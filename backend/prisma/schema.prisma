@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Colaborador {
+  id             String          @id @default(cuid())
+  nombre         String
+  apellido       String
+  cedula         String          @unique
+  cargo          String?
+  email          String?         @unique
+  telefono       String?
+  salarioMensual Float
+  activo         Boolean         @default(true)
+  creadoEn       DateTime        @default(now())
+  actualizadoEn  DateTime        @updatedAt
+  registros      Registro[]
+  permisos       Permiso[]
+
+  @@map("colaboradores")
+}
+
+model Registro {
+  id             String      @id @default(cuid())
+  colaboradorId  String
+  colaborador    Colaborador @relation(fields: [colaboradorId], references: [id])
+  fecha          DateTime
+  entrada        DateTime?
+  salida         DateTime?
+  tipo           TipoRegistro @default(NORMAL)
+  observacion    String?
+  creadoEn       DateTime    @default(now())
+
+  @@map("registros")
+}
+
+model Permiso {
+  id             String      @id @default(cuid())
+  colaboradorId  String
+  colaborador    Colaborador @relation(fields: [colaboradorId], references: [id])
+  fechaInicio    DateTime
+  fechaFin       DateTime
+  tipo           TipoPermiso
+  descripcion    String?
+  aprobado       Boolean     @default(false)
+  creadoEn       DateTime    @default(now())
+
+  @@map("permisos")
+}
+
+model DiaFestivo {
+  id          String   @id @default(cuid())
+  fecha       DateTime
+  nombre      String
+  repetirAnual Boolean  @default(true)
+  creadoEn    DateTime @default(now())
+
+  @@map("dias_festivos")
+}
+
+model Configuracion {
+  id    String @id @default(cuid())
+  clave String @unique
+  valor String
+
+  @@map("configuracion")
+}
+
+model TipoHora {
+  id          String   @id @default(cuid())
+  nombre      String
+  codigo      String   @unique
+  horaInicio  Int      // 0-23
+  horaFin     Int      // 0-23
+  recargo     Float    // porcentaje sobre hora ordinaria (ej: 1.75)
+  aplica      String[] // ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO","DOMINGO","FESTIVO"]
+  activo      Boolean  @default(true)
+
+  @@map("tipos_hora")
+}
+
+model Usuario {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  nombre       String
+  rol          Rol      @default(ADMIN)
+  creadoEn     DateTime @default(now())
+
+  @@map("usuarios")
+}
+
+enum TipoRegistro {
+  NORMAL
+  PERMISO
+  FESTIVO
+}
+
+enum TipoPermiso {
+  MEDICO
+  PERSONAL
+  CALAMIDAD
+  VACACIONES
+  OTRO
+}
+
+enum Rol {
+  ADMIN
+  SUPERVISOR
+  COLABORADOR
+}
