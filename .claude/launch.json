@@ -5,8 +5,17 @@
       "name": "frontend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "rootDir": "frontend",
-      "port": 5173
+      "cwd": "/Users/mac/Documents/Krumlab/Conteo_Horas/frontend",
+      "port": 5173,
+      "autoPort": false
+    },
+    {
+      "name": "backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/mac/Documents/Krumlab/Conteo_Horas/backend",
+      "port": 3001,
+      "autoPort": false
     }
   ]
 }

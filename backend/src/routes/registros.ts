@@ -5,11 +5,16 @@ import { prisma } from '../index';
 const TZ = 'America/Bogota';
 
 export default async function registroRoutes(app: FastifyInstance) {
-  const auth = { preHandler: [app.authenticate] };
+  const auth = { preHandler: [app.requireEmpresa] };
+
+  // Verifica que el colaborador pertenezca a la empresa del token
+  async function colaboradorDeEmpresa(colaboradorId: string, empresaId: string) {
+    return prisma.colaborador.findFirst({ where: { id: colaboradorId, empresaId } });
+  }
 
   app.get('/', auth, async (request) => {
     const { colaboradorId, desde, hasta } = request.query as any;
-    const where: any = {};
+    const where: any = { colaborador: { empresaId: request.empresaId } };
     if (colaboradorId) where.colaboradorId = colaboradorId;
     if (desde || hasta) {
       where.fecha = {};
@@ -22,6 +27,9 @@ export default async function registroRoutes(app: FastifyInstance) {
   // Registrar entrada (reloj - usa hora actual de Bogotá)
   app.post('/entrada', auth, async (request, reply) => {
     const { colaboradorId } = request.body as { colaboradorId: string };
+    if (!(await colaboradorDeEmpresa(colaboradorId, request.empresaId!))) {
+      return reply.status(404).send({ error: 'Colaborador no encontrado' });
+    }
     const ahora = new Date();
     const fechaBogota = toZonedTime(ahora, TZ);
     fechaBogota.setHours(0, 0, 0, 0);
@@ -40,6 +48,9 @@ export default async function registroRoutes(app: FastifyInstance) {
   // Registrar salida
   app.post('/salida', auth, async (request, reply) => {
     const { colaboradorId } = request.body as { colaboradorId: string };
+    if (!(await colaboradorDeEmpresa(colaboradorId, request.empresaId!))) {
+      return reply.status(404).send({ error: 'Colaborador no encontrado' });
+    }
     const ahora = new Date();
     const fechaBogota = toZonedTime(ahora, TZ);
     fechaBogota.setHours(0, 0, 0, 0);
@@ -56,18 +67,34 @@ export default async function registroRoutes(app: FastifyInstance) {
   // Registro manual (admin)
   app.post('/', auth, async (request, reply) => {
     const data = request.body as any;
+    if (!(await colaboradorDeEmpresa(data.colaboradorId, request.empresaId!))) {
+      return reply.status(404).send({ error: 'Colaborador no encontrado' });
+    }
     const registro = await prisma.registro.create({ data });
     return reply.status(201).send(registro);
   });
 
-  app.put('/:id', auth, async (request) => {
+  // Corrección manual — deja rastro de auditoría
+  app.put('/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const payload = request.user as any;
+    const existente = await prisma.registro.findFirst({
+      where: { id, colaborador: { empresaId: request.empresaId } },
+    });
+    if (!existente) return reply.status(404).send({ error: 'Registro no encontrado' });
     const data = request.body as any;
-    return prisma.registro.update({ where: { id }, data });
+    return prisma.registro.update({
+      where: { id },
+      data: { ...data, editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
+    });
   });
 
-  app.delete('/:id', auth, async (request) => {
+  app.delete('/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
+    const existente = await prisma.registro.findFirst({
+      where: { id, colaborador: { empresaId: request.empresaId } },
+    });
+    if (!existente) return reply.status(404).send({ error: 'Registro no encontrado' });
     return prisma.registro.delete({ where: { id } });
   });
 }

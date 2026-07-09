@@ -2,16 +2,18 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:16-alpine
+    image: mysql:8.4
     restart: always
     environment:
-      POSTGRES_DB: conteo_horas
-      POSTGRES_USER: conteo_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: conteo_horas
+      MYSQL_USER: conteo_user
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     ports:
-      - "5432:5432"
+      - "3306:3306"
 
   backend:
     build: ./backend
@@ -19,7 +21,7 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgresql://conteo_user:${DB_PASSWORD}@db:5432/conteo_horas
+      DATABASE_URL: mysql://conteo_user:${DB_PASSWORD}@db:3306/conteo_horas
       JWT_SECRET: ${JWT_SECRET}
       PORT: 3001
     ports:
@@ -34,4 +36,4 @@ services:
       - VITE_API_URL=http://${SERVER_IP}:3001/api
 
 volumes:
-  postgres_data:
+  mysql_data:

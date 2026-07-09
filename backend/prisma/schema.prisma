@@ -3,96 +3,259 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
+// ============ SaaS / Multi-tenant ============
+
+model Empresa {
+  id            String        @id @default(cuid())
+  nombre        String
+  nit           String        @unique
+  email         String
+  telefono      String?
+  // Token del link único del kiosco de marcación: /marcador/<token>
+  marcadorToken String        @unique @default(cuid())
+  // Acceso ilimitado (cortesía): nunca se le cobra ni se bloquea
+  exentaPago    Boolean       @default(false)
+  activa        Boolean       @default(true)
+  creadoEn      DateTime      @default(now())
+  actualizadoEn DateTime      @updatedAt
+  usuarios      Usuario[]
+  colaboradores Colaborador[]
+  festivos      DiaFestivo[]
+  configuracion Configuracion[]
+  suscripcion   Suscripcion?
+  horarios      Horario[]
+  dispositivos  DispositivoKiosco[]
+
+  @@map("empresas")
+}
+
+model Suscripcion {
+  id                String            @id @default(cuid())
+  empresaId         String            @unique
+  empresa           Empresa           @relation(fields: [empresaId], references: [id])
+  estado            EstadoSuscripcion @default(PRUEBA)
+  finPrueba         DateTime // 7 días desde la creación
+  pagadoHasta       DateTime? // fin del último período pagado
+  suspendidaEn      DateTime?
+  // Wompi: fuente de pago tokenizada para cobro recurrente (null = paga por link)
+  wompiFuentePagoId String?
+  creadoEn          DateTime          @default(now())
+  actualizadoEn     DateTime          @updatedAt
+  pagos             Pago[]
+
+  @@map("suscripciones")
+}
+
+model Pago {
+  id                      String      @id @default(cuid())
+  suscripcionId           String
+  suscripcion             Suscripcion @relation(fields: [suscripcionId], references: [id])
+  monto                   Float
+  colaboradoresFacturados Int
+  periodoInicio           DateTime
+  periodoFin              DateTime
+  metodo                  MetodoPago
+  estado                  EstadoPago  @default(APROBADO)
+  wompiTransaccionId      String?     @unique
+  nota                    String? // referencia, banco, observaciones
+  comprobanteBase64       String?     @db.LongText // foto del soporte (data URL)
+  registradoPor           String? // email del super admin que lo registró
+  creadoEn                DateTime    @default(now())
+
+  @@map("pagos")
+}
+
+// Precios del SaaS — editables por el super admin (fila única id=1)
+model ConfiguracionPlataforma {
+  id           Int   @id @default(1)
+  precioTramo1 Float @default(10000) // COP por colaborador, tramo inicial
+  limiteTramo1 Int   @default(15) // tamaño del tramo inicial
+  precioTramo2 Float @default(2000) // COP por colaborador adicional
+
+  @@map("configuracion_plataforma")
+}
+
+// ============ Reglas legales (globales, con vigencias) ============
+
+// Jornada máxima legal semanal — Ley 2101 de 2021 (48→42h gradual)
+model JornadaVigencia {
+  id             String   @id @default(cuid())
+  vigenteDesde   DateTime @unique
+  horasSemanales Float
+
+  @@map("jornadas_vigencia")
+}
+
+// Tipos de hora y recargos — CST + Ley 2466 de 2025, con vigencias por fecha
+model TipoHora {
+  id            String    @id @default(cuid())
+  nombre        String
+  codigo        String // HOD, HON, HED, HEN, HDD, HND, HEDD, HEND
+  horaInicio    Int // 0-23
+  horaFin       Int // 0-23
+  recargo       Float // factor sobre hora ordinaria (ej: 1.35)
+  aplica        Json // ["LUNES",...,"DOMINGO","FESTIVO"] — MySQL no soporta arrays escalares
+  vigenteDesde  DateTime
+  vigenteHasta  DateTime? // null = vigente indefinidamente
+  activo        Boolean   @default(true)
+
+  @@unique([codigo, vigenteDesde])
+  @@map("tipos_hora")
+}
+
+// ============ Negocio por empresa ============
+
+// Horarios de trabajo de la empresa (ej: "Oficina" L-V 08:00-17:00).
+// Se asignan por colaborador; sin horario no se controlan llegadas tarde.
+model Horario {
+  id            String        @id @default(cuid())
+  empresaId     String
+  empresa       Empresa       @relation(fields: [empresaId], references: [id])
+  nombre        String
+  horaEntrada   String // "08:00" hora local Bogotá
+  horaSalida    String // "17:00" (puede cruzar medianoche, ej. "21:00"→"05:00")
+  dias          Json // ["LUNES",...,"SABADO"]
+  toleranciaMin Int           @default(10) // minutos de gracia antes de contar tardanza
+  activo        Boolean       @default(true)
+  creadoEn      DateTime      @default(now())
+  colaboradores Colaborador[]
+
+  @@map("horarios")
+}
+
+// Dispositivos autorizados para abrir el kiosco de marcación.
+// Evita que un colaborador copie el link y marque desde su casa.
+model DispositivoKiosco {
+  id        String    @id @default(cuid())
+  empresaId String
+  empresa   Empresa   @relation(fields: [empresaId], references: [id])
+  nombre    String
+  token     String    @unique
+  creadoEn  DateTime  @default(now())
+  ultimoUso DateTime?
+
+  @@map("dispositivos_kiosco")
+}
+
 model Colaborador {
-  id             String          @id @default(cuid())
+  id             String     @id @default(cuid())
+  empresaId      String
+  empresa        Empresa    @relation(fields: [empresaId], references: [id])
   nombre         String
   apellido       String
-  cedula         String          @unique
+  cedula         String // marcación en kiosco por cédula
   cargo          String?
-  email          String?         @unique
+  email          String?
   telefono       String?
+  fechaNacimiento DateTime?
   salarioMensual Float
-  activo         Boolean         @default(true)
-  creadoEn       DateTime        @default(now())
-  actualizadoEn  DateTime        @updatedAt
+  huellaTemplate String? // Fase 4: plantilla del lector de huella
+  horarioId      String?
+  horario        Horario?   @relation(fields: [horarioId], references: [id])
+  activo         Boolean    @default(true)
+  // Si el mes ya está pagado, el "borrado" se programa para fin de mes
+  retiroProgramado DateTime?
+  creadoEn       DateTime   @default(now())
+  actualizadoEn  DateTime   @updatedAt
   registros      Registro[]
   permisos       Permiso[]
 
+  @@unique([empresaId, cedula])
   @@map("colaboradores")
 }
 
 model Registro {
-  id             String      @id @default(cuid())
-  colaboradorId  String
-  colaborador    Colaborador @relation(fields: [colaboradorId], references: [id])
-  fecha          DateTime
-  entrada        DateTime?
-  salida         DateTime?
-  tipo           TipoRegistro @default(NORMAL)
-  observacion    String?
-  creadoEn       DateTime    @default(now())
+  id            String       @id @default(cuid())
+  colaboradorId String
+  colaborador   Colaborador  @relation(fields: [colaboradorId], references: [id])
+  fecha         DateTime
+  entrada       DateTime?
+  salida        DateTime?
+  tipo          TipoRegistro @default(NORMAL)
+  observacion   String?
+  // Auditoría de correcciones manuales
+  editadoPor    String?
+  editadoEn     DateTime?
+  creadoEn      DateTime     @default(now())
 
   @@map("registros")
 }
 
 model Permiso {
-  id             String      @id @default(cuid())
-  colaboradorId  String
-  colaborador    Colaborador @relation(fields: [colaboradorId], references: [id])
-  fechaInicio    DateTime
-  fechaFin       DateTime
-  tipo           TipoPermiso
-  descripcion    String?
-  aprobado       Boolean     @default(false)
-  creadoEn       DateTime    @default(now())
+  id            String      @id @default(cuid())
+  colaboradorId String
+  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id])
+  fechaInicio   DateTime
+  fechaFin      DateTime
+  tipo          TipoPermiso
+  descripcion   String?
+  aprobado      Boolean     @default(false)
+  creadoEn      DateTime    @default(now())
 
   @@map("permisos")
 }
 
 model DiaFestivo {
-  id          String   @id @default(cuid())
-  fecha       DateTime
-  nombre      String
-  repetirAnual Boolean  @default(true)
-  creadoEn    DateTime @default(now())
+  id           String   @id @default(cuid())
+  empresaId    String? // null = festivo legal nacional (generado por algoritmo)
+  empresa      Empresa? @relation(fields: [empresaId], references: [id])
+  fecha        DateTime
+  nombre       String
+  creadoEn     DateTime @default(now())
 
+  @@unique([empresaId, fecha])
   @@map("dias_festivos")
 }
 
 model Configuracion {
-  id    String @id @default(cuid())
-  clave String @unique
-  valor String
+  id        String  @id @default(cuid())
+  empresaId String
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+  clave     String
+  valor     String
 
+  @@unique([empresaId, clave])
   @@map("configuracion")
 }
 
-model TipoHora {
-  id          String   @id @default(cuid())
-  nombre      String
-  codigo      String   @unique
-  horaInicio  Int      // 0-23
-  horaFin     Int      // 0-23
-  recargo     Float    // porcentaje sobre hora ordinaria (ej: 1.75)
-  aplica      String[] // ["LUNES","MARTES","MIERCOLES","JUEVES","VIERNES","SABADO","DOMINGO","FESTIVO"]
-  activo      Boolean  @default(true)
-
-  @@map("tipos_hora")
-}
-
 model Usuario {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  password     String
-  nombre       String
-  rol          Rol      @default(ADMIN)
-  creadoEn     DateTime @default(now())
+  id        String   @id @default(cuid())
+  empresaId String? // null = SUPER_ADMIN (usuario de la plataforma)
+  empresa   Empresa? @relation(fields: [empresaId], references: [id])
+  email     String   @unique
+  password  String
+  nombre    String
+  rol       Rol      @default(ADMIN)
+  activo    Boolean  @default(true)
+  creadoEn  DateTime @default(now())
 
   @@map("usuarios")
+}
+
+// ============ Enums ============
+
+enum EstadoSuscripcion {
+  PRUEBA
+  ACTIVA
+  EN_MORA
+  SUSPENDIDA
+  CANCELADA
+}
+
+enum MetodoPago {
+  TARJETA_RECURRENTE
+  LINK_WOMPI
+  MANUAL
+}
+
+enum EstadoPago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
 }
 
 enum TipoRegistro {
@@ -102,15 +265,21 @@ enum TipoRegistro {
 }
 
 enum TipoPermiso {
+  VACACIONES
+  INCAPACIDAD_EPS
+  INCAPACIDAD_ARL
+  LICENCIA_MATERNIDAD
+  LICENCIA_PATERNIDAD
+  LICENCIA_LUTO
+  CALAMIDAD
   MEDICO
   PERSONAL
-  CALAMIDAD
-  VACACIONES
+  NO_REMUNERADO
   OTRO
 }
 
 enum Rol {
+  SUPER_ADMIN
   ADMIN
   SUPERVISOR
-  COLABORADOR
 }

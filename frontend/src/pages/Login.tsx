@@ -1,23 +1,29 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Clock } from 'lucide-react';
+import logoCompleto from '../assets/logo-completo.svg';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, usuario, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Si ya hay sesión, no mostramos el login (evita volver aquí con "atrás")
+  if (!authLoading && usuario) {
+    return <Navigate to={usuario.rol === 'SUPER_ADMIN' ? '/admin' : '/app'} replace />;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      navigate('/');
+      const usuario = await login(email, password);
+      // replace: reemplaza /login en el historial, así "atrás" no regresa aquí
+      navigate(usuario.rol === 'SUPER_ADMIN' ? '/admin' : '/app', { replace: true });
     } catch {
       setError('Email o contraseña incorrectos');
     } finally {
@@ -26,29 +32,26 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-ink flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-blue-100 p-4 rounded-full mb-3">
-            <Clock className="text-blue-800" size={32} />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-800">Conteo de Horas</h1>
-          <p className="text-gray-500 text-sm mt-1">Sistema de control de asistencia</p>
+          <img src={logoCompleto} alt="HoraPro" className="h-16 mb-3" />
+          <p className="text-muted text-sm">Control de horas laborales</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+            <label className="block text-sm font-medium text-ink mb-1">Correo electrónico</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+            <label className="block text-sm font-medium text-ink mb-1">Contraseña</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary" />
           </div>
           {error && <p className="text-red-600 text-sm text-center">{error}</p>}
           <button type="submit" disabled={loading}
-            className="w-full bg-blue-800 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-60">
+            className="w-full bg-primary hover:bg-primary-dark text-ink font-bold py-2.5 rounded-xl transition-colors disabled:opacity-60">
             {loading ? 'Entrando...' : 'Iniciar sesión'}
           </button>
         </form>
