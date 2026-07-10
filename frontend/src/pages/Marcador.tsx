@@ -312,7 +312,7 @@ export default function Marcador() {
 
           {modoRostro ? (
             <>
-              <CamaraRostro key={capturaKey} onCapturado={loginConRostro} errorExterno={errorLogin || null} />
+              <CamaraRostro key={capturaKey} modo="login" onCapturado={(descs, foto) => loginConRostro(descs[0], foto)} errorExterno={errorLogin || null} />
               {errorLogin && (
                 <button onClick={() => { setErrorLogin(''); setCapturaKey(k => k + 1); }}
                   className="w-full mt-4 bg-primary hover:bg-primary-dark text-ink font-bold py-2.5 rounded-xl text-sm transition-colors">

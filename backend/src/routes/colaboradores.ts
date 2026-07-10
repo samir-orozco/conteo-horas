@@ -4,7 +4,7 @@ import { prisma } from '../index';
 import { calcularValorHora } from '../utils/horasColombiana';
 import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { finDeMes } from '../utils/suscripcion';
-import { esDescriptorValido } from '../utils/rostro';
+import { esListaDescriptoresValida } from '../utils/rostro';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -115,20 +115,21 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     return { ...colaborador, retiroInmediato: true };
   });
 
-  // Enrolamiento facial: guarda el descriptor (128 floats) capturado en el
-  // navegador. La imagen nunca llega al servidor. rostroEnroladoEn queda como
-  // evidencia de que hubo consentimiento explícito (dato biométrico, Ley 1581).
+  // Enrolamiento facial guiado: guarda VARIAS muestras (frente, perfiles,
+  // con/sin gafas — 128 floats cada una) capturadas en el navegador. La imagen
+  // nunca llega al servidor. rostroEnroladoEn queda como evidencia de que hubo
+  // consentimiento explícito (dato biométrico, Ley 1581).
   app.post('/:id/rostro', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { descriptor } = request.body as { descriptor: unknown };
+    const { descriptores } = request.body as { descriptores: unknown };
     const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
-    if (!esDescriptorValido(descriptor)) {
-      return reply.status(400).send({ error: 'Descriptor facial inválido' });
+    if (!esListaDescriptoresValida(descriptores)) {
+      return reply.status(400).send({ error: 'Muestras faciales inválidas' });
     }
     const colaborador = await prisma.colaborador.update({
       where: { id },
-      data: { rostroDescriptor: descriptor, rostroEnroladoEn: new Date() },
+      data: { rostroDescriptor: descriptores, rostroEnroladoEn: new Date() },
     });
     return { ok: true, rostroEnroladoEn: colaborador.rostroEnroladoEn };
   });

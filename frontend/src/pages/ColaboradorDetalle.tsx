@@ -68,6 +68,7 @@ export default function ColaboradorDetalle() {
   const [novedad, setNovedad] = useState(EMPTY_NOVEDAD);
 
   const [consentimientoRostro, setConsentimientoRostro] = useState(false);
+  const [usaGafas, setUsaGafas] = useState(false);
   const [modalCamara, setModalCamara] = useState(false);
   const [guardandoRostro, setGuardandoRostro] = useState(false);
   const [errorRostro, setErrorRostro] = useState('');
@@ -105,11 +106,11 @@ export default function ColaboradorDetalle() {
     cargar();
   };
 
-  const capturarRostro = async (descriptor: number[]) => {
+  const capturarRostro = async (descriptores: number[][]) => {
     setGuardandoRostro(true);
     setErrorRostro('');
     try {
-      await api.post(`/colaboradores/${id}/rostro`, { descriptor });
+      await api.post(`/colaboradores/${id}/rostro`, { descriptores });
       setModalCamara(false);
       setConsentimientoRostro(false);
       setToast('Rostro registrado con éxito');
@@ -248,10 +249,14 @@ export default function ColaboradorDetalle() {
             </>
           ) : (
             <>
-              <p className="text-xs text-muted mb-3 flex-1">Registra su rostro para que marque en el kiosco sin digitar la cédula. Solo se guarda un cálculo matemático, nunca la foto.</p>
-              <label className="flex items-start gap-2 text-xs text-muted mb-3 cursor-pointer">
+              <p className="text-xs text-muted mb-3 flex-1">Registra su rostro para que marque en el kiosco sin digitar la cédula. La captura es guiada (frente y perfiles) y solo se guarda un cálculo matemático, nunca la foto.</p>
+              <label className="flex items-start gap-2 text-xs text-muted mb-2 cursor-pointer">
                 <input type="checkbox" checked={consentimientoRostro} onChange={e => setConsentimientoRostro(e.target.checked)} className="mt-0.5 rounded" />
                 <span>El colaborador autoriza el tratamiento de su rostro como dato biométrico, conforme a la Ley 1581 de 2012 (Habeas Data).</span>
+              </label>
+              <label className="flex items-start gap-2 text-xs text-muted mb-3 cursor-pointer">
+                <input type="checkbox" checked={usaGafas} onChange={e => setUsaGafas(e.target.checked)} className="mt-0.5 rounded" />
+                <span>Usa gafas habitualmente (se hará una toma adicional sin gafas para reconocerlo en ambos casos).</span>
               </label>
               <button onClick={() => setModalCamara(true)} disabled={!consentimientoRostro}
                 className="w-full bg-primary hover:bg-primary-dark text-ink font-semibold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
@@ -270,7 +275,7 @@ export default function ColaboradorDetalle() {
               <h3 className="font-bold text-lg text-ink flex items-center gap-2"><ShieldCheck size={18} /> Registrar rostro</h3>
               <button onClick={() => setModalCamara(false)}><X size={20} className="text-gray-400" /></button>
             </div>
-            <CamaraRostro onCapturado={capturarRostro} />
+            <CamaraRostro modo="enrolar" pasoGafas={usaGafas} onCapturado={capturarRostro} />
             {errorRostro && <p className="text-red-600 text-sm text-center mt-3">{errorRostro}</p>}
             {guardandoRostro && <p className="text-muted text-sm text-center mt-3">Guardando...</p>}
           </div>

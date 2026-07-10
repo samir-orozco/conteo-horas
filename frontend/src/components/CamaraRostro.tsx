@@ -3,30 +3,43 @@ import * as faceapi from 'face-api.js';
 import { cargarModelosFaceApi } from '../lib/faceapi';
 import { Camera, AlertTriangle, Check } from 'lucide-react';
 
-type Estado = 'cargando' | 'buscando' | 'detectado' | 'procesando' | 'exito' | 'error';
+type Modo = 'login' | 'enrolar';
+type Estado = 'cargando' | 'guiando' | 'exito' | 'error';
 
 type Props = {
-  // foto: JPEG base64 pequeño del momento de la verificación (evidencia de la marcación)
-  onCapturado: (descriptor: number[], foto: string) => void;
+  // login: 1 captura rápida con prueba de vida (parpadeo suave)
+  // enrolar: captura guiada de varias poses (frente + perfiles + sin gafas)
+  modo?: Modo;
+  // Enrolamiento: agrega una toma final sin gafas (para quien las usa a diario)
+  pasoGafas?: boolean;
+  // Siempre entrega la lista de muestras; en login la lista tiene 1 elemento.
+  // foto: JPEG pequeño del momento (evidencia de la marcación)
+  onCapturado: (descriptores: number[][], foto: string) => void;
   onError?: (mensaje: string) => void;
-  // Error reportado por el padre (ej. "rostro no reconocido"): pinta el recuadro en rojo
+  // Error reportado por el padre (ej. "rostro no reconocido"): pinta el óvalo en rojo
   errorExterno?: string | null;
 };
 
-// Distancia entre dos puntos de landmark
+// inputSize bajo = detección 2-3x más rápida en celulares; a distancia de
+// kiosco (rostro llenando el óvalo) la precisión no se resiente.
+const opcionesDetector = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 });
+
 const dist = (a: faceapi.Point, b: faceapi.Point) => Math.hypot(a.x - b.x, a.y - b.y);
 
-// Eye Aspect Ratio: cae cuando el ojo se cierra. Usamos su caída y
-// recuperación como prueba de vida (parpadeo) — una foto no puede parpadear.
+// Eye Aspect Ratio: cae cuando el ojo se cierra (prueba de vida por parpadeo)
 function ear(ojo: faceapi.Point[]): number {
   return (dist(ojo[1], ojo[5]) + dist(ojo[2], ojo[4])) / (2 * dist(ojo[0], ojo[3]));
 }
 
-// Cámara + reconocimiento facial con prueba de vida por parpadeo.
-// Todo corre en el navegador (face-api.js/TensorFlow.js): la imagen nunca
-// sale del dispositivo, solo el descriptor matemático (128 floats) que se
-// entrega en onCapturado.
-// Captura un JPEG pequeño del cuadro actual del video (máx ~320px de ancho)
+// Giro de cabeza (yaw): posición de la nariz relativa a los ojos.
+// ~0 de frente; positivo/negativo según el lado del giro.
+function desviacionYaw(landmarks: faceapi.FaceLandmarks68): number {
+  const nariz = landmarks.getNose()[3];
+  const ojoIzq = landmarks.getLeftEye()[0];
+  const ojoDer = landmarks.getRightEye()[3];
+  return (nariz.x - ojoIzq.x) / (ojoDer.x - ojoIzq.x) - 0.5;
+}
+
 function capturarFoto(video: HTMLVideoElement): string {
   const ancho = 320;
   const alto = Math.round((video.videoHeight / video.videoWidth) * ancho) || 240;
@@ -37,19 +50,58 @@ function capturarFoto(video: HTMLVideoElement): string {
   return canvas.toDataURL('image/jpeg', 0.7);
 }
 
-export default function CamaraRostro({ onCapturado, onError, errorExterno }: Props) {
+// Guía de encuadre: qué le decimos al usuario para que el rostro llene el óvalo
+type Encuadre = 'CENTRA' | 'ACERCATE' | 'ALEJATE' | 'OK';
+function evaluarEncuadre(box: faceapi.Box, vw: number, vh: number): Encuadre {
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  if (Math.abs(cx - vw / 2) > vw * 0.2 || Math.abs(cy - vh / 2) > vh * 0.22) return 'CENTRA';
+  const proporcion = box.width / vw;
+  if (proporcion < 0.26) return 'ACERCATE';
+  if (proporcion > 0.62) return 'ALEJATE';
+  return 'OK';
+}
+const MSG_ENCUADRE: Record<Exclude<Encuadre, 'OK'>, string> = {
+  CENTRA: 'Centra tu rostro en el óvalo',
+  ACERCATE: 'Acércate un poco',
+  ALEJATE: 'Aléjate un poco',
+};
+
+type PasoEnrolar = { id: string; etiqueta: string; texto: string; tipo: 'frontal' | 'lado' | 'ladoOpuesto' };
+
+export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapturado, onError, errorExterno }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [estado, setEstado] = useState<Estado>('cargando');
   const [mensaje, setMensaje] = useState('Cargando cámara...');
+  const [encuadreOk, setEncuadreOk] = useState(false);
+  const [pasoActual, setPasoActual] = useState(0);
+
+  const pasos: PasoEnrolar[] = modo === 'enrolar'
+    ? [
+        { id: 'frente', etiqueta: 'Frente', texto: 'Mira de frente a la cámara', tipo: 'frontal' },
+        { id: 'lado1', etiqueta: 'Un lado', texto: 'Gira levemente la cabeza hacia un lado', tipo: 'lado' },
+        { id: 'lado2', etiqueta: 'Otro lado', texto: 'Ahora gira levemente hacia el otro lado', tipo: 'ladoOpuesto' },
+        ...(pasoGafas ? [{ id: 'singafas', etiqueta: 'Sin gafas', texto: 'Quítate las gafas y mira de frente', tipo: 'frontal' as const }] : []),
+      ]
+    : [];
 
   useEffect(() => {
     let activo = true;
-    let capturado = false;
-    let baseline: number | null = null;
-    const muestrasBaseline: number[] = [];
-    let ojosCerrados = false;
+    let terminado = false;
     let stream: MediaStream | null = null;
     let cuadroId: number | null = null;
+
+    // Estado del flujo (vive fuera de React para no re-renderizar por cuadro)
+    const descriptores: number[][] = [];
+    let foto: string | null = null;
+    let idxPaso = 0;
+    let establesPaso = 0; // cuadros seguidos cumpliendo la pose
+    let signoLado = 0; // hacia qué lado giró en el paso "lado"
+    // Parpadeo suave (login)
+    let baseline: number | null = null;
+    const muestrasBaseline: number[] = [];
+    let earPrevio: number | null = null;
+    let ojosCerrados = false;
 
     const detenerCamara = () => {
       if (cuadroId !== null) cancelAnimationFrame(cuadroId);
@@ -62,6 +114,19 @@ export default function CamaraRostro({ onCapturado, onError, errorExterno }: Pro
       onError?.(msg);
     };
 
+    const finalizar = (video: HTMLVideoElement) => {
+      terminado = true;
+      setEstado('exito');
+      setMensaje(modo === 'enrolar' ? '¡Rostro registrado!' : '¡Rostro verificado!');
+      const fotoFinal = foto ?? capturarFoto(video);
+      // Pausa breve para que se vea la animación de éxito antes de continuar
+      setTimeout(() => {
+        if (!activo) return;
+        detenerCamara();
+        onCapturado(descriptores, fotoFinal);
+      }, 700);
+    };
+
     (async () => {
       try {
         await cargarModelosFaceApi();
@@ -71,78 +136,104 @@ export default function CamaraRostro({ onCapturado, onError, errorExterno }: Pro
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
-        setEstado('buscando');
-        setMensaje('Ubica tu rostro frente a la cámara');
+        setEstado('guiando');
+        setMensaje('Ubica tu rostro dentro del óvalo');
 
-        // Bucle continuo (no un intervalo fijo): un parpadeo real dura apenas
-        // 100-150ms, así que hay que revisar cuadro a cuadro para no saltárselo.
         const analizarCuadro = async () => {
-          if (!activo) return;
-          if (capturado || !videoRef.current) {
-            cuadroId = requestAnimationFrame(analizarCuadro);
-            return;
-          }
+          if (!activo || terminado) return;
+          const video = videoRef.current;
+          if (!video) { cuadroId = requestAnimationFrame(analizarCuadro); return; }
 
           const deteccion = await faceapi
-            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+            .detectSingleFace(video, opcionesDetector())
             .withFaceLandmarks();
 
-          if (!activo || capturado) return;
+          if (!activo || terminado) return;
 
           if (!deteccion) {
+            setEncuadreOk(false);
+            setMensaje('Ubica tu rostro dentro del óvalo');
+            establesPaso = 0;
             baseline = null;
             muestrasBaseline.length = 0;
             ojosCerrados = false;
-            setEstado('buscando');
-            setMensaje('Ubica tu rostro frente a la cámara');
             cuadroId = requestAnimationFrame(analizarCuadro);
             return;
           }
 
-          const earActual = (ear(deteccion.landmarks.getLeftEye()) + ear(deteccion.landmarks.getRightEye())) / 2;
+          const encuadre = evaluarEncuadre(deteccion.detection.box, video.videoWidth, video.videoHeight);
+          if (encuadre !== 'OK') {
+            setEncuadreOk(false);
+            setMensaje(MSG_ENCUADRE[encuadre]);
+            establesPaso = 0;
+            cuadroId = requestAnimationFrame(analizarCuadro);
+            return;
+          }
+          setEncuadreOk(true);
 
-          if (baseline === null) {
-            muestrasBaseline.push(earActual);
-            if (muestrasBaseline.length >= 5) {
-              baseline = muestrasBaseline.reduce((a, b) => a + b, 0) / muestrasBaseline.length;
+          if (modo === 'enrolar') {
+            // ===== Enrolamiento guiado por poses =====
+            const paso = pasos[idxPaso];
+            setMensaje(paso.texto);
+            const dev = desviacionYaw(deteccion.landmarks);
+            const cumple =
+              paso.tipo === 'frontal' ? Math.abs(dev) < 0.09
+              : paso.tipo === 'lado' ? Math.abs(dev) > 0.15 && Math.abs(dev) < 0.38
+              : dev * signoLado < 0 && Math.abs(dev) > 0.15 && Math.abs(dev) < 0.38;
+
+            establesPaso = cumple ? establesPaso + 1 : 0;
+            if (establesPaso >= 3) {
+              const completa = await faceapi
+                .detectSingleFace(video, opcionesDetector())
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+              if (!activo || terminado) return;
+              if (completa) {
+                descriptores.push(Array.from(completa.descriptor));
+                if (paso.tipo === 'lado') signoLado = Math.sign(dev);
+                if (paso.id === 'frente') foto = capturarFoto(video);
+                idxPaso += 1;
+                establesPaso = 0;
+                setPasoActual(idxPaso);
+                if (idxPaso >= pasos.length) { finalizar(video); return; }
+              }
             }
-            setEstado('detectado');
-            setMensaje('Ahora parpadea para continuar');
-            cuadroId = requestAnimationFrame(analizarCuadro);
-            return;
-          }
+          } else {
+            // ===== Login: prueba de vida con parpadeo suave =====
+            const earCrudo = (ear(deteccion.landmarks.getLeftEye()) + ear(deteccion.landmarks.getRightEye())) / 2;
+            // Suavizado: promedio con el cuadro anterior para filtrar ruido
+            const earActual = earPrevio === null ? earCrudo : (earCrudo + earPrevio) / 2;
+            earPrevio = earCrudo;
 
-          if (!ojosCerrados && earActual < baseline * 0.88) {
-            ojosCerrados = true;
-          } else if (ojosCerrados && earActual > baseline * 0.90) {
-            // Parpadeo confirmado: capturamos el descriptor con este cuadro (ojos abiertos)
-            capturado = true;
-            setEstado('procesando');
-            setMensaje('Verificando...');
-            const conDescriptor = await faceapi
-              .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-              .withFaceLandmarks()
-              .withFaceDescriptor();
-            if (!activo) return;
-            if (!conDescriptor) {
-              capturado = false;
-              ojosCerrados = false;
-              setEstado('buscando');
-              setMensaje('No pudimos leer tu rostro, intenta de nuevo');
+            if (baseline === null) {
+              muestrasBaseline.push(earActual);
+              setMensaje('Quédate quieto un momento...');
+              if (muestrasBaseline.length >= 5) {
+                baseline = muestrasBaseline.reduce((a, b) => a + b, 0) / muestrasBaseline.length;
+              }
               cuadroId = requestAnimationFrame(analizarCuadro);
               return;
             }
-            const descriptorFinal = Array.from(conDescriptor.descriptor);
-            const foto = capturarFoto(videoRef.current);
-            setEstado('exito');
-            setMensaje('¡Rostro verificado!');
-            // Pequeña pausa para que se vea la animación de éxito antes de continuar
-            setTimeout(() => {
-              if (!activo) return;
-              detenerCamara();
-              onCapturado(descriptorFinal, foto);
-            }, 700);
-            return;
+
+            setMensaje('Parpadea suavemente');
+            // Cerrado: caída relativa O valor absoluto típico de ojo cerrado.
+            // Con el rostro llenando el óvalo la señal es limpia: basta un parpadeo normal.
+            if (!ojosCerrados && (earActual < baseline * 0.86 || earActual < 0.2)) {
+              ojosCerrados = true;
+            } else if (ojosCerrados && earActual > baseline * 0.93) {
+              const completa = await faceapi
+                .detectSingleFace(video, opcionesDetector())
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+              if (!activo || terminado) return;
+              if (completa) {
+                descriptores.push(Array.from(completa.descriptor));
+                foto = capturarFoto(video);
+                finalizar(video);
+                return;
+              }
+              ojosCerrados = false;
+            }
           }
 
           cuadroId = requestAnimationFrame(analizarCuadro);
@@ -160,20 +251,33 @@ export default function CamaraRostro({ onCapturado, onError, errorExterno }: Pro
       activo = false;
       detenerCamara();
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modo, pasoGafas]);
 
   const hayError = estado === 'error' || !!errorExterno;
+  const colorOvalo = hayError ? '#f87171' : estado === 'exito' ? '#4ade80' : encuadreOk ? '#4ade80' : '#FFD85E';
 
   return (
     <div className="flex flex-col items-center gap-3 w-full">
-      <div className={`relative w-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden bg-ink flex items-center justify-center transition-shadow ${hayError ? 'ring-4 ring-red-500' : estado === 'exito' ? 'ring-4 ring-green-500' : estado === 'detectado' || estado === 'procesando' ? 'ring-4 ring-green-400' : ''}`}>
+      <div className="relative w-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden bg-ink flex items-center justify-center">
         <video ref={videoRef} className="w-full h-full object-cover [transform:scaleX(-1)]" muted playsInline />
         {estado === 'cargando' && <Camera className="absolute text-white/60" size={40} />}
-        {(estado === 'buscando' || estado === 'detectado') && !hayError && (
-          <div className="hp-scan-line absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_12px_2px_rgba(255,216,94,0.8)]" />
+
+        {/* Óvalo guía: oscurece alrededor y marca dónde debe ir el rostro */}
+        {(estado === 'guiando' || estado === 'exito' || hayError) && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 75" preserveAspectRatio="none" aria-hidden="true">
+            <path
+              d="M0 0 H100 V75 H0 Z M50 37.5 m-23 0 a23 30 0 1 0 46 0 a23 30 0 1 0 -46 0"
+              fill="rgba(0,0,0,0.45)"
+              fillRule="evenodd"
+            />
+            <ellipse cx="50" cy="37.5" rx="23" ry="30" fill="none" stroke={colorOvalo} strokeWidth="1.4"
+              strokeDasharray={estado === 'guiando' && !encuadreOk ? '4 2.5' : undefined} />
+          </svg>
         )}
-        {estado === 'exito' && !hayError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-green-600/20">
+
+        {estado === 'exito' && (
+          <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative w-20 h-20">
               <div className="hp-ripple absolute inset-0 rounded-full bg-green-400/50" />
               <div className="hp-pop relative w-20 h-20 rounded-full bg-white flex items-center justify-center">
@@ -190,6 +294,25 @@ export default function CamaraRostro({ onCapturado, onError, errorExterno }: Pro
           </div>
         )}
       </div>
+
+      {/* Progreso del enrolamiento: un chip por pose */}
+      {modo === 'enrolar' && !hayError && (
+        <div className="flex flex-wrap justify-center gap-1.5">
+          {pasos.map((p, i) => (
+            <span key={p.id}
+              className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
+                i < pasoActual ? 'bg-green-100 text-green-700'
+                : i === pasoActual && estado !== 'exito' ? 'bg-primary/30 text-ink'
+                : i === pasoActual ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-muted'
+              }`}>
+              {(i < pasoActual || estado === 'exito') && <Check size={12} strokeWidth={3} />}
+              {p.etiqueta}
+            </span>
+          ))}
+        </div>
+      )}
+
       <p className={`text-sm font-medium text-center ${hayError ? 'text-red-500' : estado === 'exito' ? 'text-green-600' : 'text-muted'}`}>
         {estado === 'error' && <AlertTriangle size={14} className="inline mr-1 -mt-0.5" />}
         {errorExterno ?? mensaje}
