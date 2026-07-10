@@ -11,8 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
-    "prisma:seed:prod": "ts-node prisma/seed-produccion.ts",
-    "postinstall": "prisma generate"
+    "prisma:seed:prod": "ts-node prisma/seed-produccion.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
