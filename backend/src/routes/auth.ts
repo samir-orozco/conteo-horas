@@ -3,13 +3,28 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { prisma } from '../index';
 import { estadoEfectivo, sincronizarEstado, DIAS_PRUEBA, obtenerPrecios } from '../utils/suscripcion';
-import { enviarCorreo, plantillaCorreo } from '../utils/correo';
+import { enviarCorreo, plantillaCorreo, correoConfigurado } from '../utils/correo';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 // Vencimiento de la sesión del panel (el kiosco usa su propio token de 12h)
 const SESION = '7d';
 // Límite anti fuerza bruta para endpoints sensibles
 const limite = (max: number) => ({ rateLimit: { max, timeWindow: '1 minute' } });
+
+async function enviarCorreoVerificacion(email: string, nombre: string, token: string) {
+  const base = process.env.FRONTEND_ORIGIN?.split(',')[0] ?? 'http://localhost:5173';
+  const link = `${base}/verificar?token=${token}`;
+  await enviarCorreo({
+    para: email,
+    asunto: 'Confirma tu correo en HoraPro',
+    html: plantillaCorreo('Confirma tu correo', `
+      <p style="font-size:14px;color:#303030">Hola ${nombre},</p>
+      <p style="font-size:14px;color:#303030">Gracias por crear tu cuenta en HoraPro. Confirma tu correo para activar el panel:</p>
+      <p style="margin:24px 0"><a href="${link}" style="background:#FFD85E;color:#303030;font-weight:700;padding:12px 24px;border-radius:12px;text-decoration:none">Confirmar mi correo</a></p>
+      <p style="font-size:12px;color:#898989">Si no creaste esta cuenta, ignora este correo.</p>
+    `),
+  });
+}
 
 export default async function authRoutes(app: FastifyInstance) {
   // Precios públicos para la landing (se leen de la config del super admin)
@@ -39,16 +54,25 @@ export default async function authRoutes(app: FastifyInstance) {
     if (nitExiste) return reply.status(409).send({ error: 'Ya hay una empresa registrada con ese NIT' });
 
     const hash = await bcrypt.hash(password, 10);
+    // Verificación de correo: si el SMTP no está configurado (ej. desarrollo),
+    // la cuenta nace verificada para no bloquear a nadie sin poder enviar el link.
+    const tokenVerificacion = correoConfigurado ? crypto.randomBytes(32).toString('hex') : null;
     const nuevo = await prisma.$transaction(async (tx) => {
       const emp = await tx.empresa.create({ data: { nombre: empresa, nit, email, telefono } });
       await tx.suscripcion.create({
         data: { empresaId: emp.id, estado: 'PRUEBA', finPrueba: new Date(Date.now() + DIAS_PRUEBA * DIA_MS) },
       });
       const user = await tx.usuario.create({
-        data: { email, password: hash, nombre, rol: 'ADMIN', empresaId: emp.id },
+        data: {
+          email, password: hash, nombre, rol: 'ADMIN', empresaId: emp.id,
+          emailVerificado: !tokenVerificacion,
+          verificacionToken: tokenVerificacion,
+        },
       });
       return { emp, user };
     });
+
+    if (tokenVerificacion) await enviarCorreoVerificacion(email, nombre, tokenVerificacion);
 
     const token = app.jwt.sign({
       id: nuevo.user.id, email: nuevo.user.email, rol: 'ADMIN', nombre: nuevo.user.nombre, empresaId: nuevo.emp.id,
@@ -58,8 +82,41 @@ export default async function authRoutes(app: FastifyInstance) {
       usuario: {
         id: nuevo.user.id, email: nuevo.user.email, nombre: nuevo.user.nombre, rol: 'ADMIN',
         empresaId: nuevo.emp.id, empresaNombre: nuevo.emp.nombre, estadoSuscripcion: 'PRUEBA',
+        emailVerificado: nuevo.user.emailVerificado,
       },
     });
+  });
+
+  // Confirma el correo con el token del link enviado al registrarse
+  app.post('/verificar-email', { config: limite(10) }, async (request, reply) => {
+    const { token } = request.body as { token: string };
+    if (!token) return reply.status(400).send({ error: 'Falta el token' });
+    const usuario = await prisma.usuario.findUnique({ where: { verificacionToken: token } });
+    if (!usuario) return reply.status(400).send({ error: 'El link no es válido o ya fue usado' });
+    await prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { emailVerificado: true, verificacionToken: null },
+    });
+    return { ok: true };
+  });
+
+  // Reenvía el correo de verificación al usuario logueado
+  app.post('/reenviar-verificacion', { preHandler: [app.authenticate], config: limite(3) }, async (request, reply) => {
+    const payload = request.user as any;
+    const usuario = await prisma.usuario.findUnique({ where: { id: payload.id } });
+    if (!usuario) return reply.status(404).send({ error: 'Usuario no encontrado' });
+    if (usuario.emailVerificado) return { ok: true, yaVerificado: true };
+    if (!correoConfigurado) {
+      // Sin SMTP no podemos enviar: verificamos directo para no dejarlo atrapado
+      await prisma.usuario.update({ where: { id: usuario.id }, data: { emailVerificado: true, verificacionToken: null } });
+      return { ok: true, yaVerificado: true };
+    }
+    const token = usuario.verificacionToken ?? crypto.randomBytes(32).toString('hex');
+    if (!usuario.verificacionToken) {
+      await prisma.usuario.update({ where: { id: usuario.id }, data: { verificacionToken: token } });
+    }
+    await enviarCorreoVerificacion(usuario.email, usuario.nombre, token);
+    return { ok: true };
   });
 
   app.post('/login', { config: limite(10) }, async (request, reply) => {
@@ -102,6 +159,7 @@ export default async function authRoutes(app: FastifyInstance) {
         empresaId: usuario.empresaId,
         empresaNombre: usuario.empresa?.nombre ?? null,
         estadoSuscripcion,
+        emailVerificado: usuario.emailVerificado,
       },
     };
   });
@@ -111,7 +169,7 @@ export default async function authRoutes(app: FastifyInstance) {
     const usuario = await prisma.usuario.findUnique({
       where: { id: payload.id },
       select: {
-        id: true, email: true, nombre: true, rol: true, empresaId: true,
+        id: true, email: true, nombre: true, rol: true, empresaId: true, emailVerificado: true,
         empresa: { select: { nombre: true, exentaPago: true, suscripcion: true } },
       },
     });
@@ -123,6 +181,7 @@ export default async function authRoutes(app: FastifyInstance) {
       rol: usuario.rol,
       empresaId: usuario.empresaId,
       empresaNombre: usuario.empresa?.nombre ?? null,
+      emailVerificado: usuario.emailVerificado,
       estadoSuscripcion: usuario.empresa?.exentaPago
         ? 'ILIMITADA'
         : usuario.empresa?.suscripcion

@@ -249,6 +249,9 @@ model Usuario {
   // Recuperación de contraseña: token de un solo uso con vencimiento
   resetToken  String?   @unique
   resetExpira DateTime?
+  // Verificación del correo al registrarse (evita cuentas con correos falsos)
+  emailVerificado    Boolean @default(false)
+  verificacionToken  String? @unique
   creadoEn  DateTime @default(now())
 
   @@map("usuarios")

@@ -9,6 +9,7 @@ type Usuario = {
   empresaId: string | null;
   empresaNombre: string | null;
   estadoSuscripcion: string | null;
+  emailVerificado?: boolean;
 };
 type DatosRegistro = { empresa: string; nit: string; nombre: string; email: string; password: string; telefono?: string };
 type AuthCtx = {

@@ -85,9 +85,16 @@ body {
   85% { opacity: 1; }
   100% { transform: translateY(100%); opacity: 0; }
 }
+/* Temblor sutil (~1px) para cifras que cambian, ej. calculadora de precio */
+@keyframes hp-shake-suave {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-1px); }
+  70% { transform: translateX(1px); }
+}
 .hp-pop { animation: hp-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 .hp-ripple { animation: hp-ripple 1s ease-out infinite; }
 .hp-shake { animation: hp-shake 0.5s ease-in-out both; }
+.hp-shake-suave { animation: hp-shake-suave 0.18s ease-in-out; }
 .hp-fade-bg { animation: hp-fade-bg 0.4s ease-out both; }
 .hp-fade-out { animation: hp-fade-out 0.35s ease-in both; }
 .hp-pop-out { animation: hp-pop-out 0.32s cubic-bezier(0.4, 0, 1, 1) both; }

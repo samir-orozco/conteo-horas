@@ -45,6 +45,60 @@ function Cuenta({ children }: { children: React.ReactNode }) {
   return <span className="tabular-nums">{children}</span>;
 }
 
+// Calculadora del precio: slider de colaboradores con contador animado
+// (el número "corre" hacia el nuevo total y la cifra tiembla apenas un pelo)
+function CalculadoraPrecio({ precios }: { precios: Precios }) {
+  const [cantidad, setCantidad] = useState(15);
+  const [mostrado, setMostrado] = useState(0);
+  const [tiemblo, setTiemblo] = useState(0);
+
+  const total = Math.min(cantidad, precios.limiteTramo1) * precios.precioTramo1
+    + Math.max(0, cantidad - precios.limiteTramo1) * precios.precioTramo2;
+
+  useEffect(() => {
+    const desde = mostrado;
+    const delta = total - desde;
+    if (delta === 0) return;
+    const inicio = performance.now();
+    let raf = 0;
+    const paso = (t: number) => {
+      const k = Math.min(1, (t - inicio) / 350);
+      const suave = 1 - Math.pow(1 - k, 3); // arranca rápido, frena al llegar
+      setMostrado(Math.round(desde + delta * suave));
+      if (k < 1) raf = requestAnimationFrame(paso);
+    };
+    raf = requestAnimationFrame(paso);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
+
+  return (
+    <div className="mt-6 bg-[#f6f6f4] rounded-2xl p-5 text-left">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <label htmlFor="calc-colabs" className="text-sm font-semibold text-ink">¿Cuántos colaboradores tienes?</label>
+        <span className="text-sm font-bold bg-primary/40 text-ink px-2.5 py-0.5 rounded-full tabular-nums">{cantidad}</span>
+      </div>
+      <input
+        id="calc-colabs"
+        type="range"
+        min={1}
+        max={60}
+        step={1}
+        value={cantidad}
+        onChange={e => { setCantidad(Number(e.target.value)); setTiemblo(v => v + 1); }}
+        className="w-full accent-[#FFD85E] cursor-pointer"
+      />
+      <p className="text-center mt-3 text-sm text-muted">
+        Pagarías{' '}
+        <span key={tiemblo} className="hp-shake-suave inline-block text-2xl font-extrabold text-ink tabular-nums align-middle">
+          {cop(mostrado)}
+        </span>{' '}
+        al mes
+      </p>
+    </div>
+  );
+}
+
 export default function Landing() {
   const { usuario } = useAuth();
   const [precios, setPrecios] = useState<Precios | null>(null);
@@ -105,7 +159,8 @@ export default function Landing() {
           </div>
           {!usuario && <p className="text-xs text-muted mt-3">Sin tarjeta · sin instalar nada · listo en minutos</p>}
         </div>
-        <div className="relative h-80 md:h-96">
+        {/* La composición animada solo en pantallas medianas+: en móvil ocupaba media pantalla */}
+        <div className="relative hidden md:block md:h-96">
           <GeoArt className="absolute inset-0" />
           {/* Tarjeta flotante de muestra */}
           <div className="hp-float absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl border border-gray-100 p-5 w-64">
@@ -190,8 +245,9 @@ export default function Landing() {
                 Primeros {precios.limiteTramo1} colaboradores. Del {precios.limiteTramo1 + 1} en adelante,
                 solo <b className="text-ink">{cop(precios.precioTramo2)}</b> cada uno.
               </p>
+              <CalculadoraPrecio precios={precios} />
               <div className="mt-6 space-y-2 text-sm text-left max-w-xs mx-auto">
-                {['Marcación ilimitada por cédula', 'Liquidación de recargos y extras', 'Reportes y control de tardanzas', 'Festivos y jornada de ley al día'].map(f => (
+                {['Marcación ilimitada con rostro o cédula', 'Liquidación de recargos y extras', 'Reportes y control de tardanzas', 'Festivos y jornada de ley al día'].map(f => (
                   <div key={f} className="flex items-center gap-2"><Check size={16} className="text-green-600 shrink-0" /> {f}</div>
                 ))}
               </div>
