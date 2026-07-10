@@ -20,7 +20,9 @@ export default async function registroRoutes(app: FastifyInstance) {
     if (desde || hasta) {
       where.fecha = {};
       if (desde) where.fecha.gte = new Date(desde);
-      if (hasta) where.fecha.lte = new Date(hasta);
+      // "hasta" es inclusivo: los registros se guardan a las 05:00 UTC (medianoche
+      // de Bogotá), así que cubrimos todo el día tomando hasta el inicio del día siguiente.
+      if (hasta) where.fecha.lt = new Date(new Date(hasta).getTime() + 24 * 60 * 60 * 1000);
     }
     const registros = await prisma.registro.findMany({
       where,

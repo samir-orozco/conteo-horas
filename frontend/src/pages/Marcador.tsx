@@ -197,14 +197,14 @@ export default function Marcador() {
   if (flash?.tipo === 'ok') {
     const esEntrada = flash.accion === 'ENTRADA';
     return (
-      <div className={`min-h-screen flex items-center justify-center p-4 ${esEntrada ? 'bg-green-600' : 'bg-emerald-700'} ${cerrandoFlash ? 'hp-fade-out' : 'hp-fade-bg'}`}>
+      <div className={`min-h-screen flex items-center justify-center p-4 ${esEntrada ? 'bg-green-600' : 'bg-red-600'} ${cerrandoFlash ? 'hp-fade-out' : 'hp-fade-bg'}`}>
         <div className={`text-center text-white ${cerrandoFlash ? 'hp-pop-out' : ''}`}>
           <div className="relative mx-auto mb-8 w-36 h-36">
             <div className="hp-ripple absolute inset-0 rounded-full bg-white/40" />
             <div className={`relative w-36 h-36 rounded-full bg-white flex items-center justify-center ${cerrandoFlash ? '' : 'hp-pop'}`}>
               {esEntrada
                 ? <LogIn size={64} className="text-green-600" strokeWidth={2.5} />
-                : <LogOut size={64} className="text-emerald-700" strokeWidth={2.5} />}
+                : <LogOut size={64} className="text-red-600" strokeWidth={2.5} />}
             </div>
           </div>
           <p className={`text-4xl font-extrabold mb-2 ${cerrandoFlash ? '' : 'hp-pop'}`}>{esEntrada ? '¡Entrada registrada!' : '¡Salida registrada!'}</p>

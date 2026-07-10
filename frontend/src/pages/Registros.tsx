@@ -71,7 +71,7 @@ export default function Registros() {
   const duracion = (entrada: string | null, salida: string | null) => {
     if (!entrada || !salida) return '-';
     const mins = (new Date(salida).getTime() - new Date(entrada).getTime()) / 60000;
-    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+    return `${Math.floor(mins / 60)}h ${(mins % 60).toFixed(1)}m`;
   };
 
   const verFotos = async (r: Registro) => {
