@@ -4,6 +4,7 @@ import { ChevronLeft, Eye, EyeOff, ArrowRight, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
+import CreditoKrumlab from '../components/CreditoKrumlab';
 
 const EMPTY = { empresa: '', nit: '', nombre: '', email: '', password: '', telefono: '' };
 
@@ -110,6 +111,8 @@ export default function Registro() {
             </button>
             <p className="text-xs text-muted text-center">Al crear la cuenta aceptas los términos de HoraPro. No se cobra durante la prueba.</p>
           </form>
+
+          <CreditoKrumlab className="mt-10 text-center" />
         </div>
       </div>
     </div>

@@ -91,7 +91,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const { colaboradorId, desde, hasta } = request.query as any;
     const colaborador = await prisma.colaborador.findFirst({
       where: { id: colaboradorId, empresaId: request.empresaId },
-      include: { horario: true },
+      include: { horario: { include: { franjas: true } } },
     });
     if (!colaborador) return reply.status(404).send({ error: 'Colaborador no encontrado' });
     if (!colaborador.horario || !colaborador.horario.activo) {

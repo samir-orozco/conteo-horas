@@ -3,16 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
-  ArrowLeft, Edit2, Fingerprint, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
+  ArrowLeft, Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
+  ScanFace, Check, Trash2, ShieldCheck,
 } from 'lucide-react';
 import api from '../lib/api';
-import { formatearMiles, parsearMiles } from './Colaboradores';
+import { formatearMiles, parsearMiles, resumenFranjas, type Franja } from './Colaboradores';
+import CamaraRostro from '../components/CamaraRostro';
+import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
 
-type Horario = { id: string; nombre: string; horaEntrada: string; horaSalida: string; toleranciaMin: number };
+type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
 type Colaborador = {
   id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
   email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean;
-  horarioId?: string | null; horario?: Horario | null;
+  horarioId?: string | null; horario?: Horario | null; rostroEnroladoEn?: string | null;
 };
 type Tardanzas = {
   sinHorario: boolean;
@@ -63,6 +67,13 @@ export default function ColaboradorDetalle() {
   const [modalNovedad, setModalNovedad] = useState(false);
   const [novedad, setNovedad] = useState(EMPTY_NOVEDAD);
 
+  const [consentimientoRostro, setConsentimientoRostro] = useState(false);
+  const [modalCamara, setModalCamara] = useState(false);
+  const [guardandoRostro, setGuardandoRostro] = useState(false);
+  const [errorRostro, setErrorRostro] = useState('');
+  const [confirmarEliminarRostro, setConfirmarEliminarRostro] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
   const hoy = new Date();
   const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
   const hace30 = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -91,6 +102,29 @@ export default function ColaboradorDetalle() {
     await api.post('/permisos', { ...novedad, colaboradorId: id });
     setModalNovedad(false);
     setNovedad(EMPTY_NOVEDAD);
+    cargar();
+  };
+
+  const capturarRostro = async (descriptor: number[]) => {
+    setGuardandoRostro(true);
+    setErrorRostro('');
+    try {
+      await api.post(`/colaboradores/${id}/rostro`, { descriptor });
+      setModalCamara(false);
+      setConsentimientoRostro(false);
+      setToast('Rostro registrado con éxito');
+      cargar();
+    } catch (err: any) {
+      setErrorRostro(err.response?.data?.error ?? 'No pudimos guardar el registro facial');
+    } finally {
+      setGuardandoRostro(false);
+    }
+  };
+
+  const eliminarRostro = async () => {
+    await api.delete(`/colaboradores/${id}/rostro`);
+    setConfirmarEliminarRostro(false);
+    setToast('Registro facial eliminado');
     cargar();
   };
 
@@ -136,7 +170,7 @@ export default function ColaboradorDetalle() {
             <div className="flex justify-between gap-2"><dt className="text-muted">Cédula</dt><dd className="text-ink font-medium">{col.cedula}</dd></div>
             <div className="flex justify-between gap-2"><dt className="text-muted">Email</dt><dd className="text-ink font-medium truncate">{col.email || '—'}</dd></div>
             <div className="flex justify-between gap-2"><dt className="text-muted">Teléfono</dt><dd className="text-ink font-medium">{col.telefono || '—'}</dd></div>
-            <div className="flex justify-between gap-2"><dt className="text-muted">Horario</dt><dd className="text-ink font-medium">{col.horario ? `${col.horario.nombre} · ${col.horario.horaEntrada}—${col.horario.horaSalida}` : 'Sin asignar'}</dd></div>
+            <div className="flex justify-between gap-2"><dt className="text-muted">Horario</dt><dd className="text-ink font-medium text-right">{col.horario ? `${col.horario.nombre} · ${resumenFranjas(col.horario.franjas)}` : 'Sin asignar'}</dd></div>
             <div className="flex justify-between gap-2 border-t border-gray-100 pt-2"><dt className="text-muted">Salario</dt><dd className="text-ink font-bold">{cop(col.salarioMensual)}</dd></div>
           </dl>
         </div>
@@ -193,17 +227,67 @@ export default function ColaboradorDetalle() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        {/* Huella */}
-        <div className="bg-white rounded-card border border-gray-200 p-5 flex flex-col">
-          <p className="font-semibold text-ink mb-1 flex items-center gap-2"><Fingerprint size={16} /> Huella dactilar</p>
-          <p className="text-xs text-muted mb-4 flex-1">Cuando llegue el lector, aquí registrarás la huella para que marque sin digitar la cédula.</p>
-          <button disabled title="Disponible próximamente"
-            className="w-full border-2 border-gray-200 text-gray-400 font-semibold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 cursor-not-allowed">
-            <Fingerprint size={16} /> Registrar huella
-            <span className="text-[10px] font-bold bg-gray-100 px-1.5 py-0.5 rounded-full uppercase">Pronto</span>
-          </button>
+        {/* Reconocimiento facial */}
+        <div className="bg-white rounded-card border border-gray-200 p-5 flex flex-col lg:col-span-2">
+          <p className="font-semibold text-ink mb-1 flex items-center gap-2"><ScanFace size={16} /> Reconocimiento facial</p>
+          {col.rostroEnroladoEn ? (
+            <>
+              <p className="text-xs text-green-700 mb-4 flex-1 flex items-center gap-1.5">
+                <Check size={14} /> Registrado el {format(new Date(col.rostroEnroladoEn), "d 'de' MMMM 'de' yyyy", { locale: es })}. Ya puede marcar con su rostro en el kiosco.
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setModalCamara(true)}
+                  className="flex-1 border-2 border-gray-200 hover:border-primary text-ink font-semibold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2">
+                  <ScanFace size={16} /> Actualizar
+                </button>
+                <button onClick={() => setConfirmarEliminarRostro(true)}
+                  className="px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50" title="Eliminar registro">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-muted mb-3 flex-1">Registra su rostro para que marque en el kiosco sin digitar la cédula. Solo se guarda un cálculo matemático, nunca la foto.</p>
+              <label className="flex items-start gap-2 text-xs text-muted mb-3 cursor-pointer">
+                <input type="checkbox" checked={consentimientoRostro} onChange={e => setConsentimientoRostro(e.target.checked)} className="mt-0.5 rounded" />
+                <span>El colaborador autoriza el tratamiento de su rostro como dato biométrico, conforme a la Ley 1581 de 2012 (Habeas Data).</span>
+              </label>
+              <button onClick={() => setModalCamara(true)} disabled={!consentimientoRostro}
+                className="w-full bg-primary hover:bg-primary-dark text-ink font-semibold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                <ScanFace size={16} /> Registrar rostro
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Modal cámara: enrolar/actualizar rostro */}
+      {modalCamara && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => !guardandoRostro && setModalCamara(false)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg text-ink flex items-center gap-2"><ShieldCheck size={18} /> Registrar rostro</h3>
+              <button onClick={() => setModalCamara(false)}><X size={20} className="text-gray-400" /></button>
+            </div>
+            <CamaraRostro onCapturado={capturarRostro} />
+            {errorRostro && <p className="text-red-600 text-sm text-center mt-3">{errorRostro}</p>}
+            {guardandoRostro && <p className="text-muted text-sm text-center mt-3">Guardando...</p>}
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        abierto={confirmarEliminarRostro}
+        peligro
+        titulo="¿Eliminar registro facial?"
+        subtitulo={`${col.nombre} ya no podrá marcar con reconocimiento facial hasta que se registre de nuevo.`}
+        textoContinuar="Sí, eliminar"
+        onContinuar={eliminarRostro}
+        onCancelar={() => setConfirmarEliminarRostro(false)}
+      />
+
+      <Toast mensaje={toast} onClose={() => setToast(null)} />
 
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Novedades: vacaciones, incapacidades, licencias, permisos */}
@@ -300,7 +384,7 @@ export default function ColaboradorDetalle() {
                 <label className="block text-xs font-medium text-muted mb-1">Horario de trabajo</label>
                 <select value={formEdit.horarioId || ''} onChange={e => setFormEdit((p: any) => ({ ...p, horarioId: e.target.value }))} className={input}>
                   <option value="">Sin horario (no controla llegadas tarde)</option>
-                  {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre} · {h.horaEntrada}—{h.horaSalida}</option>)}
+                  {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre} · {resumenFranjas(h.franjas)}</option>)}
                 </select>
               </div>
               <div className="col-span-2">

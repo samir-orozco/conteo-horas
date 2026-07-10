@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { toZonedTime } from 'date-fns-tz';
 import { prisma } from '../index';
+import { franjaDelDia, minutosDe, DIAS_SEMANA } from '../utils/tardanzas';
 
 const TZ = 'America/Bogota';
 
@@ -21,7 +22,58 @@ export default async function registroRoutes(app: FastifyInstance) {
       if (desde) where.fecha.gte = new Date(desde);
       if (hasta) where.fecha.lte = new Date(hasta);
     }
-    return prisma.registro.findMany({ where, include: { colaborador: true }, orderBy: { fecha: 'desc' } });
+    const registros = await prisma.registro.findMany({
+      where,
+      include: { colaborador: { include: { horario: { include: { franjas: true } } } } },
+      orderBy: { fecha: 'desc' },
+    });
+
+    // La tardanza solo se evalúa en la PRIMERA entrada del día de cada colaborador
+    // (un reingreso después del almuerzo no es una llegada tarde).
+    const primeraEntradaDia = new Map<string, string>(); // colaboradorId|día -> registro.id
+    for (const r of registros) {
+      if (!r.entrada) continue;
+      const clave = `${r.colaboradorId}|${toZonedTime(r.fecha, TZ).toDateString()}`;
+      const actual = registros.find(x => x.id === primeraEntradaDia.get(clave));
+      if (!actual || r.entrada < actual.entrada!) primeraEntradaDia.set(clave, r.id);
+    }
+
+    // Las fotos (base64) no viajan en la lista: solo un indicador; se piden con /:id/fotos.
+    // La llegada se evalúa contra el horario asignado (null si no aplica ese día).
+    return registros.map(r => {
+      const { fotoEntrada, fotoSalida, colaborador, ...resto } = r;
+      const h = colaborador.horario;
+      let minutosTarde: number | null = null;
+      const clave = `${r.colaboradorId}|${toZonedTime(r.fecha, TZ).toDateString()}`;
+      const esPrimeraDelDia = primeraEntradaDia.get(clave) === r.id;
+      if (r.entrada && esPrimeraDelDia && r.tipo !== 'FESTIVO' && h && h.activo) {
+        const diaSemana = DIAS_SEMANA[toZonedTime(r.fecha, TZ).getDay()];
+        const franja = franjaDelDia(h, diaSemana);
+        if (franja) {
+          const z = toZonedTime(r.entrada, TZ);
+          const tarde = z.getHours() * 60 + z.getMinutes() - (minutosDe(franja.horaEntrada) + h.toleranciaMin);
+          minutosTarde = Math.max(0, tarde);
+        }
+      }
+      return {
+        ...resto,
+        colaborador: { id: colaborador.id, nombre: colaborador.nombre, apellido: colaborador.apellido },
+        minutosTarde,
+        tieneFotoEntrada: !!fotoEntrada,
+        tieneFotoSalida: !!fotoSalida,
+      };
+    });
+  });
+
+  // Fotos de verificación facial de un registro (se conservan 2 meses)
+  app.get('/:id/fotos', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const registro = await prisma.registro.findFirst({
+      where: { id, colaborador: { empresaId: request.empresaId } },
+      select: { fotoEntrada: true, fotoSalida: true },
+    });
+    if (!registro) return reply.status(404).send({ error: 'Registro no encontrado' });
+    return registro;
   });
 
   // Registrar entrada (reloj - usa hora actual de Bogotá)

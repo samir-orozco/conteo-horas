@@ -1,0 +1,114 @@
+# Despliegue de HoraPro en Banahosting
+
+Guía paso a paso. Sigue el orden.
+
+> **Dominio del despliegue inicial: `horapro.krumlab.com`** (subdominio de krumlab.com).
+> Donde la guía diga `horapro.krumlab.com`, cuando actives horapro.co bastará con cambiar
+> 4 valores: `FRONTEND_ORIGIN` (backend), `VITE_API_URL` (frontend, requiere re-build),
+> la **URL de Eventos** en el panel de Wompi y el link del kiosco que compartan las empresas.
+
+## 1. Subdominio y SSL (obligatorio)
+
+1. cPanel de krumlab.com → **Domains** (o **Subdomains**) → Create a New Domain:
+   - Dominio: `horapro.krumlab.com`
+   - Document Root: `public_html/horapro` (ahí vivirá el frontend)
+2. cPanel → **SSL/TLS Status** → activa **AutoSSL** para `horapro.krumlab.com` (suele activarse solo a los pocos minutos de crear el subdominio).
+3. Verifica que `https://horapro.krumlab.com` responda con candado. **Sin HTTPS el reconocimiento facial no funciona** (los navegadores bloquean la cámara en sitios sin candado).
+
+## 2. Base de datos MySQL
+
+1. cPanel → **MySQL Databases**:
+   - Crea la base de datos (ej. `usuario_horapro`).
+   - Crea un usuario con contraseña fuerte y asígnalo a la BD con **ALL PRIVILEGES**.
+2. Anota: nombre de BD, usuario, contraseña. El host es `localhost`.
+
+## 3. Backend (API Node)
+
+1. cPanel → **Setup Node.js App** → Create Application:
+   - Node.js version: 18 o superior.
+   - Application root: `horapro-api` (sube ahí el contenido de la carpeta `backend/`, sin `node_modules`).
+   - Application startup file: `dist/index.js`.
+2. En la terminal de la app (o SSH), dentro de `horapro-api`:
+   ```bash
+   npm install
+   cp .env.example .env        # y completa TODOS los valores (ver sección 6)
+   npx prisma db push          # crea las tablas en la BD vacía
+   npm run prisma:seed:prod    # datos legales + super admin (SIN datos demo)
+   npm run build               # compila TypeScript a dist/
+   ```
+   > Guarda la contraseña del super admin que imprime el seed: no se vuelve a mostrar.
+3. Reinicia la app en Setup Node.js App.
+4. Prueba: `https://horapro.krumlab.com/api/health` debe responder `{"status":"ok"}`.
+   (Si el panel de Node no publica en `/api`, crea la app con URL `horapro.krumlab.com/api`.)
+
+## 4. Frontend (React estático)
+
+En tu máquina:
+```bash
+cd frontend
+cp .env.example .env          # VITE_API_URL=https://horapro.krumlab.com/api
+npm install
+npm run build
+```
+Sube el contenido de `frontend/dist/` a `public_html/horapro/` (incluida la carpeta `models/` con los pesos del reconocimiento facial).
+
+Crea `public_html/horapro/.htaccess` para que React Router maneje las rutas:
+```apache
+RewriteEngine On
+RewriteBase /
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteRule . /index.html [L]
+```
+
+## 5. Correo (recuperación de contraseña)
+
+1. cPanel → **Email Accounts** → crea `no-responder@krumlab.com` con contraseña fuerte
+   (cuando horapro.co esté en el hosting podrás cambiarlo a `no-responder@horapro.co`).
+2. Pon esas credenciales en el `.env` del backend (`SMTP_*`). Host: `mail.krumlab.com`, puerto 465.
+3. Prueba: en el login → "¿Olvidaste tu contraseña?" → debe llegar el correo.
+
+## 6. Variables de entorno del backend (resumen)
+
+| Variable | Valor en producción |
+|---|---|
+| `DATABASE_URL` | `mysql://usuario:clave@localhost:3306/bd` |
+| `JWT_SECRET` | `openssl rand -hex 32` (el servidor **no arranca** sin él) |
+| `NODE_ENV` | `production` |
+| `FRONTEND_ORIGIN` | `https://horapro.krumlab.com` (restringe CORS y arma los links de correo) |
+| `WOMPI_*` | llaves de **producción** (ver sección 7) |
+| `SMTP_*` | buzón creado en el paso 5 |
+
+## 7. Wompi en producción
+
+> ✅ El comercio ya está aprobado: las llaves `pub_prod_*` ya existen en el panel.
+
+1. En [comercios.wompi.co](https://comercios.wompi.co) → **Configuraciones avanzadas para programadores**,
+   copia las 4 llaves al `.env` del servidor (la privada y los secretos con el botón "Mostrar";
+   nunca los guardes en el repositorio ni los compartas por chat):
+   - `WOMPI_PUBLIC_KEY` = `pub_prod_abvIgVu5CRAoUkw5gpz6JclCB4rgMCW6` (esta es pública, ya conocida)
+   - `WOMPI_PRIVATE_KEY` = `prv_prod_...` (botón Mostrar de "Llave privada")
+   - `WOMPI_EVENTS_SECRET` = botón Mostrar de "Eventos"
+   - `WOMPI_INTEGRITY_SECRET` = botón Mostrar de "Integridad"
+   - `WOMPI_API_URL` = `https://production.wompi.co/v1`
+2. En la misma sección, en **Seguimiento de transacciones → URL de Eventos**, escribe
+   `https://horapro.krumlab.com/api/wompi/eventos` y presiona Guardar — así los pagos se confirman
+   solos aunque el cliente cierre la pestaña. (Se puede guardar desde ya, aunque el dominio
+   aún no esté publicado; Wompi empezará a entregar eventos cuando el sitio responda.)
+3. Reinicia la app Node y haz un pago real de prueba (puedes pagar tú mismo el plan de una empresa de prueba y luego reembolsarlo desde el panel de Wompi).
+
+## 8. Backups
+
+cPanel → **Backup** → programa el respaldo automático de la BD (o descarga uno manual semanal).
+Las fotos de verificación facial viven en la BD y se auto-eliminan a los 2 meses.
+
+## 9. Checklist final antes de anunciar
+
+- [ ] `https://horapro.krumlab.com` con candado (SSL)
+- [ ] `https://horapro.krumlab.com/api/health` responde ok
+- [ ] Registro de una empresa nueva funciona de punta a punta
+- [ ] Kiosco: marcación con cédula y con rostro **desde la tablet real**
+- [ ] "¿Olvidaste tu contraseña?" llega al correo
+- [ ] Pago real con Wompi se refleja en la suscripción
+- [ ] Login del super admin funciona y NO existe ninguna cuenta demo

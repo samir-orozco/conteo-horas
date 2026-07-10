@@ -112,19 +112,29 @@ model TipoHora {
 // Horarios de trabajo de la empresa (ej: "Oficina" L-V 08:00-17:00).
 // Se asignan por colaborador; sin horario no se controlan llegadas tarde.
 model Horario {
-  id            String        @id @default(cuid())
+  id            String          @id @default(cuid())
   empresaId     String
-  empresa       Empresa       @relation(fields: [empresaId], references: [id])
+  empresa       Empresa         @relation(fields: [empresaId], references: [id])
   nombre        String
-  horaEntrada   String // "08:00" hora local Bogotá
-  horaSalida    String // "17:00" (puede cruzar medianoche, ej. "21:00"→"05:00")
-  dias          Json // ["LUNES",...,"SABADO"]
-  toleranciaMin Int           @default(10) // minutos de gracia antes de contar tardanza
-  activo        Boolean       @default(true)
-  creadoEn      DateTime      @default(now())
+  toleranciaMin Int             @default(10) // minutos de gracia antes de contar tardanza
+  activo        Boolean         @default(true)
+  creadoEn      DateTime        @default(now())
+  // Un horario tiene varias franjas: ej. L-V 08:00-17:00 y Sáb 08:00-12:00
+  franjas       FranjaHorario[]
   colaboradores Colaborador[]
 
   @@map("horarios")
+}
+
+model FranjaHorario {
+  id          String  @id @default(cuid())
+  horarioId   String
+  horario     Horario @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+  dias        Json // ["LUNES",...,"SABADO"]
+  horaEntrada String // "08:00" hora local Bogotá
+  horaSalida  String // "17:00" (puede cruzar medianoche, ej. "21:00"→"05:00")
+
+  @@map("franjas_horario")
 }
 
 // Dispositivos autorizados para abrir el kiosco de marcación.
@@ -153,7 +163,9 @@ model Colaborador {
   telefono       String?
   fechaNacimiento DateTime?
   salarioMensual Float
-  huellaTemplate String? // Fase 4: plantilla del lector de huella
+  // Reconocimiento facial: descriptor matemático (128 floats), nunca la imagen
+  rostroDescriptor Json?
+  rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
   horarioId      String?
   horario        Horario?   @relation(fields: [horarioId], references: [id])
   activo         Boolean    @default(true)
@@ -177,6 +189,9 @@ model Registro {
   salida        DateTime?
   tipo          TipoRegistro @default(NORMAL)
   observacion   String?
+  // Foto de verificación facial al marcar (se elimina automáticamente a los 2 meses)
+  fotoEntrada   String?      @db.LongText
+  fotoSalida    String?      @db.LongText
   // Auditoría de correcciones manuales
   editadoPor    String?
   editadoEn     DateTime?
@@ -231,6 +246,9 @@ model Usuario {
   nombre    String
   rol       Rol      @default(ADMIN)
   activo    Boolean  @default(true)
+  // Recuperación de contraseña: token de un solo uso con vencimiento
+  resetToken  String?   @unique
+  resetExpira DateTime?
   creadoEn  DateTime @default(now())
 
   @@map("usuarios")

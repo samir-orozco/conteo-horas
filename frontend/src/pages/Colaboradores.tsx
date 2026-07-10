@@ -5,7 +5,8 @@ import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null };
-type Horario = { id: string; nombre: string; horaEntrada: string; horaSalida: string };
+export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string };
+type Horario = { id: string; nombre: string; franjas: Franja[] };
 type FormData = Omit<Colaborador, 'id' | 'activo'>;
 
 const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '' };
@@ -16,6 +17,20 @@ export const soloFecha = (s?: string | null) => (s ? new Date(s).toISOString().s
 // Formato de pesos colombianos mientras se digita: 1750000 → 1.750.000
 export const formatearMiles = (n: number) => (n ? new Intl.NumberFormat('es-CO').format(n) : '');
 export const parsearMiles = (s: string) => Number(s.replace(/\D/g, '')) || 0;
+
+// Resumen compacto de las franjas de un horario: "Lun–Vie 08:00—17:00 · Sáb 08:00—12:00"
+const ORDEN_DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+const CORTO: Record<string, string> = { LUNES: 'Lun', MARTES: 'Mar', MIERCOLES: 'Mié', JUEVES: 'Jue', VIERNES: 'Vie', SABADO: 'Sáb', DOMINGO: 'Dom' };
+export function resumenFranjas(franjas?: Franja[]): string {
+  if (!franjas?.length) return '';
+  return franjas.map(f => {
+    const idx = ORDEN_DIAS.filter(d => f.dias.includes(d));
+    // Días consecutivos se colapsan a rango (Lun–Vie); si no, se listan
+    const consecutivos = idx.length > 2 && idx.every((d, i) => i === 0 || ORDEN_DIAS.indexOf(d) === ORDEN_DIAS.indexOf(idx[i - 1]) + 1);
+    const dias = consecutivos ? `${CORTO[idx[0]]}–${CORTO[idx[idx.length - 1]]}` : idx.map(d => CORTO[d]).join('·');
+    return `${dias} ${f.horaEntrada}—${f.horaSalida}`;
+  }).join(' · ');
+}
 
 export default function Colaboradores() {
   const navigate = useNavigate();
@@ -142,7 +157,7 @@ export default function Colaboradores() {
                 <select value={form.horarioId || ''} onChange={e => setForm(p => ({ ...p, horarioId: e.target.value }))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                   <option value="">Sin horario (no controla llegadas tarde)</option>
-                  {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre} · {h.horaEntrada}—{h.horaSalida}</option>)}
+                  {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre} · {resumenFranjas(h.franjas)}</option>)}
                 </select>
               </div>
               <div className="col-span-2">

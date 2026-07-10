@@ -1,9 +1,15 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { prisma } from '../index';
 import { estadoEfectivo, sincronizarEstado, DIAS_PRUEBA, obtenerPrecios } from '../utils/suscripcion';
+import { enviarCorreo, plantillaCorreo } from '../utils/correo';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
+// Vencimiento de la sesión del panel (el kiosco usa su propio token de 12h)
+const SESION = '7d';
+// Límite anti fuerza bruta para endpoints sensibles
+const limite = (max: number) => ({ rateLimit: { max, timeWindow: '1 minute' } });
 
 export default async function authRoutes(app: FastifyInstance) {
   // Precios públicos para la landing (se leen de la config del super admin)
@@ -14,7 +20,7 @@ export default async function authRoutes(app: FastifyInstance) {
 
   // Registro self-service: crea empresa + 7 días de prueba + usuario admin,
   // y devuelve el token para entrar de inmediato.
-  app.post('/registro', async (request, reply) => {
+  app.post('/registro', { config: limite(5) }, async (request, reply) => {
     const { empresa, nit, nombre, email, password, telefono } = request.body as {
       empresa: string; nit: string; nombre: string; email: string; password: string; telefono?: string;
     };
@@ -46,7 +52,7 @@ export default async function authRoutes(app: FastifyInstance) {
 
     const token = app.jwt.sign({
       id: nuevo.user.id, email: nuevo.user.email, rol: 'ADMIN', nombre: nuevo.user.nombre, empresaId: nuevo.emp.id,
-    });
+    }, { expiresIn: SESION });
     return reply.status(201).send({
       token,
       usuario: {
@@ -56,7 +62,7 @@ export default async function authRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post('/login', async (request, reply) => {
+  app.post('/login', { config: limite(10) }, async (request, reply) => {
     const { email, password } = request.body as { email: string; password: string };
     const usuario = await prisma.usuario.findUnique({
       where: { email },
@@ -85,7 +91,7 @@ export default async function authRoutes(app: FastifyInstance) {
       rol: usuario.rol,
       nombre: usuario.nombre,
       empresaId: usuario.empresaId,
-    });
+    }, { expiresIn: SESION });
     return {
       token,
       usuario: {
@@ -123,6 +129,83 @@ export default async function authRoutes(app: FastifyInstance) {
           ? estadoEfectivo(usuario.empresa.suscripcion)
           : null,
     };
+  });
+
+  // Recuperación de contraseña, paso 1: enviar el link al correo.
+  // Siempre responde ok (no revela si el correo existe o no).
+  app.post('/olvide-password', { config: limite(3) }, async (request) => {
+    const { email } = request.body as { email: string };
+    const usuario = email ? await prisma.usuario.findUnique({ where: { email } }) : null;
+    if (usuario && usuario.activo) {
+      const token = crypto.randomBytes(32).toString('hex');
+      await prisma.usuario.update({
+        where: { id: usuario.id },
+        data: { resetToken: token, resetExpira: new Date(Date.now() + 30 * 60 * 1000) },
+      });
+      const base = process.env.FRONTEND_ORIGIN?.split(',')[0] ?? 'http://localhost:5173';
+      const link = `${base}/restablecer?token=${token}`;
+      await enviarCorreo({
+        para: usuario.email,
+        asunto: 'Restablece tu contraseña de HoraPro',
+        html: plantillaCorreo('Restablece tu contraseña', `
+          <p style="font-size:14px;color:#303030">Hola ${usuario.nombre},</p>
+          <p style="font-size:14px;color:#303030">Recibimos una solicitud para restablecer tu contraseña. El link vence en 30 minutos:</p>
+          <p style="margin:24px 0"><a href="${link}" style="background:#FFD85E;color:#303030;font-weight:700;padding:12px 24px;border-radius:12px;text-decoration:none">Crear nueva contraseña</a></p>
+          <p style="font-size:12px;color:#898989">Si no fuiste tú, ignora este correo: tu contraseña actual sigue siendo válida.</p>
+        `),
+      });
+    }
+    return { ok: true };
+  });
+
+  // Recuperación de contraseña, paso 2: guardar la nueva con el token del correo
+  app.post('/restablecer', { config: limite(5) }, async (request, reply) => {
+    const { token, password } = request.body as { token: string; password: string };
+    if (!token || !password) return reply.status(400).send({ error: 'Datos incompletos' });
+    if (password.length < 6) return reply.status(400).send({ error: 'La contraseña debe tener al menos 6 caracteres' });
+
+    const usuario = await prisma.usuario.findUnique({ where: { resetToken: token } });
+    if (!usuario || !usuario.resetExpira || usuario.resetExpira < new Date()) {
+      return reply.status(400).send({ error: 'El link ya venció o no es válido. Solicita uno nuevo.' });
+    }
+    await prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { password: await bcrypt.hash(password, 10), resetToken: null, resetExpira: null },
+    });
+    return { ok: true };
+  });
+
+  // Mi cuenta: el usuario logueado edita su nombre/email y opcionalmente su contraseña
+  app.put('/me', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const payload = request.user as any;
+    const { nombre, email, passwordActual, passwordNueva } = request.body as {
+      nombre?: string; email?: string; passwordActual?: string; passwordNueva?: string;
+    };
+    const usuario = await prisma.usuario.findUnique({ where: { id: payload.id } });
+    if (!usuario) return reply.status(404).send({ error: 'Usuario no encontrado' });
+
+    const data: any = {};
+    if (nombre) data.nombre = nombre;
+    if (email && email !== usuario.email) {
+      const existe = await prisma.usuario.findUnique({ where: { email } });
+      if (existe) return reply.status(409).send({ error: 'Ya existe una cuenta con ese correo' });
+      data.email = email;
+    }
+    if (passwordNueva) {
+      if (!passwordActual || !(await bcrypt.compare(passwordActual, usuario.password))) {
+        // 400 y no 401: el interceptor del frontend trata cualquier 401 como sesión inválida y cierra sesión
+        return reply.status(400).send({ error: 'La contraseña actual no es correcta' });
+      }
+      if (passwordNueva.length < 6) return reply.status(400).send({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+      data.password = await bcrypt.hash(passwordNueva, 10);
+    }
+
+    const actualizado = await prisma.usuario.update({
+      where: { id: payload.id },
+      data,
+      select: { id: true, email: true, nombre: true, rol: true },
+    });
+    return { ok: true, usuario: actualizado };
   });
 
   // Usuarios internos de la empresa (solo ADMIN gestiona)

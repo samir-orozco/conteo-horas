@@ -2,12 +2,19 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Camera, Info } from 'lucide-react';
 import api from '../lib/api';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
-type Registro = { id: string; colaboradorId: string; colaborador: Colaborador; fecha: string; entrada: string | null; salida: string | null; tipo: string; observacion?: string };
+type Registro = {
+  id: string; colaboradorId: string; colaborador: Colaborador; fecha: string;
+  entrada: string | null; salida: string | null; tipo: string; observacion?: string;
+  // null = sin horario asignado o día que no aplica; 0 = a tiempo; >0 = minutos tarde
+  minutosTarde: number | null;
+  tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
+};
+type Fotos = { fotoEntrada: string | null; fotoSalida: string | null };
 
 export default function Registros() {
   const [registros, setRegistros] = useState<Registro[]>([]);
@@ -18,6 +25,8 @@ export default function Registros() {
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Registro | null>(null);
   const [form, setForm] = useState({ colaboradorId: '', fecha: '', entrada: '', salida: '', tipo: 'NORMAL', observacion: '' });
+  const [fotosDe, setFotosDe] = useState<Registro | null>(null);
+  const [fotos, setFotos] = useState<Fotos | null>(null);
 
   const cargar = () => {
     const params: any = { desde, hasta };
@@ -65,6 +74,13 @@ export default function Registros() {
     return `${Math.floor(mins / 60)}h ${mins % 60}m`;
   };
 
+  const verFotos = async (r: Registro) => {
+    setFotosDe(r);
+    setFotos(null);
+    const resp = await api.get(`/registros/${r.id}/fotos`);
+    setFotos(resp.data);
+  };
+
   return (
     <div className="p-6">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -83,6 +99,11 @@ export default function Registros() {
         <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
       </div>
 
+      <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-800 rounded-xl px-4 py-2.5 text-xs mb-4">
+        <Info size={14} className="mt-0.5 shrink-0" />
+        <span>Las fotos de verificación facial se conservan durante <b>2 meses</b> y luego se eliminan automáticamente para no sobrecargar el servidor.</span>
+      </div>
+
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
@@ -91,6 +112,7 @@ export default function Registros() {
               <th className="px-4 py-3 text-left">Fecha</th>
               <th className="px-4 py-3 text-center">Entrada</th>
               <th className="px-4 py-3 text-center">Salida</th>
+              <th className="px-4 py-3 text-center">Llegada</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Duración</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Tipo</th>
               <th className="px-4 py-3 text-center">Acciones</th>
@@ -103,12 +125,27 @@ export default function Registros() {
                 <td className="px-4 py-3 text-gray-600 capitalize">{format(toZonedTime(new Date(r.fecha), TZ), "d MMM yyyy", { locale: es })}</td>
                 <td className="px-4 py-3 text-center text-green-700 font-mono">{fmtHora(r.entrada)}</td>
                 <td className="px-4 py-3 text-center text-red-600 font-mono">{fmtHora(r.salida)}</td>
+                <td className="px-4 py-3 text-center">
+                  {r.minutosTarde === null ? (
+                    <span className="text-gray-300">—</span>
+                  ) : r.minutosTarde > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-50 text-orange-700">
+                      Tarde +{r.minutosTarde} min
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700">A tiempo</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-center text-gray-600 hidden md:table-cell">{duracion(r.entrada, r.salida)}</td>
                 <td className="px-4 py-3 text-center hidden md:table-cell">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.tipo === 'NORMAL' ? 'bg-blue-50 text-blue-700' : r.tipo === 'PERMISO' ? 'bg-yellow-50 text-yellow-700' : 'bg-purple-50 text-purple-700'}`}>{r.tipo}</span>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-center gap-2">
+                    {(r.tieneFotoEntrada || r.tieneFotoSalida) && (
+                      <button onClick={() => verFotos(r)} title="Ver fotos de verificación facial"
+                        className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"><Camera size={15} /></button>
+                    )}
                     <button onClick={() => abrir(r)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={15} /></button>
                     <button onClick={() => eliminar(r.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
                   </div>
@@ -167,6 +204,43 @@ export default function Registros() {
                 <button type="submit" className="px-4 py-2 text-sm bg-blue-800 text-white rounded-lg hover:bg-blue-700">Guardar</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Fotos de verificación facial del registro */}
+      {fotosDe && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setFotosDe(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-lg text-ink flex items-center gap-2"><Camera size={18} /> Verificación facial</h3>
+              <button onClick={() => setFotosDe(null)}><X size={20} className="text-gray-400" /></button>
+            </div>
+            <p className="text-sm text-muted mb-4">
+              {fotosDe.colaborador.nombre} {fotosDe.colaborador.apellido} · {format(toZonedTime(new Date(fotosDe.fecha), TZ), "d 'de' MMMM", { locale: es })}
+            </p>
+            {!fotos ? (
+              <p className="text-sm text-muted py-8 text-center">Cargando fotos...</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {[{ foto: fotos.fotoEntrada, label: 'Entrada', hora: fmtHora(fotosDe.entrada) },
+                  { foto: fotos.fotoSalida, label: 'Salida', hora: fmtHora(fotosDe.salida) }].map(({ foto, label, hora }) => (
+                  <div key={label}>
+                    <p className="text-xs font-semibold text-muted uppercase mb-1.5">{label} · {hora}</p>
+                    {foto ? (
+                      <img src={foto} alt={`Foto de ${label.toLowerCase()}`} className="w-full rounded-xl border border-gray-200 [transform:scaleX(-1)]" />
+                    ) : (
+                      <div className="w-full aspect-[4/3] rounded-xl bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 text-center px-3">
+                        Sin foto (marcó con cédula o fue registro manual)
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-[11px] text-muted mt-4 flex items-center gap-1.5">
+              <Info size={12} /> Las fotos se eliminan automáticamente a los 2 meses.
+            </p>
           </div>
         </div>
       )}

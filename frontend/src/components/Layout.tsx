@@ -27,7 +27,6 @@ const navEmpresa: NavSection[] = [
       { to: '/app/festivos', label: 'Festivos', icon: Calendar },
       { to: '/app/reportes', label: 'Reportes', icon: BarChart2 },
       { to: '/app/configuracion', label: 'Configuración', icon: Settings },
-      { to: '/app/suscripcion', label: 'Suscripción', icon: CreditCard },
     ],
   },
 ];

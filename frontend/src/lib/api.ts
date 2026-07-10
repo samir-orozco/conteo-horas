@@ -13,9 +13,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err.response?.status === 401) {
+    // 401 = sesión vencida → volver al login. Excepción: el 401 del propio
+    // intento de login (credenciales malas) debe mostrarse en el formulario,
+    // no recargar la página (la recarga borraba el mensaje de error).
+    const esIntentoLogin = err.config?.url?.includes('/auth/login');
+    if (err.response?.status === 401 && !esIntentoLogin) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      if (window.location.pathname !== '/login') window.location.href = '/login';
     }
     return Promise.reject(err);
   }

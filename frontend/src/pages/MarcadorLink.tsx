@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, Check, ExternalLink, MonitorSmartphone, Fingerprint, ShieldCheck, KeyRound, Trash2, TabletSmartphone } from 'lucide-react';
+import { Copy, Check, ExternalLink, MonitorSmartphone, ScanFace, ShieldCheck, KeyRound, Trash2, TabletSmartphone } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -148,9 +148,9 @@ export default function MarcadorLink() {
           <p className="text-xs text-muted">El colaborador ingresa con su cédula y solo puede marcar entrada o salida.</p>
         </div>
         <div className="bg-white rounded-card border border-gray-200 p-5">
-          <Fingerprint size={20} className="text-muted mb-2" />
-          <p className="font-semibold text-ink text-sm mb-1">Huella (próximamente)</p>
-          <p className="text-xs text-muted">El lector de huella se habilitará en una próxima fase.</p>
+          <ScanFace size={20} className="text-muted mb-2" />
+          <p className="font-semibold text-ink text-sm mb-1">Reconocimiento facial</p>
+          <p className="text-xs text-muted">Registra el rostro de cada colaborador desde su perfil y marcará sin digitar la cédula.</p>
         </div>
       </div>
 

@@ -1,8 +1,10 @@
 import { FastifyInstance } from 'fastify';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../index';
 import { calcularValorHora } from '../utils/horasColombiana';
 import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { finDeMes } from '../utils/suscripcion';
+import { esDescriptorValido } from '../utils/rostro';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -27,7 +29,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const col = await prisma.colaborador.findFirst({
       where: { id, empresaId: request.empresaId },
-      include: { horario: true },
+      include: { horario: { include: { franjas: true } } },
     });
     if (!col) return reply.status(404).send({ error: 'No encontrado' });
     return col;
@@ -111,6 +113,35 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       data: { activo: false, retiroProgramado: null },
     });
     return { ...colaborador, retiroInmediato: true };
+  });
+
+  // Enrolamiento facial: guarda el descriptor (128 floats) capturado en el
+  // navegador. La imagen nunca llega al servidor. rostroEnroladoEn queda como
+  // evidencia de que hubo consentimiento explícito (dato biométrico, Ley 1581).
+  app.post('/:id/rostro', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { descriptor } = request.body as { descriptor: unknown };
+    const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
+    if (!existente) return reply.status(404).send({ error: 'No encontrado' });
+    if (!esDescriptorValido(descriptor)) {
+      return reply.status(400).send({ error: 'Descriptor facial inválido' });
+    }
+    const colaborador = await prisma.colaborador.update({
+      where: { id },
+      data: { rostroDescriptor: descriptor, rostroEnroladoEn: new Date() },
+    });
+    return { ok: true, rostroEnroladoEn: colaborador.rostroEnroladoEn };
+  });
+
+  app.delete('/:id/rostro', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
+    if (!existente) return reply.status(404).send({ error: 'No encontrado' });
+    await prisma.colaborador.update({
+      where: { id },
+      data: { rostroDescriptor: Prisma.DbNull, rostroEnroladoEn: null },
+    });
+    return { ok: true };
   });
 
   app.get('/:id/valor-hora', auth, async (request, reply) => {

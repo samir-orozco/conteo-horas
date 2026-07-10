@@ -2,6 +2,7 @@ import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
+import rateLimit from '@fastify/rate-limit';
 import { PrismaClient } from '@prisma/client';
 
 import authRoutes from './routes/auth';
@@ -29,12 +30,39 @@ export type JwtPayload = {
   empresaId: string | null;
 };
 
-// bodyLimit amplio: los comprobantes de pago viajan como imagen base64
-const app = Fastify({ logger: true, bodyLimit: 10 * 1024 * 1024 });
+const esProduccion = process.env.NODE_ENV === 'production';
 
+// En producción los secretos NO pueden venir de valores por defecto del código
+if (esProduccion && !process.env.JWT_SECRET) {
+  console.error('FALTA JWT_SECRET: define un secreto largo y aleatorio en las variables de entorno.');
+  process.exit(1);
+}
+
+// bodyLimit amplio: los comprobantes de pago viajan como imagen base64
+// rewriteUrl: compatibilidad con hosting compartido (cPanel/Passenger) — si la
+// app se monta en <dominio>/api, algunas configuraciones entregan la URL sin el
+// prefijo. Todas nuestras rutas viven bajo /api, así que lo reponemos si falta.
+const app = Fastify({
+  logger: true,
+  bodyLimit: 10 * 1024 * 1024,
+  rewriteUrl(req) {
+    const url = req.url ?? '/';
+    return url.startsWith('/api') ? url : '/api' + url;
+  },
+});
+
+// CORS: en producción se restringe al dominio del frontend (FRONTEND_ORIGIN,
+// ej. https://horapro.co). Sin la variable, queda abierto (solo desarrollo).
 // @fastify/cors v9+ solo permite GET/HEAD/POST por defecto: hay que declarar el resto
-app.register(cors, { origin: true, methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'] });
+app.register(cors, {
+  origin: process.env.FRONTEND_ORIGIN ? process.env.FRONTEND_ORIGIN.split(',') : true,
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
+});
 app.register(jwt, { secret: process.env.JWT_SECRET || 'conteo_horas_secret_2024' });
+
+// Límite de intentos contra fuerza bruta. Global generoso; los endpoints
+// sensibles (login, registro, recuperar contraseña) declaran su propio límite.
+app.register(rateLimit, { global: false });
 
 app.decorate('authenticate', async (request: any, reply: any) => {
   try {
@@ -99,11 +127,32 @@ app.register(dashboardRoutes, { prefix: '/api/dashboard' });
 
 app.get('/api/health', async () => ({ status: 'ok' }));
 
+// Retención de fotos de verificación facial: 2 meses. Corre al arrancar y cada 24h
+// para que las imágenes base64 no crezcan sin límite en la base de datos.
+const DOS_MESES_MS = 60 * 24 * 60 * 60 * 1000;
+async function limpiarFotosAntiguas() {
+  try {
+    const corte = new Date(Date.now() - DOS_MESES_MS);
+    const { count } = await prisma.registro.updateMany({
+      where: {
+        creadoEn: { lt: corte },
+        OR: [{ fotoEntrada: { not: null } }, { fotoSalida: { not: null } }],
+      },
+      data: { fotoEntrada: null, fotoSalida: null },
+    });
+    if (count > 0) app.log.info(`Fotos de verificación eliminadas (retención 2 meses): ${count} registros`);
+  } catch (err) {
+    app.log.error(err, 'Error limpiando fotos antiguas');
+  }
+}
+
 const start = async () => {
   try {
     // '::' escucha IPv6 e IPv4 (dual-stack); localhost puede resolver a ::1
     await app.listen({ port: Number(process.env.PORT) || 3001, host: '::' });
     console.log('HoraPro API corriendo en puerto 3001');
+    limpiarFotosAntiguas();
+    setInterval(limpiarFotosAntiguas, 24 * 60 * 60 * 1000);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

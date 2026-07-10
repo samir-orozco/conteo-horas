@@ -45,7 +45,7 @@ export default function BloqueoPago() {
       'amount-in-cents': String(c.amountInCents),
       reference: c.reference,
       'signature:integrity': c.signature,
-      ...(esLocalhost ? {} : { 'redirect-url': `${window.location.origin}/suscripcion` }),
+      ...(esLocalhost ? {} : { 'redirect-url': `${window.location.origin}/app/suscripcion` }),
     };
     for (const [name, value] of Object.entries(campos)) {
       const input = document.createElement('input');

@@ -2,7 +2,7 @@
 // Se usa en el hero de la landing y en el panel del registro.
 export default function GeoArt({ className = '' }: { className?: string }) {
   return (
-    <div className={`relative overflow-hidden ${className}`} aria-hidden="true">
+    <div className={`overflow-hidden ${className}`} aria-hidden="true">
       {/* Círculo grande amarillo */}
       <div className="hp-float absolute -left-10 top-10 w-40 h-40 rounded-full bg-primary" style={{ animationDelay: '0s' }} />
       {/* Semicírculo grafito */}

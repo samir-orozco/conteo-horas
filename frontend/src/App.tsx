@@ -4,6 +4,8 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Landing from './pages/Landing';
 import Registro from './pages/Registro';
+import Olvide from './pages/Olvide';
+import Restablecer from './pages/Restablecer';
 import DashboardEmpresa from './pages/DashboardEmpresa';
 import MarcadorLink from './pages/MarcadorLink';
 import Colaboradores from './pages/Colaboradores';
@@ -46,11 +48,11 @@ function SuperAdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Home pública: landing para visitantes; si ya hay sesión, va a su panel
+// Home pública: landing para visitantes. Si hay sesión, se sigue mostrando
+// (Landing ajusta sus botones), así que un usuario logueado también puede verla.
 function PublicHome() {
-  const { usuario, loading } = useAuth();
+  const { loading } = useAuth();
   if (loading) return <Cargando />;
-  if (usuario) return <Navigate to={usuario.rol === 'SUPER_ADMIN' ? '/admin' : '/app'} replace />;
   return <Landing />;
 }
 
@@ -63,6 +65,8 @@ export default function App() {
           <Route path="/" element={<PublicHome />} />
           <Route path="/registro" element={<Registro />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/olvide" element={<Olvide />} />
+          <Route path="/restablecer" element={<Restablecer />} />
           <Route path="/autologin" element={<AutoLogin />} />
           <Route path="/marcador/:token" element={<Marcador />} />
           <Route path="/marcador" element={<Marcador />} />

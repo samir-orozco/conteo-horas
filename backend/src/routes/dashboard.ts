@@ -4,6 +4,7 @@ import { getISOWeek, getISOWeekYear } from 'date-fns';
 import { prisma } from '../index';
 import { calcularHorasTrabajadas } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes } from '../utils/vigencias';
+import { franjaDelDia } from '../utils/tardanzas';
 
 const TZ = 'America/Bogota';
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -39,7 +40,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     const [colaboradores, festivos, jornadas, tiposHoraTodos, permisos] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
-        include: { horario: true },
+        include: { horario: { include: { franjas: true } } },
         orderBy: { nombre: 'asc' },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
@@ -105,15 +106,16 @@ export default async function dashboardRoutes(app: FastifyInstance) {
 
     for (const c of colaboradores) {
       if (!c.horario || !c.horario.activo) continue;
-      const dias = (c.horario.dias as string[]) ?? [];
-      const aplicaHoy = dias.includes(diaHoy) && !hoyEsFestivo && !novedadHoyIds.has(c.id);
-      if (!aplicaHoy) continue;
+      // La franja que aplica hoy (un horario puede variar por día, ej. sábados más corto)
+      const franjaHoy = franjaDelDia(c.horario, diaHoy);
+      const aplicaHoy = !!franjaHoy && !hoyEsFestivo && !novedadHoyIds.has(c.id);
+      if (!aplicaHoy || !franjaHoy) continue;
 
       const entrada = primeraEntradaHoy.get(c.id);
       if (entrada) {
         const z = toZonedTime(entrada, TZ);
         const llegadaMin = z.getHours() * 60 + z.getMinutes();
-        const tarde = llegadaMin - (minutosDe(c.horario.horaEntrada) + c.horario.toleranciaMin);
+        const tarde = llegadaMin - (minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin);
         if (tarde > 0) {
           llegadasTardeHoy.push({
             id: c.id,
@@ -125,13 +127,13 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       } else {
         // Solo lo marcamos "sin marcar" si ya pasó su hora de entrada + tolerancia
         const ahoraMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
-        if (ahoraMin > minutosDe(c.horario.horaEntrada) + c.horario.toleranciaMin) {
+        if (ahoraMin > minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin) {
           sinMarcarHoy.push({
             id: c.id,
             nombre: `${c.nombre} ${c.apellido}`,
             cargo: c.cargo,
             horario: c.horario.nombre,
-            horaEntrada: c.horario.horaEntrada,
+            horaEntrada: franjaHoy.horaEntrada,
           });
         }
       }

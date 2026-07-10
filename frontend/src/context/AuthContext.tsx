@@ -17,6 +17,7 @@ type AuthCtx = {
   registrar: (datos: DatosRegistro) => Promise<Usuario>;
   logout: () => void;
   loading: boolean;
+  refrescarUsuario: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthCtx | null>(null);
@@ -53,7 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(null);
   };
 
-  return <AuthContext.Provider value={{ usuario, login, registrar, logout, loading }}>{children}</AuthContext.Provider>;
+  // Vuelve a leer /auth/me tras editar nombre/email en "Mi cuenta"
+  const refrescarUsuario = async () => {
+    const { data } = await api.get('/auth/me');
+    setUsuario(data);
+  };
+
+  return <AuthContext.Provider value={{ usuario, login, registrar, logout, loading, refrescarUsuario }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {

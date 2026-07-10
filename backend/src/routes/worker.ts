@@ -1,7 +1,9 @@
 import { FastifyInstance } from 'fastify';
+import { Prisma } from '@prisma/client';
 import { toZonedTime } from 'date-fns-tz';
 import crypto from 'crypto';
 import { prisma } from '../index';
+import { esDescriptorValido, mejorCoincidencia } from '../utils/rostro';
 
 const TZ = 'America/Bogota';
 
@@ -11,6 +13,19 @@ async function exigeDispositivo(empresaId: string): Promise<boolean> {
     where: { empresaId_clave: { empresaId, clave: 'KIOSCO_SOLO_DISPOSITIVOS' } },
   });
   return cfg?.valor === '1';
+}
+
+// ¿La empresa permite marcar con cédula? (por defecto sí; se desactiva en Configuración → Marcación)
+async function permiteCedula(empresaId: string): Promise<boolean> {
+  const cfg = await prisma.configuracion.findUnique({
+    where: { empresaId_clave: { empresaId, clave: 'KIOSCO_PERMITE_CEDULA' } },
+  });
+  return cfg?.valor !== '0';
+}
+
+// Foto de verificación facial: JPEG base64 pequeño tomado en el navegador al marcar
+function fotoValida(foto: unknown): foto is string {
+  return typeof foto === 'string' && foto.startsWith('data:image/jpeg;base64,') && foto.length < 300_000;
 }
 
 async function dispositivoValido(empresaId: string, deviceToken?: string): Promise<boolean> {
@@ -29,7 +44,11 @@ export default async function workerRoutes(app: FastifyInstance) {
     const { token } = request.params as { token: string };
     const empresa = await prisma.empresa.findUnique({ where: { marcadorToken: token } });
     if (!empresa || !empresa.activa) return reply.code(404).send({ error: 'Link de marcación inválido' });
-    return { empresa: empresa.nombre, requiereDispositivo: await exigeDispositivo(empresa.id) };
+    return {
+      empresa: empresa.nombre,
+      requiereDispositivo: await exigeDispositivo(empresa.id),
+      permiteCedula: await permiteCedula(empresa.id),
+    };
   });
 
   // Vincula este dispositivo al kiosco con el código de 6 dígitos que genera el admin
@@ -59,13 +78,17 @@ export default async function workerRoutes(app: FastifyInstance) {
     return { deviceToken: dispositivo.token, nombre: dispositivo.nombre };
   });
 
-  // Login del kiosco con cédula, amarrado al link único de la empresa (Fase 4: huella)
+  // Login del kiosco con cédula, amarrado al link único de la empresa
   app.post('/login', async (request, reply) => {
     const { cedula, marcadorToken, deviceToken } = request.body as { cedula: string; marcadorToken: string; deviceToken?: string };
     if (!marcadorToken) return reply.code(400).send({ error: 'Link de marcación inválido' });
 
     const empresa = await prisma.empresa.findUnique({ where: { marcadorToken } });
     if (!empresa || !empresa.activa) return reply.code(404).send({ error: 'Link de marcación inválido' });
+
+    if (!(await permiteCedula(empresa.id))) {
+      return reply.code(403).send({ error: 'Esta empresa desactivó la marcación con cédula. Usa el reconocimiento facial.' });
+    }
 
     // Con la protección activa, solo dispositivos vinculados pueden marcar
     if (await exigeDispositivo(empresa.id)) {
@@ -79,6 +102,40 @@ export default async function workerRoutes(app: FastifyInstance) {
     });
     if (!col) return reply.code(401).send({ error: 'Cédula no registrada en esta empresa' });
 
+    const token = app.jwt.sign(
+      { id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId },
+      { expiresIn: '12h' }
+    );
+    return { token, colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo } };
+  });
+
+  // Login del kiosco con reconocimiento facial: el navegador ya calculó el
+  // descriptor (128 floats) con face-api.js y ya pasó la prueba de vida
+  // (parpadeo). El servidor solo compara contra los enrolados de esa empresa.
+  app.post('/login-rostro', async (request, reply) => {
+    const { descriptor, marcadorToken, deviceToken } = request.body as {
+      descriptor: unknown; marcadorToken: string; deviceToken?: string;
+    };
+    if (!marcadorToken) return reply.code(400).send({ error: 'Link de marcación inválido' });
+    if (!esDescriptorValido(descriptor)) return reply.code(400).send({ error: 'Rostro no capturado correctamente' });
+
+    const empresa = await prisma.empresa.findUnique({ where: { marcadorToken } });
+    if (!empresa || !empresa.activa) return reply.code(404).send({ error: 'Link de marcación inválido' });
+
+    if (await exigeDispositivo(empresa.id)) {
+      if (!(await dispositivoValido(empresa.id, deviceToken))) {
+        return reply.code(401).send({ error: 'Este dispositivo no está autorizado para marcar', codigo: 'DISPOSITIVO_REQUERIDO' });
+      }
+    }
+
+    const enrolados = await prisma.colaborador.findMany({
+      where: { empresaId: empresa.id, activo: true, rostroDescriptor: { not: Prisma.DbNull } },
+      select: { id: true, nombre: true, apellido: true, cargo: true, cedula: true, empresaId: true, rostroDescriptor: true },
+    });
+    const match = mejorCoincidencia(descriptor, enrolados);
+    if (!match) return reply.code(401).send({ error: 'Rostro no reconocido. Intenta de nuevo o marca con tu cédula.' });
+
+    const col = match.colaborador;
     const token = app.jwt.sign(
       { id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId },
       { expiresIn: '12h' }
@@ -113,10 +170,13 @@ export default async function workerRoutes(app: FastifyInstance) {
     };
   });
 
-  // Registrar entrada o salida
+  // Registrar entrada o salida. Si el login fue con rostro, llega la foto de
+  // verificación (se conserva 2 meses y luego se borra automáticamente).
   app.post('/marcar', { preHandler: [app.authenticate] }, async (request, reply) => {
     const payload = (request as any).user as { id: string; rol: string };
     if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
+    const { foto } = (request.body ?? {}) as { foto?: unknown };
+    const fotoGuardar = fotoValida(foto) ? foto : null;
 
     const ahora = new Date();
     const ahoraBog = toZonedTime(ahora, TZ);
@@ -148,7 +208,7 @@ export default async function workerRoutes(app: FastifyInstance) {
     if (abierto) {
       const updated = await prisma.registro.update({
         where: { id: abierto.id },
-        data: { salida: ahora },
+        data: { salida: ahora, ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}) },
       });
       return { accion: 'SALIDA', registro: updated, hora: ahora };
     } else {
@@ -158,6 +218,7 @@ export default async function workerRoutes(app: FastifyInstance) {
           fecha: inicioDia,
           entrada: ahora,
           tipo: tipo as any,
+          ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
         },
       });
       return { accion: 'ENTRADA', registro: nuevo, hora: ahora };

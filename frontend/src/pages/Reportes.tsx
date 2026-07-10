@@ -12,7 +12,7 @@ type Reporte = {
 };
 type Tardanzas = {
   sinHorario: boolean;
-  horario?: { nombre: string; horaEntrada: string; toleranciaMin: number };
+  horario?: { nombre: string; toleranciaMin: number };
   detalle: { fecha: string; horaEsperada: string; horaLlegada: string; minutosTarde: number }[];
   totalMinutos: number;
   diasTarde: number;
@@ -196,12 +196,12 @@ export default function Reportes() {
             </p>
           ) : tardanzas.diasTarde === 0 ? (
             <p className="text-sm text-green-700 mt-2">
-              Sin llegadas tarde en el período ✓ (horario {tardanzas.horario?.nombre}, entrada {tardanzas.horario?.horaEntrada} + {tardanzas.horario?.toleranciaMin} min de tolerancia)
+              Sin llegadas tarde en el período ✓ (horario {tardanzas.horario?.nombre}, {tardanzas.horario?.toleranciaMin} min de tolerancia)
             </p>
           ) : (
             <>
               <p className="text-sm text-muted mb-3">
-                Horario {tardanzas.horario?.nombre} (entrada {tardanzas.horario?.horaEntrada} + {tardanzas.horario?.toleranciaMin} min de tolerancia):{' '}
+                Horario {tardanzas.horario?.nombre} ({tardanzas.horario?.toleranciaMin} min de tolerancia sobre la hora de cada día):{' '}
                 <b className="text-orange-600">{tardanzas.diasTarde} día{tardanzas.diasTarde === 1 ? '' : 's'} tarde · {fmtMin(tardanzas.totalMinutos)} en total</b>
               </p>
               <div className="overflow-x-auto">

@@ -8,6 +8,19 @@ input, select, textarea {
   color-scheme: light !important;
 }
 
+/* Inputs oscuros (kiosco): más específico que la regla anterior para poder ganarle */
+input.hp-input-dark {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+  color-scheme: dark !important;
+}
+input.hp-input-dark::placeholder {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+input.hp-input-dark:focus {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
 :root {
   /* Paleta HoraPro */
   --hp-amarillo: #FFD85E;
@@ -60,10 +73,25 @@ body {
   20% { opacity: 1; }
   100% { opacity: 1; }
 }
+@keyframes hp-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes hp-pop-out {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0; }
+}
+/* Línea de escaneo dentro del recuadro de la cámara mientras busca un rostro */
+@keyframes hp-scan {
+  0% { transform: translateY(-100%); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
 .hp-pop { animation: hp-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 .hp-ripple { animation: hp-ripple 1s ease-out infinite; }
 .hp-shake { animation: hp-shake 0.5s ease-in-out both; }
 .hp-fade-bg { animation: hp-fade-bg 0.4s ease-out both; }
+.hp-fade-out { animation: hp-fade-out 0.35s ease-in both; }
+.hp-pop-out { animation: hp-pop-out 0.32s cubic-bezier(0.4, 0, 1, 1) both; }
+.hp-scan-line { animation: hp-scan 2.1s ease-in-out infinite; }
 
 /* Landing: flotación, giro lento, entrada al hacer scroll */
 @keyframes hp-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
@@ -77,6 +105,6 @@ body {
 .hp-reveal.hp-in { animation: hp-rise 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hp-float, .hp-float-slow, .hp-spin-slow, .hp-ripple { animation: none; }
+  .hp-float, .hp-float-slow, .hp-spin-slow, .hp-ripple, .hp-scan-line { animation: none; }
   .hp-reveal { opacity: 1; }
 }

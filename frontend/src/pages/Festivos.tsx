@@ -72,7 +72,7 @@ export default function Festivos() {
               const esDom = getDay(dia) === 0;
               return (
                 <div key={dia.toISOString()} title={festivo?.nombre}
-                  className={`h-16 flex flex-col items-center justify-center rounded-lg text-sm relative
+                  className={`h-24 flex flex-col items-center justify-center rounded-lg text-sm relative
                     ${festivo ? 'bg-red-100 text-red-800 font-semibold' : ''}
                     ${esHoy && !festivo ? 'bg-primary/40 text-ink font-semibold' : ''}
                     ${esDom && !festivo ? 'text-red-400' : ''}

@@ -6,7 +6,9 @@ import {
 } from 'lucide-react';
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
+import CreditoKrumlab from '../components/CreditoKrumlab';
 import api from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
@@ -33,7 +35,7 @@ const BENEFICIOS = [
 
 const FAQ = [
   { q: '¿Necesito comprar algún equipo?', a: 'No. HoraPro funciona en cualquier tablet, computador o celular con navegador. El colaborador marca con su cédula en el link del kiosco.' },
-  { q: '¿Cómo marcan los colaboradores?', a: 'Con su número de cédula en la pantalla del kiosco. La marcación por huella se habilitará próximamente.' },
+  { q: '¿Cómo marcan los colaboradores?', a: 'Con su número de cédula o con reconocimiento facial en la pantalla del kiosco, desde cualquier tablet o celular con cámara.' },
   { q: '¿La prueba gratis tiene límites?', a: `Tienes acceso completo por ${''}7 días, sin tarjeta y sin restricciones. Al terminar decides si continúas.` },
   { q: '¿Se ajusta a la ley laboral colombiana?', a: 'Sí. Aplica la jornada máxima vigente, los recargos de la reforma laboral (Ley 2466) y genera los festivos automáticamente.' },
   { q: '¿Cómo se paga?', a: 'Con Wompi: tarjeta, PSE o Nequi. El cobro es mensual por colaborador activo y puedes cancelar cuando quieras.' },
@@ -44,6 +46,7 @@ function Cuenta({ children }: { children: React.ReactNode }) {
 }
 
 export default function Landing() {
+  const { usuario } = useAuth();
   const [precios, setPrecios] = useState<Precios | null>(null);
   const [faqAbierto, setFaqAbierto] = useState<number | null>(0);
   useReveal();
@@ -51,6 +54,7 @@ export default function Landing() {
   useEffect(() => { api.get('/auth/precios').then(r => setPrecios(r.data)).catch(() => {}); }, []);
 
   const dias = precios?.diasPrueba ?? 7;
+  const panelUrl = usuario?.rol === 'SUPER_ADMIN' ? '/admin' : '/app';
 
   return (
     <div className="min-h-screen bg-white text-ink">
@@ -60,8 +64,14 @@ export default function Landing() {
           <img src={logoCompleto} alt="HoraPro" className="h-8" />
           <nav className="flex items-center gap-2 sm:gap-3">
             <a href="#precios" className="hidden sm:block text-sm font-medium text-muted hover:text-ink px-3 py-2">Precios</a>
-            <Link to="/login" className="text-sm font-semibold text-ink px-4 py-2 rounded-xl hover:bg-gray-100">Iniciar sesión</Link>
-            <Link to="/registro" className="text-sm font-bold bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl">Prueba gratis</Link>
+            {usuario ? (
+              <Link to={panelUrl} className="text-sm font-bold bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl">Ir a mi panel</Link>
+            ) : (
+              <>
+                <Link to="/login" className="text-sm font-semibold text-ink px-4 py-2 rounded-xl hover:bg-gray-100">Iniciar sesión</Link>
+                <Link to="/registro" className="text-sm font-bold bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl">Prueba gratis</Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -82,12 +92,18 @@ export default function Landing() {
             Recargos nocturnos, dominicales, festivos y horas extra calculados automáticamente. Tú solo marcas entrada y salida.
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-8">
-            <Link to="/registro" className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold px-6 py-3.5 rounded-xl text-base">
-              Prueba gratis {dias} días <ArrowRight size={18} />
-            </Link>
+            {usuario ? (
+              <Link to={panelUrl} className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold px-6 py-3.5 rounded-xl text-base">
+                Ir a mi panel <ArrowRight size={18} />
+              </Link>
+            ) : (
+              <Link to="/registro" className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold px-6 py-3.5 rounded-xl text-base">
+                Prueba gratis {dias} días <ArrowRight size={18} />
+              </Link>
+            )}
             <a href="#como" className="font-semibold text-ink px-5 py-3.5 rounded-xl hover:bg-gray-100">Ver cómo funciona</a>
           </div>
-          <p className="text-xs text-muted mt-3">Sin tarjeta · sin instalar nada · listo en minutos</p>
+          {!usuario && <p className="text-xs text-muted mt-3">Sin tarjeta · sin instalar nada · listo en minutos</p>}
         </div>
         <div className="relative h-80 md:h-96">
           <GeoArt className="absolute inset-0" />
@@ -208,24 +224,35 @@ export default function Landing() {
       </section>
 
       {/* CTA final */}
-      <section className="bg-primary">
-        <div className="max-w-4xl mx-auto px-5 py-16 md:py-20 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-ink tracking-tight">Empieza a liquidar sin dolores de cabeza</h2>
-          <p className="text-ink/80 mt-3 text-lg">Crea tu cuenta y prueba HoraPro gratis por {dias} días.</p>
-          <Link to="/registro" className="inline-flex items-center gap-2 bg-ink hover:bg-ink/90 text-white font-bold px-8 py-4 rounded-xl text-base mt-8">
-            Crear cuenta gratis <ArrowRight size={18} />
-          </Link>
-        </div>
-      </section>
+      {!usuario && (
+        <section className="bg-primary">
+          <div className="max-w-4xl mx-auto px-5 py-16 md:py-20 text-center">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-ink tracking-tight">Empieza a liquidar sin dolores de cabeza</h2>
+            <p className="text-ink/80 mt-3 text-lg">Crea tu cuenta y prueba HoraPro gratis por {dias} días.</p>
+            <Link to="/registro" className="inline-flex items-center gap-2 bg-ink hover:bg-ink/90 text-white font-bold px-8 py-4 rounded-xl text-base mt-8">
+              Crear cuenta gratis <ArrowRight size={18} />
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-gray-100">
         <div className="max-w-6xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <img src={logoCompleto} alt="HoraPro" className="h-7" />
-          <p className="text-xs text-muted">© {new Date().getFullYear()} HoraPro · Control de horas para Colombia</p>
+          <div className="text-center">
+            <p className="text-xs text-muted">© {new Date().getFullYear()} HoraPro · Control de horas para Colombia</p>
+            <CreditoKrumlab className="mt-0.5" />
+          </div>
           <div className="flex gap-4 text-sm">
-            <Link to="/login" className="text-muted hover:text-ink">Iniciar sesión</Link>
-            <Link to="/registro" className="font-semibold text-ink">Prueba gratis</Link>
+            {usuario ? (
+              <Link to={panelUrl} className="font-semibold text-ink">Ir a mi panel</Link>
+            ) : (
+              <>
+                <Link to="/login" className="text-muted hover:text-ink">Iniciar sesión</Link>
+                <Link to="/registro" className="font-semibold text-ink">Prueba gratis</Link>
+              </>
+            )}
           </div>
         </div>
       </footer>

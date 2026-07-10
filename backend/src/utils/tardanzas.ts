@@ -1,8 +1,10 @@
-import { Registro, Horario, DiaFestivo, Permiso } from '@prisma/client';
+import { Registro, Horario, FranjaHorario, DiaFestivo, Permiso } from '@prisma/client';
 import { toZonedTime } from 'date-fns-tz';
 
 const TZ = 'America/Bogota';
-const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+export const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+
+export type HorarioConFranjas = Horario & { franjas: FranjaHorario[] };
 
 export type Tardanza = {
   fecha: string; // YYYY-MM-DD (día calendario Bogotá)
@@ -11,9 +13,16 @@ export type Tardanza = {
   minutosTarde: number; // ya descontada la tolerancia
 };
 
-function minutosDe(hhmm: string): number {
+export function minutosDe(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + m;
+}
+
+// Franja del horario que aplica a un día de la semana (ej. "SABADO"), o null
+// si ese día no se trabaja. Con esto un horario cubre variaciones como
+// L-V 08:00-17:00 + Sáb 08:00-12:00.
+export function franjaDelDia(horario: HorarioConFranjas, diaSemana: string): FranjaHorario | null {
+  return horario.franjas.find(f => (((f.dias as string[]) ?? []).includes(diaSemana))) ?? null;
 }
 
 function claveDia(d: Date): string {
@@ -21,16 +30,15 @@ function claveDia(d: Date): string {
   return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
 }
 
-// Llegadas tarde: primera entrada de cada día vs hora del horario + tolerancia.
-// No cuenta festivos, días fuera del horario ni días cubiertos por novedades.
+// Llegadas tarde: primera entrada de cada día vs la franja del horario que
+// aplica ese día + tolerancia. No cuenta festivos, días fuera del horario ni
+// días cubiertos por novedades.
 export function calcularTardanzas(
   registros: Registro[],
-  horario: Horario,
+  horario: HorarioConFranjas,
   festivos: DiaFestivo[],
   permisos: Permiso[]
 ): { detalle: Tardanza[]; totalMinutos: number; diasTarde: number; toleranciaMin: number } {
-  const diasHorario = new Set((horario.dias as string[]) ?? []);
-  const esperadoMin = minutosDe(horario.horaEntrada);
   const festSet = new Set(festivos.map(f => claveDia(f.fecha)));
 
   // Primera entrada por día calendario
@@ -45,17 +53,18 @@ export function calcularTardanzas(
   const detalle: Tardanza[] = [];
   for (const [clave, entrada] of [...primeraEntrada.entries()].sort()) {
     const z = toZonedTime(entrada, TZ);
-    if (!diasHorario.has(DIAS[z.getDay()])) continue;
+    const franja = franjaDelDia(horario, DIAS_SEMANA[z.getDay()]);
+    if (!franja) continue;
     if (festSet.has(clave)) continue;
     const cubiertoPorNovedad = permisos.some(p => claveDia(p.fechaInicio) <= clave && clave <= claveDia(p.fechaFin));
     if (cubiertoPorNovedad) continue;
 
     const llegadaMin = z.getHours() * 60 + z.getMinutes();
-    const tarde = llegadaMin - (esperadoMin + horario.toleranciaMin);
+    const tarde = llegadaMin - (minutosDe(franja.horaEntrada) + horario.toleranciaMin);
     if (tarde > 0) {
       detalle.push({
         fecha: clave,
-        horaEsperada: horario.horaEntrada,
+        horaEsperada: franja.horaEntrada,
         horaLlegada: `${String(z.getHours()).padStart(2, '0')}:${String(z.getMinutes()).padStart(2, '0')}`,
         minutosTarde: tarde,
       });

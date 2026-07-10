@@ -25,6 +25,28 @@ export default async function configuracionRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
+  // Datos de la empresa (los ve cualquiera de la empresa, solo ADMIN los edita)
+  app.get('/empresa', auth, async (request) => {
+    return prisma.empresa.findUnique({
+      where: { id: request.empresaId },
+      select: { nombre: true, nit: true, email: true, telefono: true },
+    });
+  });
+
+  app.put('/empresa', auth, async (request, reply) => {
+    const payload = request.user as any;
+    if (payload.rol !== 'ADMIN') return reply.status(403).send({ error: 'Solo el administrador edita los datos de la empresa' });
+    const { nombre, nit, telefono } = request.body as { nombre?: string; nit?: string; telefono?: string };
+    if (!nombre || !nit) return reply.status(400).send({ error: 'Nombre y NIT son obligatorios' });
+    const conflicto = await prisma.empresa.findFirst({ where: { nit, NOT: { id: request.empresaId! } } });
+    if (conflicto) return reply.status(409).send({ error: 'Ya hay otra empresa registrada con ese NIT' });
+    return prisma.empresa.update({
+      where: { id: request.empresaId },
+      data: { nombre, nit, telefono },
+      select: { nombre: true, nit: true, email: true, telefono: true },
+    });
+  });
+
   // Reglas legales vigentes (solo lectura para la empresa; las administra la plataforma)
   app.get('/legales', auth, async (request) => {
     const { fecha } = request.query as any;
