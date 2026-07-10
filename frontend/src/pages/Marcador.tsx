@@ -82,6 +82,8 @@ export default function Marcador() {
       localStorage.setItem(claveDispositivo, r.data.deviceToken);
       setRequiereVinculo(false);
       setCodigoVinculo('');
+      setErrorLogin('');
+      setCapturaKey(k => k + 1); // si venía en modo rostro, la cámara arranca limpia
     } catch (err: any) {
       setErrorVinculo(err.response?.data?.error ?? 'Código inválido');
     } finally {
@@ -163,8 +165,9 @@ export default function Marcador() {
       await cargarEstado(r.data.token);
     } catch (err: any) {
       if (err.response?.data?.codigo === 'DISPOSITIVO_REQUERIDO') {
+        // Se mantiene modoRostro: al vincular el dispositivo vuelve a la cámara,
+        // no al formulario de cédula
         localStorage.removeItem(claveDispositivo);
-        setModoRostro(false);
         setRequiereVinculo(true);
       } else {
         setErrorLogin(err.response?.data?.error ?? 'No pudimos reconocer tu rostro');

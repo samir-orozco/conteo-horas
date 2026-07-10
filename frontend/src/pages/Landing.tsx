@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Calculator, IdCard, CalendarCheck, AlarmClock,
+  Calculator, ScanFace, CalendarCheck, AlarmClock,
   ArrowRight, Check, ChevronDown, ShieldCheck, MapPin, MonitorSmartphone, Sparkles,
 } from 'lucide-react';
 import logoCompleto from '../assets/logo-completo.svg';
@@ -28,13 +28,13 @@ function useReveal() {
 
 const BENEFICIOS = [
   { icon: Calculator, titulo: 'Liquidación automática', texto: 'Recargos nocturnos, dominicales, festivos y horas extra calculados solos, según la ley vigente.' },
-  { icon: IdCard, titulo: 'Marca por cédula', texto: 'Tus colaboradores marcan entrada y salida en cualquier tablet o celular. Sin comprar equipos.' },
+  { icon: ScanFace, titulo: 'Registro facial', texto: 'Tus colaboradores marcan entrada y salida con su rostro, en cualquier tablet o celular. Sin comprar equipos.' },
   { icon: AlarmClock, titulo: 'Llegadas tarde y planta', texto: 'Ve en tiempo real quién está adentro, quién llegó tarde y quién no marcó.' },
   { icon: CalendarCheck, titulo: 'Ley y festivos al día', texto: 'Jornada de 42h, recargos de la Ley 2466 y festivos colombianos, siempre actualizados.' },
 ];
 
 const FAQ = [
-  { q: '¿Necesito comprar algún equipo?', a: 'No. HoraPro funciona en cualquier tablet, computador o celular con navegador. El colaborador marca con su cédula en el link del kiosco.' },
+  { q: '¿Necesito comprar algún equipo?', a: 'No. HoraPro funciona en cualquier tablet, computador o celular con navegador. El colaborador marca con su rostro o su cédula en el link del kiosco.' },
   { q: '¿Cómo marcan los colaboradores?', a: 'Con su número de cédula o con reconocimiento facial en la pantalla del kiosco, desde cualquier tablet o celular con cámara.' },
   { q: '¿La prueba gratis tiene límites?', a: `Tienes acceso completo por ${''}7 días, sin tarjeta y sin restricciones. Al terminar decides si continúas.` },
   { q: '¿Se ajusta a la ley laboral colombiana?', a: 'Sí. Aplica la jornada máxima vigente, los recargos de la reforma laboral (Ley 2466) y genera los festivos automáticamente.' },
@@ -57,7 +57,7 @@ export default function Landing() {
   const panelUrl = usuario?.rol === 'SUPER_ADMIN' ? '/admin' : '/app';
 
   return (
-    <div className="min-h-screen bg-white text-ink">
+    <div className="min-h-screen bg-white text-ink overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
@@ -83,7 +83,7 @@ export default function Landing() {
             <Sparkles size={13} /> Hecho para Colombia
           </span>
           <h1 className="text-4xl md:text-5xl font-extrabold leading-[1.08] tracking-tight">
-            Liquida las horas de tu equipo <span className="relative whitespace-nowrap">
+            Liquida las horas de tu equipo <span className="relative sm:whitespace-nowrap">
               <span className="relative z-10">sin hacer cuentas</span>
               <span className="absolute left-0 bottom-1 h-3 w-full bg-primary/60 -z-0" />
             </span>.
@@ -159,7 +159,7 @@ export default function Landing() {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { n: '1', icon: IdCard, t: 'Marca', d: 'El colaborador registra entrada y salida con su cédula en el kiosco.' },
+              { n: '1', icon: ScanFace, t: 'Marca', d: 'El colaborador registra entrada y salida con su rostro o su cédula en el kiosco.' },
               { n: '2', icon: AlarmClock, t: 'Controla', d: 'Ves en tiempo real quién está en planta, tardanzas y novedades del día.' },
               { n: '3', icon: Calculator, t: 'Liquida', d: 'HoraPro calcula recargos y horas extra listos para tu nómina.' },
             ].map((p, i) => (
