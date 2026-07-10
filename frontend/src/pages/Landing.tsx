@@ -72,24 +72,41 @@ function CalculadoraPrecio({ precios }: { precios: Precios }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total]);
 
+  const MIN = 1, MAX = 60;
+  const pct = ((cantidad - MIN) / (MAX - MIN)) * 100;
+  // Puntos de referencia sobre el riel (el 15 marca el cambio de tramo de precio)
+  const puntos = [15, 30, 45];
+
   return (
-    <div className="mt-6 bg-[#f6f6f4] rounded-2xl p-5 text-left">
-      <div className="flex items-center justify-between gap-3 mb-2">
-        <label htmlFor="calc-colabs" className="text-sm font-semibold text-ink">¿Cuántos colaboradores tienes?</label>
-        <span className="text-sm font-bold bg-primary/40 text-ink px-2.5 py-0.5 rounded-full tabular-nums">{cantidad}</span>
+    <div className="mt-6 bg-[#f6f6f4] rounded-2xl px-5 pt-4 pb-5 text-left">
+      <p className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-muted mb-4">Colaboradores</p>
+      <div className="relative">
+        <input
+          id="calc-colabs"
+          type="range"
+          min={MIN}
+          max={MAX}
+          step={1}
+          value={cantidad}
+          onChange={e => { setCantidad(Number(e.target.value)); setTiemblo(v => v + 1); }}
+          className="hp-slider relative z-10"
+          style={{ background: `linear-gradient(to right, #E8B93B 0%, #FFD85E ${pct}%, #e5e7eb ${pct}%, #e5e7eb 100%)` }}
+          aria-label="Cantidad de colaboradores"
+        />
+        {puntos.map(v => (
+          <span
+            key={v}
+            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${v <= cantidad ? 'bg-ink/25' : 'bg-gray-400/60'}`}
+            style={{ left: `calc(${((v - MIN) / (MAX - MIN)) * 100}% - 3px)` }}
+          />
+        ))}
       </div>
-      <input
-        id="calc-colabs"
-        type="range"
-        min={1}
-        max={60}
-        step={1}
-        value={cantidad}
-        onChange={e => { setCantidad(Number(e.target.value)); setTiemblo(v => v + 1); }}
-        className="w-full accent-[#FFD85E] cursor-pointer"
-      />
+      <div className="flex justify-between mt-2 text-sm font-bold text-ink tabular-nums">
+        <span>{MIN}</span>
+        <span>{MAX}</span>
+      </div>
       <p className="text-center mt-3 text-sm text-muted">
-        Pagarías{' '}
+        Con <b className="text-ink tabular-nums">{cantidad}</b> colaborador{cantidad === 1 ? '' : 'es'} pagarías{' '}
         <span key={tiemblo} className="hp-shake-suave inline-block text-2xl font-extrabold text-ink tabular-nums align-middle">
           {cop(mostrado)}
         </span>{' '}
