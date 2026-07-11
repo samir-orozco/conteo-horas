@@ -1,0 +1,449 @@
+
+Object.defineProperty(exports, "__esModule", { value: true });
+
+const {
+  PrismaClientKnownRequestError,
+  PrismaClientUnknownRequestError,
+  PrismaClientRustPanicError,
+  PrismaClientInitializationError,
+  PrismaClientValidationError,
+  NotFoundError,
+  getPrismaClient,
+  sqltag,
+  empty,
+  join,
+  raw,
+  skip,
+  Decimal,
+  Debug,
+  objectEnumValues,
+  makeStrictEnum,
+  Extensions,
+  warnOnce,
+  defineDmmfProperty,
+  Public,
+  getRuntime
+} = require('@prisma/client/runtime/library.js')
+
+
+const Prisma = {}
+
+exports.Prisma = Prisma
+exports.$Enums = {}
+
+/**
+ * Prisma Client JS version: 5.22.0
+ * Query Engine version: 605197351a3c8bdd595af2d2a9bc3025bca48ea2
+ */
+Prisma.prismaVersion = {
+  client: "5.22.0",
+  engine: "605197351a3c8bdd595af2d2a9bc3025bca48ea2"
+}
+
+Prisma.PrismaClientKnownRequestError = PrismaClientKnownRequestError;
+Prisma.PrismaClientUnknownRequestError = PrismaClientUnknownRequestError
+Prisma.PrismaClientRustPanicError = PrismaClientRustPanicError
+Prisma.PrismaClientInitializationError = PrismaClientInitializationError
+Prisma.PrismaClientValidationError = PrismaClientValidationError
+Prisma.NotFoundError = NotFoundError
+Prisma.Decimal = Decimal
+
+/**
+ * Re-export of sql-template-tag
+ */
+Prisma.sql = sqltag
+Prisma.empty = empty
+Prisma.join = join
+Prisma.raw = raw
+Prisma.validator = Public.validator
+
+/**
+* Extensions
+*/
+Prisma.getExtensionContext = Extensions.getExtensionContext
+Prisma.defineExtension = Extensions.defineExtension
+
+/**
+ * Shorthand utilities for JSON filtering
+ */
+Prisma.DbNull = objectEnumValues.instances.DbNull
+Prisma.JsonNull = objectEnumValues.instances.JsonNull
+Prisma.AnyNull = objectEnumValues.instances.AnyNull
+
+Prisma.NullTypes = {
+  DbNull: objectEnumValues.classes.DbNull,
+  JsonNull: objectEnumValues.classes.JsonNull,
+  AnyNull: objectEnumValues.classes.AnyNull
+}
+
+
+
+
+  const path = require('path')
+
+/**
+ * Enums
+ */
+exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
+  ReadUncommitted: 'ReadUncommitted',
+  ReadCommitted: 'ReadCommitted',
+  RepeatableRead: 'RepeatableRead',
+  Serializable: 'Serializable'
+});
+
+exports.Prisma.EmpresaScalarFieldEnum = {
+  id: 'id',
+  nombre: 'nombre',
+  nit: 'nit',
+  email: 'email',
+  telefono: 'telefono',
+  marcadorToken: 'marcadorToken',
+  exentaPago: 'exentaPago',
+  activa: 'activa',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
+exports.Prisma.SuscripcionScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  estado: 'estado',
+  finPrueba: 'finPrueba',
+  pagadoHasta: 'pagadoHasta',
+  suspendidaEn: 'suspendidaEn',
+  wompiFuentePagoId: 'wompiFuentePagoId',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
+exports.Prisma.PagoScalarFieldEnum = {
+  id: 'id',
+  suscripcionId: 'suscripcionId',
+  monto: 'monto',
+  colaboradoresFacturados: 'colaboradoresFacturados',
+  periodoInicio: 'periodoInicio',
+  periodoFin: 'periodoFin',
+  metodo: 'metodo',
+  estado: 'estado',
+  wompiTransaccionId: 'wompiTransaccionId',
+  nota: 'nota',
+  comprobanteBase64: 'comprobanteBase64',
+  registradoPor: 'registradoPor',
+  creadoEn: 'creadoEn'
+};
+
+exports.Prisma.ConfiguracionPlataformaScalarFieldEnum = {
+  id: 'id',
+  precioTramo1: 'precioTramo1',
+  limiteTramo1: 'limiteTramo1',
+  precioTramo2: 'precioTramo2'
+};
+
+exports.Prisma.JornadaVigenciaScalarFieldEnum = {
+  id: 'id',
+  vigenteDesde: 'vigenteDesde',
+  horasSemanales: 'horasSemanales'
+};
+
+exports.Prisma.TipoHoraScalarFieldEnum = {
+  id: 'id',
+  nombre: 'nombre',
+  codigo: 'codigo',
+  horaInicio: 'horaInicio',
+  horaFin: 'horaFin',
+  recargo: 'recargo',
+  aplica: 'aplica',
+  vigenteDesde: 'vigenteDesde',
+  vigenteHasta: 'vigenteHasta',
+  activo: 'activo'
+};
+
+exports.Prisma.HorarioScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  nombre: 'nombre',
+  toleranciaMin: 'toleranciaMin',
+  activo: 'activo',
+  creadoEn: 'creadoEn'
+};
+
+exports.Prisma.FranjaHorarioScalarFieldEnum = {
+  id: 'id',
+  horarioId: 'horarioId',
+  dias: 'dias',
+  horaEntrada: 'horaEntrada',
+  horaSalida: 'horaSalida'
+};
+
+exports.Prisma.DispositivoKioscoScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  nombre: 'nombre',
+  token: 'token',
+  creadoEn: 'creadoEn',
+  ultimoUso: 'ultimoUso'
+};
+
+exports.Prisma.ColaboradorScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  nombre: 'nombre',
+  apellido: 'apellido',
+  cedula: 'cedula',
+  cargo: 'cargo',
+  email: 'email',
+  telefono: 'telefono',
+  fechaNacimiento: 'fechaNacimiento',
+  salarioMensual: 'salarioMensual',
+  rostroDescriptor: 'rostroDescriptor',
+  rostroEnroladoEn: 'rostroEnroladoEn',
+  horarioId: 'horarioId',
+  activo: 'activo',
+  retiroProgramado: 'retiroProgramado',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
+exports.Prisma.RegistroScalarFieldEnum = {
+  id: 'id',
+  colaboradorId: 'colaboradorId',
+  fecha: 'fecha',
+  entrada: 'entrada',
+  salida: 'salida',
+  tipo: 'tipo',
+  observacion: 'observacion',
+  fotoEntrada: 'fotoEntrada',
+  fotoSalida: 'fotoSalida',
+  editadoPor: 'editadoPor',
+  editadoEn: 'editadoEn',
+  creadoEn: 'creadoEn'
+};
+
+exports.Prisma.PermisoScalarFieldEnum = {
+  id: 'id',
+  colaboradorId: 'colaboradorId',
+  fechaInicio: 'fechaInicio',
+  fechaFin: 'fechaFin',
+  tipo: 'tipo',
+  descripcion: 'descripcion',
+  aprobado: 'aprobado',
+  creadoEn: 'creadoEn'
+};
+
+exports.Prisma.DiaFestivoScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  fecha: 'fecha',
+  nombre: 'nombre',
+  creadoEn: 'creadoEn'
+};
+
+exports.Prisma.ConfiguracionScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  clave: 'clave',
+  valor: 'valor'
+};
+
+exports.Prisma.UsuarioScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  email: 'email',
+  password: 'password',
+  nombre: 'nombre',
+  rol: 'rol',
+  activo: 'activo',
+  resetToken: 'resetToken',
+  resetExpira: 'resetExpira',
+  emailVerificado: 'emailVerificado',
+  verificacionCodigo: 'verificacionCodigo',
+  verificacionExpira: 'verificacionExpira',
+  creadoEn: 'creadoEn'
+};
+
+exports.Prisma.SortOrder = {
+  asc: 'asc',
+  desc: 'desc'
+};
+
+exports.Prisma.JsonNullValueInput = {
+  JsonNull: Prisma.JsonNull
+};
+
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
+};
+
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
+
+exports.Prisma.JsonNullValueFilter = {
+  DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull,
+  AnyNull: Prisma.AnyNull
+};
+exports.EstadoSuscripcion = exports.$Enums.EstadoSuscripcion = {
+  PRUEBA: 'PRUEBA',
+  ACTIVA: 'ACTIVA',
+  EN_MORA: 'EN_MORA',
+  SUSPENDIDA: 'SUSPENDIDA',
+  CANCELADA: 'CANCELADA'
+};
+
+exports.MetodoPago = exports.$Enums.MetodoPago = {
+  TARJETA_RECURRENTE: 'TARJETA_RECURRENTE',
+  LINK_WOMPI: 'LINK_WOMPI',
+  MANUAL: 'MANUAL'
+};
+
+exports.EstadoPago = exports.$Enums.EstadoPago = {
+  PENDIENTE: 'PENDIENTE',
+  APROBADO: 'APROBADO',
+  RECHAZADO: 'RECHAZADO'
+};
+
+exports.TipoRegistro = exports.$Enums.TipoRegistro = {
+  NORMAL: 'NORMAL',
+  PERMISO: 'PERMISO',
+  FESTIVO: 'FESTIVO'
+};
+
+exports.TipoPermiso = exports.$Enums.TipoPermiso = {
+  VACACIONES: 'VACACIONES',
+  INCAPACIDAD_EPS: 'INCAPACIDAD_EPS',
+  INCAPACIDAD_ARL: 'INCAPACIDAD_ARL',
+  LICENCIA_MATERNIDAD: 'LICENCIA_MATERNIDAD',
+  LICENCIA_PATERNIDAD: 'LICENCIA_PATERNIDAD',
+  LICENCIA_LUTO: 'LICENCIA_LUTO',
+  CALAMIDAD: 'CALAMIDAD',
+  MEDICO: 'MEDICO',
+  PERSONAL: 'PERSONAL',
+  NO_REMUNERADO: 'NO_REMUNERADO',
+  OTRO: 'OTRO'
+};
+
+exports.Rol = exports.$Enums.Rol = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  ADMIN: 'ADMIN',
+  SUPERVISOR: 'SUPERVISOR'
+};
+
+exports.Prisma.ModelName = {
+  Empresa: 'Empresa',
+  Suscripcion: 'Suscripcion',
+  Pago: 'Pago',
+  ConfiguracionPlataforma: 'ConfiguracionPlataforma',
+  JornadaVigencia: 'JornadaVigencia',
+  TipoHora: 'TipoHora',
+  Horario: 'Horario',
+  FranjaHorario: 'FranjaHorario',
+  DispositivoKiosco: 'DispositivoKiosco',
+  Colaborador: 'Colaborador',
+  Registro: 'Registro',
+  Permiso: 'Permiso',
+  DiaFestivo: 'DiaFestivo',
+  Configuracion: 'Configuracion',
+  Usuario: 'Usuario'
+};
+/**
+ * Create the Client
+ */
+const config = {
+  "generator": {
+    "name": "client",
+    "provider": {
+      "fromEnvVar": null,
+      "value": "prisma-client-js"
+    },
+    "output": {
+      "value": "/Users/mac/Documents/Krumlab/Conteo_Horas/backend/node_modules/@prisma/client",
+      "fromEnvVar": null
+    },
+    "config": {
+      "engineType": "library"
+    },
+    "binaryTargets": [
+      {
+        "fromEnvVar": null,
+        "value": "darwin-arm64",
+        "native": true
+      },
+      {
+        "fromEnvVar": null,
+        "value": "rhel-openssl-1.1.x"
+      }
+    ],
+    "previewFeatures": [],
+    "sourceFilePath": "/Users/mac/Documents/Krumlab/Conteo_Horas/backend/prisma/schema.prisma"
+  },
+  "relativeEnvPaths": {
+    "rootEnvPath": null,
+    "schemaEnvPath": "../../../.env"
+  },
+  "relativePath": "../../../prisma",
+  "clientVersion": "5.22.0",
+  "engineVersion": "605197351a3c8bdd595af2d2a9bc3025bca48ea2",
+  "datasourceNames": [
+    "db"
+  ],
+  "activeProvider": "mysql",
+  "postinstall": false,
+  "inlineDatasources": {
+    "db": {
+      "url": {
+        "fromEnvVar": "DATABASE_URL",
+        "value": null
+      }
+    }
+  },
+  "inlineSchema": "generator client {\n  provider      = \"prisma-client-js\"\n  binaryTargets = [\"native\", \"rhel-openssl-1.1.x\"]\n}\n\ndatasource db {\n  provider = \"mysql\"\n  url      = env(\"DATABASE_URL\")\n}\n\n// ============ SaaS / Multi-tenant ============\n\nmodel Empresa {\n  id            String              @id @default(cuid())\n  nombre        String\n  nit           String              @unique\n  email         String\n  telefono      String?\n  // Token del link único del kiosco de marcación: /marcador/<token>\n  marcadorToken String              @unique @default(cuid())\n  // Acceso ilimitado (cortesía): nunca se le cobra ni se bloquea\n  exentaPago    Boolean             @default(false)\n  activa        Boolean             @default(true)\n  creadoEn      DateTime            @default(now())\n  actualizadoEn DateTime            @updatedAt\n  usuarios      Usuario[]\n  colaboradores Colaborador[]\n  festivos      DiaFestivo[]\n  configuracion Configuracion[]\n  suscripcion   Suscripcion?\n  horarios      Horario[]\n  dispositivos  DispositivoKiosco[]\n\n  @@map(\"empresas\")\n}\n\nmodel Suscripcion {\n  id                String            @id @default(cuid())\n  empresaId         String            @unique\n  empresa           Empresa           @relation(fields: [empresaId], references: [id])\n  estado            EstadoSuscripcion @default(PRUEBA)\n  finPrueba         DateTime // 7 días desde la creación\n  pagadoHasta       DateTime? // fin del último período pagado\n  suspendidaEn      DateTime?\n  // Wompi: fuente de pago tokenizada para cobro recurrente (null = paga por link)\n  wompiFuentePagoId String?\n  creadoEn          DateTime          @default(now())\n  actualizadoEn     DateTime          @updatedAt\n  pagos             Pago[]\n\n  @@map(\"suscripciones\")\n}\n\nmodel Pago {\n  id                      String      @id @default(cuid())\n  suscripcionId           String\n  suscripcion             Suscripcion @relation(fields: [suscripcionId], references: [id])\n  monto                   Float\n  colaboradoresFacturados Int\n  periodoInicio           DateTime\n  periodoFin              DateTime\n  metodo                  MetodoPago\n  estado                  EstadoPago  @default(APROBADO)\n  wompiTransaccionId      String?     @unique\n  nota                    String? // referencia, banco, observaciones\n  comprobanteBase64       String?     @db.LongText // foto del soporte (data URL)\n  registradoPor           String? // email del super admin que lo registró\n  creadoEn                DateTime    @default(now())\n\n  @@map(\"pagos\")\n}\n\n// Precios del SaaS — editables por el super admin (fila única id=1)\nmodel ConfiguracionPlataforma {\n  id           Int   @id @default(1)\n  precioTramo1 Float @default(10000) // COP por colaborador, tramo inicial\n  limiteTramo1 Int   @default(15) // tamaño del tramo inicial\n  precioTramo2 Float @default(2000) // COP por colaborador adicional\n\n  @@map(\"configuracion_plataforma\")\n}\n\n// ============ Reglas legales (globales, con vigencias) ============\n\n// Jornada máxima legal semanal — Ley 2101 de 2021 (48→42h gradual)\nmodel JornadaVigencia {\n  id             String   @id @default(cuid())\n  vigenteDesde   DateTime @unique\n  horasSemanales Float\n\n  @@map(\"jornadas_vigencia\")\n}\n\n// Tipos de hora y recargos — CST + Ley 2466 de 2025, con vigencias por fecha\nmodel TipoHora {\n  id           String    @id @default(cuid())\n  nombre       String\n  codigo       String // HOD, HON, HED, HEN, HDD, HND, HEDD, HEND\n  horaInicio   Int // 0-23\n  horaFin      Int // 0-23\n  recargo      Float // factor sobre hora ordinaria (ej: 1.35)\n  aplica       Json // [\"LUNES\",...,\"DOMINGO\",\"FESTIVO\"] — MySQL no soporta arrays escalares\n  vigenteDesde DateTime\n  vigenteHasta DateTime? // null = vigente indefinidamente\n  activo       Boolean   @default(true)\n\n  @@unique([codigo, vigenteDesde])\n  @@map(\"tipos_hora\")\n}\n\n// ============ Negocio por empresa ============\n\n// Horarios de trabajo de la empresa (ej: \"Oficina\" L-V 08:00-17:00).\n// Se asignan por colaborador; sin horario no se controlan llegadas tarde.\nmodel Horario {\n  id            String          @id @default(cuid())\n  empresaId     String\n  empresa       Empresa         @relation(fields: [empresaId], references: [id])\n  nombre        String\n  toleranciaMin Int             @default(10) // minutos de gracia antes de contar tardanza\n  activo        Boolean         @default(true)\n  creadoEn      DateTime        @default(now())\n  // Un horario tiene varias franjas: ej. L-V 08:00-17:00 y Sáb 08:00-12:00\n  franjas       FranjaHorario[]\n  colaboradores Colaborador[]\n\n  @@map(\"horarios\")\n}\n\nmodel FranjaHorario {\n  id          String  @id @default(cuid())\n  horarioId   String\n  horario     Horario @relation(fields: [horarioId], references: [id], onDelete: Cascade)\n  dias        Json // [\"LUNES\",...,\"SABADO\"]\n  horaEntrada String // \"08:00\" hora local Bogotá\n  horaSalida  String // \"17:00\" (puede cruzar medianoche, ej. \"21:00\"→\"05:00\")\n\n  @@map(\"franjas_horario\")\n}\n\n// Dispositivos autorizados para abrir el kiosco de marcación.\n// Evita que un colaborador copie el link y marque desde su casa.\nmodel DispositivoKiosco {\n  id        String    @id @default(cuid())\n  empresaId String\n  empresa   Empresa   @relation(fields: [empresaId], references: [id])\n  nombre    String\n  token     String    @unique\n  creadoEn  DateTime  @default(now())\n  ultimoUso DateTime?\n\n  @@map(\"dispositivos_kiosco\")\n}\n\nmodel Colaborador {\n  id               String     @id @default(cuid())\n  empresaId        String\n  empresa          Empresa    @relation(fields: [empresaId], references: [id])\n  nombre           String\n  apellido         String\n  cedula           String // marcación en kiosco por cédula\n  cargo            String?\n  email            String?\n  telefono         String?\n  fechaNacimiento  DateTime?\n  salarioMensual   Float\n  // Reconocimiento facial: descriptor matemático (128 floats), nunca la imagen\n  rostroDescriptor Json?\n  rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)\n  horarioId        String?\n  horario          Horario?   @relation(fields: [horarioId], references: [id])\n  activo           Boolean    @default(true)\n  // Si el mes ya está pagado, el \"borrado\" se programa para fin de mes\n  retiroProgramado DateTime?\n  creadoEn         DateTime   @default(now())\n  actualizadoEn    DateTime   @updatedAt\n  registros        Registro[]\n  permisos         Permiso[]\n\n  @@unique([empresaId, cedula])\n  @@map(\"colaboradores\")\n}\n\nmodel Registro {\n  id            String       @id @default(cuid())\n  colaboradorId String\n  colaborador   Colaborador  @relation(fields: [colaboradorId], references: [id])\n  fecha         DateTime\n  entrada       DateTime?\n  salida        DateTime?\n  tipo          TipoRegistro @default(NORMAL)\n  observacion   String?\n  // Foto de verificación facial al marcar (se elimina automáticamente a los 2 meses)\n  fotoEntrada   String?      @db.LongText\n  fotoSalida    String?      @db.LongText\n  // Auditoría de correcciones manuales\n  editadoPor    String?\n  editadoEn     DateTime?\n  creadoEn      DateTime     @default(now())\n\n  @@map(\"registros\")\n}\n\nmodel Permiso {\n  id            String      @id @default(cuid())\n  colaboradorId String\n  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id])\n  fechaInicio   DateTime\n  fechaFin      DateTime\n  tipo          TipoPermiso\n  descripcion   String?\n  aprobado      Boolean     @default(false)\n  creadoEn      DateTime    @default(now())\n\n  @@map(\"permisos\")\n}\n\nmodel DiaFestivo {\n  id        String   @id @default(cuid())\n  empresaId String? // null = festivo legal nacional (generado por algoritmo)\n  empresa   Empresa? @relation(fields: [empresaId], references: [id])\n  fecha     DateTime\n  nombre    String\n  creadoEn  DateTime @default(now())\n\n  @@unique([empresaId, fecha])\n  @@map(\"dias_festivos\")\n}\n\nmodel Configuracion {\n  id        String  @id @default(cuid())\n  empresaId String\n  empresa   Empresa @relation(fields: [empresaId], references: [id])\n  clave     String\n  valor     String\n\n  @@unique([empresaId, clave])\n  @@map(\"configuracion\")\n}\n\nmodel Usuario {\n  id                 String    @id @default(cuid())\n  empresaId          String? // null = SUPER_ADMIN (usuario de la plataforma)\n  empresa            Empresa?  @relation(fields: [empresaId], references: [id])\n  email              String    @unique\n  password           String\n  nombre             String\n  rol                Rol       @default(ADMIN)\n  activo             Boolean   @default(true)\n  // Recuperación de contraseña: token de un solo uso con vencimiento\n  resetToken         String?   @unique\n  resetExpira        DateTime?\n  // Verificación del correo al registrarse (evita cuentas con correos falsos)\n  emailVerificado    Boolean   @default(false)\n  verificacionCodigo String? // 6 dígitos, se valida junto con el email (no único: puede repetirse entre cuentas)\n  verificacionExpira DateTime?\n  creadoEn           DateTime  @default(now())\n\n  @@map(\"usuarios\")\n}\n\n// ============ Enums ============\n\nenum EstadoSuscripcion {\n  PRUEBA\n  ACTIVA\n  EN_MORA\n  SUSPENDIDA\n  CANCELADA\n}\n\nenum MetodoPago {\n  TARJETA_RECURRENTE\n  LINK_WOMPI\n  MANUAL\n}\n\nenum EstadoPago {\n  PENDIENTE\n  APROBADO\n  RECHAZADO\n}\n\nenum TipoRegistro {\n  NORMAL\n  PERMISO\n  FESTIVO\n}\n\nenum TipoPermiso {\n  VACACIONES\n  INCAPACIDAD_EPS\n  INCAPACIDAD_ARL\n  LICENCIA_MATERNIDAD\n  LICENCIA_PATERNIDAD\n  LICENCIA_LUTO\n  CALAMIDAD\n  MEDICO\n  PERSONAL\n  NO_REMUNERADO\n  OTRO\n}\n\nenum Rol {\n  SUPER_ADMIN\n  ADMIN\n  SUPERVISOR\n}\n",
+  "inlineSchemaHash": "aa5ac05531202f473b0de10bd92a1021a5f4a938eff025917f5214fb41b9b354",
+  "copyEngine": true
+}
+
+const fs = require('fs')
+
+config.dirname = __dirname
+if (!fs.existsSync(path.join(__dirname, 'schema.prisma'))) {
+  const alternativePaths = [
+    "node_modules/.prisma/client",
+    ".prisma/client",
+  ]
+  
+  const alternativePath = alternativePaths.find((altPath) => {
+    return fs.existsSync(path.join(process.cwd(), altPath, 'schema.prisma'))
+  }) ?? alternativePaths[0]
+
+  config.dirname = path.join(process.cwd(), alternativePath)
+  config.isBundled = true
+}
+
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Empresa\":{\"dbName\":\"empresas\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"nombre\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"nit\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":true,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"email\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"telefono\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"marcadorToken\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":true,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"exentaPago\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Boolean\",\"default\":false,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"activa\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Boolean\",\"default\":true,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"creadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"actualizadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":true},{\"name\":\"usuarios\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Usuario\",\"relationName\":\"EmpresaToUsuario\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"colaboradores\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Colaborador\",\"relationName\":\"ColaboradorToEmpresa\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"festivos\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DiaFestivo\",\"relationName\":\"DiaFestivoToEmpresa\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"configuracion\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Configuracion\",\"relationName\":\"ConfiguracionToEmpresa\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"suscripcion\",\"kind\":\"object\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Suscripcion\",\"relationName\":\"EmpresaToSuscripcion\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"horarios\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Horario\",\"relationName\":\"EmpresaToHorario\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"dispositivos\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DispositivoKiosco\",\"relationName\":\"DispositivoKioscoToEmpresa\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false},\"Suscripcion\":{\"dbName\":\"suscripciones\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresaId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":true,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresa\",\"kind\":\"object\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Empresa\",\"relationName\":\"EmpresaToSuscripcion\",\"relationFromFields\":[\"empresaId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"estado\",\"kind\":\"enum\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"EstadoSuscripcion\",\"default\":\"PRUEBA\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"finPrueba\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"pagadoHasta\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"suspendidaEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"wompiFuentePagoId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"creadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"actualizadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":true},{\"name\":\"pagos\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Pago\",\"relationName\":\"PagoToSuscripcion\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false},\"Pago\":{\"dbName\":\"pagos\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"suscripcionId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"suscripcion\",\"kind\":\"object\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Suscripcion\",\"relationName\":\"PagoToSuscripcion\",\"relationFromFields\":[\"suscripcionId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"monto\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Float\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"colaboradoresFacturados\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Int\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"periodoInicio\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"periodoFin\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"metodo\",\"kind\":\"enum\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"MetodoPago\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"estado\",\"kind\":\"enum\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"EstadoPago\",\"default\":\"APROBADO\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"wompiTransaccionId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":true,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"nota\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"comprobanteBase64\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"registradoPor\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"creadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false},\"ConfiguracionPlataforma\":{\"dbName\":\"configuracion_plataforma\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Int\",\"default\":1,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"precioTramo1\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Float\",\"default\":10000,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"limiteTramo1\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Int\",\"default\":15,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"precioTramo2\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Float\",\"default\":2000,\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false},\"JornadaVigencia\":{\"dbName\":\"jornadas_vigencia\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"vigenteDesde\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":true,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"horasSemanales\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Float\",\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false},\"TipoHora\":{\"dbName\":\"tipos_hora\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"nombre\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"codigo\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"horaInicio\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Int\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"horaFin\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Int\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"recargo\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Float\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"aplica\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Json\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"vigenteDesde\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"vigenteHasta\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"activo\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Boolean\",\"default\":true,\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[[\"codigo\",\"vigenteDesde\"]],\"uniqueIndexes\":[{\"name\":null,\"fields\":[\"codigo\",\"vigenteDesde\"]}],\"isGenerated\":false},\"Horario\":{\"dbName\":\"horarios\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresaId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresa\",\"kind\":\"object\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Empresa\",\"relationName\":\"EmpresaToHorario\",\"relationFromFields\":[\"empresaId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"nombre\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"toleranciaMin\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Int\",\"default\":10,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"activo\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Boolean\",\"default\":true,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"creadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"franjas\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"FranjaHorario\",\"relationName\":\"FranjaHorarioToHorario\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"colaboradores\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Colaborador\",\"relationName\":\"ColaboradorToHorario\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false},\"FranjaHorario\":{\"dbName\":\"franjas_horario\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"horarioId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"horario\",\"kind\":\"object\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Horario\",\"relationName\":\"FranjaHorarioToHorario\",\"relationFromFields\":[\"horarioId\"],\"relationToFields\":[\"id\"],\"relationOnDelete\":\"Cascade\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"dias\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Json\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"horaEntrada\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"horaSalida\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false},\"DispositivoKiosco\":{\"dbName\":\"dispositivos_kiosco\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresaId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresa\",\"kind\":\"object\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Empresa\",\"relationName\":\"DispositivoKioscoToEmpresa\",\"relationFromFields\":[\"empresaId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"nombre\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"token\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":true,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"creadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"ultimoUso\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false},\"Colaborador\":{\"dbName\":\"colaboradores\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresaId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresa\",\"kind\":\"object\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Empresa\",\"relationName\":\"ColaboradorToEmpresa\",\"relationFromFields\":[\"empresaId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"nombre\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"apellido\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"cedula\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"cargo\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"email\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"telefono\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"fechaNacimiento\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"salarioMensual\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Float\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"rostroDescriptor\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Json\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"rostroEnroladoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"horarioId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"horario\",\"kind\":\"object\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Horario\",\"relationName\":\"ColaboradorToHorario\",\"relationFromFields\":[\"horarioId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"activo\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Boolean\",\"default\":true,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"retiroProgramado\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"creadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"actualizadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":true},{\"name\":\"registros\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Registro\",\"relationName\":\"ColaboradorToRegistro\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"permisos\",\"kind\":\"object\",\"isList\":true,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Permiso\",\"relationName\":\"ColaboradorToPermiso\",\"relationFromFields\":[],\"relationToFields\":[],\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[[\"empresaId\",\"cedula\"]],\"uniqueIndexes\":[{\"name\":null,\"fields\":[\"empresaId\",\"cedula\"]}],\"isGenerated\":false},\"Registro\":{\"dbName\":\"registros\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"colaboradorId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"colaborador\",\"kind\":\"object\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Colaborador\",\"relationName\":\"ColaboradorToRegistro\",\"relationFromFields\":[\"colaboradorId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"fecha\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"entrada\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"salida\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"tipo\",\"kind\":\"enum\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"TipoRegistro\",\"default\":\"NORMAL\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"observacion\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"fotoEntrada\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"fotoSalida\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"editadoPor\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"editadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"creadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false},\"Permiso\":{\"dbName\":\"permisos\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"colaboradorId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"colaborador\",\"kind\":\"object\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Colaborador\",\"relationName\":\"ColaboradorToPermiso\",\"relationFromFields\":[\"colaboradorId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"fechaInicio\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"fechaFin\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"tipo\",\"kind\":\"enum\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"TipoPermiso\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"descripcion\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"aprobado\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Boolean\",\"default\":false,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"creadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false},\"DiaFestivo\":{\"dbName\":\"dias_festivos\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresaId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresa\",\"kind\":\"object\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Empresa\",\"relationName\":\"DiaFestivoToEmpresa\",\"relationFromFields\":[\"empresaId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"fecha\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"nombre\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"creadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[[\"empresaId\",\"fecha\"]],\"uniqueIndexes\":[{\"name\":null,\"fields\":[\"empresaId\",\"fecha\"]}],\"isGenerated\":false},\"Configuracion\":{\"dbName\":\"configuracion\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresaId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresa\",\"kind\":\"object\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Empresa\",\"relationName\":\"ConfiguracionToEmpresa\",\"relationFromFields\":[\"empresaId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"clave\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"valor\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[[\"empresaId\",\"clave\"]],\"uniqueIndexes\":[{\"name\":null,\"fields\":[\"empresaId\",\"clave\"]}],\"isGenerated\":false},\"Usuario\":{\"dbName\":\"usuarios\",\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":true,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"String\",\"default\":{\"name\":\"cuid\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresaId\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":true,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"empresa\",\"kind\":\"object\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"Empresa\",\"relationName\":\"EmpresaToUsuario\",\"relationFromFields\":[\"empresaId\"],\"relationToFields\":[\"id\"],\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"email\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":true,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"password\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"nombre\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"rol\",\"kind\":\"enum\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Rol\",\"default\":\"ADMIN\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"activo\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Boolean\",\"default\":true,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"resetToken\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":true,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"resetExpira\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"emailVerificado\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"Boolean\",\"default\":false,\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"verificacionCodigo\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"String\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"verificacionExpira\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":false,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":false,\"type\":\"DateTime\",\"isGenerated\":false,\"isUpdatedAt\":false},{\"name\":\"creadoEn\",\"kind\":\"scalar\",\"isList\":false,\"isRequired\":true,\"isUnique\":false,\"isId\":false,\"isReadOnly\":false,\"hasDefaultValue\":true,\"type\":\"DateTime\",\"default\":{\"name\":\"now\",\"args\":[]},\"isGenerated\":false,\"isUpdatedAt\":false}],\"primaryKey\":null,\"uniqueFields\":[],\"uniqueIndexes\":[],\"isGenerated\":false}},\"enums\":{\"EstadoSuscripcion\":{\"values\":[{\"name\":\"PRUEBA\",\"dbName\":null},{\"name\":\"ACTIVA\",\"dbName\":null},{\"name\":\"EN_MORA\",\"dbName\":null},{\"name\":\"SUSPENDIDA\",\"dbName\":null},{\"name\":\"CANCELADA\",\"dbName\":null}],\"dbName\":null},\"MetodoPago\":{\"values\":[{\"name\":\"TARJETA_RECURRENTE\",\"dbName\":null},{\"name\":\"LINK_WOMPI\",\"dbName\":null},{\"name\":\"MANUAL\",\"dbName\":null}],\"dbName\":null},\"EstadoPago\":{\"values\":[{\"name\":\"PENDIENTE\",\"dbName\":null},{\"name\":\"APROBADO\",\"dbName\":null},{\"name\":\"RECHAZADO\",\"dbName\":null}],\"dbName\":null},\"TipoRegistro\":{\"values\":[{\"name\":\"NORMAL\",\"dbName\":null},{\"name\":\"PERMISO\",\"dbName\":null},{\"name\":\"FESTIVO\",\"dbName\":null}],\"dbName\":null},\"TipoPermiso\":{\"values\":[{\"name\":\"VACACIONES\",\"dbName\":null},{\"name\":\"INCAPACIDAD_EPS\",\"dbName\":null},{\"name\":\"INCAPACIDAD_ARL\",\"dbName\":null},{\"name\":\"LICENCIA_MATERNIDAD\",\"dbName\":null},{\"name\":\"LICENCIA_PATERNIDAD\",\"dbName\":null},{\"name\":\"LICENCIA_LUTO\",\"dbName\":null},{\"name\":\"CALAMIDAD\",\"dbName\":null},{\"name\":\"MEDICO\",\"dbName\":null},{\"name\":\"PERSONAL\",\"dbName\":null},{\"name\":\"NO_REMUNERADO\",\"dbName\":null},{\"name\":\"OTRO\",\"dbName\":null}],\"dbName\":null},\"Rol\":{\"values\":[{\"name\":\"SUPER_ADMIN\",\"dbName\":null},{\"name\":\"ADMIN\",\"dbName\":null},{\"name\":\"SUPERVISOR\",\"dbName\":null}],\"dbName\":null}},\"types\":{}}")
+defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
+config.engineWasm = undefined
+
+
+const { warnEnvConflicts } = require('@prisma/client/runtime/library.js')
+
+warnEnvConflicts({
+    rootEnvPath: config.relativeEnvPaths.rootEnvPath && path.resolve(config.dirname, config.relativeEnvPaths.rootEnvPath),
+    schemaEnvPath: config.relativeEnvPaths.schemaEnvPath && path.resolve(config.dirname, config.relativeEnvPaths.schemaEnvPath)
+})
+
+const PrismaClient = getPrismaClient(config)
+exports.PrismaClient = PrismaClient
+Object.assign(exports, Prisma)
+
+// file annotations for bundling tools to include these files
+path.join(__dirname, "libquery_engine-darwin-arm64.dylib.node");
+path.join(process.cwd(), "node_modules/.prisma/client/libquery_engine-darwin-arm64.dylib.node")
+
+// file annotations for bundling tools to include these files
+path.join(__dirname, "libquery_engine-rhel-openssl-1.1.x.so.node");
+path.join(process.cwd(), "node_modules/.prisma/client/libquery_engine-rhel-openssl-1.1.x.so.node")
+// file annotations for bundling tools to include these files
+path.join(__dirname, "schema.prisma");
+path.join(process.cwd(), "node_modules/.prisma/client/schema.prisma")
