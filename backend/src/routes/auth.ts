@@ -11,16 +11,24 @@ const SESION = '7d';
 // Límite anti fuerza bruta para endpoints sensibles
 const limite = (max: number) => ({ rateLimit: { max, timeWindow: '1 minute' } });
 
-async function enviarCorreoVerificacion(email: string, nombre: string, token: string) {
-  const base = process.env.FRONTEND_ORIGIN?.split(',')[0] ?? 'http://localhost:5173';
-  const link = `${base}/verificar?token=${token}`;
+const MIN_VERIFICACION = 15;
+
+function generarCodigo(): string {
+  return String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+}
+
+async function enviarCorreoCodigo(email: string, nombre: string, codigo: string) {
+  const digitos = codigo.split('').map(d => `
+    <td style="width:40px;height:48px;border:1.5px solid #e5e5e3;border-radius:10px;font-size:22px;font-weight:800;color:#303030;text-align:center;font-family:monospace">${d}</td>
+  `).join('<td style="width:6px"></td>');
   await enviarCorreo({
     para: email,
-    asunto: 'Confirma tu correo en HoraPro',
+    asunto: `${codigo} — Tu código de verificación de HoraPro`,
     html: plantillaCorreo('Confirma tu correo', `
       <p style="font-size:14px;color:#303030">Hola ${nombre},</p>
-      <p style="font-size:14px;color:#303030">Gracias por crear tu cuenta en HoraPro. Confirma tu correo para activar el panel:</p>
-      <p style="margin:24px 0"><a href="${link}" style="background:#FFD85E;color:#303030;font-weight:700;padding:12px 24px;border-radius:12px;text-decoration:none">Confirmar mi correo</a></p>
+      <p style="font-size:14px;color:#303030">Este es tu código para activar tu cuenta en HoraPro. Vence en ${MIN_VERIFICACION} minutos:</p>
+      <table style="margin:24px auto" cellpadding="0" cellspacing="0"><tr>${digitos}</tr></table>
+      <p style="font-size:12px;color:#898989;text-align:center">Escríbelo en la ventana de verificación de tu panel.</p>
       <p style="font-size:12px;color:#898989">Si no creaste esta cuenta, ignora este correo.</p>
     `),
   });
@@ -55,8 +63,8 @@ export default async function authRoutes(app: FastifyInstance) {
 
     const hash = await bcrypt.hash(password, 10);
     // Verificación de correo: si el SMTP no está configurado (ej. desarrollo),
-    // la cuenta nace verificada para no bloquear a nadie sin poder enviar el link.
-    const tokenVerificacion = correoConfigurado ? crypto.randomBytes(32).toString('hex') : null;
+    // la cuenta nace verificada para no bloquear a nadie sin poder enviar el código.
+    const codigo = correoConfigurado ? generarCodigo() : null;
     const nuevo = await prisma.$transaction(async (tx) => {
       const emp = await tx.empresa.create({ data: { nombre: empresa, nit, email, telefono } });
       await tx.suscripcion.create({
@@ -65,14 +73,15 @@ export default async function authRoutes(app: FastifyInstance) {
       const user = await tx.usuario.create({
         data: {
           email, password: hash, nombre, rol: 'ADMIN', empresaId: emp.id,
-          emailVerificado: !tokenVerificacion,
-          verificacionToken: tokenVerificacion,
+          emailVerificado: !codigo,
+          verificacionCodigo: codigo,
+          verificacionExpira: codigo ? new Date(Date.now() + MIN_VERIFICACION * 60 * 1000) : null,
         },
       });
       return { emp, user };
     });
 
-    if (tokenVerificacion) await enviarCorreoVerificacion(email, nombre, tokenVerificacion);
+    if (codigo) await enviarCorreoCodigo(email, nombre, codigo);
 
     const token = app.jwt.sign({
       id: nuevo.user.id, email: nuevo.user.email, rol: 'ADMIN', nombre: nuevo.user.nombre, empresaId: nuevo.emp.id,
@@ -87,20 +96,30 @@ export default async function authRoutes(app: FastifyInstance) {
     });
   });
 
-  // Confirma el correo con el token del link enviado al registrarse
-  app.post('/verificar-email', { config: limite(10) }, async (request, reply) => {
-    const { token } = request.body as { token: string };
-    if (!token) return reply.status(400).send({ error: 'Falta el token' });
-    const usuario = await prisma.usuario.findUnique({ where: { verificacionToken: token } });
-    if (!usuario) return reply.status(400).send({ error: 'El link no es válido o ya fue usado' });
+  // Confirma el correo con el código de 6 dígitos enviado al registrarse.
+  // Requiere sesión: el código se valida contra EL usuario logueado (no hace
+  // falta mandar el email, y evita que alguien pruebe códigos a lo loco).
+  app.post('/verificar-email', { preHandler: [app.authenticate], config: limite(10) }, async (request, reply) => {
+    const payload = request.user as any;
+    const { codigo } = request.body as { codigo: string };
+    if (!codigo) return reply.status(400).send({ error: 'Falta el código' });
+    const usuario = await prisma.usuario.findUnique({ where: { id: payload.id } });
+    if (!usuario) return reply.status(404).send({ error: 'Usuario no encontrado' });
+    if (usuario.emailVerificado) return { ok: true };
+    if (!usuario.verificacionCodigo || !usuario.verificacionExpira || usuario.verificacionExpira < new Date()) {
+      return reply.status(400).send({ error: 'El código venció. Pide uno nuevo.' });
+    }
+    if (usuario.verificacionCodigo !== codigo) {
+      return reply.status(400).send({ error: 'El código no es correcto' });
+    }
     await prisma.usuario.update({
       where: { id: usuario.id },
-      data: { emailVerificado: true, verificacionToken: null },
+      data: { emailVerificado: true, verificacionCodigo: null, verificacionExpira: null },
     });
     return { ok: true };
   });
 
-  // Reenvía el correo de verificación al usuario logueado
+  // Reenvía el código de verificación al usuario logueado
   app.post('/reenviar-verificacion', { preHandler: [app.authenticate], config: limite(3) }, async (request, reply) => {
     const payload = request.user as any;
     const usuario = await prisma.usuario.findUnique({ where: { id: payload.id } });
@@ -108,14 +127,15 @@ export default async function authRoutes(app: FastifyInstance) {
     if (usuario.emailVerificado) return { ok: true, yaVerificado: true };
     if (!correoConfigurado) {
       // Sin SMTP no podemos enviar: verificamos directo para no dejarlo atrapado
-      await prisma.usuario.update({ where: { id: usuario.id }, data: { emailVerificado: true, verificacionToken: null } });
+      await prisma.usuario.update({ where: { id: usuario.id }, data: { emailVerificado: true, verificacionCodigo: null, verificacionExpira: null } });
       return { ok: true, yaVerificado: true };
     }
-    const token = usuario.verificacionToken ?? crypto.randomBytes(32).toString('hex');
-    if (!usuario.verificacionToken) {
-      await prisma.usuario.update({ where: { id: usuario.id }, data: { verificacionToken: token } });
-    }
-    await enviarCorreoVerificacion(usuario.email, usuario.nombre, token);
+    const codigo = generarCodigo();
+    await prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { verificacionCodigo: codigo, verificacionExpira: new Date(Date.now() + MIN_VERIFICACION * 60 * 1000) },
+    });
+    await enviarCorreoCodigo(usuario.email, usuario.nombre, codigo);
     return { ok: true };
   });
 

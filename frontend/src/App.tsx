@@ -6,7 +6,6 @@ import Landing from './pages/Landing';
 import Registro from './pages/Registro';
 import Olvide from './pages/Olvide';
 import Restablecer from './pages/Restablecer';
-import Verificar from './pages/Verificar';
 import DashboardEmpresa from './pages/DashboardEmpresa';
 import MarcadorLink from './pages/MarcadorLink';
 import Colaboradores from './pages/Colaboradores';
@@ -68,7 +67,6 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/olvide" element={<Olvide />} />
           <Route path="/restablecer" element={<Restablecer />} />
-          <Route path="/verificar" element={<Verificar />} />
           <Route path="/autologin" element={<AutoLogin />} />
           <Route path="/marcador/:token" element={<Marcador />} />
           <Route path="/marcador" element={<Marcador />} />

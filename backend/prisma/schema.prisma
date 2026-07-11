@@ -251,7 +251,8 @@ model Usuario {
   resetExpira DateTime?
   // Verificación del correo al registrarse (evita cuentas con correos falsos)
   emailVerificado    Boolean @default(false)
-  verificacionToken  String? @unique
+  verificacionCodigo String? // 6 dígitos, se valida junto con el email (no único: puede repetirse entre cuentas)
+  verificacionExpira DateTime?
   creadoEn  DateTime @default(now())
 
   @@map("usuarios")

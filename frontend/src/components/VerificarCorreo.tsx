@@ -1,67 +1,86 @@
 import { useState } from 'react';
-import { MailCheck, Send, RefreshCw, LogOut } from 'lucide-react';
+import { MailCheck, Send, LogOut, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import EntradaCodigo from './EntradaCodigo';
 
-// Bloquea el panel hasta que el usuario confirme su correo (cuentas nuevas).
-// Mismo patrón que BloqueoPago: overlay a pantalla completa dentro del Layout.
+// Bloquea el panel hasta que el usuario confirme su correo con el código de
+// 6 dígitos que le llega al registrarse. Mismo patrón que BloqueoPago: overlay
+// a pantalla completa dentro del Layout.
 export default function VerificarCorreo() {
   const { usuario, logout, refrescarUsuario } = useAuth();
+  const [codigo, setCodigo] = useState('');
+  const [verificando, setVerificando] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+  const [error, setError] = useState('');
   const [reenviado, setReenviado] = useState(false);
-  const [ocupado, setOcupado] = useState(false);
 
   if (!usuario || usuario.emailVerificado !== false) return null;
 
-  const reenviar = async () => {
-    setOcupado(true);
+  const verificar = async (valor: string) => {
+    if (valor.length < 6 || verificando) return;
+    setVerificando(true);
+    setError('');
     try {
-      await api.post('/auth/reenviar-verificacion');
-      setReenviado(true);
-      // Si el servidor lo verificó directo (sin SMTP), refleja el cambio ya
+      await api.post('/auth/verificar-email', { codigo: valor });
       await refrescarUsuario();
+    } catch (err: any) {
+      setError(err.response?.data?.error ?? 'No pudimos verificar el código');
+      setCodigo('');
     } finally {
-      setOcupado(false);
+      setVerificando(false);
     }
   };
 
-  const yaConfirme = async () => {
-    setOcupado(true);
+  const cambiarCodigo = (valor: string) => {
+    setCodigo(valor);
+    setError('');
+    if (valor.length === 6) verificar(valor);
+  };
+
+  const reenviar = async () => {
+    setReenviando(true);
+    setError('');
     try {
-      await refrescarUsuario();
+      await api.post('/auth/reenviar-verificacion');
+      setReenviado(true);
+      setCodigo('');
+      await refrescarUsuario(); // si no había SMTP, el backend ya lo verificó directo
+      setTimeout(() => setReenviado(false), 4000);
     } finally {
-      setOcupado(false);
+      setReenviando(false);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="hp-pop bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-        <div className="bg-primary px-6 py-5 flex items-center gap-3">
-          <MailCheck size={26} className="text-ink" />
-          <div>
-            <p className="font-bold text-ink text-lg leading-tight">Confirma tu correo</p>
-            <p className="text-ink/70 text-sm">Un paso más y quedas listo.</p>
-          </div>
+      <div className="hp-pop bg-white rounded-3xl w-full max-w-sm shadow-2xl p-8 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-primary/30 flex items-center justify-center mx-auto mb-5">
+          <MailCheck size={30} className="text-ink" />
         </div>
-        <div className="p-6">
-          <p className="text-sm text-muted">
-            Te enviamos un link de confirmación a <b className="text-ink">{usuario.email}</b>.
-            Ábrelo para activar tu panel. Revisa también la carpeta de spam.
-          </p>
-          <div className="mt-5 space-y-2">
-            <button onClick={yaConfirme} disabled={ocupado}
-              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold py-3 rounded-xl disabled:opacity-60">
-              <RefreshCw size={16} /> Ya lo confirmé
-            </button>
-            <button onClick={reenviar} disabled={ocupado || reenviado}
-              className="w-full flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-50 text-ink font-semibold py-3 rounded-xl text-sm disabled:opacity-60">
-              <Send size={15} /> {reenviado ? 'Correo reenviado ✓' : 'Reenviar el correo'}
-            </button>
-          </div>
-          <button onClick={logout} className="mt-4 w-full text-xs text-gray-400 hover:text-muted underline flex items-center justify-center gap-1">
-            <LogOut size={12} /> Cerrar sesión
-          </button>
+        <h1 className="text-xl font-bold text-ink">Verifica tu correo</h1>
+        <p className="text-sm text-muted mt-1.5 mb-6">
+          Enviamos un código a <b className="text-ink">{usuario.email}</b>. Escríbelo aquí para activar tu panel.
+        </p>
+
+        <EntradaCodigo valor={codigo} onChange={cambiarCodigo} error={!!error} autoFocus />
+
+        <div className="h-6 mt-3 flex items-center justify-center">
+          {verificando ? (
+            <p className="text-sm text-muted flex items-center gap-1.5"><Loader2 size={14} className="animate-spin" /> Verificando...</p>
+          ) : error ? (
+            <p className="text-sm text-red-600">{error}</p>
+          ) : null}
         </div>
+
+        <button onClick={reenviar} disabled={reenviando}
+          className="mt-2 w-full flex items-center justify-center gap-2 text-sm font-semibold text-ink hover:underline disabled:opacity-60">
+          <Send size={14} /> {reenviado ? 'Código reenviado ✓' : reenviando ? 'Enviando...' : '¿No te llegó? Reenviar código'}
+        </button>
+
+        <button onClick={logout} className="mt-5 text-xs text-gray-400 hover:text-muted underline flex items-center justify-center gap-1 mx-auto">
+          <LogOut size={12} /> Cerrar sesión
+        </button>
       </div>
     </div>
   );
