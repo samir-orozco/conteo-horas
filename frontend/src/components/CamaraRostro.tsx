@@ -18,7 +18,14 @@ type Props = {
   onError?: (mensaje: string) => void;
   // Error reportado por el padre (ej. "rostro no reconocido"): pinta el óvalo en rojo
   errorExterno?: string | null;
+  // Login: si la empresa permite cédula, tras unos segundos ofrece un respaldo
+  // que toma la foto del momento y deja marcar digitando la cédula.
+  permiteFallbackCedula?: boolean;
+  onUsarCedula?: (foto: string) => void;
 };
+
+// Segundos antes de ofrecer el respaldo "marcar con cédula" en el login.
+const SEG_FALLBACK_CEDULA = 8;
 
 // Detección continua para el encuadre en vivo (barata, rápida en celulares).
 const opcionesDeteccion = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 });
@@ -91,8 +98,9 @@ function poseCumple(tipo: TipoPose, dev: number): boolean {
   return magnitud && Math.sign(dev) === -SIGNO_DERECHA;
 }
 
-export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapturado, onError, errorExterno }: Props) {
+export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapturado, onError, errorExterno, permiteFallbackCedula = false, onUsarCedula }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [mostrarFallback, setMostrarFallback] = useState(false);
   const [estado, setEstado] = useState<Estado>('cargando');
   const [mensaje, setMensaje] = useState('Cargando cámara...');
   const [encuadreOk, setEncuadreOk] = useState(false);
@@ -257,6 +265,19 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modo, pasoGafas, intento]);
 
+  // Login: tras unos segundos sin reconocer, ofrece el respaldo con cédula.
+  useEffect(() => {
+    if (modo !== 'login' || !permiteFallbackCedula) return;
+    setMostrarFallback(false);
+    const t = setTimeout(() => setMostrarFallback(true), SEG_FALLBACK_CEDULA * 1000);
+    return () => clearTimeout(t);
+  }, [modo, permiteFallbackCedula, intento]);
+
+  const usarCedula = () => {
+    const v = videoRef.current;
+    onUsarCedula?.(v ? capturarFoto(v) : '');
+  };
+
   const aceptarPreview = () => {
     onCapturado(descsPreview.current, tomas[0]);
   };
@@ -367,6 +388,14 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
         {estado === 'error' && <AlertTriangle size={14} className="inline mr-1 -mt-0.5" />}
         {errorExterno ?? mensaje}
       </p>
+
+      {/* Respaldo: si tarda en reconocer, marcar con cédula tomando la foto del momento */}
+      {modo === 'login' && permiteFallbackCedula && mostrarFallback && (estado === 'guiando' || !!errorExterno) && (
+        <button onClick={usarCedula}
+          className="text-xs font-medium text-white/60 hover:text-white underline underline-offset-2 decoration-white/30">
+          ¿Problemas? Marcar con cédula
+        </button>
+      )}
     </div>
   );
 }

@@ -300,7 +300,7 @@ export default function Marcador() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setErrorLogin(''); setModoRostro(true); }}
+                  onClick={() => { setErrorLogin(''); setFotoRostro(null); setModoRostro(true); }}
                   className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5 ${modoRostro ? 'bg-white text-ink' : 'text-white/50 hover:text-white/80'}`}
                 >
                   <ScanFace size={15} /> Rostro
@@ -315,7 +315,9 @@ export default function Marcador() {
 
           {modoRostro ? (
             <>
-              <CamaraRostro key={capturaKey} modo="login" onCapturado={(descs, foto) => loginConRostro(descs[0], foto)} errorExterno={errorLogin || null} />
+              <CamaraRostro key={capturaKey} modo="login" onCapturado={(descs, foto) => loginConRostro(descs[0], foto)} errorExterno={errorLogin || null}
+                permiteFallbackCedula={permiteCedula}
+                onUsarCedula={foto => { setFotoRostro(foto); setModoRostro(false); setErrorLogin(''); }} />
               {errorLogin && (
                 <button onClick={() => { setErrorLogin(''); setCapturaKey(k => k + 1); }}
                   className="w-full mt-4 bg-primary hover:bg-primary-dark text-ink font-bold py-2.5 rounded-xl text-sm transition-colors">
@@ -326,6 +328,11 @@ export default function Marcador() {
           ) : (
             <>
               <p className="text-center text-4xl font-mono font-bold text-white my-4 tabular-nums">{format(ahora, 'HH:mm:ss')}</p>
+              {fotoRostro && (
+                <p className="mb-3 flex items-center justify-center gap-1.5 text-xs font-medium text-green-400">
+                  <Check size={14} /> Foto tomada · ingresa tu cédula para confirmar
+                </p>
+              )}
               <form onSubmit={ingresar} className="space-y-4">
                 <input
                   type="text"

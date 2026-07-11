@@ -11,7 +11,7 @@ Guía paso a paso. Sigue el orden.
 
 1. cPanel de krumlab.com → **Domains** (o **Subdomains**) → Create a New Domain:
    - Dominio: `horapro.krumlab.com`
-   - Document Root: `public_html/horapro` (ahí vivirá el frontend)
+   - Document Root: **`~/horapro.krumlab.com/`** (ahí vivirá el frontend — OJO: es esta carpeta, NO `public_html/horapro`; cPanel crea el docroot del subdominio en `~/horapro.krumlab.com/`)
 2. cPanel → **SSL/TLS Status** → activa **AutoSSL** para `horapro.krumlab.com` (suele activarse solo a los pocos minutos de crear el subdominio).
 3. Verifica que `https://horapro.krumlab.com` responda con candado. **Sin HTTPS el reconocimiento facial no funciona** (los navegadores bloquean la cámara en sitios sin candado).
 
@@ -50,9 +50,9 @@ cp .env.example .env          # VITE_API_URL=https://horapro.krumlab.com/api
 npm install
 npm run build
 ```
-Sube el contenido de `frontend/dist/` a `public_html/horapro/` (incluida la carpeta `models/` con los pesos del reconocimiento facial).
+Sube el contenido de `frontend/dist/` a **`~/horapro.krumlab.com/`** (el docroot real del subdominio, incluida la carpeta `models/` con los pesos del reconocimiento facial). En deploys posteriores: `rm -rf ~/horapro.krumlab.com/assets && cp -R ~/horapro-repo/frontend/dist/. ~/horapro.krumlab.com/` (no borres `.htaccess`, `models/` ni `api/`).
 
-Crea `public_html/horapro/.htaccess` para que React Router maneje las rutas:
+Crea `~/horapro.krumlab.com/.htaccess` para que React Router maneje las rutas:
 ```apache
 RewriteEngine On
 RewriteBase /
