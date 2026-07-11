@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import {
   Users, UserCheck, Clock, TrendingUp, AlarmClock, UserX, CalendarOff, CalendarDays,
-  AlertTriangle, PartyPopper, ArrowRight, Cake,
+  AlertTriangle, PartyPopper, ArrowRight, Cake, LogOut, Camera, X, Info,
 } from 'lucide-react';
+
+const TZ = 'America/Bogota';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 import api from '../lib/api';
@@ -16,6 +19,7 @@ type Dash = {
   hoyEsFestivo: boolean;
   totales: { colaboradoresActivos: number; enPlanta: number; horasSemana: number; horasExtraMes: number };
   enPlanta: { id: string; nombre: string; cargo: string | null; desde: string }[];
+  salidasRecientes: { registroId: string; id: string; nombre: string; cargo: string | null; entrada: string | null; salida: string; tieneFotoEntrada: boolean; tieneFotoSalida: boolean }[];
   llegadasTardeHoy: { id: string; nombre: string; horaLlegada: string; minutosTarde: number }[];
   sinMarcarHoy: { id: string; nombre: string; cargo: string | null; horario: string; horaEntrada: string }[];
   turnosOlvidados: { id: string; colaborador: string; fecha: string; entrada: string }[];
@@ -23,6 +27,7 @@ type Dash = {
   proximosFestivos: { nombre: string; fecha: string; propio: boolean }[];
   cumpleanos: { id: string; nombre: string; cargo: string | null; dia: number; mes: number; esHoy: boolean }[];
 };
+type Salida = Dash['salidasRecientes'][number];
 
 const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`);
 
@@ -55,8 +60,18 @@ function Kpi({ icon: Icon, titulo, valor, detalle, acento }: { icon: any; titulo
 export default function DashboardEmpresa() {
   const navigate = useNavigate();
   const [d, setD] = useState<Dash | null>(null);
+  const [fotosDe, setFotosDe] = useState<Salida | null>(null);
+  const [fotos, setFotos] = useState<{ fotoEntrada: string | null; fotoSalida: string | null } | null>(null);
 
   useEffect(() => { api.get('/dashboard/empresa').then(r => setD(r.data)); }, []);
+
+  const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
+  const verFotos = async (s: Salida) => {
+    setFotosDe(s);
+    setFotos(null);
+    const resp = await api.get(`/registros/${s.registroId}/fotos`);
+    setFotos(resp.data);
+  };
 
   if (!d) return <div className="p-8 text-muted">Cargando...</div>;
 
@@ -127,6 +142,32 @@ export default function DashboardEmpresa() {
                   </div>
                   <span className="text-xs text-green-700 font-medium">{haceCuanto(e.desde)}</span>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Salidas de hoy */}
+        <div className="bg-white rounded-card border border-gray-200 p-5">
+          <p className="font-semibold text-ink mb-3 flex items-center gap-2"><LogOut size={16} className="text-red-500" /> Salidas de hoy</p>
+          {d.salidasRecientes.length === 0 ? (
+            <p className="text-sm text-muted">Nadie ha marcado salida hoy todavía.</p>
+          ) : (
+            <div className="space-y-2">
+              {d.salidasRecientes.map(s => (
+                <button
+                  key={s.registroId}
+                  onClick={() => verFotos(s)}
+                  className="w-full flex items-center gap-3 bg-red-50 hover:bg-red-100 rounded-xl px-3.5 py-2.5 text-left transition-colors"
+                >
+                  <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink truncate">{s.nombre}</p>
+                    <p className="text-xs text-muted">{s.cargo || 'Sin cargo'}</p>
+                  </div>
+                  {s.tieneFotoSalida && <Camera size={14} className="text-red-400 shrink-0" />}
+                  <span className="text-xs text-red-700 font-medium font-mono">{fmtHora(s.salida)}</span>
+                </button>
               ))}
             </div>
           )}
@@ -241,6 +282,41 @@ export default function DashboardEmpresa() {
           )}
         </div>
       </div>
+
+      {/* Fotos de verificación facial de la salida */}
+      {fotosDe && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setFotosDe(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-lg text-ink flex items-center gap-2"><Camera size={18} /> Verificación facial</h3>
+              <button onClick={() => setFotosDe(null)}><X size={20} className="text-gray-400" /></button>
+            </div>
+            <p className="text-sm text-muted mb-4">{fotosDe.nombre} · salida {fmtHora(fotosDe.salida)}</p>
+            {!fotos ? (
+              <p className="text-sm text-muted py-8 text-center">Cargando fotos...</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {[{ foto: fotos.fotoEntrada, label: 'Entrada', hora: fmtHora(fotosDe.entrada) },
+                  { foto: fotos.fotoSalida, label: 'Salida', hora: fmtHora(fotosDe.salida) }].map(({ foto, label, hora }) => (
+                  <div key={label}>
+                    <p className="text-xs font-semibold text-muted uppercase mb-1.5">{label} · {hora}</p>
+                    {foto ? (
+                      <img src={foto} alt={`Foto de ${label.toLowerCase()}`} className="w-full rounded-xl border border-gray-200 [transform:scaleX(-1)]" />
+                    ) : (
+                      <div className="w-full aspect-[4/3] rounded-xl bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 text-center px-3">
+                        Sin foto (marcó con cédula o fue registro manual)
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-[11px] text-muted mt-4 flex items-center gap-1.5">
+              <Info size={12} /> Las fotos se eliminan automáticamente a los 2 meses.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

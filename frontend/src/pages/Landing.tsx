@@ -72,10 +72,10 @@ function CalculadoraPrecio({ precios }: { precios: Precios }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [total]);
 
-  const MIN = 1, MAX = 60;
+  const MIN = 1, MAX = 150;
   const pct = ((cantidad - MIN) / (MAX - MIN)) * 100;
   // Puntos de referencia sobre el riel (el 15 marca el cambio de tramo de precio)
-  const puntos = [15, 30, 45];
+  const puntos = [15, 50, 100];
 
   return (
     <div className="mt-6 bg-[#f6f6f4] rounded-2xl px-5 pt-4 pb-5 text-left">

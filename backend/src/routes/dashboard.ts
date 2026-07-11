@@ -85,6 +85,21 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       }));
     const enPlantaIds = new Set(enPlanta.map(e => e.id));
 
+    // ===== Salidas de hoy (colaboradores que marcaron salida) =====
+    const salidasRecientes = registrosHoy
+      .filter(r => r.salida)
+      .sort((a, b) => b.salida!.getTime() - a.salida!.getTime())
+      .map(r => ({
+        registroId: r.id,
+        id: r.colaborador.id,
+        nombre: `${r.colaborador.nombre} ${r.colaborador.apellido}`,
+        cargo: r.colaborador.cargo,
+        entrada: r.entrada,
+        salida: r.salida,
+        tieneFotoEntrada: !!r.fotoEntrada,
+        tieneFotoSalida: !!r.fotoSalida,
+      }));
+
     // Colaboradores con al menos una entrada hoy
     const marcaronHoy = new Set(registrosHoy.filter(r => r.entrada).map(r => r.colaboradorId));
     const novedadHoyIds = new Set(
@@ -223,6 +238,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         horasExtraMes: Math.round((minutosExtraMes / 60) * 10) / 10,
       },
       enPlanta,
+      salidasRecientes,
       llegadasTardeHoy: llegadasTardeHoy.sort((a, b) => b.minutosTarde - a.minutosTarde),
       sinMarcarHoy,
       turnosOlvidados,

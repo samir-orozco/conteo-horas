@@ -105,7 +105,8 @@ export default function Registros() {
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[680px]">
           <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
             <tr>
               <th className="px-4 py-3 text-left">Colaborador</th>
@@ -154,6 +155,7 @@ export default function Registros() {
             ))}
           </tbody>
         </table>
+        </div>
         {registros.length === 0 && <p className="text-center text-gray-400 py-8">No hay registros para el período seleccionado</p>}
       </div>
 
