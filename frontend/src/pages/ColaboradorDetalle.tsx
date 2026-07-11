@@ -66,6 +66,8 @@ export default function ColaboradorDetalle() {
   const [formEdit, setFormEdit] = useState<any>(null);
   const [modalNovedad, setModalNovedad] = useState(false);
   const [novedad, setNovedad] = useState(EMPTY_NOVEDAD);
+  const [errorNovedad, setErrorNovedad] = useState('');
+  const [guardandoNovedad, setGuardandoNovedad] = useState(false);
 
   const [consentimientoRostro, setConsentimientoRostro] = useState(false);
   const [usaGafas, setUsaGafas] = useState(false);
@@ -100,10 +102,30 @@ export default function ColaboradorDetalle() {
 
   const guardarNovedad = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api.post('/permisos', { ...novedad, colaboradorId: id });
-    setModalNovedad(false);
-    setNovedad(EMPTY_NOVEDAD);
-    cargar();
+    if (novedad.fechaFin < novedad.fechaInicio) {
+      setErrorNovedad('La fecha "Hasta" no puede ser anterior a "Desde".');
+      return;
+    }
+    setGuardandoNovedad(true);
+    setErrorNovedad('');
+    try {
+      await api.post('/permisos', {
+        ...novedad,
+        colaboradorId: id,
+        // Medianoche de Bogotá (Colombia siempre es UTC-5, sin horario de verano):
+        // evita que la fecha se corra un día por zona horaria.
+        fechaInicio: new Date(`${novedad.fechaInicio}T00:00:00-05:00`),
+        fechaFin: new Date(`${novedad.fechaFin}T00:00:00-05:00`),
+      });
+      setModalNovedad(false);
+      setNovedad(EMPTY_NOVEDAD);
+      setToast('Novedad registrada');
+      cargar();
+    } catch (err: any) {
+      setErrorNovedad(err.response?.data?.error ?? 'No pudimos guardar la novedad. Intenta de nuevo.');
+    } finally {
+      setGuardandoNovedad(false);
+    }
   };
 
   const capturarRostro = async (descriptores: number[][]) => {
@@ -299,7 +321,7 @@ export default function ColaboradorDetalle() {
         <div className="bg-white rounded-card border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="font-semibold text-ink flex items-center gap-2"><CalendarOff size={16} /> Novedades</p>
-            <button onClick={() => setModalNovedad(true)}
+            <button onClick={() => { setErrorNovedad(''); setNovedad(EMPTY_NOVEDAD); setModalNovedad(true); }}
               className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-2.5 py-1.5 rounded-lg">
               <Plus size={13} /> Agregar
             </button>
@@ -443,9 +465,10 @@ export default function ColaboradorDetalle() {
                 <input type="checkbox" checked={novedad.aprobado} onChange={e => setNovedad(p => ({ ...p, aprobado: e.target.checked }))} className="rounded" />
                 Aprobada
               </label>
+              {errorNovedad && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{errorNovedad}</p>}
               <div className="flex gap-3 justify-end">
                 <button type="button" onClick={() => setModalNovedad(false)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                <button type="submit" className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark">Guardar</button>
+                <button type="submit" disabled={guardandoNovedad} className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark disabled:opacity-60">{guardandoNovedad ? 'Guardando...' : 'Guardar'}</button>
               </div>
             </form>
           </div>
