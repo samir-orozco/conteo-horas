@@ -68,6 +68,8 @@ export default function ColaboradorDetalle() {
   const [novedad, setNovedad] = useState(EMPTY_NOVEDAD);
   const [errorNovedad, setErrorNovedad] = useState('');
   const [guardandoNovedad, setGuardandoNovedad] = useState(false);
+  const [verNovedad, setVerNovedad] = useState<Permiso | null>(null);
+  const [aprobando, setAprobando] = useState(false);
 
   const [consentimientoRostro, setConsentimientoRostro] = useState(false);
   const [usaGafas, setUsaGafas] = useState(false);
@@ -149,6 +151,21 @@ export default function ColaboradorDetalle() {
     setConfirmarEliminarRostro(false);
     setToast('Registro facial eliminado');
     cargar();
+  };
+
+  const aprobarNovedad = async () => {
+    if (!verNovedad) return;
+    setAprobando(true);
+    try {
+      await api.put(`/permisos/${verNovedad.id}`, { aprobado: true });
+      setVerNovedad(null);
+      setToast('Novedad aprobada');
+      cargar();
+    } catch {
+      setToast('No pudimos aprobar la novedad');
+    } finally {
+      setAprobando(false);
+    }
   };
 
   if (!col) return <div className="p-8 text-muted">Cargando...</div>;
@@ -330,18 +347,19 @@ export default function ColaboradorDetalle() {
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {permisos.length === 0 && <p className="text-sm text-muted">Sin novedades registradas.</p>}
             {permisos.map(p => (
-              <div key={p.id} className="flex items-start justify-between gap-2 bg-gray-50 rounded-xl px-3.5 py-2.5">
-                <div>
+              <button key={p.id} onClick={() => setVerNovedad(p)}
+                className="w-full flex items-start justify-between gap-2 bg-gray-50 hover:bg-gray-100 rounded-xl px-3.5 py-2.5 text-left transition-colors">
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink">{TIPO_PERMISO_LABEL[p.tipo] ?? p.tipo}</p>
-                  <p className="text-xs text-muted">
+                  <p className="text-xs text-muted truncate">
                     {format(new Date(p.fechaInicio), 'd MMM', { locale: es })} → {format(new Date(p.fechaFin), 'd MMM yyyy', { locale: es })}
                     {p.descripcion ? ` · ${p.descripcion}` : ''}
                   </p>
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${p.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
                   {p.aprobado ? 'APROBADA' : 'PENDIENTE'}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -471,6 +489,43 @@ export default function ColaboradorDetalle() {
                 <button type="submit" disabled={guardandoNovedad} className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark disabled:opacity-60">{guardandoNovedad ? 'Guardando...' : 'Guardar'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Detalle de novedad: ver descripción, fechas y aprobar si está pendiente */}
+      {verNovedad && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setVerNovedad(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-lg text-ink">{TIPO_PERMISO_LABEL[verNovedad.tipo] ?? verNovedad.tipo}</h3>
+              <button onClick={() => setVerNovedad(null)}><X size={20} className="text-gray-400" /></button>
+            </div>
+            <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mb-4 ${verNovedad.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+              {verNovedad.aprobado ? 'APROBADA' : 'PENDIENTE'}
+            </span>
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-xs text-muted">Fechas</p>
+                <p className="text-ink font-medium">
+                  {format(new Date(verNovedad.fechaInicio), "d 'de' MMMM yyyy", { locale: es })}
+                  {' → '}{format(new Date(verNovedad.fechaFin), "d 'de' MMMM yyyy", { locale: es })}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Descripción / motivo</p>
+                <p className="text-ink whitespace-pre-wrap">{verNovedad.descripcion || <span className="text-muted">Sin descripción.</span>}</p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end mt-6">
+              <button onClick={() => setVerNovedad(null)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cerrar</button>
+              {!verNovedad.aprobado && (
+                <button onClick={aprobarNovedad} disabled={aprobando}
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg disabled:opacity-60">
+                  <Check size={15} /> {aprobando ? 'Aprobando...' : 'Aprobar'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -118,6 +118,7 @@ model Horario {
   empresa       Empresa         @relation(fields: [empresaId], references: [id])
   nombre        String
   toleranciaMin Int             @default(10) // minutos de gracia antes de contar tardanza
+  almuerzoMin   Int             @default(0)  // minutos de almuerzo que NO se pagan (se descuentan de la jornada)
   activo        Boolean         @default(true)
   creadoEn      DateTime        @default(now())
   // Un horario tiene varias franjas: ej. L-V 08:00-17:00 y Sáb 08:00-12:00
@@ -131,9 +132,10 @@ model FranjaHorario {
   id          String  @id @default(cuid())
   horarioId   String
   horario     Horario @relation(fields: [horarioId], references: [id], onDelete: Cascade)
-  dias        Json // ["LUNES",...,"SABADO"]
-  horaEntrada String // "08:00" hora local Bogotá
-  horaSalida  String // "17:00" (puede cruzar medianoche, ej. "21:00"→"05:00")
+  dias          Json // ["LUNES",...,"SABADO"]
+  horaEntrada   String // "08:00" hora local Bogotá
+  horaSalida    String // "17:00" (puede cruzar medianoche, ej. "21:00"→"05:00")
+  tieneAlmuerzo Boolean @default(true) // si esta franja descuenta el almuerzo del horario (ej. sábado corto = false)
 
   @@map("franjas_horario")
 }

@@ -6,6 +6,7 @@ import { LogIn, LogOut, Check, X, Link2Off, ScanFace } from 'lucide-react';
 import axios from 'axios';
 import logoSimplificado from '../assets/logo-simplificado.svg';
 import CamaraRostro from '../components/CamaraRostro';
+import { TIPO_PERMISO_LABEL } from './ColaboradorDetalle';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api' });
 
@@ -49,6 +50,12 @@ export default function Marcador() {
   const [permiteCedula, setPermiteCedula] = useState(true);
   // Foto tomada al verificar el rostro: se adjunta a la marcación como evidencia
   const [fotoRostro, setFotoRostro] = useState<string | null>(null);
+
+  // Salida temprana: al marcar salida antes del horario, se pide motivo + descripción
+  const [salidaTemprana, setSalidaTemprana] = useState<null | { accion: string; hora: string }>(null);
+  const [novedadTipo, setNovedadTipo] = useState('MEDICO');
+  const [novedadDesc, setNovedadDesc] = useState('');
+  const [enviandoNovedad, setEnviandoNovedad] = useState(false);
 
   // Reloj en vivo
   useEffect(() => {
@@ -175,25 +182,51 @@ export default function Marcador() {
     }
   };
 
+  const mostrarFlashOk = (accion: string, hora: string) => {
+    setFlash({
+      tipo: 'ok',
+      accion,
+      hora: format(new Date(hora), 'HH:mm:ss'),
+      nombre: colaborador ? `${colaborador.nombre} ${colaborador.apellido}` : '',
+    });
+    // Confirmación visible 3.5s, luego se cierra con animación y auto-logout
+    setTimeout(() => cerrarFlash(salir), 3500);
+  };
+
   const marcar = async () => {
     if (!token || marcando) return;
     setMarcando(true);
     try {
       const r = await api.post('/worker/marcar', { foto: fotoRostro ?? undefined }, { headers });
-      setFlash({
-        tipo: 'ok',
-        accion: r.data.accion,
-        hora: format(new Date(r.data.hora), 'HH:mm:ss'),
-        nombre: colaborador ? `${colaborador.nombre} ${colaborador.apellido}` : '',
-      });
-      // Confirmación visible 3.5s, luego se cierra con animación y auto-logout
-      setTimeout(() => cerrarFlash(salir), 3500);
+      // Si salió antes de su horario, primero pedimos el motivo (queda como novedad)
+      if (r.data.accion === 'SALIDA' && r.data.salidaTemprana) {
+        setNovedadTipo('MEDICO');
+        setNovedadDesc('');
+        setSalidaTemprana({ accion: r.data.accion, hora: r.data.hora });
+      } else {
+        mostrarFlashOk(r.data.accion, r.data.hora);
+      }
     } catch {
       setFlash({ tipo: 'error', msg: 'No pudimos registrar tu marcación. Intenta de nuevo.' });
       setTimeout(() => cerrarFlash(), 2500);
     } finally {
       setMarcando(false);
     }
+  };
+
+  // La salida ya quedó registrada; esto solo adjunta el motivo como novedad pendiente.
+  const enviarNovedadTemprana = async (omitir: boolean) => {
+    if (!salidaTemprana) return;
+    const { accion, hora } = salidaTemprana;
+    if (!omitir) {
+      setEnviandoNovedad(true);
+      try {
+        await api.post('/worker/novedad', { tipo: novedadTipo, descripcion: novedadDesc }, { headers });
+      } catch { /* la salida ya está guardada; si falla la novedad no bloqueamos */ }
+      setEnviandoNovedad(false);
+    }
+    setSalidaTemprana(null);
+    mostrarFlashOk(accion, hora);
   };
 
   // ===== Pantallas de resultado (animadas, pantalla completa) =====
@@ -355,6 +388,46 @@ export default function Marcador() {
               </form>
             </>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // ===== Salida temprana: pedir motivo antes de mostrar la confirmación =====
+  if (salidaTemprana) {
+    return (
+      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
+        <div className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
+          <div className="bg-amber-400/90 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3">
+            <LogOut size={26} className="text-ink" />
+          </div>
+          <h2 className="text-lg font-bold text-white">Salida antes del horario</h2>
+          <p className="text-sm text-white/50 mt-1 mb-5">Cuéntanos el motivo de tu salida temprana. Tu salida ya quedó registrada.</p>
+
+          <div className="text-left space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-white/60 mb-1">Motivo</label>
+              <select value={novedadTipo} onChange={e => setNovedadTipo(e.target.value)}
+                className="hp-input-dark w-full border border-white/10 rounded-xl px-3 py-2.5 text-sm">
+                {Object.entries(TIPO_PERMISO_LABEL).map(([k, v]) => <option key={k} value={k} className="text-ink">{v}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-white/60 mb-1">Descripción</label>
+              <textarea value={novedadDesc} onChange={e => setNovedadDesc(e.target.value)} rows={3}
+                placeholder="Describe el motivo de tu salida temprana..."
+                className="hp-input-dark w-full border border-white/10 rounded-xl px-3 py-2.5 text-sm resize-none" />
+            </div>
+          </div>
+
+          <button onClick={() => enviarNovedadTemprana(false)} disabled={enviandoNovedad}
+            className="w-full mt-5 bg-primary hover:bg-primary-dark text-ink font-bold py-3 rounded-xl text-base disabled:opacity-60 transition-colors">
+            {enviandoNovedad ? 'Enviando...' : 'Enviar y confirmar salida'}
+          </button>
+          <button onClick={() => enviarNovedadTemprana(true)} disabled={enviandoNovedad}
+            className="w-full mt-2 text-white/50 hover:text-white/80 text-sm font-medium py-1">
+            Omitir
+          </button>
         </div>
       </div>
     );

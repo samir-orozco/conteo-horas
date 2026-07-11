@@ -2,15 +2,29 @@ import { FastifyInstance } from 'fastify';
 import { toZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear } from 'date-fns';
 import { prisma } from '../index';
-import { calcularHorasTrabajadas, calcularLiquidacion } from '../utils/horasColombiana';
+import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
-import { calcularTardanzas } from '../utils/tardanzas';
+import { calcularTardanzas, franjaDelDia, DIAS_SEMANA, HorarioConFranjas } from '../utils/tardanzas';
 
 const TZ = 'America/Bogota';
 
 function semanaKey(fecha: Date): string {
   const z = toZonedTime(fecha, TZ);
   return `${getISOWeekYear(z)}-W${String(getISOWeek(z)).padStart(2,'0')}`;
+}
+
+function claveDiaBogota(d: Date): string {
+  const z = toZonedTime(d, TZ);
+  return `${z.getFullYear()}-${z.getMonth()}-${z.getDate()}`;
+}
+
+// Minutos de almuerzo a descontar de un registro: solo si el horario tiene
+// almuerzo y la franja de ESE día lo aplica (ej. el sábado corto no).
+function almuerzoDelRegistro(horario: HorarioConFranjas | null | undefined, fecha: Date): number {
+  if (!horario || !horario.almuerzoMin) return 0;
+  const z = toZonedTime(fecha, TZ);
+  const franja = franjaDelDia(horario, DIAS_SEMANA[z.getDay()]);
+  return franja && franja.tieneAlmuerzo ? horario.almuerzoMin : 0;
 }
 
 export default async function reporteRoutes(app: FastifyInstance) {
@@ -20,7 +34,10 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const { colaboradorId, desde, hasta } = request.query as any;
 
     const [colaborador, registros, festivos, tiposHoraTodos, jornadas] = await Promise.all([
-      prisma.colaborador.findFirst({ where: { id: colaboradorId, empresaId: request.empresaId } }),
+      prisma.colaborador.findFirst({
+        where: { id: colaboradorId, empresaId: request.empresaId },
+        include: { horario: { include: { franjas: true } } },
+      }),
       prisma.registro.findMany({
         where: { colaboradorId, fecha: { gte: new Date(desde), lte: new Date(hasta) }, salida: { not: null } },
         orderBy: { fecha: 'asc' },
@@ -45,6 +62,8 @@ export default async function reporteRoutes(app: FastifyInstance) {
     }
 
     const acumulado: Record<string, TipoHoraAcum> = {};
+    const horario = (colaborador as any).horario as HorarioConFranjas | null;
+    const diasConAlmuerzo = new Set<string>(); // almuerzo se descuenta 1 vez por día
 
     for (const [, regsDeUnaSemana] of porSemana) {
       // Jornada y recargos vigentes se evalúan con la fecha de cada semana/registro,
@@ -57,7 +76,18 @@ export default async function reporteRoutes(app: FastifyInstance) {
         const { resultado, minutosOrdinariosTrabajados } = calcularHorasTrabajadas(
           registro.entrada, registro.salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana
         );
-        minutosOrdSemana += minutosOrdinariosTrabajados;
+        let ordDelRegistro = minutosOrdinariosTrabajados;
+        // Descontar almuerzo una sola vez por día (si la franja de ese día lo aplica)
+        const claveDia = claveDiaBogota(registro.entrada);
+        const almuerzo = almuerzoDelRegistro(horario, registro.entrada);
+        if (almuerzo > 0 && !diasConAlmuerzo.has(claveDia)) {
+          const { descontado } = descontarAlmuerzo(resultado, almuerzo);
+          if (descontado > 0) {
+            diasConAlmuerzo.add(claveDia);
+            ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
+          }
+        }
+        minutosOrdSemana += ordDelRegistro;
         for (const p of resultado) {
           if (!acumulado[p.codigo]) acumulado[p.codigo] = { ...p };
           else acumulado[p.codigo].minutos += p.minutos;

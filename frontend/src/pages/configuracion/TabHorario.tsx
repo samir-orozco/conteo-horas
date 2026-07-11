@@ -3,19 +3,23 @@ import { Scale, CalendarClock, Clock3, Plus, Trash2, X, Pencil } from 'lucide-re
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
-export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string };
+export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean };
 export type Horario = {
-  id: string; nombre: string; toleranciaMin: number;
+  id: string; nombre: string; toleranciaMin: number; almuerzoMin?: number;
   franjas: Franja[]; _count?: { colaboradores: number };
 };
+
+// Minutos de "HH:MM"; si la salida es menor o igual, cruza medianoche.
+const aMin = (s: string) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+const duracionFranjaMin = (f: Franja) => { let fin = aMin(f.horaSalida); const ini = aMin(f.horaEntrada); if (fin <= ini) fin += 1440; return fin - ini; };
 
 export const DIAS_SEMANA = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 export const DIA_CORTO: Record<string, string> = {
   LUNES: 'Lun', MARTES: 'Mar', MIERCOLES: 'Mié', JUEVES: 'Jue', VIERNES: 'Vie', SABADO: 'Sáb', DOMINGO: 'Dom',
 };
 
-const FRANJA_LV: Franja = { dias: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'], horaEntrada: '08:00', horaSalida: '17:00' };
-const HORARIO_VACIO = { nombre: '', toleranciaMin: 10, franjas: [{ ...FRANJA_LV }] };
+const FRANJA_LV: Franja = { dias: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'], horaEntrada: '08:00', horaSalida: '17:00', tieneAlmuerzo: true };
+const HORARIO_VACIO = { nombre: '', toleranciaMin: 10, almuerzoMin: 60, franjas: [{ ...FRANJA_LV }] };
 
 type TipoHora = {
   id: string; nombre: string; codigo: string; horaInicio: number; horaFin: number;
@@ -37,7 +41,7 @@ export default function TabHorario() {
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [modalHorario, setModalHorario] = useState(false);
   const [editandoHorario, setEditandoHorario] = useState<Horario | null>(null);
-  const [formHorario, setFormHorario] = useState<{ nombre: string; toleranciaMin: number; franjas: Franja[] }>(HORARIO_VACIO);
+  const [formHorario, setFormHorario] = useState<{ nombre: string; toleranciaMin: number; almuerzoMin: number; franjas: Franja[] }>(HORARIO_VACIO);
   const [errorHorario, setErrorHorario] = useState('');
   const [eliminandoHorario, setEliminandoHorario] = useState<Horario | null>(null);
 
@@ -52,7 +56,7 @@ export default function TabHorario() {
     setEditandoHorario(h ?? null);
     setErrorHorario('');
     setFormHorario(h
-      ? { nombre: h.nombre, toleranciaMin: h.toleranciaMin, franjas: h.franjas.map(f => ({ dias: [...f.dias], horaEntrada: f.horaEntrada, horaSalida: f.horaSalida })) }
+      ? { nombre: h.nombre, toleranciaMin: h.toleranciaMin, almuerzoMin: h.almuerzoMin ?? 0, franjas: h.franjas.map(f => ({ dias: [...f.dias], horaEntrada: f.horaEntrada, horaSalida: f.horaSalida, tieneAlmuerzo: f.tieneAlmuerzo !== false })) }
       : { ...HORARIO_VACIO, franjas: [{ ...FRANJA_LV, dias: [...FRANJA_LV.dias] }] });
     setModalHorario(true);
   };
@@ -95,7 +99,7 @@ export default function TabHorario() {
     const libres = DIAS_SEMANA.filter(d => !usados.has(d));
     setFormHorario(p => ({
       ...p,
-      franjas: [...p.franjas, { dias: libres.length ? [libres[0]] : [], horaEntrada: '08:00', horaSalida: '12:00' }],
+      franjas: [...p.franjas, { dias: libres.length ? [libres[0]] : [], horaEntrada: '08:00', horaSalida: '12:00', tieneAlmuerzo: false }],
     }));
   };
 
@@ -104,6 +108,17 @@ export default function TabHorario() {
   };
 
   const hoy = new Date();
+
+  // Resumen en vivo del horario que se está editando (horas por semana/mes ya sin almuerzo)
+  const semanaMin = formHorario.franjas.reduce(
+    (s, f) => s + f.dias.length * Math.max(0, duracionFranjaMin(f) - (f.tieneAlmuerzo !== false ? formHorario.almuerzoMin : 0)),
+    0
+  );
+  const semanaH = semanaMin / 60;
+  const mesH = semanaH * (52 / 12);
+  const norma = legales?.jornadaSemanal ?? 0;
+  const cumpleNorma = norma <= 0 || semanaH <= norma + 0.001;
+  const fmtH = (h: number) => Number.isInteger(h) ? `${h}` : h.toFixed(1);
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -145,7 +160,7 @@ export default function TabHorario() {
                     </p>
                   ))}
                 </div>
-                <p className="text-xs text-muted mt-2">Tolerancia {h.toleranciaMin} min · {h._count?.colaboradores ?? 0} colaborador{(h._count?.colaboradores ?? 0) === 1 ? '' : 'es'}</p>
+                <p className="text-xs text-muted mt-2">Tolerancia {h.toleranciaMin} min{h.almuerzoMin ? ` · almuerzo ${h.almuerzoMin} min` : ''} · {h._count?.colaboradores ?? 0} colaborador{(h._count?.colaboradores ?? 0) === 1 ? '' : 'es'}</p>
               </div>
             ))}
           </div>
@@ -232,16 +247,22 @@ export default function TabHorario() {
               <button onClick={() => setModalHorario(false)}><X size={20} className="text-gray-400" /></button>
             </div>
             <form onSubmit={guardarHorario} className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <label className="block text-xs font-medium text-muted mb-1">Nombre (ej: Oficina, Turno nocturno)</label>
-                  <input value={formHorario.nombre} onChange={e => setFormHorario(p => ({ ...p, nombre: e.target.value }))} required
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">Nombre (ej: Oficina, Turno nocturno)</label>
+                <input value={formHorario.nombre} onChange={e => setFormHorario(p => ({ ...p, nombre: e.target.value }))} required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-muted mb-1">Tolerancia (min)</label>
                   <input type="number" min={0} max={60} value={formHorario.toleranciaMin}
                     onChange={e => setFormHorario(p => ({ ...p, toleranciaMin: Number(e.target.value) }))} required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted mb-1">Almuerzo (min, no pagado)</label>
+                  <input type="number" min={0} max={240} step={5} value={formHorario.almuerzoMin}
+                    onChange={e => setFormHorario(p => ({ ...p, almuerzoMin: Math.max(0, Number(e.target.value) || 0) }))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                 </div>
               </div>
@@ -278,12 +299,44 @@ export default function TabHorario() {
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                       </div>
                     </div>
+                    {formHorario.almuerzoMin > 0 && (
+                      <label className="flex items-center gap-2 text-xs text-ink cursor-pointer">
+                        <input type="checkbox" checked={f.tieneAlmuerzo !== false}
+                          onChange={e => setFranja(i, { tieneAlmuerzo: e.target.checked })} className="rounded" />
+                        Descontar almuerzo ({formHorario.almuerzoMin} min) en estos días
+                        <span className="text-muted">— desmárcalo para días cortos (ej. sábado)</span>
+                      </label>
+                    )}
                   </div>
                 ))}
                 <button type="button" onClick={agregarFranja}
                   className="w-full border-2 border-dashed border-gray-300 hover:border-primary text-muted hover:text-ink rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-1.5">
                   <Plus size={15} /> Agregar franja (ej: sábados medio día)
                 </button>
+              </div>
+
+              {/* Resumen calculado: jornada semanal/mensual y si cumple la norma */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <div className="flex flex-wrap gap-4 items-center">
+                  <div>
+                    <p className="text-xs text-muted">Jornada semanal</p>
+                    <p className="text-lg font-bold text-ink tabular-nums">{fmtH(semanaH)} h</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted">Aprox. mensual</p>
+                    <p className="text-lg font-bold text-ink tabular-nums">{fmtH(mesH)} h</p>
+                  </div>
+                  {norma > 0 && (
+                    <span className={`ml-auto text-xs font-semibold px-3 py-1.5 rounded-full ${cumpleNorma ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {cumpleNorma
+                        ? `✓ Cumple la jornada legal (${fmtH(norma)} h)`
+                        : `Supera la jornada legal en ${fmtH(semanaH - norma)} h (se pagan como extra)`}
+                    </span>
+                  )}
+                </div>
+                {formHorario.almuerzoMin > 0 && (
+                  <p className="text-[11px] text-muted mt-2">Ya se descontó {formHorario.almuerzoMin} min de almuerzo en las franjas marcadas.</p>
+                )}
               </div>
 
               {errorHorario && <p className="text-red-600 text-sm">{errorHorario}</p>}

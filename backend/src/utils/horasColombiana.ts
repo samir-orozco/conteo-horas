@@ -109,6 +109,22 @@ export function calcularHorasTrabajadas(
   };
 }
 
+// Descuenta el almuerzo (minutos no pagados) de las horas ordinarias diurnas de
+// un registro. Se aplica una sola vez por día trabajado (el llamador controla eso)
+// y solo cuando la franja de ese día tiene almuerzo. Devuelve cuántos minutos
+// alcanzó a descontar para ajustar también el acumulado de ordinarias semanales.
+export function descontarAlmuerzo(
+  resultado: TipoHoraCalculo[],
+  almuerzoMin: number
+): { descontado: number } {
+  if (almuerzoMin <= 0) return { descontado: 0 };
+  const hod = resultado.find(t => t.codigo === 'HOD');
+  if (!hod || hod.minutos <= 0) return { descontado: 0 };
+  const restar = Math.min(almuerzoMin, hod.minutos);
+  hod.minutos -= restar;
+  return { descontado: restar };
+}
+
 export function calcularValorHora(salarioMensual: number, horasMes: number): number {
   return salarioMensual / horasMes;
 }

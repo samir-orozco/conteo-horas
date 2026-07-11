@@ -28,6 +28,14 @@ function fotoValida(foto: unknown): foto is string {
   return typeof foto === 'string' && foto.startsWith('data:image/jpeg;base64,') && foto.length < 300_000;
 }
 
+const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+// Motivos de novedad válidos (mismos de la vista interna del colaborador)
+const TIPOS_NOVEDAD = new Set([
+  'VACACIONES', 'INCAPACIDAD_EPS', 'INCAPACIDAD_ARL', 'LICENCIA_MATERNIDAD', 'LICENCIA_PATERNIDAD',
+  'LICENCIA_LUTO', 'CALAMIDAD', 'MEDICO', 'PERSONAL', 'NO_REMUNERADO', 'OTRO',
+]);
+
 async function dispositivoValido(empresaId: string, deviceToken?: string): Promise<boolean> {
   if (!deviceToken) return false;
   const disp = await prisma.dispositivoKiosco.findUnique({ where: { token: deviceToken } });
@@ -196,7 +204,10 @@ export default async function workerRoutes(app: FastifyInstance) {
     });
 
     // Festivo legal (global) o propio de la empresa del colaborador
-    const col = await prisma.colaborador.findUnique({ where: { id: payload.id } });
+    const col = await prisma.colaborador.findUnique({
+      where: { id: payload.id },
+      include: { horario: { include: { franjas: true } } },
+    });
     const festHoy = await prisma.diaFestivo.findFirst({
       where: {
         fecha: { gte: inicioDia, lt: finDia },
@@ -210,7 +221,22 @@ export default async function workerRoutes(app: FastifyInstance) {
         where: { id: abierto.id },
         data: { salida: ahora, ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}) },
       });
-      return { accion: 'SALIDA', registro: updated, hora: ahora };
+      // ¿Salió antes de la hora de fin de su franja de hoy? (para pedir motivo)
+      let salidaTemprana = false;
+      const horario = col?.horario;
+      if (horario && horario.activo && !festHoy) {
+        const franja = horario.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
+        if (franja) {
+          const finMin = minutosDe(franja.horaSalida);
+          const iniMin = minutosDe(franja.horaEntrada);
+          // Solo turnos que no cruzan medianoche (caso común de salida temprana)
+          if (finMin > iniMin) {
+            const salidaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
+            if (salidaMin < finMin - (horario.toleranciaMin ?? 0)) salidaTemprana = true;
+          }
+        }
+      }
+      return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana };
     } else {
       const nuevo = await prisma.registro.create({
         data: {
@@ -223,5 +249,28 @@ export default async function workerRoutes(app: FastifyInstance) {
       });
       return { accion: 'ENTRADA', registro: nuevo, hora: ahora };
     }
+  });
+
+  // El colaborador reporta el motivo de una salida temprana desde el kiosco.
+  // Crea una novedad del día, pendiente de aprobación por el administrador.
+  app.post('/novedad', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const payload = (request as any).user as { id: string; rol: string };
+    if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
+    const { tipo, descripcion } = (request.body ?? {}) as { tipo?: string; descripcion?: string };
+    if (!tipo || !TIPOS_NOVEDAD.has(tipo)) return reply.code(400).send({ error: 'Motivo inválido' });
+
+    const ahoraBog = toZonedTime(new Date(), TZ);
+    const fechaDia = new Date(Date.UTC(ahoraBog.getFullYear(), ahoraBog.getMonth(), ahoraBog.getDate(), 5, 0, 0));
+    const permiso = await prisma.permiso.create({
+      data: {
+        colaboradorId: payload.id,
+        tipo: tipo as any,
+        descripcion: (descripcion || '').trim() || null,
+        fechaInicio: fechaDia,
+        fechaFin: fechaDia,
+        aprobado: false,
+      },
+    });
+    return reply.code(201).send({ ok: true, id: permiso.id });
   });
 }

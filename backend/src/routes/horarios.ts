@@ -1,7 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../index';
+import { jornadaVigente } from '../utils/vigencias';
 
-type FranjaInput = { dias: string[]; horaEntrada: string; horaSalida: string };
+type FranjaInput = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean };
 
 // Cada franja: días válidos, horas HH:MM y al menos un día
 function validarFranjas(franjas: unknown): franjas is FranjaInput[] {
@@ -11,6 +12,13 @@ function validarFranjas(franjas: unknown): franjas is FranjaInput[] {
     /^\d{2}:\d{2}$/.test(f?.horaEntrada) && /^\d{2}:\d{2}$/.test(f?.horaSalida)
   );
 }
+
+const mapFranja = (f: FranjaInput) => ({
+  dias: f.dias,
+  horaEntrada: f.horaEntrada,
+  horaSalida: f.horaSalida,
+  tieneAlmuerzo: f.tieneAlmuerzo !== false, // por defecto sí descuenta almuerzo
+});
 
 // Horarios de trabajo de la empresa (se asignan a cada colaborador). Un horario
 // agrupa varias franjas: ej. "Oficina" = L-V 08:00-17:00 + Sáb 08:00-12:00.
@@ -28,8 +36,14 @@ export default async function horarioRoutes(app: FastifyInstance) {
     });
   });
 
+  // Norma de jornada máxima semanal vigente hoy (Ley 2101), para la etiqueta de cumplimiento
+  app.get('/norma', auth, async () => {
+    const jornadas = await prisma.jornadaVigencia.findMany();
+    return { horasSemanales: jornadaVigente(new Date(), jornadas) };
+  });
+
   app.post('/', auth, async (request, reply) => {
-    const { nombre, toleranciaMin, franjas } = request.body as any;
+    const { nombre, toleranciaMin, almuerzoMin, franjas } = request.body as any;
     if (!nombre) return reply.status(400).send({ error: 'El nombre es obligatorio' });
     if (!validarFranjas(franjas)) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
@@ -39,7 +53,8 @@ export default async function horarioRoutes(app: FastifyInstance) {
         empresaId: request.empresaId!,
         nombre,
         toleranciaMin: toleranciaMin ?? 10,
-        franjas: { create: franjas.map(f => ({ dias: f.dias, horaEntrada: f.horaEntrada, horaSalida: f.horaSalida })) },
+        almuerzoMin: Math.max(0, Number(almuerzoMin) || 0),
+        franjas: { create: franjas.map(mapFranja) },
       },
       include: { franjas: true },
     });
@@ -50,7 +65,7 @@ export default async function horarioRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const existente = await prisma.horario.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'Horario no encontrado' });
-    const { nombre, toleranciaMin, franjas } = request.body as any;
+    const { nombre, toleranciaMin, almuerzoMin, franjas } = request.body as any;
     if (!validarFranjas(franjas)) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
     }
@@ -60,9 +75,10 @@ export default async function horarioRoutes(app: FastifyInstance) {
       data: {
         nombre,
         toleranciaMin,
+        almuerzoMin: Math.max(0, Number(almuerzoMin) || 0),
         franjas: {
           deleteMany: {},
-          create: franjas.map(f => ({ dias: f.dias, horaEntrada: f.horaEntrada, horaSalida: f.horaSalida })),
+          create: franjas.map(mapFranja),
         },
       },
       include: { franjas: true },
