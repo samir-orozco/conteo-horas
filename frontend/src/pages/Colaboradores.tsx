@@ -40,23 +40,39 @@ export default function Colaboradores() {
   const [form, setForm] = useState<FormData>(EMPTY);
   const [eliminando, setEliminando] = useState<Colaborador | null>(null);
   const [horarios, setHorarios] = useState<Horario[]>([]);
+  const [errorForm, setErrorForm] = useState('');
+  const [guardando, setGuardando] = useState(false);
 
   const cargar = () => api.get('/colaboradores').then(r => setLista(r.data));
   useEffect(() => { cargar(); api.get('/horarios').then(r => setHorarios(r.data)); }, []);
 
   const abrir = (col?: Colaborador) => {
     setEditando(col || null);
+    setErrorForm('');
     setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '' } : EMPTY);
     setModal(true);
   };
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form, horarioId: form.horarioId || null };
-    if (editando) await api.put(`/colaboradores/${editando.id}`, payload);
-    else await api.post('/colaboradores', payload);
-    setModal(false);
-    cargar();
+    setGuardando(true);
+    setErrorForm('');
+    try {
+      const payload = {
+        ...form,
+        horarioId: form.horarioId || null,
+        // Fecha vacía debe ir como null (Prisma rechaza el string vacío en un campo de fecha)
+        fechaNacimiento: form.fechaNacimiento ? form.fechaNacimiento : null,
+      };
+      if (editando) await api.put(`/colaboradores/${editando.id}`, payload);
+      else await api.post('/colaboradores', payload);
+      setModal(false);
+      cargar();
+    } catch (err: any) {
+      setErrorForm(err.response?.data?.error ?? 'No pudimos guardar el colaborador. Revisa los datos e intenta de nuevo.');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const confirmarEliminar = async () => {
@@ -175,9 +191,10 @@ export default function Colaboradores() {
                   />
                 </div>
               </div>
+              {errorForm && <p className="col-span-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{errorForm}</p>}
               <div className="col-span-2 flex gap-3 justify-end mt-2">
                 <button type="button" onClick={() => setModal(false)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                <button type="submit" className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark">Guardar</button>
+                <button type="submit" disabled={guardando} className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark disabled:opacity-60">{guardando ? 'Guardando...' : 'Guardar'}</button>
               </div>
             </form>
           </div>
