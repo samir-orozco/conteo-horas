@@ -18,16 +18,13 @@ function generarCodigo(): string {
 }
 
 async function enviarCorreoCodigo(email: string, nombre: string, codigo: string) {
-  const digitos = codigo.split('').map(d => `
-    <td style="width:40px;height:48px;border:1.5px solid #e5e5e3;border-radius:10px;font-size:22px;font-weight:800;color:#303030;text-align:center;font-family:monospace">${d}</td>
-  `).join('<td style="width:6px"></td>');
   await enviarCorreo({
     para: email,
     asunto: `${codigo} — Tu código de verificación de HoraPro`,
     html: plantillaCorreo('Confirma tu correo', `
       <p style="font-size:14px;color:#303030">Hola ${nombre},</p>
       <p style="font-size:14px;color:#303030">Este es tu código para activar tu cuenta en HoraPro. Vence en ${MIN_VERIFICACION} minutos:</p>
-      <table style="margin:24px auto" cellpadding="0" cellspacing="0"><tr>${digitos}</tr></table>
+      <p style="margin:24px 0;text-align:center;font-size:22px;font-weight:800;color:#303030;font-family:monospace;letter-spacing:8px">${codigo}</p>
       <p style="font-size:12px;color:#898989;text-align:center">Escríbelo en la ventana de verificación de tu panel.</p>
       <p style="font-size:12px;color:#898989">Si no creaste esta cuenta, ignora este correo.</p>
     `),
