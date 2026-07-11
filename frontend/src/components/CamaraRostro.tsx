@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 import { cargarModelosFaceApi } from '../lib/faceapi';
-import { Camera, AlertTriangle, Check } from 'lucide-react';
+import { Camera, AlertTriangle, Check, RotateCcw } from 'lucide-react';
 
 type Modo = 'login' | 'enrolar';
-type Estado = 'cargando' | 'guiando' | 'exito' | 'error';
+type Estado = 'cargando' | 'guiando' | 'preview' | 'exito' | 'error';
 
 type Props = {
-  // login: 1 captura rápida con prueba de vida (parpadeo suave)
-  // enrolar: captura guiada de varias poses (frente + perfiles + sin gafas)
+  // login: captura rápida quedándose quieto (sin gestos)
+  // enrolar: captura guiada de varias poses con preview para aceptar/repetir
   modo?: Modo;
   // Enrolamiento: agrega una toma final sin gafas (para quien las usa a diario)
   pasoGafas?: boolean;
@@ -20,24 +20,37 @@ type Props = {
   errorExterno?: string | null;
 };
 
-// inputSize bajo = detección 2-3x más rápida en celulares; a distancia de
-// kiosco (rostro llenando el óvalo) la precisión no se resiente.
-const opcionesDetector = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 });
+// Detección continua para el encuadre en vivo (barata, rápida en celulares).
+const opcionesDeteccion = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 });
+// Captura del descriptor: inputSize mayor = landmarks y descriptor más nítidos.
+const opcionesCaptura = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.4 });
 
-const dist = (a: faceapi.Point, b: faceapi.Point) => Math.hypot(a.x - b.x, a.y - b.y);
+// Tiempo que la persona debe quedarse quieta antes de tomar la muestra.
+const MS_QUIETO_ENROLAR = 2000;
+const MS_QUIETO_LOGIN = 1000;
+// Mínimo de cuadros nítidos a promediar por muestra.
+const MIN_MUESTRAS_POSE = 3;
 
-// Eye Aspect Ratio: cae cuando el ojo se cierra (prueba de vida por parpadeo)
-function ear(ojo: faceapi.Point[]): number {
-  return (dist(ojo[1], ojo[5]) + dist(ojo[2], ojo[4])) / (2 * dist(ojo[0], ojo[3]));
-}
+// Signo del yaw que tratamos como "derecha". Si en pruebas los lados salen
+// invertidos, cambia este valor a -1 (es lo único que hay que tocar).
+const SIGNO_DERECHA = 1;
 
 // Giro de cabeza (yaw): posición de la nariz relativa a los ojos.
-// ~0 de frente; positivo/negativo según el lado del giro.
+// ~0 de frente; el signo indica el lado del giro.
 function desviacionYaw(landmarks: faceapi.FaceLandmarks68): number {
   const nariz = landmarks.getNose()[3];
   const ojoIzq = landmarks.getLeftEye()[0];
   const ojoDer = landmarks.getRightEye()[3];
   return (nariz.x - ojoIzq.x) / (ojoDer.x - ojoIzq.x) - 0.5;
+}
+
+// Promedio elemento a elemento de varios descriptores de 128 floats: reduce el
+// ruido y deja una muestra más estable que un solo cuadro.
+function promediarDescriptores(lista: number[][]): number[] {
+  const out = new Array(128).fill(0);
+  for (const d of lista) for (let i = 0; i < 128; i++) out[i] += d[i];
+  for (let i = 0; i < 128; i++) out[i] /= lista.length;
+  return out;
 }
 
 function capturarFoto(video: HTMLVideoElement): string {
@@ -67,7 +80,16 @@ const MSG_ENCUADRE: Record<Exclude<Encuadre, 'OK'>, string> = {
   ALEJATE: 'Aléjate un poco',
 };
 
-type PasoEnrolar = { id: string; etiqueta: string; texto: string; tipo: 'frontal' | 'lado' | 'ladoOpuesto' };
+type TipoPose = 'frontal' | 'derecha' | 'izquierda';
+type PasoEnrolar = { id: string; etiqueta: string; texto: string; tipo: TipoPose };
+
+// ¿La pose actual (según el yaw) cumple lo que pide el paso?
+function poseCumple(tipo: TipoPose, dev: number): boolean {
+  if (tipo === 'frontal') return Math.abs(dev) < 0.1;
+  const magnitud = Math.abs(dev) > 0.13 && Math.abs(dev) < 0.42;
+  if (tipo === 'derecha') return magnitud && Math.sign(dev) === SIGNO_DERECHA;
+  return magnitud && Math.sign(dev) === -SIGNO_DERECHA;
+}
 
 export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapturado, onError, errorExterno }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -75,12 +97,16 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
   const [mensaje, setMensaje] = useState('Cargando cámara...');
   const [encuadreOk, setEncuadreOk] = useState(false);
   const [pasoActual, setPasoActual] = useState(0);
+  const [progreso, setProgreso] = useState(0); // 0..1 del "quédate quieto"
+  const [intento, setIntento] = useState(0);    // se incrementa al "Repetir"
+  const [tomas, setTomas] = useState<string[]>([]); // fotos del preview (enrolar)
+  const descsPreview = useRef<number[][]>([]);   // descriptores esperando aceptación
 
   const pasos: PasoEnrolar[] = modo === 'enrolar'
     ? [
         { id: 'frente', etiqueta: 'Frente', texto: 'Mira de frente a la cámara', tipo: 'frontal' },
-        { id: 'lado1', etiqueta: 'Un lado', texto: 'Gira levemente la cabeza hacia un lado', tipo: 'lado' },
-        { id: 'lado2', etiqueta: 'Otro lado', texto: 'Ahora gira levemente hacia el otro lado', tipo: 'ladoOpuesto' },
+        { id: 'derecha', etiqueta: 'Derecha', texto: 'Gira tu rostro a la derecha', tipo: 'derecha' },
+        { id: 'izquierda', etiqueta: 'Izquierda', texto: 'Gira tu rostro a la izquierda', tipo: 'izquierda' },
         ...(pasoGafas ? [{ id: 'singafas', etiqueta: 'Sin gafas', texto: 'Quítate las gafas y mira de frente', tipo: 'frontal' as const }] : []),
       ]
     : [];
@@ -91,17 +117,12 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     let stream: MediaStream | null = null;
     let cuadroId: number | null = null;
 
-    // Estado del flujo (vive fuera de React para no re-renderizar por cuadro)
-    const descriptores: number[][] = [];
-    let foto: string | null = null;
+    // Estado del flujo (fuera de React para no re-renderizar por cuadro)
+    const descriptoresPorPose: number[][] = [];
+    const fotosPorPose: string[] = [];
     let idxPaso = 0;
-    let establesPaso = 0; // cuadros seguidos cumpliendo la pose
-    let signoLado = 0; // hacia qué lado giró en el paso "lado"
-    // Parpadeo suave (login)
-    let baseline: number | null = null;
-    const muestrasBaseline: number[] = [];
-    let earPrevio: number | null = null;
-    let ojosCerrados = false;
+    let holdInicio: number | null = null; // cuándo empezó a quedarse quieto
+    let buffer: number[][] = [];           // descriptores acumulados en el hold
 
     const detenerCamara = () => {
       if (cuadroId !== null) cancelAnimationFrame(cuadroId);
@@ -114,18 +135,7 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
       onError?.(msg);
     };
 
-    const finalizar = (video: HTMLVideoElement) => {
-      terminado = true;
-      setEstado('exito');
-      setMensaje(modo === 'enrolar' ? '¡Rostro registrado!' : '¡Rostro verificado!');
-      const fotoFinal = foto ?? capturarFoto(video);
-      // Pausa breve para que se vea la animación de éxito antes de continuar
-      setTimeout(() => {
-        if (!activo) return;
-        detenerCamara();
-        onCapturado(descriptores, fotoFinal);
-      }, 700);
-    };
+    const resetHold = () => { holdInicio = null; buffer = []; setProgreso(0); };
 
     (async () => {
       try {
@@ -144,19 +154,18 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
           const video = videoRef.current;
           if (!video) { cuadroId = requestAnimationFrame(analizarCuadro); return; }
 
-          const deteccion = await faceapi
-            .detectSingleFace(video, opcionesDetector())
-            .withFaceLandmarks();
+          const enHold = holdInicio !== null;
+          // En el hold detectamos con más resolución y ya pedimos el descriptor.
+          const deteccion = enHold
+            ? await faceapi.detectSingleFace(video, opcionesCaptura()).withFaceLandmarks().withFaceDescriptor()
+            : await faceapi.detectSingleFace(video, opcionesDeteccion()).withFaceLandmarks();
 
           if (!activo || terminado) return;
 
           if (!deteccion) {
             setEncuadreOk(false);
             setMensaje('Ubica tu rostro dentro del óvalo');
-            establesPaso = 0;
-            baseline = null;
-            muestrasBaseline.length = 0;
-            ojosCerrados = false;
+            resetHold();
             cuadroId = requestAnimationFrame(analizarCuadro);
             return;
           }
@@ -165,74 +174,68 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
           if (encuadre !== 'OK') {
             setEncuadreOk(false);
             setMensaje(MSG_ENCUADRE[encuadre]);
-            establesPaso = 0;
+            resetHold();
             cuadroId = requestAnimationFrame(analizarCuadro);
             return;
           }
           setEncuadreOk(true);
 
-          if (modo === 'enrolar') {
-            // ===== Enrolamiento guiado por poses =====
-            const paso = pasos[idxPaso];
-            setMensaje(paso.texto);
-            const dev = desviacionYaw(deteccion.landmarks);
-            const cumple =
-              paso.tipo === 'frontal' ? Math.abs(dev) < 0.09
-              : paso.tipo === 'lado' ? Math.abs(dev) > 0.15 && Math.abs(dev) < 0.38
-              : dev * signoLado < 0 && Math.abs(dev) > 0.15 && Math.abs(dev) < 0.38;
+          // ¿Se cumple la condición para (seguir) capturando?
+          const paso = modo === 'enrolar' ? pasos[idxPaso] : null;
+          const condicionOk = paso ? poseCumple(paso.tipo, desviacionYaw(deteccion.landmarks)) : true;
 
-            establesPaso = cumple ? establesPaso + 1 : 0;
-            if (establesPaso >= 3) {
-              const completa = await faceapi
-                .detectSingleFace(video, opcionesDetector())
-                .withFaceLandmarks()
-                .withFaceDescriptor();
-              if (!activo || terminado) return;
-              if (completa) {
-                descriptores.push(Array.from(completa.descriptor));
-                if (paso.tipo === 'lado') signoLado = Math.sign(dev);
-                if (paso.id === 'frente') foto = capturarFoto(video);
-                idxPaso += 1;
-                establesPaso = 0;
-                setPasoActual(idxPaso);
-                if (idxPaso >= pasos.length) { finalizar(video); return; }
-              }
-            }
-          } else {
-            // ===== Login: prueba de vida con parpadeo suave =====
-            const earCrudo = (ear(deteccion.landmarks.getLeftEye()) + ear(deteccion.landmarks.getRightEye())) / 2;
-            // Suavizado: promedio con el cuadro anterior para filtrar ruido
-            const earActual = earPrevio === null ? earCrudo : (earCrudo + earPrevio) / 2;
-            earPrevio = earCrudo;
+          if (!condicionOk) {
+            // Rompió la pose: reinicia el conteo de "quieto"
+            if (paso) setMensaje(paso.texto);
+            resetHold();
+            cuadroId = requestAnimationFrame(analizarCuadro);
+            return;
+          }
 
-            if (baseline === null) {
-              muestrasBaseline.push(earActual);
-              setMensaje('Quédate quieto un momento...');
-              if (muestrasBaseline.length >= 5) {
-                baseline = muestrasBaseline.reduce((a, b) => a + b, 0) / muestrasBaseline.length;
-              }
-              cuadroId = requestAnimationFrame(analizarCuadro);
-              return;
-            }
+          // Arranca o continúa el "quédate quieto"
+          if (holdInicio === null) {
+            holdInicio = performance.now();
+            buffer = [];
+          }
+          // Si esta detección trajo descriptor (estamos en hold), lo guardamos
+          const desc = (deteccion as any).descriptor as Float32Array | undefined;
+          if (desc) buffer.push(Array.from(desc));
 
-            setMensaje('Parpadea suavemente');
-            // Cerrado: caída relativa O valor absoluto típico de ojo cerrado.
-            // Con el rostro llenando el óvalo la señal es limpia: basta un parpadeo normal.
-            if (!ojosCerrados && (earActual < baseline * 0.86 || earActual < 0.2)) {
-              ojosCerrados = true;
-            } else if (ojosCerrados && earActual > baseline * 0.93) {
-              const completa = await faceapi
-                .detectSingleFace(video, opcionesDetector())
-                .withFaceLandmarks()
-                .withFaceDescriptor();
-              if (!activo || terminado) return;
-              if (completa) {
-                descriptores.push(Array.from(completa.descriptor));
-                foto = capturarFoto(video);
-                finalizar(video);
+          const objetivo = modo === 'enrolar' ? MS_QUIETO_ENROLAR : MS_QUIETO_LOGIN;
+          const transcurrido = performance.now() - holdInicio;
+          setProgreso(Math.min(1, transcurrido / objetivo));
+          setMensaje(paso ? `${paso.texto} · mantente quieto` : 'Quédate quieto un momento...');
+
+          if (transcurrido >= objetivo && buffer.length >= MIN_MUESTRAS_POSE) {
+            const muestra = promediarDescriptores(buffer);
+            const foto = capturarFoto(video);
+
+            if (modo === 'enrolar') {
+              descriptoresPorPose.push(muestra);
+              fotosPorPose.push(foto);
+              idxPaso += 1;
+              setPasoActual(idxPaso);
+              resetHold();
+              if (idxPaso >= pasos.length) {
+                // Todas las poses listas → preview para aceptar/repetir
+                terminado = true;
+                detenerCamara();
+                descsPreview.current = descriptoresPorPose;
+                setTomas(fotosPorPose);
+                setEstado('preview');
                 return;
               }
-              ojosCerrados = false;
+            } else {
+              // Login: una sola muestra promediada → listo
+              terminado = true;
+              setEstado('exito');
+              setMensaje('¡Rostro verificado!');
+              setTimeout(() => {
+                if (!activo) return;
+                detenerCamara();
+                onCapturado([muestra], foto);
+              }, 600);
+              return;
             }
           }
 
@@ -252,10 +255,52 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
       detenerCamara();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modo, pasoGafas]);
+  }, [modo, pasoGafas, intento]);
+
+  const aceptarPreview = () => {
+    onCapturado(descsPreview.current, tomas[0]);
+  };
+  const repetir = () => {
+    descsPreview.current = [];
+    setTomas([]);
+    setPasoActual(0);
+    setProgreso(0);
+    setEncuadreOk(false);
+    setMensaje('Cargando cámara...');
+    setEstado('cargando');
+    setIntento(i => i + 1);
+  };
 
   const hayError = estado === 'error' || !!errorExterno;
   const colorOvalo = hayError ? '#f87171' : estado === 'exito' ? '#4ade80' : encuadreOk ? '#4ade80' : '#FFD85E';
+
+  // ===== Preview de enrolamiento: aceptar o repetir =====
+  if (estado === 'preview') {
+    return (
+      <div className="flex flex-col items-center gap-4 w-full">
+        <p className="text-sm font-medium text-ink text-center">Revisa las tomas de tu rostro</p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {tomas.map((f, i) => (
+            <div key={i} className="flex flex-col items-center gap-1">
+              <img src={f} alt={pasos[i]?.etiqueta ?? `Toma ${i + 1}`}
+                className="w-20 h-20 object-cover rounded-xl border border-gray-200 [transform:scaleX(-1)]" />
+              <span className="text-[11px] text-muted">{pasos[i]?.etiqueta ?? `Toma ${i + 1}`}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-3 w-full max-w-md">
+          <button onClick={repetir}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50">
+            <RotateCcw size={15} /> Repetir
+          </button>
+          <button onClick={aceptarPreview}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700">
+            <Check size={16} /> Aceptar y guardar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-3 w-full">
@@ -273,6 +318,12 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
             />
             <ellipse cx="50" cy="37.5" rx="23" ry="30" fill="none" stroke={colorOvalo} strokeWidth="1.4"
               strokeDasharray={estado === 'guiando' && !encuadreOk ? '4 2.5' : undefined} />
+            {/* Arco de progreso del "quédate quieto" */}
+            {progreso > 0 && estado === 'guiando' && (
+              <ellipse cx="50" cy="37.5" rx="23" ry="30" fill="none" stroke="#4ade80" strokeWidth="1.8"
+                pathLength={1} strokeDasharray={1} strokeDashoffset={1 - progreso} strokeLinecap="round"
+                transform="rotate(-90 50 37.5)" />
+            )}
           </svg>
         )}
 
@@ -302,11 +353,10 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
             <span key={p.id}
               className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
                 i < pasoActual ? 'bg-green-100 text-green-700'
-                : i === pasoActual && estado !== 'exito' ? 'bg-primary/30 text-ink'
-                : i === pasoActual ? 'bg-green-100 text-green-700'
+                : i === pasoActual ? 'bg-primary/30 text-ink'
                 : 'bg-gray-100 text-muted'
               }`}>
-              {(i < pasoActual || estado === 'exito') && <Check size={12} strokeWidth={3} />}
+              {i < pasoActual && <Check size={12} strokeWidth={3} />}
               {p.etiqueta}
             </span>
           ))}
