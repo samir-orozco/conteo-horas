@@ -52,7 +52,7 @@ export default function Marcador() {
   const [fotoRostro, setFotoRostro] = useState<string | null>(null);
 
   // Salida temprana: al marcar salida antes del horario, se pide motivo + descripción
-  const [salidaTemprana, setSalidaTemprana] = useState<null | { accion: string; hora: string }>(null);
+  const [salidaTemprana, setSalidaTemprana] = useState<null | { accion: 'ENTRADA' | 'SALIDA'; hora: string }>(null);
   const [novedadTipo, setNovedadTipo] = useState('MEDICO');
   const [novedadDesc, setNovedadDesc] = useState('');
   const [enviandoNovedad, setEnviandoNovedad] = useState(false);
@@ -182,7 +182,7 @@ export default function Marcador() {
     }
   };
 
-  const mostrarFlashOk = (accion: string, hora: string) => {
+  const mostrarFlashOk = (accion: 'ENTRADA' | 'SALIDA', hora: string) => {
     setFlash({
       tipo: 'ok',
       accion,
