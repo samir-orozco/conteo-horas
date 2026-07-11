@@ -7965,10 +7965,12 @@ export namespace Prisma {
 
   export type HorarioAvgAggregateOutputType = {
     toleranciaMin: number | null
+    almuerzoMin: number | null
   }
 
   export type HorarioSumAggregateOutputType = {
     toleranciaMin: number | null
+    almuerzoMin: number | null
   }
 
   export type HorarioMinAggregateOutputType = {
@@ -7976,6 +7978,7 @@ export namespace Prisma {
     empresaId: string | null
     nombre: string | null
     toleranciaMin: number | null
+    almuerzoMin: number | null
     activo: boolean | null
     creadoEn: Date | null
   }
@@ -7985,6 +7988,7 @@ export namespace Prisma {
     empresaId: string | null
     nombre: string | null
     toleranciaMin: number | null
+    almuerzoMin: number | null
     activo: boolean | null
     creadoEn: Date | null
   }
@@ -7994,6 +7998,7 @@ export namespace Prisma {
     empresaId: number
     nombre: number
     toleranciaMin: number
+    almuerzoMin: number
     activo: number
     creadoEn: number
     _all: number
@@ -8002,10 +8007,12 @@ export namespace Prisma {
 
   export type HorarioAvgAggregateInputType = {
     toleranciaMin?: true
+    almuerzoMin?: true
   }
 
   export type HorarioSumAggregateInputType = {
     toleranciaMin?: true
+    almuerzoMin?: true
   }
 
   export type HorarioMinAggregateInputType = {
@@ -8013,6 +8020,7 @@ export namespace Prisma {
     empresaId?: true
     nombre?: true
     toleranciaMin?: true
+    almuerzoMin?: true
     activo?: true
     creadoEn?: true
   }
@@ -8022,6 +8030,7 @@ export namespace Prisma {
     empresaId?: true
     nombre?: true
     toleranciaMin?: true
+    almuerzoMin?: true
     activo?: true
     creadoEn?: true
   }
@@ -8031,6 +8040,7 @@ export namespace Prisma {
     empresaId?: true
     nombre?: true
     toleranciaMin?: true
+    almuerzoMin?: true
     activo?: true
     creadoEn?: true
     _all?: true
@@ -8127,6 +8137,7 @@ export namespace Prisma {
     empresaId: string
     nombre: string
     toleranciaMin: number
+    almuerzoMin: number
     activo: boolean
     creadoEn: Date
     _count: HorarioCountAggregateOutputType | null
@@ -8155,6 +8166,7 @@ export namespace Prisma {
     empresaId?: boolean
     nombre?: boolean
     toleranciaMin?: boolean
+    almuerzoMin?: boolean
     activo?: boolean
     creadoEn?: boolean
     empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
@@ -8169,6 +8181,7 @@ export namespace Prisma {
     empresaId?: boolean
     nombre?: boolean
     toleranciaMin?: boolean
+    almuerzoMin?: boolean
     activo?: boolean
     creadoEn?: boolean
   }
@@ -8192,6 +8205,7 @@ export namespace Prisma {
       empresaId: string
       nombre: string
       toleranciaMin: number
+      almuerzoMin: number
       activo: boolean
       creadoEn: Date
     }, ExtArgs["result"]["horario"]>
@@ -8570,6 +8584,7 @@ export namespace Prisma {
     readonly empresaId: FieldRef<"Horario", 'String'>
     readonly nombre: FieldRef<"Horario", 'String'>
     readonly toleranciaMin: FieldRef<"Horario", 'Int'>
+    readonly almuerzoMin: FieldRef<"Horario", 'Int'>
     readonly activo: FieldRef<"Horario", 'Boolean'>
     readonly creadoEn: FieldRef<"Horario", 'DateTime'>
   }
@@ -8940,6 +8955,7 @@ export namespace Prisma {
     horarioId: string | null
     horaEntrada: string | null
     horaSalida: string | null
+    tieneAlmuerzo: boolean | null
   }
 
   export type FranjaHorarioMaxAggregateOutputType = {
@@ -8947,6 +8963,7 @@ export namespace Prisma {
     horarioId: string | null
     horaEntrada: string | null
     horaSalida: string | null
+    tieneAlmuerzo: boolean | null
   }
 
   export type FranjaHorarioCountAggregateOutputType = {
@@ -8955,6 +8972,7 @@ export namespace Prisma {
     dias: number
     horaEntrada: number
     horaSalida: number
+    tieneAlmuerzo: number
     _all: number
   }
 
@@ -8964,6 +8982,7 @@ export namespace Prisma {
     horarioId?: true
     horaEntrada?: true
     horaSalida?: true
+    tieneAlmuerzo?: true
   }
 
   export type FranjaHorarioMaxAggregateInputType = {
@@ -8971,6 +8990,7 @@ export namespace Prisma {
     horarioId?: true
     horaEntrada?: true
     horaSalida?: true
+    tieneAlmuerzo?: true
   }
 
   export type FranjaHorarioCountAggregateInputType = {
@@ -8979,6 +8999,7 @@ export namespace Prisma {
     dias?: true
     horaEntrada?: true
     horaSalida?: true
+    tieneAlmuerzo?: true
     _all?: true
   }
 
@@ -9060,6 +9081,7 @@ export namespace Prisma {
     dias: JsonValue
     horaEntrada: string
     horaSalida: string
+    tieneAlmuerzo: boolean
     _count: FranjaHorarioCountAggregateOutputType | null
     _min: FranjaHorarioMinAggregateOutputType | null
     _max: FranjaHorarioMaxAggregateOutputType | null
@@ -9085,6 +9107,7 @@ export namespace Prisma {
     dias?: boolean
     horaEntrada?: boolean
     horaSalida?: boolean
+    tieneAlmuerzo?: boolean
     horario?: boolean | HorarioDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["franjaHorario"]>
 
@@ -9095,6 +9118,7 @@ export namespace Prisma {
     dias?: boolean
     horaEntrada?: boolean
     horaSalida?: boolean
+    tieneAlmuerzo?: boolean
   }
 
   export type FranjaHorarioInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -9112,6 +9136,7 @@ export namespace Prisma {
       dias: Prisma.JsonValue
       horaEntrada: string
       horaSalida: string
+      tieneAlmuerzo: boolean
     }, ExtArgs["result"]["franjaHorario"]>
     composites: {}
   }
@@ -9487,6 +9512,7 @@ export namespace Prisma {
     readonly dias: FieldRef<"FranjaHorario", 'Json'>
     readonly horaEntrada: FieldRef<"FranjaHorario", 'String'>
     readonly horaSalida: FieldRef<"FranjaHorario", 'String'>
+    readonly tieneAlmuerzo: FieldRef<"FranjaHorario", 'Boolean'>
   }
     
 
@@ -16516,6 +16542,7 @@ export namespace Prisma {
     empresaId: 'empresaId',
     nombre: 'nombre',
     toleranciaMin: 'toleranciaMin',
+    almuerzoMin: 'almuerzoMin',
     activo: 'activo',
     creadoEn: 'creadoEn'
   };
@@ -16528,7 +16555,8 @@ export namespace Prisma {
     horarioId: 'horarioId',
     dias: 'dias',
     horaEntrada: 'horaEntrada',
-    horaSalida: 'horaSalida'
+    horaSalida: 'horaSalida',
+    tieneAlmuerzo: 'tieneAlmuerzo'
   };
 
   export type FranjaHorarioScalarFieldEnum = (typeof FranjaHorarioScalarFieldEnum)[keyof typeof FranjaHorarioScalarFieldEnum]
@@ -17227,6 +17255,7 @@ export namespace Prisma {
     empresaId?: StringFilter<"Horario"> | string
     nombre?: StringFilter<"Horario"> | string
     toleranciaMin?: IntFilter<"Horario"> | number
+    almuerzoMin?: IntFilter<"Horario"> | number
     activo?: BoolFilter<"Horario"> | boolean
     creadoEn?: DateTimeFilter<"Horario"> | Date | string
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
@@ -17239,6 +17268,7 @@ export namespace Prisma {
     empresaId?: SortOrder
     nombre?: SortOrder
     toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
     empresa?: EmpresaOrderByWithRelationInput
@@ -17254,6 +17284,7 @@ export namespace Prisma {
     empresaId?: StringFilter<"Horario"> | string
     nombre?: StringFilter<"Horario"> | string
     toleranciaMin?: IntFilter<"Horario"> | number
+    almuerzoMin?: IntFilter<"Horario"> | number
     activo?: BoolFilter<"Horario"> | boolean
     creadoEn?: DateTimeFilter<"Horario"> | Date | string
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
@@ -17266,6 +17297,7 @@ export namespace Prisma {
     empresaId?: SortOrder
     nombre?: SortOrder
     toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
     _count?: HorarioCountOrderByAggregateInput
@@ -17283,6 +17315,7 @@ export namespace Prisma {
     empresaId?: StringWithAggregatesFilter<"Horario"> | string
     nombre?: StringWithAggregatesFilter<"Horario"> | string
     toleranciaMin?: IntWithAggregatesFilter<"Horario"> | number
+    almuerzoMin?: IntWithAggregatesFilter<"Horario"> | number
     activo?: BoolWithAggregatesFilter<"Horario"> | boolean
     creadoEn?: DateTimeWithAggregatesFilter<"Horario"> | Date | string
   }
@@ -17296,6 +17329,7 @@ export namespace Prisma {
     dias?: JsonFilter<"FranjaHorario">
     horaEntrada?: StringFilter<"FranjaHorario"> | string
     horaSalida?: StringFilter<"FranjaHorario"> | string
+    tieneAlmuerzo?: BoolFilter<"FranjaHorario"> | boolean
     horario?: XOR<HorarioRelationFilter, HorarioWhereInput>
   }
 
@@ -17305,6 +17339,7 @@ export namespace Prisma {
     dias?: SortOrder
     horaEntrada?: SortOrder
     horaSalida?: SortOrder
+    tieneAlmuerzo?: SortOrder
     horario?: HorarioOrderByWithRelationInput
   }
 
@@ -17317,6 +17352,7 @@ export namespace Prisma {
     dias?: JsonFilter<"FranjaHorario">
     horaEntrada?: StringFilter<"FranjaHorario"> | string
     horaSalida?: StringFilter<"FranjaHorario"> | string
+    tieneAlmuerzo?: BoolFilter<"FranjaHorario"> | boolean
     horario?: XOR<HorarioRelationFilter, HorarioWhereInput>
   }, "id">
 
@@ -17326,6 +17362,7 @@ export namespace Prisma {
     dias?: SortOrder
     horaEntrada?: SortOrder
     horaSalida?: SortOrder
+    tieneAlmuerzo?: SortOrder
     _count?: FranjaHorarioCountOrderByAggregateInput
     _max?: FranjaHorarioMaxOrderByAggregateInput
     _min?: FranjaHorarioMinOrderByAggregateInput
@@ -17340,6 +17377,7 @@ export namespace Prisma {
     dias?: JsonWithAggregatesFilter<"FranjaHorario">
     horaEntrada?: StringWithAggregatesFilter<"FranjaHorario"> | string
     horaSalida?: StringWithAggregatesFilter<"FranjaHorario"> | string
+    tieneAlmuerzo?: BoolWithAggregatesFilter<"FranjaHorario"> | boolean
   }
 
   export type DispositivoKioscoWhereInput = {
@@ -18394,6 +18432,7 @@ export namespace Prisma {
     id?: string
     nombre: string
     toleranciaMin?: number
+    almuerzoMin?: number
     activo?: boolean
     creadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutHorariosInput
@@ -18406,6 +18445,7 @@ export namespace Prisma {
     empresaId: string
     nombre: string
     toleranciaMin?: number
+    almuerzoMin?: number
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioUncheckedCreateNestedManyWithoutHorarioInput
@@ -18416,6 +18456,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutHorariosNestedInput
@@ -18428,6 +18469,7 @@ export namespace Prisma {
     empresaId?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUncheckedUpdateManyWithoutHorarioNestedInput
@@ -18439,6 +18481,7 @@ export namespace Prisma {
     empresaId: string
     nombre: string
     toleranciaMin?: number
+    almuerzoMin?: number
     activo?: boolean
     creadoEn?: Date | string
   }
@@ -18447,6 +18490,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -18456,6 +18500,7 @@ export namespace Prisma {
     empresaId?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -18465,6 +18510,7 @@ export namespace Prisma {
     dias: JsonNullValueInput | InputJsonValue
     horaEntrada: string
     horaSalida: string
+    tieneAlmuerzo?: boolean
     horario: HorarioCreateNestedOneWithoutFranjasInput
   }
 
@@ -18474,6 +18520,7 @@ export namespace Prisma {
     dias: JsonNullValueInput | InputJsonValue
     horaEntrada: string
     horaSalida: string
+    tieneAlmuerzo?: boolean
   }
 
   export type FranjaHorarioUpdateInput = {
@@ -18481,6 +18528,7 @@ export namespace Prisma {
     dias?: JsonNullValueInput | InputJsonValue
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
     horario?: HorarioUpdateOneRequiredWithoutFranjasNestedInput
   }
 
@@ -18490,6 +18538,7 @@ export namespace Prisma {
     dias?: JsonNullValueInput | InputJsonValue
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FranjaHorarioCreateManyInput = {
@@ -18498,6 +18547,7 @@ export namespace Prisma {
     dias: JsonNullValueInput | InputJsonValue
     horaEntrada: string
     horaSalida: string
+    tieneAlmuerzo?: boolean
   }
 
   export type FranjaHorarioUpdateManyMutationInput = {
@@ -18505,6 +18555,7 @@ export namespace Prisma {
     dias?: JsonNullValueInput | InputJsonValue
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FranjaHorarioUncheckedUpdateManyInput = {
@@ -18513,6 +18564,7 @@ export namespace Prisma {
     dias?: JsonNullValueInput | InputJsonValue
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type DispositivoKioscoCreateInput = {
@@ -19747,12 +19799,14 @@ export namespace Prisma {
     empresaId?: SortOrder
     nombre?: SortOrder
     toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
   }
 
   export type HorarioAvgOrderByAggregateInput = {
     toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
   }
 
   export type HorarioMaxOrderByAggregateInput = {
@@ -19760,6 +19814,7 @@ export namespace Prisma {
     empresaId?: SortOrder
     nombre?: SortOrder
     toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
   }
@@ -19769,12 +19824,14 @@ export namespace Prisma {
     empresaId?: SortOrder
     nombre?: SortOrder
     toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
   }
 
   export type HorarioSumOrderByAggregateInput = {
     toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
   }
 
   export type HorarioRelationFilter = {
@@ -19788,6 +19845,7 @@ export namespace Prisma {
     dias?: SortOrder
     horaEntrada?: SortOrder
     horaSalida?: SortOrder
+    tieneAlmuerzo?: SortOrder
   }
 
   export type FranjaHorarioMaxOrderByAggregateInput = {
@@ -19795,6 +19853,7 @@ export namespace Prisma {
     horarioId?: SortOrder
     horaEntrada?: SortOrder
     horaSalida?: SortOrder
+    tieneAlmuerzo?: SortOrder
   }
 
   export type FranjaHorarioMinOrderByAggregateInput = {
@@ -19802,6 +19861,7 @@ export namespace Prisma {
     horarioId?: SortOrder
     horaEntrada?: SortOrder
     horaSalida?: SortOrder
+    tieneAlmuerzo?: SortOrder
   }
 
   export type DispositivoKioscoCountOrderByAggregateInput = {
@@ -21451,6 +21511,7 @@ export namespace Prisma {
     id?: string
     nombre: string
     toleranciaMin?: number
+    almuerzoMin?: number
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioCreateNestedManyWithoutHorarioInput
@@ -21461,6 +21522,7 @@ export namespace Prisma {
     id?: string
     nombre: string
     toleranciaMin?: number
+    almuerzoMin?: number
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioUncheckedCreateNestedManyWithoutHorarioInput
@@ -21689,6 +21751,7 @@ export namespace Prisma {
     empresaId?: StringFilter<"Horario"> | string
     nombre?: StringFilter<"Horario"> | string
     toleranciaMin?: IntFilter<"Horario"> | number
+    almuerzoMin?: IntFilter<"Horario"> | number
     activo?: BoolFilter<"Horario"> | boolean
     creadoEn?: DateTimeFilter<"Horario"> | Date | string
   }
@@ -22000,6 +22063,7 @@ export namespace Prisma {
     dias: JsonNullValueInput | InputJsonValue
     horaEntrada: string
     horaSalida: string
+    tieneAlmuerzo?: boolean
   }
 
   export type FranjaHorarioUncheckedCreateWithoutHorarioInput = {
@@ -22007,6 +22071,7 @@ export namespace Prisma {
     dias: JsonNullValueInput | InputJsonValue
     horaEntrada: string
     horaSalida: string
+    tieneAlmuerzo?: boolean
   }
 
   export type FranjaHorarioCreateOrConnectWithoutHorarioInput = {
@@ -22145,6 +22210,7 @@ export namespace Prisma {
     dias?: JsonFilter<"FranjaHorario">
     horaEntrada?: StringFilter<"FranjaHorario"> | string
     horaSalida?: StringFilter<"FranjaHorario"> | string
+    tieneAlmuerzo?: BoolFilter<"FranjaHorario"> | boolean
   }
 
   export type ColaboradorUpsertWithWhereUniqueWithoutHorarioInput = {
@@ -22167,6 +22233,7 @@ export namespace Prisma {
     id?: string
     nombre: string
     toleranciaMin?: number
+    almuerzoMin?: number
     activo?: boolean
     creadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutHorariosInput
@@ -22178,6 +22245,7 @@ export namespace Prisma {
     empresaId: string
     nombre: string
     toleranciaMin?: number
+    almuerzoMin?: number
     activo?: boolean
     creadoEn?: Date | string
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutHorarioInput
@@ -22203,6 +22271,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutHorariosNestedInput
@@ -22214,6 +22283,7 @@ export namespace Prisma {
     empresaId?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutHorarioNestedInput
@@ -22358,6 +22428,7 @@ export namespace Prisma {
     id?: string
     nombre: string
     toleranciaMin?: number
+    almuerzoMin?: number
     activo?: boolean
     creadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutHorariosInput
@@ -22369,6 +22440,7 @@ export namespace Prisma {
     empresaId: string
     nombre: string
     toleranciaMin?: number
+    almuerzoMin?: number
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioUncheckedCreateNestedManyWithoutHorarioInput
@@ -22511,6 +22583,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutHorariosNestedInput
@@ -22522,6 +22595,7 @@ export namespace Prisma {
     empresaId?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUncheckedUpdateManyWithoutHorarioNestedInput
@@ -23118,6 +23192,7 @@ export namespace Prisma {
     id?: string
     nombre: string
     toleranciaMin?: number
+    almuerzoMin?: number
     activo?: boolean
     creadoEn?: Date | string
   }
@@ -23279,6 +23354,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUpdateManyWithoutHorarioNestedInput
@@ -23289,6 +23365,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUncheckedUpdateManyWithoutHorarioNestedInput
@@ -23299,6 +23376,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -23392,6 +23470,7 @@ export namespace Prisma {
     dias: JsonNullValueInput | InputJsonValue
     horaEntrada: string
     horaSalida: string
+    tieneAlmuerzo?: boolean
   }
 
   export type ColaboradorCreateManyHorarioInput = {
@@ -23418,6 +23497,7 @@ export namespace Prisma {
     dias?: JsonNullValueInput | InputJsonValue
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FranjaHorarioUncheckedUpdateWithoutHorarioInput = {
@@ -23425,6 +23505,7 @@ export namespace Prisma {
     dias?: JsonNullValueInput | InputJsonValue
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type FranjaHorarioUncheckedUpdateManyWithoutHorarioInput = {
@@ -23432,6 +23513,7 @@ export namespace Prisma {
     dias?: JsonNullValueInput | InputJsonValue
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type ColaboradorUpdateWithoutHorarioInput = {

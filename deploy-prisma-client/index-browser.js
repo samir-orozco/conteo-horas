@@ -194,6 +194,7 @@ exports.Prisma.HorarioScalarFieldEnum = {
   empresaId: 'empresaId',
   nombre: 'nombre',
   toleranciaMin: 'toleranciaMin',
+  almuerzoMin: 'almuerzoMin',
   activo: 'activo',
   creadoEn: 'creadoEn'
 };
@@ -203,7 +204,8 @@ exports.Prisma.FranjaHorarioScalarFieldEnum = {
   horarioId: 'horarioId',
   dias: 'dias',
   horaEntrada: 'horaEntrada',
-  horaSalida: 'horaSalida'
+  horaSalida: 'horaSalida',
+  tieneAlmuerzo: 'tieneAlmuerzo'
 };
 
 exports.Prisma.DispositivoKioscoScalarFieldEnum = {
