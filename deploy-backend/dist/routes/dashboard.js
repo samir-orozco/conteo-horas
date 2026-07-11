@@ -10,6 +10,14 @@ const tardanzas_1 = require("../utils/tardanzas");
 const TZ = 'America/Bogota';
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
+// Minutos de almuerzo del registro: solo si la franja de ese día lo aplica.
+function almuerzoDelRegistro(horario, fecha) {
+    if (!horario || !horario.almuerzoMin)
+        return 0;
+    const z = (0, date_fns_tz_1.toZonedTime)(fecha, TZ);
+    const franja = (0, tardanzas_1.franjaDelDia)(horario, DIAS[z.getDay()]);
+    return franja && franja.tieneAlmuerzo ? horario.almuerzoMin : 0;
+}
 function claveDia(d) {
     const z = (0, date_fns_tz_1.toZonedTime)(d, TZ);
     return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
@@ -156,6 +164,9 @@ async function dashboardRoutes(app) {
         let minutosExtraMes = 0;
         let minutosTrabajadosSemana = 0;
         const claveSemanaActual = semanaKey(ahora);
+        // Horario de cada colaborador (para descontar almuerzo) + control 1 vez/día
+        const horarioPorCol = new Map(colaboradores.map(c => [c.id, c.horario]));
+        const diasConAlmuerzo = new Set();
         for (const [clave, regs] of porColSemana) {
             const jornadaSemanal = (0, vigencias_1.jornadaVigente)(regs[0].fecha, jornadas);
             let minutosOrdSemana = 0;
@@ -165,7 +176,17 @@ async function dashboardRoutes(app) {
                     continue;
                 const tiposDelDia = (0, vigencias_1.tiposVigentes)(r.fecha, tiposHoraTodos);
                 const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(r.entrada, r.salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana);
-                minutosOrdSemana += minutosOrdinariosTrabajados;
+                let ordDelRegistro = minutosOrdinariosTrabajados;
+                const claveColDia = `${r.colaboradorId}|${claveDia(r.entrada)}`;
+                const almuerzo = almuerzoDelRegistro(horarioPorCol.get(r.colaboradorId), r.entrada);
+                if (almuerzo > 0 && !diasConAlmuerzo.has(claveColDia)) {
+                    const { descontado } = (0, horasColombiana_1.descontarAlmuerzo)(resultado, almuerzo);
+                    if (descontado > 0) {
+                        diasConAlmuerzo.add(claveColDia);
+                        ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
+                    }
+                }
+                minutosOrdSemana += ordDelRegistro;
                 for (const p of resultado) {
                     if (CODIGOS_EXTRA.has(p.codigo))
                         minutosExtraMes += p.minutos;
