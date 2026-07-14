@@ -7,6 +7,8 @@ import {
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
 import CreditoKrumlab from '../components/CreditoKrumlab';
+import VideoVSL from '../components/VideoVSL';
+import BotonWhatsApp from '../components/BotonWhatsApp';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -203,8 +205,15 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Video VSL */}
+      <section className="max-w-3xl mx-auto px-5 pt-4 pb-8 md:pb-12">
+        <div className="hp-reveal">
+          <VideoVSL videoId="09HUubwVicU" />
+        </div>
+      </section>
+
       {/* Beneficios */}
-      <section className="max-w-6xl mx-auto px-5 py-16 md:py-24">
+      <section className="max-w-6xl mx-auto px-5 pt-8 pb-16 md:pt-12 md:pb-24">
         <div className="text-center max-w-xl mx-auto mb-12 hp-reveal">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Todo el control horario, resuelto</h2>
           <p className="text-muted mt-3">Deja las hojas de cálculo. HoraPro se encarga del cálculo y tú de tu negocio.</p>
@@ -329,6 +338,8 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      <BotonWhatsApp />
     </div>
   );
 }
