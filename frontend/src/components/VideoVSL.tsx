@@ -88,7 +88,7 @@ export default function VideoVSL({ videoId }: { videoId: string }) {
           <img
             src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
             onError={e => { (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`; }}
-            alt="" className="absolute inset-0 w-full h-full object-cover" style={{ transform: 'scale(1.35)' }} />
+            alt="" className="absolute inset-0 w-full h-full object-cover" />
           <span className="absolute inset-0 flex items-center justify-center">
             <span className="w-20 h-20 rounded-full bg-white/90 group-hover:bg-white flex items-center justify-center shadow-lg transition-colors">
               <Play size={32} className="text-ink translate-x-0.5" fill="currentColor" />
