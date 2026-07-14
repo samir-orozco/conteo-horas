@@ -8,6 +8,7 @@ export default function VideoVSL({ videoId }: { videoId: string }) {
   const contRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const [listo, setListo] = useState(false);
+  const [iniciado, setIniciado] = useState(false); // ya se dio el primer play
   const [reproduciendo, setReproduciendo] = useState(false);
   const [silenciado, setSilenciado] = useState(false);
   const [volumen, setVolumen] = useState(100);
@@ -49,6 +50,11 @@ export default function VideoVSL({ videoId }: { videoId: string }) {
     return () => { destruido = true; try { playerRef.current?.destroy?.(); } catch { /* ya destruido */ } };
   }, [videoId]);
 
+  const iniciar = () => {
+    const p = playerRef.current;
+    setIniciado(true);
+    if (p) { if (silenciado) { p.unMute(); setSilenciado(false); } p.playVideo(); }
+  };
   const togglePlay = () => {
     const p = playerRef.current; if (!p) return;
     if (reproduciendo) p.pauseVideo();
@@ -75,18 +81,36 @@ export default function VideoVSL({ videoId }: { videoId: string }) {
         <div ref={contRef} className="w-full h-full" />
       </div>
 
-      {/* Capa de click: reproduce/pausa y muestra el botón grande cuando está pausado */}
-      <button onClick={togglePlay} aria-label={reproduciendo ? 'Pausar' : 'Reproducir'}
-        className="absolute inset-0 w-full h-full flex items-center justify-center group">
-        {!reproduciendo && (
-          <span className="w-20 h-20 rounded-full bg-white/90 group-hover:bg-white flex items-center justify-center shadow-lg transition-colors">
-            <Play size={32} className="text-ink translate-x-0.5" fill="currentColor" />
+      {/* Portada propia (miniatura del video): tapa el estado inicial de YouTube
+          y su botón rojo. Al hacer clic, arranca el video con sonido. */}
+      {!iniciado && (
+        <button onClick={iniciar} aria-label="Reproducir" className="absolute inset-0 w-full h-full group">
+          <img
+            src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+            onError={e => { (e.currentTarget as HTMLImageElement).src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`; }}
+            alt="" className="absolute inset-0 w-full h-full object-cover" style={{ transform: 'scale(1.35)' }} />
+          <span className="absolute inset-0 flex items-center justify-center">
+            <span className="w-20 h-20 rounded-full bg-white/90 group-hover:bg-white flex items-center justify-center shadow-lg transition-colors">
+              <Play size={32} className="text-ink translate-x-0.5" fill="currentColor" />
+            </span>
           </span>
-        )}
-      </button>
+        </button>
+      )}
+
+      {/* Ya iniciado: capa de click para pausar/reanudar (sin botón rojo de YouTube) */}
+      {iniciado && (
+        <button onClick={togglePlay} aria-label={reproduciendo ? 'Pausar' : 'Reproducir'}
+          className="absolute inset-0 w-full h-full flex items-center justify-center group">
+          {!reproduciendo && (
+            <span className="w-20 h-20 rounded-full bg-white/90 group-hover:bg-white flex items-center justify-center shadow-lg transition-colors">
+              <Play size={32} className="text-ink translate-x-0.5" fill="currentColor" />
+            </span>
+          )}
+        </button>
+      )}
 
       {/* Controles propios: play/pausa + volumen, SIN barra de progreso */}
-      {listo && (
+      {listo && iniciado && (
         <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 px-4 py-3 bg-gradient-to-t from-black/70 to-transparent">
           <button onClick={togglePlay} className="text-white hover:text-primary transition-colors" aria-label={reproduciendo ? 'Pausar' : 'Reproducir'}>
             {reproduciendo ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
