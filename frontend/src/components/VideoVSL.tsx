@@ -19,6 +19,8 @@ export default function VideoVSL({ videoId }: { videoId: string }) {
       if (destruido || !contRef.current || !YT?.Player) return;
       playerRef.current = new YT.Player(contRef.current, {
         videoId,
+        width: '100%',
+        height: '100%',
         playerVars: {
           controls: 0, modestbranding: 1, rel: 0, disablekb: 1,
           playsinline: 1, fs: 0, iv_load_policy: 3,
@@ -67,8 +69,11 @@ export default function VideoVSL({ videoId }: { videoId: string }) {
 
   return (
     <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-ink shadow-xl">
-      {/* El iframe queda sin eventos: toda la interacción pasa por nuestros controles */}
-      <div ref={contRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+      {/* El iframe se agranda y se recorta con overflow-hidden para esconder el
+          título y el "Mirar en YouTube". Sin eventos: la interacción pasa por nuestros controles. */}
+      <div className="absolute inset-0 pointer-events-none" style={{ transform: 'scale(1.35)' }}>
+        <div ref={contRef} className="w-full h-full" />
+      </div>
 
       {/* Capa de click: reproduce/pausa y muestra el botón grande cuando está pausado */}
       <button onClick={togglePlay} aria-label={reproduciendo ? 'Pausar' : 'Reproducir'}
