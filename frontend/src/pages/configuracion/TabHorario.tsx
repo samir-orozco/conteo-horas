@@ -241,7 +241,7 @@ export default function TabHorario() {
       {/* Modal horario */}
       {modalHorario && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg text-ink">{editandoHorario ? 'Editar horario' : 'Nuevo horario'}</h3>
               <button onClick={() => setModalHorario(false)}><X size={20} className="text-gray-400" /></button>
@@ -261,7 +261,7 @@ export default function TabHorario() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted mb-1">Almuerzo (min, no pagado)</label>
-                  <input type="number" min={0} max={240} step={5} value={formHorario.almuerzoMin}
+                  <input type="number" min={0} max={240} step={1} value={formHorario.almuerzoMin}
                     onChange={e => setFormHorario(p => ({ ...p, almuerzoMin: Math.max(0, Number(e.target.value) || 0) }))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                 </div>
