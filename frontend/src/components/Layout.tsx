@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import BloqueoPago from './BloqueoPago';
 import VerificarCorreo from './VerificarCorreo';
+import GuiaBienvenida from './GuiaBienvenida';
 import logoCompleto from '../assets/logo-completo.svg';
 
 type NavItem = { to: string; label: string; icon: any };
@@ -138,6 +139,7 @@ export default function Layout() {
       {/* Bloqueo total del panel cuando la suscripción está vencida */}
       {!esSuperAdmin && <BloqueoPago />}
       {!esSuperAdmin && <VerificarCorreo />}
+      {!esSuperAdmin && <GuiaBienvenida />}
     </div>
   );
 }

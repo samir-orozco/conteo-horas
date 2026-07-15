@@ -189,8 +189,10 @@ export default function Marcador() {
       hora: format(new Date(hora), 'HH:mm:ss'),
       nombre: colaborador ? `${colaborador.nombre} ${colaborador.apellido}` : '',
     });
-    // Confirmación visible 3.5s, luego se cierra con animación y auto-logout
-    setTimeout(() => cerrarFlash(salir), 3500);
+    // Confirmación visible 3.5s. En el kiosco recargamos la página completa para
+    // el siguiente colaborador: libera la cámara del todo y evita que en móvil se
+    // quede pidiendo permiso o se cuelgue la vista al reusar el stream.
+    setTimeout(() => window.location.reload(), 3500);
   };
 
   const marcar = async () => {

@@ -132,7 +132,7 @@ export default function DashboardEmpresa() {
           {d.enPlanta.length === 0 ? (
             <p className="text-sm text-muted">Nadie tiene un turno abierto en este momento.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {d.enPlanta.map(e => (
                 <div key={e.id} className="flex items-center gap-3 bg-green-50 rounded-xl px-3.5 py-2.5">
                   <span className="w-2 h-2 rounded-full bg-green-500 shrink-0 hp-ripple" />
@@ -153,7 +153,7 @@ export default function DashboardEmpresa() {
           {d.salidasRecientes.length === 0 ? (
             <p className="text-sm text-muted">Nadie ha marcado salida hoy todavía.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {d.salidasRecientes.map(s => (
                 <button
                   key={s.registroId}
@@ -179,7 +179,7 @@ export default function DashboardEmpresa() {
           {d.llegadasTardeHoy.length === 0 ? (
             <p className="text-sm text-green-700">Nadie ha llegado tarde hoy ✓</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {d.llegadasTardeHoy.map(t => (
                 <div key={t.id} className="flex items-center gap-3 bg-orange-50 rounded-xl px-3.5 py-2.5">
                   <div className="flex-1 min-w-0">
@@ -199,7 +199,7 @@ export default function DashboardEmpresa() {
           {d.sinMarcarHoy.length === 0 ? (
             <p className="text-sm text-muted">Todos los que debían entrar ya marcaron.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {d.sinMarcarHoy.map(s => (
                 <div key={s.id} className="flex items-center gap-3 bg-red-50 rounded-xl px-3.5 py-2.5">
                   <div className="flex-1 min-w-0">
