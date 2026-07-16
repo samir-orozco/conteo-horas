@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import {
   ArrowLeft, Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
@@ -69,6 +70,7 @@ export default function ColaboradorDetalle() {
   const [errorNovedad, setErrorNovedad] = useState('');
   const [guardandoNovedad, setGuardandoNovedad] = useState(false);
   const [verNovedad, setVerNovedad] = useState<Permiso | null>(null);
+  const [editandoNovedad, setEditandoNovedad] = useState<Permiso | null>(null);
   const [aprobando, setAprobando] = useState(false);
 
   const [consentimientoRostro, setConsentimientoRostro] = useState(false);
@@ -111,17 +113,20 @@ export default function ColaboradorDetalle() {
     setGuardandoNovedad(true);
     setErrorNovedad('');
     try {
-      await api.post('/permisos', {
+      const datos = {
         ...novedad,
         colaboradorId: id,
         // Medianoche de Bogotá (Colombia siempre es UTC-5, sin horario de verano):
         // evita que la fecha se corra un día por zona horaria.
         fechaInicio: new Date(`${novedad.fechaInicio}T00:00:00-05:00`),
         fechaFin: new Date(`${novedad.fechaFin}T00:00:00-05:00`),
-      });
+      };
+      if (editandoNovedad) await api.put(`/permisos/${editandoNovedad.id}`, datos);
+      else await api.post('/permisos', datos);
       setModalNovedad(false);
       setNovedad(EMPTY_NOVEDAD);
-      setToast('Novedad registrada');
+      setEditandoNovedad(null);
+      setToast(editandoNovedad ? 'Novedad actualizada' : 'Novedad registrada');
       cargar();
     } catch (err: any) {
       setErrorNovedad(err.response?.data?.error ?? 'No pudimos guardar la novedad. Intenta de nuevo.');
@@ -166,6 +171,22 @@ export default function ColaboradorDetalle() {
     } finally {
       setAprobando(false);
     }
+  };
+
+  // Abre el formulario de novedad pre-llenado para editar una existente
+  const editarNovedad = (p: Permiso) => {
+    const aFecha = (iso: string) => format(toZonedTime(new Date(iso), 'America/Bogota'), 'yyyy-MM-dd');
+    setEditandoNovedad(p);
+    setNovedad({
+      tipo: p.tipo,
+      fechaInicio: aFecha(p.fechaInicio),
+      fechaFin: aFecha(p.fechaFin),
+      descripcion: p.descripcion ?? '',
+      aprobado: p.aprobado,
+    });
+    setErrorNovedad('');
+    setVerNovedad(null);
+    setModalNovedad(true);
   };
 
   if (!col) return <div className="p-8 text-muted">Cargando...</div>;
@@ -338,7 +359,7 @@ export default function ColaboradorDetalle() {
         <div className="bg-white rounded-card border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="font-semibold text-ink flex items-center gap-2"><CalendarOff size={16} /> Novedades</p>
-            <button onClick={() => { setErrorNovedad(''); setNovedad(EMPTY_NOVEDAD); setModalNovedad(true); }}
+            <button onClick={() => { setErrorNovedad(''); setEditandoNovedad(null); setNovedad(EMPTY_NOVEDAD); setModalNovedad(true); }}
               className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-2.5 py-1.5 rounded-lg">
               <Plus size={13} /> Agregar
             </button>
@@ -455,8 +476,8 @@ export default function ColaboradorDetalle() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg text-ink">Nueva novedad</h3>
-              <button onClick={() => setModalNovedad(false)}><X size={20} className="text-gray-400" /></button>
+              <h3 className="font-bold text-lg text-ink">{editandoNovedad ? 'Editar novedad' : 'Nueva novedad'}</h3>
+              <button onClick={() => { setModalNovedad(false); setEditandoNovedad(null); }}><X size={20} className="text-gray-400" /></button>
             </div>
             <form onSubmit={guardarNovedad} className="space-y-4">
               <div>
@@ -485,7 +506,7 @@ export default function ColaboradorDetalle() {
               </label>
               {errorNovedad && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{errorNovedad}</p>}
               <div className="flex gap-3 justify-end">
-                <button type="button" onClick={() => setModalNovedad(false)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                <button type="button" onClick={() => { setModalNovedad(false); setEditandoNovedad(null); }} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
                 <button type="submit" disabled={guardandoNovedad} className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark disabled:opacity-60">{guardandoNovedad ? 'Guardando...' : 'Guardar'}</button>
               </div>
             </form>
@@ -517,8 +538,12 @@ export default function ColaboradorDetalle() {
                 <p className="text-ink whitespace-pre-wrap">{verNovedad.descripcion || <span className="text-muted">Sin descripción.</span>}</p>
               </div>
             </div>
-            <div className="flex gap-3 justify-end mt-6">
+            <div className="flex flex-wrap gap-3 justify-end mt-6">
               <button onClick={() => setVerNovedad(null)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cerrar</button>
+              <button onClick={() => editarNovedad(verNovedad)}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 font-medium">
+                <Edit2 size={15} /> Editar
+              </button>
               {!verNovedad.aprobado && (
                 <button onClick={aprobarNovedad} disabled={aprobando}
                   className="flex items-center gap-1.5 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg disabled:opacity-60">
