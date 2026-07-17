@@ -75,10 +75,11 @@ type Encuadre = 'CENTRA' | 'ACERCATE' | 'ALEJATE' | 'OK';
 function evaluarEncuadre(box: faceapi.Box, vw: number, vh: number): Encuadre {
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
-  if (Math.abs(cx - vw / 2) > vw * 0.2 || Math.abs(cy - vh / 2) > vh * 0.22) return 'CENTRA';
+  if (Math.abs(cx - vw / 2) > vw * 0.28 || Math.abs(cy - vh / 2) > vh * 0.3) return 'CENTRA';
   const proporcion = box.width / vw;
-  if (proporcion < 0.26) return 'ACERCATE';
-  if (proporcion > 0.62) return 'ALEJATE';
+  // Umbrales holgados: el rostro no tiene que llenar el óvalo (evita estirar el brazo)
+  if (proporcion < 0.16) return 'ACERCATE';
+  if (proporcion > 0.8) return 'ALEJATE';
   return 'OK';
 }
 const MSG_ENCUADRE: Record<Exclude<Encuadre, 'OK'>, string> = {
@@ -148,7 +149,11 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     (async () => {
       try {
         await cargarModelosFaceApi();
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 480, height: 360 } });
+        // Resolución "ideal" (no exacta): evita que iOS arranque en un lente y
+        // cambie a otro (gran angular → normal) y reduce el zoom/recorte del sensor.
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        });
         if (!activo) { stream.getTracks().forEach(t => t.stop()); return; }
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -242,7 +247,7 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
                 if (!activo) return;
                 detenerCamara();
                 onCapturado([muestra], foto);
-              }, 600);
+              }, 400);
               return;
             }
           }
@@ -339,13 +344,21 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
             />
             <ellipse cx="50" cy="37.5" rx="23" ry="30" fill="none" stroke={colorOvalo} strokeWidth="1.4"
               strokeDasharray={estado === 'guiando' && !encuadreOk ? '4 2.5' : undefined} />
-            {/* Arco de progreso del "quédate quieto" */}
-            {progreso > 0 && estado === 'guiando' && (
-              <ellipse cx="50" cy="37.5" rx="23" ry="30" fill="none" stroke="#4ade80" strokeWidth="1.8"
-                pathLength={1} strokeDasharray={1} strokeDashoffset={1 - progreso} strokeLinecap="round"
-                transform="rotate(-90 50 37.5)" />
-            )}
           </svg>
+        )}
+
+        {/* Línea de escaneo mientras lee el rostro (CSS puro; funciona en Android) */}
+        {estado === 'guiando' && encuadreOk && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="hp-scan-line absolute left-[18%] right-[18%] h-0.5 bg-green-400/80 rounded-full shadow-[0_0_8px_rgba(74,222,128,0.9)]" />
+          </div>
+        )}
+
+        {/* Barra de progreso del "quédate quieto" (robusta, sin pathLength) */}
+        {progreso > 0 && estado === 'guiando' && (
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
+            <div className="h-full bg-green-400 transition-[width] duration-100 ease-linear" style={{ width: `${Math.round(progreso * 100)}%` }} />
+          </div>
         )}
 
         {estado === 'exito' && (
