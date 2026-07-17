@@ -1,4 +1,5 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 
 // Captura TODO error (render de React + errores globales + promesas no manejadas)
 // y lo muestra EN PANTALLA en vez de dejar la página en blanco. Temporal, para
