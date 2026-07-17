@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import CapturadorErrores from './components/CapturadorErrores';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Landing from './pages/Landing';
@@ -58,6 +59,7 @@ function PublicHome() {
 
 export default function App() {
   return (
+    <CapturadorErrores>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -95,5 +97,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </CapturadorErrores>
   );
 }
