@@ -4,8 +4,22 @@ import { toZonedTime } from 'date-fns-tz';
 import crypto from 'crypto';
 import { prisma } from '../index';
 import { esDescriptorValido, mejorCoincidencia } from '../utils/rostro';
+import { enviarTelegram } from '../utils/telegram';
 
 const TZ = 'America/Bogota';
+
+// Alerta de llegada tarde por Telegram (si la empresa lo activó). No bloquea la marca.
+async function alertarTardanzaTelegram(empresaId: string, nombre: string, ahoraBog: Date, minutosTarde: number) {
+  const cfgs = await prisma.configuracion.findMany({
+    where: { empresaId, clave: { in: ['TELEGRAM_ALERTAS_TARDE', 'TELEGRAM_CHAT_ID'] } },
+  });
+  const map = Object.fromEntries(cfgs.map(c => [c.clave, c.valor]));
+  if (map.TELEGRAM_ALERTAS_TARDE !== '1' || !map.TELEGRAM_CHAT_ID) return;
+  const h = ahoraBog.getHours();
+  const hora = `${h % 12 || 12}:${String(ahoraBog.getMinutes()).padStart(2, '0')} ${h >= 12 ? 'p.m.' : 'a.m.'}`;
+  const tardeTxt = minutosTarde >= 60 ? `${Math.floor(minutosTarde / 60)}h ${minutosTarde % 60}min` : `${minutosTarde} min`;
+  await enviarTelegram(map.TELEGRAM_CHAT_ID, `⚠️ <b>${nombre}</b> llegó tarde\n🕐 ${hora} · ${tardeTxt} tarde`);
+}
 
 // ¿La empresa exige dispositivos autorizados para el kiosco?
 async function exigeDispositivo(empresaId: string): Promise<boolean> {
@@ -13,6 +27,32 @@ async function exigeDispositivo(empresaId: string): Promise<boolean> {
     where: { empresaId_clave: { empresaId, clave: 'KIOSCO_SOLO_DISPOSITIVOS' } },
   });
   return cfg?.valor === '1';
+}
+
+// Geocerco: la empresa puede exigir que la marca se haga dentro de un radio
+// de su ubicación (GPS del teléfono). Se guarda en Configuración → Marcación.
+type GeoCfg = { lat: number; lng: number; radio: number };
+async function geocercoConfig(empresaId: string): Promise<GeoCfg | null> {
+  const cfgs = await prisma.configuracion.findMany({
+    where: { empresaId, clave: { in: ['GEO_EXIGIR', 'GEO_LAT', 'GEO_LNG', 'GEO_RADIO'] } },
+  });
+  const map = Object.fromEntries(cfgs.map(c => [c.clave, c.valor]));
+  if (map.GEO_EXIGIR !== '1') return null;
+  const lat = Number(map.GEO_LAT), lng = Number(map.GEO_LNG);
+  const radio = Number(map.GEO_RADIO) || 150;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null; // activado pero sin ubicación fijada
+  return { lat, lng, radio };
+}
+
+// Distancia en metros entre dos coordenadas (fórmula de Haversine).
+function distanciaMetros(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(lat2 - lat1);
+  const dLng = rad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
 }
 
 // ¿La empresa permite marcar con cédula? (por defecto sí; se desactiva en Configuración → Marcación)
@@ -56,6 +96,7 @@ export default async function workerRoutes(app: FastifyInstance) {
       empresa: empresa.nombre,
       requiereDispositivo: await exigeDispositivo(empresa.id),
       permiteCedula: await permiteCedula(empresa.id),
+      exigeUbicacion: (await geocercoConfig(empresa.id)) !== null,
     };
   });
 
@@ -181,10 +222,26 @@ export default async function workerRoutes(app: FastifyInstance) {
   // Registrar entrada o salida. Si el login fue con rostro, llega la foto de
   // verificación (se conserva 2 meses y luego se borra automáticamente).
   app.post('/marcar', { preHandler: [app.authenticate] }, async (request, reply) => {
-    const payload = (request as any).user as { id: string; rol: string };
+    const payload = (request as any).user as { id: string; rol: string; empresaId: string };
     if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
-    const { foto } = (request.body ?? {}) as { foto?: unknown };
+    const { foto, lat, lng } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown };
     const fotoGuardar = fotoValida(foto) ? foto : null;
+
+    // Geocerco: si la empresa lo exige, la marca debe venir dentro del radio.
+    const geo = await geocercoConfig(payload.empresaId);
+    if (geo) {
+      const latN = Number(lat), lngN = Number(lng);
+      if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
+        return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
+      }
+      const dist = Math.round(distanciaMetros(latN, lngN, geo.lat, geo.lng));
+      if (dist > geo.radio) {
+        return reply.code(403).send({
+          error: `Estás fuera de la ubicación de la empresa (a ${dist} m). Debes marcar desde el sitio de trabajo.`,
+          codigo: 'FUERA_DE_UBICACION', distancia: dist, radio: geo.radio,
+        });
+      }
+    }
 
     const ahora = new Date();
     const ahoraBog = toZonedTime(ahora, TZ);
@@ -238,6 +295,10 @@ export default async function workerRoutes(app: FastifyInstance) {
       }
       return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana };
     } else {
+      // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
+      const entradasPrevias = await prisma.registro.count({
+        where: { colaboradorId: payload.id, fecha: { gte: inicioDia, lt: finDia }, entrada: { not: null } },
+      });
       const nuevo = await prisma.registro.create({
         data: {
           colaboradorId: payload.id,
@@ -247,6 +308,19 @@ export default async function workerRoutes(app: FastifyInstance) {
           ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
         },
       });
+
+      // Alerta de llegada tarde por Telegram (primera entrada del día, día laboral)
+      const horarioE = col?.horario;
+      if (entradasPrevias === 0 && col && !festHoy && horarioE?.activo) {
+        const franja = horarioE.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
+        if (franja) {
+          const entradaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
+          const tarde = entradaMin - (minutosDe(franja.horaEntrada) + (horarioE.toleranciaMin ?? 0));
+          if (tarde > 0) {
+            alertarTardanzaTelegram(col.empresaId, `${col.nombre} ${col.apellido}`, ahoraBog, tarde).catch(() => {});
+          }
+        }
+      }
       return { accion: 'ENTRADA', registro: nuevo, hora: ahora };
     }
   });

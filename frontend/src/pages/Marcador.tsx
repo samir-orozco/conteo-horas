@@ -48,6 +48,8 @@ export default function Marcador() {
   const [capturaKey, setCapturaKey] = useState(0);
   // La empresa puede desactivar la cédula (Configuración → Marcación): solo rostro
   const [permiteCedula, setPermiteCedula] = useState(true);
+  // La empresa puede exigir marcar dentro de su ubicación (geocerco por GPS)
+  const [exigeUbicacion, setExigeUbicacion] = useState(false);
   // Foto tomada al verificar el rostro: se adjunta a la marcación como evidencia
   const [fotoRostro, setFotoRostro] = useState<string | null>(null);
 
@@ -69,6 +71,7 @@ export default function Marcador() {
     api.get(`/worker/kiosco/${marcadorToken}`)
       .then(r => {
         setEmpresa(r.data.empresa);
+        setExigeUbicacion(r.data.exigeUbicacion === true);
         if (r.data.permiteCedula === false) {
           setPermiteCedula(false);
           setModoRostro(true); // solo rostro: entra directo a la cámara
@@ -195,11 +198,35 @@ export default function Marcador() {
     setTimeout(() => cerrarFlash(salir), 1500);
   };
 
+  // Pide la ubicación GPS del teléfono (solo si la empresa exige geocerco).
+  const obtenerUbicacion = (): Promise<{ lat: number; lng: number }> =>
+    new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject({ code: 0 });
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        err => reject(err),
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      );
+    });
+
   const marcar = async () => {
     if (!token || marcando) return;
     setMarcando(true);
     try {
-      const r = await api.post('/worker/marcar', { foto: fotoRostro ?? undefined }, { headers });
+      let ubic: { lat?: number; lng?: number } = {};
+      if (exigeUbicacion) {
+        try {
+          ubic = await obtenerUbicacion();
+        } catch (e: any) {
+          const msg = e?.code === 1
+            ? 'Debes permitir el acceso a tu ubicación para poder marcar.'
+            : 'No pudimos obtener tu ubicación. Activa el GPS e intenta de nuevo.';
+          setFlash({ tipo: 'error', msg });
+          setTimeout(() => cerrarFlash(), 2800);
+          return;
+        }
+      }
+      const r = await api.post('/worker/marcar', { foto: fotoRostro ?? undefined, ...ubic }, { headers });
       // Si salió antes de su horario, primero pedimos el motivo (queda como novedad)
       if (r.data.accion === 'SALIDA' && r.data.salidaTemprana) {
         setNovedadTipo('MEDICO');
@@ -208,9 +235,10 @@ export default function Marcador() {
       } else {
         mostrarFlashOk(r.data.accion, r.data.hora);
       }
-    } catch {
-      setFlash({ tipo: 'error', msg: 'No pudimos registrar tu marcación. Intenta de nuevo.' });
-      setTimeout(() => cerrarFlash(), 2500);
+    } catch (err: any) {
+      const msg = err.response?.data?.error ?? 'No pudimos registrar tu marcación. Intenta de nuevo.';
+      setFlash({ tipo: 'error', msg });
+      setTimeout(() => cerrarFlash(), 2800);
     } finally {
       setMarcando(false);
     }
