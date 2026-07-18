@@ -3,8 +3,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = configuracionRoutes;
 const index_1 = require("../index");
 const vigencias_1 = require("../utils/vigencias");
+const telegram_1 = require("../utils/telegram");
 async function configuracionRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
+    // Envía un mensaje de prueba al chat de Telegram para verificar la conexión.
+    app.post('/telegram/prueba', auth, async (request, reply) => {
+        if (!telegram_1.telegramConfigurado) {
+            return reply.status(400).send({ error: 'El bot de Telegram aún no está configurado en el servidor. Contacta a HoraPro.' });
+        }
+        const { chatId } = (request.body ?? {});
+        let destino = (chatId || '').trim();
+        if (!destino) {
+            const cfg = await index_1.prisma.configuracion.findUnique({
+                where: { empresaId_clave: { empresaId: request.empresaId, clave: 'TELEGRAM_CHAT_ID' } },
+            });
+            destino = cfg?.valor || '';
+        }
+        if (!destino)
+            return reply.status(400).send({ error: 'Falta el chat de Telegram.' });
+        const r = await (0, telegram_1.enviarTelegram)(destino, '✅ <b>HoraPro</b> quedó conectado. Aquí llegarán las alertas de llegadas tarde.');
+        if (!r.ok)
+            return reply.status(400).send({ error: r.error });
+        return { ok: true };
+    });
     app.get('/', auth, async (request) => {
         const items = await index_1.prisma.configuracion.findMany({ where: { empresaId: request.empresaId } });
         return items.reduce((acc, item) => { acc[item.clave] = item.valor; return acc; }, {});
