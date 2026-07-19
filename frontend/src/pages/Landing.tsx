@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Calculator, ScanFace, CalendarCheck, AlarmClock,
   ArrowRight, Check, ChevronDown, ShieldCheck, MapPin, MonitorSmartphone, Sparkles,
+  Send, Quote, Star, PlayCircle,
 } from 'lucide-react';
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
@@ -29,16 +30,34 @@ function useReveal() {
 }
 
 const BENEFICIOS = [
-  { icon: Calculator, titulo: 'Liquidación automática', texto: 'Recargos nocturnos, dominicales, festivos y horas extra calculados solos, según la ley vigente.' },
-  { icon: ScanFace, titulo: 'Registro facial', texto: 'Tus colaboradores marcan entrada y salida con su rostro, en cualquier tablet o celular. Sin comprar equipos.' },
-  { icon: AlarmClock, titulo: 'Llegadas tarde y planta', texto: 'Ve en tiempo real quién está adentro, quién llegó tarde y quién no marcó.' },
-  { icon: CalendarCheck, titulo: 'Ley y festivos al día', texto: 'Jornada de 42h, recargos de la Ley 2466 y festivos colombianos, siempre actualizados.' },
+  { icon: Calculator, titulo: 'Liquidación automática', texto: 'Recargos nocturnos, dominicales, festivos y horas extra según la Ley 2466. Cero errores de cálculo, cero horas en Excel.' },
+  { icon: ScanFace, titulo: 'Facial anti-fraude', texto: 'Marcan con el rostro, con prueba de vida y foto de evidencia en cada registro. Nadie marca por otro.' },
+  { icon: MapPin, titulo: 'Marcación por GPS', texto: 'Deja que marquen desde su propio celular, pero solo estando dentro de la ubicación de la empresa (geocerca).' },
+  { icon: AlarmClock, titulo: 'Control en tiempo real', texto: 'Quién está en planta, quién llegó tarde y quién no ha marcado, al instante y desde tu celular.' },
+  { icon: Send, titulo: 'Alertas por Telegram', texto: 'Recibe un aviso apenas alguien llega tarde. Enterarte deja de depender de que te avisen.' },
+  { icon: CalendarCheck, titulo: 'Ley y festivos al día', texto: 'Jornada de 42h, recargos de la reforma laboral y festivos colombianos, siempre actualizados por nosotros.' },
+];
+
+// Testimonios de clientes (van con nombre y empresa reales)
+const TESTIMONIOS = [
+  {
+    nombre: 'Mateo Vera', cargo: 'CEO Grupo MSM · Founder Fem Probiotics', iniciales: 'MV',
+    texto: 'Liquidar la nómina nos tomaba dos días y siempre había reclamos por los recargos. Con HoraPro es cuestión de minutos y los números cuadran. Dejamos de improvisar con hojas de cálculo.',
+  },
+  {
+    nombre: 'Carolina Calle', cargo: 'CEO Tuercas & Pernos', iniciales: 'CC',
+    texto: 'Lo que más me gustó es que la gente marca con la cara y se acabaron las excusas de "se me olvidó firmar". Los reportes de quién llegó tarde me los reviso desde el celular en la mañana.',
+  },
+  {
+    nombre: 'Santiago Botero', cargo: 'Gerente Lavadora Las Brisas', iniciales: 'SB',
+    texto: 'la verdad no soy de tecnologia y pense q iba ser complicado pero no. mis muchachos marcan con la cara y yo veo todo desde el telefono. me ahorro un monton de tiempo y ya no peleo con el excel jaja. muy recomendado',
+  },
 ];
 
 const FAQ = [
   { q: '¿Necesito comprar algún equipo?', a: 'No. HoraPro funciona en cualquier tablet, computador o celular con navegador. El colaborador marca con su rostro o su cédula en el link del kiosco.' },
   { q: '¿Cómo marcan los colaboradores?', a: 'Con su número de cédula o con reconocimiento facial en la pantalla del kiosco, desde cualquier tablet o celular con cámara.' },
-  { q: '¿La prueba gratis tiene límites?', a: `Tienes acceso completo por ${''}7 días, sin tarjeta y sin restricciones. Al terminar decides si continúas.` },
+  { q: '¿La prueba gratis tiene límites?', a: 'Tienes acceso completo, sin tarjeta y sin restricciones. Al terminar decides si continúas.' },
   { q: '¿Se ajusta a la ley laboral colombiana?', a: 'Sí. Aplica la jornada máxima vigente, los recargos de la reforma laboral (Ley 2466) y genera los festivos automáticamente.' },
   { q: '¿Cómo se paga?', a: 'Con Wompi: tarjeta, PSE o Nequi. El cobro es mensual por colaborador activo y puedes cancelar cuando quieras.' },
 ];
@@ -162,7 +181,8 @@ export default function Landing() {
             </span>.
           </h1>
           <p className="text-lg text-muted mt-5 max-w-md">
-            Recargos nocturnos, dominicales, festivos y horas extra calculados automáticamente. Tú solo marcas entrada y salida.
+            Recargos, dominicales, festivos y horas extra calculados solos, según la Ley 2466.
+            <b className="text-ink"> Cero errores de recargos, cero horas en Excel.</b>
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-8">
             {usuario ? (
@@ -176,7 +196,24 @@ export default function Landing() {
             )}
             <a href="#como" className="font-semibold text-ink px-5 py-3.5 rounded-xl hover:bg-gray-100">Ver cómo funciona</a>
           </div>
-          {!usuario && <p className="text-xs text-muted mt-3">Sin tarjeta · sin instalar nada · listo en minutos</p>}
+          {!usuario && <p className="text-xs text-muted mt-3">Sin tarjeta · cancela cuando quieras · soporte por WhatsApp</p>}
+
+          {/* Prueba visual también en móvil (en desktop se muestra la tarjeta flotante) */}
+          <div className="md:hidden mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-5">
+            <p className="text-xs text-muted flex items-center gap-1.5"><Calculator size={13} /> Total a pagar · junio</p>
+            <p className="text-3xl font-extrabold mt-1"><Cuenta>{cop(2101591)}</Cuenta></p>
+            <div className="mt-3 space-y-1.5 text-xs">
+              <div className="flex justify-between"><span className="text-muted">Recargos</span><span className="font-medium">{cop(101818)}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Horas extra</span><span className="font-medium">{cop(249773)}</span></div>
+              <div className="flex justify-between border-t border-gray-100 pt-1.5"><span className="text-muted">Salario base</span><span className="font-medium">{cop(1750000)}</span></div>
+            </div>
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-green-700 font-medium"><Check size={13} /> Calculado automáticamente</div>
+          </div>
+
+          {/* Para quién es (ICP) */}
+          <p className="text-sm text-muted mt-8">
+            Ideal para <b className="text-ink">restaurantes, tiendas, clínicas, obras, vigilancia, call centers</b> y todo negocio con turnos.
+          </p>
         </div>
         {/* La composición animada solo en pantallas medianas+: en móvil ocupaba media pantalla */}
         <div className="relative hidden md:block md:h-96">
@@ -199,6 +236,7 @@ export default function Landing() {
       <section className="border-y border-gray-100 bg-[#f6f6f4]">
         <div className="max-w-6xl mx-auto px-5 py-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-muted">
           <span className="flex items-center gap-1.5"><ShieldCheck size={15} className="text-ink" /> Ley 2466 al día</span>
+          <span className="flex items-center gap-1.5"><ScanFace size={15} className="text-ink" /> Facial anti-fraude</span>
           <span className="flex items-center gap-1.5"><MapPin size={15} className="text-ink" /> Datos en Colombia</span>
           <span className="flex items-center gap-1.5"><MonitorSmartphone size={15} className="text-ink" /> Sin instalar nada</span>
           <span className="flex items-center gap-1.5"><CalendarCheck size={15} className="text-ink" /> {dias} días gratis</span>
@@ -207,6 +245,9 @@ export default function Landing() {
 
       {/* Video VSL */}
       <section className="max-w-3xl mx-auto px-5 pt-4 pb-8 md:pb-12">
+        <p className="text-center text-sm font-semibold text-muted mb-4 flex items-center justify-center gap-2 hp-reveal">
+          <PlayCircle size={17} className="text-ink" /> Míralo en 90 segundos
+        </p>
         <div className="hp-reveal">
           <VideoVSL videoId="09HUubwVicU" />
         </div>
@@ -218,7 +259,7 @@ export default function Landing() {
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Todo el control horario, resuelto</h2>
           <p className="text-muted mt-3">Deja las hojas de cálculo. HoraPro se encarga del cálculo y tú de tu negocio.</p>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {BENEFICIOS.map((b, i) => (
             <div key={b.titulo} className="hp-reveal bg-white border border-gray-200 rounded-2xl p-6" style={{ animationDelay: `${i * 80}ms` }}>
               <div className="bg-primary/30 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
@@ -257,11 +298,37 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Testimonios */}
+      <section className="max-w-6xl mx-auto px-5 py-16 md:py-24">
+        <div className="text-center max-w-xl mx-auto mb-12 hp-reveal">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Negocios que ya dejaron el Excel</h2>
+          <p className="text-muted mt-3">Lo que dicen quienes liquidan sus horas con HoraPro.</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-5">
+          {TESTIMONIOS.map((t, i) => (
+            <figure key={t.nombre} className="hp-reveal bg-white border border-gray-200 rounded-2xl p-6 flex flex-col" style={{ animationDelay: `${i * 90}ms` }}>
+              <Quote size={26} className="text-primary shrink-0" />
+              <div className="flex gap-0.5 mt-3 mb-2">
+                {Array.from({ length: 5 }).map((_, s) => <Star key={s} size={14} className="fill-primary text-primary" />)}
+              </div>
+              <blockquote className="text-sm text-ink/90 leading-relaxed flex-1">"{t.texto}"</blockquote>
+              <figcaption className="flex items-center gap-3 mt-5 pt-4 border-t border-gray-100">
+                <span className="w-10 h-10 rounded-full bg-ink text-white font-bold text-sm flex items-center justify-center shrink-0">{t.iniciales}</span>
+                <span>
+                  <span className="block text-sm font-bold text-ink">{t.nombre}</span>
+                  <span className="block text-xs text-muted">{t.cargo}</span>
+                </span>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
       {/* Precios */}
       <section id="precios" className="max-w-3xl mx-auto px-5 py-16 md:py-24">
         <div className="text-center mb-10 hp-reveal">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Precio simple, por colaborador</h2>
-          <p className="text-muted mt-3">Pagas solo por quienes marcan. Sin costos de instalación.</p>
+          <p className="text-muted mt-3">Pagas solo por quienes marcan. Menos que un reloj biométrico — y sin comprar equipos.</p>
         </div>
         <div className="hp-reveal bg-white border-2 border-primary rounded-3xl p-8 text-center shadow-sm">
           {precios ? (
@@ -280,7 +347,7 @@ export default function Landing() {
               <Link to="/registro" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold px-7 py-3.5 rounded-xl text-base mt-8">
                 Empezar {dias} días gratis <ArrowRight size={18} />
               </Link>
-              <p className="text-xs text-muted mt-3">No se cobra durante la prueba.</p>
+              <p className="text-xs text-muted mt-3">No se cobra durante la prueba · cancela cuando quieras.</p>
             </>
           ) : (
             <p className="text-muted py-10">Cargando precios...</p>
