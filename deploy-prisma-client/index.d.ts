@@ -3367,8 +3367,24 @@ export namespace Prisma {
 
   export type AggregateSuscripcion = {
     _count: SuscripcionCountAggregateOutputType | null
+    _avg: SuscripcionAvgAggregateOutputType | null
+    _sum: SuscripcionSumAggregateOutputType | null
     _min: SuscripcionMinAggregateOutputType | null
     _max: SuscripcionMaxAggregateOutputType | null
+  }
+
+  export type SuscripcionAvgAggregateOutputType = {
+    precioFijo: number | null
+    precioTramo1: number | null
+    limiteTramo1: number | null
+    precioTramo2: number | null
+  }
+
+  export type SuscripcionSumAggregateOutputType = {
+    precioFijo: number | null
+    precioTramo1: number | null
+    limiteTramo1: number | null
+    precioTramo2: number | null
   }
 
   export type SuscripcionMinAggregateOutputType = {
@@ -3378,6 +3394,11 @@ export namespace Prisma {
     finPrueba: Date | null
     pagadoHasta: Date | null
     suspendidaEn: Date | null
+    precioModo: string | null
+    precioFijo: number | null
+    precioTramo1: number | null
+    limiteTramo1: number | null
+    precioTramo2: number | null
     wompiFuentePagoId: string | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -3390,6 +3411,11 @@ export namespace Prisma {
     finPrueba: Date | null
     pagadoHasta: Date | null
     suspendidaEn: Date | null
+    precioModo: string | null
+    precioFijo: number | null
+    precioTramo1: number | null
+    limiteTramo1: number | null
+    precioTramo2: number | null
     wompiFuentePagoId: string | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -3402,12 +3428,31 @@ export namespace Prisma {
     finPrueba: number
     pagadoHasta: number
     suspendidaEn: number
+    precioModo: number
+    precioFijo: number
+    precioTramo1: number
+    limiteTramo1: number
+    precioTramo2: number
     wompiFuentePagoId: number
     creadoEn: number
     actualizadoEn: number
     _all: number
   }
 
+
+  export type SuscripcionAvgAggregateInputType = {
+    precioFijo?: true
+    precioTramo1?: true
+    limiteTramo1?: true
+    precioTramo2?: true
+  }
+
+  export type SuscripcionSumAggregateInputType = {
+    precioFijo?: true
+    precioTramo1?: true
+    limiteTramo1?: true
+    precioTramo2?: true
+  }
 
   export type SuscripcionMinAggregateInputType = {
     id?: true
@@ -3416,6 +3461,11 @@ export namespace Prisma {
     finPrueba?: true
     pagadoHasta?: true
     suspendidaEn?: true
+    precioModo?: true
+    precioFijo?: true
+    precioTramo1?: true
+    limiteTramo1?: true
+    precioTramo2?: true
     wompiFuentePagoId?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -3428,6 +3478,11 @@ export namespace Prisma {
     finPrueba?: true
     pagadoHasta?: true
     suspendidaEn?: true
+    precioModo?: true
+    precioFijo?: true
+    precioTramo1?: true
+    limiteTramo1?: true
+    precioTramo2?: true
     wompiFuentePagoId?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -3440,6 +3495,11 @@ export namespace Prisma {
     finPrueba?: true
     pagadoHasta?: true
     suspendidaEn?: true
+    precioModo?: true
+    precioFijo?: true
+    precioTramo1?: true
+    limiteTramo1?: true
+    precioTramo2?: true
     wompiFuentePagoId?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -3484,6 +3544,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: SuscripcionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SuscripcionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: SuscripcionMinAggregateInputType
@@ -3514,6 +3586,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: SuscripcionCountAggregateInputType | true
+    _avg?: SuscripcionAvgAggregateInputType
+    _sum?: SuscripcionSumAggregateInputType
     _min?: SuscripcionMinAggregateInputType
     _max?: SuscripcionMaxAggregateInputType
   }
@@ -3525,10 +3599,17 @@ export namespace Prisma {
     finPrueba: Date
     pagadoHasta: Date | null
     suspendidaEn: Date | null
+    precioModo: string | null
+    precioFijo: number | null
+    precioTramo1: number | null
+    limiteTramo1: number | null
+    precioTramo2: number | null
     wompiFuentePagoId: string | null
     creadoEn: Date
     actualizadoEn: Date
     _count: SuscripcionCountAggregateOutputType | null
+    _avg: SuscripcionAvgAggregateOutputType | null
+    _sum: SuscripcionSumAggregateOutputType | null
     _min: SuscripcionMinAggregateOutputType | null
     _max: SuscripcionMaxAggregateOutputType | null
   }
@@ -3554,6 +3635,11 @@ export namespace Prisma {
     finPrueba?: boolean
     pagadoHasta?: boolean
     suspendidaEn?: boolean
+    precioModo?: boolean
+    precioFijo?: boolean
+    precioTramo1?: boolean
+    limiteTramo1?: boolean
+    precioTramo2?: boolean
     wompiFuentePagoId?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -3570,6 +3656,11 @@ export namespace Prisma {
     finPrueba?: boolean
     pagadoHasta?: boolean
     suspendidaEn?: boolean
+    precioModo?: boolean
+    precioFijo?: boolean
+    precioTramo1?: boolean
+    limiteTramo1?: boolean
+    precioTramo2?: boolean
     wompiFuentePagoId?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -3594,6 +3685,11 @@ export namespace Prisma {
       finPrueba: Date
       pagadoHasta: Date | null
       suspendidaEn: Date | null
+      precioModo: string | null
+      precioFijo: number | null
+      precioTramo1: number | null
+      limiteTramo1: number | null
+      precioTramo2: number | null
       wompiFuentePagoId: string | null
       creadoEn: Date
       actualizadoEn: Date
@@ -3974,6 +4070,11 @@ export namespace Prisma {
     readonly finPrueba: FieldRef<"Suscripcion", 'DateTime'>
     readonly pagadoHasta: FieldRef<"Suscripcion", 'DateTime'>
     readonly suspendidaEn: FieldRef<"Suscripcion", 'DateTime'>
+    readonly precioModo: FieldRef<"Suscripcion", 'String'>
+    readonly precioFijo: FieldRef<"Suscripcion", 'Int'>
+    readonly precioTramo1: FieldRef<"Suscripcion", 'Int'>
+    readonly limiteTramo1: FieldRef<"Suscripcion", 'Int'>
+    readonly precioTramo2: FieldRef<"Suscripcion", 'Int'>
     readonly wompiFuentePagoId: FieldRef<"Suscripcion", 'String'>
     readonly creadoEn: FieldRef<"Suscripcion", 'DateTime'>
     readonly actualizadoEn: FieldRef<"Suscripcion", 'DateTime'>
@@ -12800,6 +12901,9 @@ export namespace Prisma {
     tipo: $Enums.TipoPermiso | null
     descripcion: string | null
     aprobado: boolean | null
+    evidencia: string | null
+    evidenciaTipo: string | null
+    evidenciaNombre: string | null
     creadoEn: Date | null
   }
 
@@ -12811,6 +12915,9 @@ export namespace Prisma {
     tipo: $Enums.TipoPermiso | null
     descripcion: string | null
     aprobado: boolean | null
+    evidencia: string | null
+    evidenciaTipo: string | null
+    evidenciaNombre: string | null
     creadoEn: Date | null
   }
 
@@ -12822,6 +12929,9 @@ export namespace Prisma {
     tipo: number
     descripcion: number
     aprobado: number
+    evidencia: number
+    evidenciaTipo: number
+    evidenciaNombre: number
     creadoEn: number
     _all: number
   }
@@ -12835,6 +12945,9 @@ export namespace Prisma {
     tipo?: true
     descripcion?: true
     aprobado?: true
+    evidencia?: true
+    evidenciaTipo?: true
+    evidenciaNombre?: true
     creadoEn?: true
   }
 
@@ -12846,6 +12959,9 @@ export namespace Prisma {
     tipo?: true
     descripcion?: true
     aprobado?: true
+    evidencia?: true
+    evidenciaTipo?: true
+    evidenciaNombre?: true
     creadoEn?: true
   }
 
@@ -12857,6 +12973,9 @@ export namespace Prisma {
     tipo?: true
     descripcion?: true
     aprobado?: true
+    evidencia?: true
+    evidenciaTipo?: true
+    evidenciaNombre?: true
     creadoEn?: true
     _all?: true
   }
@@ -12941,6 +13060,9 @@ export namespace Prisma {
     tipo: $Enums.TipoPermiso
     descripcion: string | null
     aprobado: boolean
+    evidencia: string | null
+    evidenciaTipo: string | null
+    evidenciaNombre: string | null
     creadoEn: Date
     _count: PermisoCountAggregateOutputType | null
     _min: PermisoMinAggregateOutputType | null
@@ -12969,6 +13091,9 @@ export namespace Prisma {
     tipo?: boolean
     descripcion?: boolean
     aprobado?: boolean
+    evidencia?: boolean
+    evidenciaTipo?: boolean
+    evidenciaNombre?: boolean
     creadoEn?: boolean
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["permiso"]>
@@ -12982,6 +13107,9 @@ export namespace Prisma {
     tipo?: boolean
     descripcion?: boolean
     aprobado?: boolean
+    evidencia?: boolean
+    evidenciaTipo?: boolean
+    evidenciaNombre?: boolean
     creadoEn?: boolean
   }
 
@@ -13002,6 +13130,9 @@ export namespace Prisma {
       tipo: $Enums.TipoPermiso
       descripcion: string | null
       aprobado: boolean
+      evidencia: string | null
+      evidenciaTipo: string | null
+      evidenciaNombre: string | null
       creadoEn: Date
     }, ExtArgs["result"]["permiso"]>
     composites: {}
@@ -13380,6 +13511,9 @@ export namespace Prisma {
     readonly tipo: FieldRef<"Permiso", 'TipoPermiso'>
     readonly descripcion: FieldRef<"Permiso", 'String'>
     readonly aprobado: FieldRef<"Permiso", 'Boolean'>
+    readonly evidencia: FieldRef<"Permiso", 'String'>
+    readonly evidenciaTipo: FieldRef<"Permiso", 'String'>
+    readonly evidenciaNombre: FieldRef<"Permiso", 'String'>
     readonly creadoEn: FieldRef<"Permiso", 'DateTime'>
   }
     
@@ -16475,6 +16609,11 @@ export namespace Prisma {
     finPrueba: 'finPrueba',
     pagadoHasta: 'pagadoHasta',
     suspendidaEn: 'suspendidaEn',
+    precioModo: 'precioModo',
+    precioFijo: 'precioFijo',
+    precioTramo1: 'precioTramo1',
+    limiteTramo1: 'limiteTramo1',
+    precioTramo2: 'precioTramo2',
     wompiFuentePagoId: 'wompiFuentePagoId',
     creadoEn: 'creadoEn',
     actualizadoEn: 'actualizadoEn'
@@ -16623,6 +16762,9 @@ export namespace Prisma {
     tipo: 'tipo',
     descripcion: 'descripcion',
     aprobado: 'aprobado',
+    evidencia: 'evidencia',
+    evidenciaTipo: 'evidenciaTipo',
+    evidenciaNombre: 'evidenciaNombre',
     creadoEn: 'creadoEn'
   };
 
@@ -16743,16 +16885,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Float'
+   * Reference to a field of type 'Int'
    */
-  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
     
 
 
   /**
-   * Reference to a field of type 'Int'
+   * Reference to a field of type 'Float'
    */
-  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
     
 
 
@@ -16909,6 +17051,11 @@ export namespace Prisma {
     finPrueba?: DateTimeFilter<"Suscripcion"> | Date | string
     pagadoHasta?: DateTimeNullableFilter<"Suscripcion"> | Date | string | null
     suspendidaEn?: DateTimeNullableFilter<"Suscripcion"> | Date | string | null
+    precioModo?: StringNullableFilter<"Suscripcion"> | string | null
+    precioFijo?: IntNullableFilter<"Suscripcion"> | number | null
+    precioTramo1?: IntNullableFilter<"Suscripcion"> | number | null
+    limiteTramo1?: IntNullableFilter<"Suscripcion"> | number | null
+    precioTramo2?: IntNullableFilter<"Suscripcion"> | number | null
     wompiFuentePagoId?: StringNullableFilter<"Suscripcion"> | string | null
     creadoEn?: DateTimeFilter<"Suscripcion"> | Date | string
     actualizadoEn?: DateTimeFilter<"Suscripcion"> | Date | string
@@ -16923,6 +17070,11 @@ export namespace Prisma {
     finPrueba?: SortOrder
     pagadoHasta?: SortOrderInput | SortOrder
     suspendidaEn?: SortOrderInput | SortOrder
+    precioModo?: SortOrderInput | SortOrder
+    precioFijo?: SortOrderInput | SortOrder
+    precioTramo1?: SortOrderInput | SortOrder
+    limiteTramo1?: SortOrderInput | SortOrder
+    precioTramo2?: SortOrderInput | SortOrder
     wompiFuentePagoId?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -16940,6 +17092,11 @@ export namespace Prisma {
     finPrueba?: DateTimeFilter<"Suscripcion"> | Date | string
     pagadoHasta?: DateTimeNullableFilter<"Suscripcion"> | Date | string | null
     suspendidaEn?: DateTimeNullableFilter<"Suscripcion"> | Date | string | null
+    precioModo?: StringNullableFilter<"Suscripcion"> | string | null
+    precioFijo?: IntNullableFilter<"Suscripcion"> | number | null
+    precioTramo1?: IntNullableFilter<"Suscripcion"> | number | null
+    limiteTramo1?: IntNullableFilter<"Suscripcion"> | number | null
+    precioTramo2?: IntNullableFilter<"Suscripcion"> | number | null
     wompiFuentePagoId?: StringNullableFilter<"Suscripcion"> | string | null
     creadoEn?: DateTimeFilter<"Suscripcion"> | Date | string
     actualizadoEn?: DateTimeFilter<"Suscripcion"> | Date | string
@@ -16954,12 +17111,19 @@ export namespace Prisma {
     finPrueba?: SortOrder
     pagadoHasta?: SortOrderInput | SortOrder
     suspendidaEn?: SortOrderInput | SortOrder
+    precioModo?: SortOrderInput | SortOrder
+    precioFijo?: SortOrderInput | SortOrder
+    precioTramo1?: SortOrderInput | SortOrder
+    limiteTramo1?: SortOrderInput | SortOrder
+    precioTramo2?: SortOrderInput | SortOrder
     wompiFuentePagoId?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     _count?: SuscripcionCountOrderByAggregateInput
+    _avg?: SuscripcionAvgOrderByAggregateInput
     _max?: SuscripcionMaxOrderByAggregateInput
     _min?: SuscripcionMinOrderByAggregateInput
+    _sum?: SuscripcionSumOrderByAggregateInput
   }
 
   export type SuscripcionScalarWhereWithAggregatesInput = {
@@ -16972,6 +17136,11 @@ export namespace Prisma {
     finPrueba?: DateTimeWithAggregatesFilter<"Suscripcion"> | Date | string
     pagadoHasta?: DateTimeNullableWithAggregatesFilter<"Suscripcion"> | Date | string | null
     suspendidaEn?: DateTimeNullableWithAggregatesFilter<"Suscripcion"> | Date | string | null
+    precioModo?: StringNullableWithAggregatesFilter<"Suscripcion"> | string | null
+    precioFijo?: IntNullableWithAggregatesFilter<"Suscripcion"> | number | null
+    precioTramo1?: IntNullableWithAggregatesFilter<"Suscripcion"> | number | null
+    limiteTramo1?: IntNullableWithAggregatesFilter<"Suscripcion"> | number | null
+    precioTramo2?: IntNullableWithAggregatesFilter<"Suscripcion"> | number | null
     wompiFuentePagoId?: StringNullableWithAggregatesFilter<"Suscripcion"> | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Suscripcion"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Suscripcion"> | Date | string
@@ -17668,6 +17837,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoFilter<"Permiso"> | $Enums.TipoPermiso
     descripcion?: StringNullableFilter<"Permiso"> | string | null
     aprobado?: BoolFilter<"Permiso"> | boolean
+    evidencia?: StringNullableFilter<"Permiso"> | string | null
+    evidenciaTipo?: StringNullableFilter<"Permiso"> | string | null
+    evidenciaNombre?: StringNullableFilter<"Permiso"> | string | null
     creadoEn?: DateTimeFilter<"Permiso"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
   }
@@ -17680,6 +17852,9 @@ export namespace Prisma {
     tipo?: SortOrder
     descripcion?: SortOrderInput | SortOrder
     aprobado?: SortOrder
+    evidencia?: SortOrderInput | SortOrder
+    evidenciaTipo?: SortOrderInput | SortOrder
+    evidenciaNombre?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     colaborador?: ColaboradorOrderByWithRelationInput
   }
@@ -17695,6 +17870,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoFilter<"Permiso"> | $Enums.TipoPermiso
     descripcion?: StringNullableFilter<"Permiso"> | string | null
     aprobado?: BoolFilter<"Permiso"> | boolean
+    evidencia?: StringNullableFilter<"Permiso"> | string | null
+    evidenciaTipo?: StringNullableFilter<"Permiso"> | string | null
+    evidenciaNombre?: StringNullableFilter<"Permiso"> | string | null
     creadoEn?: DateTimeFilter<"Permiso"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
   }, "id">
@@ -17707,6 +17885,9 @@ export namespace Prisma {
     tipo?: SortOrder
     descripcion?: SortOrderInput | SortOrder
     aprobado?: SortOrder
+    evidencia?: SortOrderInput | SortOrder
+    evidenciaTipo?: SortOrderInput | SortOrder
+    evidenciaNombre?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     _count?: PermisoCountOrderByAggregateInput
     _max?: PermisoMaxOrderByAggregateInput
@@ -17724,6 +17905,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoWithAggregatesFilter<"Permiso"> | $Enums.TipoPermiso
     descripcion?: StringNullableWithAggregatesFilter<"Permiso"> | string | null
     aprobado?: BoolWithAggregatesFilter<"Permiso"> | boolean
+    evidencia?: StringNullableWithAggregatesFilter<"Permiso"> | string | null
+    evidenciaTipo?: StringNullableWithAggregatesFilter<"Permiso"> | string | null
+    evidenciaNombre?: StringNullableWithAggregatesFilter<"Permiso"> | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Permiso"> | Date | string
   }
 
@@ -18054,6 +18238,11 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    precioModo?: string | null
+    precioFijo?: number | null
+    precioTramo1?: number | null
+    limiteTramo1?: number | null
+    precioTramo2?: number | null
     wompiFuentePagoId?: string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -18068,6 +18257,11 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    precioModo?: string | null
+    precioFijo?: number | null
+    precioTramo1?: number | null
+    limiteTramo1?: number | null
+    precioTramo2?: number | null
     wompiFuentePagoId?: string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -18080,6 +18274,11 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precioModo?: NullableStringFieldUpdateOperationsInput | string | null
+    precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    limiteTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo2?: NullableIntFieldUpdateOperationsInput | number | null
     wompiFuentePagoId?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18094,6 +18293,11 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precioModo?: NullableStringFieldUpdateOperationsInput | string | null
+    precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    limiteTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo2?: NullableIntFieldUpdateOperationsInput | number | null
     wompiFuentePagoId?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18107,6 +18311,11 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    precioModo?: string | null
+    precioFijo?: number | null
+    precioTramo1?: number | null
+    limiteTramo1?: number | null
+    precioTramo2?: number | null
     wompiFuentePagoId?: string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -18118,6 +18327,11 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precioModo?: NullableStringFieldUpdateOperationsInput | string | null
+    precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    limiteTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo2?: NullableIntFieldUpdateOperationsInput | number | null
     wompiFuentePagoId?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18130,6 +18344,11 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precioModo?: NullableStringFieldUpdateOperationsInput | string | null
+    precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    limiteTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo2?: NullableIntFieldUpdateOperationsInput | number | null
     wompiFuentePagoId?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18886,6 +19105,9 @@ export namespace Prisma {
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
+    evidencia?: string | null
+    evidenciaTipo?: string | null
+    evidenciaNombre?: string | null
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutPermisosInput
   }
@@ -18898,6 +19120,9 @@ export namespace Prisma {
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
+    evidencia?: string | null
+    evidenciaTipo?: string | null
+    evidenciaNombre?: string | null
     creadoEn?: Date | string
   }
 
@@ -18908,6 +19133,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
+    evidencia?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutPermisosNestedInput
   }
@@ -18920,6 +19148,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
+    evidencia?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -18931,6 +19162,9 @@ export namespace Prisma {
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
+    evidencia?: string | null
+    evidenciaTipo?: string | null
+    evidenciaNombre?: string | null
     creadoEn?: Date | string
   }
 
@@ -18941,6 +19175,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
+    evidencia?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -18952,6 +19189,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
+    evidencia?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -19396,6 +19636,17 @@ export namespace Prisma {
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
   export type EmpresaRelationFilter = {
     is?: EmpresaWhereInput
     isNot?: EmpresaWhereInput
@@ -19418,9 +19669,21 @@ export namespace Prisma {
     finPrueba?: SortOrder
     pagadoHasta?: SortOrder
     suspendidaEn?: SortOrder
+    precioModo?: SortOrder
+    precioFijo?: SortOrder
+    precioTramo1?: SortOrder
+    limiteTramo1?: SortOrder
+    precioTramo2?: SortOrder
     wompiFuentePagoId?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
+  }
+
+  export type SuscripcionAvgOrderByAggregateInput = {
+    precioFijo?: SortOrder
+    precioTramo1?: SortOrder
+    limiteTramo1?: SortOrder
+    precioTramo2?: SortOrder
   }
 
   export type SuscripcionMaxOrderByAggregateInput = {
@@ -19430,6 +19693,11 @@ export namespace Prisma {
     finPrueba?: SortOrder
     pagadoHasta?: SortOrder
     suspendidaEn?: SortOrder
+    precioModo?: SortOrder
+    precioFijo?: SortOrder
+    precioTramo1?: SortOrder
+    limiteTramo1?: SortOrder
+    precioTramo2?: SortOrder
     wompiFuentePagoId?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -19442,9 +19710,21 @@ export namespace Prisma {
     finPrueba?: SortOrder
     pagadoHasta?: SortOrder
     suspendidaEn?: SortOrder
+    precioModo?: SortOrder
+    precioFijo?: SortOrder
+    precioTramo1?: SortOrder
+    limiteTramo1?: SortOrder
+    precioTramo2?: SortOrder
     wompiFuentePagoId?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
+  }
+
+  export type SuscripcionSumOrderByAggregateInput = {
+    precioFijo?: SortOrder
+    precioTramo1?: SortOrder
+    limiteTramo1?: SortOrder
+    precioTramo2?: SortOrder
   }
 
   export type EnumEstadoSuscripcionWithAggregatesFilter<$PrismaModel = never> = {
@@ -19469,6 +19749,22 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type FloatFilter<$PrismaModel = never> = {
@@ -20116,6 +20412,9 @@ export namespace Prisma {
     tipo?: SortOrder
     descripcion?: SortOrder
     aprobado?: SortOrder
+    evidencia?: SortOrder
+    evidenciaTipo?: SortOrder
+    evidenciaNombre?: SortOrder
     creadoEn?: SortOrder
   }
 
@@ -20127,6 +20426,9 @@ export namespace Prisma {
     tipo?: SortOrder
     descripcion?: SortOrder
     aprobado?: SortOrder
+    evidencia?: SortOrder
+    evidenciaTipo?: SortOrder
+    evidenciaNombre?: SortOrder
     creadoEn?: SortOrder
   }
 
@@ -20138,6 +20440,9 @@ export namespace Prisma {
     tipo?: SortOrder
     descripcion?: SortOrder
     aprobado?: SortOrder
+    evidencia?: SortOrder
+    evidenciaTipo?: SortOrder
+    evidenciaNombre?: SortOrder
     creadoEn?: SortOrder
   }
 
@@ -20602,6 +20907,14 @@ export namespace Prisma {
 
   export type NullableDateTimeFieldUpdateOperationsInput = {
     set?: Date | string | null
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
   }
 
   export type EmpresaUpdateOneRequiredWithoutSuscripcionNestedInput = {
@@ -21168,6 +21481,33 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
   export type NestedFloatFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel>
     in?: number[]
@@ -21484,6 +21824,11 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    precioModo?: string | null
+    precioFijo?: number | null
+    precioTramo1?: number | null
+    limiteTramo1?: number | null
+    precioTramo2?: number | null
     wompiFuentePagoId?: string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -21496,6 +21841,11 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    precioModo?: string | null
+    precioFijo?: number | null
+    precioTramo1?: number | null
+    limiteTramo1?: number | null
+    precioTramo2?: number | null
     wompiFuentePagoId?: string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -21709,6 +22059,11 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precioModo?: NullableStringFieldUpdateOperationsInput | string | null
+    precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    limiteTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo2?: NullableIntFieldUpdateOperationsInput | number | null
     wompiFuentePagoId?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -21721,6 +22076,11 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precioModo?: NullableStringFieldUpdateOperationsInput | string | null
+    precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    limiteTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo2?: NullableIntFieldUpdateOperationsInput | number | null
     wompiFuentePagoId?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -21957,6 +22317,11 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    precioModo?: string | null
+    precioFijo?: number | null
+    precioTramo1?: number | null
+    limiteTramo1?: number | null
+    precioTramo2?: number | null
     wompiFuentePagoId?: string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -21970,6 +22335,11 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    precioModo?: string | null
+    precioFijo?: number | null
+    precioTramo1?: number | null
+    limiteTramo1?: number | null
+    precioTramo2?: number | null
     wompiFuentePagoId?: string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -21997,6 +22367,11 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precioModo?: NullableStringFieldUpdateOperationsInput | string | null
+    precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    limiteTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo2?: NullableIntFieldUpdateOperationsInput | number | null
     wompiFuentePagoId?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -22010,6 +22385,11 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precioModo?: NullableStringFieldUpdateOperationsInput | string | null
+    precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    limiteTramo1?: NullableIntFieldUpdateOperationsInput | number | null
+    precioTramo2?: NullableIntFieldUpdateOperationsInput | number | null
     wompiFuentePagoId?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -22496,6 +22876,9 @@ export namespace Prisma {
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
+    evidencia?: string | null
+    evidenciaTipo?: string | null
+    evidenciaNombre?: string | null
     creadoEn?: Date | string
   }
 
@@ -22506,6 +22889,9 @@ export namespace Prisma {
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
+    evidencia?: string | null
+    evidenciaTipo?: string | null
+    evidenciaNombre?: string | null
     creadoEn?: Date | string
   }
 
@@ -22662,6 +23048,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoFilter<"Permiso"> | $Enums.TipoPermiso
     descripcion?: StringNullableFilter<"Permiso"> | string | null
     aprobado?: BoolFilter<"Permiso"> | boolean
+    evidencia?: StringNullableFilter<"Permiso"> | string | null
+    evidenciaTipo?: StringNullableFilter<"Permiso"> | string | null
+    evidenciaNombre?: StringNullableFilter<"Permiso"> | string | null
     creadoEn?: DateTimeFilter<"Permiso"> | Date | string
   }
 
@@ -23598,6 +23987,9 @@ export namespace Prisma {
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
+    evidencia?: string | null
+    evidenciaTipo?: string | null
+    evidenciaNombre?: string | null
     creadoEn?: Date | string
   }
 
@@ -23650,6 +24042,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
+    evidencia?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -23660,6 +24055,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
+    evidencia?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -23670,6 +24068,9 @@ export namespace Prisma {
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
+    evidencia?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

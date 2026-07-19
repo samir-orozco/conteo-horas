@@ -142,6 +142,11 @@ exports.Prisma.SuscripcionScalarFieldEnum = {
   finPrueba: 'finPrueba',
   pagadoHasta: 'pagadoHasta',
   suspendidaEn: 'suspendidaEn',
+  precioModo: 'precioModo',
+  precioFijo: 'precioFijo',
+  precioTramo1: 'precioTramo1',
+  limiteTramo1: 'limiteTramo1',
+  precioTramo2: 'precioTramo2',
   wompiFuentePagoId: 'wompiFuentePagoId',
   creadoEn: 'creadoEn',
   actualizadoEn: 'actualizadoEn'
@@ -260,6 +265,9 @@ exports.Prisma.PermisoScalarFieldEnum = {
   tipo: 'tipo',
   descripcion: 'descripcion',
   aprobado: 'aprobado',
+  evidencia: 'evidencia',
+  evidenciaTipo: 'evidenciaTipo',
+  evidenciaNombre: 'evidenciaNombre',
   creadoEn: 'creadoEn'
 };
 
