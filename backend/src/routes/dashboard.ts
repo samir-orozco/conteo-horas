@@ -56,7 +56,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       prisma.tipoHora.findMany(),
       prisma.permiso.findMany({
         where: { aprobado: true, colaborador: { empresaId }, fechaInicio: { lte: finDia }, fechaFin: { gte: inicioDia } },
-        include: { colaborador: true },
+        select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true, colaborador: true },
       }),
     ]);
 
@@ -113,6 +113,13 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     const novedadHoyIds = new Set(
       permisos.filter(p => claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin)).map(p => p.colaboradorId)
     );
+    // Tipo de novedad activa hoy por colaborador (para explicar por qué no marcó)
+    const novedadHoyTipo = new Map<string, string>();
+    for (const p of permisos) {
+      if (claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin) && !novedadHoyTipo.has(p.colaboradorId)) {
+        novedadHoyTipo.set(p.colaboradorId, p.tipo);
+      }
+    }
 
     // ===== Llegadas tarde hoy (según horario) =====
     const llegadasTardeHoy: { id: string; nombre: string; horaLlegada: string; minutosTarde: number }[] = [];
@@ -125,17 +132,18 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     }
 
     // ===== Sin marcar hoy (deberían haber entrado y no lo han hecho) =====
-    const sinMarcarHoy: { id: string; nombre: string; cargo: string | null; horario: string; horaEntrada: string }[] = [];
+    const sinMarcarHoy: { id: string; nombre: string; cargo: string | null; horario: string; horaEntrada: string; novedad: string | null }[] = [];
 
     for (const c of colaboradores) {
       if (!c.horario || !c.horario.activo) continue;
       // La franja que aplica hoy (un horario puede variar por día, ej. sábados más corto)
       const franjaHoy = franjaDelDia(c.horario, diaHoy);
-      const aplicaHoy = !!franjaHoy && !hoyEsFestivo && !novedadHoyIds.has(c.id);
-      if (!aplicaHoy || !franjaHoy) continue;
+      if (!franjaHoy || hoyEsFestivo) continue;
 
       const entrada = primeraEntradaHoy.get(c.id);
       if (entrada) {
+        // Llegó tarde: la tardanza solo aplica si no tiene novedad que justifique el día
+        if (novedadHoyIds.has(c.id)) continue;
         const z = toZonedTime(entrada, TZ);
         const llegadaMin = z.getHours() * 60 + z.getMinutes();
         const tarde = llegadaMin - (minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin);
@@ -148,15 +156,20 @@ export default async function dashboardRoutes(app: FastifyInstance) {
           });
         }
       } else {
-        // Solo lo marcamos "sin marcar" si ya pasó su hora de entrada + tolerancia
+        // No ha marcado. Si tiene novedad hoy (ej. médico), lo mostramos con el
+        // distintivo de su novedad para saber por qué no marcó. Si no, solo lo
+        // marcamos "sin marcar" cuando ya pasó su hora de entrada + tolerancia.
+        const novedad = novedadHoyTipo.get(c.id) ?? null;
         const ahoraMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
-        if (ahoraMin > minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin) {
+        const yaPasoEntrada = ahoraMin > minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin;
+        if (novedad || yaPasoEntrada) {
           sinMarcarHoy.push({
             id: c.id,
             nombre: `${c.nombre} ${c.apellido}`,
             cargo: c.cargo,
             horario: c.horario.nombre,
             horaEntrada: franjaHoy.horaEntrada,
+            novedad,
           });
         }
       }
@@ -220,9 +233,16 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     const novedadesHoy = permisos
       .filter(p => claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin))
       .map(p => ({
+        id: p.id,
+        colaboradorId: p.colaboradorId,
         colaborador: `${p.colaborador.nombre} ${p.colaborador.apellido}`,
         tipo: p.tipo,
+        descripcion: p.descripcion,
+        aprobado: p.aprobado,
+        fechaInicio: p.fechaInicio,
         fechaFin: p.fechaFin,
+        evidenciaTipo: p.evidenciaTipo,
+        evidenciaNombre: p.evidenciaNombre,
       }));
 
     // ===== Próximos festivos (siguientes 45 días) =====

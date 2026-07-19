@@ -5,13 +5,14 @@ import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import {
   ArrowLeft, Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
-  ScanFace, Check, Trash2, ShieldCheck,
+  ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Download,
 } from 'lucide-react';
 import api from '../lib/api';
 import { formatearMiles, parsearMiles, resumenFranjas, type Franja } from './Colaboradores';
 import CamaraRostro from '../components/CamaraRostro';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
+import CampoEvidencia, { type CambioEvidencia } from '../components/CampoEvidencia';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
 type Colaborador = {
@@ -27,7 +28,7 @@ type Tardanzas = {
 
 const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`);
 type Registro = { id: string; fecha: string; entrada?: string; salida?: string; tipo: string; observacion?: string };
-type Permiso = { id: string; fechaInicio: string; fechaFin: string; tipo: string; descripcion?: string; aprobado: boolean };
+type Permiso = { id: string; fechaInicio: string; fechaFin: string; tipo: string; descripcion?: string; aprobado: boolean; evidenciaTipo?: string | null; evidenciaNombre?: string | null };
 type Liquidacion = {
   liquidacion: { codigo: string; nombre: string; horas: number; recargo: number; esExtra: boolean; factorPagado: number; subtotal: number }[];
   salarioBase: number; totalRecargos: number; totalExtra: number; totalAdicional: number;
@@ -72,6 +73,9 @@ export default function ColaboradorDetalle() {
   const [verNovedad, setVerNovedad] = useState<Permiso | null>(null);
   const [editandoNovedad, setEditandoNovedad] = useState<Permiso | null>(null);
   const [aprobando, setAprobando] = useState(false);
+  const [cambioEvidencia, setCambioEvidencia] = useState<CambioEvidencia>({ tipo: 'sin-cambio' });
+  const [evidenciaVer, setEvidenciaVer] = useState<{ data: string; tipo: string; nombre?: string | null } | null>(null);
+  const [cargandoEvidencia, setCargandoEvidencia] = useState(false);
 
   const [consentimientoRostro, setConsentimientoRostro] = useState(false);
   const [usaGafas, setUsaGafas] = useState(false);
@@ -113,7 +117,7 @@ export default function ColaboradorDetalle() {
     setGuardandoNovedad(true);
     setErrorNovedad('');
     try {
-      const datos = {
+      const datos: any = {
         ...novedad,
         colaboradorId: id,
         // Medianoche de Bogotá (Colombia siempre es UTC-5, sin horario de verano):
@@ -121,6 +125,12 @@ export default function ColaboradorDetalle() {
         fechaInicio: new Date(`${novedad.fechaInicio}T00:00:00-05:00`),
         fechaFin: new Date(`${novedad.fechaFin}T00:00:00-05:00`),
       };
+      if (cambioEvidencia.tipo === 'nuevo') {
+        datos.evidencia = cambioEvidencia.evidencia.data;
+        datos.evidenciaNombre = cambioEvidencia.evidencia.nombre;
+      } else if (cambioEvidencia.tipo === 'quitar') {
+        datos.evidencia = null;
+      }
       if (editandoNovedad) await api.put(`/permisos/${editandoNovedad.id}`, datos);
       else await api.post('/permisos', datos);
       setModalNovedad(false);
@@ -184,9 +194,23 @@ export default function ColaboradorDetalle() {
       descripcion: p.descripcion ?? '',
       aprobado: p.aprobado,
     });
+    setCambioEvidencia({ tipo: 'sin-cambio' });
     setErrorNovedad('');
     setVerNovedad(null);
     setModalNovedad(true);
+  };
+
+  // Trae la evidencia (base64) de una novedad para verla/descargarla
+  const verEvidencia = async (permisoId: string) => {
+    setCargandoEvidencia(true);
+    try {
+      const r = await api.get(`/permisos/${permisoId}/evidencia`);
+      setEvidenciaVer({ data: r.data.evidencia, tipo: r.data.evidenciaTipo, nombre: r.data.evidenciaNombre });
+    } catch {
+      setToast('No pudimos abrir la evidencia');
+    } finally {
+      setCargandoEvidencia(false);
+    }
   };
 
   if (!col) return <div className="p-8 text-muted">Cargando...</div>;
@@ -359,7 +383,7 @@ export default function ColaboradorDetalle() {
         <div className="bg-white rounded-card border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="font-semibold text-ink flex items-center gap-2"><CalendarOff size={16} /> Novedades</p>
-            <button onClick={() => { setErrorNovedad(''); setEditandoNovedad(null); setNovedad(EMPTY_NOVEDAD); setModalNovedad(true); }}
+            <button onClick={() => { setErrorNovedad(''); setEditandoNovedad(null); setNovedad(EMPTY_NOVEDAD); setCambioEvidencia({ tipo: 'sin-cambio' }); setModalNovedad(true); }}
               className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-2.5 py-1.5 rounded-lg">
               <Plus size={13} /> Agregar
             </button>
@@ -500,6 +524,13 @@ export default function ColaboradorDetalle() {
                 <label className="block text-xs font-medium text-muted mb-1">Descripción (opcional)</label>
                 <input value={novedad.descripcion} onChange={e => setNovedad(p => ({ ...p, descripcion: e.target.value }))} className={input} placeholder="Ej: vacaciones anuales" />
               </div>
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">Evidencia (opcional)</label>
+                <CampoEvidencia
+                  existente={editandoNovedad?.evidenciaTipo ? { tipo: editandoNovedad.evidenciaTipo, nombre: editandoNovedad.evidenciaNombre } : null}
+                  onCambio={setCambioEvidencia}
+                />
+              </div>
               <label className="flex items-center gap-2 text-sm cursor-pointer text-ink">
                 <input type="checkbox" checked={novedad.aprobado} onChange={e => setNovedad(p => ({ ...p, aprobado: e.target.checked }))} className="rounded" />
                 Aprobada
@@ -537,6 +568,16 @@ export default function ColaboradorDetalle() {
                 <p className="text-xs text-muted">Descripción / motivo</p>
                 <p className="text-ink whitespace-pre-wrap">{verNovedad.descripcion || <span className="text-muted">Sin descripción.</span>}</p>
               </div>
+              {verNovedad.evidenciaTipo && (
+                <div>
+                  <p className="text-xs text-muted mb-1">Evidencia</p>
+                  <button onClick={() => verEvidencia(verNovedad.id)} disabled={cargandoEvidencia}
+                    className="flex items-center gap-2 text-sm font-medium text-primary-dark border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 disabled:opacity-60">
+                    {verNovedad.evidenciaTipo === 'application/pdf' ? <FileText size={16} className="text-red-500" /> : <ImageIcon size={16} />}
+                    {cargandoEvidencia ? 'Abriendo...' : (verNovedad.evidenciaNombre || 'Ver evidencia')}
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-3 justify-end mt-6">
               <button onClick={() => setVerNovedad(null)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cerrar</button>
@@ -551,6 +592,27 @@ export default function ColaboradorDetalle() {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visor de evidencia (imagen inline o PDF) */}
+      {evidenciaVer && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setEvidenciaVer(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-4 w-full max-w-2xl shadow-xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <p className="text-sm font-semibold text-ink truncate">{evidenciaVer.nombre || 'Evidencia'}</p>
+              <div className="flex items-center gap-1">
+                <a href={evidenciaVer.data} download={evidenciaVer.nombre || 'evidencia'} title="Descargar"
+                  className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"><Download size={18} /></a>
+                <button onClick={() => setEvidenciaVer(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+              </div>
+            </div>
+            {evidenciaVer.tipo === 'application/pdf' ? (
+              <iframe src={evidenciaVer.data} title="Evidencia PDF" className="w-full flex-1 min-h-[60vh] rounded-lg border border-gray-200" />
+            ) : (
+              <img src={evidenciaVer.data} alt="Evidencia" className="w-full object-contain rounded-lg max-h-[75vh]" />
+            )}
           </div>
         </div>
       )}

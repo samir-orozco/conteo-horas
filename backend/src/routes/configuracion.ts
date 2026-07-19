@@ -124,6 +124,17 @@ export default async function configuracionRoutes(app: FastifyInstance) {
     return { codigo, expiraEnMinutos: 10 };
   });
 
+  // Renombrar un dispositivo autorizado
+  app.put('/dispositivos/:id', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { nombre } = (request.body ?? {}) as { nombre?: string };
+    const limpio = (nombre || '').trim();
+    if (!limpio) return reply.status(400).send({ error: 'El nombre no puede estar vacío' });
+    const disp = await prisma.dispositivoKiosco.findFirst({ where: { id, empresaId: request.empresaId } });
+    if (!disp) return reply.status(404).send({ error: 'Dispositivo no encontrado' });
+    return prisma.dispositivoKiosco.update({ where: { id }, data: { nombre: limpio.slice(0, 60) } });
+  });
+
   app.delete('/dispositivos/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
     const disp = await prisma.dispositivoKiosco.findFirst({ where: { id, empresaId: request.empresaId } });

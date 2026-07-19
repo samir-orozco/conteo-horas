@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Scale, CalendarClock, Clock3, Plus, Trash2, X, Pencil } from 'lucide-react';
+import { Scale, CalendarClock, Clock3, Plus, Trash2, X, Pencil, AlertTriangle } from 'lucide-react';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
@@ -299,6 +299,15 @@ export default function TabHorario() {
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                       </div>
                     </div>
+                    {f.horaEntrada && f.horaSalida && duracionFranjaMin(f) < 240 && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 flex items-start gap-1.5">
+                        <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                        <span>
+                          Esta franja dura <b>{(duracionFranjaMin(f) / 60).toFixed(1)} h</b>. Según el <b>Art. 161 (lit. d) del Código Sustantivo del Trabajo</b> (Ley 2101 de 2021),
+                          la jornada flexible debe ser de <b>mínimo 4 horas continuas</b>. Puedes guardarlo igual, es solo una advertencia.
+                        </span>
+                      </div>
+                    )}
                     {formHorario.almuerzoMin > 0 && (
                       <label className="flex items-center gap-2 text-xs text-ink cursor-pointer">
                         <input type="checkbox" checked={f.tieneAlmuerzo !== false}

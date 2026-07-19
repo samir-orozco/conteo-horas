@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale';
 import {
   Users, UserCheck, Clock, TrendingUp, AlarmClock, UserX, CalendarOff, CalendarDays,
   AlertTriangle, PartyPopper, ArrowRight, Cake, LogOut, Camera, X, Info,
+  Paperclip, FileText, Image as ImageIcon, Download, ArrowUpRight,
 } from 'lucide-react';
 
 const TZ = 'America/Bogota';
@@ -21,9 +22,9 @@ type Dash = {
   enPlanta: { id: string; nombre: string; cargo: string | null; desde: string }[];
   salidasRecientes: { registroId: string; id: string; nombre: string; cargo: string | null; entrada: string | null; salida: string; tieneFotoEntrada: boolean; tieneFotoSalida: boolean }[];
   llegadasTardeHoy: { id: string; nombre: string; horaLlegada: string; minutosTarde: number }[];
-  sinMarcarHoy: { id: string; nombre: string; cargo: string | null; horario: string; horaEntrada: string }[];
+  sinMarcarHoy: { id: string; nombre: string; cargo: string | null; horario: string; horaEntrada: string; novedad: string | null }[];
   turnosOlvidados: { id: string; colaborador: string; fecha: string; entrada: string }[];
-  novedadesHoy: { colaborador: string; tipo: string; fechaFin: string }[];
+  novedadesHoy: { id: string; colaboradorId: string; colaborador: string; tipo: string; descripcion: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; evidenciaTipo: string | null; evidenciaNombre: string | null }[];
   proximosFestivos: { nombre: string; fecha: string; propio: boolean }[];
   cumpleanos: { id: string; nombre: string; cargo: string | null; dia: number; mes: number; esHoy: boolean }[];
 };
@@ -63,7 +64,60 @@ export default function DashboardEmpresa() {
   const [fotosDe, setFotosDe] = useState<Salida | null>(null);
   const [fotos, setFotos] = useState<{ fotoEntrada: string | null; fotoSalida: string | null } | null>(null);
 
-  useEffect(() => { api.get('/dashboard/empresa').then(r => setD(r.data)); }, []);
+  // Cierre rápido de un turno olvidado (poner la salida sin salir del dashboard)
+  type TurnoOlvidado = Dash['turnosOlvidados'][number];
+  const [cerrarTurno, setCerrarTurno] = useState<TurnoOlvidado | null>(null);
+  const [formCierre, setFormCierre] = useState({ fecha: '', entrada: '', salida: '' });
+  const [guardandoCierre, setGuardandoCierre] = useState(false);
+  const [errorCierre, setErrorCierre] = useState('');
+
+  // Detalle de una novedad del día (al hacer clic)
+  type Novedad = Dash['novedadesHoy'][number];
+  const [verNovedad, setVerNovedad] = useState<Novedad | null>(null);
+  const [evidenciaVer, setEvidenciaVer] = useState<{ data: string; tipo: string; nombre?: string | null } | null>(null);
+  const [cargandoEvidencia, setCargandoEvidencia] = useState(false);
+
+  const verEvidencia = async (permisoId: string) => {
+    setCargandoEvidencia(true);
+    try {
+      const r = await api.get(`/permisos/${permisoId}/evidencia`);
+      setEvidenciaVer({ data: r.data.evidencia, tipo: r.data.evidenciaTipo, nombre: r.data.evidenciaNombre });
+    } catch { /* sin evidencia */ } finally { setCargandoEvidencia(false); }
+  };
+
+  const cargar = () => api.get('/dashboard/empresa').then(r => setD(r.data));
+  useEffect(() => { cargar(); }, []);
+
+  const abrirCierre = (t: TurnoOlvidado) => {
+    const zEnt = toZonedTime(new Date(t.entrada), TZ);
+    setFormCierre({
+      fecha: format(zEnt, 'yyyy-MM-dd'),
+      entrada: format(zEnt, 'HH:mm'),
+      salida: '',
+    });
+    setErrorCierre('');
+    setCerrarTurno(t);
+  };
+
+  const guardarCierre = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cerrarTurno) return;
+    setErrorCierre('');
+    const entrada = new Date(`${formCierre.fecha}T${formCierre.entrada}:00`);
+    const salida = new Date(`${formCierre.fecha}T${formCierre.salida}:00`);
+    if (!formCierre.salida) { setErrorCierre('Indica la hora de salida.'); return; }
+    if (salida <= entrada) { setErrorCierre('La salida debe ser posterior a la entrada.'); return; }
+    setGuardandoCierre(true);
+    try {
+      await api.put(`/registros/${cerrarTurno.id}`, { entrada, salida });
+      setCerrarTurno(null);
+      await cargar();
+    } catch {
+      setErrorCierre('No pudimos guardar. Intenta de nuevo.');
+    } finally {
+      setGuardandoCierre(false);
+    }
+  };
 
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
   const verFotos = async (s: Salida) => {
@@ -114,7 +168,7 @@ export default function DashboardEmpresa() {
           </p>
           <div className="flex flex-wrap gap-2">
             {d.turnosOlvidados.map(t => (
-              <button key={t.id} onClick={() => navigate('/app/registros')}
+              <button key={t.id} onClick={() => abrirCierre(t)}
                 className="flex items-center gap-2 bg-white border border-orange-200 rounded-xl px-3 py-2 text-sm hover:border-orange-400">
                 <span className="font-medium text-ink">{t.colaborador}</span>
                 <span className="text-xs text-orange-700">{format(new Date(t.entrada), "d MMM · HH:mm", { locale: es })}</span>
@@ -201,12 +255,18 @@ export default function DashboardEmpresa() {
           ) : (
             <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {d.sinMarcarHoy.map(s => (
-                <div key={s.id} className="flex items-center gap-3 bg-red-50 rounded-xl px-3.5 py-2.5">
+                <div key={s.id} className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 ${s.novedad ? 'bg-amber-50' : 'bg-red-50'}`}>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-ink truncate">{s.nombre}</p>
                     <p className="text-xs text-muted">{s.horario} · entrada {s.horaEntrada}</p>
                   </div>
-                  <span className="text-xs font-medium text-red-600">sin entrada</span>
+                  {s.novedad ? (
+                    <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full shrink-0">
+                      {TIPO_PERMISO_LABEL[s.novedad] ?? 'En novedad'}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-medium text-red-600 shrink-0">sin entrada</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -221,13 +281,18 @@ export default function DashboardEmpresa() {
           ) : (
             <div className="space-y-2">
               {d.novedadesHoy.map((n, i) => (
-                <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3.5 py-2.5">
+                <button key={i} onClick={() => setVerNovedad(n)}
+                  className="w-full flex items-center gap-3 bg-gray-50 hover:bg-gray-100 rounded-xl px-3.5 py-2.5 text-left transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-ink truncate">{n.colaborador}</p>
-                    <p className="text-xs text-muted">{TIPO_PERMISO_LABEL[n.tipo] ?? n.tipo}</p>
+                    <p className="text-xs text-muted flex items-center gap-1.5">
+                      {TIPO_PERMISO_LABEL[n.tipo] ?? n.tipo}
+                      {n.evidenciaTipo && <Paperclip size={11} className="text-primary-dark" />}
+                      {!n.aprobado && <span className="text-orange-600 font-semibold">· pendiente</span>}
+                    </p>
                   </div>
-                  <span className="text-xs text-muted">hasta {format(new Date(n.fechaFin), 'd MMM', { locale: es })}</span>
-                </div>
+                  <span className="text-xs text-muted shrink-0">hasta {format(new Date(n.fechaFin), 'd MMM', { locale: es })}</span>
+                </button>
               ))}
             </div>
           )}
@@ -282,6 +347,115 @@ export default function DashboardEmpresa() {
           )}
         </div>
       </div>
+
+      {/* Cierre rápido de un turno olvidado */}
+      {cerrarTurno && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setCerrarTurno(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-lg text-ink flex items-center gap-2"><AlarmClock size={18} className="text-orange-500" /> Cerrar turno</h3>
+              <button onClick={() => setCerrarTurno(null)}><X size={20} className="text-gray-400" /></button>
+            </div>
+            <p className="text-sm text-muted mb-4">{cerrarTurno.colaborador} · marcó entrada el {format(toZonedTime(new Date(cerrarTurno.entrada), TZ), "d 'de' MMMM", { locale: es })} pero no registró salida.</p>
+            <form onSubmit={guardarCierre} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">Fecha</label>
+                <input type="date" value={formCierre.fecha} onChange={e => setFormCierre(p => ({ ...p, fecha: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-muted mb-1">Entrada</label>
+                  <input type="time" value={formCierre.entrada} onChange={e => setFormCierre(p => ({ ...p, entrada: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted mb-1">Salida</label>
+                  <input type="time" autoFocus value={formCierre.salida} onChange={e => setFormCierre(p => ({ ...p, salida: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                </div>
+              </div>
+              {errorCierre && <p className="text-sm text-red-600">{errorCierre}</p>}
+              <div className="flex justify-end gap-2 pt-1">
+                <button type="button" onClick={() => setCerrarTurno(null)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                <button type="submit" disabled={guardandoCierre}
+                  className="px-4 py-2 text-sm bg-primary hover:bg-primary-dark text-ink font-semibold rounded-lg disabled:opacity-60">
+                  {guardandoCierre ? 'Guardando...' : 'Cerrar turno'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Detalle de una novedad del día */}
+      {verNovedad && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setVerNovedad(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-lg text-ink">{TIPO_PERMISO_LABEL[verNovedad.tipo] ?? verNovedad.tipo}</h3>
+              <button onClick={() => setVerNovedad(null)}><X size={20} className="text-gray-400" /></button>
+            </div>
+            <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mb-4 ${verNovedad.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+              {verNovedad.aprobado ? 'APROBADA' : 'PENDIENTE'}
+            </span>
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-xs text-muted">Colaborador</p>
+                <p className="text-ink font-medium">{verNovedad.colaborador}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Fechas</p>
+                <p className="text-ink font-medium">
+                  {format(new Date(verNovedad.fechaInicio), "d 'de' MMMM yyyy", { locale: es })}
+                  {' → '}{format(new Date(verNovedad.fechaFin), "d 'de' MMMM yyyy", { locale: es })}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Descripción / motivo</p>
+                <p className="text-ink whitespace-pre-wrap">{verNovedad.descripcion || <span className="text-muted">Sin descripción.</span>}</p>
+              </div>
+              {verNovedad.evidenciaTipo && (
+                <div>
+                  <p className="text-xs text-muted mb-1">Evidencia</p>
+                  <button onClick={() => verEvidencia(verNovedad.id)} disabled={cargandoEvidencia}
+                    className="flex items-center gap-2 text-sm font-medium text-primary-dark border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 disabled:opacity-60">
+                    {verNovedad.evidenciaTipo === 'application/pdf' ? <FileText size={16} className="text-red-500" /> : <ImageIcon size={16} />}
+                    {cargandoEvidencia ? 'Abriendo...' : (verNovedad.evidenciaNombre || 'Ver evidencia')}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button onClick={() => setVerNovedad(null)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cerrar</button>
+              <button onClick={() => navigate(`/app/colaboradores/${verNovedad.colaboradorId}`)}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 font-medium">
+                Ver ficha <ArrowUpRight size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visor de evidencia */}
+      {evidenciaVer && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setEvidenciaVer(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-4 w-full max-w-2xl shadow-xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <p className="text-sm font-semibold text-ink truncate">{evidenciaVer.nombre || 'Evidencia'}</p>
+              <div className="flex items-center gap-1">
+                <a href={evidenciaVer.data} download={evidenciaVer.nombre || 'evidencia'} title="Descargar" className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"><Download size={18} /></a>
+                <button onClick={() => setEvidenciaVer(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+              </div>
+            </div>
+            {evidenciaVer.tipo === 'application/pdf' ? (
+              <iframe src={evidenciaVer.data} title="Evidencia PDF" className="w-full flex-1 min-h-[60vh] rounded-lg border border-gray-200" />
+            ) : (
+              <img src={evidenciaVer.data} alt="Evidencia" className="w-full object-contain rounded-lg max-h-[75vh]" />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Fotos de verificación facial de la salida */}
       {fotosDe && (

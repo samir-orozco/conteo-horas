@@ -4,6 +4,7 @@ import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import { Plus, Edit2, Trash2, X, Camera, Info } from 'lucide-react';
 import api from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
@@ -27,6 +28,7 @@ export default function Registros() {
   const [form, setForm] = useState({ colaboradorId: '', fecha: '', entrada: '', salida: '', tipo: 'NORMAL', observacion: '' });
   const [fotosDe, setFotosDe] = useState<Registro | null>(null);
   const [fotos, setFotos] = useState<Fotos | null>(null);
+  const [eliminarId, setEliminarId] = useState<string | null>(null);
 
   const cargar = () => {
     const params: any = { desde, hasta };
@@ -61,9 +63,10 @@ export default function Registros() {
     cargar();
   };
 
-  const eliminar = async (id: string) => {
-    if (!confirm('¿Eliminar este registro?')) return;
-    await api.delete(`/registros/${id}`);
+  const confirmarEliminar = async () => {
+    if (!eliminarId) return;
+    await api.delete(`/registros/${eliminarId}`);
+    setEliminarId(null);
     cargar();
   };
 
@@ -148,7 +151,7 @@ export default function Registros() {
                         className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"><Camera size={15} /></button>
                     )}
                     <button onClick={() => abrir(r)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={15} /></button>
-                    <button onClick={() => eliminar(r.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
+                    <button onClick={() => setEliminarId(r.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
                   </div>
                 </td>
               </tr>
@@ -246,6 +249,16 @@ export default function Registros() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={eliminarId !== null}
+        titulo="¿Eliminar este registro?"
+        subtitulo="Esta acción no se puede deshacer."
+        textoContinuar="Eliminar"
+        peligro
+        onContinuar={confirmarEliminar}
+        onCancelar={() => setEliminarId(null)}
+      />
     </div>
   );
 }

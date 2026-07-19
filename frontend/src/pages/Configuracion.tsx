@@ -2,12 +2,14 @@ import { useSearchParams } from 'react-router-dom';
 import TabCuenta from './configuracion/TabCuenta';
 import TabHorario from './configuracion/TabHorario';
 import TabMarcacion from './configuracion/TabMarcacion';
+import TabConexiones from './configuracion/TabConexiones';
 import Suscripcion from './Suscripcion';
 
 const TABS = [
   { id: 'cuenta', label: 'Cuenta' },
   { id: 'horario', label: 'Horario' },
   { id: 'marcacion', label: 'Marcación' },
+  { id: 'conexiones', label: 'Conexiones' },
   { id: 'suscripcion', label: 'Suscripción' },
 ] as const;
 type TabId = typeof TABS[number]['id'];
@@ -38,6 +40,7 @@ export default function Configuracion() {
       {tab === 'cuenta' && <TabCuenta />}
       {tab === 'horario' && <TabHorario />}
       {tab === 'marcacion' && <TabMarcacion />}
+      {tab === 'conexiones' && <TabConexiones />}
       {tab === 'suscripcion' && <Suscripcion />}
     </div>
   );

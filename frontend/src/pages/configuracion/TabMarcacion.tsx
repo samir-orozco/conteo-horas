@@ -1,18 +1,11 @@
 import { useState, useEffect } from 'react';
-import { IdCard, ScanFace, AlertTriangle, Send, Check, MapPin, LocateFixed } from 'lucide-react';
+import { IdCard, ScanFace, AlertTriangle, Check, MapPin, LocateFixed } from 'lucide-react';
 import api from '../../lib/api';
 
-// Métodos de marcación del kiosco + integración de alertas por Telegram.
+// Métodos de marcación del kiosco (las alertas de Telegram viven en Conexiones).
 export default function TabMarcacion() {
   const [permiteCedula, setPermiteCedula] = useState(true);
   const [cargado, setCargado] = useState(false);
-
-  // Telegram
-  const [alertasTarde, setAlertasTarde] = useState(false);
-  const [chatId, setChatId] = useState('');
-  const [guardandoTg, setGuardandoTg] = useState(false);
-  const [probandoTg, setProbandoTg] = useState(false);
-  const [msgTg, setMsgTg] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
 
   // Geolocalización (geocerco)
   const [geoExigir, setGeoExigir] = useState(false);
@@ -26,8 +19,6 @@ export default function TabMarcacion() {
   useEffect(() => {
     api.get('/configuracion').then(r => {
       setPermiteCedula(r.data.KIOSCO_PERMITE_CEDULA !== '0');
-      setAlertasTarde(r.data.TELEGRAM_ALERTAS_TARDE === '1');
-      setChatId(r.data.TELEGRAM_CHAT_ID || '');
       setGeoExigir(r.data.GEO_EXIGIR === '1');
       setGeoLat(r.data.GEO_LAT || '');
       setGeoLng(r.data.GEO_LNG || '');
@@ -87,37 +78,11 @@ export default function TabMarcacion() {
     await api.put('/configuracion', { KIOSCO_PERMITE_CEDULA: nuevo ? '1' : '0' });
   };
 
-  const toggleAlertas = async () => {
-    const nuevo = !alertasTarde;
-    setAlertasTarde(nuevo);
-    await api.put('/configuracion', { TELEGRAM_ALERTAS_TARDE: nuevo ? '1' : '0' });
-  };
-
-  const guardarChat = async () => {
-    setGuardandoTg(true); setMsgTg(null);
-    try {
-      await api.put('/configuracion', { TELEGRAM_CHAT_ID: chatId.trim() });
-      setMsgTg({ tipo: 'ok', texto: 'Chat guardado.' });
-    } catch {
-      setMsgTg({ tipo: 'error', texto: 'No pudimos guardar el chat.' });
-    } finally { setGuardandoTg(false); }
-  };
-
-  const enviarPrueba = async () => {
-    setProbandoTg(true); setMsgTg(null);
-    try {
-      await api.post('/configuracion/telegram/prueba', { chatId: chatId.trim() });
-      setMsgTg({ tipo: 'ok', texto: '¡Enviado! Revisa tu Telegram; debería llegar el mensaje de prueba.' });
-    } catch (e: any) {
-      setMsgTg({ tipo: 'error', texto: e.response?.data?.error ?? 'No pudimos enviar la prueba.' });
-    } finally { setProbandoTg(false); }
-  };
-
   return (
     <div className="p-6 md:p-8 space-y-6">
       <div>
         <h1 className="text-xl font-bold text-ink">Marcación</h1>
-        <p className="text-sm text-muted">Cómo se identifican tus colaboradores en el kiosco y avisos por Telegram.</p>
+        <p className="text-sm text-muted">Cómo se identifican tus colaboradores en el kiosco.</p>
       </div>
 
       <div className="columns-1 xl:columns-2 gap-6 [&>*]:mb-6 [&>*]:break-inside-avoid">
@@ -156,54 +121,6 @@ export default function TabMarcacion() {
           </div>
           <span className="text-xs font-bold bg-green-100 text-green-800 px-3 py-1.5 rounded-full shrink-0">Siempre activo</span>
         </div>
-      </div>
-
-      {/* Alertas por Telegram */}
-      <div className="bg-white rounded-card border border-gray-200 p-6 space-y-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="font-semibold text-ink mb-1 flex items-center gap-2"><Send size={17} className="text-[#229ED9]" /> Alertas de llegada tarde por Telegram</p>
-            <p className="text-sm text-muted">
-              Recibe un mensaje en Telegram apenas un colaborador marque <b>entrada tarde</b> (según su horario y tolerancia).
-            </p>
-          </div>
-          <button onClick={toggleAlertas} disabled={!cargado} role="switch" aria-checked={alertasTarde}
-            className={`relative w-12 h-7 rounded-full transition-colors shrink-0 disabled:opacity-50 ${alertasTarde ? 'bg-primary' : 'bg-gray-200'}`}>
-            <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${alertasTarde ? 'left-6' : 'left-1'}`} />
-          </button>
-        </div>
-
-        {alertasTarde && cargado && (
-          <div className="border-t border-gray-100 pt-5 space-y-3">
-            <div className="bg-gray-50 rounded-xl p-4 text-sm text-muted space-y-1.5">
-              <p className="font-semibold text-ink">Cómo conectar (recomendado: un grupo del equipo)</p>
-              <p>1. Crea un grupo en Telegram (ej. "Novedades HoraPro") y <b>agrega el bot de HoraPro</b>.</p>
-              <p>2. Obtén el <b>ID del chat</b> del grupo y pégalo abajo. Para un chat personal, escríbele a <b>@userinfobot</b> y te da tu ID.</p>
-              <p>3. Guarda y presiona <b>Enviar prueba</b> para confirmar que llega.</p>
-            </div>
-
-            <label className="block text-xs font-medium text-muted mb-1">ID del chat de Telegram</label>
-            <input value={chatId} onChange={e => setChatId(e.target.value)} placeholder="Ej: -1001234567890"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-
-            <div className="flex flex-wrap gap-3">
-              <button onClick={guardarChat} disabled={guardandoTg || !chatId.trim()}
-                className="px-4 py-2 text-sm bg-primary hover:bg-primary-dark text-ink font-semibold rounded-lg disabled:opacity-60">
-                {guardandoTg ? 'Guardando...' : 'Guardar chat'}
-              </button>
-              <button onClick={enviarPrueba} disabled={probandoTg || !chatId.trim()}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-60">
-                <Send size={14} /> {probandoTg ? 'Enviando...' : 'Enviar prueba'}
-              </button>
-            </div>
-
-            {msgTg && (
-              <p className={`flex items-center gap-1.5 text-sm rounded-lg px-3 py-2 ${msgTg.tipo === 'ok' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                {msgTg.tipo === 'ok' && <Check size={15} />}{msgTg.texto}
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Marcación por ubicación (geocerco GPS) */}

@@ -18,6 +18,8 @@ import wompiRoutes from './routes/wompi';
 import suscripcionRoutes from './routes/suscripcion';
 import horarioRoutes from './routes/horarios';
 import dashboardRoutes from './routes/dashboard';
+import telegramRoutes from './routes/telegram';
+import { configurarWebhook } from './utils/telegram';
 import { estadoEfectivo, accesoPermitido } from './utils/suscripcion';
 
 export const prisma = new PrismaClient();
@@ -124,6 +126,7 @@ app.register(wompiRoutes, { prefix: '/api/wompi' });
 app.register(suscripcionRoutes, { prefix: '/api/suscripcion' });
 app.register(horarioRoutes, { prefix: '/api/horarios' });
 app.register(dashboardRoutes, { prefix: '/api/dashboard' });
+app.register(telegramRoutes, { prefix: '/api/telegram' });
 
 app.get('/api/health', async () => ({ status: 'ok' }));
 
@@ -153,6 +156,8 @@ const start = async () => {
     console.log('HoraPro API corriendo en puerto 3001');
     limpiarFotosAntiguas();
     setInterval(limpiarFotosAntiguas, 24 * 60 * 60 * 1000);
+    // Registra el webhook del bot de Telegram (si hay URL configurada)
+    if (process.env.TELEGRAM_WEBHOOK_URL) configurarWebhook(process.env.TELEGRAM_WEBHOOK_URL);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

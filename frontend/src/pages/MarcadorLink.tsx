@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, Check, ExternalLink, MonitorSmartphone, ScanFace, ShieldCheck, KeyRound, Trash2, TabletSmartphone } from 'lucide-react';
+import { Copy, Check, ExternalLink, MonitorSmartphone, ScanFace, ShieldCheck, KeyRound, Trash2, TabletSmartphone, Pencil, X } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -13,6 +13,8 @@ export default function MarcadorLink() {
   const [codigo, setCodigo] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [revocando, setRevocando] = useState<Dispositivo | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [nombreEdit, setNombreEdit] = useState('');
 
   const cargar = () => {
     api.get('/configuracion/marcador-link').then(r => {
@@ -47,6 +49,15 @@ export default function MarcadorLink() {
     if (!revocando) return;
     await api.delete(`/configuracion/dispositivos/${revocando.id}`);
     setRevocando(null);
+    cargar();
+  };
+
+  const abrirEdicion = (d: Dispositivo) => { setEditandoId(d.id); setNombreEdit(d.nombre); };
+  const guardarNombre = async (id: string) => {
+    const limpio = nombreEdit.trim();
+    if (!limpio) return;
+    await api.put(`/configuracion/dispositivos/${id}`, { nombre: limpio });
+    setEditandoId(null);
     cargar();
   };
 
@@ -117,17 +128,37 @@ export default function MarcadorLink() {
               <div className="space-y-2">
                 {dispositivos.map(d => (
                   <div key={d.id} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-2.5">
-                    <TabletSmartphone size={16} className="text-muted" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-ink">{d.nombre}</p>
-                      <p className="text-xs text-muted">
-                        Vinculado el {new Date(d.creadoEn).toLocaleDateString('es-CO')}
-                        {d.ultimoUso && ` · último uso ${new Date(d.ultimoUso).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
-                      </p>
+                    <TabletSmartphone size={16} className="text-muted shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      {editandoId === d.id ? (
+                        <div className="flex items-center gap-2">
+                          <input autoFocus value={nombreEdit} maxLength={60}
+                            onChange={e => setNombreEdit(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') guardarNombre(d.id); if (e.key === 'Escape') setEditandoId(null); }}
+                            className="flex-1 min-w-0 border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                          <button onClick={() => guardarNombre(d.id)} title="Guardar" className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Check size={16} /></button>
+                          <button onClick={() => setEditandoId(null)} title="Cancelar" className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={16} /></button>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium text-ink truncate">{d.nombre}</p>
+                          <p className="text-xs text-muted">
+                            Vinculado el {new Date(d.creadoEn).toLocaleDateString('es-CO')}
+                            {d.ultimoUso && ` · último uso ${new Date(d.ultimoUso).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                          </p>
+                        </>
+                      )}
                     </div>
-                    <button onClick={() => setRevocando(d)} title="Revocar" className="p-2 text-red-400 hover:bg-red-50 rounded-lg">
-                      <Trash2 size={15} />
-                    </button>
+                    {editandoId !== d.id && (
+                      <>
+                        <button onClick={() => abrirEdicion(d)} title="Renombrar" className="p-2 text-gray-400 hover:bg-gray-100 hover:text-ink rounded-lg">
+                          <Pencil size={15} />
+                        </button>
+                        <button onClick={() => setRevocando(d)} title="Revocar" className="p-2 text-red-400 hover:bg-red-50 rounded-lg">
+                          <Trash2 size={15} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

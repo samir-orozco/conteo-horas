@@ -4,6 +4,29 @@
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 export const telegramConfigurado = Boolean(TOKEN);
+// Secreto opcional para validar que el webhook lo llama Telegram y no un tercero.
+export const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || '';
+
+// Registra el webhook del bot (una sola vez, al arrancar) para recibir los
+// mensajes por HTTP en vez de long polling — encaja con el hosting compartido.
+export async function configurarWebhook(url: string): Promise<void> {
+  if (!TOKEN || !url) return;
+  try {
+    const resp = await fetch(`https://api.telegram.org/bot${TOKEN}/setWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url,
+        allowed_updates: ['message'],
+        ...(TELEGRAM_WEBHOOK_SECRET ? { secret_token: TELEGRAM_WEBHOOK_SECRET } : {}),
+      }),
+    });
+    const data: any = await resp.json().catch(() => ({}));
+    console.log(data?.ok ? `[telegram] webhook configurado en ${url}` : `[telegram] no se pudo configurar webhook: ${data?.description}`);
+  } catch (e: any) {
+    console.log(`[telegram] error configurando webhook: ${e?.message}`);
+  }
+}
 
 export async function enviarTelegram(chatId: string, texto: string): Promise<{ ok: boolean; error?: string }> {
   if (!TOKEN) {

@@ -1,4 +1,4 @@
-import { Registro, Horario, FranjaHorario, DiaFestivo, Permiso } from '@prisma/client';
+import { Registro, Horario, FranjaHorario, DiaFestivo } from '@prisma/client';
 import { toZonedTime } from 'date-fns-tz';
 
 const TZ = 'America/Bogota';
@@ -37,7 +37,7 @@ export function calcularTardanzas(
   registros: Registro[],
   horario: HorarioConFranjas,
   festivos: DiaFestivo[],
-  permisos: Permiso[]
+  permisos: { fechaInicio: Date; fechaFin: Date }[]
 ): { detalle: Tardanza[]; totalMinutos: number; diasTarde: number; toleranciaMin: number } {
   const festSet = new Set(festivos.map(f => claveDia(f.fecha)));
 

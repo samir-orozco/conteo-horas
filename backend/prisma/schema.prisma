@@ -42,6 +42,13 @@ model Suscripcion {
   finPrueba         DateTime // 7 días desde la creación
   pagadoHasta       DateTime? // fin del último período pagado
   suspendidaEn      DateTime?
+  // Precio personalizado por cliente. null = usa el precio global de la plataforma.
+  // FIJO = precioFijo mensual; TRAMOS = tramos propios (precioTramo1/limiteTramo1/precioTramo2)
+  precioModo        String? // null | "FIJO" | "TRAMOS"
+  precioFijo        Int?
+  precioTramo1      Int?
+  limiteTramo1      Int?
+  precioTramo2      Int?
   // Wompi: fuente de pago tokenizada para cobro recurrente (null = paga por link)
   wompiFuentePagoId String?
   creadoEn          DateTime          @default(now())
@@ -212,6 +219,10 @@ model Permiso {
   tipo          TipoPermiso
   descripcion   String?
   aprobado      Boolean     @default(false)
+  // Evidencia opcional (imagen o PDF) en base64 data URI. LongText por tamaño.
+  evidencia     String?     @db.LongText
+  evidenciaTipo String? // mime, ej. image/jpeg o application/pdf
+  evidenciaNombre String?
   creadoEn      DateTime    @default(now())
 
   @@map("permisos")

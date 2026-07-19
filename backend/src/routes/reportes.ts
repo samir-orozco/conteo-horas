@@ -133,7 +133,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         where: { colaboradorId, fecha: { gte: new Date(desde), lte: new Date(hasta) } },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
-      prisma.permiso.findMany({ where: { colaboradorId, aprobado: true } }),
+      prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
     ]);
 
     const resultado = calcularTardanzas(registros, colaborador.horario, festivos, permisos);
