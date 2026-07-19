@@ -28,7 +28,7 @@ async function adminRoutes(app) {
         return {
             ...empresa,
             colaboradoresActivos,
-            tarifaMensual: (0, suscripcion_1.calcularTarifaMensual)(colaboradoresActivos, precios),
+            tarifaMensual: (0, suscripcion_1.tarifaEmpresa)(colaboradoresActivos, precios, susc),
             suscripcion: susc
                 ? { ...susc, estadoEfectivo: (0, suscripcion_1.estadoEfectivo)(susc), diasMora: (0, suscripcion_1.diasDeMora)(susc), pagos: empresa.suscripcion.pagos }
                 : null,
@@ -63,9 +63,10 @@ async function adminRoutes(app) {
         const ingresosMes = pagos.filter(p => p.creadoEn >= inicioMes).reduce((s, p) => s + p.monto, 0);
         const ingresosTotales = pagos.reduce((s, p) => s + p.monto, 0);
         // Ingreso mensual recurrente proyectado con las empresas activas/en prueba
+        const suscPorEmpresa = new Map(suscripciones.map(s => [s.empresaId, s]));
         const mrrProyectado = empresas
             .filter((e) => e.activa && !e.exentaPago && ['PRUEBA', 'ACTIVA', 'EN_MORA'].includes(estados[suscripciones.findIndex(s => s.empresaId === e.id)] ?? ''))
-            .reduce((s, e) => s + (0, suscripcion_1.calcularTarifaMensual)(e._count.colaboradores, precios), 0);
+            .reduce((s, e) => s + (0, suscripcion_1.tarifaEmpresa)(e._count.colaboradores, precios, suscPorEmpresa.get(e.id)), 0);
         return {
             totalEmpresas: empresas.length,
             empresasActivas: empresas.filter(e => e.activa).length,
@@ -105,7 +106,8 @@ async function adminRoutes(app) {
                 activa: e.activa,
                 creadoEn: e.creadoEn,
                 colaboradoresActivos: e._count.colaboradores,
-                tarifaMensual: (0, suscripcion_1.calcularTarifaMensual)(e._count.colaboradores, precios),
+                tarifaMensual: (0, suscripcion_1.tarifaEmpresa)(e._count.colaboradores, precios, susc),
+                precioModo: susc?.precioModo ?? null,
                 estadoSuscripcion: e.exentaPago ? 'ILIMITADA' : susc ? (0, suscripcion_1.estadoEfectivo)(susc) : null,
                 diasMora: e.exentaPago ? 0 : susc ? (0, suscripcion_1.diasDeMora)(susc) : 0,
                 pagadoHasta: susc?.pagadoHasta ?? null,
@@ -153,6 +155,63 @@ async function adminRoutes(app) {
         if (!existente)
             return reply.status(404).send({ error: 'Empresa no encontrada' });
         await index_1.prisma.empresa.update({ where: { id }, data: { nombre, nit, email, telefono, activa, exentaPago } });
+        return empresaConEstado(id);
+    });
+    // Ampliar / fijar el fin de la prueba gratuita. Si la empresa estaba en mora o
+    // suspendida (y nunca ha pagado), la reactiva volviéndola a PRUEBA.
+    app.put('/empresas/:id/prueba', auth, async (request, reply) => {
+        const { id } = request.params;
+        const { finPrueba } = request.body;
+        const nueva = finPrueba ? new Date(finPrueba) : null;
+        if (!nueva || isNaN(nueva.getTime()))
+            return reply.status(400).send({ error: 'Fecha inválida' });
+        const susc = await index_1.prisma.suscripcion.findUnique({ where: { empresaId: id } });
+        if (!susc)
+            return reply.status(404).send({ error: 'La empresa no tiene suscripción' });
+        // Reactivar solo si aún está en fase de prueba (nunca pagó un período)
+        const reactivar = !susc.pagadoHasta;
+        await index_1.prisma.suscripcion.update({
+            where: { empresaId: id },
+            data: {
+                finPrueba: nueva,
+                ...(reactivar ? { estado: 'PRUEBA', suspendidaEn: null } : {}),
+            },
+        });
+        return empresaConEstado(id);
+    });
+    // Precio personalizado del cliente: GLOBAL (usa el de plataforma), FIJO o TRAMOS
+    app.put('/empresas/:id/precio', auth, async (request, reply) => {
+        const { modo, precioFijo, precioTramo1, limiteTramo1, precioTramo2 } = request.body;
+        const { id } = request.params;
+        const susc = await index_1.prisma.suscripcion.findUnique({ where: { empresaId: id } });
+        if (!susc)
+            return reply.status(404).send({ error: 'La empresa no tiene suscripción' });
+        if (modo === 'GLOBAL' || modo == null) {
+            await index_1.prisma.suscripcion.update({
+                where: { empresaId: id },
+                data: { precioModo: null, precioFijo: null, precioTramo1: null, limiteTramo1: null, precioTramo2: null },
+            });
+        }
+        else if (modo === 'FIJO') {
+            if (typeof precioFijo !== 'number' || precioFijo < 0)
+                return reply.status(400).send({ error: 'Precio fijo inválido' });
+            await index_1.prisma.suscripcion.update({
+                where: { empresaId: id },
+                data: { precioModo: 'FIJO', precioFijo: Math.round(precioFijo), precioTramo1: null, limiteTramo1: null, precioTramo2: null },
+            });
+        }
+        else if (modo === 'TRAMOS') {
+            if ([precioTramo1, limiteTramo1, precioTramo2].some(v => typeof v !== 'number' || v < 0)) {
+                return reply.status(400).send({ error: 'Tramos inválidos' });
+            }
+            await index_1.prisma.suscripcion.update({
+                where: { empresaId: id },
+                data: { precioModo: 'TRAMOS', precioFijo: null, precioTramo1, limiteTramo1, precioTramo2 },
+            });
+        }
+        else {
+            return reply.status(400).send({ error: 'Modo de precio inválido' });
+        }
         return empresaConEstado(id);
     });
     // Cobro sugerido hoy (para prellenar el modal de registro de pago)

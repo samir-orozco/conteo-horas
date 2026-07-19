@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PRECIOS_DEFECTO = exports.DIAS_GRACIA_MORA = exports.DIAS_PRUEBA = void 0;
 exports.obtenerPrecios = obtenerPrecios;
 exports.calcularTarifaMensual = calcularTarifaMensual;
+exports.tarifaEmpresa = tarifaEmpresa;
 exports.finDeMes = finDeMes;
 exports.prorrateo = prorrateo;
 exports.estadoEfectivo = estadoEfectivo;
@@ -25,6 +26,16 @@ function calcularTarifaMensual(colaboradores, p) {
     const tramo1 = Math.min(colaboradores, p.limiteTramo1) * p.precioTramo1;
     const tramo2 = Math.max(0, colaboradores - p.limiteTramo1) * p.precioTramo2;
     return tramo1 + tramo2;
+}
+// Tarifa mensual efectiva de una empresa: usa su precio personalizado si lo tiene,
+// si no cae al precio global de la plataforma.
+function tarifaEmpresa(colaboradores, global, s) {
+    if (s?.precioModo === 'FIJO' && s.precioFijo != null)
+        return s.precioFijo;
+    if (s?.precioModo === 'TRAMOS' && s.precioTramo1 != null && s.limiteTramo1 != null && s.precioTramo2 != null) {
+        return calcularTarifaMensual(colaboradores, { precioTramo1: s.precioTramo1, limiteTramo1: s.limiteTramo1, precioTramo2: s.precioTramo2 });
+    }
+    return calcularTarifaMensual(colaboradores, global);
 }
 // ===== Mes calendario (Bogotá): todos los cobros van hasta fin de mes =====
 function fechaBogota(ahora = new Date()) {
@@ -87,7 +98,7 @@ async function calcularCobro(prisma, empresaId, precios, ahora = new Date()) {
         prisma.suscripcion.findUnique({ where: { empresaId }, include: { pagos: true } }),
     ]);
     const { diasMes, diasRestantes, factor } = prorrateo(ahora);
-    const tarifaMesCompleto = calcularTarifaMensual(activos, precios);
+    const tarifaMesCompleto = tarifaEmpresa(activos, precios, susc);
     const cubreHasta = finDeMes(ahora);
     // Empresa exenta (acceso ilimitado): nunca debe nada
     if (empresa?.exentaPago) {
@@ -113,7 +124,7 @@ async function calcularCobro(prisma, empresaId, precios, ahora = new Date()) {
             tarifaMesCompleto, monto: 0, diasMes, diasRestantes, cubreHasta: susc.pagadoHasta,
         };
     }
-    const diferencia = tarifaMesCompleto - calcularTarifaMensual(facturados, precios);
+    const diferencia = tarifaMesCompleto - tarifaEmpresa(facturados, precios, susc);
     return {
         tipo: 'ADICIONAL', colaboradoresActivos: activos, colaboradoresFacturados: facturados,
         tarifaMesCompleto, monto: Math.round(diferencia * factor),

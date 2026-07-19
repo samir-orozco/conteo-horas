@@ -123,7 +123,7 @@ async function reporteRoutes(app) {
                 where: { colaboradorId, fecha: { gte: new Date(desde), lte: new Date(hasta) } },
             }),
             index_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
-            index_1.prisma.permiso.findMany({ where: { colaboradorId, aprobado: true } }),
+            index_1.prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
         ]);
         const resultado = (0, tardanzas_1.calcularTardanzas)(registros, colaborador.horario, festivos, permisos);
         return { sinHorario: false, horario: colaborador.horario, ...resultado };

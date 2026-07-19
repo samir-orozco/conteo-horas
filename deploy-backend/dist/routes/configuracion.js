@@ -114,6 +114,18 @@ async function configuracionRoutes(app) {
         });
         return { codigo, expiraEnMinutos: 10 };
     });
+    // Renombrar un dispositivo autorizado
+    app.put('/dispositivos/:id', auth, async (request, reply) => {
+        const { id } = request.params;
+        const { nombre } = (request.body ?? {});
+        const limpio = (nombre || '').trim();
+        if (!limpio)
+            return reply.status(400).send({ error: 'El nombre no puede estar vacío' });
+        const disp = await index_1.prisma.dispositivoKiosco.findFirst({ where: { id, empresaId: request.empresaId } });
+        if (!disp)
+            return reply.status(404).send({ error: 'Dispositivo no encontrado' });
+        return index_1.prisma.dispositivoKiosco.update({ where: { id }, data: { nombre: limpio.slice(0, 60) } });
+    });
     app.delete('/dispositivos/:id', auth, async (request, reply) => {
         const { id } = request.params;
         const disp = await index_1.prisma.dispositivoKiosco.findFirst({ where: { id, empresaId: request.empresaId } });

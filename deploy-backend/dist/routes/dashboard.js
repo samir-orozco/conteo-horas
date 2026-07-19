@@ -53,7 +53,7 @@ async function dashboardRoutes(app) {
             index_1.prisma.tipoHora.findMany(),
             index_1.prisma.permiso.findMany({
                 where: { aprobado: true, colaborador: { empresaId }, fechaInicio: { lte: finDia }, fechaFin: { gte: inicioDia } },
-                include: { colaborador: true },
+                select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true, colaborador: true },
             }),
         ]);
         const colIds = colaboradores.map(c => c.id);
@@ -103,6 +103,13 @@ async function dashboardRoutes(app) {
         // Colaboradores con al menos una entrada hoy
         const marcaronHoy = new Set(registrosHoy.filter(r => r.entrada).map(r => r.colaboradorId));
         const novedadHoyIds = new Set(permisos.filter(p => claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin)).map(p => p.colaboradorId));
+        // Tipo de novedad activa hoy por colaborador (para explicar por qué no marcó)
+        const novedadHoyTipo = new Map();
+        for (const p of permisos) {
+            if (claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin) && !novedadHoyTipo.has(p.colaboradorId)) {
+                novedadHoyTipo.set(p.colaboradorId, p.tipo);
+            }
+        }
         // ===== Llegadas tarde hoy (según horario) =====
         const llegadasTardeHoy = [];
         // Primera entrada de hoy por colaborador
@@ -121,11 +128,13 @@ async function dashboardRoutes(app) {
                 continue;
             // La franja que aplica hoy (un horario puede variar por día, ej. sábados más corto)
             const franjaHoy = (0, tardanzas_1.franjaDelDia)(c.horario, diaHoy);
-            const aplicaHoy = !!franjaHoy && !hoyEsFestivo && !novedadHoyIds.has(c.id);
-            if (!aplicaHoy || !franjaHoy)
+            if (!franjaHoy || hoyEsFestivo)
                 continue;
             const entrada = primeraEntradaHoy.get(c.id);
             if (entrada) {
+                // Llegó tarde: la tardanza solo aplica si no tiene novedad que justifique el día
+                if (novedadHoyIds.has(c.id))
+                    continue;
                 const z = (0, date_fns_tz_1.toZonedTime)(entrada, TZ);
                 const llegadaMin = z.getHours() * 60 + z.getMinutes();
                 const tarde = llegadaMin - (minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin);
@@ -139,15 +148,20 @@ async function dashboardRoutes(app) {
                 }
             }
             else {
-                // Solo lo marcamos "sin marcar" si ya pasó su hora de entrada + tolerancia
+                // No ha marcado. Si tiene novedad hoy (ej. médico), lo mostramos con el
+                // distintivo de su novedad para saber por qué no marcó. Si no, solo lo
+                // marcamos "sin marcar" cuando ya pasó su hora de entrada + tolerancia.
+                const novedad = novedadHoyTipo.get(c.id) ?? null;
                 const ahoraMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
-                if (ahoraMin > minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin) {
+                const yaPasoEntrada = ahoraMin > minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin;
+                if (novedad || yaPasoEntrada) {
                     sinMarcarHoy.push({
                         id: c.id,
                         nombre: `${c.nombre} ${c.apellido}`,
                         cargo: c.cargo,
                         horario: c.horario.nombre,
                         horaEntrada: franjaHoy.horaEntrada,
+                        novedad,
                     });
                 }
             }
@@ -206,9 +220,16 @@ async function dashboardRoutes(app) {
         const novedadesHoy = permisos
             .filter(p => claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin))
             .map(p => ({
+            id: p.id,
+            colaboradorId: p.colaboradorId,
             colaborador: `${p.colaborador.nombre} ${p.colaborador.apellido}`,
             tipo: p.tipo,
+            descripcion: p.descripcion,
+            aprobado: p.aprobado,
+            fechaInicio: p.fechaInicio,
             fechaFin: p.fechaFin,
+            evidenciaTipo: p.evidenciaTipo,
+            evidenciaNombre: p.evidenciaNombre,
         }));
         // ===== Próximos festivos (siguientes 45 días) =====
         const en45 = new Date(inicioDia.getTime() + 45 * 24 * 60 * 60 * 1000);
