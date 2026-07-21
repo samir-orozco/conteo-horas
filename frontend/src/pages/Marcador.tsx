@@ -62,6 +62,10 @@ export default function Marcador() {
 
   // Error de ubicación (GPS apagado / permiso negado) con guía para resolverlo
   const [errorUbic, setErrorUbic] = useState<null | { titulo: string; ayuda: string }>(null);
+  // Ubicación capturada al entrar (antes de la cámara/login). Safari exige que el
+  // permiso se pida desde un toque limpio, por eso va primero y con su propio botón.
+  const [ubicOk, setUbicOk] = useState<null | { lat: number; lng: number }>(null);
+  const [buscandoUbic, setBuscandoUbic] = useState(false);
 
   // Reloj en vivo
   useEffect(() => {
@@ -242,6 +246,19 @@ export default function Marcador() {
     }
   };
 
+  // Pide la ubicación DIRECTO desde el toque (clave en Safari iOS): getCurrentPosition
+  // se llama de primero, sin nada async antes, para no perder el "gesto de usuario".
+  const activarUbicacion = () => {
+    setErrorUbic(null);
+    if (!navigator.geolocation) { setErrorUbic(mensajeGeo({ code: 0 })); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => { setUbicOk({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setBuscandoUbic(false); },
+      err => { setBuscandoUbic(false); setErrorUbic(mensajeGeo(err)); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+    setBuscandoUbic(true);
+  };
+
   const marcar = async () => {
     if (!token || marcando) return;
     setMarcando(true);
@@ -249,11 +266,13 @@ export default function Marcador() {
     try {
       let ubic: { lat?: number; lng?: number } = {};
       if (exigeUbicacion) {
+        // Ya capturamos la ubicación al entrar (gate). Intentamos refrescarla, y si
+        // falla usamos la del gate (permiso ya concedido → esto casi nunca falla).
         try {
           ubic = await obtenerUbicacion();
-        } catch (e: any) {
-          setErrorUbic(mensajeGeo(e));
-          return;
+        } catch {
+          if (ubicOk) ubic = ubicOk;
+          else { setMarcando(false); setUbicOk(null); return; }
         }
       }
       const r = await api.post('/worker/marcar', { foto: fotoRostro ?? undefined, ...ubic }, { headers });
@@ -371,6 +390,30 @@ export default function Marcador() {
     );
   }
 
+  // ===== Ubicación primero: se pide al entrar, antes de la cámara/login =====
+  // (Safari iOS exige que el permiso se pida desde un toque limpio y directo.)
+  if (empresa && exigeUbicacion && !ubicOk) {
+    return (
+      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
+        <div className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
+          <img src={logoSimplificado} alt="HoraPro" className="w-14 h-14 mx-auto mb-4" />
+          <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <MapPin size={28} className="text-ink" />
+          </div>
+          <h1 className="text-xl font-bold text-white">Marca desde la empresa</h1>
+          <p className="text-sm text-white/60 mt-2 mb-6 leading-relaxed">
+            {empresa} verifica tu <b className="text-white/90">ubicación</b> al marcar. Toca el botón y
+            <b className="text-white/90"> permite el acceso</b> cuando el navegador lo pregunte.
+          </p>
+          <button onClick={activarUbicacion} disabled={buscandoUbic}
+            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold py-3.5 rounded-xl text-base transition-colors disabled:opacity-60">
+            <MapPin size={18} /> {buscandoUbic ? 'Buscando ubicación...' : 'Activar ubicación'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ===== Login por cédula o rostro =====
   if (!token || !colaborador) {
     return (
@@ -463,13 +506,13 @@ export default function Marcador() {
           </div>
           <h2 className="text-xl font-bold text-white">{errorUbic.titulo}</h2>
           <p className="text-sm text-white/60 mt-2 mb-6 leading-relaxed">{errorUbic.ayuda}</p>
-          <button onClick={() => { setErrorUbic(null); marcar(); }}
-            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold py-3.5 rounded-xl text-base transition-colors">
-            <RotateCw size={18} /> Reintentar
+          <button onClick={activarUbicacion} disabled={buscandoUbic}
+            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold py-3.5 rounded-xl text-base transition-colors disabled:opacity-60">
+            <RotateCw size={18} /> {buscandoUbic ? 'Buscando...' : 'Reintentar'}
           </button>
-          <button onClick={() => setErrorUbic(null)}
+          <button onClick={() => window.location.reload()}
             className="w-full mt-2 text-white/50 hover:text-white/80 text-sm font-medium py-1">
-            Volver
+            Ya la activé en Ajustes · Recargar página
           </button>
         </div>
       </div>
@@ -561,9 +604,9 @@ export default function Marcador() {
           {marcando ? (exigeUbicacion ? 'Ubicando...' : 'Registrando...') : (dentroAhora ? 'Registrar Salida' : 'Registrar Entrada')}
         </button>
 
-        {exigeUbicacion && (
-          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-white/40">
-            <MapPin size={12} /> Marcas desde la ubicación de la empresa · permite el acceso cuando el navegador lo pida
+        {exigeUbicacion && ubicOk && (
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-green-400/80">
+            <MapPin size={12} /> Ubicación activada · marcarás desde la empresa
           </p>
         )}
 
