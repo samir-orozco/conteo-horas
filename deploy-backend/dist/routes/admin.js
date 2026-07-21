@@ -18,7 +18,7 @@ async function adminRoutes(app) {
             where: { id: empresaId },
             include: {
                 suscripcion: { include: { pagos: { orderBy: { creadoEn: 'desc' } } } },
-                usuarios: { select: { id: true, email: true, nombre: true, rol: true, activo: true } },
+                usuarios: { select: { id: true, email: true, nombre: true, rol: true, activo: true, emailVerificado: true } },
                 _count: { select: { colaboradores: { where: { activo: true } } } },
             },
         });
@@ -285,6 +285,20 @@ async function adminRoutes(app) {
             return reply.status(400).send({ error: 'Modo de precio inválido' });
         }
         return empresaConEstado(id);
+    });
+    // Verificar manualmente el correo de un usuario (cuando el correo falla).
+    // Deja al usuario entrar al sistema sin el código de verificación.
+    app.put('/usuarios/:id/verificar', auth, async (request, reply) => {
+        const { id } = request.params;
+        const usuario = await index_1.prisma.usuario.findUnique({ where: { id } });
+        if (!usuario)
+            return reply.status(404).send({ error: 'Usuario no encontrado' });
+        await index_1.prisma.usuario.update({
+            where: { id },
+            data: { emailVerificado: true, verificacionCodigo: null, verificacionExpira: null },
+        });
+        // Devuelve la ficha de la empresa para refrescar la lista de usuarios
+        return usuario.empresaId ? empresaConEstado(usuario.empresaId) : { ok: true };
     });
     // Cobro sugerido hoy (para prellenar el modal de registro de pago)
     app.get('/empresas/:id/cobro', auth, async (request, reply) => {
