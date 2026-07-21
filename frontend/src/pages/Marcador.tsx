@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { LogIn, LogOut, Check, X, Link2Off, ScanFace } from 'lucide-react';
+import { LogIn, LogOut, Check, X, Link2Off, ScanFace, MapPin, RotateCw } from 'lucide-react';
 import axios from 'axios';
 import logoSimplificado from '../assets/logo-simplificado.svg';
 import CamaraRostro from '../components/CamaraRostro';
 import { TIPO_PERMISO_LABEL } from './ColaboradorDetalle';
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api' });
+const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
 type Colaborador = { id: string; nombre: string; apellido: string; cargo: string | null };
 type Estado = { dentroAhora: boolean; entradaAbierta: { entrada: string } | null };
@@ -58,6 +59,9 @@ export default function Marcador() {
   const [novedadTipo, setNovedadTipo] = useState('MEDICO');
   const [novedadDesc, setNovedadDesc] = useState('');
   const [enviandoNovedad, setEnviandoNovedad] = useState(false);
+
+  // Error de ubicación (GPS apagado / permiso negado) con guía para resolverlo
+  const [errorUbic, setErrorUbic] = useState<null | { titulo: string; ayuda: string }>(null);
 
   // Reloj en vivo
   useEffect(() => {
@@ -199,30 +203,56 @@ export default function Marcador() {
   };
 
   // Pide la ubicación GPS del teléfono (solo si la empresa exige geocerco).
+  // Permite una ubicación reciente en caché (marca más rápido) y espera hasta 15s.
   const obtenerUbicacion = (): Promise<{ lat: number; lng: number }> =>
     new Promise((resolve, reject) => {
       if (!navigator.geolocation) return reject({ code: 0 });
       navigator.geolocation.getCurrentPosition(
         pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         err => reject(err),
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
       );
     });
+
+  // Traduce el error de geolocalización a un mensaje claro y accionable.
+  const mensajeGeo = (e: any): { titulo: string; ayuda: string } => {
+    switch (e?.code) {
+      case 1: // PERMISSION_DENIED
+        return {
+          titulo: 'Permite tu ubicación para marcar',
+          ayuda: esIOS
+            ? 'Toca "aA" (o el ícono junto a la dirección) → Ajustes del sitio → Ubicación → Permitir. También revisa que el navegador tenga acceso a la ubicación en Ajustes del teléfono. Luego reintenta.'
+            : 'Toca el candado junto a la dirección del navegador → Permisos → Ubicación → Permitir. Luego reintenta.',
+        };
+      case 2: // POSITION_UNAVAILABLE (normalmente ubicación apagada)
+        return {
+          titulo: 'Activa la ubicación de tu teléfono',
+          ayuda: 'Enciende el GPS/Ubicación: desliza desde arriba y toca el ícono de Ubicación (o entra a Ajustes → Ubicación). Luego reintenta.',
+        };
+      case 3: // TIMEOUT
+        return {
+          titulo: 'No pudimos ubicarte',
+          ayuda: 'Verifica que tengas señal o acércate a una ventana/lugar abierto, y reintenta.',
+        };
+      default:
+        return {
+          titulo: 'Tu navegador no permite ubicación',
+          ayuda: 'Abre el kiosco en Chrome o Safari actualizado e intenta de nuevo.',
+        };
+    }
+  };
 
   const marcar = async () => {
     if (!token || marcando) return;
     setMarcando(true);
+    setErrorUbic(null);
     try {
       let ubic: { lat?: number; lng?: number } = {};
       if (exigeUbicacion) {
         try {
           ubic = await obtenerUbicacion();
         } catch (e: any) {
-          const msg = e?.code === 1
-            ? 'Debes permitir el acceso a tu ubicación para poder marcar.'
-            : 'No pudimos obtener tu ubicación. Activa el GPS e intenta de nuevo.';
-          setFlash({ tipo: 'error', msg });
-          setTimeout(() => cerrarFlash(), 2800);
+          setErrorUbic(mensajeGeo(e));
           return;
         }
       }
@@ -423,6 +453,29 @@ export default function Marcador() {
     );
   }
 
+  // ===== Ubicación requerida: GPS apagado o permiso negado =====
+  if (errorUbic) {
+    return (
+      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
+        <div className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
+          <div className="bg-amber-400/90 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <MapPin size={28} className="text-ink" />
+          </div>
+          <h2 className="text-xl font-bold text-white">{errorUbic.titulo}</h2>
+          <p className="text-sm text-white/60 mt-2 mb-6 leading-relaxed">{errorUbic.ayuda}</p>
+          <button onClick={() => { setErrorUbic(null); marcar(); }}
+            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold py-3.5 rounded-xl text-base transition-colors">
+            <RotateCw size={18} /> Reintentar
+          </button>
+          <button onClick={() => setErrorUbic(null)}
+            className="w-full mt-2 text-white/50 hover:text-white/80 text-sm font-medium py-1">
+            Volver
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ===== Salida temprana: pedir motivo antes de mostrar la confirmación =====
   if (salidaTemprana) {
     return (
@@ -505,8 +558,14 @@ export default function Marcador() {
             }`}
         >
           {dentroAhora ? <LogOut size={28} /> : <LogIn size={28} />}
-          {marcando ? 'Registrando...' : (dentroAhora ? 'Registrar Salida' : 'Registrar Entrada')}
+          {marcando ? (exigeUbicacion ? 'Ubicando...' : 'Registrando...') : (dentroAhora ? 'Registrar Salida' : 'Registrar Entrada')}
         </button>
+
+        {exigeUbicacion && (
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-white/40">
+            <MapPin size={12} /> Marcas desde la ubicación de la empresa · permite el acceso cuando el navegador lo pida
+          </p>
+        )}
 
         <button onClick={salir} className="mt-4 text-xs text-white/30 hover:text-white/60 underline">
           No soy yo, cambiar usuario
