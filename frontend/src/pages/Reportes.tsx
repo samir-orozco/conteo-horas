@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Search, AlarmClock, Info, Download, Lock } from 'lucide-react';
+import { es } from 'date-fns/locale';
+import { toZonedTime } from 'date-fns-tz';
+import { Search, AlarmClock, Info, Download, Lock, CalendarOff, Paperclip, X, FileText, Image as ImageIcon } from 'lucide-react';
 import api from '../lib/api';
 import { useMiPlan } from '../lib/plan';
-import { descargarExcel } from '../lib/exportar';
+import { descargarExcelHojas } from '../lib/exportar';
+import { TIPO_PERMISO_LABEL } from './ColaboradorDetalle';
+
+const TZ = 'America/Bogota';
 
 type Colaborador = { id: string; nombre: string; apellido: string; salarioMensual: number };
 type LineaLiquidacion = { codigo: string; nombre: string; horas: number; valorHora: number; recargo: number; esExtra: boolean; factorPagado: number; subtotal: number };
@@ -13,6 +18,8 @@ type Reporte = {
   salarioBase: number; totalRecargos: number; totalExtra: number; totalAdicional: number;
   totalPagar: number; registrosCont: number;
 };
+type Novedad = { id: string; tipo: string; descripcion?: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; evidenciaTipo?: string | null; evidenciaNombre?: string | null };
+type RegistroDia = { id: string; fecha: string; entrada: string | null; salida: string | null; tipo: string; minutosTarde: number | null; observacion?: string | null };
 type Tardanzas = {
   sinHorario: boolean;
   horario?: { nombre: string; toleranciaMin: number };
@@ -43,8 +50,22 @@ export default function Reportes() {
   const [hasta, setHasta] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [reporte, setReporte] = useState<Reporte | null>(null);
   const [tardanzas, setTardanzas] = useState<Tardanzas | null>(null);
+  const [novedades, setNovedades] = useState<Novedad[]>([]);
+  const [registrosDia, setRegistrosDia] = useState<RegistroDia[]>([]);
+  const [vista, setVista] = useState<'liquidacion' | 'dias'>('liquidacion');
+  const [verNovedad, setVerNovedad] = useState<Novedad | null>(null);
+  const [evidenciaVer, setEvidenciaVer] = useState<{ data: string; tipo: string; nombre?: string | null } | null>(null);
+  const [cargandoEvidencia, setCargandoEvidencia] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const verEvidencia = async (permisoId: string) => {
+    setCargandoEvidencia(true);
+    try {
+      const r = await api.get(`/permisos/${permisoId}/evidencia`);
+      setEvidenciaVer({ data: r.data.evidencia, tipo: r.data.evidenciaTipo, nombre: r.data.evidenciaNombre });
+    } catch { /* sin evidencia */ } finally { setCargandoEvidencia(false); }
+  };
 
   useEffect(() => { api.get('/colaboradores').then(r => setColaboradores(r.data)); }, []);
 
@@ -53,12 +74,23 @@ export default function Reportes() {
     setLoading(true);
     setError('');
     try {
-      const [liq, tar] = await Promise.all([
+      const [liq, tar, perm, regs] = await Promise.all([
         api.get('/reportes/liquidacion', { params: { colaboradorId, desde, hasta } }),
         api.get('/reportes/tardanzas', { params: { colaboradorId, desde, hasta } }),
+        api.get('/permisos', { params: { colaboradorId } }),
+        api.get('/registros', { params: { colaboradorId, desde, hasta } }),
       ]);
       setReporte(liq.data);
       setTardanzas(tar.data);
+      setVista('liquidacion');
+      setRegistrosDia((regs.data as RegistroDia[]).slice().sort((a, b) => (a.fecha < b.fecha ? 1 : -1)));
+      // Novedades que se cruzan con el rango filtrado (por día calendario Bogotá)
+      const dia = (iso: string) => format(toZonedTime(new Date(iso), TZ), 'yyyy-MM-dd');
+      setNovedades(
+        (perm.data as Novedad[])
+          .filter(n => dia(n.fechaInicio) <= hasta && dia(n.fechaFin) >= desde)
+          .sort((a, b) => (a.fechaInicio < b.fechaInicio ? 1 : -1))
+      );
     } catch {
       setError('Error al calcular la liquidación');
     } finally {
@@ -67,25 +99,54 @@ export default function Reportes() {
   };
 
   const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+  const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '—';
+  const duracion = (entrada: string | null, salida: string | null) => {
+    if (!entrada || !salida) return '—';
+    const min = (new Date(salida).getTime() - new Date(entrada).getTime()) / 60000;
+    return `${Math.floor(min / 60)}h ${Math.round(min % 60)}min`;
+  };
 
   const totalHoras = reporte?.liquidacion.reduce((s, l) => s + l.horas, 0) ?? 0;
 
   const exportarExcel = () => {
     if (!reporte) return;
-    const cols = ['Código', 'Concepto', 'Horas', 'Recargo %', 'Valor hora', 'Subtotal'];
-    const filas = reporte.liquidacion.map(l => [
+    const dFmt = (iso: string) => format(toZonedTime(new Date(iso), TZ), 'dd/MM/yyyy');
+
+    // Hoja 1: Liquidación
+    const liqFilas: (string | number)[][] = reporte.liquidacion.map(l => [
       l.codigo, l.nombre, Number(l.horas.toFixed(2)), Math.round(l.recargo * 100), Math.round(l.valorHora), Math.round(l.subtotal),
     ]);
-    filas.push(['', 'Total recargos', '', '', '', Math.round(reporte.totalRecargos)]);
-    filas.push(['', 'Total horas extra', '', '', '', Math.round(reporte.totalExtra)]);
-    filas.push(['', 'TOTAL A PAGAR (además del salario)', '', '', '', Math.round(reporte.totalPagar)]);
+    liqFilas.push(['', 'Total recargos', '', '', '', Math.round(reporte.totalRecargos)]);
+    liqFilas.push(['', 'Total horas extra', '', '', '', Math.round(reporte.totalExtra)]);
+    liqFilas.push(['', 'TOTAL A PAGAR (además del salario)', '', '', '', Math.round(reporte.totalPagar)]);
+
+    // Hoja 2: Novedades del período
+    const novFilas = novedades.map(n => [
+      TIPO_PERMISO_LABEL[n.tipo] ?? n.tipo,
+      n.aprobado ? 'Aprobada' : 'Pendiente',
+      dFmt(n.fechaInicio),
+      dFmt(n.fechaFin),
+      n.descripcion || '',
+      n.evidenciaTipo ? 'Sí' : 'No',
+    ]);
+
+    // Hoja 3: Registros del período (día a día)
+    const regFilas = registrosDia.map(r => [
+      format(toZonedTime(new Date(r.fecha), TZ), 'dd/MM/yyyy'),
+      fmtHora(r.entrada),
+      fmtHora(r.salida),
+      r.tipo,
+      r.minutosTarde && r.minutosTarde > 0 ? r.minutosTarde : 0,
+      duracion(r.entrada, r.salida),
+    ]);
+
     const nombre = `${reporte.colaborador.nombre}_${reporte.colaborador.apellido}`.replace(/\s+/g, '');
     const periodo = `${format(new Date(reporte.desde), 'dd-MM-yyyy')}_a_${format(new Date(reporte.hasta), 'dd-MM-yyyy')}`;
-    descargarExcel(
-      `Reporte_${nombre}_${periodo}`,
-      `Liquidación · ${reporte.colaborador.nombre} ${reporte.colaborador.apellido} · ${periodo.replace(/_/g, ' ')}`,
-      cols, filas,
-    );
+    descargarExcelHojas(`Reporte_${nombre}_${periodo}`, [
+      { nombre: 'Liquidación', columnas: ['Código', 'Concepto', 'Horas', 'Recargo %', 'Valor hora', 'Subtotal'], filas: liqFilas },
+      { nombre: 'Novedades', columnas: ['Tipo', 'Estado', 'Desde', 'Hasta', 'Descripción', 'Evidencia'], filas: novFilas },
+      { nombre: 'Registros', columnas: ['Fecha', 'Entrada', 'Salida', 'Tipo', 'Min. tarde', 'Duración'], filas: regFilas },
+    ]);
   };
 
   return (
@@ -148,6 +209,53 @@ export default function Reportes() {
             )}
           </div>
 
+          {/* Pestañas: Liquidación / Registros del período */}
+          <div className="flex gap-1 border-b border-gray-200 mb-5">
+            {([['liquidacion', 'Liquidación'], ['dias', 'Registros del período']] as const).map(([id, label]) => (
+              <button key={id} onClick={() => setVista(id)}
+                className={`px-4 py-2 text-sm border-b-2 -mb-px transition-colors ${vista === id ? 'border-blue-800 text-blue-800 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {vista === 'dias' ? (
+            <div className="overflow-x-auto">
+              {registrosDia.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">Sin registros en este período.</p>
+              ) : (
+                <table className="w-full text-sm min-w-[600px]">
+                  <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Fecha</th>
+                      <th className="px-3 py-2 text-center">Entrada</th>
+                      <th className="px-3 py-2 text-center">Salida</th>
+                      <th className="px-3 py-2 text-center">Tipo</th>
+                      <th className="px-3 py-2 text-center">Tarde</th>
+                      <th className="px-3 py-2 text-right">Duración</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {registrosDia.map(r => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="px-3 py-2.5 text-gray-700 capitalize">{format(toZonedTime(new Date(r.fecha), TZ), "EEE dd/MM/yyyy", { locale: es })}</td>
+                        <td className="px-3 py-2.5 text-center font-mono text-green-700">{fmtHora(r.entrada)}</td>
+                        <td className="px-3 py-2.5 text-center font-mono text-red-600">{fmtHora(r.salida)}</td>
+                        <td className="px-3 py-2.5 text-center">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.tipo === 'FESTIVO' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>{r.tipo}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          {r.minutosTarde && r.minutosTarde > 0 ? <span className="text-orange-600 font-semibold">{fmtMin(r.minutosTarde)}</span> : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-gray-600">{duracion(r.entrada, r.salida)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          ) : (
+          <>
           {/* Aviso del modelo de pago */}
           <div className="bg-primary/20 border border-primary/40 rounded-xl px-4 py-3 mb-5 flex items-start gap-2 text-sm text-ink">
             <Info size={16} className="mt-0.5 shrink-0" />
@@ -212,12 +320,17 @@ export default function Reportes() {
           {reporte.liquidacion.length === 0 && (
             <p className="text-center text-gray-400 py-8">No hay registros completos (con entrada y salida) en este período</p>
           )}
+          </>
+          )}
         </div>
       )}
 
+      {/* Llegadas tarde + Novedades, en dos columnas (solo en la pestaña Liquidación) */}
+      {reporte && vista === 'liquidacion' && (
+      <div className="grid lg:grid-cols-2 gap-6 mt-6 items-start">
       {/* Llegadas tarde del período */}
-      {reporte && tardanzas && (
-        <div className="bg-white rounded-xl shadow p-4 md:p-6 mt-6">
+      {tardanzas && (
+        <div className="bg-white rounded-xl shadow p-4 md:p-6">
           <h3 className="font-semibold text-ink mb-1 flex items-center gap-2">
             <AlarmClock size={17} className={tardanzas.diasTarde > 0 ? 'text-orange-500' : 'text-green-600'} />
             Llegadas tarde
@@ -261,6 +374,110 @@ export default function Reportes() {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Novedades del período */}
+      {reporte && (
+        <div className="bg-white rounded-xl shadow p-4 md:p-6">
+          <h3 className="font-semibold text-ink mb-1 flex items-center gap-2">
+            <CalendarOff size={17} className="text-primary-dark" /> Novedades del período
+          </h3>
+          {novedades.length === 0 ? (
+            <p className="text-sm text-green-700 mt-2">Sin novedades (permisos, incapacidades, licencias) en el rango filtrado ✓</p>
+          ) : (
+            <>
+              <p className="text-sm text-muted mb-3">
+                {novedades.length} novedad{novedades.length === 1 ? '' : 'es'} entre el {format(new Date(reporte.desde), 'dd/MM/yyyy')} y el {format(new Date(reporte.hasta), 'dd/MM/yyyy')}.
+              </p>
+              <div className="space-y-2">
+                {novedades.map(n => (
+                  <button key={n.id} onClick={() => setVerNovedad(n)}
+                    className="w-full flex items-start gap-3 bg-gray-50 hover:bg-gray-100 rounded-xl px-4 py-3 text-left transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-ink flex items-center gap-1.5 flex-wrap">
+                        {TIPO_PERMISO_LABEL[n.tipo] ?? n.tipo}
+                        {n.evidenciaTipo && <Paperclip size={12} className="text-primary-dark" />}
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${n.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                          {n.aprobado ? 'APROBADA' : 'PENDIENTE'}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted mt-0.5">
+                        {format(toZonedTime(new Date(n.fechaInicio), TZ), 'dd/MM/yyyy')}
+                        {format(toZonedTime(new Date(n.fechaInicio), TZ), 'dd/MM/yyyy') !== format(toZonedTime(new Date(n.fechaFin), TZ), 'dd/MM/yyyy') &&
+                          ` — ${format(toZonedTime(new Date(n.fechaFin), TZ), 'dd/MM/yyyy')}`}
+                      </p>
+                      {n.descripcion && <p className="text-xs text-gray-600 mt-1 truncate">{n.descripcion}</p>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      </div>
+      )}
+
+      {/* Detalle de una novedad */}
+      {verNovedad && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setVerNovedad(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-lg text-ink">{TIPO_PERMISO_LABEL[verNovedad.tipo] ?? verNovedad.tipo}</h3>
+              <button onClick={() => setVerNovedad(null)}><X size={20} className="text-gray-400" /></button>
+            </div>
+            <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mb-4 ${verNovedad.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+              {verNovedad.aprobado ? 'APROBADA' : 'PENDIENTE'}
+            </span>
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-xs text-muted">Fechas</p>
+                <p className="text-ink font-medium">
+                  {format(toZonedTime(new Date(verNovedad.fechaInicio), TZ), 'dd/MM/yyyy')}
+                  {format(toZonedTime(new Date(verNovedad.fechaInicio), TZ), 'dd/MM/yyyy') !== format(toZonedTime(new Date(verNovedad.fechaFin), TZ), 'dd/MM/yyyy') &&
+                    ` — ${format(toZonedTime(new Date(verNovedad.fechaFin), TZ), 'dd/MM/yyyy')}`}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Descripción / motivo</p>
+                <p className="text-ink whitespace-pre-wrap">{verNovedad.descripcion || <span className="text-muted">Sin descripción.</span>}</p>
+              </div>
+              {verNovedad.evidenciaTipo && (
+                <div>
+                  <p className="text-xs text-muted mb-1">Evidencia</p>
+                  <button onClick={() => verEvidencia(verNovedad.id)} disabled={cargandoEvidencia}
+                    className="flex items-center gap-2 text-sm font-medium text-primary-dark border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 disabled:opacity-60">
+                    {verNovedad.evidenciaTipo === 'application/pdf' ? <FileText size={16} className="text-red-500" /> : <ImageIcon size={16} />}
+                    {cargandoEvidencia ? 'Abriendo...' : (verNovedad.evidenciaNombre || 'Ver evidencia')}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end mt-6">
+              <button onClick={() => setVerNovedad(null)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visor de evidencia */}
+      {evidenciaVer && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setEvidenciaVer(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-4 w-full max-w-2xl shadow-xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <p className="text-sm font-semibold text-ink truncate">{evidenciaVer.nombre || 'Evidencia'}</p>
+              <div className="flex items-center gap-1">
+                <a href={evidenciaVer.data} download={evidenciaVer.nombre || 'evidencia'} title="Descargar" className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"><Download size={18} /></a>
+                <button onClick={() => setEvidenciaVer(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+              </div>
+            </div>
+            {evidenciaVer.tipo === 'application/pdf' ? (
+              <iframe src={evidenciaVer.data} title="Evidencia PDF" className="w-full flex-1 min-h-[60vh] rounded-lg border border-gray-200" />
+            ) : (
+              <img src={evidenciaVer.data} alt="Evidencia" className="w-full object-contain rounded-lg max-h-[75vh]" />
+            )}
+          </div>
         </div>
       )}
     </div>
