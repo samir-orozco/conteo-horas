@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Building2, CreditCard, Users, Wallet, Link as LinkIcon, FileDown, Paperclip, TrendingUp, ListChecks,
+  ArrowLeft, Building2, CreditCard, Users, Wallet, Link as LinkIcon, FileDown, Paperclip, TrendingUp, ListChecks, BadgeCheck,
 } from 'lucide-react';
 import api from '../../lib/api';
 import Toast from '../../components/Toast';
@@ -26,7 +26,7 @@ type Empresa = {
   marcadorToken: string; exentaPago: boolean; activa: boolean; creadoEn: string;
   colaboradoresActivos: number; tarifaMensual: number;
   capacidades: Capacidades;
-  usuarios: { id: string; email: string; nombre: string; rol: string; activo: boolean }[];
+  usuarios: { id: string; email: string; nombre: string; rol: string; activo: boolean; emailVerificado: boolean }[];
   suscripcion: {
     estadoEfectivo: string; diasMora: number; finPrueba: string; pagadoHasta: string | null; pagos: Pago[];
     plan: string; cicloPago: string; limiteOverride: number | null;
@@ -73,6 +73,7 @@ export default function AdminEmpresaDetalle() {
   const [limite, setLimite] = useState(30);
   const [feats, setFeats] = useState<Record<string, boolean>>({});
   const [guardandoPlan, setGuardandoPlan] = useState(false);
+  const [verificando, setVerificando] = useState('');
 
   const cargar = useCallback(() => {
     if (id) api.get(`/admin/empresas/${id}`).then(r => {
@@ -99,6 +100,18 @@ export default function AdminEmpresaDetalle() {
     setLimite(opc?.limite ?? 30);
     const on = new Set(PLAN_FEATS[nuevo] ?? []);
     setFeats(Object.fromEntries(FEATURES.map(f => [f.key, on.has(f.key)])));
+  };
+
+  const verificarUsuario = async (usuarioId: string) => {
+    setVerificando(usuarioId);
+    try {
+      const r = await api.put(`/admin/usuarios/${usuarioId}/verificar`);
+      if (r.data?.id) setEmpresa(r.data); // devuelve la ficha actualizada
+      else cargar();
+      setToast('Usuario verificado · ya puede entrar (que recargue o vuelva a iniciar sesión)');
+    } catch {
+      setToast('No pudimos verificar el usuario');
+    } finally { setVerificando(''); }
   };
 
   const guardarPlan = async () => {
@@ -269,10 +282,22 @@ export default function AdminEmpresaDetalle() {
                   {u.nombre[0]}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-ink truncate">{u.nombre}</p>
+                  <p className="text-sm font-medium text-ink truncate flex items-center gap-1.5">
+                    {u.nombre}
+                    {u.emailVerificado && (
+                      <BadgeCheck size={15} className="text-amber-500 shrink-0" aria-label="Correo verificado" />
+                    )}
+                  </p>
                   <p className="text-xs text-muted truncate">{u.email}</p>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">{u.rol}</span>
+                {u.emailVerificado ? (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-700 shrink-0">{u.rol}</span>
+                ) : (
+                  <button onClick={() => verificarUsuario(u.id)} disabled={verificando === u.id}
+                    className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 disabled:opacity-60 shrink-0">
+                    {verificando === u.id ? 'Verificando...' : 'Verificar'}
+                  </button>
+                )}
               </div>
             ))}
             {empresa.usuarios.length === 0 && <p className="text-sm text-muted">Sin usuarios.</p>}
