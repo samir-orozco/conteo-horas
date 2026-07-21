@@ -4,6 +4,7 @@ import { prisma } from '../index';
 import { calcularValorHora } from '../utils/horasColombiana';
 import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { finDeMes } from '../utils/suscripcion';
+import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
@@ -61,10 +62,23 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     const existente = await prisma.colaborador.findUnique({
       where: { empresaId_cedula: { empresaId: request.empresaId!, cedula: data.cedula } },
     });
-    if (existente) {
-      if (existente.activo) {
-        return reply.status(409).send({ error: `La cédula ${data.cedula} ya está registrada para ${existente.nombre} ${existente.apellido}` });
+    if (existente?.activo) {
+      return reply.status(409).send({ error: `La cédula ${data.cedula} ya está registrada para ${existente.nombre} ${existente.apellido}` });
+    }
+
+    // Límite de colaboradores según el plan (crear o reactivar suma un activo)
+    const cap = await capacidadesEmpresa(request.empresaId!);
+    if (cap.limite !== Infinity) {
+      const activos = await prisma.colaborador.count({ where: { empresaId: request.empresaId!, activo: true } });
+      if (activos >= cap.limite) {
+        return reply.status(403).send({
+          error: `Tu plan ${cap.nombrePlan} permite hasta ${cap.limite} colaboradores.`,
+          codigo: 'LIMITE_PLAN', limite: cap.limite, plan: cap.plan,
+        });
       }
+    }
+
+    if (existente) {
       const reactivado = await prisma.colaborador.update({
         where: { id: existente.id },
         data: { ...data, activo: true, retiroProgramado: null },

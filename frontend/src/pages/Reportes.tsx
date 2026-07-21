@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Search, FileText, AlarmClock, Info } from 'lucide-react';
+import { Search, AlarmClock, Info, Download, Lock } from 'lucide-react';
 import api from '../lib/api';
+import { useMiPlan } from '../lib/plan';
+import { descargarExcel } from '../lib/exportar';
 
 type Colaborador = { id: string; nombre: string; apellido: string; salarioMensual: number };
 type LineaLiquidacion = { codigo: string; nombre: string; horas: number; valorHora: number; recargo: number; esExtra: boolean; factorPagado: number; subtotal: number };
@@ -32,6 +35,8 @@ const BADGE: Record<string, string> = {
 };
 
 export default function Reportes() {
+  const navigate = useNavigate();
+  const { plan } = useMiPlan();
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [colaboradorId, setColaboradorId] = useState('');
   const [desde, setDesde] = useState(format(new Date(), 'yyyy-MM-01'));
@@ -64,6 +69,24 @@ export default function Reportes() {
   const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
   const totalHoras = reporte?.liquidacion.reduce((s, l) => s + l.horas, 0) ?? 0;
+
+  const exportarExcel = () => {
+    if (!reporte) return;
+    const cols = ['Código', 'Concepto', 'Horas', 'Recargo %', 'Valor hora', 'Subtotal'];
+    const filas = reporte.liquidacion.map(l => [
+      l.codigo, l.nombre, Number(l.horas.toFixed(2)), Math.round(l.recargo * 100), Math.round(l.valorHora), Math.round(l.subtotal),
+    ]);
+    filas.push(['', 'Total recargos', '', '', '', Math.round(reporte.totalRecargos)]);
+    filas.push(['', 'Total horas extra', '', '', '', Math.round(reporte.totalExtra)]);
+    filas.push(['', 'TOTAL A PAGAR (además del salario)', '', '', '', Math.round(reporte.totalPagar)]);
+    const nombre = `${reporte.colaborador.nombre}_${reporte.colaborador.apellido}`.replace(/\s+/g, '');
+    const periodo = `${format(new Date(reporte.desde), 'dd-MM-yyyy')}_a_${format(new Date(reporte.hasta), 'dd-MM-yyyy')}`;
+    descargarExcel(
+      `Reporte_${nombre}_${periodo}`,
+      `Liquidación · ${reporte.colaborador.nombre} ${reporte.colaborador.apellido} · ${periodo.replace(/_/g, ' ')}`,
+      cols, filas,
+    );
+  };
 
   return (
     <div className="p-4 md:p-6 w-full">
@@ -112,7 +135,17 @@ export default function Reportes() {
               </p>
               <p className="text-sm text-gray-500">{reporte.registrosCont} días analizados · {totalHoras.toFixed(1)}h totales</p>
             </div>
-            <FileText className="text-gray-300 hidden sm:block" size={28} />
+            {plan && !plan.features.exportar ? (
+              <button onClick={() => navigate('/app/configuracion?tab=suscripcion')} title="Exportar a Excel está disponible en el plan Profesional"
+                className="flex items-center gap-1.5 text-xs font-semibold text-muted bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg self-start">
+                <Lock size={14} /> Exportar (Profesional)
+              </button>
+            ) : (
+              <button onClick={exportarExcel}
+                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-green-700 hover:bg-green-600 px-3 py-2 rounded-lg self-start">
+                <Download size={14} /> Descargar Excel
+              </button>
+            )}
           </div>
 
           {/* Aviso del modelo de pago */}

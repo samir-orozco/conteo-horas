@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../index';
 import { jornadaVigente } from '../utils/vigencias';
+import { capacidadesEmpresa } from '../utils/capacidades';
 
 type FranjaInput = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean };
 
@@ -47,6 +48,14 @@ export default async function horarioRoutes(app: FastifyInstance) {
     if (!nombre) return reply.status(400).send({ error: 'El nombre es obligatorio' });
     if (!validarFranjas(franjas)) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
+    }
+    // Gating: varios horarios requieren plan Profesional o superior
+    const cap = await capacidadesEmpresa(request.empresaId!);
+    if (!cap.features.multiHorario) {
+      const existentes = await prisma.horario.count({ where: { empresaId: request.empresaId } });
+      if (existentes >= 1) {
+        return reply.status(403).send({ error: 'Tu plan permite un solo horario. Sube de plan para crear más.', codigo: 'FUNCION_PLAN', funcion: 'multiHorario' });
+      }
     }
     const horario = await prisma.horario.create({
       data: {

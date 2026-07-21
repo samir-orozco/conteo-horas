@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Eye, ArrowUpRight, MessageCircle } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useMiPlan } from '../lib/plan';
 
 type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null };
 export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string };
@@ -32,8 +33,11 @@ export function resumenFranjas(franjas?: Franja[]): string {
   }).join(' · ');
 }
 
+const WPP_MAS_150 = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
+
 export default function Colaboradores() {
   const navigate = useNavigate();
+  const { plan } = useMiPlan();
   const [lista, setLista] = useState<Colaborador[]>([]);
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Colaborador | null>(null);
@@ -84,14 +88,53 @@ export default function Colaboradores() {
 
   const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
+  const limite = plan && !plan.ilimitado ? plan.limite : null; // null = ilimitado
+  const usados = lista.length;
+  const topado = limite != null && usados >= limite;
+  const esEmpresarial = plan?.plan === 'EMPRESARIAL';
+  const pct = limite ? Math.min(100, Math.round((usados / limite) * 100)) : 0;
+
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-4">
         <h2 className="text-2xl font-bold text-ink">Colaboradores</h2>
-        <button onClick={() => abrir()} className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl text-sm font-semibold">
-          <Plus size={16} />Agregar
-        </button>
+        {topado ? (
+          esEmpresarial ? (
+            <a href={WPP_MAS_150} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-[#25D366] hover:brightness-95 text-white px-4 py-2 rounded-xl text-sm font-semibold">
+              <MessageCircle size={16} /> ¿Más de {limite}? Escríbenos
+            </a>
+          ) : (
+            <button onClick={() => navigate('/app/configuracion?tab=suscripcion')}
+              className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl text-sm font-semibold">
+              <ArrowUpRight size={16} /> Subir de plan
+            </button>
+          )
+        ) : (
+          <button onClick={() => abrir()} className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl text-sm font-semibold">
+            <Plus size={16} />Agregar
+          </button>
+        )}
       </div>
+
+      {limite != null && (
+        <div className="bg-white rounded-card border border-gray-200 p-4 mb-4">
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="text-muted">Plan <b className="text-ink">{plan?.nombrePlan}</b> · usas <b className="text-ink">{usados}</b> de <b className="text-ink">{limite}</b> colaboradores</span>
+            {topado && <span className="text-xs font-semibold text-orange-600">Cupo lleno</span>}
+          </div>
+          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${topado ? 'bg-orange-500' : pct >= 80 ? 'bg-amber-400' : 'bg-primary'}`} style={{ width: `${pct}%` }} />
+          </div>
+          {topado && (
+            <p className="text-xs text-muted mt-2">
+              {esEmpresarial
+                ? 'Llegaste al máximo de tu plan. Escríbenos por WhatsApp para un plan a la medida.'
+                : 'Llegaste al límite de tu plan. Sube de plan para agregar más colaboradores.'}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">

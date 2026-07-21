@@ -27,6 +27,16 @@ export function empresaIdDeReferencia(reference: string): string | null {
   return partes[1];
 }
 
+// Referencia de un pago de cambio de plan: codifica el plan destino para
+// aplicarlo cuando el pago quede aprobado. HP-<empresaId>-U<PLAN>-P<venc>
+export function referenciaUpgrade(empresaId: string, plan: string, vencimiento: Date): string {
+  return `HP-${empresaId}-U${plan}-P${vencimiento.getTime()}`;
+}
+export function planDeReferencia(reference: string): string | null {
+  const seg = reference.split('-').find(p => /^U[A-Z]+$/.test(p));
+  return seg ? seg.slice(1) : null;
+}
+
 // Firma de integridad del Web Checkout: SHA256(<ref><monto><moneda><secreto>)
 export function firmaIntegridad(reference: string, amountInCents: number, currency = 'COP'): string {
   return crypto

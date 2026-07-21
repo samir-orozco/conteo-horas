@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { IdCard, ScanFace, AlertTriangle, Check, MapPin, LocateFixed } from 'lucide-react';
 import api from '../../lib/api';
+import { useMiPlan } from '../../lib/plan';
+import FuncionBloqueada from '../../components/FuncionBloqueada';
 
 // Métodos de marcación del kiosco (las alertas de Telegram viven en Conexiones).
 export default function TabMarcacion() {
+  const { plan } = useMiPlan();
   const [permiteCedula, setPermiteCedula] = useState(true);
   const [cargado, setCargado] = useState(false);
 
@@ -124,6 +127,10 @@ export default function TabMarcacion() {
       </div>
 
       {/* Marcación por ubicación (geocerco GPS) */}
+      {plan && !plan.features.gps ? (
+        <FuncionBloqueada titulo="Marcar solo desde la ubicación de la empresa"
+          descripcion="Deja que marquen desde su celular, pero solo dentro del radio de la empresa (geocerca por GPS). Disponible desde el plan Profesional." />
+      ) : (
       <div className="bg-white rounded-card border border-gray-200 p-6 space-y-5">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -188,6 +195,7 @@ export default function TabMarcacion() {
           </p>
         </div>
       </div>
+      )}
       </div>
     </div>
   );

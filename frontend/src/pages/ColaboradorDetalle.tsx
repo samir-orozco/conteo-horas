@@ -5,7 +5,7 @@ import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import {
   ArrowLeft, Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
-  ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Download,
+  ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Download, Lock,
 } from 'lucide-react';
 import api from '../lib/api';
 import { formatearMiles, parsearMiles, resumenFranjas, type Franja } from './Colaboradores';
@@ -13,6 +13,7 @@ import CamaraRostro from '../components/CamaraRostro';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import CampoEvidencia, { type CambioEvidencia } from '../components/CampoEvidencia';
+import { useMiPlan } from '../lib/plan';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
 type Colaborador = {
@@ -57,6 +58,7 @@ export default function ColaboradorDetalle() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const { plan } = useMiPlan();
   const [col, setCol] = useState<Colaborador | null>(null);
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [permisos, setPermisos] = useState<Permiso[]>([]);
@@ -524,13 +526,22 @@ export default function ColaboradorDetalle() {
                 <label className="block text-xs font-medium text-muted mb-1">Descripción (opcional)</label>
                 <input value={novedad.descripcion} onChange={e => setNovedad(p => ({ ...p, descripcion: e.target.value }))} className={input} placeholder="Ej: vacaciones anuales" />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-muted mb-1">Evidencia (opcional)</label>
-                <CampoEvidencia
-                  existente={editandoNovedad?.evidenciaTipo ? { tipo: editandoNovedad.evidenciaTipo, nombre: editandoNovedad.evidenciaNombre } : null}
-                  onCambio={setCambioEvidencia}
-                />
-              </div>
+              {(!plan || plan.features.evidencia) ? (
+                <div>
+                  <label className="block text-xs font-medium text-muted mb-1">Evidencia (opcional)</label>
+                  <CampoEvidencia
+                    existente={editandoNovedad?.evidenciaTipo ? { tipo: editandoNovedad.evidenciaTipo, nombre: editandoNovedad.evidenciaNombre } : null}
+                    onCambio={setCambioEvidencia}
+                  />
+                </div>
+              ) : (
+                <button type="button" onClick={() => navigate('/app/configuracion?tab=suscripcion')}
+                  className="w-full flex items-center gap-3 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-left hover:bg-gray-50">
+                  <Lock size={16} className="text-muted shrink-0" />
+                  <span className="flex-1 text-sm text-muted">¿Quieres adjuntar <b className="text-ink">evidencia</b> (incapacidad, permiso)? Cambia al plan <b className="text-ink">Profesional</b> o <b className="text-ink">Empresarial</b>.</span>
+                  <span className="text-xs font-semibold text-ink bg-primary/40 px-2.5 py-1 rounded-lg shrink-0">Subir de plan</span>
+                </button>
+              )}
               <label className="flex items-center gap-2 text-sm cursor-pointer text-ink">
                 <input type="checkbox" checked={novedad.aprobado} onChange={e => setNovedad(p => ({ ...p, aprobado: e.target.checked }))} className="rounded" />
                 Aprobada

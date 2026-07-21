@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../index';
+import { capacidadesEmpresa } from '../utils/capacidades';
 
 // Evidencia: imagen o PDF en base64 data URI, con tope de tamaño (~4 MB de texto).
 const MAX_EVIDENCIA = 4_200_000;
@@ -64,6 +65,10 @@ export default async function permisoRoutes(app: FastifyInstance) {
       where: { id: data.colaboradorId, empresaId: request.empresaId },
     });
     if (!col) return reply.status(404).send({ error: 'Colaborador no encontrado' });
+    if (evidenciaValida(data.evidencia)) {
+      const cap = await capacidadesEmpresa(request.empresaId!);
+      if (!cap.features.evidencia) return reply.status(403).send({ error: 'Adjuntar evidencia está disponible en el plan Profesional.', codigo: 'FUNCION_PLAN', funcion: 'evidencia' });
+    }
     const permiso = await prisma.permiso.create({ data: limpiarPermiso(data, true) });
     return reply.status(201).send(permiso);
   });

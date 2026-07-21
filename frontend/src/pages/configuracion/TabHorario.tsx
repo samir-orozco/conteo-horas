@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Scale, CalendarClock, Clock3, Plus, Trash2, X, Pencil, AlertTriangle } from 'lucide-react';
+import { Scale, CalendarClock, Clock3, Plus, Trash2, X, Pencil, AlertTriangle, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { useMiPlan } from '../../lib/plan';
 
 export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean };
 export type Horario = {
@@ -36,6 +38,8 @@ type Legales = {
 const fmtFecha = (s: string) => new Date(s).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export default function TabHorario() {
+  const navigate = useNavigate();
+  const { plan } = useMiPlan();
   const [legales, setLegales] = useState<Legales | null>(null);
 
   const [horarios, setHorarios] = useState<Horario[]>([]);
@@ -131,9 +135,16 @@ export default function TabHorario() {
       <div className="bg-white rounded-card border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-semibold text-ink flex items-center gap-2"><Clock3 size={17} /> Horarios de trabajo</h3>
-          <button onClick={() => abrirHorario()} className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-3 py-2 rounded-lg">
-            <Plus size={14} /> Nuevo horario
-          </button>
+          {plan && !plan.features.multiHorario && horarios.length >= 1 ? (
+            <button onClick={() => navigate('/app/configuracion?tab=suscripcion')} title="Sube de plan para crear más horarios"
+              className="flex items-center gap-1.5 text-xs font-semibold text-muted bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg">
+              <Lock size={13} /> Varios horarios: sube de plan
+            </button>
+          ) : (
+            <button onClick={() => abrirHorario()} className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-3 py-2 rounded-lg">
+              <Plus size={14} /> Nuevo horario
+            </button>
+          )}
         </div>
         <p className="text-xs text-muted mb-4">
           Un horario puede tener varias franjas — por ejemplo lunes a viernes de 08:00 a 17:00

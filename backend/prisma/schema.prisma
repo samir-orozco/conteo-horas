@@ -42,9 +42,15 @@ model Suscripcion {
   finPrueba         DateTime // 7 días desde la creación
   pagadoHasta       DateTime? // fin del último período pagado
   suspendidaEn      DateTime?
-  // Precio personalizado por cliente. null = usa el precio global de la plataforma.
-  // FIJO = precioFijo mensual; TRAMOS = tramos propios (precioTramo1/limiteTramo1/precioTramo2)
-  precioModo        String? // null | "FIJO" | "TRAMOS"
+  // Plan contratado y ciclo de facturación
+  plan              String            @default("PROFESIONAL") // ESENCIAL | PROFESIONAL | EMPRESARIAL
+  cicloPago         String            @default("MENSUAL") // MENSUAL | ANUAL
+  // Personalización por cliente (super admin). null = usa lo del plan.
+  limiteOverride    Int? // sobrescribe el límite de colaboradores del plan
+  funcionesOverride Json? // { gps: true, telegram: false, ... } sobre las del plan
+  // Precio personalizado por cliente. null = usa el precio del plan.
+  // FIJO = precioFijo mensual
+  precioModo        String? // null | "FIJO"
   precioFijo        Int?
   precioTramo1      Int?
   limiteTramo1      Int?
@@ -80,9 +86,12 @@ model Pago {
 // Precios del SaaS — editables por el super admin (fila única id=1)
 model ConfiguracionPlataforma {
   id           Int   @id @default(1)
-  precioTramo1 Float @default(10000) // COP por colaborador, tramo inicial
-  limiteTramo1 Int   @default(15) // tamaño del tramo inicial
-  precioTramo2 Float @default(2000) // COP por colaborador adicional
+  precioTramo1 Float @default(10000) // (legado) COP por colaborador, tramo inicial
+  limiteTramo1 Int   @default(15) // (legado) tamaño del tramo inicial
+  precioTramo2 Float @default(2000) // (legado) COP por colaborador adicional
+  // Overrides de los planes editables desde el super admin (precio, límite, funciones).
+  // null = usa los valores por defecto del código.
+  planes       Json?
 
   @@map("configuracion_plataforma")
 }

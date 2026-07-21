@@ -15,7 +15,8 @@ import { useAuth } from '../context/AuthContext';
 
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
-type Precios = { precioTramo1: number; limiteTramo1: number; precioTramo2: number; diasPrueba: number };
+type PlanApi = { id: string; nombre: string; precioMensual: number; precioAnual: number; limite: number };
+type Precios = { precioTramo1: number; limiteTramo1: number; precioTramo2: number; diasPrueba: number; planes?: PlanApi[] };
 
 // Aparición al hacer scroll: agrega .hp-in a los .hp-reveal cuando entran en viewport
 function useReveal() {
@@ -59,88 +60,37 @@ const FAQ = [
   { q: '¿Cómo marcan los colaboradores?', a: 'Con su número de cédula o con reconocimiento facial en la pantalla del kiosco, desde cualquier tablet o celular con cámara.' },
   { q: '¿La prueba gratis tiene límites?', a: 'Tienes acceso completo, sin tarjeta y sin restricciones. Al terminar decides si continúas.' },
   { q: '¿Se ajusta a la ley laboral colombiana?', a: 'Sí. Aplica la jornada máxima vigente, los recargos de la reforma laboral (Ley 2466) y genera los festivos automáticamente.' },
-  { q: '¿Cómo se paga?', a: 'Con Wompi: tarjeta, PSE o Nequi. El cobro es mensual por colaborador activo y puedes cancelar cuando quieras.' },
+  { q: '¿Cómo se paga?', a: 'Con Wompi: tarjeta, PSE o Nequi. Eliges plan mensual o anual (con 2 meses gratis) y puedes cancelar cuando quieras.' },
 ];
+
+const PLANES_LANDING = [
+  {
+    id: 'ESENCIAL', nombre: 'Esencial', mensual: 99900, anual: 999000, limite: 10, destacado: false,
+    para: 'Para negocios pequeños',
+    incluye: ['Hasta 10 colaboradores', 'Marcación con rostro o cédula', 'Liquidación de recargos y extras', 'Reportes básicos', '1 horario · 1 dispositivo'],
+  },
+  {
+    id: 'PROFESIONAL', nombre: 'Profesional', mensual: 169900, anual: 1699000, limite: 30, destacado: true,
+    para: 'El más elegido',
+    incluye: ['Hasta 30 colaboradores', 'Todo lo de Esencial', 'Marcación por GPS / geocerca', 'Alertas por Telegram', 'Evidencia en novedades', 'Varios horarios y dispositivos'],
+  },
+  {
+    id: 'EMPRESARIAL', nombre: 'Empresarial', mensual: 299900, anual: 2999000, limite: 150, destacado: false,
+    para: 'Para operaciones grandes',
+    incluye: ['Hasta 150 colaboradores', 'Todo lo de Profesional', 'Integración Siigo (pronto)', 'Soporte prioritario'],
+  },
+];
+const WPP_LANDING = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
 
 function Cuenta({ children }: { children: React.ReactNode }) {
   return <span className="tabular-nums">{children}</span>;
-}
-
-// Calculadora del precio: slider de colaboradores con contador animado
-// (el número "corre" hacia el nuevo total y la cifra tiembla apenas un pelo)
-function CalculadoraPrecio({ precios }: { precios: Precios }) {
-  const [cantidad, setCantidad] = useState(15);
-  const [mostrado, setMostrado] = useState(0);
-  const [tiemblo, setTiemblo] = useState(0);
-
-  const total = Math.min(cantidad, precios.limiteTramo1) * precios.precioTramo1
-    + Math.max(0, cantidad - precios.limiteTramo1) * precios.precioTramo2;
-
-  useEffect(() => {
-    const desde = mostrado;
-    const delta = total - desde;
-    if (delta === 0) return;
-    const inicio = performance.now();
-    let raf = 0;
-    const paso = (t: number) => {
-      const k = Math.min(1, (t - inicio) / 350);
-      const suave = 1 - Math.pow(1 - k, 3); // arranca rápido, frena al llegar
-      setMostrado(Math.round(desde + delta * suave));
-      if (k < 1) raf = requestAnimationFrame(paso);
-    };
-    raf = requestAnimationFrame(paso);
-    return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [total]);
-
-  const MIN = 1, MAX = 150;
-  const pct = ((cantidad - MIN) / (MAX - MIN)) * 100;
-  // Puntos de referencia sobre el riel (el 15 marca el cambio de tramo de precio)
-  const puntos = [15, 50, 100];
-
-  return (
-    <div className="mt-6 bg-[#f6f6f4] rounded-2xl px-5 pt-4 pb-5 text-left">
-      <p className="text-center text-xs font-semibold uppercase tracking-[0.25em] text-muted mb-4">Colaboradores</p>
-      <div className="relative">
-        <input
-          id="calc-colabs"
-          type="range"
-          min={MIN}
-          max={MAX}
-          step={1}
-          value={cantidad}
-          onChange={e => { setCantidad(Number(e.target.value)); setTiemblo(v => v + 1); }}
-          className="hp-slider relative z-10"
-          style={{ background: `linear-gradient(to right, #E8B93B 0%, #FFD85E ${pct}%, #e5e7eb ${pct}%, #e5e7eb 100%)` }}
-          aria-label="Cantidad de colaboradores"
-        />
-        {puntos.map(v => (
-          <span
-            key={v}
-            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${v <= cantidad ? 'bg-ink/25' : 'bg-gray-400/60'}`}
-            style={{ left: `calc(${((v - MIN) / (MAX - MIN)) * 100}% - 3px)` }}
-          />
-        ))}
-      </div>
-      <div className="flex justify-between mt-2 text-sm font-bold text-ink tabular-nums">
-        <span>{MIN}</span>
-        <span>{MAX}</span>
-      </div>
-      <p className="text-center mt-3 text-sm text-muted">
-        Con <b className="text-ink tabular-nums">{cantidad}</b> colaborador{cantidad === 1 ? '' : 'es'} pagarías{' '}
-        <span key={tiemblo} className="hp-shake-suave inline-block text-2xl font-extrabold text-ink tabular-nums align-middle">
-          {cop(mostrado)}
-        </span>{' '}
-        al mes
-      </p>
-    </div>
-  );
 }
 
 export default function Landing() {
   const { usuario } = useAuth();
   const [precios, setPrecios] = useState<Precios | null>(null);
   const [faqAbierto, setFaqAbierto] = useState<number | null>(0);
+  const [anual, setAnual] = useState(false);
   useReveal();
 
   useEffect(() => { api.get('/auth/precios').then(r => setPrecios(r.data)).catch(() => {}); }, []);
@@ -325,34 +275,58 @@ export default function Landing() {
       </section>
 
       {/* Precios */}
-      <section id="precios" className="max-w-3xl mx-auto px-5 py-16 md:py-24">
-        <div className="text-center mb-10 hp-reveal">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Precio simple, por colaborador</h2>
-          <p className="text-muted mt-3">Pagas solo por quienes marcan. Menos que un reloj biométrico — y sin comprar equipos.</p>
+      <section id="precios" className="max-w-6xl mx-auto px-5 py-16 md:py-24">
+        <div className="text-center mb-8 hp-reveal">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Un plan para cada tamaño</h2>
+          <p className="text-muted mt-3">Precio fijo, sin sorpresas. Empieza con {dias} días gratis, sin tarjeta.</p>
+          {/* Toggle mensual / anual */}
+          <div className="inline-flex items-center gap-1 bg-gray-100 rounded-full p-1 mt-6 text-sm font-semibold">
+            <button onClick={() => setAnual(false)} className={`px-4 py-1.5 rounded-full transition-colors ${!anual ? 'bg-white shadow text-ink' : 'text-muted'}`}>Mensual</button>
+            <button onClick={() => setAnual(true)} className={`px-4 py-1.5 rounded-full transition-colors flex items-center gap-1.5 ${anual ? 'bg-white shadow text-ink' : 'text-muted'}`}>
+              Anual <span className="text-[10px] font-bold bg-primary text-ink px-1.5 py-0.5 rounded-full">2 meses gratis</span>
+            </button>
+          </div>
         </div>
-        <div className="hp-reveal bg-white border-2 border-primary rounded-3xl p-8 text-center shadow-sm">
-          {precios ? (
-            <>
-              <p className="text-5xl font-extrabold">{cop(precios.precioTramo1)}<span className="text-lg font-medium text-muted"> /colaborador al mes</span></p>
-              <p className="text-muted mt-3">
-                Primeros {precios.limiteTramo1} colaboradores. Del {precios.limiteTramo1 + 1} en adelante,
-                solo <b className="text-ink">{cop(precios.precioTramo2)}</b> cada uno.
-              </p>
-              <CalculadoraPrecio precios={precios} />
-              <div className="mt-6 space-y-2 text-sm text-left max-w-xs mx-auto">
-                {['Marcación ilimitada con rostro o cédula', 'Liquidación de recargos y extras', 'Reportes y control de tardanzas', 'Festivos y jornada de ley al día'].map(f => (
-                  <div key={f} className="flex items-center gap-2"><Check size={16} className="text-green-600 shrink-0" /> {f}</div>
-                ))}
+
+        <div className="grid md:grid-cols-3 gap-5 items-start">
+          {PLANES_LANDING.map((p, i) => {
+            const pd = precios?.planes?.find(x => x.id === p.id);
+            const mensual = pd?.precioMensual ?? p.mensual;
+            const anualTotal = pd?.precioAnual ?? p.anual;
+            const mesEfectivo = anual ? Math.round(anualTotal / 12) : mensual;
+            return (
+              <div key={p.id} className={`hp-reveal rounded-3xl p-7 flex flex-col ${p.destacado ? 'bg-ink text-white shadow-xl md:-mt-3 md:mb-3' : 'bg-white border border-gray-200'}`} style={{ animationDelay: `${i * 80}ms` }}>
+                {p.destacado && <span className="self-start text-[11px] font-bold bg-primary text-ink px-2.5 py-1 rounded-full mb-3">{p.para}</span>}
+                {!p.destacado && <span className="text-xs font-semibold text-muted mb-1">{p.para}</span>}
+                <h3 className={`text-xl font-extrabold ${p.destacado ? 'text-white' : 'text-ink'}`}>{p.nombre}</h3>
+                <div className="mt-3">
+                  <span className="text-4xl font-extrabold">{cop(mesEfectivo)}</span>
+                  <span className={`text-sm font-medium ${p.destacado ? 'text-white/60' : 'text-muted'}`}> /mes</span>
+                </div>
+                <p className={`text-xs mt-1 ${p.destacado ? 'text-white/60' : 'text-muted'}`}>
+                  {anual ? `Facturado anual · ${cop(anualTotal)}/año` : 'Facturación mensual'}
+                </p>
+                <ul className="mt-5 space-y-2.5 text-sm flex-1">
+                  {p.incluye.map(f => (
+                    <li key={f} className="flex items-start gap-2">
+                      <Check size={16} className={`mt-0.5 shrink-0 ${p.destacado ? 'text-primary' : 'text-green-600'}`} /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link to="/registro" className={`mt-6 inline-flex items-center justify-center gap-2 font-bold px-6 py-3 rounded-xl text-base transition-colors ${p.destacado ? 'bg-primary hover:bg-primary-dark text-ink' : 'bg-ink hover:bg-ink/90 text-white'}`}>
+                  Empezar gratis <ArrowRight size={17} />
+                </Link>
               </div>
-              <Link to="/registro" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold px-7 py-3.5 rounded-xl text-base mt-8">
-                Empezar {dias} días gratis <ArrowRight size={18} />
-              </Link>
-              <p className="text-xs text-muted mt-3">No se cobra durante la prueba · cancela cuando quieras.</p>
-            </>
-          ) : (
-            <p className="text-muted py-10">Cargando precios...</p>
-          )}
+            );
+          })}
         </div>
+
+        <p className="text-center text-sm text-muted mt-8 hp-reveal">
+          ¿Más de 150 colaboradores?{' '}
+          <a href={WPP_LANDING} target="_blank" rel="noopener noreferrer" className="font-semibold text-ink underline decoration-primary decoration-2 underline-offset-2">
+            Escríbenos por WhatsApp
+          </a>{' '}y te armamos un plan a la medida.
+        </p>
       </section>
 
       {/* FAQ */}

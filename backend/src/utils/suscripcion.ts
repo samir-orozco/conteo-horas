@@ -1,4 +1,5 @@
 import { PrismaClient, Suscripcion, EstadoSuscripcion } from '@prisma/client';
+import { precioMensualDe, obtenerPlanes } from './planes';
 
 export const DIAS_PRUEBA = 7;
 export const DIAS_GRACIA_MORA = 5;
@@ -22,20 +23,11 @@ export function calcularTarifaMensual(colaboradores: number, p: Precios): number
   return tramo1 + tramo2;
 }
 
-// Campos de precio personalizado que puede traer una suscripción
-type OverridePrecio = {
-  precioModo?: string | null; precioFijo?: number | null;
-  precioTramo1?: number | null; limiteTramo1?: number | null; precioTramo2?: number | null;
-} | null | undefined;
-
-// Tarifa mensual efectiva de una empresa: usa su precio personalizado si lo tiene,
-// si no cae al precio global de la plataforma.
-export function tarifaEmpresa(colaboradores: number, global: Precios, s: OverridePrecio): number {
-  if (s?.precioModo === 'FIJO' && s.precioFijo != null) return s.precioFijo;
-  if (s?.precioModo === 'TRAMOS' && s.precioTramo1 != null && s.limiteTramo1 != null && s.precioTramo2 != null) {
-    return calcularTarifaMensual(colaboradores, { precioTramo1: s.precioTramo1, limiteTramo1: s.limiteTramo1, precioTramo2: s.precioTramo2 });
-  }
-  return calcularTarifaMensual(colaboradores, global);
+// Tarifa mensual efectiva de una empresa según su plan (o precio fijo a la medida).
+// El precio ya no depende del número de colaboradores; es plano por plan.
+// `planes` opcional: los planes ya resueltos desde config (si no, usa los del código).
+export function tarifaEmpresa(_colaboradores: number, _global: Precios, s: any, exentaPago = false, planes?: any): number {
+  return precioMensualDe(s, exentaPago, planes);
 }
 
 // ===== Mes calendario (Bogotá): todos los cobros van hasta fin de mes =====
@@ -114,13 +106,14 @@ export type Cobro = {
 };
 
 export async function calcularCobro(prisma: PrismaClient, empresaId: string, precios: Precios, ahora = new Date()): Promise<Cobro> {
-  const [empresa, activos, susc] = await Promise.all([
+  const [empresa, activos, susc, planes] = await Promise.all([
     prisma.empresa.findUnique({ where: { id: empresaId } }),
     prisma.colaborador.count({ where: { empresaId, activo: true } }),
     prisma.suscripcion.findUnique({ where: { empresaId }, include: { pagos: true } }),
+    obtenerPlanes(prisma),
   ]);
   const { diasMes, diasRestantes, factor } = prorrateo(ahora);
-  const tarifaMesCompleto = tarifaEmpresa(activos, precios, susc);
+  const tarifaMesCompleto = tarifaEmpresa(activos, precios, susc, empresa?.exentaPago ?? false, planes);
   const cubreHasta = finDeMes(ahora);
 
   // Empresa exenta (acceso ilimitado): nunca debe nada
@@ -149,7 +142,7 @@ export async function calcularCobro(prisma: PrismaClient, empresaId: string, pre
       tarifaMesCompleto, monto: 0, diasMes, diasRestantes, cubreHasta: susc!.pagadoHasta!,
     };
   }
-  const diferencia = tarifaMesCompleto - tarifaEmpresa(facturados, precios, susc);
+  const diferencia = tarifaMesCompleto - tarifaEmpresa(facturados, precios, susc, empresa?.exentaPago ?? false, planes);
   return {
     tipo: 'ADICIONAL', colaboradoresActivos: activos, colaboradoresFacturados: facturados,
     tarifaMesCompleto, monto: Math.round(diferencia * factor),

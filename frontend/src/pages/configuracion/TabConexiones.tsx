@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Send, Check, Plug, Clock } from 'lucide-react';
 import api from '../../lib/api';
+import { useMiPlan } from '../../lib/plan';
+import FuncionBloqueada from '../../components/FuncionBloqueada';
 
 // Conexiones de la empresa con servicios externos: Telegram (alertas) y Siigo (próximamente).
 export default function TabConexiones() {
+  const { plan } = useMiPlan();
   const [cargado, setCargado] = useState(false);
   const [alertasTarde, setAlertasTarde] = useState(false);
   const [chatId, setChatId] = useState('');
@@ -54,6 +57,10 @@ export default function TabConexiones() {
 
       <div className="columns-1 xl:columns-2 gap-6 [&>*]:mb-6 [&>*]:break-inside-avoid">
         {/* Telegram */}
+        {plan && !plan.features.telegram ? (
+          <FuncionBloqueada titulo="Telegram — alertas de llegada tarde"
+            descripcion="Recibe un aviso apenas un colaborador marque entrada tarde. Disponible desde el plan Profesional." />
+        ) : (
         <div className="bg-white rounded-card border border-gray-200 p-6 space-y-5">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -100,6 +107,7 @@ export default function TabConexiones() {
             </div>
           )}
         </div>
+        )}
 
         {/* Siigo — próximamente */}
         <div className="bg-white rounded-card border border-gray-200 p-6 space-y-3 opacity-90">

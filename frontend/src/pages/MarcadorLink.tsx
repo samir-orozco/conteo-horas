@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Copy, Check, ExternalLink, MonitorSmartphone, ScanFace, ShieldCheck, KeyRound, Trash2, TabletSmartphone, Pencil, X } from 'lucide-react';
+import { Copy, Check, ExternalLink, MonitorSmartphone, ScanFace, ShieldCheck, KeyRound, Trash2, TabletSmartphone, Pencil, X, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useMiPlan } from '../lib/plan';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -8,6 +10,8 @@ type Dispositivo = { id: string; nombre: string; creadoEn: string; ultimoUso: st
 // Página del panel empresa: link único del kiosco + seguridad por dispositivos.
 export default function MarcadorLink() {
   const [token, setToken] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { plan } = useMiPlan();
   const [soloDispositivos, setSoloDispositivos] = useState(false);
   const [dispositivos, setDispositivos] = useState<Dispositivo[]>([]);
   const [codigo, setCodigo] = useState<string | null>(null);
@@ -40,10 +44,18 @@ export default function MarcadorLink() {
     setSoloDispositivos(nuevo);
   };
 
+  const [errorDisp, setErrorDisp] = useState('');
   const generarCodigo = async () => {
-    const r = await api.post('/configuracion/dispositivos/codigo');
-    setCodigo(r.data.codigo);
+    setErrorDisp('');
+    try {
+      const r = await api.post('/configuracion/dispositivos/codigo');
+      setCodigo(r.data.codigo);
+    } catch (err: any) {
+      setErrorDisp(err.response?.data?.error ?? 'No pudimos generar el código.');
+    }
   };
+
+  const sinCupoDispositivos = !!plan && !plan.features.multiDispositivo && dispositivos.length >= 1;
 
   const revocar = async () => {
     if (!revocando) return;
@@ -108,6 +120,15 @@ export default function MarcadorLink() {
 
         {soloDispositivos && (
           <div className="mt-5 border-t border-gray-100 pt-5">
+            {sinCupoDispositivos ? (
+              <div className="mb-4 bg-gray-50 border border-dashed border-gray-300 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                <p className="text-sm text-muted flex items-center gap-2">
+                  <Lock size={15} /> Tu plan permite <b className="text-ink">un solo dispositivo</b>. Elimina el actual o sube de plan para vincular más.
+                </p>
+                <button onClick={() => navigate('/app/configuracion?tab=suscripcion')}
+                  className="shrink-0 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-3 py-1.5 rounded-lg">Subir de plan</button>
+              </div>
+            ) : (
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
               <button onClick={generarCodigo}
                 className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink font-semibold px-4 py-2.5 rounded-xl text-sm">
@@ -120,6 +141,8 @@ export default function MarcadorLink() {
                 </div>
               )}
             </div>
+            )}
+            {errorDisp && <p className="text-sm text-red-600 mb-3">{errorDisp}</p>}
 
             <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Dispositivos vinculados</p>
             {dispositivos.length === 0 ? (

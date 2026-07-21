@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { prisma } from '../index';
 import { estadoEfectivo, sincronizarEstado, DIAS_PRUEBA, obtenerPrecios } from '../utils/suscripcion';
+import { obtenerPlanes, PLAN_IDS } from '../utils/planes';
 import { enviarCorreo, plantillaCorreo, correoConfigurado } from '../utils/correo';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
@@ -34,8 +35,8 @@ async function enviarCorreoCodigo(email: string, nombre: string, codigo: string)
 export default async function authRoutes(app: FastifyInstance) {
   // Precios públicos para la landing (se leen de la config del super admin)
   app.get('/precios', async () => {
-    const p = await obtenerPrecios(prisma);
-    return { ...p, diasPrueba: DIAS_PRUEBA };
+    const [p, planesMap] = await Promise.all([obtenerPrecios(prisma), obtenerPlanes(prisma)]);
+    return { ...p, diasPrueba: DIAS_PRUEBA, planes: PLAN_IDS.map(id => planesMap[id]) };
   });
 
   // Registro self-service: crea empresa + 7 días de prueba + usuario admin,

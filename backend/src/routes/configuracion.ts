@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../index';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
 import { enviarTelegram, telegramConfigurado } from '../utils/telegram';
+import { capacidadesEmpresa } from '../utils/capacidades';
 
 export default async function configuracionRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -30,9 +31,19 @@ export default async function configuracionRoutes(app: FastifyInstance) {
     return items.reduce((acc: any, item) => { acc[item.clave] = item.valor; return acc; }, {});
   });
 
-  app.put('/', auth, async (request) => {
+  app.put('/', auth, async (request, reply) => {
     const data = request.body as Record<string, string>;
     const empresaId = request.empresaId!;
+    // Gating: activar GPS o Telegram requiere que el plan lo incluya
+    const cap = await capacidadesEmpresa(empresaId);
+    const tocaGeo = Object.keys(data).some(k => k.startsWith('GEO_'));
+    const tocaTelegram = Object.keys(data).some(k => k.startsWith('TELEGRAM_'));
+    if (tocaGeo && !cap.features.gps) {
+      return reply.status(403).send({ error: 'La marcación por GPS está disponible en el plan Profesional.', codigo: 'FUNCION_PLAN', funcion: 'gps' });
+    }
+    if (tocaTelegram && !cap.features.telegram) {
+      return reply.status(403).send({ error: 'Las alertas por Telegram están disponibles en el plan Profesional.', codigo: 'FUNCION_PLAN', funcion: 'telegram' });
+    }
     await Promise.all(
       Object.entries(data).map(([clave, valor]) =>
         prisma.configuracion.upsert({
@@ -113,7 +124,14 @@ export default async function configuracionRoutes(app: FastifyInstance) {
   });
 
   // Genera un código de vinculación de 6 dígitos (un solo uso, 10 minutos)
-  app.post('/dispositivos/codigo', auth, async (request) => {
+  app.post('/dispositivos/codigo', auth, async (request, reply) => {
+    const cap = await capacidadesEmpresa(request.empresaId!);
+    if (!cap.features.multiDispositivo) {
+      const yaVinculados = await prisma.dispositivoKiosco.count({ where: { empresaId: request.empresaId } });
+      if (yaVinculados >= 1) {
+        return reply.status(403).send({ error: 'Tu plan permite un solo dispositivo de kiosco. Elimina el actual o sube de plan para vincular más.', codigo: 'FUNCION_PLAN', funcion: 'multiDispositivo' });
+      }
+    }
     const codigo = String(Math.floor(100000 + Math.random() * 900000));
     const valor = JSON.stringify({ codigo, expira: Date.now() + 10 * 60 * 1000 });
     await prisma.configuracion.upsert({
