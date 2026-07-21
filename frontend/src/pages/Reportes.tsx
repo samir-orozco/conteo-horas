@@ -116,9 +116,11 @@ export default function Reportes() {
     const liqFilas: (string | number)[][] = reporte.liquidacion.map(l => [
       l.codigo, l.nombre, Number(l.horas.toFixed(2)), Math.round(l.recargo * 100), Math.round(l.valorHora), Math.round(l.subtotal),
     ]);
-    liqFilas.push(['', 'Total recargos', '', '', '', Math.round(reporte.totalRecargos)]);
-    liqFilas.push(['', 'Total horas extra', '', '', '', Math.round(reporte.totalExtra)]);
-    liqFilas.push(['', 'TOTAL A PAGAR (además del salario)', '', '', '', Math.round(reporte.totalPagar)]);
+    liqFilas.push(['', 'Total recargos del período', '', '', '', Math.round(reporte.totalRecargos)]);
+    liqFilas.push(['', 'Total horas extra del período', '', '', '', Math.round(reporte.totalExtra)]);
+    liqFilas.push(['', 'Subtotal (adicional al salario)', '', '', '', Math.round(reporte.totalAdicional)]);
+    liqFilas.push(['', 'Salario base mensual', '', '', '', Math.round(reporte.salarioBase)]);
+    liqFilas.push(['', 'TOTAL A PAGAR', '', '', '', Math.round(reporte.salarioBase + reporte.totalAdicional)]);
 
     // Hoja 2: Novedades del período
     const novFilas = novedades.map(n => [
