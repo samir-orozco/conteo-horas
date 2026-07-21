@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = permisoRoutes;
 const index_1 = require("../index");
+const capacidades_1 = require("../utils/capacidades");
 // Evidencia: imagen o PDF en base64 data URI, con tope de tamaño (~4 MB de texto).
 const MAX_EVIDENCIA = 4200000;
 function evidenciaValida(v) {
@@ -72,6 +73,11 @@ async function permisoRoutes(app) {
         });
         if (!col)
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
+        if (evidenciaValida(data.evidencia)) {
+            const cap = await (0, capacidades_1.capacidadesEmpresa)(request.empresaId);
+            if (!cap.features.evidencia)
+                return reply.status(403).send({ error: 'Adjuntar evidencia está disponible en el plan Profesional.', codigo: 'FUNCION_PLAN', funcion: 'evidencia' });
+        }
         const permiso = await index_1.prisma.permiso.create({ data: limpiarPermiso(data, true) });
         return reply.status(201).send(permiso);
     });

@@ -12,6 +12,7 @@ exports.sincronizarEstado = sincronizarEstado;
 exports.accesoPermitido = accesoPermitido;
 exports.calcularCobro = calcularCobro;
 exports.aplicarPagoAprobado = aplicarPagoAprobado;
+const planes_1 = require("./planes");
 exports.DIAS_PRUEBA = 7;
 exports.DIAS_GRACIA_MORA = 5;
 const DIA_MS = 24 * 60 * 60 * 1000;
@@ -27,15 +28,11 @@ function calcularTarifaMensual(colaboradores, p) {
     const tramo2 = Math.max(0, colaboradores - p.limiteTramo1) * p.precioTramo2;
     return tramo1 + tramo2;
 }
-// Tarifa mensual efectiva de una empresa: usa su precio personalizado si lo tiene,
-// si no cae al precio global de la plataforma.
-function tarifaEmpresa(colaboradores, global, s) {
-    if (s?.precioModo === 'FIJO' && s.precioFijo != null)
-        return s.precioFijo;
-    if (s?.precioModo === 'TRAMOS' && s.precioTramo1 != null && s.limiteTramo1 != null && s.precioTramo2 != null) {
-        return calcularTarifaMensual(colaboradores, { precioTramo1: s.precioTramo1, limiteTramo1: s.limiteTramo1, precioTramo2: s.precioTramo2 });
-    }
-    return calcularTarifaMensual(colaboradores, global);
+// Tarifa mensual efectiva de una empresa según su plan (o precio fijo a la medida).
+// El precio ya no depende del número de colaboradores; es plano por plan.
+// `planes` opcional: los planes ya resueltos desde config (si no, usa los del código).
+function tarifaEmpresa(_colaboradores, _global, s, exentaPago = false, planes) {
+    return (0, planes_1.precioMensualDe)(s, exentaPago, planes);
 }
 // ===== Mes calendario (Bogotá): todos los cobros van hasta fin de mes =====
 function fechaBogota(ahora = new Date()) {
@@ -92,13 +89,14 @@ function accesoPermitido(estado) {
     return estado === 'PRUEBA' || estado === 'ACTIVA' || estado === 'EN_MORA';
 }
 async function calcularCobro(prisma, empresaId, precios, ahora = new Date()) {
-    const [empresa, activos, susc] = await Promise.all([
+    const [empresa, activos, susc, planes] = await Promise.all([
         prisma.empresa.findUnique({ where: { id: empresaId } }),
         prisma.colaborador.count({ where: { empresaId, activo: true } }),
         prisma.suscripcion.findUnique({ where: { empresaId }, include: { pagos: true } }),
+        (0, planes_1.obtenerPlanes)(prisma),
     ]);
     const { diasMes, diasRestantes, factor } = prorrateo(ahora);
-    const tarifaMesCompleto = tarifaEmpresa(activos, precios, susc);
+    const tarifaMesCompleto = tarifaEmpresa(activos, precios, susc, empresa?.exentaPago ?? false, planes);
     const cubreHasta = finDeMes(ahora);
     // Empresa exenta (acceso ilimitado): nunca debe nada
     if (empresa?.exentaPago) {
@@ -124,7 +122,7 @@ async function calcularCobro(prisma, empresaId, precios, ahora = new Date()) {
             tarifaMesCompleto, monto: 0, diasMes, diasRestantes, cubreHasta: susc.pagadoHasta,
         };
     }
-    const diferencia = tarifaMesCompleto - tarifaEmpresa(facturados, precios, susc);
+    const diferencia = tarifaMesCompleto - tarifaEmpresa(facturados, precios, susc, empresa?.exentaPago ?? false, planes);
     return {
         tipo: 'ADICIONAL', colaboradoresActivos: activos, colaboradoresFacturados: facturados,
         tarifaMesCompleto, monto: Math.round(diferencia * factor),

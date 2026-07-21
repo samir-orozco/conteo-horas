@@ -7,12 +7,13 @@ exports.default = adminRoutes;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const index_1 = require("../index");
 const suscripcion_1 = require("../utils/suscripcion");
+const planes_1 = require("../utils/planes");
 const DIA_MS = 24 * 60 * 60 * 1000;
 async function adminRoutes(app) {
     const auth = { preHandler: [app.requireSuperAdmin] };
     // Empresa con su estado real de suscripción y tarifa actual
     async function empresaConEstado(empresaId) {
-        const precios = await (0, suscripcion_1.obtenerPrecios)(index_1.prisma);
+        const [precios, planes] = await Promise.all([(0, suscripcion_1.obtenerPrecios)(index_1.prisma), (0, planes_1.obtenerPlanes)(index_1.prisma)]);
         const empresa = await index_1.prisma.empresa.findUnique({
             where: { id: empresaId },
             include: {
@@ -28,7 +29,8 @@ async function adminRoutes(app) {
         return {
             ...empresa,
             colaboradoresActivos,
-            tarifaMensual: (0, suscripcion_1.tarifaEmpresa)(colaboradoresActivos, precios, susc),
+            tarifaMensual: (0, suscripcion_1.tarifaEmpresa)(colaboradoresActivos, precios, susc, empresa.exentaPago, planes),
+            capacidades: (0, planes_1.capacidadesDe)(susc, empresa.exentaPago, planes),
             suscripcion: susc
                 ? { ...susc, estadoEfectivo: (0, suscripcion_1.estadoEfectivo)(susc), diasMora: (0, suscripcion_1.diasDeMora)(susc), pagos: empresa.suscripcion.pagos }
                 : null,
@@ -49,10 +51,48 @@ async function adminRoutes(app) {
             create: { id: 1, precioTramo1, limiteTramo1, precioTramo2 },
         });
     });
+    // ===== Planes editables (precio, límite, funciones) =====
+    app.get('/planes', auth, async () => {
+        const planes = await (0, planes_1.obtenerPlanes)(index_1.prisma);
+        return { planes, funciones: planes_1.FEATURES, orden: planes_1.PLAN_IDS };
+    });
+    app.put('/planes', auth, async (request, reply) => {
+        const body = (request.body ?? {});
+        const clavesFuncion = new Set(planes_1.FEATURES.map(f => f.key));
+        const overrides = {};
+        for (const id of planes_1.PLAN_IDS) {
+            const p = body[id];
+            if (!p || typeof p !== 'object')
+                continue;
+            const limpio = {};
+            if (Number.isFinite(p.precioMensual) && p.precioMensual >= 0)
+                limpio.precioMensual = Math.round(p.precioMensual);
+            if (Number.isFinite(p.precioAnual) && p.precioAnual >= 0)
+                limpio.precioAnual = Math.round(p.precioAnual);
+            if (Number.isFinite(p.limite) && p.limite >= 1)
+                limpio.limite = Math.round(p.limite);
+            if (p.features && typeof p.features === 'object') {
+                const f = {};
+                for (const [k, v] of Object.entries(p.features))
+                    if (clavesFuncion.has(k))
+                        f[k] = !!v;
+                limpio.features = f;
+            }
+            overrides[id] = limpio;
+        }
+        await index_1.prisma.configuracionPlataforma.upsert({
+            where: { id: 1 },
+            update: { planes: overrides },
+            create: { id: 1, planes: overrides },
+        });
+        // Devuelve ya combinado (defaults + overrides) para refrescar la UI
+        return { planes: (0, planes_1.combinarPlanes)(overrides), funciones: planes_1.FEATURES, orden: planes_1.PLAN_IDS };
+    });
     // ===== Dashboard =====
     app.get('/dashboard', auth, async () => {
-        const [precios, empresas, suscripciones, pagos] = await Promise.all([
+        const [precios, planes, empresas, suscripciones, pagos] = await Promise.all([
             (0, suscripcion_1.obtenerPrecios)(index_1.prisma),
+            (0, planes_1.obtenerPlanes)(index_1.prisma),
             index_1.prisma.empresa.findMany({ include: { _count: { select: { colaboradores: { where: { activo: true } } } } } }),
             index_1.prisma.suscripcion.findMany(),
             index_1.prisma.pago.findMany({ where: { estado: 'APROBADO' } }),
@@ -66,7 +106,7 @@ async function adminRoutes(app) {
         const suscPorEmpresa = new Map(suscripciones.map(s => [s.empresaId, s]));
         const mrrProyectado = empresas
             .filter((e) => e.activa && !e.exentaPago && ['PRUEBA', 'ACTIVA', 'EN_MORA'].includes(estados[suscripciones.findIndex(s => s.empresaId === e.id)] ?? ''))
-            .reduce((s, e) => s + (0, suscripcion_1.tarifaEmpresa)(e._count.colaboradores, precios, suscPorEmpresa.get(e.id)), 0);
+            .reduce((s, e) => s + (0, suscripcion_1.tarifaEmpresa)(e._count.colaboradores, precios, suscPorEmpresa.get(e.id), false, planes), 0);
         return {
             totalEmpresas: empresas.length,
             empresasActivas: empresas.filter(e => e.activa).length,
@@ -85,7 +125,7 @@ async function adminRoutes(app) {
     });
     // ===== Empresas =====
     app.get('/empresas', auth, async () => {
-        const precios = await (0, suscripcion_1.obtenerPrecios)(index_1.prisma);
+        const [precios, planes] = await Promise.all([(0, suscripcion_1.obtenerPrecios)(index_1.prisma), (0, planes_1.obtenerPlanes)(index_1.prisma)]);
         const empresas = await index_1.prisma.empresa.findMany({
             include: {
                 suscripcion: true,
@@ -106,8 +146,10 @@ async function adminRoutes(app) {
                 activa: e.activa,
                 creadoEn: e.creadoEn,
                 colaboradoresActivos: e._count.colaboradores,
-                tarifaMensual: (0, suscripcion_1.tarifaEmpresa)(e._count.colaboradores, precios, susc),
+                tarifaMensual: (0, suscripcion_1.tarifaEmpresa)(e._count.colaboradores, precios, susc, e.exentaPago, planes),
                 precioModo: susc?.precioModo ?? null,
+                plan: susc?.plan ?? null,
+                cicloPago: susc?.cicloPago ?? 'MENSUAL',
                 estadoSuscripcion: e.exentaPago ? 'ILIMITADA' : susc ? (0, suscripcion_1.estadoEfectivo)(susc) : null,
                 diasMora: e.exentaPago ? 0 : susc ? (0, suscripcion_1.diasDeMora)(susc) : 0,
                 pagadoHasta: susc?.pagadoHasta ?? null,
@@ -179,7 +221,37 @@ async function adminRoutes(app) {
         });
         return empresaConEstado(id);
     });
-    // Precio personalizado del cliente: GLOBAL (usa el de plataforma), FIJO o TRAMOS
+    // Plan del cliente + personalización (límite y funciones extra) para casos a la medida
+    app.put('/empresas/:id/plan', auth, async (request, reply) => {
+        const { id } = request.params;
+        const { plan, cicloPago, limiteOverride, funcionesOverride } = request.body;
+        const susc = await index_1.prisma.suscripcion.findUnique({ where: { empresaId: id } });
+        if (!susc)
+            return reply.status(404).send({ error: 'La empresa no tiene suscripción' });
+        if (plan !== undefined && !(0, planes_1.esPlan)(plan))
+            return reply.status(400).send({ error: 'Plan inválido' });
+        // Solo se guardan flags de funciones conocidas
+        let funcionesLimpias = funcionesOverride;
+        if (funcionesOverride && typeof funcionesOverride === 'object') {
+            const validas = new Set(planes_1.FEATURES.map(f => f.key));
+            funcionesLimpias = {};
+            for (const [k, v] of Object.entries(funcionesOverride)) {
+                if (validas.has(k))
+                    funcionesLimpias[k] = !!v;
+            }
+        }
+        await index_1.prisma.suscripcion.update({
+            where: { empresaId: id },
+            data: {
+                ...(plan !== undefined ? { plan } : {}),
+                ...(cicloPago !== undefined ? { cicloPago: cicloPago === 'ANUAL' ? 'ANUAL' : 'MENSUAL' } : {}),
+                ...(limiteOverride !== undefined ? { limiteOverride: limiteOverride === null ? null : Math.max(1, Number(limiteOverride)) } : {}),
+                ...(funcionesOverride !== undefined ? { funcionesOverride: funcionesLimpias } : {}),
+            },
+        });
+        return empresaConEstado(id);
+    });
+    // Precio personalizado del cliente: GLOBAL (usa el del plan) o FIJO
     app.put('/empresas/:id/precio', auth, async (request, reply) => {
         const { modo, precioFijo, precioTramo1, limiteTramo1, precioTramo2 } = request.body;
         const { id } = request.params;

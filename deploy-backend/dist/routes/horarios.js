@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = horarioRoutes;
 const index_1 = require("../index");
 const vigencias_1 = require("../utils/vigencias");
+const capacidades_1 = require("../utils/capacidades");
 // Cada franja: días válidos, horas HH:MM y al menos un día
 function validarFranjas(franjas) {
     if (!Array.isArray(franjas) || franjas.length === 0)
@@ -41,6 +42,14 @@ async function horarioRoutes(app) {
             return reply.status(400).send({ error: 'El nombre es obligatorio' });
         if (!validarFranjas(franjas)) {
             return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
+        }
+        // Gating: varios horarios requieren plan Profesional o superior
+        const cap = await (0, capacidades_1.capacidadesEmpresa)(request.empresaId);
+        if (!cap.features.multiHorario) {
+            const existentes = await index_1.prisma.horario.count({ where: { empresaId: request.empresaId } });
+            if (existentes >= 1) {
+                return reply.status(403).send({ error: 'Tu plan permite un solo horario. Sube de plan para crear más.', codigo: 'FUNCION_PLAN', funcion: 'multiHorario' });
+            }
         }
         const horario = await index_1.prisma.horario.create({
             data: {

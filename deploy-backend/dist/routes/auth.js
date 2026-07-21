@@ -8,6 +8,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = __importDefault(require("crypto"));
 const index_1 = require("../index");
 const suscripcion_1 = require("../utils/suscripcion");
+const planes_1 = require("../utils/planes");
 const correo_1 = require("../utils/correo");
 const DIA_MS = 24 * 60 * 60 * 1000;
 // Vencimiento de la sesión del panel (el kiosco usa su propio token de 12h)
@@ -34,8 +35,8 @@ async function enviarCorreoCodigo(email, nombre, codigo) {
 async function authRoutes(app) {
     // Precios públicos para la landing (se leen de la config del super admin)
     app.get('/precios', async () => {
-        const p = await (0, suscripcion_1.obtenerPrecios)(index_1.prisma);
-        return { ...p, diasPrueba: suscripcion_1.DIAS_PRUEBA };
+        const [p, planesMap] = await Promise.all([(0, suscripcion_1.obtenerPrecios)(index_1.prisma), (0, planes_1.obtenerPlanes)(index_1.prisma)]);
+        return { ...p, diasPrueba: suscripcion_1.DIAS_PRUEBA, planes: planes_1.PLAN_IDS.map(id => planesMap[id]) };
     });
     // Registro self-service: crea empresa + 7 días de prueba + usuario admin,
     // y devuelve el token para entrar de inmediato.
