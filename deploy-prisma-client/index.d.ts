@@ -3374,6 +3374,7 @@ export namespace Prisma {
   }
 
   export type SuscripcionAvgAggregateOutputType = {
+    limiteOverride: number | null
     precioFijo: number | null
     precioTramo1: number | null
     limiteTramo1: number | null
@@ -3381,6 +3382,7 @@ export namespace Prisma {
   }
 
   export type SuscripcionSumAggregateOutputType = {
+    limiteOverride: number | null
     precioFijo: number | null
     precioTramo1: number | null
     limiteTramo1: number | null
@@ -3394,6 +3396,9 @@ export namespace Prisma {
     finPrueba: Date | null
     pagadoHasta: Date | null
     suspendidaEn: Date | null
+    plan: string | null
+    cicloPago: string | null
+    limiteOverride: number | null
     precioModo: string | null
     precioFijo: number | null
     precioTramo1: number | null
@@ -3411,6 +3416,9 @@ export namespace Prisma {
     finPrueba: Date | null
     pagadoHasta: Date | null
     suspendidaEn: Date | null
+    plan: string | null
+    cicloPago: string | null
+    limiteOverride: number | null
     precioModo: string | null
     precioFijo: number | null
     precioTramo1: number | null
@@ -3428,6 +3436,10 @@ export namespace Prisma {
     finPrueba: number
     pagadoHasta: number
     suspendidaEn: number
+    plan: number
+    cicloPago: number
+    limiteOverride: number
+    funcionesOverride: number
     precioModo: number
     precioFijo: number
     precioTramo1: number
@@ -3441,6 +3453,7 @@ export namespace Prisma {
 
 
   export type SuscripcionAvgAggregateInputType = {
+    limiteOverride?: true
     precioFijo?: true
     precioTramo1?: true
     limiteTramo1?: true
@@ -3448,6 +3461,7 @@ export namespace Prisma {
   }
 
   export type SuscripcionSumAggregateInputType = {
+    limiteOverride?: true
     precioFijo?: true
     precioTramo1?: true
     limiteTramo1?: true
@@ -3461,6 +3475,9 @@ export namespace Prisma {
     finPrueba?: true
     pagadoHasta?: true
     suspendidaEn?: true
+    plan?: true
+    cicloPago?: true
+    limiteOverride?: true
     precioModo?: true
     precioFijo?: true
     precioTramo1?: true
@@ -3478,6 +3495,9 @@ export namespace Prisma {
     finPrueba?: true
     pagadoHasta?: true
     suspendidaEn?: true
+    plan?: true
+    cicloPago?: true
+    limiteOverride?: true
     precioModo?: true
     precioFijo?: true
     precioTramo1?: true
@@ -3495,6 +3515,10 @@ export namespace Prisma {
     finPrueba?: true
     pagadoHasta?: true
     suspendidaEn?: true
+    plan?: true
+    cicloPago?: true
+    limiteOverride?: true
+    funcionesOverride?: true
     precioModo?: true
     precioFijo?: true
     precioTramo1?: true
@@ -3599,6 +3623,10 @@ export namespace Prisma {
     finPrueba: Date
     pagadoHasta: Date | null
     suspendidaEn: Date | null
+    plan: string
+    cicloPago: string
+    limiteOverride: number | null
+    funcionesOverride: JsonValue | null
     precioModo: string | null
     precioFijo: number | null
     precioTramo1: number | null
@@ -3635,6 +3663,10 @@ export namespace Prisma {
     finPrueba?: boolean
     pagadoHasta?: boolean
     suspendidaEn?: boolean
+    plan?: boolean
+    cicloPago?: boolean
+    limiteOverride?: boolean
+    funcionesOverride?: boolean
     precioModo?: boolean
     precioFijo?: boolean
     precioTramo1?: boolean
@@ -3656,6 +3688,10 @@ export namespace Prisma {
     finPrueba?: boolean
     pagadoHasta?: boolean
     suspendidaEn?: boolean
+    plan?: boolean
+    cicloPago?: boolean
+    limiteOverride?: boolean
+    funcionesOverride?: boolean
     precioModo?: boolean
     precioFijo?: boolean
     precioTramo1?: boolean
@@ -3685,6 +3721,10 @@ export namespace Prisma {
       finPrueba: Date
       pagadoHasta: Date | null
       suspendidaEn: Date | null
+      plan: string
+      cicloPago: string
+      limiteOverride: number | null
+      funcionesOverride: Prisma.JsonValue | null
       precioModo: string | null
       precioFijo: number | null
       precioTramo1: number | null
@@ -4070,6 +4110,10 @@ export namespace Prisma {
     readonly finPrueba: FieldRef<"Suscripcion", 'DateTime'>
     readonly pagadoHasta: FieldRef<"Suscripcion", 'DateTime'>
     readonly suspendidaEn: FieldRef<"Suscripcion", 'DateTime'>
+    readonly plan: FieldRef<"Suscripcion", 'String'>
+    readonly cicloPago: FieldRef<"Suscripcion", 'String'>
+    readonly limiteOverride: FieldRef<"Suscripcion", 'Int'>
+    readonly funcionesOverride: FieldRef<"Suscripcion", 'Json'>
     readonly precioModo: FieldRef<"Suscripcion", 'String'>
     readonly precioFijo: FieldRef<"Suscripcion", 'Int'>
     readonly precioTramo1: FieldRef<"Suscripcion", 'Int'>
@@ -5461,6 +5505,7 @@ export namespace Prisma {
     precioTramo1: number
     limiteTramo1: number
     precioTramo2: number
+    planes: number
     _all: number
   }
 
@@ -5498,6 +5543,7 @@ export namespace Prisma {
     precioTramo1?: true
     limiteTramo1?: true
     precioTramo2?: true
+    planes?: true
     _all?: true
   }
 
@@ -5592,6 +5638,7 @@ export namespace Prisma {
     precioTramo1: number
     limiteTramo1: number
     precioTramo2: number
+    planes: JsonValue | null
     _count: ConfiguracionPlataformaCountAggregateOutputType | null
     _avg: ConfiguracionPlataformaAvgAggregateOutputType | null
     _sum: ConfiguracionPlataformaSumAggregateOutputType | null
@@ -5618,6 +5665,7 @@ export namespace Prisma {
     precioTramo1?: boolean
     limiteTramo1?: boolean
     precioTramo2?: boolean
+    planes?: boolean
   }, ExtArgs["result"]["configuracionPlataforma"]>
 
 
@@ -5626,6 +5674,7 @@ export namespace Prisma {
     precioTramo1?: boolean
     limiteTramo1?: boolean
     precioTramo2?: boolean
+    planes?: boolean
   }
 
 
@@ -5637,6 +5686,7 @@ export namespace Prisma {
       precioTramo1: number
       limiteTramo1: number
       precioTramo2: number
+      planes: Prisma.JsonValue | null
     }, ExtArgs["result"]["configuracionPlataforma"]>
     composites: {}
   }
@@ -6010,6 +6060,7 @@ export namespace Prisma {
     readonly precioTramo1: FieldRef<"ConfiguracionPlataforma", 'Float'>
     readonly limiteTramo1: FieldRef<"ConfiguracionPlataforma", 'Int'>
     readonly precioTramo2: FieldRef<"ConfiguracionPlataforma", 'Float'>
+    readonly planes: FieldRef<"ConfiguracionPlataforma", 'Json'>
   }
     
 
@@ -16609,6 +16660,10 @@ export namespace Prisma {
     finPrueba: 'finPrueba',
     pagadoHasta: 'pagadoHasta',
     suspendidaEn: 'suspendidaEn',
+    plan: 'plan',
+    cicloPago: 'cicloPago',
+    limiteOverride: 'limiteOverride',
+    funcionesOverride: 'funcionesOverride',
     precioModo: 'precioModo',
     precioFijo: 'precioFijo',
     precioTramo1: 'precioTramo1',
@@ -16645,7 +16700,8 @@ export namespace Prisma {
     id: 'id',
     precioTramo1: 'precioTramo1',
     limiteTramo1: 'limiteTramo1',
-    precioTramo2: 'precioTramo2'
+    precioTramo2: 'precioTramo2',
+    planes: 'planes'
   };
 
   export type ConfiguracionPlataformaScalarFieldEnum = (typeof ConfiguracionPlataformaScalarFieldEnum)[keyof typeof ConfiguracionPlataformaScalarFieldEnum]
@@ -16819,19 +16875,19 @@ export namespace Prisma {
   export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
-  export const JsonNullValueInput: {
-    JsonNull: typeof JsonNull
-  };
-
-  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
-
-
   export const NullableJsonNullValueInput: {
     DbNull: typeof DbNull,
     JsonNull: typeof JsonNull
   };
 
   export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+  export const JsonNullValueInput: {
+    JsonNull: typeof JsonNull
+  };
+
+  export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
   export const NullsOrder: {
@@ -16892,6 +16948,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -16909,13 +16972,6 @@ export namespace Prisma {
    * Reference to a field of type 'EstadoPago'
    */
   export type EnumEstadoPagoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoPago'>
-    
-
-
-  /**
-   * Reference to a field of type 'Json'
-   */
-  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
     
 
 
@@ -17051,6 +17107,10 @@ export namespace Prisma {
     finPrueba?: DateTimeFilter<"Suscripcion"> | Date | string
     pagadoHasta?: DateTimeNullableFilter<"Suscripcion"> | Date | string | null
     suspendidaEn?: DateTimeNullableFilter<"Suscripcion"> | Date | string | null
+    plan?: StringFilter<"Suscripcion"> | string
+    cicloPago?: StringFilter<"Suscripcion"> | string
+    limiteOverride?: IntNullableFilter<"Suscripcion"> | number | null
+    funcionesOverride?: JsonNullableFilter<"Suscripcion">
     precioModo?: StringNullableFilter<"Suscripcion"> | string | null
     precioFijo?: IntNullableFilter<"Suscripcion"> | number | null
     precioTramo1?: IntNullableFilter<"Suscripcion"> | number | null
@@ -17070,6 +17130,10 @@ export namespace Prisma {
     finPrueba?: SortOrder
     pagadoHasta?: SortOrderInput | SortOrder
     suspendidaEn?: SortOrderInput | SortOrder
+    plan?: SortOrder
+    cicloPago?: SortOrder
+    limiteOverride?: SortOrderInput | SortOrder
+    funcionesOverride?: SortOrderInput | SortOrder
     precioModo?: SortOrderInput | SortOrder
     precioFijo?: SortOrderInput | SortOrder
     precioTramo1?: SortOrderInput | SortOrder
@@ -17092,6 +17156,10 @@ export namespace Prisma {
     finPrueba?: DateTimeFilter<"Suscripcion"> | Date | string
     pagadoHasta?: DateTimeNullableFilter<"Suscripcion"> | Date | string | null
     suspendidaEn?: DateTimeNullableFilter<"Suscripcion"> | Date | string | null
+    plan?: StringFilter<"Suscripcion"> | string
+    cicloPago?: StringFilter<"Suscripcion"> | string
+    limiteOverride?: IntNullableFilter<"Suscripcion"> | number | null
+    funcionesOverride?: JsonNullableFilter<"Suscripcion">
     precioModo?: StringNullableFilter<"Suscripcion"> | string | null
     precioFijo?: IntNullableFilter<"Suscripcion"> | number | null
     precioTramo1?: IntNullableFilter<"Suscripcion"> | number | null
@@ -17111,6 +17179,10 @@ export namespace Prisma {
     finPrueba?: SortOrder
     pagadoHasta?: SortOrderInput | SortOrder
     suspendidaEn?: SortOrderInput | SortOrder
+    plan?: SortOrder
+    cicloPago?: SortOrder
+    limiteOverride?: SortOrderInput | SortOrder
+    funcionesOverride?: SortOrderInput | SortOrder
     precioModo?: SortOrderInput | SortOrder
     precioFijo?: SortOrderInput | SortOrder
     precioTramo1?: SortOrderInput | SortOrder
@@ -17136,6 +17208,10 @@ export namespace Prisma {
     finPrueba?: DateTimeWithAggregatesFilter<"Suscripcion"> | Date | string
     pagadoHasta?: DateTimeNullableWithAggregatesFilter<"Suscripcion"> | Date | string | null
     suspendidaEn?: DateTimeNullableWithAggregatesFilter<"Suscripcion"> | Date | string | null
+    plan?: StringWithAggregatesFilter<"Suscripcion"> | string
+    cicloPago?: StringWithAggregatesFilter<"Suscripcion"> | string
+    limiteOverride?: IntNullableWithAggregatesFilter<"Suscripcion"> | number | null
+    funcionesOverride?: JsonNullableWithAggregatesFilter<"Suscripcion">
     precioModo?: StringNullableWithAggregatesFilter<"Suscripcion"> | string | null
     precioFijo?: IntNullableWithAggregatesFilter<"Suscripcion"> | number | null
     precioTramo1?: IntNullableWithAggregatesFilter<"Suscripcion"> | number | null
@@ -17251,6 +17327,7 @@ export namespace Prisma {
     precioTramo1?: FloatFilter<"ConfiguracionPlataforma"> | number
     limiteTramo1?: IntFilter<"ConfiguracionPlataforma"> | number
     precioTramo2?: FloatFilter<"ConfiguracionPlataforma"> | number
+    planes?: JsonNullableFilter<"ConfiguracionPlataforma">
   }
 
   export type ConfiguracionPlataformaOrderByWithRelationInput = {
@@ -17258,6 +17335,7 @@ export namespace Prisma {
     precioTramo1?: SortOrder
     limiteTramo1?: SortOrder
     precioTramo2?: SortOrder
+    planes?: SortOrderInput | SortOrder
   }
 
   export type ConfiguracionPlataformaWhereUniqueInput = Prisma.AtLeast<{
@@ -17268,6 +17346,7 @@ export namespace Prisma {
     precioTramo1?: FloatFilter<"ConfiguracionPlataforma"> | number
     limiteTramo1?: IntFilter<"ConfiguracionPlataforma"> | number
     precioTramo2?: FloatFilter<"ConfiguracionPlataforma"> | number
+    planes?: JsonNullableFilter<"ConfiguracionPlataforma">
   }, "id">
 
   export type ConfiguracionPlataformaOrderByWithAggregationInput = {
@@ -17275,6 +17354,7 @@ export namespace Prisma {
     precioTramo1?: SortOrder
     limiteTramo1?: SortOrder
     precioTramo2?: SortOrder
+    planes?: SortOrderInput | SortOrder
     _count?: ConfiguracionPlataformaCountOrderByAggregateInput
     _avg?: ConfiguracionPlataformaAvgOrderByAggregateInput
     _max?: ConfiguracionPlataformaMaxOrderByAggregateInput
@@ -17290,6 +17370,7 @@ export namespace Prisma {
     precioTramo1?: FloatWithAggregatesFilter<"ConfiguracionPlataforma"> | number
     limiteTramo1?: IntWithAggregatesFilter<"ConfiguracionPlataforma"> | number
     precioTramo2?: FloatWithAggregatesFilter<"ConfiguracionPlataforma"> | number
+    planes?: JsonNullableWithAggregatesFilter<"ConfiguracionPlataforma">
   }
 
   export type JornadaVigenciaWhereInput = {
@@ -18238,6 +18319,10 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    plan?: string
+    cicloPago?: string
+    limiteOverride?: number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: string | null
     precioFijo?: number | null
     precioTramo1?: number | null
@@ -18257,6 +18342,10 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    plan?: string
+    cicloPago?: string
+    limiteOverride?: number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: string | null
     precioFijo?: number | null
     precioTramo1?: number | null
@@ -18274,6 +18363,10 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plan?: StringFieldUpdateOperationsInput | string
+    cicloPago?: StringFieldUpdateOperationsInput | string
+    limiteOverride?: NullableIntFieldUpdateOperationsInput | number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: NullableStringFieldUpdateOperationsInput | string | null
     precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
     precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
@@ -18293,6 +18386,10 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plan?: StringFieldUpdateOperationsInput | string
+    cicloPago?: StringFieldUpdateOperationsInput | string
+    limiteOverride?: NullableIntFieldUpdateOperationsInput | number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: NullableStringFieldUpdateOperationsInput | string | null
     precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
     precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
@@ -18311,6 +18408,10 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    plan?: string
+    cicloPago?: string
+    limiteOverride?: number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: string | null
     precioFijo?: number | null
     precioTramo1?: number | null
@@ -18327,6 +18428,10 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plan?: StringFieldUpdateOperationsInput | string
+    cicloPago?: StringFieldUpdateOperationsInput | string
+    limiteOverride?: NullableIntFieldUpdateOperationsInput | number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: NullableStringFieldUpdateOperationsInput | string | null
     precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
     precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
@@ -18344,6 +18449,10 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plan?: StringFieldUpdateOperationsInput | string
+    cicloPago?: StringFieldUpdateOperationsInput | string
+    limiteOverride?: NullableIntFieldUpdateOperationsInput | number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: NullableStringFieldUpdateOperationsInput | string | null
     precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
     precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
@@ -18470,6 +18579,7 @@ export namespace Prisma {
     precioTramo1?: number
     limiteTramo1?: number
     precioTramo2?: number
+    planes?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ConfiguracionPlataformaUncheckedCreateInput = {
@@ -18477,6 +18587,7 @@ export namespace Prisma {
     precioTramo1?: number
     limiteTramo1?: number
     precioTramo2?: number
+    planes?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ConfiguracionPlataformaUpdateInput = {
@@ -18484,6 +18595,7 @@ export namespace Prisma {
     precioTramo1?: FloatFieldUpdateOperationsInput | number
     limiteTramo1?: IntFieldUpdateOperationsInput | number
     precioTramo2?: FloatFieldUpdateOperationsInput | number
+    planes?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ConfiguracionPlataformaUncheckedUpdateInput = {
@@ -18491,6 +18603,7 @@ export namespace Prisma {
     precioTramo1?: FloatFieldUpdateOperationsInput | number
     limiteTramo1?: IntFieldUpdateOperationsInput | number
     precioTramo2?: FloatFieldUpdateOperationsInput | number
+    planes?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ConfiguracionPlataformaCreateManyInput = {
@@ -18498,6 +18611,7 @@ export namespace Prisma {
     precioTramo1?: number
     limiteTramo1?: number
     precioTramo2?: number
+    planes?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ConfiguracionPlataformaUpdateManyMutationInput = {
@@ -18505,6 +18619,7 @@ export namespace Prisma {
     precioTramo1?: FloatFieldUpdateOperationsInput | number
     limiteTramo1?: IntFieldUpdateOperationsInput | number
     precioTramo2?: FloatFieldUpdateOperationsInput | number
+    planes?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type ConfiguracionPlataformaUncheckedUpdateManyInput = {
@@ -18512,6 +18627,7 @@ export namespace Prisma {
     precioTramo1?: FloatFieldUpdateOperationsInput | number
     limiteTramo1?: IntFieldUpdateOperationsInput | number
     precioTramo2?: FloatFieldUpdateOperationsInput | number
+    planes?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type JornadaVigenciaCreateInput = {
@@ -19646,6 +19762,28 @@ export namespace Prisma {
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
+  export type JsonNullableFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type EmpresaRelationFilter = {
     is?: EmpresaWhereInput
@@ -19669,6 +19807,10 @@ export namespace Prisma {
     finPrueba?: SortOrder
     pagadoHasta?: SortOrder
     suspendidaEn?: SortOrder
+    plan?: SortOrder
+    cicloPago?: SortOrder
+    limiteOverride?: SortOrder
+    funcionesOverride?: SortOrder
     precioModo?: SortOrder
     precioFijo?: SortOrder
     precioTramo1?: SortOrder
@@ -19680,6 +19822,7 @@ export namespace Prisma {
   }
 
   export type SuscripcionAvgOrderByAggregateInput = {
+    limiteOverride?: SortOrder
     precioFijo?: SortOrder
     precioTramo1?: SortOrder
     limiteTramo1?: SortOrder
@@ -19693,6 +19836,9 @@ export namespace Prisma {
     finPrueba?: SortOrder
     pagadoHasta?: SortOrder
     suspendidaEn?: SortOrder
+    plan?: SortOrder
+    cicloPago?: SortOrder
+    limiteOverride?: SortOrder
     precioModo?: SortOrder
     precioFijo?: SortOrder
     precioTramo1?: SortOrder
@@ -19710,6 +19856,9 @@ export namespace Prisma {
     finPrueba?: SortOrder
     pagadoHasta?: SortOrder
     suspendidaEn?: SortOrder
+    plan?: SortOrder
+    cicloPago?: SortOrder
+    limiteOverride?: SortOrder
     precioModo?: SortOrder
     precioFijo?: SortOrder
     precioTramo1?: SortOrder
@@ -19721,6 +19870,7 @@ export namespace Prisma {
   }
 
   export type SuscripcionSumOrderByAggregateInput = {
+    limiteOverride?: SortOrder
     precioFijo?: SortOrder
     precioTramo1?: SortOrder
     limiteTramo1?: SortOrder
@@ -19765,6 +19915,31 @@ export namespace Prisma {
     _sum?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedIntNullableFilter<$PrismaModel>
     _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedJsonNullableFilter<$PrismaModel>
+    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type FloatFilter<$PrismaModel = never> = {
@@ -19923,6 +20098,7 @@ export namespace Prisma {
     precioTramo1?: SortOrder
     limiteTramo1?: SortOrder
     precioTramo2?: SortOrder
+    planes?: SortOrder
   }
 
   export type ConfiguracionPlataformaAvgOrderByAggregateInput = {
@@ -20186,28 +20362,6 @@ export namespace Prisma {
     creadoEn?: SortOrder
     ultimoUso?: SortOrder
   }
-  export type JsonNullableFilter<$PrismaModel = never> = 
-    | PatchUndefined<
-        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue
-    lte?: InputJsonValue
-    gt?: InputJsonValue
-    gte?: InputJsonValue
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
 
   export type HorarioNullableRelationFilter = {
     is?: HorarioWhereInput | null
@@ -20303,31 +20457,6 @@ export namespace Prisma {
 
   export type ColaboradorSumOrderByAggregateInput = {
     salarioMensual?: SortOrder
-  }
-  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> = 
-    | PatchUndefined<
-        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue
-    lte?: InputJsonValue
-    gt?: InputJsonValue
-    gte?: InputJsonValue
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedJsonNullableFilter<$PrismaModel>
-    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type EnumTipoRegistroFilter<$PrismaModel = never> = {
@@ -21507,6 +21636,28 @@ export namespace Prisma {
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
+  export type NestedJsonNullableFilter<$PrismaModel = never> = 
+    | PatchUndefined<
+        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue
+    lte?: InputJsonValue
+    gt?: InputJsonValue
+    gte?: InputJsonValue
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type NestedFloatFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel>
@@ -21592,28 +21743,6 @@ export namespace Prisma {
     | OptionalFlat<Omit<Required<NestedJsonFilterBase<$PrismaModel>>, 'path'>>
 
   export type NestedJsonFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue
-    lte?: InputJsonValue
-    gt?: InputJsonValue
-    gte?: InputJsonValue
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
-  export type NestedJsonNullableFilter<$PrismaModel = never> = 
-    | PatchUndefined<
-        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<NestedJsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
     equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
     path?: string
     string_contains?: string | StringFieldRefInput<$PrismaModel>
@@ -21824,6 +21953,10 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    plan?: string
+    cicloPago?: string
+    limiteOverride?: number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: string | null
     precioFijo?: number | null
     precioTramo1?: number | null
@@ -21841,6 +21974,10 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    plan?: string
+    cicloPago?: string
+    limiteOverride?: number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: string | null
     precioFijo?: number | null
     precioTramo1?: number | null
@@ -22059,6 +22196,10 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plan?: StringFieldUpdateOperationsInput | string
+    cicloPago?: StringFieldUpdateOperationsInput | string
+    limiteOverride?: NullableIntFieldUpdateOperationsInput | number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: NullableStringFieldUpdateOperationsInput | string | null
     precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
     precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
@@ -22076,6 +22217,10 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plan?: StringFieldUpdateOperationsInput | string
+    cicloPago?: StringFieldUpdateOperationsInput | string
+    limiteOverride?: NullableIntFieldUpdateOperationsInput | number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: NullableStringFieldUpdateOperationsInput | string | null
     precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
     precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
@@ -22317,6 +22462,10 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    plan?: string
+    cicloPago?: string
+    limiteOverride?: number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: string | null
     precioFijo?: number | null
     precioTramo1?: number | null
@@ -22335,6 +22484,10 @@ export namespace Prisma {
     finPrueba: Date | string
     pagadoHasta?: Date | string | null
     suspendidaEn?: Date | string | null
+    plan?: string
+    cicloPago?: string
+    limiteOverride?: number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: string | null
     precioFijo?: number | null
     precioTramo1?: number | null
@@ -22367,6 +22520,10 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plan?: StringFieldUpdateOperationsInput | string
+    cicloPago?: StringFieldUpdateOperationsInput | string
+    limiteOverride?: NullableIntFieldUpdateOperationsInput | number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: NullableStringFieldUpdateOperationsInput | string | null
     precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
     precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null
@@ -22385,6 +22542,10 @@ export namespace Prisma {
     finPrueba?: DateTimeFieldUpdateOperationsInput | Date | string
     pagadoHasta?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     suspendidaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plan?: StringFieldUpdateOperationsInput | string
+    cicloPago?: StringFieldUpdateOperationsInput | string
+    limiteOverride?: NullableIntFieldUpdateOperationsInput | number | null
+    funcionesOverride?: NullableJsonNullValueInput | InputJsonValue
     precioModo?: NullableStringFieldUpdateOperationsInput | string | null
     precioFijo?: NullableIntFieldUpdateOperationsInput | number | null
     precioTramo1?: NullableIntFieldUpdateOperationsInput | number | null

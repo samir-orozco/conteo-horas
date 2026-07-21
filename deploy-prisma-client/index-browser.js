@@ -142,6 +142,10 @@ exports.Prisma.SuscripcionScalarFieldEnum = {
   finPrueba: 'finPrueba',
   pagadoHasta: 'pagadoHasta',
   suspendidaEn: 'suspendidaEn',
+  plan: 'plan',
+  cicloPago: 'cicloPago',
+  limiteOverride: 'limiteOverride',
+  funcionesOverride: 'funcionesOverride',
   precioModo: 'precioModo',
   precioFijo: 'precioFijo',
   precioTramo1: 'precioTramo1',
@@ -172,7 +176,8 @@ exports.Prisma.ConfiguracionPlataformaScalarFieldEnum = {
   id: 'id',
   precioTramo1: 'precioTramo1',
   limiteTramo1: 'limiteTramo1',
-  precioTramo2: 'precioTramo2'
+  precioTramo2: 'precioTramo2',
+  planes: 'planes'
 };
 
 exports.Prisma.JornadaVigenciaScalarFieldEnum = {
@@ -307,12 +312,12 @@ exports.Prisma.SortOrder = {
   desc: 'desc'
 };
 
-exports.Prisma.JsonNullValueInput = {
+exports.Prisma.NullableJsonNullValueInput = {
+  DbNull: Prisma.DbNull,
   JsonNull: Prisma.JsonNull
 };
 
-exports.Prisma.NullableJsonNullValueInput = {
-  DbNull: Prisma.DbNull,
+exports.Prisma.JsonNullValueInput = {
   JsonNull: Prisma.JsonNull
 };
 
