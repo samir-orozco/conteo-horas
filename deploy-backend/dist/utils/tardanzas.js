@@ -14,6 +14,8 @@ function minutosDe(hhmm) {
 // Franja del horario que aplica a un día de la semana (ej. "SABADO"), o null
 // si ese día no se trabaja. Con esto un horario cubre variaciones como
 // L-V 08:00-17:00 + Sáb 08:00-12:00.
+// Genérico en la franja: acepta el Horario completo o un `select` acotado (solo
+// necesita `franjas` con su `dias`), y devuelve la misma forma de franja recibida.
 function franjaDelDia(horario, diaSemana) {
     return horario.franjas.find(f => ((f.dias ?? []).includes(diaSemana))) ?? null;
 }
