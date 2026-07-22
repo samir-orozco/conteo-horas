@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { toZonedTime } from 'date-fns-tz';
-import { getISOWeek, getISOWeekYear } from 'date-fns';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
+import { getISOWeek, getISOWeekYear, startOfISOWeek } from 'date-fns';
 import { prisma } from '../index';
 import { calcularHorasTrabajadas, descontarAlmuerzo } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes } from '../utils/vigencias';
@@ -42,21 +42,31 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     const inicioDia = new Date(Date.UTC(ahoraBog.getFullYear(), ahoraBog.getMonth(), ahoraBog.getDate(), 5, 0, 0));
     const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
     const inicioMes = new Date(Date.UTC(ahoraBog.getFullYear(), ahoraBog.getMonth(), 1, 5, 0, 0));
+    const en45 = new Date(inicioDia.getTime() + 45 * 24 * 60 * 60 * 1000);
+    // Lunes 00:00 Bogotá de la semana ISO que contiene el día 1: así las semanas
+    // que cruzan el límite de mes quedan completas para los KPIs semanales/extra.
+    const inicioSemanaMes = fromZonedTime(startOfISOWeek(toZonedTime(inicioMes, TZ)), TZ);
     const claveHoy = claveDia(ahora);
     const diaHoy = DIAS[ahoraBog.getDay()];
 
     const [colaboradores, festivos, jornadas, tiposHoraTodos, permisos] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
-        include: { horario: { include: { franjas: true } } },
+        select: {
+          id: true, nombre: true, apellido: true, cargo: true, fechaNacimiento: true,
+          horario: { select: { id: true, activo: true, nombre: true, toleranciaMin: true, almuerzoMin: true,
+            franjas: { select: { dias: true, horaEntrada: true, horaSalida: true, tieneAlmuerzo: true } } } },
+        },
         orderBy: { nombre: 'asc' },
       }),
-      prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
+      // Solo festivos relevantes: del mes en curso (para el cálculo) hasta +45 días (próximos).
+      prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }], fecha: { gte: inicioSemanaMes, lte: en45 } } }),
       prisma.jornadaVigencia.findMany(),
       prisma.tipoHora.findMany(),
       prisma.permiso.findMany({
         where: { aprobado: true, colaborador: { empresaId }, fechaInicio: { lte: finDia }, fechaFin: { gte: inicioDia } },
-        select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true, colaborador: true },
+        select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
+          colaborador: { select: { nombre: true, apellido: true } } },
       }),
     ]);
 
@@ -64,34 +74,54 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     const festSet = new Set(festivos.map(f => claveDia(f.fecha)));
     const hoyEsFestivo = festSet.has(claveHoy);
 
-    // Registros de hoy + turnos abiertos de días anteriores
-    const [registrosHoy, turnosAbiertos, registrosMes] = await Promise.all([
+    // Registros de hoy + turnos abiertos de días anteriores.
+    // Nota: NO se traen fotoEntrada/fotoSalida (LongText base64) — solo se necesita
+    // saber si existen, que se resuelve con una consulta liviana de IDs.
+    const SEL_REG = {
+      id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, tipo: true,
+      colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
+    };
+    const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto] = await Promise.all([
       prisma.registro.findMany({
         where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia } },
-        include: { colaborador: true },
+        select: SEL_REG,
         orderBy: { entrada: 'asc' },
       }),
       prisma.registro.findMany({
         where: { colaboradorId: { in: colIds }, fecha: { lt: inicioDia }, entrada: { not: null }, salida: null },
-        include: { colaborador: true },
+        select: { id: true, fecha: true, entrada: true, colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } } },
         orderBy: { fecha: 'desc' },
       }),
       prisma.registro.findMany({
-        where: { colaboradorId: { in: colIds }, fecha: { gte: inicioMes, lte: finDia }, salida: { not: null } },
+        where: { colaboradorId: { in: colIds }, fecha: { gte: inicioSemanaMes, lte: finDia }, salida: { not: null } },
+        select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true },
         orderBy: { fecha: 'asc' },
       }),
+      // IDs de las salidas de hoy que tienen foto de verificación (para el ícono de cámara)
+      prisma.registro.findMany({
+        where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia }, fotoSalida: { not: null } },
+        select: { id: true },
+      }),
     ]);
+    const conFotoSalida = new Set(salidasConFoto.map(r => r.id));
 
-    // ===== En planta ahora (entrada abierta hoy) =====
-    const enPlanta = registrosHoy
-      .filter(r => r.entrada && !r.salida)
-      .map(r => ({
-        id: r.colaborador.id,
-        nombre: `${r.colaborador.nombre} ${r.colaborador.apellido}`,
-        cargo: r.colaborador.cargo,
-        desde: r.entrada,
-      }));
-    const enPlantaIds = new Set(enPlanta.map(e => e.id));
+    // Un turno abierto de un día anterior aún puede estar EN CURSO (turno nocturno
+    // que cruzó medianoche) si la entrada fue hace poco; si no, es un olvido de salida.
+    const LIMITE_TURNO_MS = 16 * 60 * 60 * 1000;
+    const turnoEnCurso = (r: { entrada: Date | null }) => !!r.entrada && (ahora.getTime() - r.entrada.getTime()) <= LIMITE_TURNO_MS;
+    const turnosEnCurso = turnosAbiertos.filter(turnoEnCurso);
+    const turnosViejos = turnosAbiertos.filter(r => !turnoEnCurso(r));
+
+    // ===== En planta ahora (entrada abierta hoy + turno nocturno aún en curso) =====
+    const enPlanta = [
+      ...registrosHoy.filter(r => r.entrada && !r.salida),
+      ...turnosEnCurso,
+    ].map(r => ({
+      id: r.colaborador.id,
+      nombre: `${r.colaborador.nombre} ${r.colaborador.apellido}`,
+      cargo: r.colaborador.cargo,
+      desde: r.entrada,
+    }));
 
     // ===== Salidas de hoy (colaboradores que marcaron salida) =====
     const salidasRecientes = registrosHoy
@@ -104,21 +134,16 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         cargo: r.colaborador.cargo,
         entrada: r.entrada,
         salida: r.salida,
-        tieneFotoEntrada: !!r.fotoEntrada,
-        tieneFotoSalida: !!r.fotoSalida,
+        tieneFotoSalida: conFotoSalida.has(r.id),
       }));
 
-    // Colaboradores con al menos una entrada hoy
-    const marcaronHoy = new Set(registrosHoy.filter(r => r.entrada).map(r => r.colaboradorId));
-    const novedadHoyIds = new Set(
-      permisos.filter(p => claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin)).map(p => p.colaboradorId)
-    );
+    // Novedades que cubren HOY. Se calculan las claves de día UNA sola vez por permiso
+    // y se reutilizan para 'sin marcar' y para el listado de novedades.
+    const permisosHoy = permisos.filter(p => claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin));
     // Tipo de novedad activa hoy por colaborador (para explicar por qué no marcó)
     const novedadHoyTipo = new Map<string, string>();
-    for (const p of permisos) {
-      if (claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin) && !novedadHoyTipo.has(p.colaboradorId)) {
-        novedadHoyTipo.set(p.colaboradorId, p.tipo);
-      }
+    for (const p of permisosHoy) {
+      if (!novedadHoyTipo.has(p.colaboradorId)) novedadHoyTipo.set(p.colaboradorId, p.tipo);
     }
 
     // ===== Llegadas tarde hoy (según horario) =====
@@ -143,7 +168,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       const entrada = primeraEntradaHoy.get(c.id);
       if (entrada) {
         // Llegó tarde: la tardanza solo aplica si no tiene novedad que justifique el día
-        if (novedadHoyIds.has(c.id)) continue;
+        if (novedadHoyTipo.has(c.id)) continue;
         const z = toZonedTime(entrada, TZ);
         const llegadaMin = z.getHours() * 60 + z.getMinutes();
         const tarde = llegadaMin - (minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin);
@@ -221,32 +246,28 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       }
     }
 
-    // ===== Turnos abiertos de días anteriores (olvidaron marcar salida) =====
-    const turnosOlvidados = turnosAbiertos.map(r => ({
+    // ===== Turnos realmente olvidados (abiertos de días anteriores, ya no en curso) =====
+    const turnosOlvidados = turnosViejos.map(r => ({
       id: r.id,
       colaborador: `${r.colaborador.nombre} ${r.colaborador.apellido}`,
-      fecha: r.fecha,
       entrada: r.entrada,
     }));
 
     // ===== Novedades activas hoy =====
-    const novedadesHoy = permisos
-      .filter(p => claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin))
-      .map(p => ({
-        id: p.id,
-        colaboradorId: p.colaboradorId,
-        colaborador: `${p.colaborador.nombre} ${p.colaborador.apellido}`,
-        tipo: p.tipo,
-        descripcion: p.descripcion,
-        aprobado: p.aprobado,
-        fechaInicio: p.fechaInicio,
-        fechaFin: p.fechaFin,
-        evidenciaTipo: p.evidenciaTipo,
-        evidenciaNombre: p.evidenciaNombre,
-      }));
+    const novedadesHoy = permisosHoy.map(p => ({
+      id: p.id,
+      colaboradorId: p.colaboradorId,
+      colaborador: `${p.colaborador.nombre} ${p.colaborador.apellido}`,
+      tipo: p.tipo,
+      descripcion: p.descripcion,
+      aprobado: p.aprobado,
+      fechaInicio: p.fechaInicio,
+      fechaFin: p.fechaFin,
+      evidenciaTipo: p.evidenciaTipo,
+      evidenciaNombre: p.evidenciaNombre,
+    }));
 
     // ===== Próximos festivos (siguientes 45 días) =====
-    const en45 = new Date(inicioDia.getTime() + 45 * 24 * 60 * 60 * 1000);
     const proximosFestivos = festivos
       .filter(f => new Date(f.fecha) >= inicioDia && new Date(f.fecha) <= en45)
       .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())

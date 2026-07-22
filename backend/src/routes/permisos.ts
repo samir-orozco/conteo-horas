@@ -31,7 +31,8 @@ function limpiarPermiso(data: any, esNuevo: boolean) {
 const SELECT_LISTA = {
   id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, tipo: true,
   descripcion: true, aprobado: true, creadoEn: true, evidenciaTipo: true, evidenciaNombre: true,
-  colaborador: true,
+  // Colaborador acotado: NUNCA exponer rostroDescriptor (biométrico), salario ni cédula.
+  colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
 };
 
 export default async function permisoRoutes(app: FastifyInstance) {

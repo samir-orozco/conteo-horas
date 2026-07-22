@@ -4,6 +4,20 @@ import { prisma } from '../index';
 import { franjaDelDia, minutosDe, DIAS_SEMANA } from '../utils/tardanzas';
 
 const TZ = 'America/Bogota';
+const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
+
+// Lista blanca de campos que la empresa puede escribir en un registro. Evita
+// mass-assignment (inyectar fotos base64, editadoPor, creadoEn, etc. desde el body).
+function camposRegistro(body: any, esNuevo: boolean) {
+  const out: any = {};
+  if (esNuevo || body.colaboradorId !== undefined) out.colaboradorId = body.colaboradorId;
+  if (body.fecha !== undefined) out.fecha = body.fecha ? new Date(body.fecha) : undefined;
+  if (body.entrada !== undefined) out.entrada = body.entrada ? new Date(body.entrada) : null;
+  if (body.salida !== undefined) out.salida = body.salida ? new Date(body.salida) : null;
+  if (body.tipo !== undefined && TIPOS_REGISTRO.has(body.tipo)) out.tipo = body.tipo;
+  if (body.observacion !== undefined) out.observacion = body.observacion || null;
+  return out;
+}
 
 export default async function registroRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -120,11 +134,11 @@ export default async function registroRoutes(app: FastifyInstance) {
 
   // Registro manual (admin)
   app.post('/', auth, async (request, reply) => {
-    const data = request.body as any;
-    if (!(await colaboradorDeEmpresa(data.colaboradorId, request.empresaId!))) {
+    const body = request.body as any;
+    if (!(await colaboradorDeEmpresa(body.colaboradorId, request.empresaId!))) {
       return reply.status(404).send({ error: 'Colaborador no encontrado' });
     }
-    const registro = await prisma.registro.create({ data });
+    const registro = await prisma.registro.create({ data: camposRegistro(body, true) as any });
     return reply.status(201).send(registro);
   });
 
@@ -136,10 +150,15 @@ export default async function registroRoutes(app: FastifyInstance) {
       where: { id, colaborador: { empresaId: request.empresaId } },
     });
     if (!existente) return reply.status(404).send({ error: 'Registro no encontrado' });
-    const data = request.body as any;
+    const body = request.body as any;
+    // Si se reasigna el colaborador, debe pertenecer a la MISMA empresa (evita
+    // reasignar el registro a otra empresa vía body manipulado).
+    if (body.colaboradorId !== undefined && !(await colaboradorDeEmpresa(body.colaboradorId, request.empresaId!))) {
+      return reply.status(404).send({ error: 'Colaborador no encontrado' });
+    }
     return prisma.registro.update({
       where: { id },
-      data: { ...data, editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
+      data: { ...camposRegistro(body, false), editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
     });
   });
 

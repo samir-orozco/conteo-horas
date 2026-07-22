@@ -13,6 +13,7 @@ import CamaraRostro from '../components/CamaraRostro';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import CampoEvidencia, { type CambioEvidencia } from '../components/CampoEvidencia';
+import { TIPO_PERMISO_LABEL } from '../constants/permisos';
 import { useMiPlan } from '../lib/plan';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
@@ -38,19 +39,9 @@ type Liquidacion = {
 
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
-export const TIPO_PERMISO_LABEL: Record<string, string> = {
-  VACACIONES: 'Vacaciones',
-  INCAPACIDAD_EPS: 'Incapacidad (EPS)',
-  INCAPACIDAD_ARL: 'Incapacidad laboral (ARL)',
-  LICENCIA_MATERNIDAD: 'Licencia de maternidad',
-  LICENCIA_PATERNIDAD: 'Licencia de paternidad',
-  LICENCIA_LUTO: 'Licencia por luto',
-  CALAMIDAD: 'Calamidad doméstica',
-  MEDICO: 'Cita médica',
-  PERSONAL: 'Permiso personal',
-  NO_REMUNERADO: 'Permiso no remunerado',
-  OTRO: 'Otro',
-};
+// Reexportado para no romper a Reportes/Marcador, que aún lo importan desde aquí.
+// La definición vive en constants/permisos.ts (arriba se importa a este scope).
+export { TIPO_PERMISO_LABEL };
 
 const EMPTY_NOVEDAD = { tipo: 'VACACIONES', fechaInicio: '', fechaFin: '', descripcion: '', aprobado: true };
 

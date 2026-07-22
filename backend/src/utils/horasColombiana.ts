@@ -71,13 +71,16 @@ export function calcularHorasTrabajadas(
   // Construir mapa código→TipoHoraDB para lookups rápidos
   const tipoMap = Object.fromEntries(tiposHoraDB.map(t => [t.codigo, t]));
 
-  let cursor = new Date(entrada.getTime());
+  // Iteramos en la "hora de pared" de Bogotá. Como Colombia es UTC-5 constante (sin
+  // horario de verano), avanzar el cursor ya zonificado 1 minuto equivale a llamar
+  // toZonedTime en cada minuto, pero sin ese costo por minuto.
+  const zSalida = toZonedTime(salida, TZ);
+  let zc = toZonedTime(entrada, TZ);
 
-  while (cursor < salida) {
-    const zonedCursor = toZonedTime(cursor, TZ);
-    const hora = zonedCursor.getHours();
-    const diaSemana = DIAS[getDay(zonedCursor)];
-    const key = `${zonedCursor.getFullYear()}-${zonedCursor.getMonth()}-${zonedCursor.getDate()}`;
+  while (zc < zSalida) {
+    const hora = zc.getHours();
+    const diaSemana = DIAS[getDay(zc)];
+    const key = `${zc.getFullYear()}-${zc.getMonth()}-${zc.getDate()}`;
     const esFestivo = festSet.has(key);
     const esDomingo = diaSemana === 'DOMINGO';
     const esDomOFestivo = esDomingo || esFestivo;
@@ -100,7 +103,7 @@ export function calcularHorasTrabajadas(
       minutosOrdAcum += 1;
     }
 
-    cursor = new Date(cursor.getTime() + 60 * 1000);
+    zc = new Date(zc.getTime() + 60 * 1000);
   }
 
   return {

@@ -21,7 +21,9 @@ export function minutosDe(hhmm: string): number {
 // Franja del horario que aplica a un día de la semana (ej. "SABADO"), o null
 // si ese día no se trabaja. Con esto un horario cubre variaciones como
 // L-V 08:00-17:00 + Sáb 08:00-12:00.
-export function franjaDelDia(horario: HorarioConFranjas, diaSemana: string): FranjaHorario | null {
+// Genérico en la franja: acepta el Horario completo o un `select` acotado (solo
+// necesita `franjas` con su `dias`), y devuelve la misma forma de franja recibida.
+export function franjaDelDia<F extends { dias: unknown }>(horario: { franjas: F[] }, diaSemana: string): F | null {
   return horario.franjas.find(f => (((f.dias as string[]) ?? []).includes(diaSemana))) ?? null;
 }
 
