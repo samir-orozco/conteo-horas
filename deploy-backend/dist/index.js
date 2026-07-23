@@ -24,7 +24,9 @@ const suscripcion_1 = __importDefault(require("./routes/suscripcion"));
 const horarios_1 = __importDefault(require("./routes/horarios"));
 const dashboard_1 = __importDefault(require("./routes/dashboard"));
 const telegram_1 = __importDefault(require("./routes/telegram"));
+const notificaciones_1 = __importDefault(require("./routes/notificaciones"));
 const telegram_2 = require("./utils/telegram");
+const cierreTurnos_1 = require("./utils/cierreTurnos");
 const suscripcion_2 = require("./utils/suscripcion");
 exports.prisma = new client_1.PrismaClient();
 const esProduccion = process.env.NODE_ENV === 'production';
@@ -117,6 +119,7 @@ app.register(suscripcion_1.default, { prefix: '/api/suscripcion' });
 app.register(horarios_1.default, { prefix: '/api/horarios' });
 app.register(dashboard_1.default, { prefix: '/api/dashboard' });
 app.register(telegram_1.default, { prefix: '/api/telegram' });
+app.register(notificaciones_1.default, { prefix: '/api/notificaciones' });
 app.get('/api/health', async () => ({ status: 'ok' }));
 // Retención de fotos de verificación facial: 2 meses. Corre al arrancar y cada 24h
 // para que las imágenes base64 no crezcan sin límite en la base de datos.
@@ -145,6 +148,10 @@ const start = async () => {
         console.log('HoraPro API corriendo en puerto 3001');
         limpiarFotosAntiguas();
         setInterval(limpiarFotosAntiguas, 24 * 60 * 60 * 1000);
+        // Cierra turnos que quedaron sin salida (marca "No marcó salida" para revisar).
+        // Al arrancar y cada 24h; es idempotente y solo actúa sobre días ya pasados.
+        (0, cierreTurnos_1.cerrarTurnosOlvidados)(app.log);
+        setInterval(() => (0, cierreTurnos_1.cerrarTurnosOlvidados)(app.log), 24 * 60 * 60 * 1000);
         // Registra el webhook del bot de Telegram (si hay URL configurada)
         if (process.env.TELEGRAM_WEBHOOK_URL)
             (0, telegram_2.configurarWebhook)(process.env.TELEGRAM_WEBHOOK_URL);
