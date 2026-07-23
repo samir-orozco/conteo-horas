@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 import { cargarModelosFaceApi } from '../lib/faceapi';
-import { Camera, AlertTriangle, Check, RotateCcw } from 'lucide-react';
-
-type Modo = 'login' | 'enrolar';
-type Estado = 'cargando' | 'guiando' | 'preview' | 'exito' | 'error';
+import { Camera, AlertTriangle, Check } from 'lucide-react';
+import PreviewEnrolamiento from './camaraRostro/PreviewEnrolamiento';
+import {
+  SEG_FALLBACK_CEDULA, opcionesDeteccion, opcionesCaptura, MS_QUIETO_ENROLAR, MS_QUIETO_LOGIN,
+  MIN_MUESTRAS_POSE, MS_MIN_CUADRO, desviacionYaw, promediarDescriptores, capturarFoto,
+  evaluarEncuadre, MSG_ENCUADRE, poseCumple, type Modo, type Estado, type PasoEnrolar,
+} from './camaraRostro/rostroCliente';
 
 type Props = {
   // login: captura rápida quedándose quieto (sin gestos)
@@ -23,81 +26,6 @@ type Props = {
   permiteFallbackCedula?: boolean;
   onUsarCedula?: (foto: string) => void;
 };
-
-// Segundos antes de ofrecer el respaldo "marcar con cédula" en el login.
-const SEG_FALLBACK_CEDULA = 8;
-
-// Detección continua para el encuadre en vivo (barata, rápida en celulares).
-const opcionesDeteccion = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 });
-// Captura del descriptor: inputSize mayor = landmarks y descriptor más nítidos.
-const opcionesCaptura = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.4 });
-
-// Tiempo que la persona debe quedarse quieta antes de tomar la muestra.
-const MS_QUIETO_ENROLAR = 2000;
-const MS_QUIETO_LOGIN = 1000;
-// Mínimo de cuadros nítidos a promediar por muestra.
-const MIN_MUESTRAS_POSE = 3;
-
-// Signo del yaw que tratamos como "derecha". Si en pruebas los lados salen
-// invertidos, cambia este valor a -1 (es lo único que hay que tocar).
-const SIGNO_DERECHA = 1;
-
-// Giro de cabeza (yaw): posición de la nariz relativa a los ojos.
-// ~0 de frente; el signo indica el lado del giro.
-function desviacionYaw(landmarks: faceapi.FaceLandmarks68): number {
-  const nariz = landmarks.getNose()[3];
-  const ojoIzq = landmarks.getLeftEye()[0];
-  const ojoDer = landmarks.getRightEye()[3];
-  return (nariz.x - ojoIzq.x) / (ojoDer.x - ojoIzq.x) - 0.5;
-}
-
-// Promedio elemento a elemento de varios descriptores de 128 floats: reduce el
-// ruido y deja una muestra más estable que un solo cuadro.
-function promediarDescriptores(lista: number[][]): number[] {
-  const out = new Array(128).fill(0);
-  for (const d of lista) for (let i = 0; i < 128; i++) out[i] += d[i];
-  for (let i = 0; i < 128; i++) out[i] /= lista.length;
-  return out;
-}
-
-function capturarFoto(video: HTMLVideoElement): string {
-  const ancho = 320;
-  const alto = Math.round((video.videoHeight / video.videoWidth) * ancho) || 240;
-  const canvas = document.createElement('canvas');
-  canvas.width = ancho;
-  canvas.height = alto;
-  canvas.getContext('2d')!.drawImage(video, 0, 0, ancho, alto);
-  return canvas.toDataURL('image/jpeg', 0.7);
-}
-
-// Guía de encuadre: qué le decimos al usuario para que el rostro llene el óvalo
-type Encuadre = 'CENTRA' | 'ACERCATE' | 'ALEJATE' | 'OK';
-function evaluarEncuadre(box: faceapi.Box, vw: number, vh: number): Encuadre {
-  const cx = box.x + box.width / 2;
-  const cy = box.y + box.height / 2;
-  if (Math.abs(cx - vw / 2) > vw * 0.28 || Math.abs(cy - vh / 2) > vh * 0.3) return 'CENTRA';
-  const proporcion = box.width / vw;
-  // Umbrales holgados: el rostro no tiene que llenar el óvalo (evita estirar el brazo)
-  if (proporcion < 0.16) return 'ACERCATE';
-  if (proporcion > 0.8) return 'ALEJATE';
-  return 'OK';
-}
-const MSG_ENCUADRE: Record<Exclude<Encuadre, 'OK'>, string> = {
-  CENTRA: 'Centra tu rostro en el óvalo',
-  ACERCATE: 'Acércate un poco',
-  ALEJATE: 'Aléjate un poco',
-};
-
-type TipoPose = 'frontal' | 'derecha' | 'izquierda';
-type PasoEnrolar = { id: string; etiqueta: string; texto: string; tipo: TipoPose };
-
-// ¿La pose actual (según el yaw) cumple lo que pide el paso?
-function poseCumple(tipo: TipoPose, dev: number): boolean {
-  if (tipo === 'frontal') return Math.abs(dev) < 0.1;
-  const magnitud = Math.abs(dev) > 0.13 && Math.abs(dev) < 0.42;
-  if (tipo === 'derecha') return magnitud && Math.sign(dev) === SIGNO_DERECHA;
-  return magnitud && Math.sign(dev) === -SIGNO_DERECHA;
-}
 
 export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapturado, onError, errorExterno, permiteFallbackCedula = false, onUsarCedula }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -125,6 +53,8 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     let terminado = false;
     let stream: MediaStream | null = null;
     let cuadroId: number | null = null;
+    let cuadroTimeout: ReturnType<typeof setTimeout> | null = null;
+    let erroresSeguidos = 0;
 
     // Estado del flujo (fuera de React para no re-renderizar por cuadro)
     const descriptoresPorPose: number[][] = [];
@@ -135,6 +65,7 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
 
     const detenerCamara = () => {
       if (cuadroId !== null) cancelAnimationFrame(cuadroId);
+      if (cuadroTimeout !== null) clearTimeout(cuadroTimeout);
       stream?.getTracks().forEach(t => t.stop());
     };
 
@@ -162,97 +93,117 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
         setEstado('guiando');
         setMensaje('Ubica tu rostro dentro del óvalo');
 
+        function programarSiguiente() {
+          if (!activo || terminado) return;
+          // En captura ("hold") vamos a máxima fluidez; el resto con un piso de ~120ms.
+          if (holdInicio !== null) {
+            cuadroId = requestAnimationFrame(analizarCuadro);
+          } else {
+            cuadroTimeout = setTimeout(() => { cuadroId = requestAnimationFrame(analizarCuadro); }, MS_MIN_CUADRO);
+          }
+        }
+
         const analizarCuadro = async () => {
           if (!activo || terminado) return;
           const video = videoRef.current;
-          if (!video) { cuadroId = requestAnimationFrame(analizarCuadro); return; }
+          if (!video) { programarSiguiente(); return; }
 
-          const enHold = holdInicio !== null;
-          // En el hold detectamos con más resolución y ya pedimos el descriptor.
-          const deteccion = enHold
-            ? await faceapi.detectSingleFace(video, opcionesCaptura()).withFaceLandmarks().withFaceDescriptor()
-            : await faceapi.detectSingleFace(video, opcionesDeteccion()).withFaceLandmarks();
+          try {
+            const enHold = holdInicio !== null;
+            // En el hold detectamos con más resolución y ya pedimos el descriptor.
+            const deteccion = enHold
+              ? await faceapi.detectSingleFace(video, opcionesCaptura()).withFaceLandmarks().withFaceDescriptor()
+              : await faceapi.detectSingleFace(video, opcionesDeteccion()).withFaceLandmarks();
+            erroresSeguidos = 0; // el cuadro se procesó sin lanzar
 
-          if (!activo || terminado) return;
+            if (!activo || terminado) return;
 
-          if (!deteccion) {
-            setEncuadreOk(false);
-            setMensaje('Ubica tu rostro dentro del óvalo');
-            resetHold();
-            cuadroId = requestAnimationFrame(analizarCuadro);
-            return;
-          }
-
-          const encuadre = evaluarEncuadre(deteccion.detection.box, video.videoWidth, video.videoHeight);
-          if (encuadre !== 'OK') {
-            setEncuadreOk(false);
-            setMensaje(MSG_ENCUADRE[encuadre]);
-            resetHold();
-            cuadroId = requestAnimationFrame(analizarCuadro);
-            return;
-          }
-          setEncuadreOk(true);
-
-          // ¿Se cumple la condición para (seguir) capturando?
-          const paso = modo === 'enrolar' ? pasos[idxPaso] : null;
-          const condicionOk = paso ? poseCumple(paso.tipo, desviacionYaw(deteccion.landmarks)) : true;
-
-          if (!condicionOk) {
-            // Rompió la pose: reinicia el conteo de "quieto"
-            if (paso) setMensaje(paso.texto);
-            resetHold();
-            cuadroId = requestAnimationFrame(analizarCuadro);
-            return;
-          }
-
-          // Arranca o continúa el "quédate quieto"
-          if (holdInicio === null) {
-            holdInicio = performance.now();
-            buffer = [];
-          }
-          // Si esta detección trajo descriptor (estamos en hold), lo guardamos
-          const desc = (deteccion as any).descriptor as Float32Array | undefined;
-          if (desc) buffer.push(Array.from(desc));
-
-          const objetivo = modo === 'enrolar' ? MS_QUIETO_ENROLAR : MS_QUIETO_LOGIN;
-          const transcurrido = performance.now() - holdInicio;
-          setProgreso(Math.min(1, transcurrido / objetivo));
-          setMensaje(paso ? `${paso.texto} · mantente quieto` : 'Quédate quieto un momento...');
-
-          if (transcurrido >= objetivo && buffer.length >= MIN_MUESTRAS_POSE) {
-            const muestra = promediarDescriptores(buffer);
-            const foto = capturarFoto(video);
-
-            if (modo === 'enrolar') {
-              descriptoresPorPose.push(muestra);
-              fotosPorPose.push(foto);
-              idxPaso += 1;
-              setPasoActual(idxPaso);
+            if (!deteccion) {
+              setEncuadreOk(false);
+              setMensaje('Ubica tu rostro dentro del óvalo');
               resetHold();
-              if (idxPaso >= pasos.length) {
-                // Todas las poses listas → preview para aceptar/repetir
-                terminado = true;
-                detenerCamara();
-                descsPreview.current = descriptoresPorPose;
-                setTomas(fotosPorPose);
-                setEstado('preview');
-                return;
-              }
-            } else {
-              // Login: una sola muestra promediada → listo
-              terminado = true;
-              setEstado('exito');
-              setMensaje('¡Rostro verificado!');
-              setTimeout(() => {
-                if (!activo) return;
-                detenerCamara();
-                onCapturado([muestra], foto);
-              }, 400);
+              programarSiguiente();
               return;
             }
-          }
 
-          cuadroId = requestAnimationFrame(analizarCuadro);
+            const encuadre = evaluarEncuadre(deteccion.detection.box, video.videoWidth, video.videoHeight);
+            if (encuadre !== 'OK') {
+              setEncuadreOk(false);
+              setMensaje(MSG_ENCUADRE[encuadre]);
+              resetHold();
+              programarSiguiente();
+              return;
+            }
+            setEncuadreOk(true);
+
+            // ¿Se cumple la condición para (seguir) capturando?
+            const paso = modo === 'enrolar' ? pasos[idxPaso] : null;
+            const condicionOk = paso ? poseCumple(paso.tipo, desviacionYaw(deteccion.landmarks)) : true;
+
+            if (!condicionOk) {
+              // Rompió la pose: reinicia el conteo de "quieto"
+              if (paso) setMensaje(paso.texto);
+              resetHold();
+              programarSiguiente();
+              return;
+            }
+
+            // Arranca o continúa el "quédate quieto"
+            if (holdInicio === null) {
+              holdInicio = performance.now();
+              buffer = [];
+            }
+            // Si esta detección trajo descriptor (estamos en hold), lo guardamos
+            const desc = (deteccion as any).descriptor as Float32Array | undefined;
+            if (desc) buffer.push(Array.from(desc));
+
+            const objetivo = modo === 'enrolar' ? MS_QUIETO_ENROLAR : MS_QUIETO_LOGIN;
+            const transcurrido = performance.now() - holdInicio;
+            setProgreso(Math.min(1, transcurrido / objetivo));
+            setMensaje(paso ? `${paso.texto} · mantente quieto` : 'Quédate quieto un momento...');
+
+            if (transcurrido >= objetivo && buffer.length >= MIN_MUESTRAS_POSE) {
+              const muestra = promediarDescriptores(buffer);
+              const foto = capturarFoto(video);
+
+              if (modo === 'enrolar') {
+                descriptoresPorPose.push(muestra);
+                fotosPorPose.push(foto);
+                idxPaso += 1;
+                setPasoActual(idxPaso);
+                resetHold();
+                if (idxPaso >= pasos.length) {
+                  // Todas las poses listas → preview para aceptar/repetir
+                  terminado = true;
+                  detenerCamara();
+                  descsPreview.current = descriptoresPorPose;
+                  setTomas(fotosPorPose);
+                  setEstado('preview');
+                  return;
+                }
+              } else {
+                // Login: una sola muestra promediada → listo
+                terminado = true;
+                setEstado('exito');
+                setMensaje('¡Rostro verificado!');
+                setTimeout(() => {
+                  if (!activo) return;
+                  detenerCamara();
+                  onCapturado([muestra], foto);
+                }, 400);
+                return;
+              }
+            }
+
+            programarSiguiente();
+          } catch {
+            if (!activo || terminado) return;
+            // Error transitorio (video aún en 0x0, hipo del modelo): reintenta el
+            // siguiente cuadro; si es persistente, muestra error en vez de congelarse.
+            erroresSeguidos++;
+            if (erroresSeguidos >= 20) { fallar('La cámara tuvo un problema. Toca Reintentar.'); return; }
+            programarSiguiente();
+          }
         };
         cuadroId = requestAnimationFrame(analizarCuadro);
       } catch (e: any) {
@@ -302,30 +253,7 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
 
   // ===== Preview de enrolamiento: aceptar o repetir =====
   if (estado === 'preview') {
-    return (
-      <div className="flex flex-col items-center gap-4 w-full">
-        <p className="text-sm font-medium text-ink text-center">Revisa las tomas de tu rostro</p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {tomas.map((f, i) => (
-            <div key={i} className="flex flex-col items-center gap-1">
-              <img src={f} alt={pasos[i]?.etiqueta ?? `Toma ${i + 1}`}
-                className="w-20 h-20 object-cover rounded-xl border border-gray-200 [transform:scaleX(-1)]" />
-              <span className="text-[11px] text-muted">{pasos[i]?.etiqueta ?? `Toma ${i + 1}`}</span>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-3 w-full max-w-md">
-          <button onClick={repetir}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50">
-            <RotateCcw size={15} /> Repetir
-          </button>
-          <button onClick={aceptarPreview}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700">
-            <Check size={16} /> Aceptar y guardar
-          </button>
-        </div>
-      </div>
-    );
+    return <PreviewEnrolamiento tomas={tomas} pasos={pasos} onAceptar={aceptarPreview} onRepetir={repetir} />;
   }
 
   return (

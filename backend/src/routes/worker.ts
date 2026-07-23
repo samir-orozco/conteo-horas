@@ -1,12 +1,65 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma } from '@prisma/client';
-import { toZonedTime } from 'date-fns-tz';
 import crypto from 'crypto';
 import { prisma } from '../index';
 import { esDescriptorValido, mejorCoincidencia } from '../utils/rostro';
 import { enviarTelegram } from '../utils/telegram';
+import { notificar } from '../utils/notificaciones';
+import { rangoDiaBogota } from '../utils/fechas';
+import { distanciaMetros } from '../utils/geo';
+import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido } from '../utils/kioscoConfig';
 
-const TZ = 'America/Bogota';
+const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+
+// Motivos de novedad válidos (mismos de la vista interna del colaborador)
+const TIPOS_NOVEDAD = new Set([
+  'VACACIONES', 'INCAPACIDAD_EPS', 'INCAPACIDAD_ARL', 'LICENCIA_MATERNIDAD', 'LICENCIA_PATERNIDAD',
+  'LICENCIA_LUTO', 'CALAMIDAD', 'MEDICO', 'PERSONAL', 'NO_REMUNERADO', 'OTRO',
+]);
+
+// Ventana máxima para considerar que una entrada abierta es el turno en curso al
+// marcar salida. Cubre turnos que cruzan medianoche (ej. 22:00→06:00) sin atar por
+// error una salida a un turno olvidado de días atrás (que el auto-cierre ya maneja).
+const VENTANA_TURNO_MS = 18 * 60 * 60 * 1000;
+
+// Candado en memoria contra marcas dobles concurrentes del mismo colaborador
+// (reintento de red, doble pestaña). El kiosco corre en un único proceso Node.
+const marcandoAhora = new Set<string>();
+
+// Límite de rate para los endpoints públicos del kiosco (anti fuerza bruta / enumeración)
+const rlPublico = { config: { rateLimit: { max: 12, timeWindow: '1 minute' } } };
+
+// Cachea los descriptores faciales enrolados por empresa unos segundos: los
+// reintentos de login-rostro (lo normal es 2-3 seguidos) no vuelven a golpear la BD.
+// TTL corto para que un enrolamiento nuevo entre en efecto casi de inmediato.
+const CACHE_ROSTROS_MS = 30_000;
+type Enrolado = { id: string; nombre: string; apellido: string; cargo: string | null; cedula: string; empresaId: string; rostroDescriptor: Prisma.JsonValue };
+const cacheRostros = new Map<string, { ts: number; enrolados: Enrolado[] }>();
+async function enroladosDeEmpresa(empresaId: string): Promise<Enrolado[]> {
+  const hit = cacheRostros.get(empresaId);
+  if (hit && Date.now() - hit.ts < CACHE_ROSTROS_MS) return hit.enrolados;
+  const enrolados = await prisma.colaborador.findMany({
+    where: { empresaId, activo: true, rostroDescriptor: { not: Prisma.DbNull } },
+    select: { id: true, nombre: true, apellido: true, cargo: true, cedula: true, empresaId: true, rostroDescriptor: true },
+  });
+  cacheRostros.set(empresaId, { ts: Date.now(), enrolados });
+  return enrolados;
+}
+
+// Foto de verificación facial: data URI JPEG pequeño tomado en el navegador al
+// marcar. Valida el prefijo, el tamaño y que los bytes empiecen con la firma JPEG
+// (FF D8 FF), para no almacenar datos arbitrarios en la columna.
+function fotoValida(foto: unknown): foto is string {
+  const PREFIJO = 'data:image/jpeg;base64,';
+  if (typeof foto !== 'string' || !foto.startsWith(PREFIJO) || foto.length > 300_000) return false;
+  try {
+    const cabecera = Buffer.from(foto.slice(PREFIJO.length, PREFIJO.length + 24), 'base64');
+    return cabecera.length >= 3 && cabecera[0] === 0xff && cabecera[1] === 0xd8 && cabecera[2] === 0xff;
+  } catch {
+    return false;
+  }
+}
 
 // Alerta de llegada tarde por Telegram (si la empresa lo activó). No bloquea la marca.
 async function alertarTardanzaTelegram(empresaId: string, nombre: string, ahoraBog: Date, minutosTarde: number) {
@@ -21,68 +74,40 @@ async function alertarTardanzaTelegram(empresaId: string, nombre: string, ahoraB
   await enviarTelegram(map.TELEGRAM_CHAT_ID, `⚠️ <b>${nombre}</b> llegó tarde\n🕐 ${hora} · ${tardeTxt} tarde`);
 }
 
-// ¿La empresa exige dispositivos autorizados para el kiosco?
-async function exigeDispositivo(empresaId: string): Promise<boolean> {
-  const cfg = await prisma.configuracion.findUnique({
-    where: { empresaId_clave: { empresaId, clave: 'KIOSCO_SOLO_DISPOSITIVOS' } },
-  });
-  return cfg?.valor === '1';
-}
-
-// Geocerco: la empresa puede exigir que la marca se haga dentro de un radio
-// de su ubicación (GPS del teléfono). Se guarda en Configuración → Marcación.
-type GeoCfg = { lat: number; lng: number; radio: number };
-async function geocercoConfig(empresaId: string): Promise<GeoCfg | null> {
-  const cfgs = await prisma.configuracion.findMany({
-    where: { empresaId, clave: { in: ['GEO_EXIGIR', 'GEO_LAT', 'GEO_LNG', 'GEO_RADIO'] } },
-  });
-  const map = Object.fromEntries(cfgs.map(c => [c.clave, c.valor]));
-  if (map.GEO_EXIGIR !== '1') return null;
-  const lat = Number(map.GEO_LAT), lng = Number(map.GEO_LNG);
-  const radio = Number(map.GEO_RADIO) || 150;
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null; // activado pero sin ubicación fijada
-  return { lat, lng, radio };
-}
-
-// Distancia en metros entre dos coordenadas (fórmula de Haversine).
-function distanciaMetros(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371000;
-  const rad = (d: number) => (d * Math.PI) / 180;
-  const dLat = rad(lat2 - lat1);
-  const dLng = rad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
-
-// ¿La empresa permite marcar con cédula? (por defecto sí; se desactiva en Configuración → Marcación)
-async function permiteCedula(empresaId: string): Promise<boolean> {
-  const cfg = await prisma.configuracion.findUnique({
-    where: { empresaId_clave: { empresaId, clave: 'KIOSCO_PERMITE_CEDULA' } },
-  });
-  return cfg?.valor !== '0';
-}
-
-// Foto de verificación facial: JPEG base64 pequeño tomado en el navegador al marcar
-function fotoValida(foto: unknown): foto is string {
-  return typeof foto === 'string' && foto.startsWith('data:image/jpeg;base64,') && foto.length < 300_000;
-}
-
-const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
-const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
-// Motivos de novedad válidos (mismos de la vista interna del colaborador)
-const TIPOS_NOVEDAD = new Set([
-  'VACACIONES', 'INCAPACIDAD_EPS', 'INCAPACIDAD_ARL', 'LICENCIA_MATERNIDAD', 'LICENCIA_PATERNIDAD',
-  'LICENCIA_LUTO', 'CALAMIDAD', 'MEDICO', 'PERSONAL', 'NO_REMUNERADO', 'OTRO',
-]);
-
-async function dispositivoValido(empresaId: string, deviceToken?: string): Promise<boolean> {
-  if (!deviceToken) return false;
-  const disp = await prisma.dispositivoKiosco.findUnique({ where: { token: deviceToken } });
-  if (!disp || disp.empresaId !== empresaId) return false;
-  await prisma.dispositivoKiosco.update({ where: { id: disp.id }, data: { ultimoUso: new Date() } });
-  return true;
-}
+// Esquemas de body: rechazan tipos inesperados (p. ej. `cedula` como objeto de
+// filtro Prisma) ANTES del handler → cierran la inyección de operadores.
+const loginSchema = {
+  body: {
+    type: 'object', additionalProperties: false,
+    required: ['cedula', 'marcadorToken'],
+    properties: {
+      cedula: { type: 'string', minLength: 1, maxLength: 30 },
+      marcadorToken: { type: 'string', minLength: 1, maxLength: 100 },
+      deviceToken: { type: 'string', maxLength: 100 },
+    },
+  },
+};
+const loginRostroSchema = {
+  body: {
+    type: 'object', additionalProperties: false,
+    required: ['descriptor', 'marcadorToken'],
+    properties: {
+      descriptor: { type: 'array', items: { type: 'number' }, maxItems: 256 },
+      marcadorToken: { type: 'string', minLength: 1, maxLength: 100 },
+      deviceToken: { type: 'string', maxLength: 100 },
+    },
+  },
+};
+const vincularSchema = {
+  body: {
+    type: 'object', additionalProperties: false,
+    required: ['marcadorToken', 'codigo'],
+    properties: {
+      marcadorToken: { type: 'string', minLength: 1, maxLength: 100 },
+      codigo: { type: 'string', minLength: 1, maxLength: 12 },
+    },
+  },
+};
 
 // Nota: el kiosco NUNCA se bloquea por mora o suspensión — los colaboradores
 // siguen marcando sus horas; el cobro se gestiona en el panel del admin.
@@ -101,7 +126,7 @@ export default async function workerRoutes(app: FastifyInstance) {
   });
 
   // Vincula este dispositivo al kiosco con el código de 6 dígitos que genera el admin
-  app.post('/vincular', async (request, reply) => {
+  app.post('/vincular', { ...rlPublico, schema: vincularSchema }, async (request, reply) => {
     const { marcadorToken, codigo } = request.body as { marcadorToken: string; codigo: string };
     const empresa = await prisma.empresa.findUnique({ where: { marcadorToken } });
     if (!empresa || !empresa.activa) return reply.code(404).send({ error: 'Link de marcación inválido' });
@@ -128,9 +153,8 @@ export default async function workerRoutes(app: FastifyInstance) {
   });
 
   // Login del kiosco con cédula, amarrado al link único de la empresa
-  app.post('/login', async (request, reply) => {
+  app.post('/login', { ...rlPublico, schema: loginSchema }, async (request, reply) => {
     const { cedula, marcadorToken, deviceToken } = request.body as { cedula: string; marcadorToken: string; deviceToken?: string };
-    if (!marcadorToken) return reply.code(400).send({ error: 'Link de marcación inválido' });
 
     const empresa = await prisma.empresa.findUnique({ where: { marcadorToken } });
     if (!empresa || !empresa.activa) return reply.code(404).send({ error: 'Link de marcación inválido' });
@@ -159,13 +183,15 @@ export default async function workerRoutes(app: FastifyInstance) {
   });
 
   // Login del kiosco con reconocimiento facial: el navegador ya calculó el
-  // descriptor (128 floats) con face-api.js y ya pasó la prueba de vida
-  // (parpadeo). El servidor solo compara contra los enrolados de esa empresa.
-  app.post('/login-rostro', async (request, reply) => {
+  // descriptor (128 floats) con face-api.js tras una captura estable. El servidor
+  // compara contra los enrolados de esa empresa.
+  // OJO: el descriptor lo calcula el cliente; hoy no hay liveness ni anti-replay en
+  // el servidor, así que la foto adjunta debe tomarse como evidencia, no como
+  // prueba fuerte de identidad (pendiente: liveness real / reto firmado).
+  app.post('/login-rostro', { ...rlPublico, schema: loginRostroSchema }, async (request, reply) => {
     const { descriptor, marcadorToken, deviceToken } = request.body as {
       descriptor: unknown; marcadorToken: string; deviceToken?: string;
     };
-    if (!marcadorToken) return reply.code(400).send({ error: 'Link de marcación inválido' });
     if (!esDescriptorValido(descriptor)) return reply.code(400).send({ error: 'Rostro no capturado correctamente' });
 
     const empresa = await prisma.empresa.findUnique({ where: { marcadorToken } });
@@ -177,11 +203,7 @@ export default async function workerRoutes(app: FastifyInstance) {
       }
     }
 
-    const enrolados = await prisma.colaborador.findMany({
-      where: { empresaId: empresa.id, activo: true, rostroDescriptor: { not: Prisma.DbNull } },
-      select: { id: true, nombre: true, apellido: true, cargo: true, cedula: true, empresaId: true, rostroDescriptor: true },
-    });
-    const match = mejorCoincidencia(descriptor, enrolados);
+    const match = mejorCoincidencia(descriptor, await enroladosDeEmpresa(empresa.id));
     if (!match) return reply.code(401).send({ error: 'Rostro no reconocido. Intenta de nuevo o marca con tu cédula.' });
 
     const col = match.colaborador;
@@ -192,29 +214,23 @@ export default async function workerRoutes(app: FastifyInstance) {
     return { token, colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo } };
   });
 
-  // Estado del día: retorna si hay entrada abierta (sin salida)
+  // Estado del día: retorna si hay entrada abierta (sin salida). Select mínimo: no
+  // trae las fotos (LongText) ni el resto de columnas que el kiosco no usa.
   app.get('/estado', { preHandler: [app.authenticate] }, async (request) => {
     const payload = (request as any).user as { id: string; rol: string };
     if (payload.rol !== 'WORKER') return { error: 'No autorizado' };
 
-    const ahoraBog = toZonedTime(new Date(), TZ);
-    const inicioDia = new Date(Date.UTC(
-      ahoraBog.getFullYear(), ahoraBog.getMonth(), ahoraBog.getDate(), 5, 0, 0
-    )); // 00:00 Bogotá = 05:00 UTC
-    const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
-
-    const registrosHoy = await prisma.registro.findMany({
+    const abierto = await prisma.registro.findFirst({
       where: {
         colaboradorId: payload.id,
-        fecha: { gte: inicioDia, lt: finDia },
+        entrada: { gte: new Date(Date.now() - VENTANA_TURNO_MS) },
+        salida: null,
       },
-      orderBy: { creadoEn: 'asc' },
+      orderBy: { creadoEn: 'desc' },
+      select: { entrada: true },
     });
-
-    const abierto = registrosHoy.find(r => r.entrada && !r.salida) ?? null;
     return {
-      registrosHoy,
-      entradaAbierta: abierto,
+      entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
       dentroAhora: !!abierto,
     };
   });
@@ -224,104 +240,120 @@ export default async function workerRoutes(app: FastifyInstance) {
   app.post('/marcar', { preHandler: [app.authenticate] }, async (request, reply) => {
     const payload = (request as any).user as { id: string; rol: string; empresaId: string };
     if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
-    const { foto, lat, lng } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown };
-    const fotoGuardar = fotoValida(foto) ? foto : null;
 
-    // Geocerco: si la empresa lo exige, la marca debe venir dentro del radio.
-    const geo = await geocercoConfig(payload.empresaId);
-    if (geo) {
-      const latN = Number(lat), lngN = Number(lng);
-      if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
-        return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
-      }
-      const dist = Math.round(distanciaMetros(latN, lngN, geo.lat, geo.lng));
-      if (dist > geo.radio) {
-        return reply.code(403).send({
-          error: `Estás fuera de la ubicación de la empresa (a ${dist} m). Debes marcar desde el sitio de trabajo.`,
-          codigo: 'FUERA_DE_UBICACION', distancia: dist, radio: geo.radio,
-        });
-      }
+    // Evita marcas dobles concurrentes del mismo colaborador (reintento/doble tap).
+    if (marcandoAhora.has(payload.id)) {
+      return reply.code(409).send({ error: 'Tu marca se está procesando, espera un momento.' });
     }
+    marcandoAhora.add(payload.id);
+    try {
+      const { foto, lat, lng } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown };
+      const fotoGuardar = fotoValida(foto) ? foto : null;
 
-    const ahora = new Date();
-    const ahoraBog = toZonedTime(ahora, TZ);
-    const inicioDia = new Date(Date.UTC(
-      ahoraBog.getFullYear(), ahoraBog.getMonth(), ahoraBog.getDate(), 5, 0, 0
-    ));
-    const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
+      // Geocerco: si la empresa lo exige, la marca debe venir dentro del radio.
+      const geo = await geocercoConfig(payload.empresaId);
+      if (geo) {
+        const latN = Number(lat), lngN = Number(lng);
+        if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
+          return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
+        }
+        const dist = Math.round(distanciaMetros(latN, lngN, geo.lat, geo.lng));
+        if (dist > geo.radio) {
+          return reply.code(403).send({
+            error: `Estás fuera de la ubicación de la empresa (a ${dist} m). Debes marcar desde el sitio de trabajo.`,
+            codigo: 'FUERA_DE_UBICACION', distancia: dist, radio: geo.radio,
+          });
+        }
+      }
 
-    const abierto = await prisma.registro.findFirst({
-      where: {
-        colaboradorId: payload.id,
-        fecha: { gte: inicioDia, lt: finDia },
-        entrada: { not: null },
-        salida: null,
-      },
-      orderBy: { creadoEn: 'asc' },
-    });
+      const ahora = new Date();
+      const { ahoraBog, inicioDia, finDia } = rangoDiaBogota(ahora);
 
-    // Festivo legal (global) o propio de la empresa del colaborador
-    const col = await prisma.colaborador.findUnique({
-      where: { id: payload.id },
-      include: { horario: { include: { franjas: true } } },
-    });
-    const festHoy = await prisma.diaFestivo.findFirst({
-      where: {
-        fecha: { gte: inicioDia, lt: finDia },
-        OR: [{ empresaId: null }, { empresaId: col?.empresaId }],
-      },
-    });
-    const tipo = festHoy ? 'FESTIVO' : 'NORMAL';
-
-    if (abierto) {
-      const updated = await prisma.registro.update({
-        where: { id: abierto.id },
-        data: { salida: ahora, ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}) },
+      // Turno abierto en curso: se busca por ventana (no por día calendario), para
+      // que un turno que cruzó medianoche encuentre su entrada y registre salida en
+      // vez de crear una entrada nueva.
+      const abierto = await prisma.registro.findFirst({
+        where: {
+          colaboradorId: payload.id,
+          entrada: { gte: new Date(ahora.getTime() - VENTANA_TURNO_MS) },
+          salida: null,
+        },
+        orderBy: { creadoEn: 'desc' },
       });
-      // ¿Salió antes de la hora de fin de su franja de hoy? (para pedir motivo)
-      let salidaTemprana = false;
-      const horario = col?.horario;
-      if (horario && horario.activo && !festHoy) {
-        const franja = horario.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
-        if (franja) {
-          const finMin = minutosDe(franja.horaSalida);
-          const iniMin = minutosDe(franja.horaEntrada);
-          // Solo turnos que no cruzan medianoche (caso común de salida temprana)
-          if (finMin > iniMin) {
-            const salidaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
+
+      // Festivo legal (global) o propio de la empresa del colaborador
+      const col = await prisma.colaborador.findUnique({
+        where: { id: payload.id },
+        include: { horario: { include: { franjas: true } } },
+      });
+      const festHoy = await prisma.diaFestivo.findFirst({
+        where: {
+          fecha: { gte: inicioDia, lt: finDia },
+          OR: [{ empresaId: null }, { empresaId: col?.empresaId }],
+        },
+      });
+      const tipo = festHoy ? 'FESTIVO' : 'NORMAL';
+
+      if (abierto) {
+        const updated = await prisma.registro.update({
+          where: { id: abierto.id },
+          data: { salida: ahora, ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}) },
+        });
+        // ¿Salió antes de la hora de fin de su franja? (para pedir motivo).
+        // Normaliza franjas que cruzan medianoche (fin < inicio) sumando 24h.
+        let salidaTemprana = false;
+        const horario = col?.horario;
+        if (horario && horario.activo && !festHoy) {
+          const franja = horario.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
+          if (franja) {
+            const iniMin = minutosDe(franja.horaEntrada);
+            let finMin = minutosDe(franja.horaSalida);
+            const cruzaMedianoche = finMin <= iniMin;
+            if (cruzaMedianoche) finMin += 1440;
+            let salidaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
+            if (cruzaMedianoche && salidaMin < iniMin) salidaMin += 1440; // salió pasada la medianoche
             if (salidaMin < finMin - (horario.toleranciaMin ?? 0)) salidaTemprana = true;
           }
         }
-      }
-      return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana };
-    } else {
-      // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
-      const entradasPrevias = await prisma.registro.count({
-        where: { colaboradorId: payload.id, fecha: { gte: inicioDia, lt: finDia }, entrada: { not: null } },
-      });
-      const nuevo = await prisma.registro.create({
-        data: {
-          colaboradorId: payload.id,
-          fecha: inicioDia,
-          entrada: ahora,
-          tipo: tipo as any,
-          ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
-        },
-      });
+        return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana };
+      } else {
+        // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
+        const entradasPrevias = await prisma.registro.count({
+          where: { colaboradorId: payload.id, fecha: { gte: inicioDia, lt: finDia }, entrada: { not: null } },
+        });
+        const nuevo = await prisma.registro.create({
+          data: {
+            colaboradorId: payload.id,
+            fecha: inicioDia,
+            entrada: ahora,
+            tipo: tipo as any,
+            ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
+          },
+        });
 
-      // Alerta de llegada tarde por Telegram (primera entrada del día, día laboral)
-      const horarioE = col?.horario;
-      if (entradasPrevias === 0 && col && !festHoy && horarioE?.activo) {
-        const franja = horarioE.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
-        if (franja) {
-          const entradaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
-          const tarde = entradaMin - (minutosDe(franja.horaEntrada) + (horarioE.toleranciaMin ?? 0));
-          if (tarde > 0) {
-            alertarTardanzaTelegram(col.empresaId, `${col.nombre} ${col.apellido}`, ahoraBog, tarde).catch(() => {});
+        // Alerta de llegada tarde por Telegram (primera entrada del día, día laboral)
+        const horarioE = col?.horario;
+        if (entradasPrevias === 0 && col && !festHoy && horarioE?.activo) {
+          const franja = horarioE.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
+          if (franja) {
+            const entradaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
+            const tarde = entradaMin - (minutosDe(franja.horaEntrada) + (horarioE.toleranciaMin ?? 0));
+            if (tarde > 0) {
+              alertarTardanzaTelegram(col.empresaId, `${col.nombre} ${col.apellido}`, ahoraBog, tarde).catch(() => {});
+              const tardeTxt = tarde >= 60 ? `${Math.floor(tarde / 60)}h ${tarde % 60}min` : `${tarde} min`;
+              notificar(col.empresaId, {
+                tipo: 'LLEGADA_TARDE',
+                titulo: `${col.nombre} ${col.apellido} llegó tarde`,
+                cuerpo: `Marcó entrada con ${tardeTxt} de retraso.`,
+                entidad: 'colaborador', entidadId: col.id,
+              });
+            }
           }
         }
+        return { accion: 'ENTRADA', registro: nuevo, hora: ahora };
       }
-      return { accion: 'ENTRADA', registro: nuevo, hora: ahora };
+    } finally {
+      marcandoAhora.delete(payload.id);
     }
   });
 
@@ -333,18 +365,30 @@ export default async function workerRoutes(app: FastifyInstance) {
     const { tipo, descripcion } = (request.body ?? {}) as { tipo?: string; descripcion?: string };
     if (!tipo || !TIPOS_NOVEDAD.has(tipo)) return reply.code(400).send({ error: 'Motivo inválido' });
 
-    const ahoraBog = toZonedTime(new Date(), TZ);
-    const fechaDia = new Date(Date.UTC(ahoraBog.getFullYear(), ahoraBog.getMonth(), ahoraBog.getDate(), 5, 0, 0));
+    const { inicioDia } = rangoDiaBogota();
     const permiso = await prisma.permiso.create({
       data: {
         colaboradorId: payload.id,
         tipo: tipo as any,
         descripcion: (descripcion || '').trim() || null,
-        fechaInicio: fechaDia,
-        fechaFin: fechaDia,
+        fechaInicio: inicioDia,
+        fechaFin: inicioDia,
         aprobado: false,
       },
     });
+    // Avisa al admin que hay una novedad por aprobar (campana del menú)
+    const quien = await prisma.colaborador.findUnique({
+      where: { id: payload.id },
+      select: { nombre: true, apellido: true, empresaId: true },
+    });
+    if (quien) {
+      notificar(quien.empresaId, {
+        tipo: 'NOVEDAD_PENDIENTE',
+        titulo: `Novedad por aprobar: ${quien.nombre} ${quien.apellido}`,
+        cuerpo: `Reportó una novedad (${tipo}) pendiente de tu aprobación.`,
+        entidad: 'colaborador', entidadId: payload.id,
+      });
+    }
     return reply.code(201).send({ ok: true, id: permiso.id });
   });
 }

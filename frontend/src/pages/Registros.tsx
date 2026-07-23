@@ -14,6 +14,8 @@ type Registro = {
   // null = sin horario asignado o día que no aplica; 0 = a tiempo; >0 = minutos tarde
   minutosTarde: number | null;
   tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
+  // El sistema cerró el turno (la persona no marcó salida): la hora es estimada y hay que revisarla
+  salidaEstimada?: boolean;
 };
 type Fotos = { fotoEntrada: string | null; fotoSalida: string | null };
 
@@ -128,7 +130,16 @@ export default function Registros() {
                 <td className="px-4 py-3 font-medium text-gray-800">{r.colaborador.nombre} {r.colaborador.apellido}</td>
                 <td className="px-4 py-3 text-gray-600 capitalize">{format(toZonedTime(new Date(r.fecha), TZ), "d MMM yyyy", { locale: es })}</td>
                 <td className="px-4 py-3 text-center text-green-700 font-mono">{fmtHora(r.entrada)}</td>
-                <td className="px-4 py-3 text-center text-red-600 font-mono">{fmtHora(r.salida)}</td>
+                <td className="px-4 py-3 text-center">
+                  {r.salidaEstimada ? (
+                    <span title="El sistema cerró el turno porque no marcó salida. Revisa la hora."
+                      className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 whitespace-nowrap">
+                      No marcó salida{r.salida ? ` · ~${fmtHora(r.salida)}` : ''}
+                    </span>
+                  ) : (
+                    <span className="text-red-600 font-mono">{fmtHora(r.salida)}</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-center">
                   {r.minutosTarde === null ? (
                     <span className="text-gray-300">—</span>

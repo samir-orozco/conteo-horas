@@ -11,25 +11,26 @@ datasource db {
 // ============ SaaS / Multi-tenant ============
 
 model Empresa {
-  id            String        @id @default(cuid())
-  nombre        String
-  nit           String        @unique
-  email         String
-  telefono      String?
+  id             String              @id @default(cuid())
+  nombre         String
+  nit            String              @unique
+  email          String
+  telefono       String?
   // Token del link único del kiosco de marcación: /marcador/<token>
-  marcadorToken String        @unique @default(cuid())
+  marcadorToken  String              @unique @default(cuid())
   // Acceso ilimitado (cortesía): nunca se le cobra ni se bloquea
-  exentaPago    Boolean       @default(false)
-  activa        Boolean       @default(true)
-  creadoEn      DateTime      @default(now())
-  actualizadoEn DateTime      @updatedAt
-  usuarios      Usuario[]
-  colaboradores Colaborador[]
-  festivos      DiaFestivo[]
-  configuracion Configuracion[]
-  suscripcion   Suscripcion?
-  horarios      Horario[]
-  dispositivos  DispositivoKiosco[]
+  exentaPago     Boolean             @default(false)
+  activa         Boolean             @default(true)
+  creadoEn       DateTime            @default(now())
+  actualizadoEn  DateTime            @updatedAt
+  usuarios       Usuario[]
+  colaboradores  Colaborador[]
+  festivos       DiaFestivo[]
+  configuracion  Configuracion[]
+  suscripcion    Suscripcion?
+  horarios       Horario[]
+  dispositivos   DispositivoKiosco[]
+  notificaciones Notificacion[]
 
   @@map("empresas")
 }
@@ -109,16 +110,16 @@ model JornadaVigencia {
 
 // Tipos de hora y recargos — CST + Ley 2466 de 2025, con vigencias por fecha
 model TipoHora {
-  id            String    @id @default(cuid())
-  nombre        String
-  codigo        String // HOD, HON, HED, HEN, HDD, HND, HEDD, HEND
-  horaInicio    Int // 0-23
-  horaFin       Int // 0-23
-  recargo       Float // factor sobre hora ordinaria (ej: 1.35)
-  aplica        Json // ["LUNES",...,"DOMINGO","FESTIVO"] — MySQL no soporta arrays escalares
-  vigenteDesde  DateTime
-  vigenteHasta  DateTime? // null = vigente indefinidamente
-  activo        Boolean   @default(true)
+  id           String    @id @default(cuid())
+  nombre       String
+  codigo       String // HOD, HON, HED, HEN, HDD, HND, HEDD, HEND
+  horaInicio   Int // 0-23
+  horaFin      Int // 0-23
+  recargo      Float // factor sobre hora ordinaria (ej: 1.35)
+  aplica       Json // ["LUNES",...,"DOMINGO","FESTIVO"] — MySQL no soporta arrays escalares
+  vigenteDesde DateTime
+  vigenteHasta DateTime? // null = vigente indefinidamente
+  activo       Boolean   @default(true)
 
   @@unique([codigo, vigenteDesde])
   @@map("tipos_hora")
@@ -134,7 +135,7 @@ model Horario {
   empresa       Empresa         @relation(fields: [empresaId], references: [id])
   nombre        String
   toleranciaMin Int             @default(10) // minutos de gracia antes de contar tardanza
-  almuerzoMin   Int             @default(0)  // minutos de almuerzo que NO se pagan (se descuentan de la jornada)
+  almuerzoMin   Int             @default(0) // minutos de almuerzo que NO se pagan (se descuentan de la jornada)
   activo        Boolean         @default(true)
   creadoEn      DateTime        @default(now())
   // Un horario tiene varias franjas: ej. L-V 08:00-17:00 y Sáb 08:00-12:00
@@ -145,9 +146,9 @@ model Horario {
 }
 
 model FranjaHorario {
-  id          String  @id @default(cuid())
-  horarioId   String
-  horario     Horario @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+  id            String  @id @default(cuid())
+  horarioId     String
+  horario       Horario @relation(fields: [horarioId], references: [id], onDelete: Cascade)
   dias          Json // ["LUNES",...,"SABADO"]
   horaEntrada   String // "08:00" hora local Bogotá
   horaSalida    String // "17:00" (puede cruzar medianoche, ej. "21:00"→"05:00")
@@ -171,79 +172,83 @@ model DispositivoKiosco {
 }
 
 model Colaborador {
-  id             String     @id @default(cuid())
-  empresaId      String
-  empresa        Empresa    @relation(fields: [empresaId], references: [id])
-  nombre         String
-  apellido       String
-  cedula         String // marcación en kiosco por cédula
-  cargo          String?
-  email          String?
-  telefono       String?
-  fechaNacimiento DateTime?
-  salarioMensual Float
+  id               String     @id @default(cuid())
+  empresaId        String
+  empresa          Empresa    @relation(fields: [empresaId], references: [id])
+  nombre           String
+  apellido         String
+  cedula           String // marcación en kiosco por cédula
+  cargo            String?
+  email            String?
+  telefono         String?
+  fechaNacimiento  DateTime?
+  salarioMensual   Float
   // Reconocimiento facial: descriptor matemático (128 floats), nunca la imagen
   rostroDescriptor Json?
   rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
-  horarioId      String?
-  horario        Horario?   @relation(fields: [horarioId], references: [id])
-  activo         Boolean    @default(true)
+  horarioId        String?
+  horario          Horario?   @relation(fields: [horarioId], references: [id])
+  activo           Boolean    @default(true)
   // Si el mes ya está pagado, el "borrado" se programa para fin de mes
   retiroProgramado DateTime?
-  creadoEn       DateTime   @default(now())
-  actualizadoEn  DateTime   @updatedAt
-  registros      Registro[]
-  permisos       Permiso[]
+  creadoEn         DateTime   @default(now())
+  actualizadoEn    DateTime   @updatedAt
+  registros        Registro[]
+  permisos         Permiso[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
 }
 
 model Registro {
-  id            String       @id @default(cuid())
-  colaboradorId String
-  colaborador   Colaborador  @relation(fields: [colaboradorId], references: [id])
-  fecha         DateTime
-  entrada       DateTime?
-  salida        DateTime?
-  tipo          TipoRegistro @default(NORMAL)
-  observacion   String?
+  id             String       @id @default(cuid())
+  colaboradorId  String
+  colaborador    Colaborador  @relation(fields: [colaboradorId], references: [id])
+  fecha          DateTime
+  entrada        DateTime?
+  salida         DateTime?
+  tipo           TipoRegistro @default(NORMAL)
+  observacion    String?
+  // Salida generada por el auto-cierre (la persona no marcó): se muestra como chip
+  // "No marcó salida" en la columna Salida para que el admin la revise. No toca `tipo`,
+  // así la liquidación del día sigue siendo correcta (NORMAL/FESTIVO).
+  salidaEstimada Boolean      @default(false)
   // Foto de verificación facial al marcar (se elimina automáticamente a los 2 meses)
-  fotoEntrada   String?      @db.LongText
-  fotoSalida    String?      @db.LongText
+  fotoEntrada    String?      @db.LongText
+  fotoSalida     String?      @db.LongText
   // Auditoría de correcciones manuales
-  editadoPor    String?
-  editadoEn     DateTime?
-  creadoEn      DateTime     @default(now())
+  editadoPor     String?
+  editadoEn      DateTime?
+  creadoEn       DateTime     @default(now())
 
   @@map("registros")
 }
 
 model Permiso {
-  id            String      @id @default(cuid())
-  colaboradorId String
-  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id])
-  fechaInicio   DateTime
-  fechaFin      DateTime
-  tipo          TipoPermiso
-  descripcion   String?
-  aprobado      Boolean     @default(false)
+  id              String      @id @default(cuid())
+  colaboradorId   String
+  colaborador     Colaborador @relation(fields: [colaboradorId], references: [id])
+  fechaInicio     DateTime
+  fechaFin        DateTime
+  tipo            TipoPermiso
+  descripcion     String?
+  aprobado        Boolean     @default(false)
   // Evidencia opcional (imagen o PDF) en base64 data URI. LongText por tamaño.
-  evidencia     String?     @db.LongText
-  evidenciaTipo String? // mime, ej. image/jpeg o application/pdf
+  evidencia       String?     @db.LongText
+  evidenciaTipo   String? // mime, ej. image/jpeg o application/pdf
   evidenciaNombre String?
-  creadoEn      DateTime    @default(now())
+  creadoEn        DateTime    @default(now())
 
   @@map("permisos")
 }
 
 model DiaFestivo {
-  id           String   @id @default(cuid())
-  empresaId    String? // null = festivo legal nacional (generado por algoritmo)
-  empresa      Empresa? @relation(fields: [empresaId], references: [id])
-  fecha        DateTime
-  nombre       String
-  creadoEn     DateTime @default(now())
+  id        String   @id @default(cuid())
+  empresaId String? // null = festivo legal nacional (generado por algoritmo)
+  empresa   Empresa? @relation(fields: [empresaId], references: [id])
+  fecha     DateTime
+  nombre    String
+  creadoEn  DateTime @default(now())
 
   @@unique([empresaId, fecha])
   @@map("dias_festivos")
@@ -260,23 +265,44 @@ model Configuracion {
   @@map("configuracion")
 }
 
+// Aviso interno para el admin (campana del menú). Se genera por eventos del sistema.
+model Notificacion {
+  id        String    @id @default(cuid())
+  empresaId String
+  empresa   Empresa   @relation(fields: [empresaId], references: [id])
+  // NO_MARCO_SALIDA | LLEGADA_TARDE | NOVEDAD_PENDIENTE (string por flexibilidad)
+  tipo      String
+  titulo    String
+  cuerpo    String?   @db.Text
+  // Enlace opcional para abrir el detalle desde la campana
+  entidad   String? // 'registro' | 'permiso' | 'colaborador'
+  entidadId String?
+  leida     Boolean   @default(false)
+  leidaEn   DateTime?
+  creadoEn  DateTime  @default(now())
+
+  @@index([empresaId, leida])
+  @@index([empresaId, creadoEn])
+  @@map("notificaciones")
+}
+
 model Usuario {
-  id        String   @id @default(cuid())
-  empresaId String? // null = SUPER_ADMIN (usuario de la plataforma)
-  empresa   Empresa? @relation(fields: [empresaId], references: [id])
-  email     String   @unique
-  password  String
-  nombre    String
-  rol       Rol      @default(ADMIN)
-  activo    Boolean  @default(true)
+  id                 String    @id @default(cuid())
+  empresaId          String? // null = SUPER_ADMIN (usuario de la plataforma)
+  empresa            Empresa?  @relation(fields: [empresaId], references: [id])
+  email              String    @unique
+  password           String
+  nombre             String
+  rol                Rol       @default(ADMIN)
+  activo             Boolean   @default(true)
   // Recuperación de contraseña: token de un solo uso con vencimiento
-  resetToken  String?   @unique
-  resetExpira DateTime?
+  resetToken         String?   @unique
+  resetExpira        DateTime?
   // Verificación del correo al registrarse (evita cuentas con correos falsos)
-  emailVerificado    Boolean @default(false)
+  emailVerificado    Boolean   @default(false)
   verificacionCodigo String? // 6 dígitos, se valida junto con el email (no único: puede repetirse entre cuentas)
   verificacionExpira DateTime?
-  creadoEn  DateTime @default(now())
+  creadoEn           DateTime  @default(now())
 
   @@map("usuarios")
 }

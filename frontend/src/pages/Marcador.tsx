@@ -1,125 +1,56 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { LogIn, LogOut, Check, X, Link2Off, ScanFace, MapPin, RotateCw } from 'lucide-react';
-import axios from 'axios';
-import logoSimplificado from '../assets/logo-simplificado.svg';
-import CamaraRostro from '../components/CamaraRostro';
-import { TIPO_PERMISO_LABEL } from './ColaboradorDetalle';
-
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api' });
-const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-type Colaborador = { id: string; nombre: string; apellido: string; cargo: string | null };
-type Estado = { dentroAhora: boolean; entradaAbierta: { entrada: string } | null };
-type Flash =
-  | { tipo: 'ok'; accion: 'ENTRADA' | 'SALIDA'; hora: string; nombre: string }
-  | { tipo: 'error'; msg: string }
-  | null;
+import { infoKiosco, marcar as apiMarcar, enviarNovedad as apiEnviarNovedad } from './marcador/api';
+import { useSesionKiosco } from './marcador/useSesionKiosco';
+import { useGeolocalizacion } from './marcador/useGeolocalizacion';
+import { useVinculoDispositivo } from './marcador/useVinculoDispositivo';
+import { useFlashResultado } from './marcador/useFlashResultado';
+import PantallaResultado from './marcador/pantallas/PantallaResultado';
+import PantallaVinculacion from './marcador/pantallas/PantallaVinculacion';
+import PantallaLinkInvalido from './marcador/pantallas/PantallaLinkInvalido';
+import PantallaUbicacion from './marcador/pantallas/PantallaUbicacion';
+import PantallaLogin from './marcador/pantallas/PantallaLogin';
+import PantallaSalidaTemprana from './marcador/pantallas/PantallaSalidaTemprana';
+import PantallaMarcar from './marcador/pantallas/PantallaMarcar';
 
 // Kiosco HoraPro — se abre con el link único de cada empresa: /marcador/<token>
+// Orquesta los hooks (sesión, geolocalización, dispositivo, flash) y decide qué
+// pantalla mostrar. La lógica de cada parte vive en pages/marcador/.
 export default function Marcador() {
   const { token: marcadorToken } = useParams<{ token: string }>();
   const [empresa, setEmpresa] = useState<string | null>(null);
   const [linkInvalido, setLinkInvalido] = useState(false);
-
-  // Seguridad: dispositivos autorizados (si la empresa lo activó)
-  const claveDispositivo = `hp_kiosco_${marcadorToken}`;
-  const [requiereVinculo, setRequiereVinculo] = useState(false);
-  const [codigoVinculo, setCodigoVinculo] = useState('');
-  const [errorVinculo, setErrorVinculo] = useState('');
-  const [vinculando, setVinculando] = useState(false);
-
-  const [token, setToken] = useState<string | null>(null);
-  const [colaborador, setColaborador] = useState<Colaborador | null>(null);
-  const [estado, setEstado] = useState<Estado | null>(null);
-  const [flash, setFlash] = useState<Flash>(null);
-  const [cerrandoFlash, setCerrandoFlash] = useState(false);
   const [ahora, setAhora] = useState(new Date());
-  const [marcando, setMarcando] = useState(false);
 
+  // Config del kiosco (viene de /worker/kiosco/:token)
+  const [permiteCedula, setPermiteCedula] = useState(true);
+  const [exigeUbicacion, setExigeUbicacion] = useState(false);
+
+  // Estado del login/UI
+  const [modoRostro, setModoRostro] = useState(false);
+  const [capturaKey, setCapturaKey] = useState(0);
+  const [fotoRostro, setFotoRostro] = useState<string | null>(null);
   const [cedula, setCedula] = useState('');
   const [errorLogin, setErrorLogin] = useState('');
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
+  const [marcando, setMarcando] = useState(false);
 
-  // Método alterno de marcación: reconocimiento facial (corre 100% en el navegador)
-  const [modoRostro, setModoRostro] = useState(false);
-  const [capturaKey, setCapturaKey] = useState(0);
-  // La empresa puede desactivar la cédula (Configuración → Marcación): solo rostro
-  const [permiteCedula, setPermiteCedula] = useState(true);
-  // La empresa puede exigir marcar dentro de su ubicación (geocerco por GPS)
-  const [exigeUbicacion, setExigeUbicacion] = useState(false);
-  // Foto tomada al verificar el rostro: se adjunta a la marcación como evidencia
-  const [fotoRostro, setFotoRostro] = useState<string | null>(null);
-
-  // Salida temprana: al marcar salida antes del horario, se pide motivo + descripción
+  // Salida temprana (se pide motivo antes de confirmar)
   const [salidaTemprana, setSalidaTemprana] = useState<null | { accion: 'ENTRADA' | 'SALIDA'; hora: string }>(null);
   const [novedadTipo, setNovedadTipo] = useState('MEDICO');
   const [novedadDesc, setNovedadDesc] = useState('');
   const [enviandoNovedad, setEnviandoNovedad] = useState(false);
 
-  // Error de ubicación (GPS apagado / permiso negado) con guía para resolverlo
-  const [errorUbic, setErrorUbic] = useState<null | { titulo: string; ayuda: string }>(null);
-  // Ubicación capturada al entrar (antes de la cámara/login). Safari exige que el
-  // permiso se pida desde un toque limpio, por eso va primero y con su propio botón.
-  const [ubicOk, setUbicOk] = useState<null | { lat: number; lng: number }>(null);
-  const [buscandoUbic, setBuscandoUbic] = useState(false);
+  const sesion = useSesionKiosco(marcadorToken);
+  const geo = useGeolocalizacion();
+  const vinculo = useVinculoDispositivo(marcadorToken, () => { setErrorLogin(''); setCapturaKey(k => k + 1); });
 
-  // Reloj en vivo
-  useEffect(() => {
-    const t = setInterval(() => setAhora(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+  const nombreColab = sesion.colaborador ? `${sesion.colaborador.nombre} ${sesion.colaborador.apellido}` : '';
 
-  // Validar el link del kiosco y si exige dispositivo autorizado
-  useEffect(() => {
-    if (!marcadorToken) { setLinkInvalido(true); return; }
-    api.get(`/worker/kiosco/${marcadorToken}`)
-      .then(r => {
-        setEmpresa(r.data.empresa);
-        setExigeUbicacion(r.data.exigeUbicacion === true);
-        if (r.data.permiteCedula === false) {
-          setPermiteCedula(false);
-          setModoRostro(true); // solo rostro: entra directo a la cámara
-        }
-        if (r.data.requiereDispositivo && !localStorage.getItem(claveDispositivo)) {
-          setRequiereVinculo(true);
-        }
-      })
-      .catch(() => setLinkInvalido(true));
-  }, [marcadorToken]);
-
-  const vincular = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setVinculando(true);
-    setErrorVinculo('');
-    try {
-      const r = await api.post('/worker/vincular', { marcadorToken, codigo: codigoVinculo });
-      localStorage.setItem(claveDispositivo, r.data.deviceToken);
-      setRequiereVinculo(false);
-      setCodigoVinculo('');
-      setErrorLogin('');
-      setCapturaKey(k => k + 1); // si venía en modo rostro, la cámara arranca limpia
-    } catch (err: any) {
-      setErrorVinculo(err.response?.data?.error ?? 'Código inválido');
-    } finally {
-      setVinculando(false);
-    }
-  };
-
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-  const cargarEstado = useCallback(async (t: string) => {
-    const r = await api.get('/worker/estado', { headers: { Authorization: `Bearer ${t}` } });
-    setEstado(r.data);
-  }, []);
-
+  // salir(): libera la sesión y deja el kiosco listo para el siguiente colaborador
   const salir = () => {
-    setToken(null);
-    setColaborador(null);
-    setEstado(null);
+    sesion.limpiarSesion();
     setCedula('');
     setErrorLogin('');
     setModoRostro(!permiteCedula); // si solo hay rostro, vuelve a la cámara
@@ -127,15 +58,7 @@ export default function Marcador() {
     setCapturaKey(k => k + 1);
   };
 
-  // Cierra la pantalla de resultado con una animación de salida antes de desmontarla
-  const cerrarFlash = (despues?: () => void) => {
-    setCerrandoFlash(true);
-    setTimeout(() => {
-      setFlash(null);
-      setCerrandoFlash(false);
-      despues?.();
-    }, 320);
-  };
+  const { flash, cerrandoFlash, mostrarFlashOk, mostrarFlashError } = useFlashResultado(salir);
 
   const fallar = (msg: string) => {
     setErrorLogin(msg);
@@ -143,151 +66,94 @@ export default function Marcador() {
     setTimeout(() => setShake(false), 550);
   };
 
+  // Reloj en vivo
+  useEffect(() => {
+    const t = setInterval(() => setAhora(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Validar el link del kiosco y su configuración
+  useEffect(() => {
+    if (!marcadorToken) { setLinkInvalido(true); return; }
+    infoKiosco(marcadorToken)
+      .then(info => {
+        setEmpresa(info.empresa);
+        setExigeUbicacion(info.exigeUbicacion === true);
+        if (info.permiteCedula === false) {
+          setPermiteCedula(false);
+          setModoRostro(true); // solo rostro: entra directo a la cámara
+        }
+        if (info.requiereDispositivo && !vinculo.getDeviceToken()) {
+          vinculo.setRequiereVinculo(true);
+        }
+      })
+      .catch(() => setLinkInvalido(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marcadorToken]);
+
   const ingresar = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorLogin('');
     try {
-      const r = await api.post('/worker/login', {
-        cedula, marcadorToken,
-        deviceToken: localStorage.getItem(claveDispositivo) ?? undefined,
-      });
-      setToken(r.data.token);
-      setColaborador(r.data.colaborador);
-      await cargarEstado(r.data.token);
+      await sesion.ingresar(cedula, vinculo.getDeviceToken());
     } catch (err: any) {
       if (err.response?.data?.codigo === 'DISPOSITIVO_REQUERIDO') {
-        localStorage.removeItem(claveDispositivo); // token revocado o inválido
-        setRequiereVinculo(true);
+        vinculo.olvidarDispositivo();
+        vinculo.setRequiereVinculo(true);
       } else {
-        fallar(err.response?.data?.error ?? 'Cédula no registrada');
+        fallar(err.response?.data?.error ?? 'No pudimos conectarte. Reintenta.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // El descriptor (128 floats) ya viene calculado desde CamaraRostro; la
-  // imagen nunca sale del dispositivo.
+  // El descriptor (128 floats) ya viene calculado desde CamaraRostro; la imagen
+  // nunca sale del dispositivo.
   const loginConRostro = async (descriptor: number[], foto: string) => {
     setErrorLogin('');
     try {
-      const r = await api.post('/worker/login-rostro', {
-        descriptor, marcadorToken,
-        deviceToken: localStorage.getItem(claveDispositivo) ?? undefined,
-      });
+      await sesion.ingresarRostro(descriptor, vinculo.getDeviceToken());
       setFotoRostro(foto);
       setModoRostro(false);
-      setToken(r.data.token);
-      setColaborador(r.data.colaborador);
-      await cargarEstado(r.data.token);
     } catch (err: any) {
       if (err.response?.data?.codigo === 'DISPOSITIVO_REQUERIDO') {
-        // Se mantiene modoRostro: al vincular el dispositivo vuelve a la cámara,
-        // no al formulario de cédula
-        localStorage.removeItem(claveDispositivo);
-        setRequiereVinculo(true);
+        // Se mantiene modoRostro: al vincular vuelve a la cámara, no a la cédula
+        vinculo.olvidarDispositivo();
+        vinculo.setRequiereVinculo(true);
       } else {
         setErrorLogin(err.response?.data?.error ?? 'No pudimos reconocer tu rostro');
       }
     }
   };
 
-  const mostrarFlashOk = (accion: 'ENTRADA' | 'SALIDA', hora: string) => {
-    setFlash({
-      tipo: 'ok',
-      accion,
-      hora: format(new Date(hora), 'HH:mm:ss'),
-      nombre: colaborador ? `${colaborador.nombre} ${colaborador.apellido}` : '',
-    });
-    // Confirmación breve y luego reset suave (sin recargar la página, que en móvil
-    // se sentía lento y reiniciaba de forma extraña). salir() libera la cámara y
-    // deja el kiosco listo para el siguiente colaborador.
-    setTimeout(() => cerrarFlash(salir), 1500);
-  };
-
-  // Pide la ubicación GPS del teléfono (solo si la empresa exige geocerco).
-  // Permite una ubicación reciente en caché (marca más rápido) y espera hasta 15s.
-  const obtenerUbicacion = (): Promise<{ lat: number; lng: number }> =>
-    new Promise((resolve, reject) => {
-      if (!navigator.geolocation) return reject({ code: 0 });
-      navigator.geolocation.getCurrentPosition(
-        pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        err => reject(err),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
-      );
-    });
-
-  // Traduce el error de geolocalización a un mensaje claro y accionable.
-  const mensajeGeo = (e: any): { titulo: string; ayuda: string } => {
-    switch (e?.code) {
-      case 1: // PERMISSION_DENIED
-        return {
-          titulo: 'Permite tu ubicación para marcar',
-          ayuda: esIOS
-            ? 'Toca "aA" (o el ícono junto a la dirección) → Ajustes del sitio → Ubicación → Permitir. También revisa que el navegador tenga acceso a la ubicación en Ajustes del teléfono. Luego reintenta.'
-            : 'Toca el candado junto a la dirección del navegador → Permisos → Ubicación → Permitir. Luego reintenta.',
-        };
-      case 2: // POSITION_UNAVAILABLE (normalmente ubicación apagada)
-        return {
-          titulo: 'Activa la ubicación de tu teléfono',
-          ayuda: 'Enciende el GPS/Ubicación: desliza desde arriba y toca el ícono de Ubicación (o entra a Ajustes → Ubicación). Luego reintenta.',
-        };
-      case 3: // TIMEOUT
-        return {
-          titulo: 'No pudimos ubicarte',
-          ayuda: 'Verifica que tengas señal o acércate a una ventana/lugar abierto, y reintenta.',
-        };
-      default:
-        return {
-          titulo: 'Tu navegador no permite ubicación',
-          ayuda: 'Abre el kiosco en Chrome o Safari actualizado e intenta de nuevo.',
-        };
-    }
-  };
-
-  // Pide la ubicación DIRECTO desde el toque (clave en Safari iOS): getCurrentPosition
-  // se llama de primero, sin nada async antes, para no perder el "gesto de usuario".
-  const activarUbicacion = () => {
-    setErrorUbic(null);
-    if (!navigator.geolocation) { setErrorUbic(mensajeGeo({ code: 0 })); return; }
-    navigator.geolocation.getCurrentPosition(
-      pos => { setUbicOk({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setBuscandoUbic(false); },
-      err => { setBuscandoUbic(false); setErrorUbic(mensajeGeo(err)); },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
-    );
-    setBuscandoUbic(true);
-  };
-
   const marcar = async () => {
-    if (!token || marcando) return;
+    if (!sesion.token || marcando) return;
     setMarcando(true);
-    setErrorUbic(null);
+    geo.setErrorUbic(null);
     try {
       let ubic: { lat?: number; lng?: number } = {};
       if (exigeUbicacion) {
-        // Ya capturamos la ubicación al entrar (gate). Intentamos refrescarla, y si
-        // falla usamos la del gate (permiso ya concedido → esto casi nunca falla).
+        // Ya capturamos la ubicación al entrar (gate). Refrescamos y, si falla,
+        // usamos la del gate (permiso ya concedido → esto casi nunca falla).
         try {
-          ubic = await obtenerUbicacion();
+          ubic = await geo.obtenerUbicacion();
         } catch {
-          if (ubicOk) ubic = ubicOk;
-          else { setMarcando(false); setUbicOk(null); return; }
+          if (geo.ubicOk) ubic = geo.ubicOk;
         }
       }
-      const r = await api.post('/worker/marcar', { foto: fotoRostro ?? undefined, ...ubic }, { headers });
+      const r = await apiMarcar(sesion.token, { foto: fotoRostro ?? undefined, ...ubic });
       // Si salió antes de su horario, primero pedimos el motivo (queda como novedad)
-      if (r.data.accion === 'SALIDA' && r.data.salidaTemprana) {
+      if (r.accion === 'SALIDA' && r.salidaTemprana) {
         setNovedadTipo('MEDICO');
         setNovedadDesc('');
-        setSalidaTemprana({ accion: r.data.accion, hora: r.data.hora });
+        setSalidaTemprana({ accion: r.accion, hora: r.hora });
       } else {
-        mostrarFlashOk(r.data.accion, r.data.hora);
+        mostrarFlashOk(r.accion, r.hora, nombreColab);
       }
     } catch (err: any) {
-      const msg = err.response?.data?.error ?? 'No pudimos registrar tu marcación. Intenta de nuevo.';
-      setFlash({ tipo: 'error', msg });
-      setTimeout(() => cerrarFlash(), 2800);
+      mostrarFlashError(err.response?.data?.error ?? 'No pudimos registrar tu marcación. Intenta de nuevo.');
     } finally {
       setMarcando(false);
     }
@@ -300,320 +166,59 @@ export default function Marcador() {
     if (!omitir) {
       setEnviandoNovedad(true);
       try {
-        await api.post('/worker/novedad', { tipo: novedadTipo, descripcion: novedadDesc }, { headers });
+        await apiEnviarNovedad(sesion.token!, { tipo: novedadTipo, descripcion: novedadDesc });
       } catch { /* la salida ya está guardada; si falla la novedad no bloqueamos */ }
       setEnviandoNovedad(false);
     }
     setSalidaTemprana(null);
-    mostrarFlashOk(accion, hora);
+    mostrarFlashOk(accion, hora, nombreColab);
   };
 
-  // ===== Pantallas de resultado (animadas, pantalla completa) =====
-  if (flash?.tipo === 'ok') {
-    const esEntrada = flash.accion === 'ENTRADA';
+  // ===== Selección de pantalla (mismo orden que antes) =====
+  if (flash) return <PantallaResultado flash={flash} cerrandoFlash={cerrandoFlash} />;
+  if (vinculo.requiereVinculo && !linkInvalido) {
     return (
-      <div className={`min-h-screen flex items-center justify-center p-4 ${esEntrada ? 'bg-green-600' : 'bg-red-600'} ${cerrandoFlash ? 'hp-fade-out' : 'hp-fade-bg'}`}>
-        <div className={`text-center text-white ${cerrandoFlash ? 'hp-pop-out' : ''}`}>
-          <div className="relative mx-auto mb-8 w-36 h-36">
-            <div className="hp-ripple absolute inset-0 rounded-full bg-white/40" />
-            <div className={`relative w-36 h-36 rounded-full bg-white flex items-center justify-center ${cerrandoFlash ? '' : 'hp-pop'}`}>
-              {esEntrada
-                ? <LogIn size={64} className="text-green-600" strokeWidth={2.5} />
-                : <LogOut size={64} className="text-red-600" strokeWidth={2.5} />}
-            </div>
-          </div>
-          <p className={`text-4xl font-extrabold mb-2 ${cerrandoFlash ? '' : 'hp-pop'}`}>{esEntrada ? '¡Entrada registrada!' : '¡Salida registrada!'}</p>
-          <p className="text-xl text-white/90">{flash.nombre}</p>
-          <p className="text-6xl font-mono font-bold mt-4 tabular-nums">{flash.hora}</p>
-          <p className="mt-6 text-white/80 flex items-center justify-center gap-2"><Check size={18} /> {esEntrada ? 'Buen turno' : 'Hasta pronto'}</p>
-        </div>
-      </div>
+      <PantallaVinculacion
+        empresa={empresa} vincular={vinculo.vincular}
+        codigoVinculo={vinculo.codigoVinculo} setCodigoVinculo={vinculo.setCodigoVinculo}
+        setErrorVinculo={vinculo.setErrorVinculo} errorVinculo={vinculo.errorVinculo} vinculando={vinculo.vinculando}
+      />
     );
   }
-  if (flash?.tipo === 'error') {
+  if (linkInvalido) return <PantallaLinkInvalido />;
+  if (empresa && exigeUbicacion && !geo.ubicOk) {
+    return <PantallaUbicacion empresa={empresa} errorUbic={geo.errorUbic} activarUbicacion={geo.activarUbicacion} buscandoUbic={geo.buscandoUbic} />;
+  }
+  if (!sesion.token || !sesion.colaborador) {
     return (
-      <div className={`min-h-screen bg-red-600 flex items-center justify-center p-4 ${cerrandoFlash ? 'hp-fade-out' : 'hp-fade-bg'}`}>
-        <div className={`text-center text-white ${cerrandoFlash ? 'hp-pop-out' : 'hp-shake'}`}>
-          <div className={`mx-auto mb-8 w-36 h-36 rounded-full bg-white flex items-center justify-center ${cerrandoFlash ? '' : 'hp-pop'}`}>
-            <X size={64} className="text-red-600" strokeWidth={2.5} />
-          </div>
-          <p className="text-4xl font-extrabold mb-2">Algo salió mal</p>
-          <p className="text-xl text-white/90">{flash.msg}</p>
-        </div>
-      </div>
+      <PantallaLogin
+        empresa={empresa} permiteCedula={permiteCedula} modoRostro={modoRostro}
+        onModoCedula={() => { setModoRostro(false); setErrorLogin(''); }}
+        onModoRostro={() => { setErrorLogin(''); setFotoRostro(null); setModoRostro(true); }}
+        shake={shake} capturaKey={capturaKey}
+        loginConRostro={loginConRostro}
+        onUsarCedula={foto => { setFotoRostro(foto); setModoRostro(false); setErrorLogin(''); }}
+        onReintentar={() => { setErrorLogin(''); setCapturaKey(k => k + 1); }}
+        errorLogin={errorLogin} ahora={ahora} fotoRostro={fotoRostro}
+        cedula={cedula} onCedulaChange={v => { setCedula(v); setErrorLogin(''); }}
+        ingresar={ingresar} loading={loading}
+      />
     );
   }
-
-  // ===== Vinculación del dispositivo (código del panel) =====
-  if (requiereVinculo && !linkInvalido) {
-    return (
-      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
-        <div className="w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
-          <img src={logoSimplificado} alt="HoraPro" className="w-16 h-16 mx-auto mb-5" />
-          <h1 className="text-xl font-bold text-white mb-1">Autorizar este dispositivo</h1>
-          <p className="text-sm text-white/50 mb-6">
-            {empresa ?? ''} protege su kiosco. Pide al administrador un código de
-            vinculación (panel → Marcador) y digítalo aquí una sola vez.
-          </p>
-          <form onSubmit={vincular} className="space-y-4">
-            <input
-              type="text"
-              inputMode="numeric"
-              autoFocus
-              maxLength={6}
-              value={codigoVinculo}
-              onChange={e => { setCodigoVinculo(e.target.value.replace(/\D/g, '')); setErrorVinculo(''); }}
-              placeholder="000000"
-              required
-              className={`hp-input-dark w-full border rounded-xl px-4 py-3 text-3xl text-center tracking-[0.4em] font-mono placeholder:text-white/20 focus:outline-none transition-colors ${errorVinculo ? 'border-red-400/60 bg-red-500/10 hp-shake' : 'border-white/10 focus:border-primary/60'}`}
-            />
-            {errorVinculo && <p className="text-red-400 text-sm font-medium">{errorVinculo}</p>}
-            <button type="submit" disabled={vinculando || codigoVinculo.length !== 6}
-              className="w-full bg-primary hover:bg-primary-dark text-ink font-bold py-3 rounded-xl disabled:opacity-60 transition-colors">
-              {vinculando ? 'Vinculando...' : 'Vincular dispositivo'}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  if (linkInvalido) {
-    return (
-      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
-        <div className="w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
-          <Link2Off size={40} className="mx-auto mb-4 text-white/40" />
-          <h1 className="text-xl font-bold text-white mb-2">Link de marcación inválido</h1>
-          <p className="text-sm text-white/50">Pide a tu administrador el link del marcador de tu empresa.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ===== Ubicación primero: se pide al entrar, antes de la cámara/login =====
-  // (Safari iOS exige que el permiso se pida desde un toque limpio y directo.)
-  if (empresa && exigeUbicacion && !ubicOk) {
-    return (
-      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
-        <div className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
-          <img src={logoSimplificado} alt="HoraPro" className="w-14 h-14 mx-auto mb-4" />
-          <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-            <MapPin size={28} className="text-ink" />
-          </div>
-          <h1 className="text-xl font-bold text-white">Marca desde la empresa</h1>
-          <p className="text-sm text-white/60 mt-2 mb-6 leading-relaxed">
-            {empresa} verifica tu <b className="text-white/90">ubicación</b> al marcar. Toca el botón y
-            <b className="text-white/90"> permite el acceso</b> cuando el navegador lo pregunte.
-          </p>
-          <button onClick={activarUbicacion} disabled={buscandoUbic}
-            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold py-3.5 rounded-xl text-base transition-colors disabled:opacity-60">
-            <MapPin size={18} /> {buscandoUbic ? 'Buscando ubicación...' : 'Activar ubicación'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ===== Login por cédula o rostro =====
-  if (!token || !colaborador) {
-    return (
-      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
-        <div className={`relative w-full rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 transition-all ${modoRostro ? 'max-w-md' : 'max-w-sm'} ${shake ? 'hp-shake ring-2 ring-red-400/60' : ''}`}>
-          <div className="flex flex-col items-center mb-5">
-            <img src={logoSimplificado} alt="HoraPro" className="w-14 h-14 mb-3" />
-            <p className="text-white font-semibold text-sm">{empresa ?? 'Cargando...'}</p>
-          </div>
-
-          {permiteCedula ? (
-            <div className="flex justify-center mb-6">
-              <div className="inline-flex bg-white/5 border border-white/10 rounded-full p-1">
-                <button
-                  type="button"
-                  onClick={() => { setModoRostro(false); setErrorLogin(''); }}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${!modoRostro ? 'bg-white text-ink' : 'text-white/50 hover:text-white/80'}`}
-                >
-                  Cédula
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setErrorLogin(''); setFotoRostro(null); setModoRostro(true); }}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5 ${modoRostro ? 'bg-white text-ink' : 'text-white/50 hover:text-white/80'}`}
-                >
-                  <ScanFace size={15} /> Rostro
-                </button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-center text-white/50 text-sm font-medium mb-6 flex items-center justify-center gap-1.5">
-              <ScanFace size={15} /> Reconocimiento facial
-            </p>
-          )}
-
-          {modoRostro ? (
-            <>
-              <CamaraRostro key={capturaKey} modo="login" onCapturado={(descs, foto) => loginConRostro(descs[0], foto)} errorExterno={errorLogin || null}
-                permiteFallbackCedula={permiteCedula}
-                onUsarCedula={foto => { setFotoRostro(foto); setModoRostro(false); setErrorLogin(''); }} />
-              {errorLogin && (
-                <button onClick={() => { setErrorLogin(''); setCapturaKey(k => k + 1); }}
-                  className="w-full mt-4 bg-primary hover:bg-primary-dark text-ink font-bold py-2.5 rounded-xl text-sm transition-colors">
-                  Reintentar
-                </button>
-              )}
-            </>
-          ) : (
-            <>
-              <p className="text-center text-4xl font-mono font-bold text-white my-4 tabular-nums">{format(ahora, 'HH:mm:ss')}</p>
-              {fotoRostro && (
-                <p className="mb-3 flex items-center justify-center gap-1.5 text-xs font-medium text-green-400">
-                  <Check size={14} /> Foto tomada · ingresa tu cédula para confirmar
-                </p>
-              )}
-              <form onSubmit={ingresar} className="space-y-4">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoFocus
-                  value={cedula}
-                  onChange={e => { setCedula(e.target.value.replace(/\D/g, '')); setErrorLogin(''); }}
-                  placeholder="Número de cédula"
-                  required
-                  className={`hp-input-dark w-full border rounded-xl px-4 py-3 text-2xl text-center tracking-widest placeholder:text-white/25 focus:outline-none transition-colors ${errorLogin ? 'border-red-400/60 bg-red-500/10' : 'border-white/10 focus:border-primary/60'}`}
-                />
-                {errorLogin && <p className="text-red-400 text-sm text-center font-medium">{errorLogin}</p>}
-                <button
-                  type="submit"
-                  disabled={loading || !empresa}
-                  className="w-full bg-primary hover:bg-primary-dark text-ink font-bold py-3 rounded-xl text-base disabled:opacity-60 transition-colors"
-                >
-                  {loading ? 'Verificando...' : 'Continuar'}
-                </button>
-              </form>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ===== Ubicación requerida: GPS apagado o permiso negado =====
-  if (errorUbic) {
-    return (
-      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
-        <div className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
-          <div className="bg-amber-400/90 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-            <MapPin size={28} className="text-ink" />
-          </div>
-          <h2 className="text-xl font-bold text-white">{errorUbic.titulo}</h2>
-          <p className="text-sm text-white/60 mt-2 mb-6 leading-relaxed">{errorUbic.ayuda}</p>
-          <button onClick={activarUbicacion} disabled={buscandoUbic}
-            className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold py-3.5 rounded-xl text-base transition-colors disabled:opacity-60">
-            <RotateCw size={18} /> {buscandoUbic ? 'Buscando...' : 'Reintentar'}
-          </button>
-          <button onClick={() => window.location.reload()}
-            className="w-full mt-2 text-white/50 hover:text-white/80 text-sm font-medium py-1">
-            Ya la activé en Ajustes · Recargar página
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ===== Salida temprana: pedir motivo antes de mostrar la confirmación =====
   if (salidaTemprana) {
     return (
-      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
-        <div className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
-          <div className="bg-amber-400/90 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3">
-            <LogOut size={26} className="text-ink" />
-          </div>
-          <h2 className="text-lg font-bold text-white">Salida antes del horario</h2>
-          <p className="text-sm text-white/50 mt-1 mb-5">Cuéntanos el motivo de tu salida temprana. Tu salida ya quedó registrada.</p>
-
-          <div className="text-left space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-white/60 mb-1">Motivo</label>
-              <select value={novedadTipo} onChange={e => setNovedadTipo(e.target.value)}
-                className="hp-input-dark w-full border border-white/10 rounded-xl px-3 py-2.5 text-sm">
-                {Object.entries(TIPO_PERMISO_LABEL).map(([k, v]) => <option key={k} value={k} className="text-ink">{v}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-white/60 mb-1">Descripción</label>
-              <textarea value={novedadDesc} onChange={e => setNovedadDesc(e.target.value)} rows={3}
-                placeholder="Describe el motivo de tu salida temprana..."
-                className="hp-input-dark w-full border border-white/10 rounded-xl px-3 py-2.5 text-sm resize-none" />
-            </div>
-          </div>
-
-          <button onClick={() => enviarNovedadTemprana(false)} disabled={enviandoNovedad}
-            className="w-full mt-5 bg-primary hover:bg-primary-dark text-ink font-bold py-3 rounded-xl text-base disabled:opacity-60 transition-colors">
-            {enviandoNovedad ? 'Enviando...' : 'Enviar y confirmar salida'}
-          </button>
-          <button onClick={() => enviarNovedadTemprana(true)} disabled={enviandoNovedad}
-            className="w-full mt-2 text-white/50 hover:text-white/80 text-sm font-medium py-1">
-            Omitir
-          </button>
-        </div>
-      </div>
+      <PantallaSalidaTemprana
+        novedadTipo={novedadTipo} setNovedadTipo={setNovedadTipo}
+        novedadDesc={novedadDesc} setNovedadDesc={setNovedadDesc}
+        enviarNovedadTemprana={enviarNovedadTemprana} enviandoNovedad={enviandoNovedad}
+      />
     );
   }
-
-  // ===== Pantalla de marcación =====
-  const dentroAhora = estado?.dentroAhora ?? false;
-  const entradaHace = estado?.entradaAbierta?.entrada
-    ? format(new Date(estado.entradaAbierta.entrada), 'HH:mm')
-    : null;
-
   return (
-    <div className="min-h-screen bg-ink flex items-center justify-center p-4">
-      <div className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
-        <div className="mb-6">
-          <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl font-bold text-ink">
-              {colaborador.nombre[0]}{colaborador.apellido[0]}
-            </span>
-          </div>
-          <h2 className="text-xl font-bold text-white">{colaborador.nombre} {colaborador.apellido}</h2>
-          {colaborador.cargo && <p className="text-sm text-white/50">{colaborador.cargo}</p>}
-        </div>
-
-        <div className="mb-6">
-          <p className="text-5xl font-mono font-bold text-white tracking-tight tabular-nums">
-            {format(ahora, 'HH:mm:ss')}
-          </p>
-          <p className="text-sm text-white/50 mt-1 capitalize">
-            {format(ahora, "EEEE d 'de' MMMM", { locale: es })}
-          </p>
-        </div>
-
-        <div className={`mb-6 rounded-xl px-4 py-2 text-sm font-medium ${dentroAhora ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-white/50'}`}>
-          {dentroAhora ? `Entrada registrada a las ${entradaHace}` : 'Sin entrada registrada hoy'}
-        </div>
-
-        <button
-          onClick={marcar}
-          disabled={marcando || !estado}
-          className={`w-full font-bold py-5 rounded-2xl text-xl text-white transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-3 shadow-lg
-            ${dentroAhora
-              ? 'bg-orange-500 hover:bg-orange-400 shadow-orange-900/30'
-              : 'bg-green-600 hover:bg-green-500 shadow-green-900/30'
-            }`}
-        >
-          {dentroAhora ? <LogOut size={28} /> : <LogIn size={28} />}
-          {marcando ? (exigeUbicacion ? 'Ubicando...' : 'Registrando...') : (dentroAhora ? 'Registrar Salida' : 'Registrar Entrada')}
-        </button>
-
-        {exigeUbicacion && ubicOk && (
-          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-green-400/80">
-            <MapPin size={12} /> Ubicación activada · marcarás desde la empresa
-          </p>
-        )}
-
-        <button onClick={salir} className="mt-4 text-xs text-white/30 hover:text-white/60 underline">
-          No soy yo, cambiar usuario
-        </button>
-      </div>
-    </div>
+    <PantallaMarcar
+      colaborador={sesion.colaborador} ahora={ahora} estado={sesion.estado}
+      marcar={marcar} marcando={marcando}
+      exigeUbicacion={exigeUbicacion} ubicOk={geo.ubicOk} salir={salir}
+    />
   );
 }
