@@ -11,25 +11,26 @@ datasource db {
 // ============ SaaS / Multi-tenant ============
 
 model Empresa {
-  id            String              @id @default(cuid())
-  nombre        String
-  nit           String              @unique
-  email         String
-  telefono      String?
+  id             String              @id @default(cuid())
+  nombre         String
+  nit            String              @unique
+  email          String
+  telefono       String?
   // Token del link único del kiosco de marcación: /marcador/<token>
-  marcadorToken String              @unique @default(cuid())
+  marcadorToken  String              @unique @default(cuid())
   // Acceso ilimitado (cortesía): nunca se le cobra ni se bloquea
-  exentaPago    Boolean             @default(false)
-  activa        Boolean             @default(true)
-  creadoEn      DateTime            @default(now())
-  actualizadoEn DateTime            @updatedAt
-  usuarios      Usuario[]
-  colaboradores Colaborador[]
-  festivos      DiaFestivo[]
-  configuracion Configuracion[]
-  suscripcion   Suscripcion?
-  horarios      Horario[]
-  dispositivos  DispositivoKiosco[]
+  exentaPago     Boolean             @default(false)
+  activa         Boolean             @default(true)
+  creadoEn       DateTime            @default(now())
+  actualizadoEn  DateTime            @updatedAt
+  usuarios       Usuario[]
+  colaboradores  Colaborador[]
+  festivos       DiaFestivo[]
+  configuracion  Configuracion[]
+  suscripcion    Suscripcion?
+  horarios       Horario[]
+  dispositivos   DispositivoKiosco[]
+  notificaciones Notificacion[]
 
   @@map("empresas")
 }
@@ -200,21 +201,25 @@ model Colaborador {
 }
 
 model Registro {
-  id            String       @id @default(cuid())
-  colaboradorId String
-  colaborador   Colaborador  @relation(fields: [colaboradorId], references: [id])
-  fecha         DateTime
-  entrada       DateTime?
-  salida        DateTime?
-  tipo          TipoRegistro @default(NORMAL)
-  observacion   String?
+  id             String       @id @default(cuid())
+  colaboradorId  String
+  colaborador    Colaborador  @relation(fields: [colaboradorId], references: [id])
+  fecha          DateTime
+  entrada        DateTime?
+  salida         DateTime?
+  tipo           TipoRegistro @default(NORMAL)
+  observacion    String?
+  // Salida generada por el auto-cierre (la persona no marcó): se muestra como chip
+  // "No marcó salida" en la columna Salida para que el admin la revise. No toca `tipo`,
+  // así la liquidación del día sigue siendo correcta (NORMAL/FESTIVO).
+  salidaEstimada Boolean      @default(false)
   // Foto de verificación facial al marcar (se elimina automáticamente a los 2 meses)
-  fotoEntrada   String?      @db.LongText
-  fotoSalida    String?      @db.LongText
+  fotoEntrada    String?      @db.LongText
+  fotoSalida     String?      @db.LongText
   // Auditoría de correcciones manuales
-  editadoPor    String?
-  editadoEn     DateTime?
-  creadoEn      DateTime     @default(now())
+  editadoPor     String?
+  editadoEn      DateTime?
+  creadoEn       DateTime     @default(now())
 
   @@map("registros")
 }
@@ -258,6 +263,27 @@ model Configuracion {
 
   @@unique([empresaId, clave])
   @@map("configuracion")
+}
+
+// Aviso interno para el admin (campana del menú). Se genera por eventos del sistema.
+model Notificacion {
+  id        String    @id @default(cuid())
+  empresaId String
+  empresa   Empresa   @relation(fields: [empresaId], references: [id])
+  // NO_MARCO_SALIDA | LLEGADA_TARDE | NOVEDAD_PENDIENTE (string por flexibilidad)
+  tipo      String
+  titulo    String
+  cuerpo    String?   @db.Text
+  // Enlace opcional para abrir el detalle desde la campana
+  entidad   String? // 'registro' | 'permiso' | 'colaborador'
+  entidadId String?
+  leida     Boolean   @default(false)
+  leidaEn   DateTime?
+  creadoEn  DateTime  @default(now())
+
+  @@index([empresaId, leida])
+  @@index([empresaId, creadoEn])
+  @@map("notificaciones")
 }
 
 model Usuario {

@@ -255,6 +255,7 @@ exports.Prisma.RegistroScalarFieldEnum = {
   salida: 'salida',
   tipo: 'tipo',
   observacion: 'observacion',
+  salidaEstimada: 'salidaEstimada',
   fotoEntrada: 'fotoEntrada',
   fotoSalida: 'fotoSalida',
   editadoPor: 'editadoPor',
@@ -289,6 +290,19 @@ exports.Prisma.ConfiguracionScalarFieldEnum = {
   empresaId: 'empresaId',
   clave: 'clave',
   valor: 'valor'
+};
+
+exports.Prisma.NotificacionScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  tipo: 'tipo',
+  titulo: 'titulo',
+  cuerpo: 'cuerpo',
+  entidad: 'entidad',
+  entidadId: 'entidadId',
+  leida: 'leida',
+  leidaEn: 'leidaEn',
+  creadoEn: 'creadoEn'
 };
 
 exports.Prisma.UsuarioScalarFieldEnum = {
@@ -392,6 +406,7 @@ exports.Prisma.ModelName = {
   Permiso: 'Permiso',
   DiaFestivo: 'DiaFestivo',
   Configuracion: 'Configuracion',
+  Notificacion: 'Notificacion',
   Usuario: 'Usuario'
 };
 
