@@ -202,18 +202,35 @@ async function workerRoutes(app) {
         const payload = request.user;
         if (payload.rol !== 'WORKER')
             return { error: 'No autorizado' };
-        const abierto = await index_1.prisma.registro.findFirst({
-            where: {
-                colaboradorId: payload.id,
-                entrada: { gte: new Date(Date.now() - VENTANA_TURNO_MS) },
-                salida: null,
-            },
-            orderBy: { creadoEn: 'desc' },
-            select: { entrada: true },
-        });
+        const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)();
+        const [abierto, cerradoHoy] = await Promise.all([
+            index_1.prisma.registro.findFirst({
+                where: {
+                    colaboradorId: payload.id,
+                    entrada: { gte: new Date(Date.now() - VENTANA_TURNO_MS) },
+                    salida: null,
+                },
+                orderBy: { creadoEn: 'desc' },
+                select: { entrada: true },
+            }),
+            // Último turno YA COMPLETO de hoy (entrada + salida). El kiosco lo usa para
+            // mostrar el resumen del día y para confirmar antes de abrir un turno nuevo
+            // (evita la entrada duplicada de quien cree que no le quedó la salida).
+            index_1.prisma.registro.findFirst({
+                where: {
+                    colaboradorId: payload.id,
+                    fecha: { gte: inicioDia, lt: finDia },
+                    entrada: { not: null },
+                    salida: { not: null },
+                },
+                orderBy: { salida: 'desc' },
+                select: { entrada: true, salida: true },
+            }),
+        ]);
         return {
             entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
             dentroAhora: !!abierto,
+            turnoCerradoHoy: cerradoHoy ? { entrada: cerradoHoy.entrada, salida: cerradoHoy.salida } : null,
         };
     });
     // Registrar entrada o salida. Si el login fue con rostro, llega la foto de
