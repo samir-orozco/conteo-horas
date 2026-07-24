@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
-import { cargarModelosFaceApi } from '../lib/faceapi';
+import { cargarModelosLigeros, cargarModeloRostro } from '../lib/faceapi';
 import { Camera, AlertTriangle, Check } from 'lucide-react';
 import PreviewEnrolamiento from './camaraRostro/PreviewEnrolamiento';
 import {
@@ -38,6 +38,8 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
   const [intento, setIntento] = useState(0);    // se incrementa al "Repetir"
   const [tomas, setTomas] = useState<string[]>([]); // fotos del preview (enrolar)
   const descsPreview = useRef<number[][]>([]);   // descriptores esperando aceptación
+  const [progModelos, setProgModelos] = useState(0); // 0..1 carga de los modelos livianos
+  const [metrica, setMetrica] = useState<{ camara?: number; rostro?: number }>({}); // solo dev
 
   const pasos: PasoEnrolar[] = modo === 'enrolar'
     ? [
@@ -62,6 +64,8 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     let idxPaso = 0;
     let holdInicio: number | null = null; // cuándo empezó a quedarse quieto
     let buffer: number[][] = [];           // descriptores acumulados en el hold
+    let rostroListo = false;               // ¿ya cargó el modelo de reconocimiento?
+    let progRostro = 0;                    // 0..1 de su descarga en segundo plano
 
     const detenerCamara = () => {
       if (cuadroId !== null) cancelAnimationFrame(cuadroId);
@@ -79,7 +83,19 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
 
     (async () => {
       try {
-        await cargarModelosFaceApi();
+        const t0 = performance.now();
+        // 1) Modelos livianos (detector + landmarks): con esto ya enciende la cámara.
+        await cargarModelosLigeros(p => { if (activo) setProgModelos(p); });
+        if (!activo) return;
+        // 2) Reconocimiento (~6.1MB) en segundo plano: solo hace falta al capturar.
+        cargarModeloRostro(p => { progRostro = p; })
+          .then(() => {
+            if (!activo) return;
+            rostroListo = true;
+            setMetrica(m => ({ ...m, rostro: Math.round(performance.now() - t0) }));
+          })
+          .catch(() => { /* si falla, el hold seguirá esperando; el padre maneja el error */ });
+
         // Resolución "ideal" (no exacta): evita que iOS arranque en un lente y
         // cambie a otro (gran angular → normal) y reduce el zoom/recorte del sensor.
         stream = await navigator.mediaDevices.getUserMedia({
@@ -92,6 +108,7 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
         }
         setEstado('guiando');
         setMensaje('Ubica tu rostro dentro del óvalo');
+        setMetrica(m => ({ ...m, camara: Math.round(performance.now() - t0) }));
 
         function programarSiguiente() {
           if (!activo || terminado) return;
@@ -143,6 +160,15 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
             if (!condicionOk) {
               // Rompió la pose: reinicia el conteo de "quieto"
               if (paso) setMensaje(paso.texto);
+              resetHold();
+              programarSiguiente();
+              return;
+            }
+
+            // La captura del descriptor necesita el modelo de reconocimiento (pesado).
+            // Si aún está bajando, mantenemos el encuadre y esperamos con su %.
+            if (!rostroListo) {
+              setMensaje(`Preparando reconocimiento… ${Math.round(progRostro * 100)}%`);
               resetHold();
               programarSiguiente();
               return;
@@ -260,7 +286,16 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     <div className="flex flex-col items-center gap-3 w-full">
       <div className="relative w-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden bg-ink flex items-center justify-center">
         <video ref={videoRef} className="w-full h-full object-cover [transform:scaleX(-1)]" muted playsInline />
-        {estado === 'cargando' && <Camera className="absolute text-white/60" size={40} />}
+        {estado === 'cargando' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center">
+            <Camera className="text-white/50 animate-pulse" size={34} />
+            <div className="w-44 h-1.5 rounded-full bg-white/15 overflow-hidden">
+              <div className="h-full bg-primary transition-[width] duration-200 ease-out" style={{ width: `${Math.round(progModelos * 100)}%` }} />
+            </div>
+            <p className="text-white/85 text-sm font-medium">Preparando la cámara… {Math.round(progModelos * 100)}%</p>
+            <p className="text-white/40 text-xs">Esto solo pasa la primera vez en este teléfono</p>
+          </div>
+        )}
 
         {/* Óvalo guía: oscurece alrededor y marca dónde debe ir el rostro */}
         {(estado === 'guiando' || estado === 'exito' || hayError) && (
@@ -336,6 +371,13 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
           className="text-xs font-medium text-white/60 hover:text-white underline underline-offset-2 decoration-white/30">
           ¿Problemas? Marcar con cédula
         </button>
+      )}
+
+      {/* Cronómetro de carga — SOLO en desarrollo (banco de pruebas). En prod no aparece. */}
+      {import.meta.env.DEV && (metrica.camara != null || metrica.rostro != null) && (
+        <p className="text-[10px] font-mono text-white/30">
+          ⏱ cámara {metrica.camara ?? '…'}ms · reconocimiento {metrica.rostro ?? '…'}ms
+        </p>
       )}
     </div>
   );

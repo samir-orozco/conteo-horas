@@ -1,8 +1,10 @@
-import { LogIn, LogOut, MapPin } from 'lucide-react';
+import { useState } from 'react';
+import { LogIn, LogOut, MapPin, Check } from 'lucide-react';
 import { es } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
 import { horaBog } from '../helpers';
 import { TZ, type Colaborador, type Estado } from '../tipos';
+import ConfirmarNuevaEntrada from './ConfirmarNuevaEntrada';
 
 type Props = {
   colaborador: Colaborador;
@@ -19,6 +21,15 @@ type Props = {
 export default function PantallaMarcar({ colaborador, ahora, estado, marcar, marcando, exigeUbicacion, ubicOk, salir }: Props) {
   const dentroAhora = estado?.dentroAhora ?? false;
   const entradaHace = estado?.entradaAbierta?.entrada ? horaBog(estado.entradaAbierta.entrada, 'HH:mm') : null;
+  const cerradoHoy = estado?.turnoCerradoHoy ?? null;
+  const [confirmando, setConfirmando] = useState(false);
+
+  // Si el día ya tiene un turno completo y no hay uno abierto, confirmamos antes de
+  // abrir otro (evita la entrada duplicada de quien cree que no le quedó la salida).
+  const alPresionar = () => {
+    if (!dentroAhora && cerradoHoy) { setConfirmando(true); return; }
+    marcar();
+  };
 
   return (
     <div className="min-h-screen bg-ink flex items-center justify-center p-4">
@@ -42,12 +53,20 @@ export default function PantallaMarcar({ colaborador, ahora, estado, marcar, mar
           </p>
         </div>
 
-        <div className={`mb-6 rounded-xl px-4 py-2 text-sm font-medium ${dentroAhora ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-white/50'}`}>
-          {dentroAhora ? `Entrada registrada a las ${entradaHace}` : 'Sin entrada registrada hoy'}
+        <div className={`mb-6 rounded-xl px-4 py-2 text-sm font-medium ${dentroAhora || cerradoHoy ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-white/50'}`}>
+          {dentroAhora ? (
+            `Entrada registrada a las ${entradaHace}`
+          ) : cerradoHoy ? (
+            <span className="flex items-center justify-center gap-1.5">
+              <Check size={14} /> Hoy: entrada {horaBog(cerradoHoy.entrada, 'HH:mm')} · salida {horaBog(cerradoHoy.salida, 'HH:mm')}
+            </span>
+          ) : (
+            'Sin entrada registrada hoy'
+          )}
         </div>
 
         <button
-          onClick={marcar}
+          onClick={alPresionar}
           disabled={marcando || !estado}
           className={`w-full font-bold py-5 rounded-2xl text-xl text-white transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-3 shadow-lg
             ${dentroAhora
@@ -69,6 +88,14 @@ export default function PantallaMarcar({ colaborador, ahora, estado, marcar, mar
           No soy yo, cambiar usuario
         </button>
       </div>
+
+      {confirmando && cerradoHoy && (
+        <ConfirmarNuevaEntrada
+          turno={cerradoHoy}
+          onConfirmar={() => { setConfirmando(false); marcar(); }}
+          onCancelar={() => setConfirmando(false)}
+        />
+      )}
     </div>
   );
 }

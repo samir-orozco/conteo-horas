@@ -220,18 +220,35 @@ export default async function workerRoutes(app: FastifyInstance) {
     const payload = (request as any).user as { id: string; rol: string };
     if (payload.rol !== 'WORKER') return { error: 'No autorizado' };
 
-    const abierto = await prisma.registro.findFirst({
-      where: {
-        colaboradorId: payload.id,
-        entrada: { gte: new Date(Date.now() - VENTANA_TURNO_MS) },
-        salida: null,
-      },
-      orderBy: { creadoEn: 'desc' },
-      select: { entrada: true },
-    });
+    const { inicioDia, finDia } = rangoDiaBogota();
+    const [abierto, cerradoHoy] = await Promise.all([
+      prisma.registro.findFirst({
+        where: {
+          colaboradorId: payload.id,
+          entrada: { gte: new Date(Date.now() - VENTANA_TURNO_MS) },
+          salida: null,
+        },
+        orderBy: { creadoEn: 'desc' },
+        select: { entrada: true },
+      }),
+      // Último turno YA COMPLETO de hoy (entrada + salida). El kiosco lo usa para
+      // mostrar el resumen del día y para confirmar antes de abrir un turno nuevo
+      // (evita la entrada duplicada de quien cree que no le quedó la salida).
+      prisma.registro.findFirst({
+        where: {
+          colaboradorId: payload.id,
+          fecha: { gte: inicioDia, lt: finDia },
+          entrada: { not: null },
+          salida: { not: null },
+        },
+        orderBy: { salida: 'desc' },
+        select: { entrada: true, salida: true },
+      }),
+    ]);
     return {
       entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
       dentroAhora: !!abierto,
+      turnoCerradoHoy: cerradoHoy ? { entrada: cerradoHoy.entrada, salida: cerradoHoy.salida } : null,
     };
   });
 
