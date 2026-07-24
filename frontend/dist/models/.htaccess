@@ -1,0 +1,10 @@
+# Modelos de reconocimiento facial (face-api). Sus nombres son fijos, así que se
+# cachean por 1 año (la 2ª visita en el mismo teléfono es instantánea) y se envían
+# comprimidos (la 1ª descarga baja de ~6.7MB a ~4.6MB). Va DENTRO de /models para
+# no tocar el .htaccess raíz de React Router.
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000"
+</IfModule>
+<IfModule mod_deflate.c>
+  SetOutputFilter DEFLATE
+</IfModule>
