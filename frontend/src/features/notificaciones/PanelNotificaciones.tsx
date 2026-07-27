@@ -84,13 +84,12 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
                     <Icon size={15} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-start gap-2">
-                      <p className={`text-[13px] leading-snug flex-1 ${n.leida ? 'text-ink' : 'font-semibold text-ink'}`}>{n.titulo}</p>
-                      {!n.leida && <span className="shrink-0 w-2 h-2 rounded-full bg-green-500 mt-1" />}
-                    </div>
+                    <p className={`text-[13px] leading-snug ${n.leida ? 'text-ink' : 'font-semibold text-ink'}`}>{n.titulo}</p>
                     {n.cuerpo && <p className="text-xs text-muted mt-0.5 line-clamp-2">{n.cuerpo}</p>}
                     <p className="text-[11px] text-gray-400 mt-1">{formatDistanceToNow(new Date(n.creadoEn), { addSuffix: true, locale: es })}</p>
                   </div>
+                  {/* Punto de "no leída": centrado verticalmente en la fila, al borde derecho */}
+                  {!n.leida && <span className="shrink-0 self-center w-2.5 h-2.5 rounded-full bg-green-500" />}
                 </button>
               );
             })
