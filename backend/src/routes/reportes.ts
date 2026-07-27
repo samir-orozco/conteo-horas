@@ -4,7 +4,7 @@ import { getISOWeek, getISOWeekYear } from 'date-fns';
 import { prisma } from '../index';
 import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
-import { calcularTardanzas, franjaDelDia, DIAS_SEMANA, HorarioConFranjas } from '../utils/tardanzas';
+import { calcularTardanzas, franjaDelDia, DIAS_SEMANA, HorarioConFranjas, construirExtraConfig } from '../utils/tardanzas';
 
 const TZ = 'America/Bogota';
 
@@ -33,7 +33,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
   app.get('/liquidacion', auth, async (request, reply) => {
     const { colaboradorId, desde, hasta } = request.query as any;
 
-    const [colaborador, registros, festivos, tiposHoraTodos, jornadas] = await Promise.all([
+    const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo] = await Promise.all([
       prisma.colaborador.findFirst({
         where: { id: colaboradorId, empresaId: request.empresaId },
         include: { horario: { include: { franjas: true } } },
@@ -47,9 +47,14 @@ export default async function reporteRoutes(app: FastifyInstance) {
       }),
       prisma.tipoHora.findMany(),
       prisma.jornadaVigencia.findMany(),
+      prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId!, clave: 'HORAS_EXTRA_MODO' } } }),
     ]);
 
     if (!colaborador) return reply.status(404).send({ error: 'Colaborador no encontrado' });
+
+    // Modo de horas extra (SEMANAL por defecto). En HORARIO, extra = fuera de la
+    // franja asignada; sin horario activo el helper cae a SEMANAL solo.
+    const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
 
     const festivosDates = festivos.map(f => new Date(f.fecha));
 
@@ -63,6 +68,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
 
     const acumulado: Record<string, TipoHoraAcum> = {};
     const horario = (colaborador as any).horario as HorarioConFranjas | null;
+    const extraConfig = construirExtraConfig(modoExtra, horario);
     const diasConAlmuerzo = new Set<string>(); // almuerzo se descuenta 1 vez por día
 
     for (const [, regsDeUnaSemana] of porSemana) {
@@ -74,7 +80,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         if (!registro.entrada || !registro.salida) continue;
         const tiposDelDia = tiposVigentes(registro.fecha, tiposHoraTodos);
         const { resultado, minutosOrdinariosTrabajados } = calcularHorasTrabajadas(
-          registro.entrada, registro.salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana
+          registro.entrada, registro.salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfig
         );
         let ordDelRegistro = minutosOrdinariosTrabajados;
         // Descontar almuerzo una sola vez por día (si la franja de ese día lo aplica)

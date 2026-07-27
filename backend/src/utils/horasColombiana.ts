@@ -43,13 +43,38 @@ function clasificarMinuto(
   return diurno ? 'HED' : 'HEN';
 }
 
+// Cómo se decide qué es "hora extra":
+//  - SEMANAL: extra = lo que pasa de la jornada semanal (tope legal, ej. 42h).
+//  - HORARIO: extra = lo trabajado FUERA de la franja asignada de ese día (antes de
+//    entrar o después de salir), o en un día no programado; el tope legal se mantiene
+//    encima. Requiere el horario del colaborador; sin horario, el llamador cae a SEMANAL.
+export type ExtraConfig = {
+  modo: 'SEMANAL' | 'HORARIO';
+  // día de semana (0=DOM..6=SAB) → ventana de la franja en minutos del día; null/ausente = no programado
+  franjaPorDia?: Record<number, { ini: number; fin: number } | null>;
+  toleranciaMin?: number; // gracia para no marcar como extra unos minutos sueltos
+};
+
+function esExtraPorModo(extra: ExtraConfig, zc: Date, hora: number, superoTope: boolean): boolean {
+  if (extra.modo !== 'HORARIO' || !extra.franjaPorDia) return superoTope;
+  const fr = extra.franjaPorDia[getDay(zc)] ?? null;
+  const min = hora * 60 + zc.getMinutes();
+  const tol = extra.toleranciaMin ?? 0;
+  let fuera: boolean;
+  if (!fr) fuera = true;                                       // día no programado → todo extra
+  else if (fr.fin > fr.ini) fuera = min < fr.ini - tol || min >= fr.fin + tol;
+  else fuera = !(min >= fr.ini - tol || min < fr.fin + tol);   // franja que cruza medianoche
+  return fuera || superoTope;                                  // el tope legal siempre aplica encima
+}
+
 export function calcularHorasTrabajadas(
   entrada: Date,
   salida: Date,
   festivosDates: Date[],
   tiposHoraDB: TipoHoraDB[],
   jornadaSemanalHoras: number,
-  minutosOrdinariosSemanaAcumulados: number = 0
+  minutosOrdinariosSemanaAcumulados: number = 0,
+  extra: ExtraConfig = { modo: 'SEMANAL' }
 ): { resultado: TipoHoraCalculo[]; minutosOrdinariosTrabajados: number } {
   const maxOrdinariosSemana = jornadaSemanalHoras * 60;
   const festSet = new Set(
@@ -85,8 +110,10 @@ export function calcularHorasTrabajadas(
     const esDomingo = diaSemana === 'DOMINGO';
     const esDomOFestivo = esDomingo || esFestivo;
 
-    // Extra si se superan las horas ordinarias de la semana
-    const esExtra = minutosOrdAcum >= maxOrdinariosSemana;
+    // Extra según el modo configurado (semanal >tope, u horario fuera de la franja).
+    // El tope legal semanal siempre aplica encima.
+    const superoTope = minutosOrdAcum >= maxOrdinariosSemana;
+    const esExtra = esExtraPorModo(extra, zc, hora, superoTope);
 
     const codigo = clasificarMinuto(hora, esDomOFestivo, esExtra, horaInicioDiurna, horaFinDiurna);
     const tipoRef = tipoMap[codigo];

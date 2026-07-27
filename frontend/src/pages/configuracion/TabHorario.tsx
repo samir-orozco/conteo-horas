@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Scale, CalendarClock, Clock3, Plus, Trash2, X, Pencil, AlertTriangle, Lock } from 'lucide-react';
+import { Scale, CalendarClock, Clock3, Plus, Trash2, X, Pencil, AlertTriangle, Lock, Timer, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -49,12 +49,30 @@ export default function TabHorario() {
   const [errorHorario, setErrorHorario] = useState('');
   const [eliminandoHorario, setEliminandoHorario] = useState<Horario | null>(null);
 
+  // Modo de cálculo de horas extra (SEMANAL por defecto)
+  const [modoExtra, setModoExtra] = useState<'SEMANAL' | 'HORARIO'>('SEMANAL');
+  const [modoExtraGuardado, setModoExtraGuardado] = useState(false);
+
   const cargarHorarios = () => api.get('/horarios').then(r => setHorarios(r.data));
 
   useEffect(() => {
     api.get('/configuracion/legales').then(r => setLegales(r.data));
+    api.get('/configuracion').then(r => setModoExtra(r.data.HORAS_EXTRA_MODO === 'HORARIO' ? 'HORARIO' : 'SEMANAL'));
     cargarHorarios();
   }, []);
+
+  const cambiarModoExtra = async (m: 'SEMANAL' | 'HORARIO') => {
+    if (m === modoExtra) return;
+    const anterior = modoExtra;
+    setModoExtra(m);
+    setModoExtraGuardado(false);
+    try {
+      await api.put('/configuracion', { HORAS_EXTRA_MODO: m });
+      setModoExtraGuardado(true);
+    } catch {
+      setModoExtra(anterior); // revertir si falla
+    }
+  };
 
   const abrirHorario = (h?: Horario) => {
     setEditandoHorario(h ?? null);
@@ -174,6 +192,40 @@ export default function TabHorario() {
                 <p className="text-xs text-muted mt-2">Tolerancia {h.toleranciaMin} min{h.almuerzoMin ? ` · almuerzo ${h.almuerzoMin} min` : ''} · {h._count?.colaboradores ?? 0} colaborador{(h._count?.colaboradores ?? 0) === 1 ? '' : 'es'}</p>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Cómo se calculan las horas extra */}
+      <div className="bg-white rounded-card border border-gray-200 p-6">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <h3 className="font-semibold text-ink flex items-center gap-2"><Timer size={17} /> Cómo se calculan las horas extra</h3>
+          {modoExtraGuardado && (
+            <span className="flex items-center gap-1 text-xs font-semibold text-green-700"><Check size={13} /> Guardado</span>
+          )}
+        </div>
+        <p className="text-xs text-muted mb-4">
+          Define qué se considera hora extra al liquidar. El tope legal semanal ({fmtH(norma || 42)} h) siempre se aplica encima.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {([
+            { v: 'SEMANAL', t: 'Por jornada semanal', d: `Es extra lo que supere la jornada legal (${fmtH(norma || 42)} h/semana). Es el modo estándar.` },
+            { v: 'HORARIO', t: 'Fuera del horario asignado', d: 'Es extra lo trabajado fuera de la franja del colaborador (antes de entrar o después de salir), o en días no programados.' },
+          ] as const).map(o => (
+            <button key={o.v} type="button" onClick={() => cambiarModoExtra(o.v)}
+              className={`text-left rounded-xl border p-4 transition-colors ${modoExtra === o.v ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-gray-200 hover:border-gray-300'}`}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-semibold text-ink text-sm">{o.t}</p>
+                {modoExtra === o.v && <Check size={16} className="text-primary-dark shrink-0" />}
+              </div>
+              <p className="text-xs text-muted mt-1">{o.d}</p>
+            </button>
+          ))}
+        </div>
+        {modoExtra === 'HORARIO' && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 flex items-start gap-1.5 mt-3">
+            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+            <span>Requiere que el colaborador tenga un <b>horario asignado</b>. Si no lo tiene, se liquida por jornada semanal. La <b>tolerancia</b> del horario evita marcar como extra unos minutos sueltos.</span>
           </div>
         )}
       </div>

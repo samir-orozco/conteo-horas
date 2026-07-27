@@ -4,7 +4,7 @@ import { getISOWeek, getISOWeekYear, startOfISOWeek } from 'date-fns';
 import { prisma } from '../index';
 import { calcularHorasTrabajadas, descontarAlmuerzo } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes } from '../utils/vigencias';
-import { franjaDelDia, HorarioConFranjas } from '../utils/tardanzas';
+import { franjaDelDia, HorarioConFranjas, construirExtraConfig } from '../utils/tardanzas';
 
 const TZ = 'America/Bogota';
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -218,6 +218,11 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     );
     const diasConAlmuerzo = new Set<string>();
 
+    // Modo de horas extra (mismo criterio que el reporte de liquidación)
+    const cfgModo = await prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } });
+    const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
+    const extraConfigPorCol = new Map(colaboradores.map(c => [c.id, construirExtraConfig(modoExtra, (c as any).horario)]));
+
     for (const [clave, regs] of porColSemana) {
       const jornadaSemanal = jornadaVigente(regs[0].fecha, jornadas);
       let minutosOrdSemana = 0;
@@ -226,7 +231,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         if (!r.entrada || !r.salida) continue;
         const tiposDelDia = tiposVigentes(r.fecha, tiposHoraTodos);
         const { resultado, minutosOrdinariosTrabajados } = calcularHorasTrabajadas(
-          r.entrada, r.salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana
+          r.entrada, r.salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfigPorCol.get(r.colaboradorId)
         );
         let ordDelRegistro = minutosOrdinariosTrabajados;
         const claveColDia = `${r.colaboradorId}|${claveDia(r.entrada)}`;
