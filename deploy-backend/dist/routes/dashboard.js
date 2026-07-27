@@ -208,6 +208,10 @@ async function dashboardRoutes(app) {
         // Horario de cada colaborador (para descontar almuerzo) + control 1 vez/día
         const horarioPorCol = new Map(colaboradores.map(c => [c.id, c.horario]));
         const diasConAlmuerzo = new Set();
+        // Modo de horas extra (mismo criterio que el reporte de liquidación)
+        const cfgModo = await index_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } });
+        const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
+        const extraConfigPorCol = new Map(colaboradores.map(c => [c.id, (0, tardanzas_1.construirExtraConfig)(modoExtra, c.horario)]));
         for (const [clave, regs] of porColSemana) {
             const jornadaSemanal = (0, vigencias_1.jornadaVigente)(regs[0].fecha, jornadas);
             let minutosOrdSemana = 0;
@@ -216,7 +220,7 @@ async function dashboardRoutes(app) {
                 if (!r.entrada || !r.salida)
                     continue;
                 const tiposDelDia = (0, vigencias_1.tiposVigentes)(r.fecha, tiposHoraTodos);
-                const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(r.entrada, r.salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana);
+                const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(r.entrada, r.salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana, extraConfigPorCol.get(r.colaboradorId));
                 let ordDelRegistro = minutosOrdinariosTrabajados;
                 const claveColDia = `${r.colaboradorId}|${claveDia(r.entrada)}`;
                 const almuerzo = almuerzoDelRegistro(horarioPorCol.get(r.colaboradorId), r.entrada);

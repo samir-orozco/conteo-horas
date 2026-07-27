@@ -29,7 +29,7 @@ async function reporteRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     app.get('/liquidacion', auth, async (request, reply) => {
         const { colaboradorId, desde, hasta } = request.query;
-        const [colaborador, registros, festivos, tiposHoraTodos, jornadas] = await Promise.all([
+        const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo] = await Promise.all([
             index_1.prisma.colaborador.findFirst({
                 where: { id: colaboradorId, empresaId: request.empresaId },
                 include: { horario: { include: { franjas: true } } },
@@ -43,9 +43,13 @@ async function reporteRoutes(app) {
             }),
             index_1.prisma.tipoHora.findMany(),
             index_1.prisma.jornadaVigencia.findMany(),
+            index_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
         ]);
         if (!colaborador)
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
+        // Modo de horas extra (SEMANAL por defecto). En HORARIO, extra = fuera de la
+        // franja asignada; sin horario activo el helper cae a SEMANAL solo.
+        const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
         const festivosDates = festivos.map(f => new Date(f.fecha));
         // Agrupar registros por semana ISO para resetear el contador de ordinarias cada semana
         const porSemana = new Map();
@@ -57,6 +61,7 @@ async function reporteRoutes(app) {
         }
         const acumulado = {};
         const horario = colaborador.horario;
+        const extraConfig = (0, tardanzas_1.construirExtraConfig)(modoExtra, horario);
         const diasConAlmuerzo = new Set(); // almuerzo se descuenta 1 vez por día
         for (const [, regsDeUnaSemana] of porSemana) {
             // Jornada y recargos vigentes se evalúan con la fecha de cada semana/registro,
@@ -67,7 +72,7 @@ async function reporteRoutes(app) {
                 if (!registro.entrada || !registro.salida)
                     continue;
                 const tiposDelDia = (0, vigencias_1.tiposVigentes)(registro.fecha, tiposHoraTodos);
-                const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(registro.entrada, registro.salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana);
+                const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(registro.entrada, registro.salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana, extraConfig);
                 let ordDelRegistro = minutosOrdinariosTrabajados;
                 // Descontar almuerzo una sola vez por día (si la franja de ese día lo aplica)
                 const claveDia = claveDiaBogota(registro.entrada);

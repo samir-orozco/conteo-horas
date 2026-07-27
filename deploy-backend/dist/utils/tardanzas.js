@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DIAS_SEMANA = void 0;
 exports.minutosDe = minutosDe;
 exports.franjaDelDia = franjaDelDia;
+exports.construirExtraConfig = construirExtraConfig;
 exports.calcularTardanzas = calcularTardanzas;
 const date_fns_tz_1 = require("date-fns-tz");
 const TZ = 'America/Bogota';
@@ -22,6 +23,19 @@ function franjaDelDia(horario, diaSemana) {
 function claveDia(d) {
     const z = (0, date_fns_tz_1.toZonedTime)(d, TZ);
     return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
+}
+function construirExtraConfig(modo, horario) {
+    if (modo !== 'HORARIO' || !horario || !horario.activo)
+        return { modo: 'SEMANAL' };
+    const franjaPorDia = {};
+    for (const fr of horario.franjas) {
+        for (const d of (fr.dias ?? [])) {
+            const idx = exports.DIAS_SEMANA.indexOf(d);
+            if (idx >= 0)
+                franjaPorDia[idx] = { ini: minutosDe(fr.horaEntrada), fin: minutosDe(fr.horaSalida) };
+        }
+    }
+    return { modo: 'HORARIO', franjaPorDia, toleranciaMin: horario.toleranciaMin ?? 0 };
 }
 // Llegadas tarde: primera entrada de cada día vs la franja del horario que
 // aplica ese día + tolerancia. No cuenta festivos, días fuera del horario ni

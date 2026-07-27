@@ -26,7 +26,22 @@ function clasificarMinuto(hora, esDomOFestivo, esExtra, horaInicioDiurna, horaFi
         return diurno ? 'HOD' : 'HON';
     return diurno ? 'HED' : 'HEN';
 }
-function calcularHorasTrabajadas(entrada, salida, festivosDates, tiposHoraDB, jornadaSemanalHoras, minutosOrdinariosSemanaAcumulados = 0) {
+function esExtraPorModo(extra, zc, hora, superoTope) {
+    if (extra.modo !== 'HORARIO' || !extra.franjaPorDia)
+        return superoTope;
+    const fr = extra.franjaPorDia[(0, date_fns_1.getDay)(zc)] ?? null;
+    const min = hora * 60 + zc.getMinutes();
+    const tol = extra.toleranciaMin ?? 0;
+    let fuera;
+    if (!fr)
+        fuera = true; // día no programado → todo extra
+    else if (fr.fin > fr.ini)
+        fuera = min < fr.ini - tol || min >= fr.fin + tol;
+    else
+        fuera = !(min >= fr.ini - tol || min < fr.fin + tol); // franja que cruza medianoche
+    return fuera || superoTope; // el tope legal siempre aplica encima
+}
+function calcularHorasTrabajadas(entrada, salida, festivosDates, tiposHoraDB, jornadaSemanalHoras, minutosOrdinariosSemanaAcumulados = 0, extra = { modo: 'SEMANAL' }) {
     const maxOrdinariosSemana = jornadaSemanalHoras * 60;
     const festSet = new Set(festivosDates.map(f => {
         const z = (0, date_fns_tz_1.toZonedTime)(f, TZ);
@@ -53,8 +68,10 @@ function calcularHorasTrabajadas(entrada, salida, festivosDates, tiposHoraDB, jo
         const esFestivo = festSet.has(key);
         const esDomingo = diaSemana === 'DOMINGO';
         const esDomOFestivo = esDomingo || esFestivo;
-        // Extra si se superan las horas ordinarias de la semana
-        const esExtra = minutosOrdAcum >= maxOrdinariosSemana;
+        // Extra según el modo configurado (semanal >tope, u horario fuera de la franja).
+        // El tope legal semanal siempre aplica encima.
+        const superoTope = minutosOrdAcum >= maxOrdinariosSemana;
+        const esExtra = esExtraPorModo(extra, zc, hora, superoTope);
         const codigo = clasificarMinuto(hora, esDomOFestivo, esExtra, horaInicioDiurna, horaFinDiurna);
         const tipoRef = tipoMap[codigo];
         if (tipoRef) {
