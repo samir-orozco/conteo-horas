@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { capturarRef } from './lib/ref';
+import { rutaInicio } from './lib/rutas';
 import CapturadorErrores from './components/CapturadorErrores';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -23,6 +26,9 @@ import AdminEmpresas from './pages/admin/AdminEmpresas';
 import AdminPagos from './pages/admin/AdminPagos';
 import AdminConfiguracion from './pages/admin/AdminConfiguracion';
 import AdminEmpresaDetalle from './pages/admin/AdminEmpresaDetalle';
+import AdminAfiliados from './pages/admin/AdminAfiliados';
+import PanelAfiliado from './pages/PanelAfiliado';
+import RegistroAfiliado from './pages/RegistroAfiliado';
 
 function Cargando() {
   return (
@@ -32,12 +38,12 @@ function Cargando() {
   );
 }
 
-// Rutas de empresa: si entra un super admin, va a su panel
+// Rutas de empresa: si entra un super admin o afiliado, va a su propio panel
 function EmpresaRoute({ children }: { children: React.ReactNode }) {
   const { usuario, loading } = useAuth();
   if (loading) return <Cargando />;
   if (!usuario) return <Navigate to="/login" replace />;
-  if (usuario.rol === 'SUPER_ADMIN') return <Navigate to="/admin" replace />;
+  if (usuario.rol !== 'ADMIN' && usuario.rol !== 'SUPERVISOR') return <Navigate to={rutaInicio(usuario.rol)} replace />;
   return <>{children}</>;
 }
 
@@ -45,7 +51,15 @@ function SuperAdminRoute({ children }: { children: React.ReactNode }) {
   const { usuario, loading } = useAuth();
   if (loading) return <Cargando />;
   if (!usuario) return <Navigate to="/login" replace />;
-  if (usuario.rol !== 'SUPER_ADMIN') return <Navigate to="/app" replace />;
+  if (usuario.rol !== 'SUPER_ADMIN') return <Navigate to={rutaInicio(usuario.rol)} replace />;
+  return <>{children}</>;
+}
+
+function AfiliadoRoute({ children }: { children: React.ReactNode }) {
+  const { usuario, loading } = useAuth();
+  if (loading) return <Cargando />;
+  if (!usuario) return <Navigate to="/login" replace />;
+  if (usuario.rol !== 'AFILIADO') return <Navigate to={rutaInicio(usuario.rol)} replace />;
   return <>{children}</>;
 }
 
@@ -58,6 +72,8 @@ function PublicHome() {
 }
 
 export default function App() {
+  // Captura el ?ref= del link de afiliado en cualquier página de entrada (landing, /registro)
+  useEffect(() => { capturarRef(); }, []);
   return (
     <CapturadorErrores>
     <AuthProvider>
@@ -66,6 +82,7 @@ export default function App() {
           {/* Público */}
           <Route path="/" element={<PublicHome />} />
           <Route path="/registro" element={<Registro />} />
+          <Route path="/afiliado/registro" element={<RegistroAfiliado />} />
           <Route path="/login" element={<Login />} />
           <Route path="/olvide" element={<Olvide />} />
           <Route path="/restablecer" element={<Restablecer />} />
@@ -92,8 +109,12 @@ export default function App() {
             <Route path="empresas" element={<AdminEmpresas />} />
             <Route path="empresas/:id" element={<AdminEmpresaDetalle />} />
             <Route path="pagos" element={<AdminPagos />} />
+            <Route path="afiliados" element={<AdminAfiliados />} />
             <Route path="configuracion" element={<AdminConfiguracion />} />
           </Route>
+
+          {/* Panel del afiliado (programa de referidos) */}
+          <Route path="/afiliado" element={<AfiliadoRoute><PanelAfiliado /></AfiliadoRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

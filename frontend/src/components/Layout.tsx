@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Clock, Users, Calendar, Settings, BarChart2, FileBarChart2, Bell, LogOut, Menu, X,
-  Building2, CreditCard, LayoutDashboard, AlertTriangle, Home,
+  Building2, CreditCard, LayoutDashboard, AlertTriangle, Home, Handshake,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -43,6 +43,7 @@ const navSuperAdmin: NavSection[] = [
     items: [
       { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/admin/empresas', label: 'Empresas', icon: Building2 },
+      { to: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
       { to: '/admin/pagos', label: 'Pagos', icon: CreditCard },
       { to: '/admin/configuracion', label: 'Precios', icon: Settings },
     ],

@@ -14,6 +14,8 @@ import configuracionRoutes from './routes/configuracion';
 import reporteRoutes from './routes/reportes';
 import workerRoutes from './routes/worker';
 import adminRoutes from './routes/admin';
+import afiliadoAdminRoutes from './routes/afiliados';
+import afiliadoPanelRoutes from './routes/afiliado-panel';
 import wompiRoutes from './routes/wompi';
 import suscripcionRoutes from './routes/suscripcion';
 import horarioRoutes from './routes/horarios';
@@ -29,9 +31,10 @@ export const prisma = new PrismaClient();
 export type JwtPayload = {
   id: string;
   email?: string;
-  rol: 'SUPER_ADMIN' | 'ADMIN' | 'SUPERVISOR' | 'WORKER';
+  rol: 'SUPER_ADMIN' | 'ADMIN' | 'SUPERVISOR' | 'WORKER' | 'AFILIADO';
   nombre: string;
   empresaId: string | null;
+  afiliadoId?: string | null;
 };
 
 const esProduccion = process.env.NODE_ENV === 'production';
@@ -115,6 +118,20 @@ app.decorate('requireSuperAdmin', async (request: any, reply: any) => {
   }
 });
 
+// Afiliado (programa de referidos): exige rol AFILIADO con su afiliadoId
+app.decorate('requireAfiliado', async (request: any, reply: any) => {
+  try {
+    await request.jwtVerify();
+  } catch {
+    return reply.status(401).send({ error: 'No autorizado' });
+  }
+  const payload = request.user as JwtPayload;
+  if (payload.rol !== 'AFILIADO' || !payload.afiliadoId) {
+    return reply.status(403).send({ error: 'Requiere cuenta de afiliado' });
+  }
+  request.afiliadoId = payload.afiliadoId;
+});
+
 app.register(authRoutes, { prefix: '/api/auth' });
 app.register(colaboradorRoutes, { prefix: '/api/colaboradores' });
 app.register(registroRoutes, { prefix: '/api/registros' });
@@ -124,6 +141,8 @@ app.register(configuracionRoutes, { prefix: '/api/configuracion' });
 app.register(reporteRoutes, { prefix: '/api/reportes' });
 app.register(workerRoutes, { prefix: '/api/worker' });
 app.register(adminRoutes, { prefix: '/api/admin' });
+app.register(afiliadoAdminRoutes, { prefix: '/api/admin/afiliados' });
+app.register(afiliadoPanelRoutes, { prefix: '/api/afiliado' });
 app.register(wompiRoutes, { prefix: '/api/wompi' });
 app.register(suscripcionRoutes, { prefix: '/api/suscripcion' });
 app.register(horarioRoutes, { prefix: '/api/horarios' });
