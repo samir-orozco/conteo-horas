@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /admin
+Disallow: /afiliado
+Disallow: /marcador
+Disallow: /api
+
+Sitemap: https://horapro.co/sitemap.xml

@@ -1,5 +1,5 @@
 // Código de referido del programa de afiliados.
-// El link del afiliado es https://horapro.krumlab.com/?ref=CODIGO. Al abrirlo se
+// El link del afiliado es https://horapro.co/?ref=CODIGO. Al abrirlo se
 // guarda el código en localStorage SIN vencimiento: cuando el visitante se
 // registre —hoy o dentro de meses— la empresa queda atribuida a ese afiliado.
 const KEY = 'horapro_ref';
