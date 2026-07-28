@@ -25,6 +25,10 @@ export default class CapturadorErrores extends Component<{ children: ReactNode }
   };
   onRejection = (e: PromiseRejectionEvent) => {
     const r: any = e.reason;
+    // Los errores HTTP de axios (el servidor respondió 4xx/5xx) son estados
+    // esperados que maneja la app —p. ej. 402 = empresa en mora, que dispara el
+    // modal de pago—, no un cuelgue de la página. No los mostramos como error global.
+    if (r?.isAxiosError || r?.response || r?.config) return;
     this.mostrar('global', `Promesa rechazada: ${r?.message ?? String(r)}${r?.stack ? `\n${r.stack}` : ''}`);
   };
 
