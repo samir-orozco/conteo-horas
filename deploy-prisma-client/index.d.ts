@@ -93,6 +93,21 @@ export type Notificacion = $Result.DefaultSelection<Prisma.$NotificacionPayload>
  * 
  */
 export type Usuario = $Result.DefaultSelection<Prisma.$UsuarioPayload>
+/**
+ * Model Afiliado
+ * 
+ */
+export type Afiliado = $Result.DefaultSelection<Prisma.$AfiliadoPayload>
+/**
+ * Model Comision
+ * 
+ */
+export type Comision = $Result.DefaultSelection<Prisma.$ComisionPayload>
+/**
+ * Model SolicitudRetiro
+ * 
+ */
+export type SolicitudRetiro = $Result.DefaultSelection<Prisma.$SolicitudRetiroPayload>
 
 /**
  * Enums
@@ -156,10 +171,47 @@ export type TipoPermiso = (typeof TipoPermiso)[keyof typeof TipoPermiso]
 export const Rol: {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
-  SUPERVISOR: 'SUPERVISOR'
+  SUPERVISOR: 'SUPERVISOR',
+  AFILIADO: 'AFILIADO'
 };
 
 export type Rol = (typeof Rol)[keyof typeof Rol]
+
+
+export const MetodoPagoAfiliado: {
+  NEQUI: 'NEQUI',
+  BANCOLOMBIA: 'BANCOLOMBIA',
+  DAVIPLATA: 'DAVIPLATA',
+  OTRO: 'OTRO'
+};
+
+export type MetodoPagoAfiliado = (typeof MetodoPagoAfiliado)[keyof typeof MetodoPagoAfiliado]
+
+
+export const TipoCuentaBancaria: {
+  AHORROS: 'AHORROS',
+  CORRIENTE: 'CORRIENTE'
+};
+
+export type TipoCuentaBancaria = (typeof TipoCuentaBancaria)[keyof typeof TipoCuentaBancaria]
+
+
+export const EstadoComision: {
+  CAUSADA: 'CAUSADA',
+  ANULADA: 'ANULADA'
+};
+
+export type EstadoComision = (typeof EstadoComision)[keyof typeof EstadoComision]
+
+
+export const EstadoRetiro: {
+  SOLICITADO: 'SOLICITADO',
+  APROBADO: 'APROBADO',
+  PAGADO: 'PAGADO',
+  RECHAZADO: 'RECHAZADO'
+};
+
+export type EstadoRetiro = (typeof EstadoRetiro)[keyof typeof EstadoRetiro]
 
 }
 
@@ -186,6 +238,22 @@ export const TipoPermiso: typeof $Enums.TipoPermiso
 export type Rol = $Enums.Rol
 
 export const Rol: typeof $Enums.Rol
+
+export type MetodoPagoAfiliado = $Enums.MetodoPagoAfiliado
+
+export const MetodoPagoAfiliado: typeof $Enums.MetodoPagoAfiliado
+
+export type TipoCuentaBancaria = $Enums.TipoCuentaBancaria
+
+export const TipoCuentaBancaria: typeof $Enums.TipoCuentaBancaria
+
+export type EstadoComision = $Enums.EstadoComision
+
+export const EstadoComision: typeof $Enums.EstadoComision
+
+export type EstadoRetiro = $Enums.EstadoRetiro
+
+export const EstadoRetiro: typeof $Enums.EstadoRetiro
 
 /**
  * ##  Prisma Client ʲˢ
@@ -469,6 +537,36 @@ export class PrismaClient<
     * ```
     */
   get usuario(): Prisma.UsuarioDelegate<ExtArgs>;
+
+  /**
+   * `prisma.afiliado`: Exposes CRUD operations for the **Afiliado** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Afiliados
+    * const afiliados = await prisma.afiliado.findMany()
+    * ```
+    */
+  get afiliado(): Prisma.AfiliadoDelegate<ExtArgs>;
+
+  /**
+   * `prisma.comision`: Exposes CRUD operations for the **Comision** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Comisions
+    * const comisions = await prisma.comision.findMany()
+    * ```
+    */
+  get comision(): Prisma.ComisionDelegate<ExtArgs>;
+
+  /**
+   * `prisma.solicitudRetiro`: Exposes CRUD operations for the **SolicitudRetiro** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SolicitudRetiros
+    * const solicitudRetiros = await prisma.solicitudRetiro.findMany()
+    * ```
+    */
+  get solicitudRetiro(): Prisma.SolicitudRetiroDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -925,7 +1023,10 @@ export namespace Prisma {
     DiaFestivo: 'DiaFestivo',
     Configuracion: 'Configuracion',
     Notificacion: 'Notificacion',
-    Usuario: 'Usuario'
+    Usuario: 'Usuario',
+    Afiliado: 'Afiliado',
+    Comision: 'Comision',
+    SolicitudRetiro: 'SolicitudRetiro'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -941,7 +1042,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario"
+      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2001,6 +2102,204 @@ export namespace Prisma {
           }
         }
       }
+      Afiliado: {
+        payload: Prisma.$AfiliadoPayload<ExtArgs>
+        fields: Prisma.AfiliadoFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.AfiliadoFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AfiliadoPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.AfiliadoFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AfiliadoPayload>
+          }
+          findFirst: {
+            args: Prisma.AfiliadoFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AfiliadoPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.AfiliadoFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AfiliadoPayload>
+          }
+          findMany: {
+            args: Prisma.AfiliadoFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AfiliadoPayload>[]
+          }
+          create: {
+            args: Prisma.AfiliadoCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AfiliadoPayload>
+          }
+          createMany: {
+            args: Prisma.AfiliadoCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.AfiliadoDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AfiliadoPayload>
+          }
+          update: {
+            args: Prisma.AfiliadoUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AfiliadoPayload>
+          }
+          deleteMany: {
+            args: Prisma.AfiliadoDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.AfiliadoUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.AfiliadoUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AfiliadoPayload>
+          }
+          aggregate: {
+            args: Prisma.AfiliadoAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateAfiliado>
+          }
+          groupBy: {
+            args: Prisma.AfiliadoGroupByArgs<ExtArgs>
+            result: $Utils.Optional<AfiliadoGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.AfiliadoCountArgs<ExtArgs>
+            result: $Utils.Optional<AfiliadoCountAggregateOutputType> | number
+          }
+        }
+      }
+      Comision: {
+        payload: Prisma.$ComisionPayload<ExtArgs>
+        fields: Prisma.ComisionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ComisionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComisionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ComisionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComisionPayload>
+          }
+          findFirst: {
+            args: Prisma.ComisionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComisionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ComisionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComisionPayload>
+          }
+          findMany: {
+            args: Prisma.ComisionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComisionPayload>[]
+          }
+          create: {
+            args: Prisma.ComisionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComisionPayload>
+          }
+          createMany: {
+            args: Prisma.ComisionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ComisionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComisionPayload>
+          }
+          update: {
+            args: Prisma.ComisionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComisionPayload>
+          }
+          deleteMany: {
+            args: Prisma.ComisionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ComisionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ComisionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComisionPayload>
+          }
+          aggregate: {
+            args: Prisma.ComisionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateComision>
+          }
+          groupBy: {
+            args: Prisma.ComisionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ComisionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ComisionCountArgs<ExtArgs>
+            result: $Utils.Optional<ComisionCountAggregateOutputType> | number
+          }
+        }
+      }
+      SolicitudRetiro: {
+        payload: Prisma.$SolicitudRetiroPayload<ExtArgs>
+        fields: Prisma.SolicitudRetiroFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SolicitudRetiroFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SolicitudRetiroPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SolicitudRetiroFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SolicitudRetiroPayload>
+          }
+          findFirst: {
+            args: Prisma.SolicitudRetiroFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SolicitudRetiroPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SolicitudRetiroFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SolicitudRetiroPayload>
+          }
+          findMany: {
+            args: Prisma.SolicitudRetiroFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SolicitudRetiroPayload>[]
+          }
+          create: {
+            args: Prisma.SolicitudRetiroCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SolicitudRetiroPayload>
+          }
+          createMany: {
+            args: Prisma.SolicitudRetiroCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SolicitudRetiroDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SolicitudRetiroPayload>
+          }
+          update: {
+            args: Prisma.SolicitudRetiroUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SolicitudRetiroPayload>
+          }
+          deleteMany: {
+            args: Prisma.SolicitudRetiroDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SolicitudRetiroUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SolicitudRetiroUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SolicitudRetiroPayload>
+          }
+          aggregate: {
+            args: Prisma.SolicitudRetiroAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSolicitudRetiro>
+          }
+          groupBy: {
+            args: Prisma.SolicitudRetiroGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SolicitudRetiroGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SolicitudRetiroCountArgs<ExtArgs>
+            result: $Utils.Optional<SolicitudRetiroCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -2169,6 +2468,7 @@ export namespace Prisma {
     horarios: number
     dispositivos: number
     notificaciones: number
+    comisiones: number
   }
 
   export type EmpresaCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2179,6 +2479,7 @@ export namespace Prisma {
     horarios?: boolean | EmpresaCountOutputTypeCountHorariosArgs
     dispositivos?: boolean | EmpresaCountOutputTypeCountDispositivosArgs
     notificaciones?: boolean | EmpresaCountOutputTypeCountNotificacionesArgs
+    comisiones?: boolean | EmpresaCountOutputTypeCountComisionesArgs
   }
 
   // Custom InputTypes
@@ -2239,6 +2540,13 @@ export namespace Prisma {
    */
   export type EmpresaCountOutputTypeCountNotificacionesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: NotificacionWhereInput
+  }
+
+  /**
+   * EmpresaCountOutputType without action
+   */
+  export type EmpresaCountOutputTypeCountComisionesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ComisionWhereInput
   }
 
 
@@ -2354,6 +2662,64 @@ export namespace Prisma {
 
 
   /**
+   * Count Type AfiliadoCountOutputType
+   */
+
+  export type AfiliadoCountOutputType = {
+    usuarios: number
+    empresas: number
+    comisiones: number
+    retiros: number
+  }
+
+  export type AfiliadoCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    usuarios?: boolean | AfiliadoCountOutputTypeCountUsuariosArgs
+    empresas?: boolean | AfiliadoCountOutputTypeCountEmpresasArgs
+    comisiones?: boolean | AfiliadoCountOutputTypeCountComisionesArgs
+    retiros?: boolean | AfiliadoCountOutputTypeCountRetirosArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * AfiliadoCountOutputType without action
+   */
+  export type AfiliadoCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AfiliadoCountOutputType
+     */
+    select?: AfiliadoCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * AfiliadoCountOutputType without action
+   */
+  export type AfiliadoCountOutputTypeCountUsuariosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UsuarioWhereInput
+  }
+
+  /**
+   * AfiliadoCountOutputType without action
+   */
+  export type AfiliadoCountOutputTypeCountEmpresasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: EmpresaWhereInput
+  }
+
+  /**
+   * AfiliadoCountOutputType without action
+   */
+  export type AfiliadoCountOutputTypeCountComisionesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ComisionWhereInput
+  }
+
+  /**
+   * AfiliadoCountOutputType without action
+   */
+  export type AfiliadoCountOutputTypeCountRetirosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SolicitudRetiroWhereInput
+  }
+
+
+  /**
    * Models
    */
 
@@ -2378,6 +2744,9 @@ export namespace Prisma {
     activa: boolean | null
     creadoEn: Date | null
     actualizadoEn: Date | null
+    afiliadoId: string | null
+    atribuidoEn: Date | null
+    primerPagoComisionEn: Date | null
   }
 
   export type EmpresaMaxAggregateOutputType = {
@@ -2391,6 +2760,9 @@ export namespace Prisma {
     activa: boolean | null
     creadoEn: Date | null
     actualizadoEn: Date | null
+    afiliadoId: string | null
+    atribuidoEn: Date | null
+    primerPagoComisionEn: Date | null
   }
 
   export type EmpresaCountAggregateOutputType = {
@@ -2404,6 +2776,9 @@ export namespace Prisma {
     activa: number
     creadoEn: number
     actualizadoEn: number
+    afiliadoId: number
+    atribuidoEn: number
+    primerPagoComisionEn: number
     _all: number
   }
 
@@ -2419,6 +2794,9 @@ export namespace Prisma {
     activa?: true
     creadoEn?: true
     actualizadoEn?: true
+    afiliadoId?: true
+    atribuidoEn?: true
+    primerPagoComisionEn?: true
   }
 
   export type EmpresaMaxAggregateInputType = {
@@ -2432,6 +2810,9 @@ export namespace Prisma {
     activa?: true
     creadoEn?: true
     actualizadoEn?: true
+    afiliadoId?: true
+    atribuidoEn?: true
+    primerPagoComisionEn?: true
   }
 
   export type EmpresaCountAggregateInputType = {
@@ -2445,6 +2826,9 @@ export namespace Prisma {
     activa?: true
     creadoEn?: true
     actualizadoEn?: true
+    afiliadoId?: true
+    atribuidoEn?: true
+    primerPagoComisionEn?: true
     _all?: true
   }
 
@@ -2531,6 +2915,9 @@ export namespace Prisma {
     activa: boolean
     creadoEn: Date
     actualizadoEn: Date
+    afiliadoId: string | null
+    atribuidoEn: Date | null
+    primerPagoComisionEn: Date | null
     _count: EmpresaCountAggregateOutputType | null
     _min: EmpresaMinAggregateOutputType | null
     _max: EmpresaMaxAggregateOutputType | null
@@ -2561,6 +2948,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
+    afiliadoId?: boolean
+    atribuidoEn?: boolean
+    primerPagoComisionEn?: boolean
     usuarios?: boolean | Empresa$usuariosArgs<ExtArgs>
     colaboradores?: boolean | Empresa$colaboradoresArgs<ExtArgs>
     festivos?: boolean | Empresa$festivosArgs<ExtArgs>
@@ -2569,6 +2959,8 @@ export namespace Prisma {
     horarios?: boolean | Empresa$horariosArgs<ExtArgs>
     dispositivos?: boolean | Empresa$dispositivosArgs<ExtArgs>
     notificaciones?: boolean | Empresa$notificacionesArgs<ExtArgs>
+    afiliado?: boolean | Empresa$afiliadoArgs<ExtArgs>
+    comisiones?: boolean | Empresa$comisionesArgs<ExtArgs>
     _count?: boolean | EmpresaCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["empresa"]>
 
@@ -2584,6 +2976,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
+    afiliadoId?: boolean
+    atribuidoEn?: boolean
+    primerPagoComisionEn?: boolean
   }
 
   export type EmpresaInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2595,6 +2990,8 @@ export namespace Prisma {
     horarios?: boolean | Empresa$horariosArgs<ExtArgs>
     dispositivos?: boolean | Empresa$dispositivosArgs<ExtArgs>
     notificaciones?: boolean | Empresa$notificacionesArgs<ExtArgs>
+    afiliado?: boolean | Empresa$afiliadoArgs<ExtArgs>
+    comisiones?: boolean | Empresa$comisionesArgs<ExtArgs>
     _count?: boolean | EmpresaCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -2609,6 +3006,8 @@ export namespace Prisma {
       horarios: Prisma.$HorarioPayload<ExtArgs>[]
       dispositivos: Prisma.$DispositivoKioscoPayload<ExtArgs>[]
       notificaciones: Prisma.$NotificacionPayload<ExtArgs>[]
+      afiliado: Prisma.$AfiliadoPayload<ExtArgs> | null
+      comisiones: Prisma.$ComisionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -2621,6 +3020,9 @@ export namespace Prisma {
       activa: boolean
       creadoEn: Date
       actualizadoEn: Date
+      afiliadoId: string | null
+      atribuidoEn: Date | null
+      primerPagoComisionEn: Date | null
     }, ExtArgs["result"]["empresa"]>
     composites: {}
   }
@@ -2969,6 +3371,8 @@ export namespace Prisma {
     horarios<T extends Empresa$horariosArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$horariosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HorarioPayload<ExtArgs>, T, "findMany"> | Null>
     dispositivos<T extends Empresa$dispositivosArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$dispositivosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DispositivoKioscoPayload<ExtArgs>, T, "findMany"> | Null>
     notificaciones<T extends Empresa$notificacionesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$notificacionesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NotificacionPayload<ExtArgs>, T, "findMany"> | Null>
+    afiliado<T extends Empresa$afiliadoArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$afiliadoArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    comisiones<T extends Empresa$comisionesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$comisionesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3008,6 +3412,9 @@ export namespace Prisma {
     readonly activa: FieldRef<"Empresa", 'Boolean'>
     readonly creadoEn: FieldRef<"Empresa", 'DateTime'>
     readonly actualizadoEn: FieldRef<"Empresa", 'DateTime'>
+    readonly afiliadoId: FieldRef<"Empresa", 'String'>
+    readonly atribuidoEn: FieldRef<"Empresa", 'DateTime'>
+    readonly primerPagoComisionEn: FieldRef<"Empresa", 'DateTime'>
   }
     
 
@@ -3459,6 +3866,41 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: NotificacionScalarFieldEnum | NotificacionScalarFieldEnum[]
+  }
+
+  /**
+   * Empresa.afiliado
+   */
+  export type Empresa$afiliadoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    where?: AfiliadoWhereInput
+  }
+
+  /**
+   * Empresa.comisiones
+   */
+  export type Empresa$comisionesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    where?: ComisionWhereInput
+    orderBy?: ComisionOrderByWithRelationInput | ComisionOrderByWithRelationInput[]
+    cursor?: ComisionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ComisionScalarFieldEnum | ComisionScalarFieldEnum[]
   }
 
   /**
@@ -4837,6 +5279,7 @@ export namespace Prisma {
     registradoPor?: boolean
     creadoEn?: boolean
     suscripcion?: boolean | SuscripcionDefaultArgs<ExtArgs>
+    comision?: boolean | Pago$comisionArgs<ExtArgs>
   }, ExtArgs["result"]["pago"]>
 
 
@@ -4858,12 +5301,14 @@ export namespace Prisma {
 
   export type PagoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     suscripcion?: boolean | SuscripcionDefaultArgs<ExtArgs>
+    comision?: boolean | Pago$comisionArgs<ExtArgs>
   }
 
   export type $PagoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Pago"
     objects: {
       suscripcion: Prisma.$SuscripcionPayload<ExtArgs>
+      comision: Prisma.$ComisionPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -5220,6 +5665,7 @@ export namespace Prisma {
   export interface Prisma__PagoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     suscripcion<T extends SuscripcionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SuscripcionDefaultArgs<ExtArgs>>): Prisma__SuscripcionClient<$Result.GetResult<Prisma.$SuscripcionPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    comision<T extends Pago$comisionArgs<ExtArgs> = {}>(args?: Subset<T, Pago$comisionArgs<ExtArgs>>): Prisma__ComisionClient<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5558,6 +6004,21 @@ export namespace Prisma {
      * Filter which Pagos to delete
      */
     where?: PagoWhereInput
+  }
+
+  /**
+   * Pago.comision
+   */
+  export type Pago$comisionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    where?: ComisionWhereInput
   }
 
   /**
@@ -16714,6 +17175,7 @@ export namespace Prisma {
   export type UsuarioMinAggregateOutputType = {
     id: string | null
     empresaId: string | null
+    afiliadoId: string | null
     email: string | null
     password: string | null
     nombre: string | null
@@ -16730,6 +17192,7 @@ export namespace Prisma {
   export type UsuarioMaxAggregateOutputType = {
     id: string | null
     empresaId: string | null
+    afiliadoId: string | null
     email: string | null
     password: string | null
     nombre: string | null
@@ -16746,6 +17209,7 @@ export namespace Prisma {
   export type UsuarioCountAggregateOutputType = {
     id: number
     empresaId: number
+    afiliadoId: number
     email: number
     password: number
     nombre: number
@@ -16764,6 +17228,7 @@ export namespace Prisma {
   export type UsuarioMinAggregateInputType = {
     id?: true
     empresaId?: true
+    afiliadoId?: true
     email?: true
     password?: true
     nombre?: true
@@ -16780,6 +17245,7 @@ export namespace Prisma {
   export type UsuarioMaxAggregateInputType = {
     id?: true
     empresaId?: true
+    afiliadoId?: true
     email?: true
     password?: true
     nombre?: true
@@ -16796,6 +17262,7 @@ export namespace Prisma {
   export type UsuarioCountAggregateInputType = {
     id?: true
     empresaId?: true
+    afiliadoId?: true
     email?: true
     password?: true
     nombre?: true
@@ -16885,6 +17352,7 @@ export namespace Prisma {
   export type UsuarioGroupByOutputType = {
     id: string
     empresaId: string | null
+    afiliadoId: string | null
     email: string
     password: string
     nombre: string
@@ -16918,6 +17386,7 @@ export namespace Prisma {
   export type UsuarioSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     empresaId?: boolean
+    afiliadoId?: boolean
     email?: boolean
     password?: boolean
     nombre?: boolean
@@ -16930,12 +17399,14 @@ export namespace Prisma {
     verificacionExpira?: boolean
     creadoEn?: boolean
     empresa?: boolean | Usuario$empresaArgs<ExtArgs>
+    afiliado?: boolean | Usuario$afiliadoArgs<ExtArgs>
   }, ExtArgs["result"]["usuario"]>
 
 
   export type UsuarioSelectScalar = {
     id?: boolean
     empresaId?: boolean
+    afiliadoId?: boolean
     email?: boolean
     password?: boolean
     nombre?: boolean
@@ -16951,16 +17422,19 @@ export namespace Prisma {
 
   export type UsuarioInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     empresa?: boolean | Usuario$empresaArgs<ExtArgs>
+    afiliado?: boolean | Usuario$afiliadoArgs<ExtArgs>
   }
 
   export type $UsuarioPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Usuario"
     objects: {
       empresa: Prisma.$EmpresaPayload<ExtArgs> | null
+      afiliado: Prisma.$AfiliadoPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       empresaId: string | null
+      afiliadoId: string | null
       email: string
       password: string
       nombre: string
@@ -17313,6 +17787,7 @@ export namespace Prisma {
   export interface Prisma__UsuarioClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     empresa<T extends Usuario$empresaArgs<ExtArgs> = {}>(args?: Subset<T, Usuario$empresaArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    afiliado<T extends Usuario$afiliadoArgs<ExtArgs> = {}>(args?: Subset<T, Usuario$afiliadoArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -17344,6 +17819,7 @@ export namespace Prisma {
   interface UsuarioFieldRefs {
     readonly id: FieldRef<"Usuario", 'String'>
     readonly empresaId: FieldRef<"Usuario", 'String'>
+    readonly afiliadoId: FieldRef<"Usuario", 'String'>
     readonly email: FieldRef<"Usuario", 'String'>
     readonly password: FieldRef<"Usuario", 'String'>
     readonly nombre: FieldRef<"Usuario", 'String'>
@@ -17669,6 +18145,21 @@ export namespace Prisma {
   }
 
   /**
+   * Usuario.afiliado
+   */
+  export type Usuario$afiliadoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    where?: AfiliadoWhereInput
+  }
+
+  /**
    * Usuario without action
    */
   export type UsuarioDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -17680,6 +18171,3057 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: UsuarioInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model Afiliado
+   */
+
+  export type AggregateAfiliado = {
+    _count: AfiliadoCountAggregateOutputType | null
+    _avg: AfiliadoAvgAggregateOutputType | null
+    _sum: AfiliadoSumAggregateOutputType | null
+    _min: AfiliadoMinAggregateOutputType | null
+    _max: AfiliadoMaxAggregateOutputType | null
+  }
+
+  export type AfiliadoAvgAggregateOutputType = {
+    porcentaje: number | null
+    duracionMeses: number | null
+  }
+
+  export type AfiliadoSumAggregateOutputType = {
+    porcentaje: number | null
+    duracionMeses: number | null
+  }
+
+  export type AfiliadoMinAggregateOutputType = {
+    id: string | null
+    nombre: string | null
+    codigo: string | null
+    porcentaje: number | null
+    duracionMeses: number | null
+    activo: boolean | null
+    telefono: string | null
+    pagoMetodo: $Enums.MetodoPagoAfiliado | null
+    pagoBanco: string | null
+    pagoTipoCuenta: $Enums.TipoCuentaBancaria | null
+    pagoNumero: string | null
+    pagoTitular: string | null
+    pagoDocumento: string | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type AfiliadoMaxAggregateOutputType = {
+    id: string | null
+    nombre: string | null
+    codigo: string | null
+    porcentaje: number | null
+    duracionMeses: number | null
+    activo: boolean | null
+    telefono: string | null
+    pagoMetodo: $Enums.MetodoPagoAfiliado | null
+    pagoBanco: string | null
+    pagoTipoCuenta: $Enums.TipoCuentaBancaria | null
+    pagoNumero: string | null
+    pagoTitular: string | null
+    pagoDocumento: string | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type AfiliadoCountAggregateOutputType = {
+    id: number
+    nombre: number
+    codigo: number
+    porcentaje: number
+    duracionMeses: number
+    activo: number
+    telefono: number
+    pagoMetodo: number
+    pagoBanco: number
+    pagoTipoCuenta: number
+    pagoNumero: number
+    pagoTitular: number
+    pagoDocumento: number
+    creadoEn: number
+    actualizadoEn: number
+    _all: number
+  }
+
+
+  export type AfiliadoAvgAggregateInputType = {
+    porcentaje?: true
+    duracionMeses?: true
+  }
+
+  export type AfiliadoSumAggregateInputType = {
+    porcentaje?: true
+    duracionMeses?: true
+  }
+
+  export type AfiliadoMinAggregateInputType = {
+    id?: true
+    nombre?: true
+    codigo?: true
+    porcentaje?: true
+    duracionMeses?: true
+    activo?: true
+    telefono?: true
+    pagoMetodo?: true
+    pagoBanco?: true
+    pagoTipoCuenta?: true
+    pagoNumero?: true
+    pagoTitular?: true
+    pagoDocumento?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type AfiliadoMaxAggregateInputType = {
+    id?: true
+    nombre?: true
+    codigo?: true
+    porcentaje?: true
+    duracionMeses?: true
+    activo?: true
+    telefono?: true
+    pagoMetodo?: true
+    pagoBanco?: true
+    pagoTipoCuenta?: true
+    pagoNumero?: true
+    pagoTitular?: true
+    pagoDocumento?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type AfiliadoCountAggregateInputType = {
+    id?: true
+    nombre?: true
+    codigo?: true
+    porcentaje?: true
+    duracionMeses?: true
+    activo?: true
+    telefono?: true
+    pagoMetodo?: true
+    pagoBanco?: true
+    pagoTipoCuenta?: true
+    pagoNumero?: true
+    pagoTitular?: true
+    pagoDocumento?: true
+    creadoEn?: true
+    actualizadoEn?: true
+    _all?: true
+  }
+
+  export type AfiliadoAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Afiliado to aggregate.
+     */
+    where?: AfiliadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Afiliados to fetch.
+     */
+    orderBy?: AfiliadoOrderByWithRelationInput | AfiliadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: AfiliadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Afiliados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Afiliados.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Afiliados
+    **/
+    _count?: true | AfiliadoCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: AfiliadoAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: AfiliadoSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: AfiliadoMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: AfiliadoMaxAggregateInputType
+  }
+
+  export type GetAfiliadoAggregateType<T extends AfiliadoAggregateArgs> = {
+        [P in keyof T & keyof AggregateAfiliado]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateAfiliado[P]>
+      : GetScalarType<T[P], AggregateAfiliado[P]>
+  }
+
+
+
+
+  export type AfiliadoGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AfiliadoWhereInput
+    orderBy?: AfiliadoOrderByWithAggregationInput | AfiliadoOrderByWithAggregationInput[]
+    by: AfiliadoScalarFieldEnum[] | AfiliadoScalarFieldEnum
+    having?: AfiliadoScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: AfiliadoCountAggregateInputType | true
+    _avg?: AfiliadoAvgAggregateInputType
+    _sum?: AfiliadoSumAggregateInputType
+    _min?: AfiliadoMinAggregateInputType
+    _max?: AfiliadoMaxAggregateInputType
+  }
+
+  export type AfiliadoGroupByOutputType = {
+    id: string
+    nombre: string
+    codigo: string
+    porcentaje: number
+    duracionMeses: number | null
+    activo: boolean
+    telefono: string | null
+    pagoMetodo: $Enums.MetodoPagoAfiliado | null
+    pagoBanco: string | null
+    pagoTipoCuenta: $Enums.TipoCuentaBancaria | null
+    pagoNumero: string | null
+    pagoTitular: string | null
+    pagoDocumento: string | null
+    creadoEn: Date
+    actualizadoEn: Date
+    _count: AfiliadoCountAggregateOutputType | null
+    _avg: AfiliadoAvgAggregateOutputType | null
+    _sum: AfiliadoSumAggregateOutputType | null
+    _min: AfiliadoMinAggregateOutputType | null
+    _max: AfiliadoMaxAggregateOutputType | null
+  }
+
+  type GetAfiliadoGroupByPayload<T extends AfiliadoGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<AfiliadoGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof AfiliadoGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], AfiliadoGroupByOutputType[P]>
+            : GetScalarType<T[P], AfiliadoGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type AfiliadoSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    nombre?: boolean
+    codigo?: boolean
+    porcentaje?: boolean
+    duracionMeses?: boolean
+    activo?: boolean
+    telefono?: boolean
+    pagoMetodo?: boolean
+    pagoBanco?: boolean
+    pagoTipoCuenta?: boolean
+    pagoNumero?: boolean
+    pagoTitular?: boolean
+    pagoDocumento?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+    usuarios?: boolean | Afiliado$usuariosArgs<ExtArgs>
+    empresas?: boolean | Afiliado$empresasArgs<ExtArgs>
+    comisiones?: boolean | Afiliado$comisionesArgs<ExtArgs>
+    retiros?: boolean | Afiliado$retirosArgs<ExtArgs>
+    _count?: boolean | AfiliadoCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["afiliado"]>
+
+
+  export type AfiliadoSelectScalar = {
+    id?: boolean
+    nombre?: boolean
+    codigo?: boolean
+    porcentaje?: boolean
+    duracionMeses?: boolean
+    activo?: boolean
+    telefono?: boolean
+    pagoMetodo?: boolean
+    pagoBanco?: boolean
+    pagoTipoCuenta?: boolean
+    pagoNumero?: boolean
+    pagoTitular?: boolean
+    pagoDocumento?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+  }
+
+  export type AfiliadoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    usuarios?: boolean | Afiliado$usuariosArgs<ExtArgs>
+    empresas?: boolean | Afiliado$empresasArgs<ExtArgs>
+    comisiones?: boolean | Afiliado$comisionesArgs<ExtArgs>
+    retiros?: boolean | Afiliado$retirosArgs<ExtArgs>
+    _count?: boolean | AfiliadoCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $AfiliadoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Afiliado"
+    objects: {
+      usuarios: Prisma.$UsuarioPayload<ExtArgs>[]
+      empresas: Prisma.$EmpresaPayload<ExtArgs>[]
+      comisiones: Prisma.$ComisionPayload<ExtArgs>[]
+      retiros: Prisma.$SolicitudRetiroPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      nombre: string
+      codigo: string
+      porcentaje: number
+      duracionMeses: number | null
+      activo: boolean
+      telefono: string | null
+      pagoMetodo: $Enums.MetodoPagoAfiliado | null
+      pagoBanco: string | null
+      pagoTipoCuenta: $Enums.TipoCuentaBancaria | null
+      pagoNumero: string | null
+      pagoTitular: string | null
+      pagoDocumento: string | null
+      creadoEn: Date
+      actualizadoEn: Date
+    }, ExtArgs["result"]["afiliado"]>
+    composites: {}
+  }
+
+  type AfiliadoGetPayload<S extends boolean | null | undefined | AfiliadoDefaultArgs> = $Result.GetResult<Prisma.$AfiliadoPayload, S>
+
+  type AfiliadoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<AfiliadoFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: AfiliadoCountAggregateInputType | true
+    }
+
+  export interface AfiliadoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Afiliado'], meta: { name: 'Afiliado' } }
+    /**
+     * Find zero or one Afiliado that matches the filter.
+     * @param {AfiliadoFindUniqueArgs} args - Arguments to find a Afiliado
+     * @example
+     * // Get one Afiliado
+     * const afiliado = await prisma.afiliado.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends AfiliadoFindUniqueArgs>(args: SelectSubset<T, AfiliadoFindUniqueArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Afiliado that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {AfiliadoFindUniqueOrThrowArgs} args - Arguments to find a Afiliado
+     * @example
+     * // Get one Afiliado
+     * const afiliado = await prisma.afiliado.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends AfiliadoFindUniqueOrThrowArgs>(args: SelectSubset<T, AfiliadoFindUniqueOrThrowArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Afiliado that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AfiliadoFindFirstArgs} args - Arguments to find a Afiliado
+     * @example
+     * // Get one Afiliado
+     * const afiliado = await prisma.afiliado.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends AfiliadoFindFirstArgs>(args?: SelectSubset<T, AfiliadoFindFirstArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Afiliado that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AfiliadoFindFirstOrThrowArgs} args - Arguments to find a Afiliado
+     * @example
+     * // Get one Afiliado
+     * const afiliado = await prisma.afiliado.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends AfiliadoFindFirstOrThrowArgs>(args?: SelectSubset<T, AfiliadoFindFirstOrThrowArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Afiliados that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AfiliadoFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Afiliados
+     * const afiliados = await prisma.afiliado.findMany()
+     * 
+     * // Get first 10 Afiliados
+     * const afiliados = await prisma.afiliado.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const afiliadoWithIdOnly = await prisma.afiliado.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends AfiliadoFindManyArgs>(args?: SelectSubset<T, AfiliadoFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Afiliado.
+     * @param {AfiliadoCreateArgs} args - Arguments to create a Afiliado.
+     * @example
+     * // Create one Afiliado
+     * const Afiliado = await prisma.afiliado.create({
+     *   data: {
+     *     // ... data to create a Afiliado
+     *   }
+     * })
+     * 
+     */
+    create<T extends AfiliadoCreateArgs>(args: SelectSubset<T, AfiliadoCreateArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Afiliados.
+     * @param {AfiliadoCreateManyArgs} args - Arguments to create many Afiliados.
+     * @example
+     * // Create many Afiliados
+     * const afiliado = await prisma.afiliado.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends AfiliadoCreateManyArgs>(args?: SelectSubset<T, AfiliadoCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Afiliado.
+     * @param {AfiliadoDeleteArgs} args - Arguments to delete one Afiliado.
+     * @example
+     * // Delete one Afiliado
+     * const Afiliado = await prisma.afiliado.delete({
+     *   where: {
+     *     // ... filter to delete one Afiliado
+     *   }
+     * })
+     * 
+     */
+    delete<T extends AfiliadoDeleteArgs>(args: SelectSubset<T, AfiliadoDeleteArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Afiliado.
+     * @param {AfiliadoUpdateArgs} args - Arguments to update one Afiliado.
+     * @example
+     * // Update one Afiliado
+     * const afiliado = await prisma.afiliado.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends AfiliadoUpdateArgs>(args: SelectSubset<T, AfiliadoUpdateArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Afiliados.
+     * @param {AfiliadoDeleteManyArgs} args - Arguments to filter Afiliados to delete.
+     * @example
+     * // Delete a few Afiliados
+     * const { count } = await prisma.afiliado.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends AfiliadoDeleteManyArgs>(args?: SelectSubset<T, AfiliadoDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Afiliados.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AfiliadoUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Afiliados
+     * const afiliado = await prisma.afiliado.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends AfiliadoUpdateManyArgs>(args: SelectSubset<T, AfiliadoUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Afiliado.
+     * @param {AfiliadoUpsertArgs} args - Arguments to update or create a Afiliado.
+     * @example
+     * // Update or create a Afiliado
+     * const afiliado = await prisma.afiliado.upsert({
+     *   create: {
+     *     // ... data to create a Afiliado
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Afiliado we want to update
+     *   }
+     * })
+     */
+    upsert<T extends AfiliadoUpsertArgs>(args: SelectSubset<T, AfiliadoUpsertArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of Afiliados.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AfiliadoCountArgs} args - Arguments to filter Afiliados to count.
+     * @example
+     * // Count the number of Afiliados
+     * const count = await prisma.afiliado.count({
+     *   where: {
+     *     // ... the filter for the Afiliados we want to count
+     *   }
+     * })
+    **/
+    count<T extends AfiliadoCountArgs>(
+      args?: Subset<T, AfiliadoCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], AfiliadoCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Afiliado.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AfiliadoAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends AfiliadoAggregateArgs>(args: Subset<T, AfiliadoAggregateArgs>): Prisma.PrismaPromise<GetAfiliadoAggregateType<T>>
+
+    /**
+     * Group by Afiliado.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AfiliadoGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends AfiliadoGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: AfiliadoGroupByArgs['orderBy'] }
+        : { orderBy?: AfiliadoGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, AfiliadoGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetAfiliadoGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Afiliado model
+   */
+  readonly fields: AfiliadoFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Afiliado.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__AfiliadoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    usuarios<T extends Afiliado$usuariosArgs<ExtArgs> = {}>(args?: Subset<T, Afiliado$usuariosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UsuarioPayload<ExtArgs>, T, "findMany"> | Null>
+    empresas<T extends Afiliado$empresasArgs<ExtArgs> = {}>(args?: Subset<T, Afiliado$empresasArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findMany"> | Null>
+    comisiones<T extends Afiliado$comisionesArgs<ExtArgs> = {}>(args?: Subset<T, Afiliado$comisionesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "findMany"> | Null>
+    retiros<T extends Afiliado$retirosArgs<ExtArgs> = {}>(args?: Subset<T, Afiliado$retirosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SolicitudRetiroPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Afiliado model
+   */ 
+  interface AfiliadoFieldRefs {
+    readonly id: FieldRef<"Afiliado", 'String'>
+    readonly nombre: FieldRef<"Afiliado", 'String'>
+    readonly codigo: FieldRef<"Afiliado", 'String'>
+    readonly porcentaje: FieldRef<"Afiliado", 'Float'>
+    readonly duracionMeses: FieldRef<"Afiliado", 'Int'>
+    readonly activo: FieldRef<"Afiliado", 'Boolean'>
+    readonly telefono: FieldRef<"Afiliado", 'String'>
+    readonly pagoMetodo: FieldRef<"Afiliado", 'MetodoPagoAfiliado'>
+    readonly pagoBanco: FieldRef<"Afiliado", 'String'>
+    readonly pagoTipoCuenta: FieldRef<"Afiliado", 'TipoCuentaBancaria'>
+    readonly pagoNumero: FieldRef<"Afiliado", 'String'>
+    readonly pagoTitular: FieldRef<"Afiliado", 'String'>
+    readonly pagoDocumento: FieldRef<"Afiliado", 'String'>
+    readonly creadoEn: FieldRef<"Afiliado", 'DateTime'>
+    readonly actualizadoEn: FieldRef<"Afiliado", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Afiliado findUnique
+   */
+  export type AfiliadoFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    /**
+     * Filter, which Afiliado to fetch.
+     */
+    where: AfiliadoWhereUniqueInput
+  }
+
+  /**
+   * Afiliado findUniqueOrThrow
+   */
+  export type AfiliadoFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    /**
+     * Filter, which Afiliado to fetch.
+     */
+    where: AfiliadoWhereUniqueInput
+  }
+
+  /**
+   * Afiliado findFirst
+   */
+  export type AfiliadoFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    /**
+     * Filter, which Afiliado to fetch.
+     */
+    where?: AfiliadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Afiliados to fetch.
+     */
+    orderBy?: AfiliadoOrderByWithRelationInput | AfiliadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Afiliados.
+     */
+    cursor?: AfiliadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Afiliados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Afiliados.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Afiliados.
+     */
+    distinct?: AfiliadoScalarFieldEnum | AfiliadoScalarFieldEnum[]
+  }
+
+  /**
+   * Afiliado findFirstOrThrow
+   */
+  export type AfiliadoFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    /**
+     * Filter, which Afiliado to fetch.
+     */
+    where?: AfiliadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Afiliados to fetch.
+     */
+    orderBy?: AfiliadoOrderByWithRelationInput | AfiliadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Afiliados.
+     */
+    cursor?: AfiliadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Afiliados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Afiliados.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Afiliados.
+     */
+    distinct?: AfiliadoScalarFieldEnum | AfiliadoScalarFieldEnum[]
+  }
+
+  /**
+   * Afiliado findMany
+   */
+  export type AfiliadoFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    /**
+     * Filter, which Afiliados to fetch.
+     */
+    where?: AfiliadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Afiliados to fetch.
+     */
+    orderBy?: AfiliadoOrderByWithRelationInput | AfiliadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Afiliados.
+     */
+    cursor?: AfiliadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Afiliados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Afiliados.
+     */
+    skip?: number
+    distinct?: AfiliadoScalarFieldEnum | AfiliadoScalarFieldEnum[]
+  }
+
+  /**
+   * Afiliado create
+   */
+  export type AfiliadoCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Afiliado.
+     */
+    data: XOR<AfiliadoCreateInput, AfiliadoUncheckedCreateInput>
+  }
+
+  /**
+   * Afiliado createMany
+   */
+  export type AfiliadoCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Afiliados.
+     */
+    data: AfiliadoCreateManyInput | AfiliadoCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Afiliado update
+   */
+  export type AfiliadoUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Afiliado.
+     */
+    data: XOR<AfiliadoUpdateInput, AfiliadoUncheckedUpdateInput>
+    /**
+     * Choose, which Afiliado to update.
+     */
+    where: AfiliadoWhereUniqueInput
+  }
+
+  /**
+   * Afiliado updateMany
+   */
+  export type AfiliadoUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Afiliados.
+     */
+    data: XOR<AfiliadoUpdateManyMutationInput, AfiliadoUncheckedUpdateManyInput>
+    /**
+     * Filter which Afiliados to update
+     */
+    where?: AfiliadoWhereInput
+  }
+
+  /**
+   * Afiliado upsert
+   */
+  export type AfiliadoUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Afiliado to update in case it exists.
+     */
+    where: AfiliadoWhereUniqueInput
+    /**
+     * In case the Afiliado found by the `where` argument doesn't exist, create a new Afiliado with this data.
+     */
+    create: XOR<AfiliadoCreateInput, AfiliadoUncheckedCreateInput>
+    /**
+     * In case the Afiliado was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<AfiliadoUpdateInput, AfiliadoUncheckedUpdateInput>
+  }
+
+  /**
+   * Afiliado delete
+   */
+  export type AfiliadoDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+    /**
+     * Filter which Afiliado to delete.
+     */
+    where: AfiliadoWhereUniqueInput
+  }
+
+  /**
+   * Afiliado deleteMany
+   */
+  export type AfiliadoDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Afiliados to delete
+     */
+    where?: AfiliadoWhereInput
+  }
+
+  /**
+   * Afiliado.usuarios
+   */
+  export type Afiliado$usuariosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Usuario
+     */
+    select?: UsuarioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UsuarioInclude<ExtArgs> | null
+    where?: UsuarioWhereInput
+    orderBy?: UsuarioOrderByWithRelationInput | UsuarioOrderByWithRelationInput[]
+    cursor?: UsuarioWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: UsuarioScalarFieldEnum | UsuarioScalarFieldEnum[]
+  }
+
+  /**
+   * Afiliado.empresas
+   */
+  export type Afiliado$empresasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Empresa
+     */
+    select?: EmpresaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmpresaInclude<ExtArgs> | null
+    where?: EmpresaWhereInput
+    orderBy?: EmpresaOrderByWithRelationInput | EmpresaOrderByWithRelationInput[]
+    cursor?: EmpresaWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: EmpresaScalarFieldEnum | EmpresaScalarFieldEnum[]
+  }
+
+  /**
+   * Afiliado.comisiones
+   */
+  export type Afiliado$comisionesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    where?: ComisionWhereInput
+    orderBy?: ComisionOrderByWithRelationInput | ComisionOrderByWithRelationInput[]
+    cursor?: ComisionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ComisionScalarFieldEnum | ComisionScalarFieldEnum[]
+  }
+
+  /**
+   * Afiliado.retiros
+   */
+  export type Afiliado$retirosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
+    where?: SolicitudRetiroWhereInput
+    orderBy?: SolicitudRetiroOrderByWithRelationInput | SolicitudRetiroOrderByWithRelationInput[]
+    cursor?: SolicitudRetiroWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SolicitudRetiroScalarFieldEnum | SolicitudRetiroScalarFieldEnum[]
+  }
+
+  /**
+   * Afiliado without action
+   */
+  export type AfiliadoDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Afiliado
+     */
+    select?: AfiliadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AfiliadoInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model Comision
+   */
+
+  export type AggregateComision = {
+    _count: ComisionCountAggregateOutputType | null
+    _avg: ComisionAvgAggregateOutputType | null
+    _sum: ComisionSumAggregateOutputType | null
+    _min: ComisionMinAggregateOutputType | null
+    _max: ComisionMaxAggregateOutputType | null
+  }
+
+  export type ComisionAvgAggregateOutputType = {
+    montoBase: number | null
+    porcentaje: number | null
+    monto: number | null
+  }
+
+  export type ComisionSumAggregateOutputType = {
+    montoBase: number | null
+    porcentaje: number | null
+    monto: number | null
+  }
+
+  export type ComisionMinAggregateOutputType = {
+    id: string | null
+    afiliadoId: string | null
+    empresaId: string | null
+    pagoId: string | null
+    montoBase: number | null
+    porcentaje: number | null
+    monto: number | null
+    estado: $Enums.EstadoComision | null
+    creadoEn: Date | null
+  }
+
+  export type ComisionMaxAggregateOutputType = {
+    id: string | null
+    afiliadoId: string | null
+    empresaId: string | null
+    pagoId: string | null
+    montoBase: number | null
+    porcentaje: number | null
+    monto: number | null
+    estado: $Enums.EstadoComision | null
+    creadoEn: Date | null
+  }
+
+  export type ComisionCountAggregateOutputType = {
+    id: number
+    afiliadoId: number
+    empresaId: number
+    pagoId: number
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado: number
+    creadoEn: number
+    _all: number
+  }
+
+
+  export type ComisionAvgAggregateInputType = {
+    montoBase?: true
+    porcentaje?: true
+    monto?: true
+  }
+
+  export type ComisionSumAggregateInputType = {
+    montoBase?: true
+    porcentaje?: true
+    monto?: true
+  }
+
+  export type ComisionMinAggregateInputType = {
+    id?: true
+    afiliadoId?: true
+    empresaId?: true
+    pagoId?: true
+    montoBase?: true
+    porcentaje?: true
+    monto?: true
+    estado?: true
+    creadoEn?: true
+  }
+
+  export type ComisionMaxAggregateInputType = {
+    id?: true
+    afiliadoId?: true
+    empresaId?: true
+    pagoId?: true
+    montoBase?: true
+    porcentaje?: true
+    monto?: true
+    estado?: true
+    creadoEn?: true
+  }
+
+  export type ComisionCountAggregateInputType = {
+    id?: true
+    afiliadoId?: true
+    empresaId?: true
+    pagoId?: true
+    montoBase?: true
+    porcentaje?: true
+    monto?: true
+    estado?: true
+    creadoEn?: true
+    _all?: true
+  }
+
+  export type ComisionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Comision to aggregate.
+     */
+    where?: ComisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Comisions to fetch.
+     */
+    orderBy?: ComisionOrderByWithRelationInput | ComisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ComisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Comisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Comisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Comisions
+    **/
+    _count?: true | ComisionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ComisionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ComisionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ComisionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ComisionMaxAggregateInputType
+  }
+
+  export type GetComisionAggregateType<T extends ComisionAggregateArgs> = {
+        [P in keyof T & keyof AggregateComision]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateComision[P]>
+      : GetScalarType<T[P], AggregateComision[P]>
+  }
+
+
+
+
+  export type ComisionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ComisionWhereInput
+    orderBy?: ComisionOrderByWithAggregationInput | ComisionOrderByWithAggregationInput[]
+    by: ComisionScalarFieldEnum[] | ComisionScalarFieldEnum
+    having?: ComisionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ComisionCountAggregateInputType | true
+    _avg?: ComisionAvgAggregateInputType
+    _sum?: ComisionSumAggregateInputType
+    _min?: ComisionMinAggregateInputType
+    _max?: ComisionMaxAggregateInputType
+  }
+
+  export type ComisionGroupByOutputType = {
+    id: string
+    afiliadoId: string
+    empresaId: string
+    pagoId: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado: $Enums.EstadoComision
+    creadoEn: Date
+    _count: ComisionCountAggregateOutputType | null
+    _avg: ComisionAvgAggregateOutputType | null
+    _sum: ComisionSumAggregateOutputType | null
+    _min: ComisionMinAggregateOutputType | null
+    _max: ComisionMaxAggregateOutputType | null
+  }
+
+  type GetComisionGroupByPayload<T extends ComisionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ComisionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ComisionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ComisionGroupByOutputType[P]>
+            : GetScalarType<T[P], ComisionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ComisionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    afiliadoId?: boolean
+    empresaId?: boolean
+    pagoId?: boolean
+    montoBase?: boolean
+    porcentaje?: boolean
+    monto?: boolean
+    estado?: boolean
+    creadoEn?: boolean
+    afiliado?: boolean | AfiliadoDefaultArgs<ExtArgs>
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    pago?: boolean | PagoDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["comision"]>
+
+
+  export type ComisionSelectScalar = {
+    id?: boolean
+    afiliadoId?: boolean
+    empresaId?: boolean
+    pagoId?: boolean
+    montoBase?: boolean
+    porcentaje?: boolean
+    monto?: boolean
+    estado?: boolean
+    creadoEn?: boolean
+  }
+
+  export type ComisionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    afiliado?: boolean | AfiliadoDefaultArgs<ExtArgs>
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    pago?: boolean | PagoDefaultArgs<ExtArgs>
+  }
+
+  export type $ComisionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Comision"
+    objects: {
+      afiliado: Prisma.$AfiliadoPayload<ExtArgs>
+      empresa: Prisma.$EmpresaPayload<ExtArgs>
+      pago: Prisma.$PagoPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      afiliadoId: string
+      empresaId: string
+      pagoId: string
+      montoBase: number
+      porcentaje: number
+      monto: number
+      estado: $Enums.EstadoComision
+      creadoEn: Date
+    }, ExtArgs["result"]["comision"]>
+    composites: {}
+  }
+
+  type ComisionGetPayload<S extends boolean | null | undefined | ComisionDefaultArgs> = $Result.GetResult<Prisma.$ComisionPayload, S>
+
+  type ComisionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ComisionFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ComisionCountAggregateInputType | true
+    }
+
+  export interface ComisionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Comision'], meta: { name: 'Comision' } }
+    /**
+     * Find zero or one Comision that matches the filter.
+     * @param {ComisionFindUniqueArgs} args - Arguments to find a Comision
+     * @example
+     * // Get one Comision
+     * const comision = await prisma.comision.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ComisionFindUniqueArgs>(args: SelectSubset<T, ComisionFindUniqueArgs<ExtArgs>>): Prisma__ComisionClient<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Comision that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ComisionFindUniqueOrThrowArgs} args - Arguments to find a Comision
+     * @example
+     * // Get one Comision
+     * const comision = await prisma.comision.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ComisionFindUniqueOrThrowArgs>(args: SelectSubset<T, ComisionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ComisionClient<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Comision that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComisionFindFirstArgs} args - Arguments to find a Comision
+     * @example
+     * // Get one Comision
+     * const comision = await prisma.comision.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ComisionFindFirstArgs>(args?: SelectSubset<T, ComisionFindFirstArgs<ExtArgs>>): Prisma__ComisionClient<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Comision that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComisionFindFirstOrThrowArgs} args - Arguments to find a Comision
+     * @example
+     * // Get one Comision
+     * const comision = await prisma.comision.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ComisionFindFirstOrThrowArgs>(args?: SelectSubset<T, ComisionFindFirstOrThrowArgs<ExtArgs>>): Prisma__ComisionClient<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Comisions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComisionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Comisions
+     * const comisions = await prisma.comision.findMany()
+     * 
+     * // Get first 10 Comisions
+     * const comisions = await prisma.comision.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const comisionWithIdOnly = await prisma.comision.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ComisionFindManyArgs>(args?: SelectSubset<T, ComisionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Comision.
+     * @param {ComisionCreateArgs} args - Arguments to create a Comision.
+     * @example
+     * // Create one Comision
+     * const Comision = await prisma.comision.create({
+     *   data: {
+     *     // ... data to create a Comision
+     *   }
+     * })
+     * 
+     */
+    create<T extends ComisionCreateArgs>(args: SelectSubset<T, ComisionCreateArgs<ExtArgs>>): Prisma__ComisionClient<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Comisions.
+     * @param {ComisionCreateManyArgs} args - Arguments to create many Comisions.
+     * @example
+     * // Create many Comisions
+     * const comision = await prisma.comision.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ComisionCreateManyArgs>(args?: SelectSubset<T, ComisionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Comision.
+     * @param {ComisionDeleteArgs} args - Arguments to delete one Comision.
+     * @example
+     * // Delete one Comision
+     * const Comision = await prisma.comision.delete({
+     *   where: {
+     *     // ... filter to delete one Comision
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ComisionDeleteArgs>(args: SelectSubset<T, ComisionDeleteArgs<ExtArgs>>): Prisma__ComisionClient<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Comision.
+     * @param {ComisionUpdateArgs} args - Arguments to update one Comision.
+     * @example
+     * // Update one Comision
+     * const comision = await prisma.comision.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ComisionUpdateArgs>(args: SelectSubset<T, ComisionUpdateArgs<ExtArgs>>): Prisma__ComisionClient<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Comisions.
+     * @param {ComisionDeleteManyArgs} args - Arguments to filter Comisions to delete.
+     * @example
+     * // Delete a few Comisions
+     * const { count } = await prisma.comision.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ComisionDeleteManyArgs>(args?: SelectSubset<T, ComisionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Comisions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComisionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Comisions
+     * const comision = await prisma.comision.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ComisionUpdateManyArgs>(args: SelectSubset<T, ComisionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Comision.
+     * @param {ComisionUpsertArgs} args - Arguments to update or create a Comision.
+     * @example
+     * // Update or create a Comision
+     * const comision = await prisma.comision.upsert({
+     *   create: {
+     *     // ... data to create a Comision
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Comision we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ComisionUpsertArgs>(args: SelectSubset<T, ComisionUpsertArgs<ExtArgs>>): Prisma__ComisionClient<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of Comisions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComisionCountArgs} args - Arguments to filter Comisions to count.
+     * @example
+     * // Count the number of Comisions
+     * const count = await prisma.comision.count({
+     *   where: {
+     *     // ... the filter for the Comisions we want to count
+     *   }
+     * })
+    **/
+    count<T extends ComisionCountArgs>(
+      args?: Subset<T, ComisionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ComisionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Comision.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComisionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ComisionAggregateArgs>(args: Subset<T, ComisionAggregateArgs>): Prisma.PrismaPromise<GetComisionAggregateType<T>>
+
+    /**
+     * Group by Comision.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComisionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ComisionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ComisionGroupByArgs['orderBy'] }
+        : { orderBy?: ComisionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ComisionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetComisionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Comision model
+   */
+  readonly fields: ComisionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Comision.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ComisionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    afiliado<T extends AfiliadoDefaultArgs<ExtArgs> = {}>(args?: Subset<T, AfiliadoDefaultArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    empresa<T extends EmpresaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EmpresaDefaultArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    pago<T extends PagoDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PagoDefaultArgs<ExtArgs>>): Prisma__PagoClient<$Result.GetResult<Prisma.$PagoPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Comision model
+   */ 
+  interface ComisionFieldRefs {
+    readonly id: FieldRef<"Comision", 'String'>
+    readonly afiliadoId: FieldRef<"Comision", 'String'>
+    readonly empresaId: FieldRef<"Comision", 'String'>
+    readonly pagoId: FieldRef<"Comision", 'String'>
+    readonly montoBase: FieldRef<"Comision", 'Float'>
+    readonly porcentaje: FieldRef<"Comision", 'Float'>
+    readonly monto: FieldRef<"Comision", 'Float'>
+    readonly estado: FieldRef<"Comision", 'EstadoComision'>
+    readonly creadoEn: FieldRef<"Comision", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Comision findUnique
+   */
+  export type ComisionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    /**
+     * Filter, which Comision to fetch.
+     */
+    where: ComisionWhereUniqueInput
+  }
+
+  /**
+   * Comision findUniqueOrThrow
+   */
+  export type ComisionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    /**
+     * Filter, which Comision to fetch.
+     */
+    where: ComisionWhereUniqueInput
+  }
+
+  /**
+   * Comision findFirst
+   */
+  export type ComisionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    /**
+     * Filter, which Comision to fetch.
+     */
+    where?: ComisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Comisions to fetch.
+     */
+    orderBy?: ComisionOrderByWithRelationInput | ComisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Comisions.
+     */
+    cursor?: ComisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Comisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Comisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Comisions.
+     */
+    distinct?: ComisionScalarFieldEnum | ComisionScalarFieldEnum[]
+  }
+
+  /**
+   * Comision findFirstOrThrow
+   */
+  export type ComisionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    /**
+     * Filter, which Comision to fetch.
+     */
+    where?: ComisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Comisions to fetch.
+     */
+    orderBy?: ComisionOrderByWithRelationInput | ComisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Comisions.
+     */
+    cursor?: ComisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Comisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Comisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Comisions.
+     */
+    distinct?: ComisionScalarFieldEnum | ComisionScalarFieldEnum[]
+  }
+
+  /**
+   * Comision findMany
+   */
+  export type ComisionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    /**
+     * Filter, which Comisions to fetch.
+     */
+    where?: ComisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Comisions to fetch.
+     */
+    orderBy?: ComisionOrderByWithRelationInput | ComisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Comisions.
+     */
+    cursor?: ComisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Comisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Comisions.
+     */
+    skip?: number
+    distinct?: ComisionScalarFieldEnum | ComisionScalarFieldEnum[]
+  }
+
+  /**
+   * Comision create
+   */
+  export type ComisionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Comision.
+     */
+    data: XOR<ComisionCreateInput, ComisionUncheckedCreateInput>
+  }
+
+  /**
+   * Comision createMany
+   */
+  export type ComisionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Comisions.
+     */
+    data: ComisionCreateManyInput | ComisionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Comision update
+   */
+  export type ComisionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Comision.
+     */
+    data: XOR<ComisionUpdateInput, ComisionUncheckedUpdateInput>
+    /**
+     * Choose, which Comision to update.
+     */
+    where: ComisionWhereUniqueInput
+  }
+
+  /**
+   * Comision updateMany
+   */
+  export type ComisionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Comisions.
+     */
+    data: XOR<ComisionUpdateManyMutationInput, ComisionUncheckedUpdateManyInput>
+    /**
+     * Filter which Comisions to update
+     */
+    where?: ComisionWhereInput
+  }
+
+  /**
+   * Comision upsert
+   */
+  export type ComisionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Comision to update in case it exists.
+     */
+    where: ComisionWhereUniqueInput
+    /**
+     * In case the Comision found by the `where` argument doesn't exist, create a new Comision with this data.
+     */
+    create: XOR<ComisionCreateInput, ComisionUncheckedCreateInput>
+    /**
+     * In case the Comision was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ComisionUpdateInput, ComisionUncheckedUpdateInput>
+  }
+
+  /**
+   * Comision delete
+   */
+  export type ComisionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+    /**
+     * Filter which Comision to delete.
+     */
+    where: ComisionWhereUniqueInput
+  }
+
+  /**
+   * Comision deleteMany
+   */
+  export type ComisionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Comisions to delete
+     */
+    where?: ComisionWhereInput
+  }
+
+  /**
+   * Comision without action
+   */
+  export type ComisionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Comision
+     */
+    select?: ComisionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComisionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SolicitudRetiro
+   */
+
+  export type AggregateSolicitudRetiro = {
+    _count: SolicitudRetiroCountAggregateOutputType | null
+    _avg: SolicitudRetiroAvgAggregateOutputType | null
+    _sum: SolicitudRetiroSumAggregateOutputType | null
+    _min: SolicitudRetiroMinAggregateOutputType | null
+    _max: SolicitudRetiroMaxAggregateOutputType | null
+  }
+
+  export type SolicitudRetiroAvgAggregateOutputType = {
+    monto: number | null
+  }
+
+  export type SolicitudRetiroSumAggregateOutputType = {
+    monto: number | null
+  }
+
+  export type SolicitudRetiroMinAggregateOutputType = {
+    id: string | null
+    afiliadoId: string | null
+    monto: number | null
+    estado: $Enums.EstadoRetiro | null
+    comprobanteBase64: string | null
+    nota: string | null
+    solicitadoEn: Date | null
+    procesadoEn: Date | null
+    procesadoPor: string | null
+  }
+
+  export type SolicitudRetiroMaxAggregateOutputType = {
+    id: string | null
+    afiliadoId: string | null
+    monto: number | null
+    estado: $Enums.EstadoRetiro | null
+    comprobanteBase64: string | null
+    nota: string | null
+    solicitadoEn: Date | null
+    procesadoEn: Date | null
+    procesadoPor: string | null
+  }
+
+  export type SolicitudRetiroCountAggregateOutputType = {
+    id: number
+    afiliadoId: number
+    monto: number
+    estado: number
+    comprobanteBase64: number
+    nota: number
+    solicitadoEn: number
+    procesadoEn: number
+    procesadoPor: number
+    _all: number
+  }
+
+
+  export type SolicitudRetiroAvgAggregateInputType = {
+    monto?: true
+  }
+
+  export type SolicitudRetiroSumAggregateInputType = {
+    monto?: true
+  }
+
+  export type SolicitudRetiroMinAggregateInputType = {
+    id?: true
+    afiliadoId?: true
+    monto?: true
+    estado?: true
+    comprobanteBase64?: true
+    nota?: true
+    solicitadoEn?: true
+    procesadoEn?: true
+    procesadoPor?: true
+  }
+
+  export type SolicitudRetiroMaxAggregateInputType = {
+    id?: true
+    afiliadoId?: true
+    monto?: true
+    estado?: true
+    comprobanteBase64?: true
+    nota?: true
+    solicitadoEn?: true
+    procesadoEn?: true
+    procesadoPor?: true
+  }
+
+  export type SolicitudRetiroCountAggregateInputType = {
+    id?: true
+    afiliadoId?: true
+    monto?: true
+    estado?: true
+    comprobanteBase64?: true
+    nota?: true
+    solicitadoEn?: true
+    procesadoEn?: true
+    procesadoPor?: true
+    _all?: true
+  }
+
+  export type SolicitudRetiroAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SolicitudRetiro to aggregate.
+     */
+    where?: SolicitudRetiroWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SolicitudRetiros to fetch.
+     */
+    orderBy?: SolicitudRetiroOrderByWithRelationInput | SolicitudRetiroOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SolicitudRetiroWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SolicitudRetiros from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SolicitudRetiros.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SolicitudRetiros
+    **/
+    _count?: true | SolicitudRetiroCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SolicitudRetiroAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SolicitudRetiroSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SolicitudRetiroMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SolicitudRetiroMaxAggregateInputType
+  }
+
+  export type GetSolicitudRetiroAggregateType<T extends SolicitudRetiroAggregateArgs> = {
+        [P in keyof T & keyof AggregateSolicitudRetiro]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSolicitudRetiro[P]>
+      : GetScalarType<T[P], AggregateSolicitudRetiro[P]>
+  }
+
+
+
+
+  export type SolicitudRetiroGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SolicitudRetiroWhereInput
+    orderBy?: SolicitudRetiroOrderByWithAggregationInput | SolicitudRetiroOrderByWithAggregationInput[]
+    by: SolicitudRetiroScalarFieldEnum[] | SolicitudRetiroScalarFieldEnum
+    having?: SolicitudRetiroScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SolicitudRetiroCountAggregateInputType | true
+    _avg?: SolicitudRetiroAvgAggregateInputType
+    _sum?: SolicitudRetiroSumAggregateInputType
+    _min?: SolicitudRetiroMinAggregateInputType
+    _max?: SolicitudRetiroMaxAggregateInputType
+  }
+
+  export type SolicitudRetiroGroupByOutputType = {
+    id: string
+    afiliadoId: string
+    monto: number
+    estado: $Enums.EstadoRetiro
+    comprobanteBase64: string | null
+    nota: string | null
+    solicitadoEn: Date
+    procesadoEn: Date | null
+    procesadoPor: string | null
+    _count: SolicitudRetiroCountAggregateOutputType | null
+    _avg: SolicitudRetiroAvgAggregateOutputType | null
+    _sum: SolicitudRetiroSumAggregateOutputType | null
+    _min: SolicitudRetiroMinAggregateOutputType | null
+    _max: SolicitudRetiroMaxAggregateOutputType | null
+  }
+
+  type GetSolicitudRetiroGroupByPayload<T extends SolicitudRetiroGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SolicitudRetiroGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SolicitudRetiroGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SolicitudRetiroGroupByOutputType[P]>
+            : GetScalarType<T[P], SolicitudRetiroGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SolicitudRetiroSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    afiliadoId?: boolean
+    monto?: boolean
+    estado?: boolean
+    comprobanteBase64?: boolean
+    nota?: boolean
+    solicitadoEn?: boolean
+    procesadoEn?: boolean
+    procesadoPor?: boolean
+    afiliado?: boolean | AfiliadoDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["solicitudRetiro"]>
+
+
+  export type SolicitudRetiroSelectScalar = {
+    id?: boolean
+    afiliadoId?: boolean
+    monto?: boolean
+    estado?: boolean
+    comprobanteBase64?: boolean
+    nota?: boolean
+    solicitadoEn?: boolean
+    procesadoEn?: boolean
+    procesadoPor?: boolean
+  }
+
+  export type SolicitudRetiroInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    afiliado?: boolean | AfiliadoDefaultArgs<ExtArgs>
+  }
+
+  export type $SolicitudRetiroPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SolicitudRetiro"
+    objects: {
+      afiliado: Prisma.$AfiliadoPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      afiliadoId: string
+      monto: number
+      estado: $Enums.EstadoRetiro
+      comprobanteBase64: string | null
+      nota: string | null
+      solicitadoEn: Date
+      procesadoEn: Date | null
+      procesadoPor: string | null
+    }, ExtArgs["result"]["solicitudRetiro"]>
+    composites: {}
+  }
+
+  type SolicitudRetiroGetPayload<S extends boolean | null | undefined | SolicitudRetiroDefaultArgs> = $Result.GetResult<Prisma.$SolicitudRetiroPayload, S>
+
+  type SolicitudRetiroCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<SolicitudRetiroFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: SolicitudRetiroCountAggregateInputType | true
+    }
+
+  export interface SolicitudRetiroDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SolicitudRetiro'], meta: { name: 'SolicitudRetiro' } }
+    /**
+     * Find zero or one SolicitudRetiro that matches the filter.
+     * @param {SolicitudRetiroFindUniqueArgs} args - Arguments to find a SolicitudRetiro
+     * @example
+     * // Get one SolicitudRetiro
+     * const solicitudRetiro = await prisma.solicitudRetiro.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SolicitudRetiroFindUniqueArgs>(args: SelectSubset<T, SolicitudRetiroFindUniqueArgs<ExtArgs>>): Prisma__SolicitudRetiroClient<$Result.GetResult<Prisma.$SolicitudRetiroPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one SolicitudRetiro that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {SolicitudRetiroFindUniqueOrThrowArgs} args - Arguments to find a SolicitudRetiro
+     * @example
+     * // Get one SolicitudRetiro
+     * const solicitudRetiro = await prisma.solicitudRetiro.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SolicitudRetiroFindUniqueOrThrowArgs>(args: SelectSubset<T, SolicitudRetiroFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SolicitudRetiroClient<$Result.GetResult<Prisma.$SolicitudRetiroPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first SolicitudRetiro that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SolicitudRetiroFindFirstArgs} args - Arguments to find a SolicitudRetiro
+     * @example
+     * // Get one SolicitudRetiro
+     * const solicitudRetiro = await prisma.solicitudRetiro.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SolicitudRetiroFindFirstArgs>(args?: SelectSubset<T, SolicitudRetiroFindFirstArgs<ExtArgs>>): Prisma__SolicitudRetiroClient<$Result.GetResult<Prisma.$SolicitudRetiroPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first SolicitudRetiro that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SolicitudRetiroFindFirstOrThrowArgs} args - Arguments to find a SolicitudRetiro
+     * @example
+     * // Get one SolicitudRetiro
+     * const solicitudRetiro = await prisma.solicitudRetiro.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SolicitudRetiroFindFirstOrThrowArgs>(args?: SelectSubset<T, SolicitudRetiroFindFirstOrThrowArgs<ExtArgs>>): Prisma__SolicitudRetiroClient<$Result.GetResult<Prisma.$SolicitudRetiroPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more SolicitudRetiros that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SolicitudRetiroFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SolicitudRetiros
+     * const solicitudRetiros = await prisma.solicitudRetiro.findMany()
+     * 
+     * // Get first 10 SolicitudRetiros
+     * const solicitudRetiros = await prisma.solicitudRetiro.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const solicitudRetiroWithIdOnly = await prisma.solicitudRetiro.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SolicitudRetiroFindManyArgs>(args?: SelectSubset<T, SolicitudRetiroFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SolicitudRetiroPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a SolicitudRetiro.
+     * @param {SolicitudRetiroCreateArgs} args - Arguments to create a SolicitudRetiro.
+     * @example
+     * // Create one SolicitudRetiro
+     * const SolicitudRetiro = await prisma.solicitudRetiro.create({
+     *   data: {
+     *     // ... data to create a SolicitudRetiro
+     *   }
+     * })
+     * 
+     */
+    create<T extends SolicitudRetiroCreateArgs>(args: SelectSubset<T, SolicitudRetiroCreateArgs<ExtArgs>>): Prisma__SolicitudRetiroClient<$Result.GetResult<Prisma.$SolicitudRetiroPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many SolicitudRetiros.
+     * @param {SolicitudRetiroCreateManyArgs} args - Arguments to create many SolicitudRetiros.
+     * @example
+     * // Create many SolicitudRetiros
+     * const solicitudRetiro = await prisma.solicitudRetiro.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SolicitudRetiroCreateManyArgs>(args?: SelectSubset<T, SolicitudRetiroCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SolicitudRetiro.
+     * @param {SolicitudRetiroDeleteArgs} args - Arguments to delete one SolicitudRetiro.
+     * @example
+     * // Delete one SolicitudRetiro
+     * const SolicitudRetiro = await prisma.solicitudRetiro.delete({
+     *   where: {
+     *     // ... filter to delete one SolicitudRetiro
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SolicitudRetiroDeleteArgs>(args: SelectSubset<T, SolicitudRetiroDeleteArgs<ExtArgs>>): Prisma__SolicitudRetiroClient<$Result.GetResult<Prisma.$SolicitudRetiroPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one SolicitudRetiro.
+     * @param {SolicitudRetiroUpdateArgs} args - Arguments to update one SolicitudRetiro.
+     * @example
+     * // Update one SolicitudRetiro
+     * const solicitudRetiro = await prisma.solicitudRetiro.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SolicitudRetiroUpdateArgs>(args: SelectSubset<T, SolicitudRetiroUpdateArgs<ExtArgs>>): Prisma__SolicitudRetiroClient<$Result.GetResult<Prisma.$SolicitudRetiroPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more SolicitudRetiros.
+     * @param {SolicitudRetiroDeleteManyArgs} args - Arguments to filter SolicitudRetiros to delete.
+     * @example
+     * // Delete a few SolicitudRetiros
+     * const { count } = await prisma.solicitudRetiro.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SolicitudRetiroDeleteManyArgs>(args?: SelectSubset<T, SolicitudRetiroDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SolicitudRetiros.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SolicitudRetiroUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SolicitudRetiros
+     * const solicitudRetiro = await prisma.solicitudRetiro.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SolicitudRetiroUpdateManyArgs>(args: SelectSubset<T, SolicitudRetiroUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SolicitudRetiro.
+     * @param {SolicitudRetiroUpsertArgs} args - Arguments to update or create a SolicitudRetiro.
+     * @example
+     * // Update or create a SolicitudRetiro
+     * const solicitudRetiro = await prisma.solicitudRetiro.upsert({
+     *   create: {
+     *     // ... data to create a SolicitudRetiro
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SolicitudRetiro we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SolicitudRetiroUpsertArgs>(args: SelectSubset<T, SolicitudRetiroUpsertArgs<ExtArgs>>): Prisma__SolicitudRetiroClient<$Result.GetResult<Prisma.$SolicitudRetiroPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of SolicitudRetiros.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SolicitudRetiroCountArgs} args - Arguments to filter SolicitudRetiros to count.
+     * @example
+     * // Count the number of SolicitudRetiros
+     * const count = await prisma.solicitudRetiro.count({
+     *   where: {
+     *     // ... the filter for the SolicitudRetiros we want to count
+     *   }
+     * })
+    **/
+    count<T extends SolicitudRetiroCountArgs>(
+      args?: Subset<T, SolicitudRetiroCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SolicitudRetiroCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SolicitudRetiro.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SolicitudRetiroAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SolicitudRetiroAggregateArgs>(args: Subset<T, SolicitudRetiroAggregateArgs>): Prisma.PrismaPromise<GetSolicitudRetiroAggregateType<T>>
+
+    /**
+     * Group by SolicitudRetiro.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SolicitudRetiroGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SolicitudRetiroGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SolicitudRetiroGroupByArgs['orderBy'] }
+        : { orderBy?: SolicitudRetiroGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SolicitudRetiroGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSolicitudRetiroGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SolicitudRetiro model
+   */
+  readonly fields: SolicitudRetiroFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SolicitudRetiro.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SolicitudRetiroClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    afiliado<T extends AfiliadoDefaultArgs<ExtArgs> = {}>(args?: Subset<T, AfiliadoDefaultArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SolicitudRetiro model
+   */ 
+  interface SolicitudRetiroFieldRefs {
+    readonly id: FieldRef<"SolicitudRetiro", 'String'>
+    readonly afiliadoId: FieldRef<"SolicitudRetiro", 'String'>
+    readonly monto: FieldRef<"SolicitudRetiro", 'Float'>
+    readonly estado: FieldRef<"SolicitudRetiro", 'EstadoRetiro'>
+    readonly comprobanteBase64: FieldRef<"SolicitudRetiro", 'String'>
+    readonly nota: FieldRef<"SolicitudRetiro", 'String'>
+    readonly solicitadoEn: FieldRef<"SolicitudRetiro", 'DateTime'>
+    readonly procesadoEn: FieldRef<"SolicitudRetiro", 'DateTime'>
+    readonly procesadoPor: FieldRef<"SolicitudRetiro", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SolicitudRetiro findUnique
+   */
+  export type SolicitudRetiroFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
+    /**
+     * Filter, which SolicitudRetiro to fetch.
+     */
+    where: SolicitudRetiroWhereUniqueInput
+  }
+
+  /**
+   * SolicitudRetiro findUniqueOrThrow
+   */
+  export type SolicitudRetiroFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
+    /**
+     * Filter, which SolicitudRetiro to fetch.
+     */
+    where: SolicitudRetiroWhereUniqueInput
+  }
+
+  /**
+   * SolicitudRetiro findFirst
+   */
+  export type SolicitudRetiroFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
+    /**
+     * Filter, which SolicitudRetiro to fetch.
+     */
+    where?: SolicitudRetiroWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SolicitudRetiros to fetch.
+     */
+    orderBy?: SolicitudRetiroOrderByWithRelationInput | SolicitudRetiroOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SolicitudRetiros.
+     */
+    cursor?: SolicitudRetiroWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SolicitudRetiros from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SolicitudRetiros.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SolicitudRetiros.
+     */
+    distinct?: SolicitudRetiroScalarFieldEnum | SolicitudRetiroScalarFieldEnum[]
+  }
+
+  /**
+   * SolicitudRetiro findFirstOrThrow
+   */
+  export type SolicitudRetiroFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
+    /**
+     * Filter, which SolicitudRetiro to fetch.
+     */
+    where?: SolicitudRetiroWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SolicitudRetiros to fetch.
+     */
+    orderBy?: SolicitudRetiroOrderByWithRelationInput | SolicitudRetiroOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SolicitudRetiros.
+     */
+    cursor?: SolicitudRetiroWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SolicitudRetiros from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SolicitudRetiros.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SolicitudRetiros.
+     */
+    distinct?: SolicitudRetiroScalarFieldEnum | SolicitudRetiroScalarFieldEnum[]
+  }
+
+  /**
+   * SolicitudRetiro findMany
+   */
+  export type SolicitudRetiroFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
+    /**
+     * Filter, which SolicitudRetiros to fetch.
+     */
+    where?: SolicitudRetiroWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SolicitudRetiros to fetch.
+     */
+    orderBy?: SolicitudRetiroOrderByWithRelationInput | SolicitudRetiroOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SolicitudRetiros.
+     */
+    cursor?: SolicitudRetiroWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SolicitudRetiros from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SolicitudRetiros.
+     */
+    skip?: number
+    distinct?: SolicitudRetiroScalarFieldEnum | SolicitudRetiroScalarFieldEnum[]
+  }
+
+  /**
+   * SolicitudRetiro create
+   */
+  export type SolicitudRetiroCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SolicitudRetiro.
+     */
+    data: XOR<SolicitudRetiroCreateInput, SolicitudRetiroUncheckedCreateInput>
+  }
+
+  /**
+   * SolicitudRetiro createMany
+   */
+  export type SolicitudRetiroCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SolicitudRetiros.
+     */
+    data: SolicitudRetiroCreateManyInput | SolicitudRetiroCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SolicitudRetiro update
+   */
+  export type SolicitudRetiroUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SolicitudRetiro.
+     */
+    data: XOR<SolicitudRetiroUpdateInput, SolicitudRetiroUncheckedUpdateInput>
+    /**
+     * Choose, which SolicitudRetiro to update.
+     */
+    where: SolicitudRetiroWhereUniqueInput
+  }
+
+  /**
+   * SolicitudRetiro updateMany
+   */
+  export type SolicitudRetiroUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SolicitudRetiros.
+     */
+    data: XOR<SolicitudRetiroUpdateManyMutationInput, SolicitudRetiroUncheckedUpdateManyInput>
+    /**
+     * Filter which SolicitudRetiros to update
+     */
+    where?: SolicitudRetiroWhereInput
+  }
+
+  /**
+   * SolicitudRetiro upsert
+   */
+  export type SolicitudRetiroUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SolicitudRetiro to update in case it exists.
+     */
+    where: SolicitudRetiroWhereUniqueInput
+    /**
+     * In case the SolicitudRetiro found by the `where` argument doesn't exist, create a new SolicitudRetiro with this data.
+     */
+    create: XOR<SolicitudRetiroCreateInput, SolicitudRetiroUncheckedCreateInput>
+    /**
+     * In case the SolicitudRetiro was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SolicitudRetiroUpdateInput, SolicitudRetiroUncheckedUpdateInput>
+  }
+
+  /**
+   * SolicitudRetiro delete
+   */
+  export type SolicitudRetiroDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
+    /**
+     * Filter which SolicitudRetiro to delete.
+     */
+    where: SolicitudRetiroWhereUniqueInput
+  }
+
+  /**
+   * SolicitudRetiro deleteMany
+   */
+  export type SolicitudRetiroDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SolicitudRetiros to delete
+     */
+    where?: SolicitudRetiroWhereInput
+  }
+
+  /**
+   * SolicitudRetiro without action
+   */
+  export type SolicitudRetiroDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SolicitudRetiro
+     */
+    select?: SolicitudRetiroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SolicitudRetiroInclude<ExtArgs> | null
   }
 
 
@@ -17707,7 +21249,10 @@ export namespace Prisma {
     exentaPago: 'exentaPago',
     activa: 'activa',
     creadoEn: 'creadoEn',
-    actualizadoEn: 'actualizadoEn'
+    actualizadoEn: 'actualizadoEn',
+    afiliadoId: 'afiliadoId',
+    atribuidoEn: 'atribuidoEn',
+    primerPagoComisionEn: 'primerPagoComisionEn'
   };
 
   export type EmpresaScalarFieldEnum = (typeof EmpresaScalarFieldEnum)[keyof typeof EmpresaScalarFieldEnum]
@@ -17928,6 +21473,7 @@ export namespace Prisma {
   export const UsuarioScalarFieldEnum: {
     id: 'id',
     empresaId: 'empresaId',
+    afiliadoId: 'afiliadoId',
     email: 'email',
     password: 'password',
     nombre: 'nombre',
@@ -17942,6 +21488,57 @@ export namespace Prisma {
   };
 
   export type UsuarioScalarFieldEnum = (typeof UsuarioScalarFieldEnum)[keyof typeof UsuarioScalarFieldEnum]
+
+
+  export const AfiliadoScalarFieldEnum: {
+    id: 'id',
+    nombre: 'nombre',
+    codigo: 'codigo',
+    porcentaje: 'porcentaje',
+    duracionMeses: 'duracionMeses',
+    activo: 'activo',
+    telefono: 'telefono',
+    pagoMetodo: 'pagoMetodo',
+    pagoBanco: 'pagoBanco',
+    pagoTipoCuenta: 'pagoTipoCuenta',
+    pagoNumero: 'pagoNumero',
+    pagoTitular: 'pagoTitular',
+    pagoDocumento: 'pagoDocumento',
+    creadoEn: 'creadoEn',
+    actualizadoEn: 'actualizadoEn'
+  };
+
+  export type AfiliadoScalarFieldEnum = (typeof AfiliadoScalarFieldEnum)[keyof typeof AfiliadoScalarFieldEnum]
+
+
+  export const ComisionScalarFieldEnum: {
+    id: 'id',
+    afiliadoId: 'afiliadoId',
+    empresaId: 'empresaId',
+    pagoId: 'pagoId',
+    montoBase: 'montoBase',
+    porcentaje: 'porcentaje',
+    monto: 'monto',
+    estado: 'estado',
+    creadoEn: 'creadoEn'
+  };
+
+  export type ComisionScalarFieldEnum = (typeof ComisionScalarFieldEnum)[keyof typeof ComisionScalarFieldEnum]
+
+
+  export const SolicitudRetiroScalarFieldEnum: {
+    id: 'id',
+    afiliadoId: 'afiliadoId',
+    monto: 'monto',
+    estado: 'estado',
+    comprobanteBase64: 'comprobanteBase64',
+    nota: 'nota',
+    solicitadoEn: 'solicitadoEn',
+    procesadoEn: 'procesadoEn',
+    procesadoPor: 'procesadoPor'
+  };
+
+  export type SolicitudRetiroScalarFieldEnum = (typeof SolicitudRetiroScalarFieldEnum)[keyof typeof SolicitudRetiroScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -18071,6 +21668,34 @@ export namespace Prisma {
    */
   export type EnumRolFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Rol'>
     
+
+
+  /**
+   * Reference to a field of type 'MetodoPagoAfiliado'
+   */
+  export type EnumMetodoPagoAfiliadoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MetodoPagoAfiliado'>
+    
+
+
+  /**
+   * Reference to a field of type 'TipoCuentaBancaria'
+   */
+  export type EnumTipoCuentaBancariaFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TipoCuentaBancaria'>
+    
+
+
+  /**
+   * Reference to a field of type 'EstadoComision'
+   */
+  export type EnumEstadoComisionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoComision'>
+    
+
+
+  /**
+   * Reference to a field of type 'EstadoRetiro'
+   */
+  export type EnumEstadoRetiroFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoRetiro'>
+    
   /**
    * Deep Input Types
    */
@@ -18090,6 +21715,9 @@ export namespace Prisma {
     activa?: BoolFilter<"Empresa"> | boolean
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
+    afiliadoId?: StringNullableFilter<"Empresa"> | string | null
+    atribuidoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
+    primerPagoComisionEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     usuarios?: UsuarioListRelationFilter
     colaboradores?: ColaboradorListRelationFilter
     festivos?: DiaFestivoListRelationFilter
@@ -18098,6 +21726,8 @@ export namespace Prisma {
     horarios?: HorarioListRelationFilter
     dispositivos?: DispositivoKioscoListRelationFilter
     notificaciones?: NotificacionListRelationFilter
+    afiliado?: XOR<AfiliadoNullableRelationFilter, AfiliadoWhereInput> | null
+    comisiones?: ComisionListRelationFilter
   }
 
   export type EmpresaOrderByWithRelationInput = {
@@ -18111,6 +21741,9 @@ export namespace Prisma {
     activa?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
+    afiliadoId?: SortOrderInput | SortOrder
+    atribuidoEn?: SortOrderInput | SortOrder
+    primerPagoComisionEn?: SortOrderInput | SortOrder
     usuarios?: UsuarioOrderByRelationAggregateInput
     colaboradores?: ColaboradorOrderByRelationAggregateInput
     festivos?: DiaFestivoOrderByRelationAggregateInput
@@ -18119,6 +21752,8 @@ export namespace Prisma {
     horarios?: HorarioOrderByRelationAggregateInput
     dispositivos?: DispositivoKioscoOrderByRelationAggregateInput
     notificaciones?: NotificacionOrderByRelationAggregateInput
+    afiliado?: AfiliadoOrderByWithRelationInput
+    comisiones?: ComisionOrderByRelationAggregateInput
   }
 
   export type EmpresaWhereUniqueInput = Prisma.AtLeast<{
@@ -18135,6 +21770,9 @@ export namespace Prisma {
     activa?: BoolFilter<"Empresa"> | boolean
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
+    afiliadoId?: StringNullableFilter<"Empresa"> | string | null
+    atribuidoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
+    primerPagoComisionEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     usuarios?: UsuarioListRelationFilter
     colaboradores?: ColaboradorListRelationFilter
     festivos?: DiaFestivoListRelationFilter
@@ -18143,6 +21781,8 @@ export namespace Prisma {
     horarios?: HorarioListRelationFilter
     dispositivos?: DispositivoKioscoListRelationFilter
     notificaciones?: NotificacionListRelationFilter
+    afiliado?: XOR<AfiliadoNullableRelationFilter, AfiliadoWhereInput> | null
+    comisiones?: ComisionListRelationFilter
   }, "id" | "nit" | "marcadorToken">
 
   export type EmpresaOrderByWithAggregationInput = {
@@ -18156,6 +21796,9 @@ export namespace Prisma {
     activa?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
+    afiliadoId?: SortOrderInput | SortOrder
+    atribuidoEn?: SortOrderInput | SortOrder
+    primerPagoComisionEn?: SortOrderInput | SortOrder
     _count?: EmpresaCountOrderByAggregateInput
     _max?: EmpresaMaxOrderByAggregateInput
     _min?: EmpresaMinOrderByAggregateInput
@@ -18175,6 +21818,9 @@ export namespace Prisma {
     activa?: BoolWithAggregatesFilter<"Empresa"> | boolean
     creadoEn?: DateTimeWithAggregatesFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Empresa"> | Date | string
+    afiliadoId?: StringNullableWithAggregatesFilter<"Empresa"> | string | null
+    atribuidoEn?: DateTimeNullableWithAggregatesFilter<"Empresa"> | Date | string | null
+    primerPagoComisionEn?: DateTimeNullableWithAggregatesFilter<"Empresa"> | Date | string | null
   }
 
   export type SuscripcionWhereInput = {
@@ -18320,6 +21966,7 @@ export namespace Prisma {
     registradoPor?: StringNullableFilter<"Pago"> | string | null
     creadoEn?: DateTimeFilter<"Pago"> | Date | string
     suscripcion?: XOR<SuscripcionRelationFilter, SuscripcionWhereInput>
+    comision?: XOR<ComisionNullableRelationFilter, ComisionWhereInput> | null
   }
 
   export type PagoOrderByWithRelationInput = {
@@ -18337,6 +21984,7 @@ export namespace Prisma {
     registradoPor?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     suscripcion?: SuscripcionOrderByWithRelationInput
+    comision?: ComisionOrderByWithRelationInput
   }
 
   export type PagoWhereUniqueInput = Prisma.AtLeast<{
@@ -18357,6 +22005,7 @@ export namespace Prisma {
     registradoPor?: StringNullableFilter<"Pago"> | string | null
     creadoEn?: DateTimeFilter<"Pago"> | Date | string
     suscripcion?: XOR<SuscripcionRelationFilter, SuscripcionWhereInput>
+    comision?: XOR<ComisionNullableRelationFilter, ComisionWhereInput> | null
   }, "id" | "wompiTransaccionId">
 
   export type PagoOrderByWithAggregationInput = {
@@ -19270,6 +22919,7 @@ export namespace Prisma {
     NOT?: UsuarioWhereInput | UsuarioWhereInput[]
     id?: StringFilter<"Usuario"> | string
     empresaId?: StringNullableFilter<"Usuario"> | string | null
+    afiliadoId?: StringNullableFilter<"Usuario"> | string | null
     email?: StringFilter<"Usuario"> | string
     password?: StringFilter<"Usuario"> | string
     nombre?: StringFilter<"Usuario"> | string
@@ -19282,11 +22932,13 @@ export namespace Prisma {
     verificacionExpira?: DateTimeNullableFilter<"Usuario"> | Date | string | null
     creadoEn?: DateTimeFilter<"Usuario"> | Date | string
     empresa?: XOR<EmpresaNullableRelationFilter, EmpresaWhereInput> | null
+    afiliado?: XOR<AfiliadoNullableRelationFilter, AfiliadoWhereInput> | null
   }
 
   export type UsuarioOrderByWithRelationInput = {
     id?: SortOrder
     empresaId?: SortOrderInput | SortOrder
+    afiliadoId?: SortOrderInput | SortOrder
     email?: SortOrder
     password?: SortOrder
     nombre?: SortOrder
@@ -19299,6 +22951,7 @@ export namespace Prisma {
     verificacionExpira?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     empresa?: EmpresaOrderByWithRelationInput
+    afiliado?: AfiliadoOrderByWithRelationInput
   }
 
   export type UsuarioWhereUniqueInput = Prisma.AtLeast<{
@@ -19309,6 +22962,7 @@ export namespace Prisma {
     OR?: UsuarioWhereInput[]
     NOT?: UsuarioWhereInput | UsuarioWhereInput[]
     empresaId?: StringNullableFilter<"Usuario"> | string | null
+    afiliadoId?: StringNullableFilter<"Usuario"> | string | null
     password?: StringFilter<"Usuario"> | string
     nombre?: StringFilter<"Usuario"> | string
     rol?: EnumRolFilter<"Usuario"> | $Enums.Rol
@@ -19319,11 +22973,13 @@ export namespace Prisma {
     verificacionExpira?: DateTimeNullableFilter<"Usuario"> | Date | string | null
     creadoEn?: DateTimeFilter<"Usuario"> | Date | string
     empresa?: XOR<EmpresaNullableRelationFilter, EmpresaWhereInput> | null
+    afiliado?: XOR<AfiliadoNullableRelationFilter, AfiliadoWhereInput> | null
   }, "id" | "email" | "resetToken">
 
   export type UsuarioOrderByWithAggregationInput = {
     id?: SortOrder
     empresaId?: SortOrderInput | SortOrder
+    afiliadoId?: SortOrderInput | SortOrder
     email?: SortOrder
     password?: SortOrder
     nombre?: SortOrder
@@ -19346,6 +23002,7 @@ export namespace Prisma {
     NOT?: UsuarioScalarWhereWithAggregatesInput | UsuarioScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Usuario"> | string
     empresaId?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
+    afiliadoId?: StringNullableWithAggregatesFilter<"Usuario"> | string | null
     email?: StringWithAggregatesFilter<"Usuario"> | string
     password?: StringWithAggregatesFilter<"Usuario"> | string
     nombre?: StringWithAggregatesFilter<"Usuario"> | string
@@ -19359,6 +23016,282 @@ export namespace Prisma {
     creadoEn?: DateTimeWithAggregatesFilter<"Usuario"> | Date | string
   }
 
+  export type AfiliadoWhereInput = {
+    AND?: AfiliadoWhereInput | AfiliadoWhereInput[]
+    OR?: AfiliadoWhereInput[]
+    NOT?: AfiliadoWhereInput | AfiliadoWhereInput[]
+    id?: StringFilter<"Afiliado"> | string
+    nombre?: StringFilter<"Afiliado"> | string
+    codigo?: StringFilter<"Afiliado"> | string
+    porcentaje?: FloatFilter<"Afiliado"> | number
+    duracionMeses?: IntNullableFilter<"Afiliado"> | number | null
+    activo?: BoolFilter<"Afiliado"> | boolean
+    telefono?: StringNullableFilter<"Afiliado"> | string | null
+    pagoMetodo?: EnumMetodoPagoAfiliadoNullableFilter<"Afiliado"> | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: StringNullableFilter<"Afiliado"> | string | null
+    pagoTipoCuenta?: EnumTipoCuentaBancariaNullableFilter<"Afiliado"> | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: StringNullableFilter<"Afiliado"> | string | null
+    pagoTitular?: StringNullableFilter<"Afiliado"> | string | null
+    pagoDocumento?: StringNullableFilter<"Afiliado"> | string | null
+    creadoEn?: DateTimeFilter<"Afiliado"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Afiliado"> | Date | string
+    usuarios?: UsuarioListRelationFilter
+    empresas?: EmpresaListRelationFilter
+    comisiones?: ComisionListRelationFilter
+    retiros?: SolicitudRetiroListRelationFilter
+  }
+
+  export type AfiliadoOrderByWithRelationInput = {
+    id?: SortOrder
+    nombre?: SortOrder
+    codigo?: SortOrder
+    porcentaje?: SortOrder
+    duracionMeses?: SortOrderInput | SortOrder
+    activo?: SortOrder
+    telefono?: SortOrderInput | SortOrder
+    pagoMetodo?: SortOrderInput | SortOrder
+    pagoBanco?: SortOrderInput | SortOrder
+    pagoTipoCuenta?: SortOrderInput | SortOrder
+    pagoNumero?: SortOrderInput | SortOrder
+    pagoTitular?: SortOrderInput | SortOrder
+    pagoDocumento?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    usuarios?: UsuarioOrderByRelationAggregateInput
+    empresas?: EmpresaOrderByRelationAggregateInput
+    comisiones?: ComisionOrderByRelationAggregateInput
+    retiros?: SolicitudRetiroOrderByRelationAggregateInput
+  }
+
+  export type AfiliadoWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    codigo?: string
+    AND?: AfiliadoWhereInput | AfiliadoWhereInput[]
+    OR?: AfiliadoWhereInput[]
+    NOT?: AfiliadoWhereInput | AfiliadoWhereInput[]
+    nombre?: StringFilter<"Afiliado"> | string
+    porcentaje?: FloatFilter<"Afiliado"> | number
+    duracionMeses?: IntNullableFilter<"Afiliado"> | number | null
+    activo?: BoolFilter<"Afiliado"> | boolean
+    telefono?: StringNullableFilter<"Afiliado"> | string | null
+    pagoMetodo?: EnumMetodoPagoAfiliadoNullableFilter<"Afiliado"> | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: StringNullableFilter<"Afiliado"> | string | null
+    pagoTipoCuenta?: EnumTipoCuentaBancariaNullableFilter<"Afiliado"> | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: StringNullableFilter<"Afiliado"> | string | null
+    pagoTitular?: StringNullableFilter<"Afiliado"> | string | null
+    pagoDocumento?: StringNullableFilter<"Afiliado"> | string | null
+    creadoEn?: DateTimeFilter<"Afiliado"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Afiliado"> | Date | string
+    usuarios?: UsuarioListRelationFilter
+    empresas?: EmpresaListRelationFilter
+    comisiones?: ComisionListRelationFilter
+    retiros?: SolicitudRetiroListRelationFilter
+  }, "id" | "codigo">
+
+  export type AfiliadoOrderByWithAggregationInput = {
+    id?: SortOrder
+    nombre?: SortOrder
+    codigo?: SortOrder
+    porcentaje?: SortOrder
+    duracionMeses?: SortOrderInput | SortOrder
+    activo?: SortOrder
+    telefono?: SortOrderInput | SortOrder
+    pagoMetodo?: SortOrderInput | SortOrder
+    pagoBanco?: SortOrderInput | SortOrder
+    pagoTipoCuenta?: SortOrderInput | SortOrder
+    pagoNumero?: SortOrderInput | SortOrder
+    pagoTitular?: SortOrderInput | SortOrder
+    pagoDocumento?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    _count?: AfiliadoCountOrderByAggregateInput
+    _avg?: AfiliadoAvgOrderByAggregateInput
+    _max?: AfiliadoMaxOrderByAggregateInput
+    _min?: AfiliadoMinOrderByAggregateInput
+    _sum?: AfiliadoSumOrderByAggregateInput
+  }
+
+  export type AfiliadoScalarWhereWithAggregatesInput = {
+    AND?: AfiliadoScalarWhereWithAggregatesInput | AfiliadoScalarWhereWithAggregatesInput[]
+    OR?: AfiliadoScalarWhereWithAggregatesInput[]
+    NOT?: AfiliadoScalarWhereWithAggregatesInput | AfiliadoScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Afiliado"> | string
+    nombre?: StringWithAggregatesFilter<"Afiliado"> | string
+    codigo?: StringWithAggregatesFilter<"Afiliado"> | string
+    porcentaje?: FloatWithAggregatesFilter<"Afiliado"> | number
+    duracionMeses?: IntNullableWithAggregatesFilter<"Afiliado"> | number | null
+    activo?: BoolWithAggregatesFilter<"Afiliado"> | boolean
+    telefono?: StringNullableWithAggregatesFilter<"Afiliado"> | string | null
+    pagoMetodo?: EnumMetodoPagoAfiliadoNullableWithAggregatesFilter<"Afiliado"> | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: StringNullableWithAggregatesFilter<"Afiliado"> | string | null
+    pagoTipoCuenta?: EnumTipoCuentaBancariaNullableWithAggregatesFilter<"Afiliado"> | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: StringNullableWithAggregatesFilter<"Afiliado"> | string | null
+    pagoTitular?: StringNullableWithAggregatesFilter<"Afiliado"> | string | null
+    pagoDocumento?: StringNullableWithAggregatesFilter<"Afiliado"> | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"Afiliado"> | Date | string
+    actualizadoEn?: DateTimeWithAggregatesFilter<"Afiliado"> | Date | string
+  }
+
+  export type ComisionWhereInput = {
+    AND?: ComisionWhereInput | ComisionWhereInput[]
+    OR?: ComisionWhereInput[]
+    NOT?: ComisionWhereInput | ComisionWhereInput[]
+    id?: StringFilter<"Comision"> | string
+    afiliadoId?: StringFilter<"Comision"> | string
+    empresaId?: StringFilter<"Comision"> | string
+    pagoId?: StringFilter<"Comision"> | string
+    montoBase?: FloatFilter<"Comision"> | number
+    porcentaje?: FloatFilter<"Comision"> | number
+    monto?: FloatFilter<"Comision"> | number
+    estado?: EnumEstadoComisionFilter<"Comision"> | $Enums.EstadoComision
+    creadoEn?: DateTimeFilter<"Comision"> | Date | string
+    afiliado?: XOR<AfiliadoRelationFilter, AfiliadoWhereInput>
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    pago?: XOR<PagoRelationFilter, PagoWhereInput>
+  }
+
+  export type ComisionOrderByWithRelationInput = {
+    id?: SortOrder
+    afiliadoId?: SortOrder
+    empresaId?: SortOrder
+    pagoId?: SortOrder
+    montoBase?: SortOrder
+    porcentaje?: SortOrder
+    monto?: SortOrder
+    estado?: SortOrder
+    creadoEn?: SortOrder
+    afiliado?: AfiliadoOrderByWithRelationInput
+    empresa?: EmpresaOrderByWithRelationInput
+    pago?: PagoOrderByWithRelationInput
+  }
+
+  export type ComisionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    pagoId?: string
+    AND?: ComisionWhereInput | ComisionWhereInput[]
+    OR?: ComisionWhereInput[]
+    NOT?: ComisionWhereInput | ComisionWhereInput[]
+    afiliadoId?: StringFilter<"Comision"> | string
+    empresaId?: StringFilter<"Comision"> | string
+    montoBase?: FloatFilter<"Comision"> | number
+    porcentaje?: FloatFilter<"Comision"> | number
+    monto?: FloatFilter<"Comision"> | number
+    estado?: EnumEstadoComisionFilter<"Comision"> | $Enums.EstadoComision
+    creadoEn?: DateTimeFilter<"Comision"> | Date | string
+    afiliado?: XOR<AfiliadoRelationFilter, AfiliadoWhereInput>
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    pago?: XOR<PagoRelationFilter, PagoWhereInput>
+  }, "id" | "pagoId">
+
+  export type ComisionOrderByWithAggregationInput = {
+    id?: SortOrder
+    afiliadoId?: SortOrder
+    empresaId?: SortOrder
+    pagoId?: SortOrder
+    montoBase?: SortOrder
+    porcentaje?: SortOrder
+    monto?: SortOrder
+    estado?: SortOrder
+    creadoEn?: SortOrder
+    _count?: ComisionCountOrderByAggregateInput
+    _avg?: ComisionAvgOrderByAggregateInput
+    _max?: ComisionMaxOrderByAggregateInput
+    _min?: ComisionMinOrderByAggregateInput
+    _sum?: ComisionSumOrderByAggregateInput
+  }
+
+  export type ComisionScalarWhereWithAggregatesInput = {
+    AND?: ComisionScalarWhereWithAggregatesInput | ComisionScalarWhereWithAggregatesInput[]
+    OR?: ComisionScalarWhereWithAggregatesInput[]
+    NOT?: ComisionScalarWhereWithAggregatesInput | ComisionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Comision"> | string
+    afiliadoId?: StringWithAggregatesFilter<"Comision"> | string
+    empresaId?: StringWithAggregatesFilter<"Comision"> | string
+    pagoId?: StringWithAggregatesFilter<"Comision"> | string
+    montoBase?: FloatWithAggregatesFilter<"Comision"> | number
+    porcentaje?: FloatWithAggregatesFilter<"Comision"> | number
+    monto?: FloatWithAggregatesFilter<"Comision"> | number
+    estado?: EnumEstadoComisionWithAggregatesFilter<"Comision"> | $Enums.EstadoComision
+    creadoEn?: DateTimeWithAggregatesFilter<"Comision"> | Date | string
+  }
+
+  export type SolicitudRetiroWhereInput = {
+    AND?: SolicitudRetiroWhereInput | SolicitudRetiroWhereInput[]
+    OR?: SolicitudRetiroWhereInput[]
+    NOT?: SolicitudRetiroWhereInput | SolicitudRetiroWhereInput[]
+    id?: StringFilter<"SolicitudRetiro"> | string
+    afiliadoId?: StringFilter<"SolicitudRetiro"> | string
+    monto?: FloatFilter<"SolicitudRetiro"> | number
+    estado?: EnumEstadoRetiroFilter<"SolicitudRetiro"> | $Enums.EstadoRetiro
+    comprobanteBase64?: StringNullableFilter<"SolicitudRetiro"> | string | null
+    nota?: StringNullableFilter<"SolicitudRetiro"> | string | null
+    solicitadoEn?: DateTimeFilter<"SolicitudRetiro"> | Date | string
+    procesadoEn?: DateTimeNullableFilter<"SolicitudRetiro"> | Date | string | null
+    procesadoPor?: StringNullableFilter<"SolicitudRetiro"> | string | null
+    afiliado?: XOR<AfiliadoRelationFilter, AfiliadoWhereInput>
+  }
+
+  export type SolicitudRetiroOrderByWithRelationInput = {
+    id?: SortOrder
+    afiliadoId?: SortOrder
+    monto?: SortOrder
+    estado?: SortOrder
+    comprobanteBase64?: SortOrderInput | SortOrder
+    nota?: SortOrderInput | SortOrder
+    solicitadoEn?: SortOrder
+    procesadoEn?: SortOrderInput | SortOrder
+    procesadoPor?: SortOrderInput | SortOrder
+    afiliado?: AfiliadoOrderByWithRelationInput
+  }
+
+  export type SolicitudRetiroWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: SolicitudRetiroWhereInput | SolicitudRetiroWhereInput[]
+    OR?: SolicitudRetiroWhereInput[]
+    NOT?: SolicitudRetiroWhereInput | SolicitudRetiroWhereInput[]
+    afiliadoId?: StringFilter<"SolicitudRetiro"> | string
+    monto?: FloatFilter<"SolicitudRetiro"> | number
+    estado?: EnumEstadoRetiroFilter<"SolicitudRetiro"> | $Enums.EstadoRetiro
+    comprobanteBase64?: StringNullableFilter<"SolicitudRetiro"> | string | null
+    nota?: StringNullableFilter<"SolicitudRetiro"> | string | null
+    solicitadoEn?: DateTimeFilter<"SolicitudRetiro"> | Date | string
+    procesadoEn?: DateTimeNullableFilter<"SolicitudRetiro"> | Date | string | null
+    procesadoPor?: StringNullableFilter<"SolicitudRetiro"> | string | null
+    afiliado?: XOR<AfiliadoRelationFilter, AfiliadoWhereInput>
+  }, "id">
+
+  export type SolicitudRetiroOrderByWithAggregationInput = {
+    id?: SortOrder
+    afiliadoId?: SortOrder
+    monto?: SortOrder
+    estado?: SortOrder
+    comprobanteBase64?: SortOrderInput | SortOrder
+    nota?: SortOrderInput | SortOrder
+    solicitadoEn?: SortOrder
+    procesadoEn?: SortOrderInput | SortOrder
+    procesadoPor?: SortOrderInput | SortOrder
+    _count?: SolicitudRetiroCountOrderByAggregateInput
+    _avg?: SolicitudRetiroAvgOrderByAggregateInput
+    _max?: SolicitudRetiroMaxOrderByAggregateInput
+    _min?: SolicitudRetiroMinOrderByAggregateInput
+    _sum?: SolicitudRetiroSumOrderByAggregateInput
+  }
+
+  export type SolicitudRetiroScalarWhereWithAggregatesInput = {
+    AND?: SolicitudRetiroScalarWhereWithAggregatesInput | SolicitudRetiroScalarWhereWithAggregatesInput[]
+    OR?: SolicitudRetiroScalarWhereWithAggregatesInput[]
+    NOT?: SolicitudRetiroScalarWhereWithAggregatesInput | SolicitudRetiroScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SolicitudRetiro"> | string
+    afiliadoId?: StringWithAggregatesFilter<"SolicitudRetiro"> | string
+    monto?: FloatWithAggregatesFilter<"SolicitudRetiro"> | number
+    estado?: EnumEstadoRetiroWithAggregatesFilter<"SolicitudRetiro"> | $Enums.EstadoRetiro
+    comprobanteBase64?: StringNullableWithAggregatesFilter<"SolicitudRetiro"> | string | null
+    nota?: StringNullableWithAggregatesFilter<"SolicitudRetiro"> | string | null
+    solicitadoEn?: DateTimeWithAggregatesFilter<"SolicitudRetiro"> | Date | string
+    procesadoEn?: DateTimeNullableWithAggregatesFilter<"SolicitudRetiro"> | Date | string | null
+    procesadoPor?: StringNullableWithAggregatesFilter<"SolicitudRetiro"> | string | null
+  }
+
   export type EmpresaCreateInput = {
     id?: string
     nombre: string
@@ -19370,6 +23303,8 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
@@ -19378,6 +23313,8 @@ export namespace Prisma {
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateInput = {
@@ -19391,6 +23328,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
@@ -19399,6 +23339,7 @@ export namespace Prisma {
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUpdateInput = {
@@ -19412,6 +23353,8 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
@@ -19420,6 +23363,8 @@ export namespace Prisma {
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateInput = {
@@ -19433,6 +23378,9 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -19441,6 +23389,7 @@ export namespace Prisma {
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateManyInput = {
@@ -19454,6 +23403,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
   }
 
   export type EmpresaUpdateManyMutationInput = {
@@ -19467,6 +23419,8 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type EmpresaUncheckedUpdateManyInput = {
@@ -19480,6 +23434,9 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SuscripcionCreateInput = {
@@ -19646,6 +23603,7 @@ export namespace Prisma {
     registradoPor?: string | null
     creadoEn?: Date | string
     suscripcion: SuscripcionCreateNestedOneWithoutPagosInput
+    comision?: ComisionCreateNestedOneWithoutPagoInput
   }
 
   export type PagoUncheckedCreateInput = {
@@ -19662,6 +23620,7 @@ export namespace Prisma {
     comprobanteBase64?: string | null
     registradoPor?: string | null
     creadoEn?: Date | string
+    comision?: ComisionUncheckedCreateNestedOneWithoutPagoInput
   }
 
   export type PagoUpdateInput = {
@@ -19678,6 +23637,7 @@ export namespace Prisma {
     registradoPor?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     suscripcion?: SuscripcionUpdateOneRequiredWithoutPagosNestedInput
+    comision?: ComisionUpdateOneWithoutPagoNestedInput
   }
 
   export type PagoUncheckedUpdateInput = {
@@ -19694,6 +23654,7 @@ export namespace Prisma {
     comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
     registradoPor?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    comision?: ComisionUncheckedUpdateOneWithoutPagoNestedInput
   }
 
   export type PagoCreateManyInput = {
@@ -20694,11 +24655,13 @@ export namespace Prisma {
     verificacionExpira?: Date | string | null
     creadoEn?: Date | string
     empresa?: EmpresaCreateNestedOneWithoutUsuariosInput
+    afiliado?: AfiliadoCreateNestedOneWithoutUsuariosInput
   }
 
   export type UsuarioUncheckedCreateInput = {
     id?: string
     empresaId?: string | null
+    afiliadoId?: string | null
     email: string
     password: string
     nombre: string
@@ -20726,11 +24689,13 @@ export namespace Prisma {
     verificacionExpira?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneWithoutUsuariosNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutUsuariosNestedInput
   }
 
   export type UsuarioUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     empresaId?: NullableStringFieldUpdateOperationsInput | string | null
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
@@ -20747,6 +24712,7 @@ export namespace Prisma {
   export type UsuarioCreateManyInput = {
     id?: string
     empresaId?: string | null
+    afiliadoId?: string | null
     email: string
     password: string
     nombre: string
@@ -20778,6 +24744,7 @@ export namespace Prisma {
   export type UsuarioUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     empresaId?: NullableStringFieldUpdateOperationsInput | string | null
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
@@ -20789,6 +24756,312 @@ export namespace Prisma {
     verificacionCodigo?: NullableStringFieldUpdateOperationsInput | string | null
     verificacionExpira?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AfiliadoCreateInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    usuarios?: UsuarioCreateNestedManyWithoutAfiliadoInput
+    empresas?: EmpresaCreateNestedManyWithoutAfiliadoInput
+    comisiones?: ComisionCreateNestedManyWithoutAfiliadoInput
+    retiros?: SolicitudRetiroCreateNestedManyWithoutAfiliadoInput
+  }
+
+  export type AfiliadoUncheckedCreateInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutAfiliadoInput
+    empresas?: EmpresaUncheckedCreateNestedManyWithoutAfiliadoInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutAfiliadoInput
+    retiros?: SolicitudRetiroUncheckedCreateNestedManyWithoutAfiliadoInput
+  }
+
+  export type AfiliadoUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usuarios?: UsuarioUpdateManyWithoutAfiliadoNestedInput
+    empresas?: EmpresaUpdateManyWithoutAfiliadoNestedInput
+    comisiones?: ComisionUpdateManyWithoutAfiliadoNestedInput
+    retiros?: SolicitudRetiroUpdateManyWithoutAfiliadoNestedInput
+  }
+
+  export type AfiliadoUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usuarios?: UsuarioUncheckedUpdateManyWithoutAfiliadoNestedInput
+    empresas?: EmpresaUncheckedUpdateManyWithoutAfiliadoNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutAfiliadoNestedInput
+    retiros?: SolicitudRetiroUncheckedUpdateManyWithoutAfiliadoNestedInput
+  }
+
+  export type AfiliadoCreateManyInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type AfiliadoUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AfiliadoUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ComisionCreateInput = {
+    id?: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+    afiliado: AfiliadoCreateNestedOneWithoutComisionesInput
+    empresa: EmpresaCreateNestedOneWithoutComisionesInput
+    pago: PagoCreateNestedOneWithoutComisionInput
+  }
+
+  export type ComisionUncheckedCreateInput = {
+    id?: string
+    afiliadoId: string
+    empresaId: string
+    pagoId: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+  }
+
+  export type ComisionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliado?: AfiliadoUpdateOneRequiredWithoutComisionesNestedInput
+    empresa?: EmpresaUpdateOneRequiredWithoutComisionesNestedInput
+    pago?: PagoUpdateOneRequiredWithoutComisionNestedInput
+  }
+
+  export type ComisionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    afiliadoId?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    pagoId?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ComisionCreateManyInput = {
+    id?: string
+    afiliadoId: string
+    empresaId: string
+    pagoId: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+  }
+
+  export type ComisionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ComisionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    afiliadoId?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    pagoId?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SolicitudRetiroCreateInput = {
+    id?: string
+    monto: number
+    estado?: $Enums.EstadoRetiro
+    comprobanteBase64?: string | null
+    nota?: string | null
+    solicitadoEn?: Date | string
+    procesadoEn?: Date | string | null
+    procesadoPor?: string | null
+    afiliado: AfiliadoCreateNestedOneWithoutRetirosInput
+  }
+
+  export type SolicitudRetiroUncheckedCreateInput = {
+    id?: string
+    afiliadoId: string
+    monto: number
+    estado?: $Enums.EstadoRetiro
+    comprobanteBase64?: string | null
+    nota?: string | null
+    solicitadoEn?: Date | string
+    procesadoEn?: Date | string | null
+    procesadoPor?: string | null
+  }
+
+  export type SolicitudRetiroUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoRetiroFieldUpdateOperationsInput | $Enums.EstadoRetiro
+    comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    solicitadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    procesadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    afiliado?: AfiliadoUpdateOneRequiredWithoutRetirosNestedInput
+  }
+
+  export type SolicitudRetiroUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    afiliadoId?: StringFieldUpdateOperationsInput | string
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoRetiroFieldUpdateOperationsInput | $Enums.EstadoRetiro
+    comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    solicitadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    procesadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SolicitudRetiroCreateManyInput = {
+    id?: string
+    afiliadoId: string
+    monto: number
+    estado?: $Enums.EstadoRetiro
+    comprobanteBase64?: string | null
+    nota?: string | null
+    solicitadoEn?: Date | string
+    procesadoEn?: Date | string | null
+    procesadoPor?: string | null
+  }
+
+  export type SolicitudRetiroUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoRetiroFieldUpdateOperationsInput | $Enums.EstadoRetiro
+    comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    solicitadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    procesadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SolicitudRetiroUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    afiliadoId?: StringFieldUpdateOperationsInput | string
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoRetiroFieldUpdateOperationsInput | $Enums.EstadoRetiro
+    comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    solicitadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    procesadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -20833,6 +25106,17 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
   export type UsuarioListRelationFilter = {
@@ -20882,6 +25166,17 @@ export namespace Prisma {
     none?: NotificacionWhereInput
   }
 
+  export type AfiliadoNullableRelationFilter = {
+    is?: AfiliadoWhereInput | null
+    isNot?: AfiliadoWhereInput | null
+  }
+
+  export type ComisionListRelationFilter = {
+    every?: ComisionWhereInput
+    some?: ComisionWhereInput
+    none?: ComisionWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -20915,6 +25210,10 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
+  export type ComisionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type EmpresaCountOrderByAggregateInput = {
     id?: SortOrder
     nombre?: SortOrder
@@ -20926,6 +25225,9 @@ export namespace Prisma {
     activa?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
+    afiliadoId?: SortOrder
+    atribuidoEn?: SortOrder
+    primerPagoComisionEn?: SortOrder
   }
 
   export type EmpresaMaxOrderByAggregateInput = {
@@ -20939,6 +25241,9 @@ export namespace Prisma {
     activa?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
+    afiliadoId?: SortOrder
+    atribuidoEn?: SortOrder
+    primerPagoComisionEn?: SortOrder
   }
 
   export type EmpresaMinOrderByAggregateInput = {
@@ -20952,6 +25257,9 @@ export namespace Prisma {
     activa?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
+    afiliadoId?: SortOrder
+    atribuidoEn?: SortOrder
+    primerPagoComisionEn?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -21010,14 +25318,7 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type EnumEstadoSuscripcionFilter<$PrismaModel = never> = {
-    equals?: $Enums.EstadoSuscripcion | EnumEstadoSuscripcionFieldRefInput<$PrismaModel>
-    in?: $Enums.EstadoSuscripcion[]
-    notIn?: $Enums.EstadoSuscripcion[]
-    not?: NestedEnumEstadoSuscripcionFilter<$PrismaModel> | $Enums.EstadoSuscripcion
-  }
-
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | null
     notIn?: Date[] | string[] | null
@@ -21025,7 +25326,17 @@ export namespace Prisma {
     lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type EnumEstadoSuscripcionFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoSuscripcion | EnumEstadoSuscripcionFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoSuscripcion[]
+    notIn?: $Enums.EstadoSuscripcion[]
+    not?: NestedEnumEstadoSuscripcionFilter<$PrismaModel> | $Enums.EstadoSuscripcion
   }
 
   export type IntNullableFilter<$PrismaModel = never> = {
@@ -21163,20 +25474,6 @@ export namespace Prisma {
     _max?: NestedEnumEstadoSuscripcionFilter<$PrismaModel>
   }
 
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
-  }
-
   export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | null
@@ -21257,6 +25554,11 @@ export namespace Prisma {
   export type SuscripcionRelationFilter = {
     is?: SuscripcionWhereInput
     isNot?: SuscripcionWhereInput
+  }
+
+  export type ComisionNullableRelationFilter = {
+    is?: ComisionWhereInput | null
+    isNot?: ComisionWhereInput | null
   }
 
   export type PagoCountOrderByAggregateInput = {
@@ -21973,6 +26275,7 @@ export namespace Prisma {
   export type UsuarioCountOrderByAggregateInput = {
     id?: SortOrder
     empresaId?: SortOrder
+    afiliadoId?: SortOrder
     email?: SortOrder
     password?: SortOrder
     nombre?: SortOrder
@@ -21989,6 +26292,7 @@ export namespace Prisma {
   export type UsuarioMaxOrderByAggregateInput = {
     id?: SortOrder
     empresaId?: SortOrder
+    afiliadoId?: SortOrder
     email?: SortOrder
     password?: SortOrder
     nombre?: SortOrder
@@ -22005,6 +26309,7 @@ export namespace Prisma {
   export type UsuarioMinOrderByAggregateInput = {
     id?: SortOrder
     empresaId?: SortOrder
+    afiliadoId?: SortOrder
     email?: SortOrder
     password?: SortOrder
     nombre?: SortOrder
@@ -22026,6 +26331,260 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumRolFilter<$PrismaModel>
     _max?: NestedEnumRolFilter<$PrismaModel>
+  }
+
+  export type EnumMetodoPagoAfiliadoNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.MetodoPagoAfiliado | EnumMetodoPagoAfiliadoFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MetodoPagoAfiliado[] | null
+    notIn?: $Enums.MetodoPagoAfiliado[] | null
+    not?: NestedEnumMetodoPagoAfiliadoNullableFilter<$PrismaModel> | $Enums.MetodoPagoAfiliado | null
+  }
+
+  export type EnumTipoCuentaBancariaNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoCuentaBancaria | EnumTipoCuentaBancariaFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TipoCuentaBancaria[] | null
+    notIn?: $Enums.TipoCuentaBancaria[] | null
+    not?: NestedEnumTipoCuentaBancariaNullableFilter<$PrismaModel> | $Enums.TipoCuentaBancaria | null
+  }
+
+  export type EmpresaListRelationFilter = {
+    every?: EmpresaWhereInput
+    some?: EmpresaWhereInput
+    none?: EmpresaWhereInput
+  }
+
+  export type SolicitudRetiroListRelationFilter = {
+    every?: SolicitudRetiroWhereInput
+    some?: SolicitudRetiroWhereInput
+    none?: SolicitudRetiroWhereInput
+  }
+
+  export type EmpresaOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SolicitudRetiroOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type AfiliadoCountOrderByAggregateInput = {
+    id?: SortOrder
+    nombre?: SortOrder
+    codigo?: SortOrder
+    porcentaje?: SortOrder
+    duracionMeses?: SortOrder
+    activo?: SortOrder
+    telefono?: SortOrder
+    pagoMetodo?: SortOrder
+    pagoBanco?: SortOrder
+    pagoTipoCuenta?: SortOrder
+    pagoNumero?: SortOrder
+    pagoTitular?: SortOrder
+    pagoDocumento?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type AfiliadoAvgOrderByAggregateInput = {
+    porcentaje?: SortOrder
+    duracionMeses?: SortOrder
+  }
+
+  export type AfiliadoMaxOrderByAggregateInput = {
+    id?: SortOrder
+    nombre?: SortOrder
+    codigo?: SortOrder
+    porcentaje?: SortOrder
+    duracionMeses?: SortOrder
+    activo?: SortOrder
+    telefono?: SortOrder
+    pagoMetodo?: SortOrder
+    pagoBanco?: SortOrder
+    pagoTipoCuenta?: SortOrder
+    pagoNumero?: SortOrder
+    pagoTitular?: SortOrder
+    pagoDocumento?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type AfiliadoMinOrderByAggregateInput = {
+    id?: SortOrder
+    nombre?: SortOrder
+    codigo?: SortOrder
+    porcentaje?: SortOrder
+    duracionMeses?: SortOrder
+    activo?: SortOrder
+    telefono?: SortOrder
+    pagoMetodo?: SortOrder
+    pagoBanco?: SortOrder
+    pagoTipoCuenta?: SortOrder
+    pagoNumero?: SortOrder
+    pagoTitular?: SortOrder
+    pagoDocumento?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type AfiliadoSumOrderByAggregateInput = {
+    porcentaje?: SortOrder
+    duracionMeses?: SortOrder
+  }
+
+  export type EnumMetodoPagoAfiliadoNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MetodoPagoAfiliado | EnumMetodoPagoAfiliadoFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MetodoPagoAfiliado[] | null
+    notIn?: $Enums.MetodoPagoAfiliado[] | null
+    not?: NestedEnumMetodoPagoAfiliadoNullableWithAggregatesFilter<$PrismaModel> | $Enums.MetodoPagoAfiliado | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumMetodoPagoAfiliadoNullableFilter<$PrismaModel>
+    _max?: NestedEnumMetodoPagoAfiliadoNullableFilter<$PrismaModel>
+  }
+
+  export type EnumTipoCuentaBancariaNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoCuentaBancaria | EnumTipoCuentaBancariaFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TipoCuentaBancaria[] | null
+    notIn?: $Enums.TipoCuentaBancaria[] | null
+    not?: NestedEnumTipoCuentaBancariaNullableWithAggregatesFilter<$PrismaModel> | $Enums.TipoCuentaBancaria | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumTipoCuentaBancariaNullableFilter<$PrismaModel>
+    _max?: NestedEnumTipoCuentaBancariaNullableFilter<$PrismaModel>
+  }
+
+  export type EnumEstadoComisionFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoComision | EnumEstadoComisionFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoComision[]
+    notIn?: $Enums.EstadoComision[]
+    not?: NestedEnumEstadoComisionFilter<$PrismaModel> | $Enums.EstadoComision
+  }
+
+  export type AfiliadoRelationFilter = {
+    is?: AfiliadoWhereInput
+    isNot?: AfiliadoWhereInput
+  }
+
+  export type PagoRelationFilter = {
+    is?: PagoWhereInput
+    isNot?: PagoWhereInput
+  }
+
+  export type ComisionCountOrderByAggregateInput = {
+    id?: SortOrder
+    afiliadoId?: SortOrder
+    empresaId?: SortOrder
+    pagoId?: SortOrder
+    montoBase?: SortOrder
+    porcentaje?: SortOrder
+    monto?: SortOrder
+    estado?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type ComisionAvgOrderByAggregateInput = {
+    montoBase?: SortOrder
+    porcentaje?: SortOrder
+    monto?: SortOrder
+  }
+
+  export type ComisionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    afiliadoId?: SortOrder
+    empresaId?: SortOrder
+    pagoId?: SortOrder
+    montoBase?: SortOrder
+    porcentaje?: SortOrder
+    monto?: SortOrder
+    estado?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type ComisionMinOrderByAggregateInput = {
+    id?: SortOrder
+    afiliadoId?: SortOrder
+    empresaId?: SortOrder
+    pagoId?: SortOrder
+    montoBase?: SortOrder
+    porcentaje?: SortOrder
+    monto?: SortOrder
+    estado?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type ComisionSumOrderByAggregateInput = {
+    montoBase?: SortOrder
+    porcentaje?: SortOrder
+    monto?: SortOrder
+  }
+
+  export type EnumEstadoComisionWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoComision | EnumEstadoComisionFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoComision[]
+    notIn?: $Enums.EstadoComision[]
+    not?: NestedEnumEstadoComisionWithAggregatesFilter<$PrismaModel> | $Enums.EstadoComision
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoComisionFilter<$PrismaModel>
+    _max?: NestedEnumEstadoComisionFilter<$PrismaModel>
+  }
+
+  export type EnumEstadoRetiroFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoRetiro | EnumEstadoRetiroFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoRetiro[]
+    notIn?: $Enums.EstadoRetiro[]
+    not?: NestedEnumEstadoRetiroFilter<$PrismaModel> | $Enums.EstadoRetiro
+  }
+
+  export type SolicitudRetiroCountOrderByAggregateInput = {
+    id?: SortOrder
+    afiliadoId?: SortOrder
+    monto?: SortOrder
+    estado?: SortOrder
+    comprobanteBase64?: SortOrder
+    nota?: SortOrder
+    solicitadoEn?: SortOrder
+    procesadoEn?: SortOrder
+    procesadoPor?: SortOrder
+  }
+
+  export type SolicitudRetiroAvgOrderByAggregateInput = {
+    monto?: SortOrder
+  }
+
+  export type SolicitudRetiroMaxOrderByAggregateInput = {
+    id?: SortOrder
+    afiliadoId?: SortOrder
+    monto?: SortOrder
+    estado?: SortOrder
+    comprobanteBase64?: SortOrder
+    nota?: SortOrder
+    solicitadoEn?: SortOrder
+    procesadoEn?: SortOrder
+    procesadoPor?: SortOrder
+  }
+
+  export type SolicitudRetiroMinOrderByAggregateInput = {
+    id?: SortOrder
+    afiliadoId?: SortOrder
+    monto?: SortOrder
+    estado?: SortOrder
+    comprobanteBase64?: SortOrder
+    nota?: SortOrder
+    solicitadoEn?: SortOrder
+    procesadoEn?: SortOrder
+    procesadoPor?: SortOrder
+  }
+
+  export type SolicitudRetiroSumOrderByAggregateInput = {
+    monto?: SortOrder
+  }
+
+  export type EnumEstadoRetiroWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoRetiro | EnumEstadoRetiroFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoRetiro[]
+    notIn?: $Enums.EstadoRetiro[]
+    not?: NestedEnumEstadoRetiroWithAggregatesFilter<$PrismaModel> | $Enums.EstadoRetiro
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoRetiroFilter<$PrismaModel>
+    _max?: NestedEnumEstadoRetiroFilter<$PrismaModel>
   }
 
   export type UsuarioCreateNestedManyWithoutEmpresaInput = {
@@ -22083,6 +26642,19 @@ export namespace Prisma {
     connect?: NotificacionWhereUniqueInput | NotificacionWhereUniqueInput[]
   }
 
+  export type AfiliadoCreateNestedOneWithoutEmpresasInput = {
+    create?: XOR<AfiliadoCreateWithoutEmpresasInput, AfiliadoUncheckedCreateWithoutEmpresasInput>
+    connectOrCreate?: AfiliadoCreateOrConnectWithoutEmpresasInput
+    connect?: AfiliadoWhereUniqueInput
+  }
+
+  export type ComisionCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<ComisionCreateWithoutEmpresaInput, ComisionUncheckedCreateWithoutEmpresaInput> | ComisionCreateWithoutEmpresaInput[] | ComisionUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ComisionCreateOrConnectWithoutEmpresaInput | ComisionCreateOrConnectWithoutEmpresaInput[]
+    createMany?: ComisionCreateManyEmpresaInputEnvelope
+    connect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+  }
+
   export type UsuarioUncheckedCreateNestedManyWithoutEmpresaInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -22138,6 +26710,13 @@ export namespace Prisma {
     connect?: NotificacionWhereUniqueInput | NotificacionWhereUniqueInput[]
   }
 
+  export type ComisionUncheckedCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<ComisionCreateWithoutEmpresaInput, ComisionUncheckedCreateWithoutEmpresaInput> | ComisionCreateWithoutEmpresaInput[] | ComisionUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ComisionCreateOrConnectWithoutEmpresaInput | ComisionCreateOrConnectWithoutEmpresaInput[]
+    createMany?: ComisionCreateManyEmpresaInputEnvelope
+    connect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+  }
+
   export type StringFieldUpdateOperationsInput = {
     set?: string
   }
@@ -22152,6 +26731,10 @@ export namespace Prisma {
 
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
+  }
+
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
   }
 
   export type UsuarioUpdateManyWithoutEmpresaNestedInput = {
@@ -22262,6 +26845,30 @@ export namespace Prisma {
     deleteMany?: NotificacionScalarWhereInput | NotificacionScalarWhereInput[]
   }
 
+  export type AfiliadoUpdateOneWithoutEmpresasNestedInput = {
+    create?: XOR<AfiliadoCreateWithoutEmpresasInput, AfiliadoUncheckedCreateWithoutEmpresasInput>
+    connectOrCreate?: AfiliadoCreateOrConnectWithoutEmpresasInput
+    upsert?: AfiliadoUpsertWithoutEmpresasInput
+    disconnect?: AfiliadoWhereInput | boolean
+    delete?: AfiliadoWhereInput | boolean
+    connect?: AfiliadoWhereUniqueInput
+    update?: XOR<XOR<AfiliadoUpdateToOneWithWhereWithoutEmpresasInput, AfiliadoUpdateWithoutEmpresasInput>, AfiliadoUncheckedUpdateWithoutEmpresasInput>
+  }
+
+  export type ComisionUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<ComisionCreateWithoutEmpresaInput, ComisionUncheckedCreateWithoutEmpresaInput> | ComisionCreateWithoutEmpresaInput[] | ComisionUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ComisionCreateOrConnectWithoutEmpresaInput | ComisionCreateOrConnectWithoutEmpresaInput[]
+    upsert?: ComisionUpsertWithWhereUniqueWithoutEmpresaInput | ComisionUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: ComisionCreateManyEmpresaInputEnvelope
+    set?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    disconnect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    delete?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    connect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    update?: ComisionUpdateWithWhereUniqueWithoutEmpresaInput | ComisionUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: ComisionUpdateManyWithWhereWithoutEmpresaInput | ComisionUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: ComisionScalarWhereInput | ComisionScalarWhereInput[]
+  }
+
   export type UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -22370,6 +26977,20 @@ export namespace Prisma {
     deleteMany?: NotificacionScalarWhereInput | NotificacionScalarWhereInput[]
   }
 
+  export type ComisionUncheckedUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<ComisionCreateWithoutEmpresaInput, ComisionUncheckedCreateWithoutEmpresaInput> | ComisionCreateWithoutEmpresaInput[] | ComisionUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ComisionCreateOrConnectWithoutEmpresaInput | ComisionCreateOrConnectWithoutEmpresaInput[]
+    upsert?: ComisionUpsertWithWhereUniqueWithoutEmpresaInput | ComisionUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: ComisionCreateManyEmpresaInputEnvelope
+    set?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    disconnect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    delete?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    connect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    update?: ComisionUpdateWithWhereUniqueWithoutEmpresaInput | ComisionUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: ComisionUpdateManyWithWhereWithoutEmpresaInput | ComisionUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: ComisionScalarWhereInput | ComisionScalarWhereInput[]
+  }
+
   export type EmpresaCreateNestedOneWithoutSuscripcionInput = {
     create?: XOR<EmpresaCreateWithoutSuscripcionInput, EmpresaUncheckedCreateWithoutSuscripcionInput>
     connectOrCreate?: EmpresaCreateOrConnectWithoutSuscripcionInput
@@ -22392,10 +27013,6 @@ export namespace Prisma {
 
   export type EnumEstadoSuscripcionFieldUpdateOperationsInput = {
     set?: $Enums.EstadoSuscripcion
-  }
-
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
   }
 
   export type NullableIntFieldUpdateOperationsInput = {
@@ -22448,6 +27065,18 @@ export namespace Prisma {
     connect?: SuscripcionWhereUniqueInput
   }
 
+  export type ComisionCreateNestedOneWithoutPagoInput = {
+    create?: XOR<ComisionCreateWithoutPagoInput, ComisionUncheckedCreateWithoutPagoInput>
+    connectOrCreate?: ComisionCreateOrConnectWithoutPagoInput
+    connect?: ComisionWhereUniqueInput
+  }
+
+  export type ComisionUncheckedCreateNestedOneWithoutPagoInput = {
+    create?: XOR<ComisionCreateWithoutPagoInput, ComisionUncheckedCreateWithoutPagoInput>
+    connectOrCreate?: ComisionCreateOrConnectWithoutPagoInput
+    connect?: ComisionWhereUniqueInput
+  }
+
   export type FloatFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -22478,6 +27107,26 @@ export namespace Prisma {
     upsert?: SuscripcionUpsertWithoutPagosInput
     connect?: SuscripcionWhereUniqueInput
     update?: XOR<XOR<SuscripcionUpdateToOneWithWhereWithoutPagosInput, SuscripcionUpdateWithoutPagosInput>, SuscripcionUncheckedUpdateWithoutPagosInput>
+  }
+
+  export type ComisionUpdateOneWithoutPagoNestedInput = {
+    create?: XOR<ComisionCreateWithoutPagoInput, ComisionUncheckedCreateWithoutPagoInput>
+    connectOrCreate?: ComisionCreateOrConnectWithoutPagoInput
+    upsert?: ComisionUpsertWithoutPagoInput
+    disconnect?: ComisionWhereInput | boolean
+    delete?: ComisionWhereInput | boolean
+    connect?: ComisionWhereUniqueInput
+    update?: XOR<XOR<ComisionUpdateToOneWithWhereWithoutPagoInput, ComisionUpdateWithoutPagoInput>, ComisionUncheckedUpdateWithoutPagoInput>
+  }
+
+  export type ComisionUncheckedUpdateOneWithoutPagoNestedInput = {
+    create?: XOR<ComisionCreateWithoutPagoInput, ComisionUncheckedCreateWithoutPagoInput>
+    connectOrCreate?: ComisionCreateOrConnectWithoutPagoInput
+    upsert?: ComisionUpsertWithoutPagoInput
+    disconnect?: ComisionWhereInput | boolean
+    delete?: ComisionWhereInput | boolean
+    connect?: ComisionWhereUniqueInput
+    update?: XOR<XOR<ComisionUpdateToOneWithWhereWithoutPagoInput, ComisionUpdateWithoutPagoInput>, ComisionUncheckedUpdateWithoutPagoInput>
   }
 
   export type EmpresaCreateNestedOneWithoutHorariosInput = {
@@ -22806,6 +27455,12 @@ export namespace Prisma {
     connect?: EmpresaWhereUniqueInput
   }
 
+  export type AfiliadoCreateNestedOneWithoutUsuariosInput = {
+    create?: XOR<AfiliadoCreateWithoutUsuariosInput, AfiliadoUncheckedCreateWithoutUsuariosInput>
+    connectOrCreate?: AfiliadoCreateOrConnectWithoutUsuariosInput
+    connect?: AfiliadoWhereUniqueInput
+  }
+
   export type EnumRolFieldUpdateOperationsInput = {
     set?: $Enums.Rol
   }
@@ -22818,6 +27473,256 @@ export namespace Prisma {
     delete?: EmpresaWhereInput | boolean
     connect?: EmpresaWhereUniqueInput
     update?: XOR<XOR<EmpresaUpdateToOneWithWhereWithoutUsuariosInput, EmpresaUpdateWithoutUsuariosInput>, EmpresaUncheckedUpdateWithoutUsuariosInput>
+  }
+
+  export type AfiliadoUpdateOneWithoutUsuariosNestedInput = {
+    create?: XOR<AfiliadoCreateWithoutUsuariosInput, AfiliadoUncheckedCreateWithoutUsuariosInput>
+    connectOrCreate?: AfiliadoCreateOrConnectWithoutUsuariosInput
+    upsert?: AfiliadoUpsertWithoutUsuariosInput
+    disconnect?: AfiliadoWhereInput | boolean
+    delete?: AfiliadoWhereInput | boolean
+    connect?: AfiliadoWhereUniqueInput
+    update?: XOR<XOR<AfiliadoUpdateToOneWithWhereWithoutUsuariosInput, AfiliadoUpdateWithoutUsuariosInput>, AfiliadoUncheckedUpdateWithoutUsuariosInput>
+  }
+
+  export type UsuarioCreateNestedManyWithoutAfiliadoInput = {
+    create?: XOR<UsuarioCreateWithoutAfiliadoInput, UsuarioUncheckedCreateWithoutAfiliadoInput> | UsuarioCreateWithoutAfiliadoInput[] | UsuarioUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: UsuarioCreateOrConnectWithoutAfiliadoInput | UsuarioCreateOrConnectWithoutAfiliadoInput[]
+    createMany?: UsuarioCreateManyAfiliadoInputEnvelope
+    connect?: UsuarioWhereUniqueInput | UsuarioWhereUniqueInput[]
+  }
+
+  export type EmpresaCreateNestedManyWithoutAfiliadoInput = {
+    create?: XOR<EmpresaCreateWithoutAfiliadoInput, EmpresaUncheckedCreateWithoutAfiliadoInput> | EmpresaCreateWithoutAfiliadoInput[] | EmpresaUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: EmpresaCreateOrConnectWithoutAfiliadoInput | EmpresaCreateOrConnectWithoutAfiliadoInput[]
+    createMany?: EmpresaCreateManyAfiliadoInputEnvelope
+    connect?: EmpresaWhereUniqueInput | EmpresaWhereUniqueInput[]
+  }
+
+  export type ComisionCreateNestedManyWithoutAfiliadoInput = {
+    create?: XOR<ComisionCreateWithoutAfiliadoInput, ComisionUncheckedCreateWithoutAfiliadoInput> | ComisionCreateWithoutAfiliadoInput[] | ComisionUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: ComisionCreateOrConnectWithoutAfiliadoInput | ComisionCreateOrConnectWithoutAfiliadoInput[]
+    createMany?: ComisionCreateManyAfiliadoInputEnvelope
+    connect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+  }
+
+  export type SolicitudRetiroCreateNestedManyWithoutAfiliadoInput = {
+    create?: XOR<SolicitudRetiroCreateWithoutAfiliadoInput, SolicitudRetiroUncheckedCreateWithoutAfiliadoInput> | SolicitudRetiroCreateWithoutAfiliadoInput[] | SolicitudRetiroUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: SolicitudRetiroCreateOrConnectWithoutAfiliadoInput | SolicitudRetiroCreateOrConnectWithoutAfiliadoInput[]
+    createMany?: SolicitudRetiroCreateManyAfiliadoInputEnvelope
+    connect?: SolicitudRetiroWhereUniqueInput | SolicitudRetiroWhereUniqueInput[]
+  }
+
+  export type UsuarioUncheckedCreateNestedManyWithoutAfiliadoInput = {
+    create?: XOR<UsuarioCreateWithoutAfiliadoInput, UsuarioUncheckedCreateWithoutAfiliadoInput> | UsuarioCreateWithoutAfiliadoInput[] | UsuarioUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: UsuarioCreateOrConnectWithoutAfiliadoInput | UsuarioCreateOrConnectWithoutAfiliadoInput[]
+    createMany?: UsuarioCreateManyAfiliadoInputEnvelope
+    connect?: UsuarioWhereUniqueInput | UsuarioWhereUniqueInput[]
+  }
+
+  export type EmpresaUncheckedCreateNestedManyWithoutAfiliadoInput = {
+    create?: XOR<EmpresaCreateWithoutAfiliadoInput, EmpresaUncheckedCreateWithoutAfiliadoInput> | EmpresaCreateWithoutAfiliadoInput[] | EmpresaUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: EmpresaCreateOrConnectWithoutAfiliadoInput | EmpresaCreateOrConnectWithoutAfiliadoInput[]
+    createMany?: EmpresaCreateManyAfiliadoInputEnvelope
+    connect?: EmpresaWhereUniqueInput | EmpresaWhereUniqueInput[]
+  }
+
+  export type ComisionUncheckedCreateNestedManyWithoutAfiliadoInput = {
+    create?: XOR<ComisionCreateWithoutAfiliadoInput, ComisionUncheckedCreateWithoutAfiliadoInput> | ComisionCreateWithoutAfiliadoInput[] | ComisionUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: ComisionCreateOrConnectWithoutAfiliadoInput | ComisionCreateOrConnectWithoutAfiliadoInput[]
+    createMany?: ComisionCreateManyAfiliadoInputEnvelope
+    connect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+  }
+
+  export type SolicitudRetiroUncheckedCreateNestedManyWithoutAfiliadoInput = {
+    create?: XOR<SolicitudRetiroCreateWithoutAfiliadoInput, SolicitudRetiroUncheckedCreateWithoutAfiliadoInput> | SolicitudRetiroCreateWithoutAfiliadoInput[] | SolicitudRetiroUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: SolicitudRetiroCreateOrConnectWithoutAfiliadoInput | SolicitudRetiroCreateOrConnectWithoutAfiliadoInput[]
+    createMany?: SolicitudRetiroCreateManyAfiliadoInputEnvelope
+    connect?: SolicitudRetiroWhereUniqueInput | SolicitudRetiroWhereUniqueInput[]
+  }
+
+  export type NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput = {
+    set?: $Enums.MetodoPagoAfiliado | null
+  }
+
+  export type NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput = {
+    set?: $Enums.TipoCuentaBancaria | null
+  }
+
+  export type UsuarioUpdateManyWithoutAfiliadoNestedInput = {
+    create?: XOR<UsuarioCreateWithoutAfiliadoInput, UsuarioUncheckedCreateWithoutAfiliadoInput> | UsuarioCreateWithoutAfiliadoInput[] | UsuarioUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: UsuarioCreateOrConnectWithoutAfiliadoInput | UsuarioCreateOrConnectWithoutAfiliadoInput[]
+    upsert?: UsuarioUpsertWithWhereUniqueWithoutAfiliadoInput | UsuarioUpsertWithWhereUniqueWithoutAfiliadoInput[]
+    createMany?: UsuarioCreateManyAfiliadoInputEnvelope
+    set?: UsuarioWhereUniqueInput | UsuarioWhereUniqueInput[]
+    disconnect?: UsuarioWhereUniqueInput | UsuarioWhereUniqueInput[]
+    delete?: UsuarioWhereUniqueInput | UsuarioWhereUniqueInput[]
+    connect?: UsuarioWhereUniqueInput | UsuarioWhereUniqueInput[]
+    update?: UsuarioUpdateWithWhereUniqueWithoutAfiliadoInput | UsuarioUpdateWithWhereUniqueWithoutAfiliadoInput[]
+    updateMany?: UsuarioUpdateManyWithWhereWithoutAfiliadoInput | UsuarioUpdateManyWithWhereWithoutAfiliadoInput[]
+    deleteMany?: UsuarioScalarWhereInput | UsuarioScalarWhereInput[]
+  }
+
+  export type EmpresaUpdateManyWithoutAfiliadoNestedInput = {
+    create?: XOR<EmpresaCreateWithoutAfiliadoInput, EmpresaUncheckedCreateWithoutAfiliadoInput> | EmpresaCreateWithoutAfiliadoInput[] | EmpresaUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: EmpresaCreateOrConnectWithoutAfiliadoInput | EmpresaCreateOrConnectWithoutAfiliadoInput[]
+    upsert?: EmpresaUpsertWithWhereUniqueWithoutAfiliadoInput | EmpresaUpsertWithWhereUniqueWithoutAfiliadoInput[]
+    createMany?: EmpresaCreateManyAfiliadoInputEnvelope
+    set?: EmpresaWhereUniqueInput | EmpresaWhereUniqueInput[]
+    disconnect?: EmpresaWhereUniqueInput | EmpresaWhereUniqueInput[]
+    delete?: EmpresaWhereUniqueInput | EmpresaWhereUniqueInput[]
+    connect?: EmpresaWhereUniqueInput | EmpresaWhereUniqueInput[]
+    update?: EmpresaUpdateWithWhereUniqueWithoutAfiliadoInput | EmpresaUpdateWithWhereUniqueWithoutAfiliadoInput[]
+    updateMany?: EmpresaUpdateManyWithWhereWithoutAfiliadoInput | EmpresaUpdateManyWithWhereWithoutAfiliadoInput[]
+    deleteMany?: EmpresaScalarWhereInput | EmpresaScalarWhereInput[]
+  }
+
+  export type ComisionUpdateManyWithoutAfiliadoNestedInput = {
+    create?: XOR<ComisionCreateWithoutAfiliadoInput, ComisionUncheckedCreateWithoutAfiliadoInput> | ComisionCreateWithoutAfiliadoInput[] | ComisionUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: ComisionCreateOrConnectWithoutAfiliadoInput | ComisionCreateOrConnectWithoutAfiliadoInput[]
+    upsert?: ComisionUpsertWithWhereUniqueWithoutAfiliadoInput | ComisionUpsertWithWhereUniqueWithoutAfiliadoInput[]
+    createMany?: ComisionCreateManyAfiliadoInputEnvelope
+    set?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    disconnect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    delete?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    connect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    update?: ComisionUpdateWithWhereUniqueWithoutAfiliadoInput | ComisionUpdateWithWhereUniqueWithoutAfiliadoInput[]
+    updateMany?: ComisionUpdateManyWithWhereWithoutAfiliadoInput | ComisionUpdateManyWithWhereWithoutAfiliadoInput[]
+    deleteMany?: ComisionScalarWhereInput | ComisionScalarWhereInput[]
+  }
+
+  export type SolicitudRetiroUpdateManyWithoutAfiliadoNestedInput = {
+    create?: XOR<SolicitudRetiroCreateWithoutAfiliadoInput, SolicitudRetiroUncheckedCreateWithoutAfiliadoInput> | SolicitudRetiroCreateWithoutAfiliadoInput[] | SolicitudRetiroUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: SolicitudRetiroCreateOrConnectWithoutAfiliadoInput | SolicitudRetiroCreateOrConnectWithoutAfiliadoInput[]
+    upsert?: SolicitudRetiroUpsertWithWhereUniqueWithoutAfiliadoInput | SolicitudRetiroUpsertWithWhereUniqueWithoutAfiliadoInput[]
+    createMany?: SolicitudRetiroCreateManyAfiliadoInputEnvelope
+    set?: SolicitudRetiroWhereUniqueInput | SolicitudRetiroWhereUniqueInput[]
+    disconnect?: SolicitudRetiroWhereUniqueInput | SolicitudRetiroWhereUniqueInput[]
+    delete?: SolicitudRetiroWhereUniqueInput | SolicitudRetiroWhereUniqueInput[]
+    connect?: SolicitudRetiroWhereUniqueInput | SolicitudRetiroWhereUniqueInput[]
+    update?: SolicitudRetiroUpdateWithWhereUniqueWithoutAfiliadoInput | SolicitudRetiroUpdateWithWhereUniqueWithoutAfiliadoInput[]
+    updateMany?: SolicitudRetiroUpdateManyWithWhereWithoutAfiliadoInput | SolicitudRetiroUpdateManyWithWhereWithoutAfiliadoInput[]
+    deleteMany?: SolicitudRetiroScalarWhereInput | SolicitudRetiroScalarWhereInput[]
+  }
+
+  export type UsuarioUncheckedUpdateManyWithoutAfiliadoNestedInput = {
+    create?: XOR<UsuarioCreateWithoutAfiliadoInput, UsuarioUncheckedCreateWithoutAfiliadoInput> | UsuarioCreateWithoutAfiliadoInput[] | UsuarioUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: UsuarioCreateOrConnectWithoutAfiliadoInput | UsuarioCreateOrConnectWithoutAfiliadoInput[]
+    upsert?: UsuarioUpsertWithWhereUniqueWithoutAfiliadoInput | UsuarioUpsertWithWhereUniqueWithoutAfiliadoInput[]
+    createMany?: UsuarioCreateManyAfiliadoInputEnvelope
+    set?: UsuarioWhereUniqueInput | UsuarioWhereUniqueInput[]
+    disconnect?: UsuarioWhereUniqueInput | UsuarioWhereUniqueInput[]
+    delete?: UsuarioWhereUniqueInput | UsuarioWhereUniqueInput[]
+    connect?: UsuarioWhereUniqueInput | UsuarioWhereUniqueInput[]
+    update?: UsuarioUpdateWithWhereUniqueWithoutAfiliadoInput | UsuarioUpdateWithWhereUniqueWithoutAfiliadoInput[]
+    updateMany?: UsuarioUpdateManyWithWhereWithoutAfiliadoInput | UsuarioUpdateManyWithWhereWithoutAfiliadoInput[]
+    deleteMany?: UsuarioScalarWhereInput | UsuarioScalarWhereInput[]
+  }
+
+  export type EmpresaUncheckedUpdateManyWithoutAfiliadoNestedInput = {
+    create?: XOR<EmpresaCreateWithoutAfiliadoInput, EmpresaUncheckedCreateWithoutAfiliadoInput> | EmpresaCreateWithoutAfiliadoInput[] | EmpresaUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: EmpresaCreateOrConnectWithoutAfiliadoInput | EmpresaCreateOrConnectWithoutAfiliadoInput[]
+    upsert?: EmpresaUpsertWithWhereUniqueWithoutAfiliadoInput | EmpresaUpsertWithWhereUniqueWithoutAfiliadoInput[]
+    createMany?: EmpresaCreateManyAfiliadoInputEnvelope
+    set?: EmpresaWhereUniqueInput | EmpresaWhereUniqueInput[]
+    disconnect?: EmpresaWhereUniqueInput | EmpresaWhereUniqueInput[]
+    delete?: EmpresaWhereUniqueInput | EmpresaWhereUniqueInput[]
+    connect?: EmpresaWhereUniqueInput | EmpresaWhereUniqueInput[]
+    update?: EmpresaUpdateWithWhereUniqueWithoutAfiliadoInput | EmpresaUpdateWithWhereUniqueWithoutAfiliadoInput[]
+    updateMany?: EmpresaUpdateManyWithWhereWithoutAfiliadoInput | EmpresaUpdateManyWithWhereWithoutAfiliadoInput[]
+    deleteMany?: EmpresaScalarWhereInput | EmpresaScalarWhereInput[]
+  }
+
+  export type ComisionUncheckedUpdateManyWithoutAfiliadoNestedInput = {
+    create?: XOR<ComisionCreateWithoutAfiliadoInput, ComisionUncheckedCreateWithoutAfiliadoInput> | ComisionCreateWithoutAfiliadoInput[] | ComisionUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: ComisionCreateOrConnectWithoutAfiliadoInput | ComisionCreateOrConnectWithoutAfiliadoInput[]
+    upsert?: ComisionUpsertWithWhereUniqueWithoutAfiliadoInput | ComisionUpsertWithWhereUniqueWithoutAfiliadoInput[]
+    createMany?: ComisionCreateManyAfiliadoInputEnvelope
+    set?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    disconnect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    delete?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    connect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+    update?: ComisionUpdateWithWhereUniqueWithoutAfiliadoInput | ComisionUpdateWithWhereUniqueWithoutAfiliadoInput[]
+    updateMany?: ComisionUpdateManyWithWhereWithoutAfiliadoInput | ComisionUpdateManyWithWhereWithoutAfiliadoInput[]
+    deleteMany?: ComisionScalarWhereInput | ComisionScalarWhereInput[]
+  }
+
+  export type SolicitudRetiroUncheckedUpdateManyWithoutAfiliadoNestedInput = {
+    create?: XOR<SolicitudRetiroCreateWithoutAfiliadoInput, SolicitudRetiroUncheckedCreateWithoutAfiliadoInput> | SolicitudRetiroCreateWithoutAfiliadoInput[] | SolicitudRetiroUncheckedCreateWithoutAfiliadoInput[]
+    connectOrCreate?: SolicitudRetiroCreateOrConnectWithoutAfiliadoInput | SolicitudRetiroCreateOrConnectWithoutAfiliadoInput[]
+    upsert?: SolicitudRetiroUpsertWithWhereUniqueWithoutAfiliadoInput | SolicitudRetiroUpsertWithWhereUniqueWithoutAfiliadoInput[]
+    createMany?: SolicitudRetiroCreateManyAfiliadoInputEnvelope
+    set?: SolicitudRetiroWhereUniqueInput | SolicitudRetiroWhereUniqueInput[]
+    disconnect?: SolicitudRetiroWhereUniqueInput | SolicitudRetiroWhereUniqueInput[]
+    delete?: SolicitudRetiroWhereUniqueInput | SolicitudRetiroWhereUniqueInput[]
+    connect?: SolicitudRetiroWhereUniqueInput | SolicitudRetiroWhereUniqueInput[]
+    update?: SolicitudRetiroUpdateWithWhereUniqueWithoutAfiliadoInput | SolicitudRetiroUpdateWithWhereUniqueWithoutAfiliadoInput[]
+    updateMany?: SolicitudRetiroUpdateManyWithWhereWithoutAfiliadoInput | SolicitudRetiroUpdateManyWithWhereWithoutAfiliadoInput[]
+    deleteMany?: SolicitudRetiroScalarWhereInput | SolicitudRetiroScalarWhereInput[]
+  }
+
+  export type AfiliadoCreateNestedOneWithoutComisionesInput = {
+    create?: XOR<AfiliadoCreateWithoutComisionesInput, AfiliadoUncheckedCreateWithoutComisionesInput>
+    connectOrCreate?: AfiliadoCreateOrConnectWithoutComisionesInput
+    connect?: AfiliadoWhereUniqueInput
+  }
+
+  export type EmpresaCreateNestedOneWithoutComisionesInput = {
+    create?: XOR<EmpresaCreateWithoutComisionesInput, EmpresaUncheckedCreateWithoutComisionesInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutComisionesInput
+    connect?: EmpresaWhereUniqueInput
+  }
+
+  export type PagoCreateNestedOneWithoutComisionInput = {
+    create?: XOR<PagoCreateWithoutComisionInput, PagoUncheckedCreateWithoutComisionInput>
+    connectOrCreate?: PagoCreateOrConnectWithoutComisionInput
+    connect?: PagoWhereUniqueInput
+  }
+
+  export type EnumEstadoComisionFieldUpdateOperationsInput = {
+    set?: $Enums.EstadoComision
+  }
+
+  export type AfiliadoUpdateOneRequiredWithoutComisionesNestedInput = {
+    create?: XOR<AfiliadoCreateWithoutComisionesInput, AfiliadoUncheckedCreateWithoutComisionesInput>
+    connectOrCreate?: AfiliadoCreateOrConnectWithoutComisionesInput
+    upsert?: AfiliadoUpsertWithoutComisionesInput
+    connect?: AfiliadoWhereUniqueInput
+    update?: XOR<XOR<AfiliadoUpdateToOneWithWhereWithoutComisionesInput, AfiliadoUpdateWithoutComisionesInput>, AfiliadoUncheckedUpdateWithoutComisionesInput>
+  }
+
+  export type EmpresaUpdateOneRequiredWithoutComisionesNestedInput = {
+    create?: XOR<EmpresaCreateWithoutComisionesInput, EmpresaUncheckedCreateWithoutComisionesInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutComisionesInput
+    upsert?: EmpresaUpsertWithoutComisionesInput
+    connect?: EmpresaWhereUniqueInput
+    update?: XOR<XOR<EmpresaUpdateToOneWithWhereWithoutComisionesInput, EmpresaUpdateWithoutComisionesInput>, EmpresaUncheckedUpdateWithoutComisionesInput>
+  }
+
+  export type PagoUpdateOneRequiredWithoutComisionNestedInput = {
+    create?: XOR<PagoCreateWithoutComisionInput, PagoUncheckedCreateWithoutComisionInput>
+    connectOrCreate?: PagoCreateOrConnectWithoutComisionInput
+    upsert?: PagoUpsertWithoutComisionInput
+    connect?: PagoWhereUniqueInput
+    update?: XOR<XOR<PagoUpdateToOneWithWhereWithoutComisionInput, PagoUpdateWithoutComisionInput>, PagoUncheckedUpdateWithoutComisionInput>
+  }
+
+  export type AfiliadoCreateNestedOneWithoutRetirosInput = {
+    create?: XOR<AfiliadoCreateWithoutRetirosInput, AfiliadoUncheckedCreateWithoutRetirosInput>
+    connectOrCreate?: AfiliadoCreateOrConnectWithoutRetirosInput
+    connect?: AfiliadoWhereUniqueInput
+  }
+
+  export type EnumEstadoRetiroFieldUpdateOperationsInput = {
+    set?: $Enums.EstadoRetiro
+  }
+
+  export type AfiliadoUpdateOneRequiredWithoutRetirosNestedInput = {
+    create?: XOR<AfiliadoCreateWithoutRetirosInput, AfiliadoUncheckedCreateWithoutRetirosInput>
+    connectOrCreate?: AfiliadoCreateOrConnectWithoutRetirosInput
+    upsert?: AfiliadoUpsertWithoutRetirosInput
+    connect?: AfiliadoWhereUniqueInput
+    update?: XOR<XOR<AfiliadoUpdateToOneWithWhereWithoutRetirosInput, AfiliadoUpdateWithoutRetirosInput>, AfiliadoUncheckedUpdateWithoutRetirosInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -22862,6 +27767,17 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
+  }
+
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
   export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
@@ -22942,34 +27858,6 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type NestedEnumEstadoSuscripcionFilter<$PrismaModel = never> = {
-    equals?: $Enums.EstadoSuscripcion | EnumEstadoSuscripcionFieldRefInput<$PrismaModel>
-    in?: $Enums.EstadoSuscripcion[]
-    notIn?: $Enums.EstadoSuscripcion[]
-    not?: NestedEnumEstadoSuscripcionFilter<$PrismaModel> | $Enums.EstadoSuscripcion
-  }
-
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
-  export type NestedEnumEstadoSuscripcionWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.EstadoSuscripcion | EnumEstadoSuscripcionFieldRefInput<$PrismaModel>
-    in?: $Enums.EstadoSuscripcion[]
-    notIn?: $Enums.EstadoSuscripcion[]
-    not?: NestedEnumEstadoSuscripcionWithAggregatesFilter<$PrismaModel> | $Enums.EstadoSuscripcion
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumEstadoSuscripcionFilter<$PrismaModel>
-    _max?: NestedEnumEstadoSuscripcionFilter<$PrismaModel>
-  }
-
   export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | null
@@ -22982,6 +27870,23 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumEstadoSuscripcionFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoSuscripcion | EnumEstadoSuscripcionFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoSuscripcion[]
+    notIn?: $Enums.EstadoSuscripcion[]
+    not?: NestedEnumEstadoSuscripcionFilter<$PrismaModel> | $Enums.EstadoSuscripcion
+  }
+
+  export type NestedEnumEstadoSuscripcionWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoSuscripcion | EnumEstadoSuscripcionFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoSuscripcion[]
+    notIn?: $Enums.EstadoSuscripcion[]
+    not?: NestedEnumEstadoSuscripcionWithAggregatesFilter<$PrismaModel> | $Enums.EstadoSuscripcion
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoSuscripcionFilter<$PrismaModel>
+    _max?: NestedEnumEstadoSuscripcionFilter<$PrismaModel>
   }
 
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -23183,6 +28088,74 @@ export namespace Prisma {
     _max?: NestedEnumRolFilter<$PrismaModel>
   }
 
+  export type NestedEnumMetodoPagoAfiliadoNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.MetodoPagoAfiliado | EnumMetodoPagoAfiliadoFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MetodoPagoAfiliado[] | null
+    notIn?: $Enums.MetodoPagoAfiliado[] | null
+    not?: NestedEnumMetodoPagoAfiliadoNullableFilter<$PrismaModel> | $Enums.MetodoPagoAfiliado | null
+  }
+
+  export type NestedEnumTipoCuentaBancariaNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoCuentaBancaria | EnumTipoCuentaBancariaFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TipoCuentaBancaria[] | null
+    notIn?: $Enums.TipoCuentaBancaria[] | null
+    not?: NestedEnumTipoCuentaBancariaNullableFilter<$PrismaModel> | $Enums.TipoCuentaBancaria | null
+  }
+
+  export type NestedEnumMetodoPagoAfiliadoNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MetodoPagoAfiliado | EnumMetodoPagoAfiliadoFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MetodoPagoAfiliado[] | null
+    notIn?: $Enums.MetodoPagoAfiliado[] | null
+    not?: NestedEnumMetodoPagoAfiliadoNullableWithAggregatesFilter<$PrismaModel> | $Enums.MetodoPagoAfiliado | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumMetodoPagoAfiliadoNullableFilter<$PrismaModel>
+    _max?: NestedEnumMetodoPagoAfiliadoNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumTipoCuentaBancariaNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoCuentaBancaria | EnumTipoCuentaBancariaFieldRefInput<$PrismaModel> | null
+    in?: $Enums.TipoCuentaBancaria[] | null
+    notIn?: $Enums.TipoCuentaBancaria[] | null
+    not?: NestedEnumTipoCuentaBancariaNullableWithAggregatesFilter<$PrismaModel> | $Enums.TipoCuentaBancaria | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumTipoCuentaBancariaNullableFilter<$PrismaModel>
+    _max?: NestedEnumTipoCuentaBancariaNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumEstadoComisionFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoComision | EnumEstadoComisionFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoComision[]
+    notIn?: $Enums.EstadoComision[]
+    not?: NestedEnumEstadoComisionFilter<$PrismaModel> | $Enums.EstadoComision
+  }
+
+  export type NestedEnumEstadoComisionWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoComision | EnumEstadoComisionFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoComision[]
+    notIn?: $Enums.EstadoComision[]
+    not?: NestedEnumEstadoComisionWithAggregatesFilter<$PrismaModel> | $Enums.EstadoComision
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoComisionFilter<$PrismaModel>
+    _max?: NestedEnumEstadoComisionFilter<$PrismaModel>
+  }
+
+  export type NestedEnumEstadoRetiroFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoRetiro | EnumEstadoRetiroFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoRetiro[]
+    notIn?: $Enums.EstadoRetiro[]
+    not?: NestedEnumEstadoRetiroFilter<$PrismaModel> | $Enums.EstadoRetiro
+  }
+
+  export type NestedEnumEstadoRetiroWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoRetiro | EnumEstadoRetiroFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoRetiro[]
+    notIn?: $Enums.EstadoRetiro[]
+    not?: NestedEnumEstadoRetiroWithAggregatesFilter<$PrismaModel> | $Enums.EstadoRetiro
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoRetiroFilter<$PrismaModel>
+    _max?: NestedEnumEstadoRetiroFilter<$PrismaModel>
+  }
+
   export type UsuarioCreateWithoutEmpresaInput = {
     id?: string
     email: string
@@ -23196,10 +28169,12 @@ export namespace Prisma {
     verificacionCodigo?: string | null
     verificacionExpira?: Date | string | null
     creadoEn?: Date | string
+    afiliado?: AfiliadoCreateNestedOneWithoutUsuariosInput
   }
 
   export type UsuarioUncheckedCreateWithoutEmpresaInput = {
     id?: string
+    afiliadoId?: string | null
     email: string
     password: string
     nombre: string
@@ -23460,6 +28435,85 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type AfiliadoCreateWithoutEmpresasInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    usuarios?: UsuarioCreateNestedManyWithoutAfiliadoInput
+    comisiones?: ComisionCreateNestedManyWithoutAfiliadoInput
+    retiros?: SolicitudRetiroCreateNestedManyWithoutAfiliadoInput
+  }
+
+  export type AfiliadoUncheckedCreateWithoutEmpresasInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutAfiliadoInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutAfiliadoInput
+    retiros?: SolicitudRetiroUncheckedCreateNestedManyWithoutAfiliadoInput
+  }
+
+  export type AfiliadoCreateOrConnectWithoutEmpresasInput = {
+    where: AfiliadoWhereUniqueInput
+    create: XOR<AfiliadoCreateWithoutEmpresasInput, AfiliadoUncheckedCreateWithoutEmpresasInput>
+  }
+
+  export type ComisionCreateWithoutEmpresaInput = {
+    id?: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+    afiliado: AfiliadoCreateNestedOneWithoutComisionesInput
+    pago: PagoCreateNestedOneWithoutComisionInput
+  }
+
+  export type ComisionUncheckedCreateWithoutEmpresaInput = {
+    id?: string
+    afiliadoId: string
+    pagoId: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+  }
+
+  export type ComisionCreateOrConnectWithoutEmpresaInput = {
+    where: ComisionWhereUniqueInput
+    create: XOR<ComisionCreateWithoutEmpresaInput, ComisionUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type ComisionCreateManyEmpresaInputEnvelope = {
+    data: ComisionCreateManyEmpresaInput | ComisionCreateManyEmpresaInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UsuarioUpsertWithWhereUniqueWithoutEmpresaInput = {
     where: UsuarioWhereUniqueInput
     update: XOR<UsuarioUpdateWithoutEmpresaInput, UsuarioUncheckedUpdateWithoutEmpresaInput>
@@ -23482,6 +28536,7 @@ export namespace Prisma {
     NOT?: UsuarioScalarWhereInput | UsuarioScalarWhereInput[]
     id?: StringFilter<"Usuario"> | string
     empresaId?: StringNullableFilter<"Usuario"> | string | null
+    afiliadoId?: StringNullableFilter<"Usuario"> | string | null
     email?: StringFilter<"Usuario"> | string
     password?: StringFilter<"Usuario"> | string
     nombre?: StringFilter<"Usuario"> | string
@@ -23729,6 +28784,90 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Notificacion"> | Date | string
   }
 
+  export type AfiliadoUpsertWithoutEmpresasInput = {
+    update: XOR<AfiliadoUpdateWithoutEmpresasInput, AfiliadoUncheckedUpdateWithoutEmpresasInput>
+    create: XOR<AfiliadoCreateWithoutEmpresasInput, AfiliadoUncheckedCreateWithoutEmpresasInput>
+    where?: AfiliadoWhereInput
+  }
+
+  export type AfiliadoUpdateToOneWithWhereWithoutEmpresasInput = {
+    where?: AfiliadoWhereInput
+    data: XOR<AfiliadoUpdateWithoutEmpresasInput, AfiliadoUncheckedUpdateWithoutEmpresasInput>
+  }
+
+  export type AfiliadoUpdateWithoutEmpresasInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usuarios?: UsuarioUpdateManyWithoutAfiliadoNestedInput
+    comisiones?: ComisionUpdateManyWithoutAfiliadoNestedInput
+    retiros?: SolicitudRetiroUpdateManyWithoutAfiliadoNestedInput
+  }
+
+  export type AfiliadoUncheckedUpdateWithoutEmpresasInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usuarios?: UsuarioUncheckedUpdateManyWithoutAfiliadoNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutAfiliadoNestedInput
+    retiros?: SolicitudRetiroUncheckedUpdateManyWithoutAfiliadoNestedInput
+  }
+
+  export type ComisionUpsertWithWhereUniqueWithoutEmpresaInput = {
+    where: ComisionWhereUniqueInput
+    update: XOR<ComisionUpdateWithoutEmpresaInput, ComisionUncheckedUpdateWithoutEmpresaInput>
+    create: XOR<ComisionCreateWithoutEmpresaInput, ComisionUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type ComisionUpdateWithWhereUniqueWithoutEmpresaInput = {
+    where: ComisionWhereUniqueInput
+    data: XOR<ComisionUpdateWithoutEmpresaInput, ComisionUncheckedUpdateWithoutEmpresaInput>
+  }
+
+  export type ComisionUpdateManyWithWhereWithoutEmpresaInput = {
+    where: ComisionScalarWhereInput
+    data: XOR<ComisionUpdateManyMutationInput, ComisionUncheckedUpdateManyWithoutEmpresaInput>
+  }
+
+  export type ComisionScalarWhereInput = {
+    AND?: ComisionScalarWhereInput | ComisionScalarWhereInput[]
+    OR?: ComisionScalarWhereInput[]
+    NOT?: ComisionScalarWhereInput | ComisionScalarWhereInput[]
+    id?: StringFilter<"Comision"> | string
+    afiliadoId?: StringFilter<"Comision"> | string
+    empresaId?: StringFilter<"Comision"> | string
+    pagoId?: StringFilter<"Comision"> | string
+    montoBase?: FloatFilter<"Comision"> | number
+    porcentaje?: FloatFilter<"Comision"> | number
+    monto?: FloatFilter<"Comision"> | number
+    estado?: EnumEstadoComisionFilter<"Comision"> | $Enums.EstadoComision
+    creadoEn?: DateTimeFilter<"Comision"> | Date | string
+  }
+
   export type EmpresaCreateWithoutSuscripcionInput = {
     id?: string
     nombre: string
@@ -23740,6 +28879,8 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
@@ -23747,6 +28888,8 @@ export namespace Prisma {
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutSuscripcionInput = {
@@ -23760,6 +28903,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
@@ -23767,6 +28913,7 @@ export namespace Prisma {
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutSuscripcionInput = {
@@ -23787,6 +28934,7 @@ export namespace Prisma {
     comprobanteBase64?: string | null
     registradoPor?: string | null
     creadoEn?: Date | string
+    comision?: ComisionCreateNestedOneWithoutPagoInput
   }
 
   export type PagoUncheckedCreateWithoutSuscripcionInput = {
@@ -23802,6 +28950,7 @@ export namespace Prisma {
     comprobanteBase64?: string | null
     registradoPor?: string | null
     creadoEn?: Date | string
+    comision?: ComisionUncheckedCreateNestedOneWithoutPagoInput
   }
 
   export type PagoCreateOrConnectWithoutSuscripcionInput = {
@@ -23836,6 +28985,8 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
@@ -23843,6 +28994,8 @@ export namespace Prisma {
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutSuscripcionInput = {
@@ -23856,6 +29009,9 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -23863,6 +29019,7 @@ export namespace Prisma {
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type PagoUpsertWithWhereUniqueWithoutSuscripcionInput = {
@@ -23947,6 +29104,33 @@ export namespace Prisma {
     create: XOR<SuscripcionCreateWithoutPagosInput, SuscripcionUncheckedCreateWithoutPagosInput>
   }
 
+  export type ComisionCreateWithoutPagoInput = {
+    id?: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+    afiliado: AfiliadoCreateNestedOneWithoutComisionesInput
+    empresa: EmpresaCreateNestedOneWithoutComisionesInput
+  }
+
+  export type ComisionUncheckedCreateWithoutPagoInput = {
+    id?: string
+    afiliadoId: string
+    empresaId: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+  }
+
+  export type ComisionCreateOrConnectWithoutPagoInput = {
+    where: ComisionWhereUniqueInput
+    create: XOR<ComisionCreateWithoutPagoInput, ComisionUncheckedCreateWithoutPagoInput>
+  }
+
   export type SuscripcionUpsertWithoutPagosInput = {
     update: XOR<SuscripcionUpdateWithoutPagosInput, SuscripcionUncheckedUpdateWithoutPagosInput>
     create: XOR<SuscripcionCreateWithoutPagosInput, SuscripcionUncheckedCreateWithoutPagosInput>
@@ -24000,6 +29184,39 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ComisionUpsertWithoutPagoInput = {
+    update: XOR<ComisionUpdateWithoutPagoInput, ComisionUncheckedUpdateWithoutPagoInput>
+    create: XOR<ComisionCreateWithoutPagoInput, ComisionUncheckedCreateWithoutPagoInput>
+    where?: ComisionWhereInput
+  }
+
+  export type ComisionUpdateToOneWithWhereWithoutPagoInput = {
+    where?: ComisionWhereInput
+    data: XOR<ComisionUpdateWithoutPagoInput, ComisionUncheckedUpdateWithoutPagoInput>
+  }
+
+  export type ComisionUpdateWithoutPagoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliado?: AfiliadoUpdateOneRequiredWithoutComisionesNestedInput
+    empresa?: EmpresaUpdateOneRequiredWithoutComisionesNestedInput
+  }
+
+  export type ComisionUncheckedUpdateWithoutPagoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    afiliadoId?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type EmpresaCreateWithoutHorariosInput = {
     id?: string
     nombre: string
@@ -24011,6 +29228,8 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
@@ -24018,6 +29237,8 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutHorariosInput = {
@@ -24031,6 +29252,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
@@ -24038,6 +29262,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutHorariosInput = {
@@ -24145,6 +29370,8 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
@@ -24152,6 +29379,8 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutHorariosInput = {
@@ -24165,6 +29394,9 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -24172,6 +29404,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type FranjaHorarioUpsertWithWhereUniqueWithoutHorarioInput = {
@@ -24289,6 +29522,8 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
@@ -24296,6 +29531,8 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutDispositivosInput = {
@@ -24309,6 +29546,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
@@ -24316,6 +29556,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutDispositivosInput = {
@@ -24345,6 +29586,8 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
@@ -24352,6 +29595,8 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutDispositivosInput = {
@@ -24365,6 +29610,9 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -24372,6 +29620,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutColaboradoresInput = {
@@ -24385,6 +29634,8 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
@@ -24392,6 +29643,8 @@ export namespace Prisma {
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutColaboradoresInput = {
@@ -24405,6 +29658,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -24412,6 +29668,7 @@ export namespace Prisma {
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutColaboradoresInput = {
@@ -24544,6 +29801,8 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
@@ -24551,6 +29810,8 @@ export namespace Prisma {
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutColaboradoresInput = {
@@ -24564,6 +29825,9 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -24571,6 +29835,7 @@ export namespace Prisma {
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type HorarioUpsertWithoutColaboradoresInput = {
@@ -24885,6 +30150,8 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
@@ -24892,6 +30159,8 @@ export namespace Prisma {
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutFestivosInput = {
@@ -24905,6 +30174,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -24912,6 +30184,7 @@ export namespace Prisma {
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutFestivosInput = {
@@ -24941,6 +30214,8 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
@@ -24948,6 +30223,8 @@ export namespace Prisma {
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutFestivosInput = {
@@ -24961,6 +30238,9 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -24968,6 +30248,7 @@ export namespace Prisma {
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutConfiguracionInput = {
@@ -24981,6 +30262,8 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
@@ -24988,6 +30271,8 @@ export namespace Prisma {
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutConfiguracionInput = {
@@ -25001,6 +30286,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
@@ -25008,6 +30296,7 @@ export namespace Prisma {
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutConfiguracionInput = {
@@ -25037,6 +30326,8 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
@@ -25044,6 +30335,8 @@ export namespace Prisma {
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutConfiguracionInput = {
@@ -25057,6 +30350,9 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -25064,6 +30360,7 @@ export namespace Prisma {
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutNotificacionesInput = {
@@ -25077,6 +30374,8 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
@@ -25084,6 +30383,8 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutNotificacionesInput = {
@@ -25097,6 +30398,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
@@ -25104,6 +30408,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutNotificacionesInput = {
@@ -25133,6 +30438,8 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
@@ -25140,6 +30447,8 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutNotificacionesInput = {
@@ -25153,6 +30462,9 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -25160,6 +30472,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutUsuariosInput = {
@@ -25173,6 +30486,8 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
@@ -25180,6 +30495,8 @@ export namespace Prisma {
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutUsuariosInput = {
@@ -25193,6 +30510,9 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -25200,11 +30520,59 @@ export namespace Prisma {
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutUsuariosInput = {
     where: EmpresaWhereUniqueInput
     create: XOR<EmpresaCreateWithoutUsuariosInput, EmpresaUncheckedCreateWithoutUsuariosInput>
+  }
+
+  export type AfiliadoCreateWithoutUsuariosInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresas?: EmpresaCreateNestedManyWithoutAfiliadoInput
+    comisiones?: ComisionCreateNestedManyWithoutAfiliadoInput
+    retiros?: SolicitudRetiroCreateNestedManyWithoutAfiliadoInput
+  }
+
+  export type AfiliadoUncheckedCreateWithoutUsuariosInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresas?: EmpresaUncheckedCreateNestedManyWithoutAfiliadoInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutAfiliadoInput
+    retiros?: SolicitudRetiroUncheckedCreateNestedManyWithoutAfiliadoInput
+  }
+
+  export type AfiliadoCreateOrConnectWithoutUsuariosInput = {
+    where: AfiliadoWhereUniqueInput
+    create: XOR<AfiliadoCreateWithoutUsuariosInput, AfiliadoUncheckedCreateWithoutUsuariosInput>
   }
 
   export type EmpresaUpsertWithoutUsuariosInput = {
@@ -25229,6 +30597,8 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
@@ -25236,6 +30606,8 @@ export namespace Prisma {
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutUsuariosInput = {
@@ -25249,6 +30621,574 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type AfiliadoUpsertWithoutUsuariosInput = {
+    update: XOR<AfiliadoUpdateWithoutUsuariosInput, AfiliadoUncheckedUpdateWithoutUsuariosInput>
+    create: XOR<AfiliadoCreateWithoutUsuariosInput, AfiliadoUncheckedCreateWithoutUsuariosInput>
+    where?: AfiliadoWhereInput
+  }
+
+  export type AfiliadoUpdateToOneWithWhereWithoutUsuariosInput = {
+    where?: AfiliadoWhereInput
+    data: XOR<AfiliadoUpdateWithoutUsuariosInput, AfiliadoUncheckedUpdateWithoutUsuariosInput>
+  }
+
+  export type AfiliadoUpdateWithoutUsuariosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresas?: EmpresaUpdateManyWithoutAfiliadoNestedInput
+    comisiones?: ComisionUpdateManyWithoutAfiliadoNestedInput
+    retiros?: SolicitudRetiroUpdateManyWithoutAfiliadoNestedInput
+  }
+
+  export type AfiliadoUncheckedUpdateWithoutUsuariosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresas?: EmpresaUncheckedUpdateManyWithoutAfiliadoNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutAfiliadoNestedInput
+    retiros?: SolicitudRetiroUncheckedUpdateManyWithoutAfiliadoNestedInput
+  }
+
+  export type UsuarioCreateWithoutAfiliadoInput = {
+    id?: string
+    email: string
+    password: string
+    nombre: string
+    rol?: $Enums.Rol
+    activo?: boolean
+    resetToken?: string | null
+    resetExpira?: Date | string | null
+    emailVerificado?: boolean
+    verificacionCodigo?: string | null
+    verificacionExpira?: Date | string | null
+    creadoEn?: Date | string
+    empresa?: EmpresaCreateNestedOneWithoutUsuariosInput
+  }
+
+  export type UsuarioUncheckedCreateWithoutAfiliadoInput = {
+    id?: string
+    empresaId?: string | null
+    email: string
+    password: string
+    nombre: string
+    rol?: $Enums.Rol
+    activo?: boolean
+    resetToken?: string | null
+    resetExpira?: Date | string | null
+    emailVerificado?: boolean
+    verificacionCodigo?: string | null
+    verificacionExpira?: Date | string | null
+    creadoEn?: Date | string
+  }
+
+  export type UsuarioCreateOrConnectWithoutAfiliadoInput = {
+    where: UsuarioWhereUniqueInput
+    create: XOR<UsuarioCreateWithoutAfiliadoInput, UsuarioUncheckedCreateWithoutAfiliadoInput>
+  }
+
+  export type UsuarioCreateManyAfiliadoInputEnvelope = {
+    data: UsuarioCreateManyAfiliadoInput | UsuarioCreateManyAfiliadoInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type EmpresaCreateWithoutAfiliadoInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaUncheckedCreateWithoutAfiliadoInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaCreateOrConnectWithoutAfiliadoInput = {
+    where: EmpresaWhereUniqueInput
+    create: XOR<EmpresaCreateWithoutAfiliadoInput, EmpresaUncheckedCreateWithoutAfiliadoInput>
+  }
+
+  export type EmpresaCreateManyAfiliadoInputEnvelope = {
+    data: EmpresaCreateManyAfiliadoInput | EmpresaCreateManyAfiliadoInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ComisionCreateWithoutAfiliadoInput = {
+    id?: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutComisionesInput
+    pago: PagoCreateNestedOneWithoutComisionInput
+  }
+
+  export type ComisionUncheckedCreateWithoutAfiliadoInput = {
+    id?: string
+    empresaId: string
+    pagoId: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+  }
+
+  export type ComisionCreateOrConnectWithoutAfiliadoInput = {
+    where: ComisionWhereUniqueInput
+    create: XOR<ComisionCreateWithoutAfiliadoInput, ComisionUncheckedCreateWithoutAfiliadoInput>
+  }
+
+  export type ComisionCreateManyAfiliadoInputEnvelope = {
+    data: ComisionCreateManyAfiliadoInput | ComisionCreateManyAfiliadoInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SolicitudRetiroCreateWithoutAfiliadoInput = {
+    id?: string
+    monto: number
+    estado?: $Enums.EstadoRetiro
+    comprobanteBase64?: string | null
+    nota?: string | null
+    solicitadoEn?: Date | string
+    procesadoEn?: Date | string | null
+    procesadoPor?: string | null
+  }
+
+  export type SolicitudRetiroUncheckedCreateWithoutAfiliadoInput = {
+    id?: string
+    monto: number
+    estado?: $Enums.EstadoRetiro
+    comprobanteBase64?: string | null
+    nota?: string | null
+    solicitadoEn?: Date | string
+    procesadoEn?: Date | string | null
+    procesadoPor?: string | null
+  }
+
+  export type SolicitudRetiroCreateOrConnectWithoutAfiliadoInput = {
+    where: SolicitudRetiroWhereUniqueInput
+    create: XOR<SolicitudRetiroCreateWithoutAfiliadoInput, SolicitudRetiroUncheckedCreateWithoutAfiliadoInput>
+  }
+
+  export type SolicitudRetiroCreateManyAfiliadoInputEnvelope = {
+    data: SolicitudRetiroCreateManyAfiliadoInput | SolicitudRetiroCreateManyAfiliadoInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type UsuarioUpsertWithWhereUniqueWithoutAfiliadoInput = {
+    where: UsuarioWhereUniqueInput
+    update: XOR<UsuarioUpdateWithoutAfiliadoInput, UsuarioUncheckedUpdateWithoutAfiliadoInput>
+    create: XOR<UsuarioCreateWithoutAfiliadoInput, UsuarioUncheckedCreateWithoutAfiliadoInput>
+  }
+
+  export type UsuarioUpdateWithWhereUniqueWithoutAfiliadoInput = {
+    where: UsuarioWhereUniqueInput
+    data: XOR<UsuarioUpdateWithoutAfiliadoInput, UsuarioUncheckedUpdateWithoutAfiliadoInput>
+  }
+
+  export type UsuarioUpdateManyWithWhereWithoutAfiliadoInput = {
+    where: UsuarioScalarWhereInput
+    data: XOR<UsuarioUpdateManyMutationInput, UsuarioUncheckedUpdateManyWithoutAfiliadoInput>
+  }
+
+  export type EmpresaUpsertWithWhereUniqueWithoutAfiliadoInput = {
+    where: EmpresaWhereUniqueInput
+    update: XOR<EmpresaUpdateWithoutAfiliadoInput, EmpresaUncheckedUpdateWithoutAfiliadoInput>
+    create: XOR<EmpresaCreateWithoutAfiliadoInput, EmpresaUncheckedCreateWithoutAfiliadoInput>
+  }
+
+  export type EmpresaUpdateWithWhereUniqueWithoutAfiliadoInput = {
+    where: EmpresaWhereUniqueInput
+    data: XOR<EmpresaUpdateWithoutAfiliadoInput, EmpresaUncheckedUpdateWithoutAfiliadoInput>
+  }
+
+  export type EmpresaUpdateManyWithWhereWithoutAfiliadoInput = {
+    where: EmpresaScalarWhereInput
+    data: XOR<EmpresaUpdateManyMutationInput, EmpresaUncheckedUpdateManyWithoutAfiliadoInput>
+  }
+
+  export type EmpresaScalarWhereInput = {
+    AND?: EmpresaScalarWhereInput | EmpresaScalarWhereInput[]
+    OR?: EmpresaScalarWhereInput[]
+    NOT?: EmpresaScalarWhereInput | EmpresaScalarWhereInput[]
+    id?: StringFilter<"Empresa"> | string
+    nombre?: StringFilter<"Empresa"> | string
+    nit?: StringFilter<"Empresa"> | string
+    email?: StringFilter<"Empresa"> | string
+    telefono?: StringNullableFilter<"Empresa"> | string | null
+    marcadorToken?: StringFilter<"Empresa"> | string
+    exentaPago?: BoolFilter<"Empresa"> | boolean
+    activa?: BoolFilter<"Empresa"> | boolean
+    creadoEn?: DateTimeFilter<"Empresa"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
+    afiliadoId?: StringNullableFilter<"Empresa"> | string | null
+    atribuidoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
+    primerPagoComisionEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
+  }
+
+  export type ComisionUpsertWithWhereUniqueWithoutAfiliadoInput = {
+    where: ComisionWhereUniqueInput
+    update: XOR<ComisionUpdateWithoutAfiliadoInput, ComisionUncheckedUpdateWithoutAfiliadoInput>
+    create: XOR<ComisionCreateWithoutAfiliadoInput, ComisionUncheckedCreateWithoutAfiliadoInput>
+  }
+
+  export type ComisionUpdateWithWhereUniqueWithoutAfiliadoInput = {
+    where: ComisionWhereUniqueInput
+    data: XOR<ComisionUpdateWithoutAfiliadoInput, ComisionUncheckedUpdateWithoutAfiliadoInput>
+  }
+
+  export type ComisionUpdateManyWithWhereWithoutAfiliadoInput = {
+    where: ComisionScalarWhereInput
+    data: XOR<ComisionUpdateManyMutationInput, ComisionUncheckedUpdateManyWithoutAfiliadoInput>
+  }
+
+  export type SolicitudRetiroUpsertWithWhereUniqueWithoutAfiliadoInput = {
+    where: SolicitudRetiroWhereUniqueInput
+    update: XOR<SolicitudRetiroUpdateWithoutAfiliadoInput, SolicitudRetiroUncheckedUpdateWithoutAfiliadoInput>
+    create: XOR<SolicitudRetiroCreateWithoutAfiliadoInput, SolicitudRetiroUncheckedCreateWithoutAfiliadoInput>
+  }
+
+  export type SolicitudRetiroUpdateWithWhereUniqueWithoutAfiliadoInput = {
+    where: SolicitudRetiroWhereUniqueInput
+    data: XOR<SolicitudRetiroUpdateWithoutAfiliadoInput, SolicitudRetiroUncheckedUpdateWithoutAfiliadoInput>
+  }
+
+  export type SolicitudRetiroUpdateManyWithWhereWithoutAfiliadoInput = {
+    where: SolicitudRetiroScalarWhereInput
+    data: XOR<SolicitudRetiroUpdateManyMutationInput, SolicitudRetiroUncheckedUpdateManyWithoutAfiliadoInput>
+  }
+
+  export type SolicitudRetiroScalarWhereInput = {
+    AND?: SolicitudRetiroScalarWhereInput | SolicitudRetiroScalarWhereInput[]
+    OR?: SolicitudRetiroScalarWhereInput[]
+    NOT?: SolicitudRetiroScalarWhereInput | SolicitudRetiroScalarWhereInput[]
+    id?: StringFilter<"SolicitudRetiro"> | string
+    afiliadoId?: StringFilter<"SolicitudRetiro"> | string
+    monto?: FloatFilter<"SolicitudRetiro"> | number
+    estado?: EnumEstadoRetiroFilter<"SolicitudRetiro"> | $Enums.EstadoRetiro
+    comprobanteBase64?: StringNullableFilter<"SolicitudRetiro"> | string | null
+    nota?: StringNullableFilter<"SolicitudRetiro"> | string | null
+    solicitadoEn?: DateTimeFilter<"SolicitudRetiro"> | Date | string
+    procesadoEn?: DateTimeNullableFilter<"SolicitudRetiro"> | Date | string | null
+    procesadoPor?: StringNullableFilter<"SolicitudRetiro"> | string | null
+  }
+
+  export type AfiliadoCreateWithoutComisionesInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    usuarios?: UsuarioCreateNestedManyWithoutAfiliadoInput
+    empresas?: EmpresaCreateNestedManyWithoutAfiliadoInput
+    retiros?: SolicitudRetiroCreateNestedManyWithoutAfiliadoInput
+  }
+
+  export type AfiliadoUncheckedCreateWithoutComisionesInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutAfiliadoInput
+    empresas?: EmpresaUncheckedCreateNestedManyWithoutAfiliadoInput
+    retiros?: SolicitudRetiroUncheckedCreateNestedManyWithoutAfiliadoInput
+  }
+
+  export type AfiliadoCreateOrConnectWithoutComisionesInput = {
+    where: AfiliadoWhereUniqueInput
+    create: XOR<AfiliadoCreateWithoutComisionesInput, AfiliadoUncheckedCreateWithoutComisionesInput>
+  }
+
+  export type EmpresaCreateWithoutComisionesInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+  }
+
+  export type EmpresaUncheckedCreateWithoutComisionesInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaCreateOrConnectWithoutComisionesInput = {
+    where: EmpresaWhereUniqueInput
+    create: XOR<EmpresaCreateWithoutComisionesInput, EmpresaUncheckedCreateWithoutComisionesInput>
+  }
+
+  export type PagoCreateWithoutComisionInput = {
+    id?: string
+    monto: number
+    colaboradoresFacturados: number
+    periodoInicio: Date | string
+    periodoFin: Date | string
+    metodo: $Enums.MetodoPago
+    estado?: $Enums.EstadoPago
+    wompiTransaccionId?: string | null
+    nota?: string | null
+    comprobanteBase64?: string | null
+    registradoPor?: string | null
+    creadoEn?: Date | string
+    suscripcion: SuscripcionCreateNestedOneWithoutPagosInput
+  }
+
+  export type PagoUncheckedCreateWithoutComisionInput = {
+    id?: string
+    suscripcionId: string
+    monto: number
+    colaboradoresFacturados: number
+    periodoInicio: Date | string
+    periodoFin: Date | string
+    metodo: $Enums.MetodoPago
+    estado?: $Enums.EstadoPago
+    wompiTransaccionId?: string | null
+    nota?: string | null
+    comprobanteBase64?: string | null
+    registradoPor?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type PagoCreateOrConnectWithoutComisionInput = {
+    where: PagoWhereUniqueInput
+    create: XOR<PagoCreateWithoutComisionInput, PagoUncheckedCreateWithoutComisionInput>
+  }
+
+  export type AfiliadoUpsertWithoutComisionesInput = {
+    update: XOR<AfiliadoUpdateWithoutComisionesInput, AfiliadoUncheckedUpdateWithoutComisionesInput>
+    create: XOR<AfiliadoCreateWithoutComisionesInput, AfiliadoUncheckedCreateWithoutComisionesInput>
+    where?: AfiliadoWhereInput
+  }
+
+  export type AfiliadoUpdateToOneWithWhereWithoutComisionesInput = {
+    where?: AfiliadoWhereInput
+    data: XOR<AfiliadoUpdateWithoutComisionesInput, AfiliadoUncheckedUpdateWithoutComisionesInput>
+  }
+
+  export type AfiliadoUpdateWithoutComisionesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usuarios?: UsuarioUpdateManyWithoutAfiliadoNestedInput
+    empresas?: EmpresaUpdateManyWithoutAfiliadoNestedInput
+    retiros?: SolicitudRetiroUpdateManyWithoutAfiliadoNestedInput
+  }
+
+  export type AfiliadoUncheckedUpdateWithoutComisionesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usuarios?: UsuarioUncheckedUpdateManyWithoutAfiliadoNestedInput
+    empresas?: EmpresaUncheckedUpdateManyWithoutAfiliadoNestedInput
+    retiros?: SolicitudRetiroUncheckedUpdateManyWithoutAfiliadoNestedInput
+  }
+
+  export type EmpresaUpsertWithoutComisionesInput = {
+    update: XOR<EmpresaUpdateWithoutComisionesInput, EmpresaUncheckedUpdateWithoutComisionesInput>
+    create: XOR<EmpresaCreateWithoutComisionesInput, EmpresaUncheckedCreateWithoutComisionesInput>
+    where?: EmpresaWhereInput
+  }
+
+  export type EmpresaUpdateToOneWithWhereWithoutComisionesInput = {
+    where?: EmpresaWhereInput
+    data: XOR<EmpresaUpdateWithoutComisionesInput, EmpresaUncheckedUpdateWithoutComisionesInput>
+  }
+
+  export type EmpresaUpdateWithoutComisionesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+  }
+
+  export type EmpresaUncheckedUpdateWithoutComisionesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -25258,8 +31198,152 @@ export namespace Prisma {
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
+  export type PagoUpsertWithoutComisionInput = {
+    update: XOR<PagoUpdateWithoutComisionInput, PagoUncheckedUpdateWithoutComisionInput>
+    create: XOR<PagoCreateWithoutComisionInput, PagoUncheckedCreateWithoutComisionInput>
+    where?: PagoWhereInput
+  }
+
+  export type PagoUpdateToOneWithWhereWithoutComisionInput = {
+    where?: PagoWhereInput
+    data: XOR<PagoUpdateWithoutComisionInput, PagoUncheckedUpdateWithoutComisionInput>
+  }
+
+  export type PagoUpdateWithoutComisionInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    monto?: FloatFieldUpdateOperationsInput | number
+    colaboradoresFacturados?: IntFieldUpdateOperationsInput | number
+    periodoInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodoFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    metodo?: EnumMetodoPagoFieldUpdateOperationsInput | $Enums.MetodoPago
+    estado?: EnumEstadoPagoFieldUpdateOperationsInput | $Enums.EstadoPago
+    wompiTransaccionId?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
+    registradoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    suscripcion?: SuscripcionUpdateOneRequiredWithoutPagosNestedInput
+  }
+
+  export type PagoUncheckedUpdateWithoutComisionInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    suscripcionId?: StringFieldUpdateOperationsInput | string
+    monto?: FloatFieldUpdateOperationsInput | number
+    colaboradoresFacturados?: IntFieldUpdateOperationsInput | number
+    periodoInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    periodoFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    metodo?: EnumMetodoPagoFieldUpdateOperationsInput | $Enums.MetodoPago
+    estado?: EnumEstadoPagoFieldUpdateOperationsInput | $Enums.EstadoPago
+    wompiTransaccionId?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
+    registradoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AfiliadoCreateWithoutRetirosInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    usuarios?: UsuarioCreateNestedManyWithoutAfiliadoInput
+    empresas?: EmpresaCreateNestedManyWithoutAfiliadoInput
+    comisiones?: ComisionCreateNestedManyWithoutAfiliadoInput
+  }
+
+  export type AfiliadoUncheckedCreateWithoutRetirosInput = {
+    id?: string
+    nombre: string
+    codigo: string
+    porcentaje?: number
+    duracionMeses?: number | null
+    activo?: boolean
+    telefono?: string | null
+    pagoMetodo?: $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: string | null
+    pagoTipoCuenta?: $Enums.TipoCuentaBancaria | null
+    pagoNumero?: string | null
+    pagoTitular?: string | null
+    pagoDocumento?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutAfiliadoInput
+    empresas?: EmpresaUncheckedCreateNestedManyWithoutAfiliadoInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutAfiliadoInput
+  }
+
+  export type AfiliadoCreateOrConnectWithoutRetirosInput = {
+    where: AfiliadoWhereUniqueInput
+    create: XOR<AfiliadoCreateWithoutRetirosInput, AfiliadoUncheckedCreateWithoutRetirosInput>
+  }
+
+  export type AfiliadoUpsertWithoutRetirosInput = {
+    update: XOR<AfiliadoUpdateWithoutRetirosInput, AfiliadoUncheckedUpdateWithoutRetirosInput>
+    create: XOR<AfiliadoCreateWithoutRetirosInput, AfiliadoUncheckedCreateWithoutRetirosInput>
+    where?: AfiliadoWhereInput
+  }
+
+  export type AfiliadoUpdateToOneWithWhereWithoutRetirosInput = {
+    where?: AfiliadoWhereInput
+    data: XOR<AfiliadoUpdateWithoutRetirosInput, AfiliadoUncheckedUpdateWithoutRetirosInput>
+  }
+
+  export type AfiliadoUpdateWithoutRetirosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usuarios?: UsuarioUpdateManyWithoutAfiliadoNestedInput
+    empresas?: EmpresaUpdateManyWithoutAfiliadoNestedInput
+    comisiones?: ComisionUpdateManyWithoutAfiliadoNestedInput
+  }
+
+  export type AfiliadoUncheckedUpdateWithoutRetirosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    codigo?: StringFieldUpdateOperationsInput | string
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    duracionMeses?: NullableIntFieldUpdateOperationsInput | number | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoMetodo?: NullableEnumMetodoPagoAfiliadoFieldUpdateOperationsInput | $Enums.MetodoPagoAfiliado | null
+    pagoBanco?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTipoCuenta?: NullableEnumTipoCuentaBancariaFieldUpdateOperationsInput | $Enums.TipoCuentaBancaria | null
+    pagoNumero?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoTitular?: NullableStringFieldUpdateOperationsInput | string | null
+    pagoDocumento?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usuarios?: UsuarioUncheckedUpdateManyWithoutAfiliadoNestedInput
+    empresas?: EmpresaUncheckedUpdateManyWithoutAfiliadoNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutAfiliadoNestedInput
+  }
+
   export type UsuarioCreateManyEmpresaInput = {
     id?: string
+    afiliadoId?: string | null
     email: string
     password: string
     nombre: string
@@ -25334,6 +31418,17 @@ export namespace Prisma {
     creadoEn?: Date | string
   }
 
+  export type ComisionCreateManyEmpresaInput = {
+    id?: string
+    afiliadoId: string
+    pagoId: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+  }
+
   export type UsuarioUpdateWithoutEmpresaInput = {
     id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
@@ -25347,10 +31442,12 @@ export namespace Prisma {
     verificacionCodigo?: NullableStringFieldUpdateOperationsInput | string | null
     verificacionExpira?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliado?: AfiliadoUpdateOneWithoutUsuariosNestedInput
   }
 
   export type UsuarioUncheckedUpdateWithoutEmpresaInput = {
     id?: StringFieldUpdateOperationsInput | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
@@ -25366,6 +31463,7 @@ export namespace Prisma {
 
   export type UsuarioUncheckedUpdateManyWithoutEmpresaInput = {
     id?: StringFieldUpdateOperationsInput | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
     email?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
     nombre?: StringFieldUpdateOperationsInput | string
@@ -25570,6 +31668,39 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ComisionUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliado?: AfiliadoUpdateOneRequiredWithoutComisionesNestedInput
+    pago?: PagoUpdateOneRequiredWithoutComisionNestedInput
+  }
+
+  export type ComisionUncheckedUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    afiliadoId?: StringFieldUpdateOperationsInput | string
+    pagoId?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ComisionUncheckedUpdateManyWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    afiliadoId?: StringFieldUpdateOperationsInput | string
+    pagoId?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type PagoCreateManySuscripcionInput = {
     id?: string
     monto: number
@@ -25598,6 +31729,7 @@ export namespace Prisma {
     comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
     registradoPor?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    comision?: ComisionUpdateOneWithoutPagoNestedInput
   }
 
   export type PagoUncheckedUpdateWithoutSuscripcionInput = {
@@ -25613,6 +31745,7 @@ export namespace Prisma {
     comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
     registradoPor?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    comision?: ComisionUncheckedUpdateOneWithoutPagoNestedInput
   }
 
   export type PagoUncheckedUpdateManyWithoutSuscripcionInput = {
@@ -25854,6 +31987,236 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type UsuarioCreateManyAfiliadoInput = {
+    id?: string
+    empresaId?: string | null
+    email: string
+    password: string
+    nombre: string
+    rol?: $Enums.Rol
+    activo?: boolean
+    resetToken?: string | null
+    resetExpira?: Date | string | null
+    emailVerificado?: boolean
+    verificacionCodigo?: string | null
+    verificacionExpira?: Date | string | null
+    creadoEn?: Date | string
+  }
+
+  export type EmpresaCreateManyAfiliadoInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+  }
+
+  export type ComisionCreateManyAfiliadoInput = {
+    id?: string
+    empresaId: string
+    pagoId: string
+    montoBase: number
+    porcentaje: number
+    monto: number
+    estado?: $Enums.EstadoComision
+    creadoEn?: Date | string
+  }
+
+  export type SolicitudRetiroCreateManyAfiliadoInput = {
+    id?: string
+    monto: number
+    estado?: $Enums.EstadoRetiro
+    comprobanteBase64?: string | null
+    nota?: string | null
+    solicitadoEn?: Date | string
+    procesadoEn?: Date | string | null
+    procesadoPor?: string | null
+  }
+
+  export type UsuarioUpdateWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    rol?: EnumRolFieldUpdateOperationsInput | $Enums.Rol
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    resetToken?: NullableStringFieldUpdateOperationsInput | string | null
+    resetExpira?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailVerificado?: BoolFieldUpdateOperationsInput | boolean
+    verificacionCodigo?: NullableStringFieldUpdateOperationsInput | string | null
+    verificacionExpira?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneWithoutUsuariosNestedInput
+  }
+
+  export type UsuarioUncheckedUpdateWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    rol?: EnumRolFieldUpdateOperationsInput | $Enums.Rol
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    resetToken?: NullableStringFieldUpdateOperationsInput | string | null
+    resetExpira?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailVerificado?: BoolFieldUpdateOperationsInput | boolean
+    verificacionCodigo?: NullableStringFieldUpdateOperationsInput | string | null
+    verificacionExpira?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UsuarioUncheckedUpdateManyWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    password?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    rol?: EnumRolFieldUpdateOperationsInput | $Enums.Rol
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    resetToken?: NullableStringFieldUpdateOperationsInput | string | null
+    resetExpira?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    emailVerificado?: BoolFieldUpdateOperationsInput | boolean
+    verificacionCodigo?: NullableStringFieldUpdateOperationsInput | string | null
+    verificacionExpira?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EmpresaUpdateWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type EmpresaUncheckedUpdateWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type EmpresaUncheckedUpdateManyWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ComisionUpdateWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutComisionesNestedInput
+    pago?: PagoUpdateOneRequiredWithoutComisionNestedInput
+  }
+
+  export type ComisionUncheckedUpdateWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    pagoId?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ComisionUncheckedUpdateManyWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    pagoId?: StringFieldUpdateOperationsInput | string
+    montoBase?: FloatFieldUpdateOperationsInput | number
+    porcentaje?: FloatFieldUpdateOperationsInput | number
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoComisionFieldUpdateOperationsInput | $Enums.EstadoComision
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SolicitudRetiroUpdateWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoRetiroFieldUpdateOperationsInput | $Enums.EstadoRetiro
+    comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    solicitadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    procesadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SolicitudRetiroUncheckedUpdateWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoRetiroFieldUpdateOperationsInput | $Enums.EstadoRetiro
+    comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    solicitadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    procesadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SolicitudRetiroUncheckedUpdateManyWithoutAfiliadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    monto?: FloatFieldUpdateOperationsInput | number
+    estado?: EnumEstadoRetiroFieldUpdateOperationsInput | $Enums.EstadoRetiro
+    comprobanteBase64?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    solicitadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    procesadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
 
 
   /**
@@ -25875,6 +32238,10 @@ export namespace Prisma {
      * @deprecated Use ColaboradorCountOutputTypeDefaultArgs instead
      */
     export type ColaboradorCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use AfiliadoCountOutputTypeDefaultArgs instead
+     */
+    export type AfiliadoCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = AfiliadoCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use EmpresaDefaultArgs instead
      */
@@ -25939,6 +32306,18 @@ export namespace Prisma {
      * @deprecated Use UsuarioDefaultArgs instead
      */
     export type UsuarioArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = UsuarioDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use AfiliadoDefaultArgs instead
+     */
+    export type AfiliadoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = AfiliadoDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ComisionDefaultArgs instead
+     */
+    export type ComisionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ComisionDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use SolicitudRetiroDefaultArgs instead
+     */
+    export type SolicitudRetiroArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SolicitudRetiroDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

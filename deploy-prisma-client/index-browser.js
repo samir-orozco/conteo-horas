@@ -132,7 +132,10 @@ exports.Prisma.EmpresaScalarFieldEnum = {
   exentaPago: 'exentaPago',
   activa: 'activa',
   creadoEn: 'creadoEn',
-  actualizadoEn: 'actualizadoEn'
+  actualizadoEn: 'actualizadoEn',
+  afiliadoId: 'afiliadoId',
+  atribuidoEn: 'atribuidoEn',
+  primerPagoComisionEn: 'primerPagoComisionEn'
 };
 
 exports.Prisma.SuscripcionScalarFieldEnum = {
@@ -308,6 +311,7 @@ exports.Prisma.NotificacionScalarFieldEnum = {
 exports.Prisma.UsuarioScalarFieldEnum = {
   id: 'id',
   empresaId: 'empresaId',
+  afiliadoId: 'afiliadoId',
   email: 'email',
   password: 'password',
   nombre: 'nombre',
@@ -319,6 +323,48 @@ exports.Prisma.UsuarioScalarFieldEnum = {
   verificacionCodigo: 'verificacionCodigo',
   verificacionExpira: 'verificacionExpira',
   creadoEn: 'creadoEn'
+};
+
+exports.Prisma.AfiliadoScalarFieldEnum = {
+  id: 'id',
+  nombre: 'nombre',
+  codigo: 'codigo',
+  porcentaje: 'porcentaje',
+  duracionMeses: 'duracionMeses',
+  activo: 'activo',
+  telefono: 'telefono',
+  pagoMetodo: 'pagoMetodo',
+  pagoBanco: 'pagoBanco',
+  pagoTipoCuenta: 'pagoTipoCuenta',
+  pagoNumero: 'pagoNumero',
+  pagoTitular: 'pagoTitular',
+  pagoDocumento: 'pagoDocumento',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
+exports.Prisma.ComisionScalarFieldEnum = {
+  id: 'id',
+  afiliadoId: 'afiliadoId',
+  empresaId: 'empresaId',
+  pagoId: 'pagoId',
+  montoBase: 'montoBase',
+  porcentaje: 'porcentaje',
+  monto: 'monto',
+  estado: 'estado',
+  creadoEn: 'creadoEn'
+};
+
+exports.Prisma.SolicitudRetiroScalarFieldEnum = {
+  id: 'id',
+  afiliadoId: 'afiliadoId',
+  monto: 'monto',
+  estado: 'estado',
+  comprobanteBase64: 'comprobanteBase64',
+  nota: 'nota',
+  solicitadoEn: 'solicitadoEn',
+  procesadoEn: 'procesadoEn',
+  procesadoPor: 'procesadoPor'
 };
 
 exports.Prisma.SortOrder = {
@@ -388,7 +434,32 @@ exports.TipoPermiso = exports.$Enums.TipoPermiso = {
 exports.Rol = exports.$Enums.Rol = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
-  SUPERVISOR: 'SUPERVISOR'
+  SUPERVISOR: 'SUPERVISOR',
+  AFILIADO: 'AFILIADO'
+};
+
+exports.MetodoPagoAfiliado = exports.$Enums.MetodoPagoAfiliado = {
+  NEQUI: 'NEQUI',
+  BANCOLOMBIA: 'BANCOLOMBIA',
+  DAVIPLATA: 'DAVIPLATA',
+  OTRO: 'OTRO'
+};
+
+exports.TipoCuentaBancaria = exports.$Enums.TipoCuentaBancaria = {
+  AHORROS: 'AHORROS',
+  CORRIENTE: 'CORRIENTE'
+};
+
+exports.EstadoComision = exports.$Enums.EstadoComision = {
+  CAUSADA: 'CAUSADA',
+  ANULADA: 'ANULADA'
+};
+
+exports.EstadoRetiro = exports.$Enums.EstadoRetiro = {
+  SOLICITADO: 'SOLICITADO',
+  APROBADO: 'APROBADO',
+  PAGADO: 'PAGADO',
+  RECHAZADO: 'RECHAZADO'
 };
 
 exports.Prisma.ModelName = {
@@ -407,7 +478,10 @@ exports.Prisma.ModelName = {
   DiaFestivo: 'DiaFestivo',
   Configuracion: 'Configuracion',
   Notificacion: 'Notificacion',
-  Usuario: 'Usuario'
+  Usuario: 'Usuario',
+  Afiliado: 'Afiliado',
+  Comision: 'Comision',
+  SolicitudRetiro: 'SolicitudRetiro'
 };
 
 /**
