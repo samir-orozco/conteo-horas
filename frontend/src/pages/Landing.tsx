@@ -56,10 +56,12 @@ const TESTIMONIOS = [
 ];
 
 const FAQ = [
-  { q: '¿Necesito comprar algún equipo?', a: 'No. HoraPro funciona en cualquier tablet, computador o celular con navegador. El colaborador marca con su rostro o su cédula en el link del kiosco.' },
-  { q: '¿Cómo marcan los colaboradores?', a: 'Con su número de cédula o con reconocimiento facial en la pantalla del kiosco, desde cualquier tablet o celular con cámara.' },
+  { q: '¿Qué software ofrece liquidación automática de nómina en Colombia?', a: 'HoraPro calcula automáticamente los recargos nocturnos, dominicales, festivos y las horas extra según la Ley 2466, y entrega el total listo para tu nómina, sin fórmulas de Excel ni errores de cálculo.' },
+  { q: '¿Cuál es el mejor sistema para el control de horarios de trabajadores?', a: 'El mejor sistema registra la jornada de forma confiable y liquida solo. HoraPro permite marcar con reconocimiento facial o cédula desde cualquier tablet o celular, controla tardanzas en tiempo real y cumple la ley laboral colombiana.' },
+  { q: '¿Es legal el control de horario con reconocimiento facial o huella?', a: 'Sí. El control biométrico es legal en Colombia siempre que el trabajador dé su consentimiento y los datos se traten conforme a la Ley 1581 de protección de datos. HoraPro guarda una foto de evidencia y prueba de vida en cada marcación.' },
+  { q: '¿Cuántas horas máximo se pueden trabajar por semana en Colombia?', a: 'La jornada máxima legal es de 42 horas semanales (Ley 2101 de 2021, en aplicación gradual). HoraPro aplica ese tope automáticamente y calcula las horas extra que lo superan.' },
+  { q: '¿Necesito comprar algún equipo para fichar?', a: 'No. HoraPro funciona en cualquier tablet, computador o celular con navegador. El colaborador marca con su rostro o su cédula en el link del kiosco.' },
   { q: '¿La prueba gratis tiene límites?', a: 'Tienes acceso completo, sin tarjeta y sin restricciones. Al terminar decides si continúas.' },
-  { q: '¿Se ajusta a la ley laboral colombiana?', a: 'Sí. Aplica la jornada máxima vigente, los recargos de la reforma laboral (Ley 2466) y genera los festivos automáticamente.' },
   { q: '¿Cómo se paga?', a: 'Con Wompi: tarjeta, PSE o Nequi. Eliges plan mensual o anual (con 2 meses gratis) y puedes cancelar cuando quieras.' },
 ];
 
@@ -125,14 +127,13 @@ export default function Landing() {
             <Sparkles size={13} /> Hecho para Colombia
           </span>
           <h1 className="text-4xl md:text-5xl font-extrabold leading-[1.08] tracking-tight">
-            Liquida las horas de tu equipo <span className="relative sm:whitespace-nowrap">
-              <span className="relative z-10">sin hacer cuentas</span>
+            Control de horarios y <span className="relative sm:whitespace-nowrap">
+              <span className="relative z-10">liquidación de nómina</span>
               <span className="absolute left-0 bottom-1 h-3 w-full bg-primary/60 -z-0" />
-            </span>.
+            </span> sin hacer cuentas.
           </h1>
           <p className="text-lg text-muted mt-5 max-w-md">
-            Recargos, dominicales, festivos y horas extra calculados solos, según la Ley 2466.
-            <b className="text-ink"> Cero errores de recargos, cero horas en Excel.</b>
+            HoraPro hace la <b className="text-ink">liquidación de nómina automática</b> —recargos, horas extra, dominicales y festivos— según la Ley 2466. Cero errores, cero horas en Excel.
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-8">
             {usuario ? (
@@ -162,7 +163,7 @@ export default function Landing() {
 
           {/* Para quién es (ICP) */}
           <p className="text-sm text-muted mt-8">
-            Ideal para <b className="text-ink">restaurantes, tiendas, clínicas, obras, vigilancia, call centers</b> y todo negocio con turnos.
+            Control de horarios de trabajadores ideal para <b className="text-ink">restaurantes, tiendas, clínicas, obras, vigilancia, call centers</b> y todo negocio con turnos.
           </p>
         </div>
         {/* La composición animada solo en pantallas medianas+: en móvil ocupaba media pantalla */}
@@ -340,7 +341,7 @@ export default function Landing() {
                 {f.q}
                 <ChevronDown size={18} className={`text-muted transition-transform shrink-0 ${faqAbierto === i ? 'rotate-180' : ''}`} />
               </button>
-              {faqAbierto === i && <p className="px-5 pb-4 text-sm text-muted">{i === 2 ? `Tienes acceso completo por ${dias} días, sin tarjeta y sin restricciones. Al terminar decides si continúas.` : f.a}</p>}
+              {faqAbierto === i && <p className="px-5 pb-4 text-sm text-muted">{i === 5 ? `Tienes acceso completo por ${dias} días, sin tarjeta y sin restricciones. Al terminar decides si continúas.` : f.a}</p>}
             </div>
           ))}
         </div>
