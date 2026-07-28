@@ -12,6 +12,7 @@ exports.sincronizarEstado = sincronizarEstado;
 exports.accesoPermitido = accesoPermitido;
 exports.calcularCobro = calcularCobro;
 exports.aplicarPagoAprobado = aplicarPagoAprobado;
+exports.causarComisionAfiliado = causarComisionAfiliado;
 const planes_1 = require("./planes");
 exports.DIAS_PRUEBA = 7;
 exports.DIAS_GRACIA_MORA = 5;
@@ -165,5 +166,58 @@ async function aplicarPagoAprobado(prisma, empresaId, datos) {
             data: { estado: 'ACTIVA', pagadoHasta: periodoFin, suspendidaEn: null },
         }),
     ]);
+    // Comisión de afiliado (si la empresa vino por un referido). Nunca debe tumbar
+    // el registro del pago: si falla, se registra y sigue.
+    try {
+        await causarComisionAfiliado(prisma, empresaId, pago);
+    }
+    catch (e) {
+        console.error('Error causando comisión de afiliado:', e);
+    }
     return pago;
+}
+// Causa la comisión del afiliado por un pago aprobado, si la empresa tiene un
+// afiliado activo y el pago cae dentro de la ventana de duración del trato.
+// Idempotente: la FK única pagoId evita duplicar la comisión de un mismo pago.
+async function causarComisionAfiliado(prisma, empresaId, pago) {
+    const empresa = await prisma.empresa.findUnique({
+        where: { id: empresaId },
+        select: {
+            afiliadoId: true,
+            primerPagoComisionEn: true,
+            afiliado: { select: { activo: true, porcentaje: true, duracionMeses: true } },
+        },
+    });
+    if (!empresa?.afiliadoId || !empresa.afiliado?.activo)
+        return;
+    if (await prisma.comision.findUnique({ where: { pagoId: pago.id } }))
+        return; // ya comisionado
+    // La duración cuenta desde el primer pago que comisionó. En ese primer pago se
+    // fija el ancla; los siguientes solo comisionan dentro de la ventana.
+    const fechaPago = pago.creadoEn;
+    const ancla = empresa.primerPagoComisionEn ?? fechaPago;
+    if (empresa.afiliado.duracionMeses != null) {
+        const fin = new Date(ancla);
+        fin.setMonth(fin.getMonth() + empresa.afiliado.duracionMeses);
+        if (fechaPago > fin)
+            return; // fuera de la ventana → no comisiona
+    }
+    const porcentaje = empresa.afiliado.porcentaje;
+    const monto = Math.round((pago.monto * porcentaje) / 100);
+    await prisma.$transaction([
+        prisma.comision.create({
+            data: {
+                afiliadoId: empresa.afiliadoId,
+                empresaId,
+                pagoId: pago.id,
+                montoBase: pago.monto,
+                porcentaje,
+                monto,
+                estado: 'CAUSADA',
+            },
+        }),
+        ...(empresa.primerPagoComisionEn
+            ? []
+            : [prisma.empresa.update({ where: { id: empresaId }, data: { primerPagoComisionEn: fechaPago } })]),
+    ]);
 }

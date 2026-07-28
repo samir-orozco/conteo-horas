@@ -19,6 +19,8 @@ const configuracion_1 = __importDefault(require("./routes/configuracion"));
 const reportes_1 = __importDefault(require("./routes/reportes"));
 const worker_1 = __importDefault(require("./routes/worker"));
 const admin_1 = __importDefault(require("./routes/admin"));
+const afiliados_1 = __importDefault(require("./routes/afiliados"));
+const afiliado_panel_1 = __importDefault(require("./routes/afiliado-panel"));
 const wompi_1 = __importDefault(require("./routes/wompi"));
 const suscripcion_1 = __importDefault(require("./routes/suscripcion"));
 const horarios_1 = __importDefault(require("./routes/horarios"));
@@ -105,6 +107,20 @@ app.decorate('requireSuperAdmin', async (request, reply) => {
         return reply.status(403).send({ error: 'Requiere super administrador' });
     }
 });
+// Afiliado (programa de referidos): exige rol AFILIADO con su afiliadoId
+app.decorate('requireAfiliado', async (request, reply) => {
+    try {
+        await request.jwtVerify();
+    }
+    catch {
+        return reply.status(401).send({ error: 'No autorizado' });
+    }
+    const payload = request.user;
+    if (payload.rol !== 'AFILIADO' || !payload.afiliadoId) {
+        return reply.status(403).send({ error: 'Requiere cuenta de afiliado' });
+    }
+    request.afiliadoId = payload.afiliadoId;
+});
 app.register(auth_1.default, { prefix: '/api/auth' });
 app.register(colaboradores_1.default, { prefix: '/api/colaboradores' });
 app.register(registros_1.default, { prefix: '/api/registros' });
@@ -114,6 +130,8 @@ app.register(configuracion_1.default, { prefix: '/api/configuracion' });
 app.register(reportes_1.default, { prefix: '/api/reportes' });
 app.register(worker_1.default, { prefix: '/api/worker' });
 app.register(admin_1.default, { prefix: '/api/admin' });
+app.register(afiliados_1.default, { prefix: '/api/admin/afiliados' });
+app.register(afiliado_panel_1.default, { prefix: '/api/afiliado' });
 app.register(wompi_1.default, { prefix: '/api/wompi' });
 app.register(suscripcion_1.default, { prefix: '/api/suscripcion' });
 app.register(horarios_1.default, { prefix: '/api/horarios' });
