@@ -1,4 +1,5 @@
 import { useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FileBarChart2, Clock3, AlarmClock, ChevronRight } from 'lucide-react';
 
@@ -47,10 +48,13 @@ export default function ReportesNav({ onNav }: { onNav?: () => void }) {
         <FileBarChart2 size={18} /> Reportes
       </button>
 
-      {abierto && (
+      {/* Portal a document.body: este botón vive dentro del <aside> del sidebar,
+          que es `position: sticky` y por eso crea su propio contexto de
+          apilamiento en CSS — ningún z-index interno puede escapar de ahí para
+          quedar por encima del contenido de <main> (tarjetas del inicio,
+          calendario de festivos, etc). Montarlo en el body evita el problema de raíz. */}
+      {abierto && createPortal(
         <>
-          {/* Captura de clics fuera para cerrar (sin oscurecer: es un menú).
-              z-index muy alto: debe quedar por encima de TODO (toasts, bloqueo por mora, etc). */}
           <div className="fixed inset-0 z-[200]" onClick={() => setAbierto(false)} />
           <div
             style={estilo}
@@ -75,7 +79,8 @@ export default function ReportesNav({ onNav }: { onNav?: () => void }) {
               ))}
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </>
   );

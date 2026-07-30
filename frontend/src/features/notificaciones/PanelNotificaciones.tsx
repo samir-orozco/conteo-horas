@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -37,7 +38,12 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
     ? { top: 12, left: 12, right: 12, maxHeight: 'calc(100dvh - 24px)' }
     : { top, left: (ancla ? ancla.right : 256) + 10, width: 380, maxHeight: `calc(100dvh - ${top}px - 16px)` };
 
-  return (
+  // Portal a document.body: el botón que lo abre vive dentro del <aside> del
+  // sidebar, que es `position: sticky` y por eso crea su propio contexto de
+  // apilamiento en CSS — ningún z-index interno puede escapar de ahí para
+  // quedar por encima del contenido de <main> (tarjetas del inicio, calendario
+  // de festivos, etc). Montarlo en el body evita el problema de raíz.
+  return createPortal(
     <>
       {/* Captura de clics fuera para cerrar (sin oscurecer: es un menú).
           z-index muy alto: debe quedar por encima de TODO (toasts, bloqueo por mora, etc). */}
@@ -107,6 +113,7 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
           </button>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 }
