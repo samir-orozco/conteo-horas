@@ -49,11 +49,12 @@ export default function ReportesNav({ onNav }: { onNav?: () => void }) {
 
       {abierto && (
         <>
-          {/* Captura de clics fuera para cerrar (sin oscurecer: es un menú) */}
-          <div className="fixed inset-0 z-[59]" onClick={() => setAbierto(false)} />
+          {/* Captura de clics fuera para cerrar (sin oscurecer: es un menú).
+              z-index muy alto: debe quedar por encima de TODO (toasts, bloqueo por mora, etc). */}
+          <div className="fixed inset-0 z-[200]" onClick={() => setAbierto(false)} />
           <div
             style={estilo}
-            className="fixed z-[60] bg-white rounded-2xl shadow-2xl border border-gray-200/70 overflow-hidden hp-notif-pop"
+            className="fixed z-[201] bg-white rounded-2xl shadow-2xl border border-gray-200/70 overflow-hidden hp-notif-pop"
           >
             <div className="px-5 pt-3.5 pb-2.5 border-b border-gray-100">
               <h3 className="font-bold text-[15px] text-ink">Reportes</h3>

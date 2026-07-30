@@ -39,12 +39,13 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
 
   return (
     <>
-      {/* Captura de clics fuera para cerrar (sin oscurecer: es un menú) */}
-      <div className="fixed inset-0 z-[59]" onClick={onClose} />
+      {/* Captura de clics fuera para cerrar (sin oscurecer: es un menú).
+          z-index muy alto: debe quedar por encima de TODO (toasts, bloqueo por mora, etc). */}
+      <div className="fixed inset-0 z-[200]" onClick={onClose} />
 
       <div
         style={estilo}
-        className="fixed z-[60] bg-white rounded-2xl shadow-2xl border border-gray-200/70 flex flex-col overflow-hidden hp-notif-pop"
+        className="fixed z-[201] bg-white rounded-2xl shadow-2xl border border-gray-200/70 flex flex-col overflow-hidden hp-notif-pop"
       >
         {/* Encabezado con pestañas Todas / No leídas */}
         <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5 border-b border-gray-100">
