@@ -9,11 +9,13 @@ import BloqueoPago from './BloqueoPago';
 import VerificarCorreo from './VerificarCorreo';
 import GuiaBienvenida from './GuiaBienvenida';
 import CampanaNav from '../features/notificaciones/CampanaNav';
+import ReportesNav from './ReportesNav';
 import { useNotificaciones } from '../features/notificaciones/useNotificaciones';
 import logoCompleto from '../assets/logo-completo.svg';
 
 // `panel: true` = ítem que abre un panel (campana), no una ruta.
-type NavItem = { to?: string; label: string; icon: any; panel?: boolean };
+// `submenu: true` = ítem que abre un modal con varias rutas para elegir (Reportes).
+type NavItem = { to?: string; label: string; icon: any; panel?: boolean; submenu?: boolean };
 type NavSection = { titulo: string; items: NavItem[] };
 
 const navEmpresa: NavSection[] = [
@@ -31,7 +33,7 @@ const navEmpresa: NavSection[] = [
     titulo: 'Herramientas',
     items: [
       { to: '/app/festivos', label: 'Festivos', icon: Calendar },
-      { to: '/app/reportes', label: 'Reportes', icon: FileBarChart2 },
+      { label: 'Reportes', icon: FileBarChart2, submenu: true },
       { to: '/app/configuracion', label: 'Configuración', icon: Settings },
     ],
   },
@@ -79,6 +81,8 @@ export default function Layout() {
           <div className="space-y-1">
             {sec.items.map(item => item.panel ? (
               <CampanaNav key={item.label} notif={notif} onNav={onNav} />
+            ) : item.submenu ? (
+              <ReportesNav key={item.label} onNav={onNav} />
             ) : (
               <NavLink key={item.to} to={item.to!} end={item.to === '/app' || item.to === '/admin'} onClick={onNav} className={linkClass}>
                 <item.icon size={18} />{item.label}
