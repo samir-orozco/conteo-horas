@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Plus, X, Pencil, Link2, Copy, Check, Send, Users, Wallet, Handshake, Mail, Banknote, Upload } from 'lucide-react';
+import { Plus, X, Pencil, Link2, Copy, Check, Send, Users, Wallet, Handshake, Mail, Banknote, Upload, Trash2 } from 'lucide-react';
 import api from '../../lib/api';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 type AfiliadoRow = {
   id: string; nombre: string; codigo: string; porcentaje: number; duracionMeses: number | null;
@@ -43,6 +44,7 @@ export default function AdminAfiliados() {
   const [invitacion, setInvitacion] = useState<{ link: string; enviada: boolean } | null>(null);
 
   const [detalle, setDetalle] = useState<Detalle | null>(null);
+  const [eliminando, setEliminando] = useState<AfiliadoRow | null>(null);
 
   // Invitar a que se registre solo
   const [modalInvitar, setModalInvitar] = useState(false);
@@ -181,6 +183,19 @@ export default function AdminAfiliados() {
     }
   };
 
+  const confirmarEliminar = async () => {
+    if (!eliminando) return;
+    try {
+      await api.delete(`/admin/afiliados/${eliminando.id}`);
+      setEliminando(null);
+      avisar('Afiliado eliminado');
+      cargar();
+    } catch (err: any) {
+      setEliminando(null);
+      avisar(err.response?.data?.error ?? 'No pudimos eliminar el afiliado');
+    }
+  };
+
   const verDetalle = async (id: string) => {
     const { data } = await api.get(`/admin/afiliados/${id}`);
     setDetalle(data);
@@ -283,6 +298,7 @@ export default function AdminAfiliados() {
                           <button onClick={() => reinvitar(a)} title="Reenviar invitación" className="p-1.5 text-muted hover:bg-gray-100 rounded-lg"><Send size={14} /></button>
                         )}
                         <button onClick={() => abrirEditar(a.id)} title="Editar" className="p-1.5 text-muted hover:bg-gray-100 rounded-lg"><Pencil size={14} /></button>
+                        <button onClick={() => setEliminando(a)} title="Eliminar" className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -545,6 +561,16 @@ export default function AdminAfiliados() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={!!eliminando}
+        peligro
+        titulo="¿Eliminar afiliado?"
+        subtitulo={eliminando ? `Se eliminará a ${eliminando.nombre} junto con su cuenta de acceso. Si ya tiene referidos, comisiones o retiros, no se podrá eliminar (desactívalo en su lugar).` : ''}
+        textoContinuar="Sí, eliminar"
+        onContinuar={confirmarEliminar}
+        onCancelar={() => setEliminando(null)}
+      />
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-ink text-white text-sm px-4 py-2.5 rounded-xl shadow-lg z-[70]">{toast}</div>

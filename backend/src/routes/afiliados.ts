@@ -251,6 +251,25 @@ export default async function afiliadoAdminRoutes(app: FastifyInstance) {
     return { id, activo };
   });
 
+  // Eliminar: solo si nunca tuvo actividad real (sin referidos, comisiones ni
+  // retiros). Si ya la tuvo, se pierde el historial de pagos — mejor desactivar.
+  app.delete('/:id', auth, async (request, reply) => {
+    const { id } = request.params as any;
+    const a = await prisma.afiliado.findUnique({
+      where: { id },
+      include: { _count: { select: { empresas: true, comisiones: true, retiros: true } } },
+    });
+    if (!a) return reply.status(404).send({ error: 'Afiliado no encontrado' });
+    if (a._count.empresas > 0 || a._count.comisiones > 0 || a._count.retiros > 0) {
+      return reply.status(409).send({ error: 'No se puede eliminar: tiene referidos, comisiones o retiros asociados. Desactívalo en su lugar.' });
+    }
+    await prisma.$transaction([
+      prisma.usuario.deleteMany({ where: { afiliadoId: id } }),
+      prisma.afiliado.delete({ where: { id } }),
+    ]);
+    return reply.status(204).send();
+  });
+
   // Reenviar invitación (regenera el token de "crear contraseña")
   app.post('/:id/reinvitar', auth, async (request, reply) => {
     const { id } = request.params as any;
