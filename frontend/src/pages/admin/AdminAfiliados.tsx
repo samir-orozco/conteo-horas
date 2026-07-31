@@ -165,10 +165,20 @@ export default function AdminAfiliados() {
   };
 
   const reinvitar = async (a: AfiliadoRow) => {
-    const { data } = await api.post(`/admin/afiliados/${a.id}/reinvitar`);
-    if (data.invitacionEnviada) avisar(`Invitación reenviada a ${a.email}`);
-    else { navigator.clipboard.writeText(data.inviteLink); avisar('Link de invitación copiado (SMTP no configurado)'); }
-    cargar();
+    try {
+      const { data } = await api.post(`/admin/afiliados/${a.id}/reinvitar`);
+      if (data.invitacionEnviada) {
+        avisar(`Invitación reenviada a ${a.email}`);
+      } else {
+        // Copiar al portapapeles es "mejor esfuerzo": en móvil puede fallar
+        // (permiso, foco de la pestaña) y no debe tapar el aviso del link.
+        try { await navigator.clipboard.writeText(data.inviteLink); avisar('Link de invitación copiado. Compártelo tú mismo.'); }
+        catch { avisar(`No se pudo copiar. Link: ${data.inviteLink}`); }
+      }
+      cargar();
+    } catch (err: any) {
+      avisar(err.response?.data?.error ?? 'No pudimos reenviar la invitación');
+    }
   };
 
   const verDetalle = async (id: string) => {
