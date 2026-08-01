@@ -57,7 +57,7 @@
 >
 > **Decisión consciente, no por defecto:**
 > - Si el proyecto es nuevo, evalúa `mysql2` con SQL directo primero (`PLAYBOOK-BANAHOSTING.md` sección 6) — elimina el riesgo por completo, no lo mitiga.
-> - Si necesitas Prisma (velocidad de desarrollo, `migrate`, tipos), acéptalo sabiendo esto, y considera limitar el pool de conexiones de Prisma explícitamente (`connection_limit` en la `DATABASE_URL`) en vez de dejarlo autodimensionarse.
+> - Si necesitas Prisma (velocidad de desarrollo, `migrate`, tipos), acéptalo sabiendo esto, y **aplica las mitigaciones de la sección 5 desde el montaje inicial** (`connection_limit` en la `DATABASE_URL` + `TOKIO_WORKER_THREADS`/`UV_THREADPOOL_SIZE` en el panel de cPanel) — no son opcionales, reducen el riesgo pero no lo eliminan.
 > - No mezcles: o todo el acceso a datos va por Prisma, o todo va por SQL directo. Tener los dos duplica la carga cognitiva sin reducir el riesgo del primero.
 
 - La API va en el **mismo dominio**, bajo `/api` (ej. `midominio.com/api`) — nunca un subdominio aparte.
@@ -98,9 +98,9 @@
    > cPanel escribe un `index.js` de plantilla al crear la app. Sobrescríbelo con el
    > tuyo **después** de crearla, y reinicia.
 4. Define las variables de entorno de la app (sección 5).
-5. **Deja el docroot vacío.** En LiteSpeed llega sin `.htaccess` — no hay bloque de Passenger que preservar. Sube el `.htaccess` completo tal cual (sección 8). El enrutado de `/api` lo maneja LiteSpeed con un `api/.htaccess` que **cPanel genera solo** dentro de la carpeta de la app Node; no lo toques ni intentes recrearlo a mano.
+5. **Deja el docroot vacío.** En LiteSpeed llega sin `.htaccess` — no hay bloque de Passenger que preservar. Sube el `.htaccess` completo tal cual (sección 7). El enrutado de `/api` lo maneja LiteSpeed con un `api/.htaccess` que **cPanel genera solo** dentro de la carpeta de la app Node; no lo toques ni intentes recrearlo a mano.
 6. Clona el repo en `~/app-repo` (rama por defecto: `develop`, solo para tener el remoto listo).
-7. Genera el cliente de Prisma **en tu máquina local** (`npx prisma generate`, con el `binaryTargets` del `schema.prisma` incluyendo `"rhel-openssl-1.1.x"` además de tu plataforma local) y arma la primera versión de `prisma-build` (sección 7).
+7. Genera el cliente de Prisma **en tu máquina local** (`npx prisma generate`, con el `binaryTargets` del `schema.prisma` incluyendo `"rhel-openssl-1.1.x"` además de tu plataforma local) y arma la primera versión de `prisma-build` con el mismo patrón de worktree (sección 6, paso A.4-5).
 
 ---
 
@@ -108,14 +108,37 @@
 
 | Variable | Valor en producción |
 |---|---|
-| `DATABASE_URL` | `mysql://usuario:clave@localhost:3306/nombre_bd` |
+| `DATABASE_URL` | `mysql://usuario:clave@localhost:3306/nombre_bd?connection_limit=5&pool_timeout=10` (⚠️ no lo pongas sin los parámetros — ver 5.1) |
 | `JWT_SECRET` | secreto largo aleatorio. El server no debe arrancar sin él. |
 | `NODE_ENV` | `production` |
 | `FRONTEND_ORIGIN` | `https://midominio.com` (CORS + links de correo) |
 | `PORT` | lo asigna cPanel; léelo con `Number(process.env.PORT) \|\| fallback` |
+| `TOKIO_WORKER_THREADS` | `1` (ver 5.1) |
+| `UV_THREADPOOL_SIZE` | `2` (ver 5.1) |
 | *(SMTP, pasarela de pago, etc.)* | nunca en el repo |
 
-En desarrollo, cada quien usa su `.env` local (gitignored).
+En desarrollo, cada quien usa su `.env` local (gitignored) — usa los mismos parámetros de `connection_limit`/`pool_timeout` ahí también, para que el comportamiento no cambie entre local y producción.
+
+### 5.1 Por qué estas cuatro son obligatorias, no opcionales
+
+Sin ellas, Prisma dimensiona su pool de conexiones y el runtime de Tokio (su
+motor nativo) según las CPU **físicas** del servidor — 64 a 88 en Banahosting,
+medido en dos servidores distintos (`PLAYBOOK-BANAHOSTING.md` sección 12) — muy
+por encima de lo que soporta un usuario de MySQL compartido (10-25 conexiones) y
+del límite `NPROC` de la cuenta. Es la misma familia de riesgo de la sección 1,
+con una mitigación concreta y comprobada:
+
+- **`connection_limit=5&pool_timeout=10`** en la `DATABASE_URL`: tope de 5
+  conexiones simultáneas (de sobra para un proyecto chico), y si se agotan, la
+  consulta falla a los 10s en vez de colgarse esperando indefinidamente.
+- **`TOKIO_WORKER_THREADS=1` y `UV_THREADPOOL_SIZE=2`**: van en el panel de
+  cPanel (Setup Node.js App → Environment variables), **no** en el `.env` del
+  repo. Limitan los hilos del runtime async de Rust (Tokio, usado por el motor
+  de Prisma) y el threadpool de libuv de Node — ambos se autodimensionan según
+  las CPU físicas igual que el pool de conexiones si no se fijan.
+
+Verificado en HoraPro: con `connection_limit=5&pool_timeout=10` las consultas
+contra MySQL (local y en producción) funcionan sin cambios de comportamiento.
 
 ---
 
@@ -136,7 +159,7 @@ En desarrollo, cada quien usa su `.env` local (gitignored).
      ```
      cd backend && rm -rf dist && npm run build
      ```
-   - **Frontend** (¡la trampa del `.env.local`, sección 9!):
+   - **Frontend** (¡la trampa del `.env.local`, sección 8!):
      ```
      cd frontend && mv .env.local .env.local.bak && rm -rf dist && npm run build
      ```
@@ -218,7 +241,7 @@ El chequeo debe tocar la base de datos, no solo confirmar que Node está vivo. D
 > pruebas) que bloquean el cambio de rama con "your local changes would be
 > overwritten". Es contenido compilado desechable, nunca código fuente — forzar es
 > seguro aquí, pero no lo hagas sin antes mirar `git status --short` una vez para
-> confirmar que no hay nada real (sección 10 tiene el caso completo).
+> confirmar que no hay nada real (sección 9 tiene el caso completo).
 
 ---
 
