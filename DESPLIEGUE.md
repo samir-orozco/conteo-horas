@@ -71,12 +71,40 @@ RewriteRule . /index.html [L]
 
 | Variable | Valor en producción |
 |---|---|
-| `DATABASE_URL` | `mysql://usuario:clave@localhost:3306/bd` |
+| `DATABASE_URL` | `mysql://usuario:clave@localhost:3306/bd?connection_limit=5&pool_timeout=10` (⚠️ ver 6.1, no lo pongas sin los parámetros) |
 | `JWT_SECRET` | `openssl rand -hex 32` (el servidor **no arranca** sin él) |
 | `NODE_ENV` | `production` |
 | `FRONTEND_ORIGIN` | `https://horapro.co` (restringe CORS y arma los links de correo) |
+| `TOKIO_WORKER_THREADS` | `1` (ver 6.1) |
+| `UV_THREADPOOL_SIZE` | `2` (ver 6.1) |
 | `WOMPI_*` | llaves de **producción** (ver sección 7) |
 | `SMTP_*` | buzón creado en el paso 5 |
+
+### 6.1 ⚠️ Prisma en Banahosting: por qué estas variables son obligatorias, no opcionales
+
+El motor de Prisma es un binario nativo (Rust) que dimensiona sus hilos y su pool
+de conexiones según las CPU que **ve el sistema físico** del servidor — no las que
+tiene asignada tu cuenta. En Banahosting eso son 64-88 CPUs (medido en dos
+servidores distintos), así que sin estas variables Prisma intenta abrir más de
+100 conexiones a MySQL contra un usuario que normalmente tiene un tope de 10-25,
+y usa el mismo criterio para abrir hilos del sistema operativo — contra el límite
+`NPROC` de CloudLinux. **El 24/07/2026 esto tumbó los procesos de toda una cuenta
+de Banahosting** (otro proyecto, misma cuenta que hospeda HoraPro):
+`bash: fork: Resource temporarily unavailable` en SSH y en la Terminal de cPanel,
+sin poder ni entrar a arreglarlo.
+
+- **`DATABASE_URL` con `?connection_limit=5&pool_timeout=10`:** limita el pool de
+  conexiones de Prisma a 5 (de sobra para el tráfico de HoraPro) y hace que una
+  consulta sin conexión libre falle a los 10s en vez de colgarse indefinidamente.
+- **`TOKIO_WORKER_THREADS=1` y `UV_THREADPOOL_SIZE=2`** (cPanel → Setup Node.js
+  App → Environment variables, **no** en el `.env`): limitan los hilos del
+  runtime async de Rust (Tokio, usado por el motor de Prisma) y del threadpool de
+  libuv de Node. Sin esto, ambos se dimensionan solos según las CPU físicas del
+  host, igual que el pool de conexiones.
+
+**Aplica las cuatro en cualquier app Node de esta cuenta que use Prisma** — no
+solo en `horapro-co-api`. Si hay una app vieja corriendo en paralelo (ver nota del
+dominio, arriba) y usa Prisma, confirma que también las tenga.
 
 ## 7. Wompi en producción
 
