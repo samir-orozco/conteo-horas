@@ -32,7 +32,7 @@ export async function cerrarTurnosOlvidados(log?: Log): Promise<number> {
     );
 
     const abiertos = await prisma.registro.findMany({
-      where: { entrada: { not: null, lt: inicioHoy }, salida: null },
+      where: { entrada: { not: null, lt: inicioHoy }, salida: null, salidaEstimada: false },
       select: {
         id: true, entrada: true,
         colaborador: {
