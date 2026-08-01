@@ -27,7 +27,7 @@ async function cerrarTurnosOlvidados(log) {
         // 00:00 de hoy en Bogotá → solo miramos turnos que empezaron antes de hoy
         const inicioHoy = (0, date_fns_tz_1.fromZonedTime)(new Date(ahoraBog.getFullYear(), ahoraBog.getMonth(), ahoraBog.getDate(), 0, 0, 0), TZ);
         const abiertos = await index_1.prisma.registro.findMany({
-            where: { entrada: { not: null, lt: inicioHoy }, salida: null },
+            where: { entrada: { not: null, lt: inicioHoy }, salida: null, salidaEstimada: false },
             select: {
                 id: true, entrada: true,
                 colaborador: {
