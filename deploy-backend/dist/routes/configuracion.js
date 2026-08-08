@@ -5,6 +5,7 @@ const index_1 = require("../index");
 const vigencias_1 = require("../utils/vigencias");
 const telegram_1 = require("../utils/telegram");
 const capacidades_1 = require("../utils/capacidades");
+const saldoTiempo_1 = require("../utils/saldoTiempo");
 async function configuracionRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     // Envía un mensaje de prueba al chat de Telegram para verificar la conexión.
@@ -31,6 +32,25 @@ async function configuracionRoutes(app) {
         const items = await index_1.prisma.configuracion.findMany({ where: { empresaId: request.empresaId } });
         return items.reduce((acc, item) => { acc[item.clave] = item.valor; return acc; }, {});
     });
+    // Política de permisos remunerados, ya resuelta. El frontend NO debe repetir
+    // la clasificación ni el default: los recibe de aquí, que es la misma fuente
+    // que usa el cálculo del saldo.
+    app.get('/permisos-remunerados', auth, async (request) => {
+        const cfg = await index_1.prisma.configuracion.findUnique({
+            where: { empresaId_clave: { empresaId: request.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } },
+        });
+        const politica = (0, saldoTiempo_1.parsearPoliticaPermisos)(cfg?.valor);
+        return {
+            // Fijos por ley: se muestran bloqueados, no se pueden cambiar.
+            remuneradosPorLey: saldoTiempo_1.PERMISOS_REMUNERADOS_LEY,
+            nuncaRemunerados: saldoTiempo_1.PERMISOS_NUNCA_REMUNERADOS,
+            // Los que cada empresa decide, y cuáles están marcados hoy.
+            configurables: saldoTiempo_1.PERMISOS_CONFIGURABLES,
+            remunerados: [...politica],
+            // Distingue "nunca lo configuró" (se aplicó el default) de una elección real.
+            configurado: cfg != null,
+        };
+    });
     app.put('/', auth, async (request, reply) => {
         const data = request.body;
         const empresaId = request.empresaId;
@@ -43,6 +63,22 @@ async function configuracionRoutes(app) {
         }
         if (tocaTelegram && !cap.features.telegram) {
             return reply.status(403).send({ error: 'Las alertas por Telegram están disponibles en el plan Profesional.', codigo: 'FUNCION_PLAN', funcion: 'telegram' });
+        }
+        // La política de permisos remunerados decide descuentos de nómina: solo el
+        // ADMIN la toca, y solo sobre los tipos que la ley deja a criterio de la
+        // empresa. Se valida en el servidor, no basta con ocultarlo en la UI.
+        if (saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS in data) {
+            if (request.user?.rol !== 'ADMIN') {
+                return reply.status(403).send({ error: 'Solo el administrador cambia qué permisos son remunerados' });
+            }
+            const pedidos = String(data[saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS] ?? '').split(',').map(s => s.trim()).filter(Boolean);
+            const invalidos = pedidos.filter(t => !saldoTiempo_1.PERMISOS_CONFIGURABLES.includes(t));
+            if (invalidos.length > 0) {
+                return reply.status(400).send({
+                    error: `Estos tipos no se pueden configurar: ${invalidos.join(', ')}. Los definidos por ley no son editables.`,
+                });
+            }
+            data[saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS] = (0, saldoTiempo_1.normalizarPoliticaPermisos)(pedidos).join(',');
         }
         await Promise.all(Object.entries(data).map(([clave, valor]) => index_1.prisma.configuracion.upsert({
             where: { empresaId_clave: { empresaId, clave } },

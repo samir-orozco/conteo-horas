@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CODIGOS_EXTRA = void 0;
 exports.calcularHorasTrabajadas = calcularHorasTrabajadas;
 exports.descontarAlmuerzo = descontarAlmuerzo;
 exports.calcularValorHora = calcularValorHora;
@@ -110,7 +111,7 @@ function calcularValorHora(salarioMensual, horasMes) {
 }
 // Códigos de hora EXTRA (superan la jornada legal). Las demás son ordinarias
 // y su hora base ya está incluida en el salario mensual.
-const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
+exports.CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
 // Liquidación de lo que se paga ADEMÁS del salario:
 //  - Ordinaria diurna (HOD): $0, ya está en el salario.
 //  - Ordinaria nocturna / dominical / festiva: solo el recargo (factor − 1).
@@ -118,7 +119,7 @@ const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
 function calcularLiquidacion(salarioMensual, horasMes, horasPorTipo) {
     const valorHoraBase = calcularValorHora(salarioMensual, horasMes);
     return horasPorTipo.map(t => {
-        const esExtra = CODIGOS_EXTRA.has(t.codigo);
+        const esExtra = exports.CODIGOS_EXTRA.has(t.codigo);
         // Extra: paga el factor completo. Ordinaria: solo el recargo por encima de la hora base.
         const factorPagado = esExtra ? t.recargo : Math.max(0, t.recargo - 1);
         return {

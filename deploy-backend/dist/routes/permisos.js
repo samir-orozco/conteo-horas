@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = permisoRoutes;
 const index_1 = require("../index");
 const capacidades_1 = require("../utils/capacidades");
+const saldoTiempo_1 = require("../utils/saldoTiempo");
 // Evidencia: imagen o PDF en base64 data URI, con tope de tamaño (~4 MB de texto).
 const MAX_EVIDENCIA = 4200000;
 function evidenciaValida(v) {
@@ -50,11 +51,17 @@ async function permisoRoutes(app) {
         const where = { colaborador: { empresaId: request.empresaId } };
         if (colaboradorId)
             where.colaboradorId = colaboradorId;
-        return index_1.prisma.permiso.findMany({
-            where,
-            select: SELECT_LISTA,
-            orderBy: { fechaInicio: 'desc' },
-        });
+        const [permisos, cfg] = await Promise.all([
+            index_1.prisma.permiso.findMany({ where, select: SELECT_LISTA, orderBy: { fechaInicio: 'desc' } }),
+            index_1.prisma.configuracion.findUnique({
+                where: { empresaId_clave: { empresaId: request.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } },
+            }),
+        ]);
+        // `remunerado` se resuelve aquí, con la misma función que usa el cálculo del
+        // saldo, para que la UI no tenga que reimplementar la regla y no se puedan
+        // desincronizar la etiqueta que ve el usuario y el descuento que se aplica.
+        const politica = (0, saldoTiempo_1.parsearPoliticaPermisos)(cfg?.valor);
+        return permisos.map(p => ({ ...p, remunerado: (0, saldoTiempo_1.esPermisoRemunerado)(p.tipo, politica) }));
     });
     // Evidencia de una novedad (se pide aparte para no cargarla en cada listado)
     app.get('/:id/evidencia', auth, async (request, reply) => {
