@@ -62,10 +62,14 @@ function esPermisoRemunerado(tipo, politica) {
     return politica.has(tipo);
 }
 // ============ Horas esperadas según el horario ============
-// Clave de día calendario Bogotá, comparable lexicográficamente ("2026-07-15").
-function claveDia(d) {
-    const z = (0, date_fns_tz_1.toZonedTime)(d, TZ);
+// Clave de día calendario, comparable lexicográficamente ("2026-07-15").
+// Ojo: `claveZonificada` recibe una fecha a la que YA se le aplicó toZonedTime;
+// volver a convertirla la correría otras 5 horas hacia atrás.
+function claveZonificada(z) {
     return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
+}
+function claveDia(d) {
+    return claveZonificada((0, date_fns_tz_1.toZonedTime)(d, TZ));
 }
 function semanaKeyDeZonificada(z) {
     return `${(0, date_fns_1.getISOWeekYear)(z)}-W${(0, date_fns_1.getISOWeek)(z)}`;
@@ -110,7 +114,7 @@ function calcularHorasEsperadas(desde, finExclusivo, horario, festivosDates, per
     let z = (0, date_fns_tz_1.toZonedTime)(desde, TZ);
     const zFin = (0, date_fns_tz_1.toZonedTime)(finExclusivo, TZ);
     while (z < zFin) {
-        const clave = claveDia(z);
+        const clave = claveZonificada(z);
         const franja = (0, tardanzas_1.franjaDelDia)(horario, tardanzas_1.DIAS_SEMANA[z.getDay()]);
         // Solo se exige un día programado y no festivo.
         if (franja && !festSet.has(clave)) {

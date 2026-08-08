@@ -12,16 +12,26 @@ function rangoDiaBogota(ahora = new Date()) {
     const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
     return { ahoraBog, inicioDia, finDia };
 }
+// Medianoche de Bogotá de una fecha "YYYY-MM-DD", como instante UTC.
+// Colombia es UTC-5 fijo (no tiene horario de verano), así que son las 05:00.
+// Es la misma convención con la que el kiosco guarda `Registro.fecha`.
+function medianocheBogota(fecha) {
+    const [a, m, d] = fecha.slice(0, 10).split('-').map(Number);
+    return new Date(Date.UTC(a, m - 1, d, 5, 0, 0));
+}
 // Rango de un reporte a partir de dos fechas "YYYY-MM-DD".
 //
-// El campo `Registro.fecha` guarda la MEDIANOCHE de Bogotá, que en UTC son las
-// 05:00 de ese mismo día. Por eso un filtro `lte: new Date(hasta)` —que es
-// hasta a las 00:00 UTC— deja fuera todos los registros del último día del
-// rango. La forma correcta es un tope EXCLUSIVO en el día siguiente, igual que
-// ya lo hace /registros. Devuelve ese tope como `finExclusivo` para usar con
-// `lt`, nunca con `lte`.
+// Ojo con la zona horaria: `new Date("2026-07-01")` es medianoche UTC, que en
+// Bogotá son las 7 p.m. del 30 de junio. Usarlo directamente hacía dos daños:
+// el filtro con `lte` dejaba fuera el último día del rango, y al recorrer los
+// días para calcular las horas esperadas el cálculo arrancaba un día antes
+// (un rango que empieza el miércoles 1 se contaba como si empezara el martes).
+//
+// Por eso ambos extremos se anclan a la medianoche de BOGOTÁ, y el final es el
+// arranque del día siguiente: `finExclusivo` va siempre con `lt`, nunca `lte`.
 function rangoReporte(desde, hasta) {
-    const desdeF = new Date(desde);
-    const finExclusivo = new Date(new Date(hasta).getTime() + 24 * 60 * 60 * 1000);
-    return { desdeF, finExclusivo };
+    return {
+        desdeF: medianocheBogota(desde),
+        finExclusivo: new Date(medianocheBogota(hasta).getTime() + 24 * 60 * 60 * 1000),
+    };
 }
