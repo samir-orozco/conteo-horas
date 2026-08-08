@@ -10,20 +10,13 @@ const TZ = 'America/Bogota';
 type Fila = {
   colaboradorId: string; nombre: string; apellido: string;
   totalRecargos: number; totalExtra: number; totalAdicional: number;
-  sinHorario: boolean; minutosSaldo: number; montoSaldo: number; totalNeto: number;
 };
 type LineaLiquidacion = { codigo: string; nombre: string; horas: number; valorHora: number; recargo: number; esExtra: boolean; factorPagado: number; subtotal: number };
 type DetalleRegistro = { fecha: string; entrada: string; salida: string; filas: { codigo: string; nombre: string; horas: number; subtotal: number }[] };
-export type SaldoTiempo = {
-  sinHorario: boolean; minutosEsperados: number; minutosPermisoRemunerado: number;
-  minutosPermisoNoRemunerado: number; minutosTrabajados: number; minutosSaldo: number;
-  valorHora: number; montoSaldo: number;
-};
 type Drill = {
   colaborador: { nombre: string; apellido: string };
   liquidacion: LineaLiquidacion[]; totalRecargos: number; totalExtra: number; totalAdicional: number;
   detalleRegistros: DetalleRegistro[];
-  saldo?: SaldoTiempo;
 };
 
 const BADGE: Record<string, string> = {
@@ -77,8 +70,10 @@ export default function ReporteExtras() {
     return colaboradorId ? filas.filter(f => f.colaboradorId === colaboradorId) : filas;
   }, [filas, colaboradorId]);
 
-  const totalGeneral = visibles.reduce((s, f) => s + f.totalNeto, 0);
-  const totalSaldo = visibles.reduce((s, f) => s + (f.montoSaldo ?? 0), 0);
+  // Este reporte es solo lo que se PAGA además del salario. El saldo de tiempo
+  // no remunerado es un descuento sobre el salario y vive en el reporte diario,
+  // que es donde el salario está a la vista y la resta tiene sentido.
+  const totalGeneral = visibles.reduce((s, f) => s + f.totalAdicional, 0);
 
   const abrirDrill = async (f: Fila) => {
     setDrillLoading(true);
@@ -145,8 +140,7 @@ export default function ReporteExtras() {
                   <th className="px-3 py-2 text-left">Colaborador</th>
                   <th className="px-3 py-2 text-right">Recargos</th>
                   <th className="px-3 py-2 text-right">Extras</th>
-                  <th className="px-3 py-2 text-right">Saldo pendiente</th>
-                  <th className="px-3 py-2 text-right">Neto a pagar</th>
+                  <th className="px-3 py-2 text-right">Total a pagar</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
@@ -156,14 +150,7 @@ export default function ReporteExtras() {
                     <td className="px-3 py-2.5 font-medium text-gray-800">{f.nombre} {f.apellido}</td>
                     <td className="px-3 py-2.5 text-right text-gray-600">{fmt(f.totalRecargos)}</td>
                     <td className="px-3 py-2.5 text-right text-gray-600">{fmt(f.totalExtra)}</td>
-                    <td className="px-3 py-2.5 text-right">
-                      {f.sinHorario
-                        ? <span className="text-xs text-muted">sin horario</span>
-                        : f.montoSaldo > 0
-                          ? <span className="text-red-600 font-semibold">−{fmt(f.montoSaldo)}</span>
-                          : <span className="text-gray-400">—</span>}
-                    </td>
-                    <td className="px-3 py-2.5 text-right font-semibold text-ink">{fmt(f.totalNeto)}</td>
+                    <td className="px-3 py-2.5 text-right font-semibold text-ink">{fmt(f.totalAdicional)}</td>
                     <td className="px-3 py-2.5 text-right text-primary-dark text-xs font-semibold">Ver desglose →</td>
                   </tr>
                 ))}
@@ -173,7 +160,6 @@ export default function ReporteExtras() {
                   <td className="px-3 py-3 font-bold text-ink">Total {colaboradorId ? '' : `(${visibles.length} colaboradores)`}</td>
                   <td className="px-3 py-3 text-right font-semibold text-gray-700">{fmt(visibles.reduce((s, f) => s + f.totalRecargos, 0))}</td>
                   <td className="px-3 py-3 text-right font-semibold text-gray-700">{fmt(visibles.reduce((s, f) => s + f.totalExtra, 0))}</td>
-                  <td className="px-3 py-3 text-right font-semibold text-red-600">{totalSaldo > 0 ? `−${fmt(totalSaldo)}` : '—'}</td>
                   <td className="px-3 py-3 text-right font-bold text-ink text-base">{fmt(totalGeneral)}</td>
                   <td></td>
                 </tr>
@@ -204,41 +190,8 @@ export default function ReporteExtras() {
                   <div className="flex gap-4 mb-5 text-sm flex-wrap">
                     <div className="bg-gray-50 rounded-xl px-4 py-2.5"><p className="text-xs text-muted">Recargos</p><p className="font-semibold text-ink">{fmt(drill.totalRecargos)}</p></div>
                     <div className="bg-gray-50 rounded-xl px-4 py-2.5"><p className="text-xs text-muted">Extras</p><p className="font-semibold text-ink">{fmt(drill.totalExtra)}</p></div>
-                    {drill.saldo && !drill.saldo.sinHorario && drill.saldo.montoSaldo > 0 && (
-                      <div className="bg-red-50 rounded-xl px-4 py-2.5"><p className="text-xs text-red-700/80">Saldo pendiente</p><p className="font-semibold text-red-700">−{fmt(drill.saldo.montoSaldo)}</p></div>
-                    )}
-                    <div className="bg-primary/15 rounded-xl px-4 py-2.5"><p className="text-xs text-ink/70">Neto</p><p className="font-bold text-ink">{fmt(drill.totalAdicional - (drill.saldo?.montoSaldo ?? 0))}</p></div>
+                    <div className="bg-primary/15 rounded-xl px-4 py-2.5"><p className="text-xs text-ink/70">Total a pagar</p><p className="font-bold text-ink">{fmt(drill.totalAdicional)}</p></div>
                   </div>
-
-                  {drill.saldo && !drill.saldo.sinHorario && (
-                    <div className="mb-5 border border-gray-100 rounded-xl px-4 py-3 text-sm">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Tiempo del período</p>
-                      <div className="grid grid-cols-2 gap-y-1 gap-x-4">
-                        <span className="text-muted">Debía trabajar</span>
-                        <span className="text-right font-medium text-ink">{fmtMin(drill.saldo.minutosEsperados)}</span>
-                        <span className="text-muted">Trabajó</span>
-                        <span className="text-right font-medium text-ink">{fmtMin(drill.saldo.minutosTrabajados)}</span>
-                        {drill.saldo.minutosPermisoRemunerado > 0 && (
-                          <>
-                            <span className="text-muted">Novedades pagadas (no se exigen)</span>
-                            <span className="text-right text-gray-500">{fmtMin(drill.saldo.minutosPermisoRemunerado)}</span>
-                          </>
-                        )}
-                        {drill.saldo.minutosPermisoNoRemunerado > 0 && (
-                          <>
-                            <span className="text-muted">Novedades no remuneradas</span>
-                            <span className="text-right text-red-600">{fmtMin(drill.saldo.minutosPermisoNoRemunerado)}</span>
-                          </>
-                        )}
-                        <span className="font-semibold text-ink border-t border-gray-100 pt-1">
-                          {drill.saldo.minutosSaldo > 0 ? 'Queda debiendo' : 'Repuso todo'}
-                        </span>
-                        <span className={`text-right font-bold border-t border-gray-100 pt-1 ${drill.saldo.minutosSaldo > 0 ? 'text-red-600' : 'text-green-700'}`}>
-                          {drill.saldo.minutosSaldo > 0 ? fmtMin(drill.saldo.minutosSaldo) : '✓'}
-                        </span>
-                      </div>
-                    </div>
-                  )}
 
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
                     <Clock3 size={13} /> Desglose por día
@@ -260,7 +213,7 @@ export default function ReporteExtras() {
                         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                           {d.filas.map(fl => (
                             <span key={fl.codigo} className={`text-[11px] font-semibold px-2 py-1 rounded-lg ${BADGE[fl.codigo] ?? 'bg-gray-100 text-gray-600'}`}>
-                              {fl.codigo} · {fl.horas}h · {fmt(fl.subtotal)}
+                              {fl.codigo} · {fmtMin(fl.horas * 60)} · {fmt(fl.subtotal)}
                             </span>
                           ))}
                         </div>

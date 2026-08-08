@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../index';
 import { capacidadesEmpresa } from '../utils/capacidades';
+import { CLAVE_PERMISOS_REMUNERADOS, parsearPoliticaPermisos, esPermisoRemunerado } from '../utils/saldoTiempo';
 
 // Evidencia: imagen o PDF en base64 data URI, con tope de tamaño (~4 MB de texto).
 const MAX_EVIDENCIA = 4_200_000;
@@ -42,11 +43,17 @@ export default async function permisoRoutes(app: FastifyInstance) {
     const { colaboradorId } = request.query as any;
     const where: any = { colaborador: { empresaId: request.empresaId } };
     if (colaboradorId) where.colaboradorId = colaboradorId;
-    return prisma.permiso.findMany({
-      where,
-      select: SELECT_LISTA,
-      orderBy: { fechaInicio: 'desc' },
-    });
+    const [permisos, cfg] = await Promise.all([
+      prisma.permiso.findMany({ where, select: SELECT_LISTA, orderBy: { fechaInicio: 'desc' } }),
+      prisma.configuracion.findUnique({
+        where: { empresaId_clave: { empresaId: request.empresaId!, clave: CLAVE_PERMISOS_REMUNERADOS } },
+      }),
+    ]);
+    // `remunerado` se resuelve aquí, con la misma función que usa el cálculo del
+    // saldo, para que la UI no tenga que reimplementar la regla y no se puedan
+    // desincronizar la etiqueta que ve el usuario y el descuento que se aplica.
+    const politica = parsearPoliticaPermisos(cfg?.valor);
+    return permisos.map(p => ({ ...p, remunerado: esPermisoRemunerado(p.tipo, politica) }));
   });
 
   // Evidencia de una novedad (se pide aparte para no cargarla en cada listado)

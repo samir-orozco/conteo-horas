@@ -210,7 +210,11 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
     const hastaF = new Date(hasta); // solo para resolver la jornada vigente al cierre
 
-    const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosTodos] = await Promise.all([
+    // Este reporte es SOLO lo que se paga además del salario. El saldo de tiempo
+    // no remunerado no se calcula aquí a propósito: es un descuento sobre el
+    // salario y vive en /liquidacion, donde el salario está a la vista. Dejarlo
+    // fuera evita además traer los permisos de toda la empresa en cada consulta.
+    const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
         include: { horario: { include: { franjas: true } } },
@@ -224,12 +228,6 @@ export default async function reporteRoutes(app: FastifyInstance) {
       prisma.tipoHora.findMany(),
       prisma.jornadaVigencia.findMany(),
       prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
-      prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: CLAVE_PERMISOS_REMUNERADOS } } }),
-      // Acotado al rango: sin esto se traería el histórico completo de la empresa.
-      prisma.permiso.findMany({
-        where: { colaborador: { empresaId }, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
-        select: { fechaInicio: true, fechaFin: true, tipo: true, colaboradorId: true },
-      }),
     ]);
 
     const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
@@ -237,26 +235,15 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const jornadaCierre = jornadaVigente(hastaF, jornadas);
     const horasMes = horasMesDeJornada(jornadaCierre);
     const porColaborador = agrupar(registrosTodos as any);
-    const politica = parsearPoliticaPermisos(cfgPermisos?.valor);
-    const permisosPorCol = agrupar(permisosTodos as any);
 
     const resultado = colaboradores.map(col => {
       const horario = (col as any).horario as HorarioConFranjas | null;
       const extraConfig = construirExtraConfig(modoExtra, horario);
       const registros = porColaborador.get(col.id) ?? [];
       const r = liquidarRegistros(registros as any, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false);
-      const sinHorario = !horario || !horario.activo;
-      const esperadas = calcularHorasEsperadas(
-        desdeF, finExclusivo, horario, festivosDates, (permisosPorCol.get(col.id) ?? []) as any, politica,
-        (fecha) => jornadaVigente(fecha, jornadas),
-      );
-      const saldo = armarSaldo(esperadas, r.minutosOrdinarios, calcularValorHora(col.salarioMensual, horasMes), sinHorario);
       return {
         colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
         totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
-        sinHorario: saldo.sinHorario, minutosSaldo: saldo.minutosSaldo, montoSaldo: saldo.montoSaldo,
-        // Neto del período: lo adicional a pagar menos lo que se descuenta.
-        totalNeto: parseFloat((r.totalAdicional - saldo.montoSaldo).toFixed(2)),
       };
     });
 

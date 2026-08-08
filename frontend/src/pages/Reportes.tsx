@@ -23,7 +23,7 @@ type Reporte = {
   salarioBase: number; totalRecargos: number; totalExtra: number; totalAdicional: number;
   totalPagar: number; registrosCont: number; saldo?: SaldoTiempo;
 };
-type Novedad = { id: string; tipo: string; descripcion?: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; evidenciaTipo?: string | null; evidenciaNombre?: string | null };
+type Novedad = { id: string; tipo: string; descripcion?: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; evidenciaTipo?: string | null; evidenciaNombre?: string | null; remunerado?: boolean };
 type RegistroDia = { id: string; fecha: string; entrada: string | null; salida: string | null; tipo: string; minutosTarde: number | null; observacion?: string | null };
 type Tardanzas = {
   sinHorario: boolean;
@@ -148,6 +148,7 @@ export default function Reportes() {
     // Hoja 2: Novedades del período
     const novFilas = novedades.map(n => [
       TIPO_PERMISO_LABEL[n.tipo] ?? n.tipo,
+      n.remunerado ? 'Se paga' : 'No se paga',
       n.aprobado ? 'Aprobada' : 'Pendiente',
       dFmt(n.fechaInicio),
       dFmt(n.fechaFin),
@@ -169,7 +170,7 @@ export default function Reportes() {
     const periodo = `${format(fechaLocal(reporte.desde), 'dd-MM-yyyy')}_a_${format(fechaLocal(reporte.hasta), 'dd-MM-yyyy')}`;
     descargarExcelHojas(`Reporte_${nombre}_${periodo}`, [
       { nombre: 'Liquidación', columnas: ['Código', 'Concepto', 'Horas', 'Recargo %', 'Valor hora', 'Subtotal'], filas: liqFilas },
-      { nombre: 'Novedades', columnas: ['Tipo', 'Estado', 'Desde', 'Hasta', 'Descripción', 'Evidencia'], filas: novFilas },
+      { nombre: 'Novedades', columnas: ['Tipo', 'Remuneración', 'Estado', 'Desde', 'Hasta', 'Descripción', 'Evidencia'], filas: novFilas },
       { nombre: 'Registros', columnas: ['Fecha', 'Entrada', 'Salida', 'Tipo', 'Min. tarde', 'Duración'], filas: regFilas },
     ]);
   };
@@ -217,9 +218,8 @@ export default function Reportes() {
             <div>
               <h3 className="font-bold text-xl text-gray-800">{reporte.colaborador.nombre} {reporte.colaborador.apellido}</h3>
               <p className="text-sm text-gray-500 mt-0.5">
-                Período: {format(fechaLocal(reporte.desde), 'dd/MM/yyyy')} — {format(fechaLocal(reporte.hasta), 'dd/MM/yyyy')}
+                {format(fechaLocal(reporte.desde), 'dd/MM/yyyy')} — {format(fechaLocal(reporte.hasta), 'dd/MM/yyyy')} · {reporte.registrosCont} días con marcación
               </p>
-              <p className="text-sm text-gray-500">{reporte.registrosCont} días analizados · {totalHoras.toFixed(1)}h totales</p>
             </div>
             {plan && !plan.features.exportar ? (
               <button onClick={() => navigate('/app/configuracion?tab=suscripcion')} title="Exportar a Excel está disponible en el plan Profesional"
@@ -233,6 +233,33 @@ export default function Reportes() {
               </button>
             )}
           </div>
+
+          {/* Cifras de tiempo del período. Reemplazan a la tarjeta "Tiempo del
+              período": lo esperado y lo trabajado se leen de un vistazo, y el
+              detalle de las novedades vive en su propio panel. */}
+          {reporte.saldo && !reporte.saldo.sinHorario && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+              <div className="bg-gray-50 border border-gray-200/70 rounded-xl px-4 py-3">
+                <p className="text-xs text-muted">Debía trabajar</p>
+                <p className="text-xl font-bold text-ink mt-1">{fmtMin(reporte.saldo.minutosEsperados)}</p>
+              </div>
+              <div className="bg-gray-50 border border-gray-200/70 rounded-xl px-4 py-3">
+                <p className="text-xs text-muted">Trabajó</p>
+                <p className="text-xl font-bold text-ink mt-1">{fmtMin(reporte.saldo.minutosTrabajados)}</p>
+              </div>
+              {reporte.saldo.minutosSaldo > 0 ? (
+                <div className="bg-red-50 border border-red-200/70 rounded-xl px-4 py-3">
+                  <p className="text-xs text-red-700/80">Queda debiendo</p>
+                  <p className="text-xl font-bold text-red-600 mt-1">{fmtMin(reporte.saldo.minutosSaldo)}</p>
+                </div>
+              ) : (
+                <div className="bg-green-50 border border-green-200/70 rounded-xl px-4 py-3">
+                  <p className="text-xs text-green-800/80">Queda debiendo</p>
+                  <p className="text-xl font-bold text-green-700 mt-1">Nada ✓</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Pestañas: Liquidación / Registros del período */}
           <div className="flex gap-1 border-b border-gray-200 mb-5">
@@ -307,7 +334,7 @@ export default function Reportes() {
                       <span className="text-gray-700">{l.nombre}</span>
                       {l.esExtra && <span className="ml-1.5 text-[10px] font-bold text-orange-600">EXTRA</span>}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono text-gray-700">{l.horas}h</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-700">{fmtMin(l.horas * 60)}</td>
                     <td className="px-3 py-2.5 text-right text-gray-500">{fmt(l.valorHora)}</td>
                     <td className="px-3 py-2.5 text-right text-gray-500">
                       {l.factorPagado === 0 ? '—' : `×${l.factorPagado}`}
@@ -317,6 +344,26 @@ export default function Reportes() {
                     </td>
                   </tr>
                 ))}
+
+                {/* Tiempo no repuesto: se renderiza aparte y NO se mete en
+                    `liquidacion`, porque ese array alimenta totalRecargos y
+                    totalAdicional, y una fila sintética ahí desviaría los
+                    totales de todos los reportes. */}
+                {descuentoSaldo > 0 && (
+                  <tr className="hover:bg-gray-50 bg-red-50/30">
+                    <td className="px-3 py-2.5">
+                      <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold mr-2 bg-red-100 text-red-700">TNR</span>
+                      <span className="text-gray-700">Tiempo no remunerado</span>
+                      <span className="ml-1.5 text-[10px] font-bold text-red-600">DESCUENTO</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-right font-mono text-red-700">
+                      {fmtMin(reporte.saldo!.minutosSaldo)}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-gray-500">{fmt(reporte.saldo!.valorHora)}</td>
+                    <td className="px-3 py-2.5 text-right text-gray-500">—</td>
+                    <td className="px-3 py-2.5 text-right font-semibold text-red-700">−{fmt(descuentoSaldo)}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -347,33 +394,6 @@ export default function Reportes() {
               <span className="font-bold text-ink text-lg">{fmt(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)}</span>
             </div>
           </div>
-
-          {/* Tiempo del período: de dónde sale el saldo */}
-          {reporte.saldo && !reporte.saldo.sinHorario && (
-            <div className="mt-5 border border-gray-200 rounded-xl p-4 text-sm max-w-sm ml-auto">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Tiempo del período</p>
-              <div className="space-y-1.5">
-                <div className="flex justify-between"><span className="text-muted">Debía trabajar</span><span className="font-medium text-ink">{fmtMin(reporte.saldo.minutosEsperados)}</span></div>
-                <div className="flex justify-between"><span className="text-muted">Trabajó</span><span className="font-medium text-ink">{fmtMin(reporte.saldo.minutosTrabajados)}</span></div>
-                {reporte.saldo.minutosPermisoRemunerado > 0 && (
-                  <div className="flex justify-between"><span className="text-muted">Novedades pagadas (no se exigen)</span><span className="text-gray-500">{fmtMin(reporte.saldo.minutosPermisoRemunerado)}</span></div>
-                )}
-                {reporte.saldo.minutosPermisoNoRemunerado > 0 && (
-                  <div className="flex justify-between"><span className="text-muted">Novedades no remuneradas</span><span className="text-red-600">{fmtMin(reporte.saldo.minutosPermisoNoRemunerado)}</span></div>
-                )}
-                <div className="flex justify-between border-t border-gray-100 pt-1.5">
-                  <span className="font-semibold text-ink">{reporte.saldo.minutosSaldo > 0 ? 'Queda debiendo' : 'Repuso todo el tiempo'}</span>
-                  <span className={`font-bold ${reporte.saldo.minutosSaldo > 0 ? 'text-red-600' : 'text-green-700'}`}>
-                    {reporte.saldo.minutosSaldo > 0 ? fmtMin(reporte.saldo.minutosSaldo) : '✓'}
-                  </span>
-                </div>
-              </div>
-              <p className="text-[11px] text-muted mt-2.5 leading-snug">
-                Las llegadas tarde y los permisos no remunerados restan tiempo; las horas trabajadas de más
-                dentro de la jornada legal lo reponen. Solo se descuenta lo que quede sin reponer.
-              </p>
-            </div>
-          )}
 
           {reporte.liquidacion.length === 0 && (
             <p className="text-center text-gray-400 py-8">No hay registros completos (con entrada y salida) en este período</p>
@@ -448,25 +468,56 @@ export default function Reportes() {
               <p className="text-sm text-muted mb-3">
                 {novedades.length} novedad{novedades.length === 1 ? '' : 'es'} entre el {format(fechaLocal(reporte.desde), 'dd/MM/yyyy')} y el {format(fechaLocal(reporte.hasta), 'dd/MM/yyyy')}.
               </p>
+
+              {/* Horas que aportan al período, separadas. Vienen del cálculo del
+                  saldo —no de contar días × jornada— porque solo cuentan los días
+                  que el horario tenía programados: un festivo o un domingo dentro
+                  de unas vacaciones no suma horas. */}
+              {reporte.saldo && !reporte.saldo.sinHorario &&
+                (reporte.saldo.minutosPermisoRemunerado > 0 || reporte.saldo.minutosPermisoNoRemunerado > 0) && (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-gray-50 border border-gray-200/70 rounded-xl px-4 py-3">
+                    <p className="text-xs text-muted flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Se pagan
+                    </p>
+                    <p className="text-lg font-bold text-ink mt-1">{fmtMin(reporte.saldo.minutosPermisoRemunerado)}</p>
+                  </div>
+                  <div className="bg-red-50 border border-red-200/70 rounded-xl px-4 py-3">
+                    <p className="text-xs text-red-700/80 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> No se pagan
+                    </p>
+                    <p className="text-lg font-bold text-red-700 mt-1">{fmtMin(reporte.saldo.minutosPermisoNoRemunerado)}</p>
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
+                {/* Tarjeta con borde propio: el estado de aprobación va arriba a
+                    la derecha (dato secundario) y el de pago viaja con la fecha,
+                    marcado con un punto de color para que se distinga de un
+                    vistazo sin competir con el título. */}
                 {novedades.map(n => (
                   <button key={n.id} onClick={() => setVerNovedad(n)}
-                    className="w-full flex items-start gap-3 bg-gray-50 hover:bg-gray-100 rounded-xl px-4 py-3 text-left transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-ink flex items-center gap-1.5 flex-wrap">
-                        {TIPO_PERMISO_LABEL[n.tipo] ?? n.tipo}
-                        {n.evidenciaTipo && <Paperclip size={12} className="text-primary-dark" />}
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${n.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                          {n.aprobado ? 'APROBADA' : 'PENDIENTE'}
-                        </span>
-                      </p>
-                      <p className="text-xs text-muted mt-0.5">
+                    className="w-full relative text-left bg-white border border-gray-200 rounded-xl px-4 py-3 hover:border-gray-300 hover:shadow-sm transition-all">
+                    <span className={`absolute top-3 right-3 text-[10px] font-semibold tracking-wide px-1.5 py-0.5 rounded ${n.aprobado ? 'text-green-700 bg-green-50' : 'text-orange-700 bg-orange-50'}`}>
+                      {n.aprobado ? 'Aprobada' : 'Pendiente'}
+                    </span>
+                    <p className="text-sm font-semibold text-ink flex items-center gap-1.5 pr-20">
+                      {TIPO_PERMISO_LABEL[n.tipo] ?? n.tipo}
+                      {n.evidenciaTipo && <Paperclip size={12} className="text-primary-dark shrink-0" />}
+                    </p>
+                    <p className="text-xs mt-1 flex items-center gap-1.5 flex-wrap">
+                      <span className="text-muted">
                         {format(toZonedTime(new Date(n.fechaInicio), TZ), 'dd/MM/yyyy')}
                         {format(toZonedTime(new Date(n.fechaInicio), TZ), 'dd/MM/yyyy') !== format(toZonedTime(new Date(n.fechaFin), TZ), 'dd/MM/yyyy') &&
                           ` — ${format(toZonedTime(new Date(n.fechaFin), TZ), 'dd/MM/yyyy')}`}
-                      </p>
-                      {n.descripcion && <p className="text-xs text-gray-600 mt-1 truncate">{n.descripcion}</p>}
-                    </div>
+                      </span>
+                      <span className="text-gray-300">·</span>
+                      <span className={`inline-flex items-center gap-1 font-medium ${n.remunerado ? 'text-gray-600' : 'text-red-600'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${n.remunerado ? 'bg-green-500' : 'bg-red-500'}`} />
+                        {n.remunerado ? 'Se paga' : 'No se paga'}
+                      </span>
+                    </p>
+                    {n.descripcion && <p className="text-xs text-gray-500 mt-1.5 truncate">{n.descripcion}</p>}
                   </button>
                 ))}
               </div>

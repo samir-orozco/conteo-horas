@@ -79,8 +79,8 @@ export default function TabNovedades() {
   );
 
   return (
-    <div className="p-6 md:p-8 max-w-2xl space-y-5">
-      <div>
+    <div className="p-6 md:p-8 space-y-5">
+      <div className="max-w-3xl">
         <h3 className="font-bold text-ink flex items-center gap-2"><CalendarOff size={18} /> Novedades remuneradas</h3>
         <p className="text-sm text-muted mt-1">
           Cuando una novedad <b>no</b> es remunerada, ese tiempo queda como saldo pendiente del colaborador.
@@ -100,27 +100,32 @@ export default function TabNovedades() {
         </div>
       )}
 
-      <div className="bg-white rounded-card border border-gray-200 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-1">Definido por la ley</p>
-        <p className="text-xs text-muted mb-2">No se puede cambiar.</p>
-        {pol.remuneradosPorLey.map(t => <Fila key={t} tipo={t} estado bloqueado />)}
-        {pol.nuncaRemunerados.map(t => <Fila key={t} tipo={t} estado={false} bloqueado />)}
-      </div>
-
-      <div className="bg-white rounded-card border border-gray-200 p-5">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Lo decide tu empresa</p>
-          {guardado && (
-            <span className="text-[11px] font-semibold text-green-700 flex items-center gap-1"><Check size={12} /> Guardado</span>
-          )}
+      {/* Dos columnas a lo ancho: lo que fija la ley a la izquierda y lo que
+          decide la empresa a la derecha. `items-start` para que cada tarjeta
+          conserve su propia altura en vez de estirarse a la más larga. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+        <div className="bg-white rounded-card border border-gray-200 p-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-1">Definido por la ley</p>
+          <p className="text-xs text-muted mb-2">No se puede cambiar.</p>
+          {pol.remuneradosPorLey.map(t => <Fila key={t} tipo={t} estado bloqueado />)}
+          {pol.nuncaRemunerados.map(t => <Fila key={t} tipo={t} estado={false} bloqueado />)}
         </div>
-        <p className="text-xs text-muted mb-2">
-          La ley no obliga a pagarlos. Actívalos si en tu empresa se pagan igual.
-          {!pol.configurado && ' Hoy están todos activos por defecto.'}
-        </p>
-        {pol.configurables.map(t => (
-          <Fila key={t} tipo={t} estado={pol.remunerados.includes(t)} bloqueado={false} />
-        ))}
+
+        <div className="bg-white rounded-card border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Lo decide tu empresa</p>
+            {guardado && (
+              <span className="text-[11px] font-semibold text-green-700 flex items-center gap-1"><Check size={12} /> Guardado</span>
+            )}
+          </div>
+          <p className="text-xs text-muted mb-2">
+            La ley no obliga a pagarlos. Actívalos si en tu empresa se pagan igual.
+            {!pol.configurado && ' Hoy están todos activos por defecto.'}
+          </p>
+          {pol.configurables.map(t => (
+            <Fila key={t} tipo={t} estado={pol.remunerados.includes(t)} bloqueado={false} />
+          ))}
+        </div>
       </div>
     </div>
   );
