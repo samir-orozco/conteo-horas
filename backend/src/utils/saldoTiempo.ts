@@ -64,10 +64,14 @@ export function esPermisoRemunerado(tipo: string, politica: Set<string>): boolea
 
 // ============ Horas esperadas según el horario ============
 
-// Clave de día calendario Bogotá, comparable lexicográficamente ("2026-07-15").
-function claveDia(d: Date): string {
-  const z = toZonedTime(d, TZ);
+// Clave de día calendario, comparable lexicográficamente ("2026-07-15").
+// Ojo: `claveZonificada` recibe una fecha a la que YA se le aplicó toZonedTime;
+// volver a convertirla la correría otras 5 horas hacia atrás.
+function claveZonificada(z: Date): string {
   return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
+}
+function claveDia(d: Date): string {
+  return claveZonificada(toZonedTime(d, TZ));
 }
 
 function semanaKeyDeZonificada(z: Date): string {
@@ -140,7 +144,7 @@ export function calcularHorasEsperadas(
   const zFin = toZonedTime(finExclusivo, TZ);
 
   while (z < zFin) {
-    const clave = claveDia(z);
+    const clave = claveZonificada(z);
     const franja = franjaDelDia(horario, DIAS_SEMANA[z.getDay()]);
 
     // Solo se exige un día programado y no festivo.
