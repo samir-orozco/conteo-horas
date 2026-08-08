@@ -7,7 +7,10 @@ import api from '../lib/api';
 
 const TZ = 'America/Bogota';
 
-type Fila = { colaboradorId: string; nombre: string; apellido: string; totalRecargos: number; totalExtra: number; totalAdicional: number };
+type Fila = {
+  colaboradorId: string; nombre: string; apellido: string;
+  totalRecargos: number; totalExtra: number; totalAdicional: number;
+};
 type LineaLiquidacion = { codigo: string; nombre: string; horas: number; valorHora: number; recargo: number; esExtra: boolean; factorPagado: number; subtotal: number };
 type DetalleRegistro = { fecha: string; entrada: string; salida: string; filas: { codigo: string; nombre: string; horas: number; subtotal: number }[] };
 type Drill = {
@@ -24,6 +27,10 @@ const BADGE: Record<string, string> = {
 };
 
 const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+const fmtMin = (m: number) => {
+  const t = Math.round(Math.abs(m));
+  return t >= 60 ? `${Math.floor(t / 60)}h ${t % 60}min` : `${t} min`;
+};
 const fmtHora = (s: string) => format(toZonedTime(new Date(s), TZ), 'HH:mm');
 
 export default function ReporteExtras() {
@@ -63,6 +70,9 @@ export default function ReporteExtras() {
     return colaboradorId ? filas.filter(f => f.colaboradorId === colaboradorId) : filas;
   }, [filas, colaboradorId]);
 
+  // Este reporte es solo lo que se PAGA además del salario. El saldo de tiempo
+  // no remunerado es un descuento sobre el salario y vive en el reporte diario,
+  // que es donde el salario está a la vista y la resta tiene sentido.
   const totalGeneral = visibles.reduce((s, f) => s + f.totalAdicional, 0);
 
   const abrirDrill = async (f: Fila) => {
@@ -175,18 +185,20 @@ export default function ReporteExtras() {
             <div className="p-6">
               {drillLoading ? (
                 <p className="text-center text-gray-400 py-8">Cargando...</p>
-              ) : drill.detalleRegistros.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">Sin horas extra ni recargos en este período.</p>
               ) : (
                 <>
-                  <div className="flex gap-4 mb-5 text-sm">
+                  <div className="flex gap-4 mb-5 text-sm flex-wrap">
                     <div className="bg-gray-50 rounded-xl px-4 py-2.5"><p className="text-xs text-muted">Recargos</p><p className="font-semibold text-ink">{fmt(drill.totalRecargos)}</p></div>
                     <div className="bg-gray-50 rounded-xl px-4 py-2.5"><p className="text-xs text-muted">Extras</p><p className="font-semibold text-ink">{fmt(drill.totalExtra)}</p></div>
-                    <div className="bg-primary/15 rounded-xl px-4 py-2.5"><p className="text-xs text-ink/70">Total</p><p className="font-bold text-ink">{fmt(drill.totalAdicional)}</p></div>
+                    <div className="bg-primary/15 rounded-xl px-4 py-2.5"><p className="text-xs text-ink/70">Total a pagar</p><p className="font-bold text-ink">{fmt(drill.totalAdicional)}</p></div>
                   </div>
+
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
                     <Clock3 size={13} /> Desglose por día
                   </p>
+                  {drill.detalleRegistros.length === 0 && (
+                    <p className="text-center text-gray-400 py-6 text-sm">Sin horas extra ni recargos en este período.</p>
+                  )}
                   <div className="space-y-1.5">
                     {drill.detalleRegistros.map((d, i) => (
                       <div key={i} className="border border-gray-100 rounded-xl px-4 py-3">
@@ -201,7 +213,7 @@ export default function ReporteExtras() {
                         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                           {d.filas.map(fl => (
                             <span key={fl.codigo} className={`text-[11px] font-semibold px-2 py-1 rounded-lg ${BADGE[fl.codigo] ?? 'bg-gray-100 text-gray-600'}`}>
-                              {fl.codigo} · {fl.horas}h · {fmt(fl.subtotal)}
+                              {fl.codigo} · {fmtMin(fl.horas * 60)} · {fmt(fl.subtotal)}
                             </span>
                           ))}
                         </div>

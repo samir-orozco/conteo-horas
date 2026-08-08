@@ -10,3 +10,17 @@ export function rangoDiaBogota(ahora: Date = new Date()): { ahoraBog: Date; inic
   const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
   return { ahoraBog, inicioDia, finDia };
 }
+
+// Rango de un reporte a partir de dos fechas "YYYY-MM-DD".
+//
+// El campo `Registro.fecha` guarda la MEDIANOCHE de Bogotá, que en UTC son las
+// 05:00 de ese mismo día. Por eso un filtro `lte: new Date(hasta)` —que es
+// hasta a las 00:00 UTC— deja fuera todos los registros del último día del
+// rango. La forma correcta es un tope EXCLUSIVO en el día siguiente, igual que
+// ya lo hace /registros. Devuelve ese tope como `finExclusivo` para usar con
+// `lt`, nunca con `lte`.
+export function rangoReporte(desde: string, hasta: string): { desdeF: Date; finExclusivo: Date } {
+  const desdeF = new Date(desde);
+  const finExclusivo = new Date(new Date(hasta).getTime() + 24 * 60 * 60 * 1000);
+  return { desdeF, finExclusivo };
+}

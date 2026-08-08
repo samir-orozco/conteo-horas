@@ -13,12 +13,17 @@ const TZ = 'America/Bogota';
 
 type Colaborador = { id: string; nombre: string; apellido: string; salarioMensual: number };
 type LineaLiquidacion = { codigo: string; nombre: string; horas: number; valorHora: number; recargo: number; esExtra: boolean; factorPagado: number; subtotal: number };
+type SaldoTiempo = {
+  sinHorario: boolean; minutosEsperados: number; minutosPermisoRemunerado: number;
+  minutosPermisoNoRemunerado: number; minutosTrabajados: number; minutosSaldo: number;
+  valorHora: number; montoSaldo: number;
+};
 type Reporte = {
   colaborador: Colaborador; desde: string; hasta: string; liquidacion: LineaLiquidacion[];
   salarioBase: number; totalRecargos: number; totalExtra: number; totalAdicional: number;
-  totalPagar: number; registrosCont: number;
+  totalPagar: number; registrosCont: number; saldo?: SaldoTiempo;
 };
-type Novedad = { id: string; tipo: string; descripcion?: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; evidenciaTipo?: string | null; evidenciaNombre?: string | null };
+type Novedad = { id: string; tipo: string; descripcion?: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; evidenciaTipo?: string | null; evidenciaNombre?: string | null; remunerado?: boolean };
 type RegistroDia = { id: string; fecha: string; entrada: string | null; salida: string | null; tipo: string; minutosTarde: number | null; observacion?: string | null };
 type Tardanzas = {
   sinHorario: boolean;
@@ -28,7 +33,18 @@ type Tardanzas = {
   diasTarde: number;
 };
 
-const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`);
+// Redondea a minuto entero: los minutos pueden llegar con decimales del cálculo
+// y "8h 40.19999999999891min" no es algo que se le muestre a nadie.
+const fmtMin = (m: number) => {
+  const t = Math.round(Math.abs(m));
+  return t >= 60 ? `${Math.floor(t / 60)}h ${t % 60}min` : `${t} min`;
+};
+
+// Una fecha "2026-07-01" la interpreta `new Date()` como medianoche UTC, que en
+// Bogotá es el 30 de junio a las 19:00. Al formatearla se mostraba un período
+// corrido un día ("30/06 — 30/07" para julio completo). Añadir la hora la fuerza
+// a leerse como fecha local, que es lo que el usuario escribió.
+const fechaLocal = (s: string) => new Date(`${s.slice(0, 10)}T00:00:00`);
 
 const BADGE: Record<string, string> = {
   HOD:  'bg-blue-50 text-blue-700',
@@ -107,6 +123,10 @@ export default function Reportes() {
   };
 
   const totalHoras = reporte?.liquidacion.reduce((s, l) => s + l.horas, 0) ?? 0;
+  // Lo que se descuenta por tiempo no repuesto. Vive fuera de `liquidacion` a
+  // propósito: si fuera una línea más, contaminaría totalHoras y los totales
+  // de recargos que se calculan sobre ese array.
+  const descuentoSaldo = reporte?.saldo && !reporte.saldo.sinHorario ? reporte.saldo.montoSaldo : 0;
 
   const exportarExcel = () => {
     if (!reporte) return;
@@ -120,11 +140,15 @@ export default function Reportes() {
     liqFilas.push(['', 'Total horas extra del período', '', '', '', Math.round(reporte.totalExtra)]);
     liqFilas.push(['', 'Subtotal (adicional al salario)', '', '', '', Math.round(reporte.totalAdicional)]);
     liqFilas.push(['', 'Salario base mensual', '', '', '', Math.round(reporte.salarioBase)]);
-    liqFilas.push(['', 'TOTAL A PAGAR', '', '', '', Math.round(reporte.salarioBase + reporte.totalAdicional)]);
+    if (descuentoSaldo > 0) {
+      liqFilas.push(['', `Saldo pendiente (${fmtMin(reporte.saldo!.minutosSaldo)} sin reponer)`, '', '', '', -Math.round(descuentoSaldo)]);
+    }
+    liqFilas.push(['', 'TOTAL A PAGAR', '', '', '', Math.round(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)]);
 
     // Hoja 2: Novedades del período
     const novFilas = novedades.map(n => [
       TIPO_PERMISO_LABEL[n.tipo] ?? n.tipo,
+      n.remunerado ? 'Se paga' : 'No se paga',
       n.aprobado ? 'Aprobada' : 'Pendiente',
       dFmt(n.fechaInicio),
       dFmt(n.fechaFin),
@@ -143,10 +167,10 @@ export default function Reportes() {
     ]);
 
     const nombre = `${reporte.colaborador.nombre}_${reporte.colaborador.apellido}`.replace(/\s+/g, '');
-    const periodo = `${format(new Date(reporte.desde), 'dd-MM-yyyy')}_a_${format(new Date(reporte.hasta), 'dd-MM-yyyy')}`;
+    const periodo = `${format(fechaLocal(reporte.desde), 'dd-MM-yyyy')}_a_${format(fechaLocal(reporte.hasta), 'dd-MM-yyyy')}`;
     descargarExcelHojas(`Reporte_${nombre}_${periodo}`, [
       { nombre: 'Liquidación', columnas: ['Código', 'Concepto', 'Horas', 'Recargo %', 'Valor hora', 'Subtotal'], filas: liqFilas },
-      { nombre: 'Novedades', columnas: ['Tipo', 'Estado', 'Desde', 'Hasta', 'Descripción', 'Evidencia'], filas: novFilas },
+      { nombre: 'Novedades', columnas: ['Tipo', 'Remuneración', 'Estado', 'Desde', 'Hasta', 'Descripción', 'Evidencia'], filas: novFilas },
       { nombre: 'Registros', columnas: ['Fecha', 'Entrada', 'Salida', 'Tipo', 'Min. tarde', 'Duración'], filas: regFilas },
     ]);
   };
@@ -194,9 +218,8 @@ export default function Reportes() {
             <div>
               <h3 className="font-bold text-xl text-gray-800">{reporte.colaborador.nombre} {reporte.colaborador.apellido}</h3>
               <p className="text-sm text-gray-500 mt-0.5">
-                Período: {format(new Date(reporte.desde), 'dd/MM/yyyy')} — {format(new Date(reporte.hasta), 'dd/MM/yyyy')}
+                {format(fechaLocal(reporte.desde), 'dd/MM/yyyy')} — {format(fechaLocal(reporte.hasta), 'dd/MM/yyyy')} · {reporte.registrosCont} días con marcación
               </p>
-              <p className="text-sm text-gray-500">{reporte.registrosCont} días analizados · {totalHoras.toFixed(1)}h totales</p>
             </div>
             {plan && !plan.features.exportar ? (
               <button onClick={() => navigate('/app/configuracion?tab=suscripcion')} title="Exportar a Excel está disponible en el plan Profesional"
@@ -210,6 +233,33 @@ export default function Reportes() {
               </button>
             )}
           </div>
+
+          {/* Cifras de tiempo del período. Reemplazan a la tarjeta "Tiempo del
+              período": lo esperado y lo trabajado se leen de un vistazo, y el
+              detalle de las novedades vive en su propio panel. */}
+          {reporte.saldo && !reporte.saldo.sinHorario && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+              <div className="bg-gray-50 border border-gray-200/70 rounded-xl px-4 py-3">
+                <p className="text-xs text-muted">Debía trabajar</p>
+                <p className="text-xl font-bold text-ink mt-1">{fmtMin(reporte.saldo.minutosEsperados)}</p>
+              </div>
+              <div className="bg-gray-50 border border-gray-200/70 rounded-xl px-4 py-3">
+                <p className="text-xs text-muted">Trabajó</p>
+                <p className="text-xl font-bold text-ink mt-1">{fmtMin(reporte.saldo.minutosTrabajados)}</p>
+              </div>
+              {reporte.saldo.minutosSaldo > 0 ? (
+                <div className="bg-red-50 border border-red-200/70 rounded-xl px-4 py-3">
+                  <p className="text-xs text-red-700/80">Queda debiendo</p>
+                  <p className="text-xl font-bold text-red-600 mt-1">{fmtMin(reporte.saldo.minutosSaldo)}</p>
+                </div>
+              ) : (
+                <div className="bg-green-50 border border-green-200/70 rounded-xl px-4 py-3">
+                  <p className="text-xs text-green-800/80">Queda debiendo</p>
+                  <p className="text-xl font-bold text-green-700 mt-1">Nada ✓</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Pestañas: Liquidación / Registros del período */}
           <div className="flex gap-1 border-b border-gray-200 mb-5">
@@ -284,7 +334,7 @@ export default function Reportes() {
                       <span className="text-gray-700">{l.nombre}</span>
                       {l.esExtra && <span className="ml-1.5 text-[10px] font-bold text-orange-600">EXTRA</span>}
                     </td>
-                    <td className="px-3 py-2.5 text-right font-mono text-gray-700">{l.horas}h</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-700">{fmtMin(l.horas * 60)}</td>
                     <td className="px-3 py-2.5 text-right text-gray-500">{fmt(l.valorHora)}</td>
                     <td className="px-3 py-2.5 text-right text-gray-500">
                       {l.factorPagado === 0 ? '—' : `×${l.factorPagado}`}
@@ -294,6 +344,26 @@ export default function Reportes() {
                     </td>
                   </tr>
                 ))}
+
+                {/* Tiempo no repuesto: se renderiza aparte y NO se mete en
+                    `liquidacion`, porque ese array alimenta totalRecargos y
+                    totalAdicional, y una fila sintética ahí desviaría los
+                    totales de todos los reportes. */}
+                {descuentoSaldo > 0 && (
+                  <tr className="hover:bg-gray-50 bg-red-50/30">
+                    <td className="px-3 py-2.5">
+                      <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold mr-2 bg-red-100 text-red-700">TNR</span>
+                      <span className="text-gray-700">Tiempo no remunerado</span>
+                      <span className="ml-1.5 text-[10px] font-bold text-red-600">DESCUENTO</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-right font-mono text-red-700">
+                      {fmtMin(reporte.saldo!.minutosSaldo)}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-gray-500">{fmt(reporte.saldo!.valorHora)}</td>
+                    <td className="px-3 py-2.5 text-right text-gray-500">—</td>
+                    <td className="px-3 py-2.5 text-right font-semibold text-red-700">−{fmt(descuentoSaldo)}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -313,9 +383,15 @@ export default function Reportes() {
             <div className="flex justify-between text-muted">
               <span>Salario base mensual</span><span className="text-ink font-medium">{fmt(reporte.salarioBase)}</span>
             </div>
+            {descuentoSaldo > 0 && (
+              <div className="flex justify-between">
+                <span className="text-red-700">Saldo pendiente ({fmtMin(reporte.saldo!.minutosSaldo)} sin reponer)</span>
+                <span className="text-red-700 font-semibold">−{fmt(descuentoSaldo)}</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-gray-200 pt-2">
               <span className="font-bold text-ink">Total a pagar</span>
-              <span className="font-bold text-ink text-lg">{fmt(reporte.salarioBase + reporte.totalAdicional)}</span>
+              <span className="font-bold text-ink text-lg">{fmt(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)}</span>
             </div>
           </div>
 
@@ -390,27 +466,58 @@ export default function Reportes() {
           ) : (
             <>
               <p className="text-sm text-muted mb-3">
-                {novedades.length} novedad{novedades.length === 1 ? '' : 'es'} entre el {format(new Date(reporte.desde), 'dd/MM/yyyy')} y el {format(new Date(reporte.hasta), 'dd/MM/yyyy')}.
+                {novedades.length} novedad{novedades.length === 1 ? '' : 'es'} entre el {format(fechaLocal(reporte.desde), 'dd/MM/yyyy')} y el {format(fechaLocal(reporte.hasta), 'dd/MM/yyyy')}.
               </p>
+
+              {/* Horas que aportan al período, separadas. Vienen del cálculo del
+                  saldo —no de contar días × jornada— porque solo cuentan los días
+                  que el horario tenía programados: un festivo o un domingo dentro
+                  de unas vacaciones no suma horas. */}
+              {reporte.saldo && !reporte.saldo.sinHorario &&
+                (reporte.saldo.minutosPermisoRemunerado > 0 || reporte.saldo.minutosPermisoNoRemunerado > 0) && (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-gray-50 border border-gray-200/70 rounded-xl px-4 py-3">
+                    <p className="text-xs text-muted flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Se pagan
+                    </p>
+                    <p className="text-lg font-bold text-ink mt-1">{fmtMin(reporte.saldo.minutosPermisoRemunerado)}</p>
+                  </div>
+                  <div className="bg-red-50 border border-red-200/70 rounded-xl px-4 py-3">
+                    <p className="text-xs text-red-700/80 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> No se pagan
+                    </p>
+                    <p className="text-lg font-bold text-red-700 mt-1">{fmtMin(reporte.saldo.minutosPermisoNoRemunerado)}</p>
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
+                {/* Tarjeta con borde propio: el estado de aprobación va arriba a
+                    la derecha (dato secundario) y el de pago viaja con la fecha,
+                    marcado con un punto de color para que se distinga de un
+                    vistazo sin competir con el título. */}
                 {novedades.map(n => (
                   <button key={n.id} onClick={() => setVerNovedad(n)}
-                    className="w-full flex items-start gap-3 bg-gray-50 hover:bg-gray-100 rounded-xl px-4 py-3 text-left transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-ink flex items-center gap-1.5 flex-wrap">
-                        {TIPO_PERMISO_LABEL[n.tipo] ?? n.tipo}
-                        {n.evidenciaTipo && <Paperclip size={12} className="text-primary-dark" />}
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${n.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                          {n.aprobado ? 'APROBADA' : 'PENDIENTE'}
-                        </span>
-                      </p>
-                      <p className="text-xs text-muted mt-0.5">
+                    className="w-full relative text-left bg-white border border-gray-200 rounded-xl px-4 py-3 hover:border-gray-300 hover:shadow-sm transition-all">
+                    <span className={`absolute top-3 right-3 text-[10px] font-semibold tracking-wide px-1.5 py-0.5 rounded ${n.aprobado ? 'text-green-700 bg-green-50' : 'text-orange-700 bg-orange-50'}`}>
+                      {n.aprobado ? 'Aprobada' : 'Pendiente'}
+                    </span>
+                    <p className="text-sm font-semibold text-ink flex items-center gap-1.5 pr-20">
+                      {TIPO_PERMISO_LABEL[n.tipo] ?? n.tipo}
+                      {n.evidenciaTipo && <Paperclip size={12} className="text-primary-dark shrink-0" />}
+                    </p>
+                    <p className="text-xs mt-1 flex items-center gap-1.5 flex-wrap">
+                      <span className="text-muted">
                         {format(toZonedTime(new Date(n.fechaInicio), TZ), 'dd/MM/yyyy')}
                         {format(toZonedTime(new Date(n.fechaInicio), TZ), 'dd/MM/yyyy') !== format(toZonedTime(new Date(n.fechaFin), TZ), 'dd/MM/yyyy') &&
                           ` — ${format(toZonedTime(new Date(n.fechaFin), TZ), 'dd/MM/yyyy')}`}
-                      </p>
-                      {n.descripcion && <p className="text-xs text-gray-600 mt-1 truncate">{n.descripcion}</p>}
-                    </div>
+                      </span>
+                      <span className="text-gray-300">·</span>
+                      <span className={`inline-flex items-center gap-1 font-medium ${n.remunerado ? 'text-gray-600' : 'text-red-600'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${n.remunerado ? 'bg-green-500' : 'bg-red-500'}`} />
+                        {n.remunerado ? 'Se paga' : 'No se paga'}
+                      </span>
+                    </p>
+                    {n.descripcion && <p className="text-xs text-gray-500 mt-1.5 truncate">{n.descripcion}</p>}
                   </button>
                 ))}
               </div>
