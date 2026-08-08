@@ -161,7 +161,7 @@ export function calcularValorHora(salarioMensual: number, horasMes: number): num
 
 // Códigos de hora EXTRA (superan la jornada legal). Las demás son ordinarias
 // y su hora base ya está incluida en el salario mensual.
-const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
+export const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
 
 // Liquidación de lo que se paga ADEMÁS del salario:
 //  - Ordinaria diurna (HOD): $0, ya está en el salario.

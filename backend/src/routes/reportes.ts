@@ -5,6 +5,11 @@ import { prisma } from '../index';
 import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
 import { calcularTardanzas, franjaDelDia, DIAS_SEMANA, HorarioConFranjas, construirExtraConfig } from '../utils/tardanzas';
+import { rangoReporte } from '../utils/fechas';
+import { calcularValorHora, CODIGOS_EXTRA } from '../utils/horasColombiana';
+import {
+  CLAVE_PERMISOS_REMUNERADOS, parsearPoliticaPermisos, calcularHorasEsperadas, armarSaldo,
+} from '../utils/saldoTiempo';
 
 const TZ = 'America/Bogota';
 
@@ -111,7 +116,20 @@ function liquidarRegistros(
   const totalRecargos = liquidacion.filter(l => !l.esExtra).reduce((s, l) => s + l.subtotal, 0);
   const totalExtra = liquidacion.filter(l => l.esExtra).reduce((s, l) => s + l.subtotal, 0);
 
-  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont: registros.length, detalleRegistros };
+  // Minutos ORDINARIOS del período (ya netos de almuerzo), para comparar contra
+  // las horas que el horario exigía. Se suman los códigos no extra del acumulado
+  // —no el contador semanal interno— porque ese excluye domingos y festivos, y
+  // aquí sí queremos contarlos: si alguien trabajó un domingo, ese tiempo lo
+  // trabajó. Las extra quedan fuera a propósito: se pagan aparte con su recargo.
+  //
+  // Se toman los MINUTOS crudos, no las horas de `liquidacion`: esas vienen
+  // redondeadas a 2 decimales y al multiplicarlas por 60 reaparecen colas de
+  // coma flotante (167.33h → 10039.8 min en vez de 10040).
+  const minutosOrdinarios = horasPorTipo
+    .filter(t => !CODIGOS_EXTRA.has(t.codigo))
+    .reduce((s, t) => s + t.minutos, 0);
+
+  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont: registros.length, detalleRegistros, minutosOrdinarios };
 }
 
 export default async function reporteRoutes(app: FastifyInstance) {
@@ -119,14 +137,15 @@ export default async function reporteRoutes(app: FastifyInstance) {
 
   app.get('/liquidacion', auth, async (request, reply) => {
     const { colaboradorId, desde, hasta } = request.query as any;
+    const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
 
-    const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo] = await Promise.all([
+    const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosRango] = await Promise.all([
       prisma.colaborador.findFirst({
         where: { id: colaboradorId, empresaId: request.empresaId },
         include: { horario: { include: { franjas: true } } },
       }),
       prisma.registro.findMany({
-        where: { colaboradorId, fecha: { gte: new Date(desde), lte: new Date(hasta) }, salida: { not: null } },
+        where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } },
         orderBy: { fecha: 'asc' },
       }),
       prisma.diaFestivo.findMany({
@@ -135,6 +154,13 @@ export default async function reporteRoutes(app: FastifyInstance) {
       prisma.tipoHora.findMany(),
       prisma.jornadaVigencia.findMany(),
       prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId!, clave: 'HORAS_EXTRA_MODO' } } }),
+      prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId!, clave: CLAVE_PERMISOS_REMUNERADOS } } }),
+      // Solo los permisos que tocan el rango: un permiso que terminó antes de
+      // `desde` o empieza después del corte no afecta este período.
+      prisma.permiso.findMany({
+        where: { colaboradorId, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
+        select: { fechaInicio: true, fechaFin: true, tipo: true },
+      }),
     ]);
 
     if (!colaborador) return reply.status(404).send({ error: 'Colaborador no encontrado' });
@@ -152,6 +178,18 @@ export default async function reporteRoutes(app: FastifyInstance) {
 
     const r = liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true);
 
+    // Saldo de tiempo no remunerado: lo que el horario exigía contra lo que
+    // realmente trabajó. Va en su propio campo y NUNCA dentro de `liquidacion`,
+    // porque ese array alimenta totalRecargos/totalAdicional y una fila
+    // sintética ahí contaminaría los totales de todos los reportes.
+    const politica = parsearPoliticaPermisos(cfgPermisos?.valor);
+    const sinHorario = !horario || !horario.activo;
+    const esperadas = calcularHorasEsperadas(
+      desdeF, finExclusivo, horario, festivosDates, permisosRango, politica,
+      (fecha) => jornadaVigente(fecha, jornadas),
+    );
+    const saldo = armarSaldo(esperadas, r.minutosOrdinarios, calcularValorHora(colaborador.salarioMensual, horasMes), sinHorario);
+
     return {
       colaborador, desde, hasta, liquidacion: r.liquidacion,
       salarioBase: colaborador.salarioMensual,
@@ -160,6 +198,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
       registrosCont: r.registrosCont,
       detalleRegistros: r.detalleRegistros,
       jornadaSemanal: jornadaCierre, horasMes,
+      saldo,
     };
   });
 
@@ -168,22 +207,29 @@ export default async function reporteRoutes(app: FastifyInstance) {
   app.get('/extras-resumen', auth, async (request) => {
     const { desde, hasta } = request.query as any;
     const empresaId = request.empresaId!;
-    const desdeF = new Date(desde), hastaF = new Date(hasta);
+    const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
+    const hastaF = new Date(hasta); // solo para resolver la jornada vigente al cierre
 
-    const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo] = await Promise.all([
+    const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosTodos] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
         include: { horario: { include: { franjas: true } } },
         orderBy: { nombre: 'asc' },
       }),
       prisma.registro.findMany({
-        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lte: hastaF }, salida: { not: null } },
+        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } },
         orderBy: { fecha: 'asc' },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
       prisma.tipoHora.findMany(),
       prisma.jornadaVigencia.findMany(),
       prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
+      prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: CLAVE_PERMISOS_REMUNERADOS } } }),
+      // Acotado al rango: sin esto se traería el histórico completo de la empresa.
+      prisma.permiso.findMany({
+        where: { colaborador: { empresaId }, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
+        select: { fechaInicio: true, fechaFin: true, tipo: true, colaboradorId: true },
+      }),
     ]);
 
     const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
@@ -191,15 +237,26 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const jornadaCierre = jornadaVigente(hastaF, jornadas);
     const horasMes = horasMesDeJornada(jornadaCierre);
     const porColaborador = agrupar(registrosTodos as any);
+    const politica = parsearPoliticaPermisos(cfgPermisos?.valor);
+    const permisosPorCol = agrupar(permisosTodos as any);
 
     const resultado = colaboradores.map(col => {
       const horario = (col as any).horario as HorarioConFranjas | null;
       const extraConfig = construirExtraConfig(modoExtra, horario);
       const registros = porColaborador.get(col.id) ?? [];
       const r = liquidarRegistros(registros as any, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false);
+      const sinHorario = !horario || !horario.activo;
+      const esperadas = calcularHorasEsperadas(
+        desdeF, finExclusivo, horario, festivosDates, (permisosPorCol.get(col.id) ?? []) as any, politica,
+        (fecha) => jornadaVigente(fecha, jornadas),
+      );
+      const saldo = armarSaldo(esperadas, r.minutosOrdinarios, calcularValorHora(col.salarioMensual, horasMes), sinHorario);
       return {
         colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
         totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
+        sinHorario: saldo.sinHorario, minutosSaldo: saldo.minutosSaldo, montoSaldo: saldo.montoSaldo,
+        // Neto del período: lo adicional a pagar menos lo que se descuenta.
+        totalNeto: parseFloat((r.totalAdicional - saldo.montoSaldo).toFixed(2)),
       };
     });
 
@@ -218,16 +275,26 @@ export default async function reporteRoutes(app: FastifyInstance) {
       return { sinHorario: true, detalle: [], totalMinutos: 0, diasTarde: 0 };
     }
 
-    const [registros, festivos, permisos] = await Promise.all([
+    const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
+    const [registros, festivos, permisos, jornadas] = await Promise.all([
       prisma.registro.findMany({
-        where: { colaboradorId, fecha: { gte: new Date(desde), lte: new Date(hasta) } },
+        where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
       prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
+      prisma.jornadaVigencia.findMany(),
     ]);
 
     const resultado = calcularTardanzas(registros, colaborador.horario, festivos, permisos);
-    return { sinHorario: false, horario: colaborador.horario, ...resultado };
+    // Valor del tiempo llegado tarde, a la tarifa base. Es INFORMATIVO: el
+    // descuento real sale del saldo del período (ver /liquidacion), que ya
+    // incluye estos minutos. Sumar ambos cobraría la tardanza dos veces.
+    const valorHora = calcularValorHora(colaborador.salarioMensual, horasMesDeJornada(jornadaVigente(new Date(hasta), jornadas)));
+    return {
+      sinHorario: false, horario: colaborador.horario, ...resultado,
+      valorHora: parseFloat(valorHora.toFixed(2)),
+      montoTardanzas: parseFloat(((resultado.totalMinutos / 60) * valorHora).toFixed(2)),
+    };
   });
 
   // Resumen de llegadas tarde de TODOS los colaboradores activos en un período
@@ -235,28 +302,31 @@ export default async function reporteRoutes(app: FastifyInstance) {
   app.get('/tardanzas-resumen', auth, async (request) => {
     const { desde, hasta } = request.query as any;
     const empresaId = request.empresaId!;
-    const desdeF = new Date(desde), hastaF = new Date(hasta);
+    const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
 
-    const [colaboradores, registrosTodos, festivos, permisosTodos] = await Promise.all([
+    const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
         include: { horario: { include: { franjas: true } } },
         orderBy: { nombre: 'asc' },
       }),
-      prisma.registro.findMany({ where: { colaborador: { empresaId }, fecha: { gte: desdeF, lte: hastaF } } }),
+      prisma.registro.findMany({ where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } } }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
       prisma.permiso.findMany({
         where: { colaborador: { empresaId }, aprobado: true },
         select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true },
       }),
+      prisma.jornadaVigencia.findMany(),
     ]);
 
     const porColRegistros = agrupar(registrosTodos as any);
     const porColPermisos = agrupar(permisosTodos as any);
+    // Mismo divisor para todos: la jornada vigente al cierre del período.
+    const horasMes = horasMesDeJornada(jornadaVigente(new Date(hasta), jornadas));
 
     const resultado = colaboradores.map(col => {
       if (!col.horario || !col.horario.activo) {
-        return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: true, diasTarde: 0, totalMinutos: 0 };
+        return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: true, diasTarde: 0, totalMinutos: 0, montoTardanzas: 0 };
       }
       const r = calcularTardanzas(
         (porColRegistros.get(col.id) ?? []) as any,
@@ -264,7 +334,14 @@ export default async function reporteRoutes(app: FastifyInstance) {
         festivos,
         (porColPermisos.get(col.id) ?? []) as any
       );
-      return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: false, diasTarde: r.diasTarde, totalMinutos: r.totalMinutos };
+      // Valor informativo (ver la nota en /tardanzas): el descuento efectivo
+      // viaja en el saldo del período, no aquí.
+      const monto = (r.totalMinutos / 60) * calcularValorHora(col.salarioMensual, horasMes);
+      return {
+        colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: false,
+        diasTarde: r.diasTarde, totalMinutos: r.totalMinutos,
+        montoTardanzas: parseFloat(monto.toFixed(2)),
+      };
     });
 
     return { desde, hasta, colaboradores: resultado };
@@ -272,10 +349,11 @@ export default async function reporteRoutes(app: FastifyInstance) {
 
   app.get('/asistencia', auth, async (request) => {
     const { desde, hasta } = request.query as any;
+    const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
     return prisma.registro.findMany({
       where: {
         colaborador: { empresaId: request.empresaId },
-        fecha: { gte: new Date(desde), lte: new Date(hasta) },
+        fecha: { gte: desdeF, lt: finExclusivo },
       },
       include: { colaborador: true },
       orderBy: { fecha: 'desc' },

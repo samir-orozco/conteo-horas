@@ -13,10 +13,15 @@ const TZ = 'America/Bogota';
 
 type Colaborador = { id: string; nombre: string; apellido: string; salarioMensual: number };
 type LineaLiquidacion = { codigo: string; nombre: string; horas: number; valorHora: number; recargo: number; esExtra: boolean; factorPagado: number; subtotal: number };
+type SaldoTiempo = {
+  sinHorario: boolean; minutosEsperados: number; minutosPermisoRemunerado: number;
+  minutosPermisoNoRemunerado: number; minutosTrabajados: number; minutosSaldo: number;
+  valorHora: number; montoSaldo: number;
+};
 type Reporte = {
   colaborador: Colaborador; desde: string; hasta: string; liquidacion: LineaLiquidacion[];
   salarioBase: number; totalRecargos: number; totalExtra: number; totalAdicional: number;
-  totalPagar: number; registrosCont: number;
+  totalPagar: number; registrosCont: number; saldo?: SaldoTiempo;
 };
 type Novedad = { id: string; tipo: string; descripcion?: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; evidenciaTipo?: string | null; evidenciaNombre?: string | null };
 type RegistroDia = { id: string; fecha: string; entrada: string | null; salida: string | null; tipo: string; minutosTarde: number | null; observacion?: string | null };
@@ -28,7 +33,18 @@ type Tardanzas = {
   diasTarde: number;
 };
 
-const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`);
+// Redondea a minuto entero: los minutos pueden llegar con decimales del cálculo
+// y "8h 40.19999999999891min" no es algo que se le muestre a nadie.
+const fmtMin = (m: number) => {
+  const t = Math.round(Math.abs(m));
+  return t >= 60 ? `${Math.floor(t / 60)}h ${t % 60}min` : `${t} min`;
+};
+
+// Una fecha "2026-07-01" la interpreta `new Date()` como medianoche UTC, que en
+// Bogotá es el 30 de junio a las 19:00. Al formatearla se mostraba un período
+// corrido un día ("30/06 — 30/07" para julio completo). Añadir la hora la fuerza
+// a leerse como fecha local, que es lo que el usuario escribió.
+const fechaLocal = (s: string) => new Date(`${s.slice(0, 10)}T00:00:00`);
 
 const BADGE: Record<string, string> = {
   HOD:  'bg-blue-50 text-blue-700',
@@ -107,6 +123,10 @@ export default function Reportes() {
   };
 
   const totalHoras = reporte?.liquidacion.reduce((s, l) => s + l.horas, 0) ?? 0;
+  // Lo que se descuenta por tiempo no repuesto. Vive fuera de `liquidacion` a
+  // propósito: si fuera una línea más, contaminaría totalHoras y los totales
+  // de recargos que se calculan sobre ese array.
+  const descuentoSaldo = reporte?.saldo && !reporte.saldo.sinHorario ? reporte.saldo.montoSaldo : 0;
 
   const exportarExcel = () => {
     if (!reporte) return;
@@ -120,7 +140,10 @@ export default function Reportes() {
     liqFilas.push(['', 'Total horas extra del período', '', '', '', Math.round(reporte.totalExtra)]);
     liqFilas.push(['', 'Subtotal (adicional al salario)', '', '', '', Math.round(reporte.totalAdicional)]);
     liqFilas.push(['', 'Salario base mensual', '', '', '', Math.round(reporte.salarioBase)]);
-    liqFilas.push(['', 'TOTAL A PAGAR', '', '', '', Math.round(reporte.salarioBase + reporte.totalAdicional)]);
+    if (descuentoSaldo > 0) {
+      liqFilas.push(['', `Saldo pendiente (${fmtMin(reporte.saldo!.minutosSaldo)} sin reponer)`, '', '', '', -Math.round(descuentoSaldo)]);
+    }
+    liqFilas.push(['', 'TOTAL A PAGAR', '', '', '', Math.round(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)]);
 
     // Hoja 2: Novedades del período
     const novFilas = novedades.map(n => [
@@ -143,7 +166,7 @@ export default function Reportes() {
     ]);
 
     const nombre = `${reporte.colaborador.nombre}_${reporte.colaborador.apellido}`.replace(/\s+/g, '');
-    const periodo = `${format(new Date(reporte.desde), 'dd-MM-yyyy')}_a_${format(new Date(reporte.hasta), 'dd-MM-yyyy')}`;
+    const periodo = `${format(fechaLocal(reporte.desde), 'dd-MM-yyyy')}_a_${format(fechaLocal(reporte.hasta), 'dd-MM-yyyy')}`;
     descargarExcelHojas(`Reporte_${nombre}_${periodo}`, [
       { nombre: 'Liquidación', columnas: ['Código', 'Concepto', 'Horas', 'Recargo %', 'Valor hora', 'Subtotal'], filas: liqFilas },
       { nombre: 'Novedades', columnas: ['Tipo', 'Estado', 'Desde', 'Hasta', 'Descripción', 'Evidencia'], filas: novFilas },
@@ -194,7 +217,7 @@ export default function Reportes() {
             <div>
               <h3 className="font-bold text-xl text-gray-800">{reporte.colaborador.nombre} {reporte.colaborador.apellido}</h3>
               <p className="text-sm text-gray-500 mt-0.5">
-                Período: {format(new Date(reporte.desde), 'dd/MM/yyyy')} — {format(new Date(reporte.hasta), 'dd/MM/yyyy')}
+                Período: {format(fechaLocal(reporte.desde), 'dd/MM/yyyy')} — {format(fechaLocal(reporte.hasta), 'dd/MM/yyyy')}
               </p>
               <p className="text-sm text-gray-500">{reporte.registrosCont} días analizados · {totalHoras.toFixed(1)}h totales</p>
             </div>
@@ -313,11 +336,44 @@ export default function Reportes() {
             <div className="flex justify-between text-muted">
               <span>Salario base mensual</span><span className="text-ink font-medium">{fmt(reporte.salarioBase)}</span>
             </div>
+            {descuentoSaldo > 0 && (
+              <div className="flex justify-between">
+                <span className="text-red-700">Saldo pendiente ({fmtMin(reporte.saldo!.minutosSaldo)} sin reponer)</span>
+                <span className="text-red-700 font-semibold">−{fmt(descuentoSaldo)}</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-gray-200 pt-2">
               <span className="font-bold text-ink">Total a pagar</span>
-              <span className="font-bold text-ink text-lg">{fmt(reporte.salarioBase + reporte.totalAdicional)}</span>
+              <span className="font-bold text-ink text-lg">{fmt(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)}</span>
             </div>
           </div>
+
+          {/* Tiempo del período: de dónde sale el saldo */}
+          {reporte.saldo && !reporte.saldo.sinHorario && (
+            <div className="mt-5 border border-gray-200 rounded-xl p-4 text-sm max-w-sm ml-auto">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Tiempo del período</p>
+              <div className="space-y-1.5">
+                <div className="flex justify-between"><span className="text-muted">Debía trabajar</span><span className="font-medium text-ink">{fmtMin(reporte.saldo.minutosEsperados)}</span></div>
+                <div className="flex justify-between"><span className="text-muted">Trabajó</span><span className="font-medium text-ink">{fmtMin(reporte.saldo.minutosTrabajados)}</span></div>
+                {reporte.saldo.minutosPermisoRemunerado > 0 && (
+                  <div className="flex justify-between"><span className="text-muted">Novedades pagadas (no se exigen)</span><span className="text-gray-500">{fmtMin(reporte.saldo.minutosPermisoRemunerado)}</span></div>
+                )}
+                {reporte.saldo.minutosPermisoNoRemunerado > 0 && (
+                  <div className="flex justify-between"><span className="text-muted">Novedades no remuneradas</span><span className="text-red-600">{fmtMin(reporte.saldo.minutosPermisoNoRemunerado)}</span></div>
+                )}
+                <div className="flex justify-between border-t border-gray-100 pt-1.5">
+                  <span className="font-semibold text-ink">{reporte.saldo.minutosSaldo > 0 ? 'Queda debiendo' : 'Repuso todo el tiempo'}</span>
+                  <span className={`font-bold ${reporte.saldo.minutosSaldo > 0 ? 'text-red-600' : 'text-green-700'}`}>
+                    {reporte.saldo.minutosSaldo > 0 ? fmtMin(reporte.saldo.minutosSaldo) : '✓'}
+                  </span>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted mt-2.5 leading-snug">
+                Las llegadas tarde y los permisos no remunerados restan tiempo; las horas trabajadas de más
+                dentro de la jornada legal lo reponen. Solo se descuenta lo que quede sin reponer.
+              </p>
+            </div>
+          )}
 
           {reporte.liquidacion.length === 0 && (
             <p className="text-center text-gray-400 py-8">No hay registros completos (con entrada y salida) en este período</p>
@@ -390,7 +446,7 @@ export default function Reportes() {
           ) : (
             <>
               <p className="text-sm text-muted mb-3">
-                {novedades.length} novedad{novedades.length === 1 ? '' : 'es'} entre el {format(new Date(reporte.desde), 'dd/MM/yyyy')} y el {format(new Date(reporte.hasta), 'dd/MM/yyyy')}.
+                {novedades.length} novedad{novedades.length === 1 ? '' : 'es'} entre el {format(fechaLocal(reporte.desde), 'dd/MM/yyyy')} y el {format(fechaLocal(reporte.hasta), 'dd/MM/yyyy')}.
               </p>
               <div className="space-y-2">
                 {novedades.map(n => (

@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Search, X, AlarmClock } from 'lucide-react';
 import api from '../lib/api';
 
-type Fila = { colaboradorId: string; nombre: string; apellido: string; sinHorario: boolean; diasTarde: number; totalMinutos: number };
+type Fila = { colaboradorId: string; nombre: string; apellido: string; sinHorario: boolean; diasTarde: number; totalMinutos: number; montoTardanzas: number };
 type DetalleTardanza = { fecha: string; horaEsperada: string; horaLlegada: string; minutosTarde: number };
 type Drill = {
   colaborador: { nombre: string; apellido: string };
@@ -12,6 +12,7 @@ type Drill = {
 };
 
 const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`);
+const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
 export default function ReporteLlegadasTarde() {
   const [colaboradores, setColaboradores] = useState<{ id: string; nombre: string; apellido: string }[]>([]);
@@ -113,6 +114,7 @@ export default function ReporteLlegadasTarde() {
                   <th className="px-3 py-2 text-left">Colaborador</th>
                   <th className="px-3 py-2 text-center">Días tarde</th>
                   <th className="px-3 py-2 text-right">Tiempo total</th>
+                  <th className="px-3 py-2 text-right">Valor</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
@@ -121,7 +123,7 @@ export default function ReporteLlegadasTarde() {
                   <tr key={f.colaboradorId} className={f.sinHorario ? '' : 'hover:bg-gray-50 cursor-pointer'} onClick={() => abrirDrill(f)}>
                     <td className="px-3 py-2.5 font-medium text-gray-800">{f.nombre} {f.apellido}</td>
                     {f.sinHorario ? (
-                      <td colSpan={2} className="px-3 py-2.5 text-center text-xs text-muted">Sin horario asignado</td>
+                      <td colSpan={3} className="px-3 py-2.5 text-center text-xs text-muted">Sin horario asignado</td>
                     ) : (
                       <>
                         <td className="px-3 py-2.5 text-center">
@@ -130,6 +132,7 @@ export default function ReporteLlegadasTarde() {
                             : <span className="text-orange-600 font-semibold">{f.diasTarde}</span>}
                         </td>
                         <td className="px-3 py-2.5 text-right font-semibold text-ink">{f.diasTarde === 0 ? '—' : fmtMin(f.totalMinutos)}</td>
+                        <td className="px-3 py-2.5 text-right text-gray-600">{f.diasTarde === 0 ? '—' : cop(f.montoTardanzas)}</td>
                       </>
                     )}
                     <td className="px-3 py-2.5 text-right text-primary-dark text-xs font-semibold">{f.sinHorario ? '' : 'Ver desglose →'}</td>
@@ -141,12 +144,20 @@ export default function ReporteLlegadasTarde() {
                   <td className="px-3 py-3 font-bold text-ink">Total {colaboradorId ? '' : `(${visibles.length} colaboradores)`}</td>
                   <td className="px-3 py-3 text-center font-semibold text-gray-700">{visibles.reduce((s, f) => s + f.diasTarde, 0)}</td>
                   <td className="px-3 py-3 text-right font-bold text-ink">{fmtMin(visibles.reduce((s, f) => s + f.totalMinutos, 0))}</td>
+                  <td className="px-3 py-3 text-right font-bold text-ink">{cop(visibles.reduce((s, f) => s + (f.montoTardanzas ?? 0), 0))}</td>
                   <td></td>
                 </tr>
               </tfoot>
             </table>
           )}
         </div>
+        {visibles.length > 0 && (
+          <p className="mt-3 text-xs text-muted">
+            El <b>valor</b> es de referencia: es lo que cuesta ese tiempo a la tarifa base. El descuento que
+            realmente se aplica sale del <b>saldo del período</b> en el reporte diario, que ya incluye estos
+            minutos y los cruza con el tiempo que el colaborador haya repuesto.
+          </p>
+        )}
       </div>
 
       {/* Drill-down: desglose de un colaborador */}
