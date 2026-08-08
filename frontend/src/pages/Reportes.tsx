@@ -122,10 +122,9 @@ export default function Reportes() {
     return `${Math.floor(min / 60)}h ${Math.round(min % 60)}min`;
   };
 
-  const totalHoras = reporte?.liquidacion.reduce((s, l) => s + l.horas, 0) ?? 0;
   // Lo que se descuenta por tiempo no repuesto. Vive fuera de `liquidacion` a
-  // propósito: si fuera una línea más, contaminaría totalHoras y los totales
-  // de recargos que se calculan sobre ese array.
+  // propósito: si fuera una línea más de ese array, se colaría en los totales
+  // de recargos y de horas, que se calculan recorriéndolo.
   const descuentoSaldo = reporte?.saldo && !reporte.saldo.sinHorario ? reporte.saldo.montoSaldo : 0;
 
   const exportarExcel = () => {
