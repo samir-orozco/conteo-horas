@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Plus, Pencil, Trash2, X, Lock, Crosshair, Users } from 'lucide-react';
+import { MapPin, Plus, Pencil, Trash2, X, Lock, Crosshair, Users, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -11,7 +11,7 @@ export type Sede = {
   _count?: { colaboradores: number };
 };
 
-const VACIA = { nombre: '', direccion: '', lat: '', lng: '', radio: '150' };
+const VACIA = { nombre: '', direccion: '', lat: '', lng: '', radio: '150', exigeUbicacion: false };
 
 export default function TabSedes() {
   const navigate = useNavigate();
@@ -35,7 +35,7 @@ export default function TabSedes() {
     setEditando(s ?? null);
     setError('');
     setForm(s
-      ? { nombre: s.nombre, direccion: s.direccion ?? '', lat: s.lat?.toString() ?? '', lng: s.lng?.toString() ?? '', radio: String(s.radio) }
+      ? { nombre: s.nombre, direccion: s.direccion ?? '', lat: s.lat?.toString() ?? '', lng: s.lng?.toString() ?? '', radio: String(s.radio), exigeUbicacion: s.lat !== null && s.lng !== null }
       : VACIA);
     setModal(true);
   };
@@ -57,18 +57,18 @@ export default function TabSedes() {
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    // El interruptor manda: apagado, la sede se guarda SIN coordenadas y no
+    // exige nada. Encendido, las coordenadas son obligatorias — guardar una
+    // geocerca activada y a medias dejaría una sede imposible de cumplir.
+    if (form.exigeUbicacion && (form.lat === '' || form.lng === '')) {
+      return setError('Fija la ubicación con "Usar mi ubicación actual" o escribe latitud y longitud.');
+    }
     const cuerpo = {
       nombre: form.nombre, direccion: form.direccion,
-      lat: form.lat === '' ? null : Number(form.lat),
-      lng: form.lng === '' ? null : Number(form.lng),
+      lat: form.exigeUbicacion ? Number(form.lat) : null,
+      lng: form.exigeUbicacion ? Number(form.lng) : null,
       radio: Number(form.radio) || 150,
     };
-    // Media coordenada no ubica nada: se avisa aquí en vez de dejar que el
-    // servidor la descarte en silencio y la sede quede sin geocerca sin que
-    // nadie se entere.
-    if ((form.lat === '') !== (form.lng === '')) {
-      return setError('Necesitamos latitud y longitud, o ninguna de las dos.');
-    }
     try {
       if (editando) await api.put(`/sedes/${editando.id}`, cuerpo);
       else await api.post('/sedes', cuerpo);
@@ -123,7 +123,7 @@ export default function TabSedes() {
                     {s.lat !== null && s.lng !== null ? (
                       <span className="flex items-center gap-1"><Crosshair size={12} /> {s.lat.toFixed(5)}, {s.lng.toFixed(5)} · radio {s.radio} m</span>
                     ) : (
-                      <span className="text-amber-700">Sin ubicación: no se exige GPS para marcar aquí</span>
+                      <span className="text-amber-700">No exige ubicación: pueden marcar desde cualquier lugar</span>
                     )}
                     <span className="flex items-center gap-1"><Users size={12} /> {s._count?.colaboradores ?? 0}</span>
                   </p>
@@ -138,9 +138,8 @@ export default function TabSedes() {
         )}
 
         <p className="text-[11px] text-muted mt-4 leading-relaxed">
-          Una sede <b>sin ubicación</b> no exige GPS: sirve para oficinas donde no hace falta o mientras la configuras.
-          Si un colaborador no tiene ninguna sede asignada, se le aplica la ubicación general de
-          <b> Configuración → Marcación</b>, como antes.
+          Cada sede decide si exige ubicación. Fíjala <b>desde el celular y parado en el sitio</b>: el
+          computador ubica por wifi o por IP y suele errar por mucho.
         </p>
       </div>
 
@@ -164,36 +163,69 @@ export default function TabSedes() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
 
+              {/* Exigir ubicación es una DECISIÓN, no la ausencia de un dato. Antes
+                  se apagaba dejando las coordenadas en blanco, y nadie podía
+                  saber si eso era a propósito o un campo sin llenar. */}
               <div className="border border-gray-200 rounded-xl p-3 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">Ubicación</p>
-                  <button type="button" onClick={usarMiUbicacion} disabled={ubicando}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 rounded-lg disabled:opacity-60">
-                    <Crosshair size={13} /> {ubicando ? 'Buscando...' : 'Usar mi ubicación'}
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-ink">Exigir ubicación para marcar</p>
+                    <p className="text-xs text-muted mt-0.5">
+                      {form.exigeUbicacion
+                        ? 'Solo podrán marcar dentro del radio de esta sede.'
+                        : 'Podrán marcar desde cualquier lugar.'}
+                    </p>
+                  </div>
+                  <button type="button" role="switch" aria-checked={form.exigeUbicacion}
+                    onClick={() => setForm(p => ({ ...p, exigeUbicacion: !p.exigeUbicacion }))}
+                    className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${form.exigeUbicacion ? 'bg-primary' : 'bg-gray-200'}`}>
+                    <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${form.exigeUbicacion ? 'left-6' : 'left-1'}`} />
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-muted mb-1">Latitud</label>
-                    <input value={form.lat} onChange={e => setForm(p => ({ ...p, lat: e.target.value }))} placeholder="6.208700"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" />
+
+                {form.exigeUbicacion && (
+                  <div className="border-t border-gray-100 pt-3 space-y-3">
+                    <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
+                      <p className="text-[11px] text-amber-900 leading-relaxed flex items-start gap-1.5">
+                        <Smartphone size={13} className="mt-0.5 shrink-0" />
+                        <span>
+                          <b>Hazlo desde el celular, parado en la sede.</b> El computador ubica por wifi o por IP
+                          y puede fallar por kilómetros; el celular usa el GPS real. Si la fijas mal, nadie va a
+                          poder marcar.
+                        </span>
+                      </p>
+                    </div>
+
+                    <button type="button" onClick={usarMiUbicacion} disabled={ubicando}
+                      className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-ink bg-gray-100 hover:bg-gray-200 px-2.5 py-2 rounded-lg disabled:opacity-60">
+                      <Crosshair size={13} /> {ubicando ? 'Buscando...' : 'Usar mi ubicación actual'}
+                    </button>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-muted mb-1">Latitud</label>
+                        <input value={form.lat} onChange={e => setForm(p => ({ ...p, lat: e.target.value }))} placeholder="6.208700"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-muted mb-1">Longitud</label>
+                        <input value={form.lng} onChange={e => setForm(p => ({ ...p, lng: e.target.value }))} placeholder="-75.567400"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-muted mb-1">Radio permitido (metros)</label>
+                      <input type="number" min={20} max={5000} value={form.radio}
+                        onChange={e => setForm(p => ({ ...p, radio: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                      <p className="text-[11px] text-muted mt-1">
+                        Recomendado <b>100–150 m</b>. Ni el mejor GPS es exacto, y un radio muy corto deja a
+                        gente honesta sin poder marcar.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted mb-1">Longitud</label>
-                    <input value={form.lng} onChange={e => setForm(p => ({ ...p, lng: e.target.value }))} placeholder="-75.567400"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted mb-1">Radio permitido (metros)</label>
-                  <input type="number" min={20} max={5000} value={form.radio}
-                    onChange={e => setForm(p => ({ ...p, radio: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                  <p className="text-[11px] text-muted mt-1">Recomendado 100–150 m: el GPS de un teléfono no es exacto.</p>
-                </div>
-                <p className="text-[11px] text-muted">
-                  Déjalo en blanco si esta sede no debe exigir ubicación para marcar.
-                </p>
+                )}
               </div>
 
               {error && <p className="text-sm text-red-600">{error}</p>}
