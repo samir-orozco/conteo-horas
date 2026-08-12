@@ -10,7 +10,8 @@ import { calcularValorHora, CODIGOS_EXTRA } from '../utils/horasColombiana';
 import {
   CLAVE_PERMISOS_REMUNERADOS, parsearPoliticaPermisos, calcularHorasEsperadas, armarSaldo,
 } from '../utils/saldoTiempo';
-import { combinarDiasEsperados } from '../utils/diasEsperados';
+import { combinarDiasEsperados, type DiaEsperadoCalculado } from '../utils/diasEsperados';
+import { ajustarAJornada } from '../utils/ajusteJornada';
 
 const TZ = 'America/Bogota';
 
@@ -64,8 +65,12 @@ function liquidarRegistros(
   jornadas: any[],
   salarioMensual: number,
   horasMes: number,
-  incluirDetalle: boolean
+  incluirDetalle: boolean,
+  // Días materializados del rango: de ahí sale la hora de salida programada para
+  // la tolerancia. Si no llegan, la tolerancia sencillamente no se aplica.
+  diasEsperados: DiaEsperadoCalculado[] = [],
 ) {
+  const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
   const porSemana = new Map<string, typeof registros>();
   for (const reg of registros) {
     const key = semanaKey(reg.fecha);
@@ -82,12 +87,22 @@ function liquidarRegistros(
     let minutosOrdSemana = 0;
     for (const registro of regsDeUnaSemana) {
       if (!registro.entrada || !registro.salida) continue;
+      const claveDia = claveDiaBogota(registro.entrada);
+
+      // Tolerancia de jornada: los minutos sueltos que alguien trabaja fuera de
+      // su horario sin orden previa no se pagan como extra. Se aplica ANTES del
+      // motor de horas para que la clasificación (ordinaria/extra/nocturna) se
+      // haga sobre la jornada ya ajustada.
+      const diaDelRegistro = diaPorClave.get(claveDia);
+      const { entrada, salida } = diaDelRegistro
+        ? ajustarAJornada(registro.entrada, registro.salida, diaDelRegistro)
+        : { entrada: registro.entrada, salida: registro.salida };
+
       const tiposDelDia = tiposVigentes(registro.fecha, tiposHoraTodos);
       const { resultado, minutosOrdinariosTrabajados } = calcularHorasTrabajadas(
-        registro.entrada, registro.salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfig
+        entrada, salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfig
       );
       let ordDelRegistro = minutosOrdinariosTrabajados;
-      const claveDia = claveDiaBogota(registro.entrada);
       const almuerzo = almuerzoDelRegistro(horario, registro.entrada);
       if (almuerzo > 0 && !diasConAlmuerzo.has(claveDia)) {
         const { descontado } = descontarAlmuerzo(resultado, almuerzo);
@@ -178,6 +193,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         select: {
           fecha: true, programado: true, horaEntrada: true, horaSalida: true,
           toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+          toleranciaSalidaMin: true, ajustaEntrada: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -196,7 +212,14 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const jornadaCierre = jornadaVigente(new Date(hasta), jornadas);
     const horasMes = horasMesDeJornada(jornadaCierre);
 
-    const r = liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true);
+    // Los días materializados mandan; los que todavía no lo están (backfill a
+    // medias, colaborador anterior a la función) caen al horario vigente, que es
+    // lo que el sistema hacía siempre. Así nadie ve números nuevos por sorpresa.
+    // Se resuelven ANTES de liquidar porque de ahí sale también la hora de
+    // salida programada que usa la tolerancia de jornada.
+    const diasEsperados = combinarDiasEsperados(desdeF, finExclusivo, diasMaterializados, horario);
+
+    const r = liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados);
 
     // Saldo de tiempo no remunerado: lo que el horario exigía contra lo que
     // realmente trabajó. Va en su propio campo y NUNCA dentro de `liquidacion`,
@@ -204,10 +227,6 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // sintética ahí contaminaría los totales de todos los reportes.
     const politica = parsearPoliticaPermisos(cfgPermisos?.valor);
     const sinHorario = !horario || !horario.activo;
-    // Los días materializados mandan; los que todavía no lo están (backfill a
-    // medias, colaborador anterior a la función) caen al horario vigente, que es
-    // lo que el sistema hacía siempre. Así nadie ve números nuevos por sorpresa.
-    const diasEsperados = combinarDiasEsperados(desdeF, finExclusivo, diasMaterializados, horario);
     const esperadas = calcularHorasEsperadas(
       desdeF, finExclusivo, diasEsperados, festivosDates, permisosRango, politica,
       (fecha) => jornadaVigente(fecha, jornadas),
@@ -238,7 +257,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // no remunerado no se calcula aquí a propósito: es un descuento sobre el
     // salario y vive en /liquidacion, donde el salario está a la vista. Dejarlo
     // fuera evita además traer los permisos de toda la empresa en cada consulta.
-    const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo] = await Promise.all([
+    const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, diasTodosEsp] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
         include: { horario: { include: { franjas: true } } },
@@ -256,6 +275,19 @@ export default async function reporteRoutes(app: FastifyInstance) {
       prisma.tipoHora.findMany(),
       prisma.jornadaVigencia.findMany(),
       prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
+      // Los días de toda la empresa en una consulta. Hacen falta para aplicar la
+      // tolerancia de jornada igual que en /liquidacion: si esta vista no la
+      // aplicara, el resumen y el desglose del mismo colaborador darían cifras
+      // distintas, que es la peor forma de perder la confianza en un reporte.
+      prisma.diaEsperado.findMany({
+        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: {
+          colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
+          horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+          toleranciaSalidaMin: true, ajustaEntrada: true,
+        },
+        orderBy: { fecha: 'asc' },
+      }),
     ]);
 
     const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
@@ -263,12 +295,14 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const jornadaCierre = jornadaVigente(hastaF, jornadas);
     const horasMes = horasMesDeJornada(jornadaCierre);
     const porColaborador = agrupar(registrosTodos as any);
+    const porColDiasEsp = agrupar(diasTodosEsp);
 
     const resultado = colaboradores.map(col => {
       const horario = (col as any).horario as HorarioConFranjas | null;
       const extraConfig = construirExtraConfig(modoExtra, horario);
       const registros = porColaborador.get(col.id) ?? [];
-      const r = liquidarRegistros(registros as any, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false);
+      const dias = combinarDiasEsperados(desdeF, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
+      const r = liquidarRegistros(registros as any, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias);
       return {
         colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
         totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
@@ -305,6 +339,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         select: {
           fecha: true, programado: true, horaEntrada: true, horaSalida: true,
           toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+          toleranciaSalidaMin: true, ajustaEntrada: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -350,6 +385,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         select: {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+          toleranciaSalidaMin: true, ajustaEntrada: true,
         },
         orderBy: { fecha: 'asc' },
       }),

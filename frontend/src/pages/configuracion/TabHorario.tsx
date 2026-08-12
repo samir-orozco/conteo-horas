@@ -8,6 +8,7 @@ import { useMiPlan } from '../../lib/plan';
 export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean };
 export type Horario = {
   id: string; nombre: string; toleranciaMin: number; almuerzoMin?: number;
+  toleranciaSalidaMin?: number; ajustaEntrada?: boolean;
   franjas: Franja[]; _count?: { colaboradores: number };
 };
 
@@ -21,7 +22,7 @@ export const DIA_CORTO: Record<string, string> = {
 };
 
 const FRANJA_LV: Franja = { dias: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'], horaEntrada: '08:00', horaSalida: '17:00', tieneAlmuerzo: true };
-const HORARIO_VACIO = { nombre: '', toleranciaMin: 10, almuerzoMin: 60, franjas: [{ ...FRANJA_LV }] };
+const HORARIO_VACIO = { nombre: '', toleranciaMin: 10, almuerzoMin: 60, toleranciaSalidaMin: 0, ajustaEntrada: false, franjas: [{ ...FRANJA_LV }] };
 
 type TipoHora = {
   id: string; nombre: string; codigo: string; horaInicio: number; horaFin: number;
@@ -45,7 +46,7 @@ export default function TabHorario() {
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [modalHorario, setModalHorario] = useState(false);
   const [editandoHorario, setEditandoHorario] = useState<Horario | null>(null);
-  const [formHorario, setFormHorario] = useState<{ nombre: string; toleranciaMin: number; almuerzoMin: number; franjas: Franja[] }>(HORARIO_VACIO);
+  const [formHorario, setFormHorario] = useState<{ nombre: string; toleranciaMin: number; almuerzoMin: number; toleranciaSalidaMin: number; ajustaEntrada: boolean; franjas: Franja[] }>(HORARIO_VACIO);
   const [errorHorario, setErrorHorario] = useState('');
   const [eliminandoHorario, setEliminandoHorario] = useState<Horario | null>(null);
 
@@ -78,7 +79,7 @@ export default function TabHorario() {
     setEditandoHorario(h ?? null);
     setErrorHorario('');
     setFormHorario(h
-      ? { nombre: h.nombre, toleranciaMin: h.toleranciaMin, almuerzoMin: h.almuerzoMin ?? 0, franjas: h.franjas.map(f => ({ dias: [...f.dias], horaEntrada: f.horaEntrada, horaSalida: f.horaSalida, tieneAlmuerzo: f.tieneAlmuerzo !== false })) }
+      ? { nombre: h.nombre, toleranciaMin: h.toleranciaMin, almuerzoMin: h.almuerzoMin ?? 0, toleranciaSalidaMin: h.toleranciaSalidaMin ?? 0, ajustaEntrada: h.ajustaEntrada ?? false, franjas: h.franjas.map(f => ({ dias: [...f.dias], horaEntrada: f.horaEntrada, horaSalida: f.horaSalida, tieneAlmuerzo: f.tieneAlmuerzo !== false })) }
       : { ...HORARIO_VACIO, franjas: [{ ...FRANJA_LV, dias: [...FRANJA_LV.dias] }] });
     setModalHorario(true);
   };
@@ -342,6 +343,41 @@ export default function TabHorario() {
                     onChange={e => setFormHorario(p => ({ ...p, almuerzoMin: Math.max(0, Number(e.target.value) || 0) }))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                 </div>
+              </div>
+
+              {/* Tolerancia de salida: los minutos sueltos que alguien se queda
+                  sin orden previa no se pagan como extra. 0 = desactivada. */}
+              <div className="border border-gray-200 rounded-xl p-3">
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-muted mb-1">Tolerancia de salida (min)</label>
+                    <input type="number" min={0} max={120} step={1} value={formHorario.toleranciaSalidaMin}
+                      onChange={e => setFormHorario(p => ({ ...p, toleranciaSalidaMin: Math.max(0, Number(e.target.value) || 0) }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted mt-2 leading-relaxed">
+                  {formHorario.toleranciaSalidaMin > 0 ? (
+                    <>Si se queda hasta <b>{formHorario.toleranciaSalidaMin} min</b> pasada su hora de salida, se toma la
+                    hora programada y no se paga como extra. Si se queda más, cuenta completo.</>
+                  ) : (
+                    <>En <b>0</b> no se aplica: cada minuto de más cuenta como hoy. Súbela si no quieres pagar como extra
+                    los minutos que nadie autorizó.</>
+                  )}
+                </p>
+                <label className="flex items-start gap-2 mt-3 cursor-pointer">
+                  <input type="checkbox" checked={formHorario.ajustaEntrada}
+                    onChange={e => setFormHorario(p => ({ ...p, ajustaEntrada: e.target.checked }))}
+                    disabled={formHorario.toleranciaSalidaMin === 0}
+                    className="mt-0.5 accent-primary disabled:opacity-40" />
+                  <span className={`text-xs ${formHorario.toleranciaSalidaMin === 0 ? 'text-gray-400' : 'text-ink/80'}`}>
+                    Aplicar también a las entradas tempranas
+                    <span className="block text-[11px] text-muted">
+                      Sin esto, la tolerancia solo juega a favor de la empresa: se recorta lo que trabaja de más al salir,
+                      pero no lo que llega antes. Llegar tarde nunca se recorta.
+                    </span>
+                  </span>
+                </label>
               </div>
 
               <div className="space-y-3">

@@ -143,6 +143,14 @@ model Horario {
   nombre        String
   toleranciaMin Int             @default(10) // minutos de gracia antes de contar tardanza
   almuerzoMin   Int             @default(0) // minutos de almuerzo que NO se pagan (se descuentan de la jornada)
+  // Minutos que alguien puede quedarse de más SIN que se paguen como extra: por
+  // debajo del umbral se toma la hora de salida programada. 0 = desactivado, que
+  // es el valor por defecto para no cambiarle el cálculo a nadie.
+  toleranciaSalidaMin Int       @default(0)
+  // Si también se aplica a las entradas tempranas. Apagado por defecto: dejarlo
+  // solo en la salida sería asimétrico a favor de la empresa, así que la
+  // simetría existe pero se elige a propósito.
+  ajustaEntrada Boolean         @default(false)
   activo        Boolean         @default(true)
   creadoEn      DateTime        @default(now())
   // Un horario tiene varias franjas: ej. L-V 08:00-17:00 y Sáb 08:00-12:00
@@ -227,6 +235,10 @@ model DiaEsperado {
   toleranciaMin    Int         @default(0)
   almuerzoMin      Int         @default(0) // el que aplica ESE día
   minutosEsperados Int         @default(0) // ya neto de almuerzo
+  // La tolerancia de salida también se congela: es política de la empresa, y si
+  // la cambian mañana no puede mover lo que ya se liquidó.
+  toleranciaSalidaMin Int      @default(0)
+  ajustaEntrada    Boolean     @default(false)
   // De qué horario salió, solo informativo: el horario puede cambiar después.
   horarioId        String?
   // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)

@@ -23,6 +23,8 @@ export type DiaEsperadoCalculado = {
   toleranciaMin: number;
   almuerzoMin: number; // el que aplica ESE día (0 si la franja no lo descuenta)
   minutosEsperados: number; // duración ya neta de almuerzo
+  toleranciaSalidaMin: number; // minutos de más que no se pagan como extra
+  ajustaEntrada: boolean; // si esa tolerancia vale también para llegar temprano
 };
 
 // Medianoche de Bogotá del día al que pertenece un instante.
@@ -67,6 +69,8 @@ export function calcularDiasEsperados(
         toleranciaMin: horario?.toleranciaMin ?? 0,
         almuerzoMin: 0,
         minutosEsperados: 0,
+        toleranciaSalidaMin: horario?.toleranciaSalidaMin ?? 0,
+        ajustaEntrada: horario?.ajustaEntrada ?? false,
       });
     } else {
       const almuerzo = (franja as any).tieneAlmuerzo ? (horario!.almuerzoMin ?? 0) : 0;
@@ -79,6 +83,8 @@ export function calcularDiasEsperados(
         toleranciaMin: horario!.toleranciaMin ?? 0,
         almuerzoMin: almuerzo,
         minutosEsperados: Math.max(0, bruto - almuerzo),
+        toleranciaSalidaMin: horario!.toleranciaSalidaMin ?? 0,
+        ajustaEntrada: horario!.ajustaEntrada ?? false,
       });
     }
 

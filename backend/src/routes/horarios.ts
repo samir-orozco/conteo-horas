@@ -45,7 +45,7 @@ export default async function horarioRoutes(app: FastifyInstance) {
   });
 
   app.post('/', auth, async (request, reply) => {
-    const { nombre, toleranciaMin, almuerzoMin, franjas } = request.body as any;
+    const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, franjas } = request.body as any;
     if (!nombre) return reply.status(400).send({ error: 'El nombre es obligatorio' });
     if (!validarFranjas(franjas)) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
@@ -64,6 +64,8 @@ export default async function horarioRoutes(app: FastifyInstance) {
         nombre,
         toleranciaMin: toleranciaMin ?? 10,
         almuerzoMin: Math.max(0, Number(almuerzoMin) || 0),
+        toleranciaSalidaMin: Math.max(0, Number(toleranciaSalidaMin) || 0),
+        ajustaEntrada: ajustaEntrada === true,
         franjas: { create: franjas.map(mapFranja) },
       },
       include: { franjas: true },
@@ -75,7 +77,7 @@ export default async function horarioRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const existente = await prisma.horario.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'Horario no encontrado' });
-    const { nombre, toleranciaMin, almuerzoMin, franjas } = request.body as any;
+    const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, franjas } = request.body as any;
     if (!validarFranjas(franjas)) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
     }
@@ -86,6 +88,8 @@ export default async function horarioRoutes(app: FastifyInstance) {
         nombre,
         toleranciaMin,
         almuerzoMin: Math.max(0, Number(almuerzoMin) || 0),
+        toleranciaSalidaMin: Math.max(0, Number(toleranciaSalidaMin) || 0),
+        ajustaEntrada: ajustaEntrada === true,
         franjas: {
           deleteMany: {},
           create: franjas.map(mapFranja),
