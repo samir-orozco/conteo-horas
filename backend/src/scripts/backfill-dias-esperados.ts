@@ -1,9 +1,14 @@
-import { prisma } from '../src/prisma';
-import { backfillTodos } from '../src/utils/materializarDias';
+import { prisma } from '../prisma';
+import { backfillTodos } from '../utils/materializarDias';
 
 // Rellena `dias_esperados` hacia atrás para TODA la plataforma. Se corre UNA vez
 // al desplegar la función; de ahí en adelante la ventana la mantiene el propio
 // servidor al arrancar y cada 24h.
+//
+// Vive en `src/` y no en `prisma/` para que `tsc` lo compile a `dist/` y viaje
+// al servidor: allá no hay ts-node. Se ejecuta con:
+//   node dist/scripts/backfill-dias-esperados.js
+// En local: npx ts-node src/scripts/backfill-dias-esperados.ts
 //
 // Usa el horario ACTUAL de cada colaborador, porque es el único dato que existe:
 // el sistema nunca guardó cuál era antes ni cuándo cambió. Es decir, congela el
