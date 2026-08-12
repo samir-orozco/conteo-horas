@@ -1,5 +1,6 @@
 import { prisma } from '../src/prisma';
 import { calcularHorasEsperadas, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS } from '../src/utils/saldoTiempo';
+import { calcularTardanzas } from '../src/utils/tardanzas';
 import { combinarDiasEsperados } from '../src/utils/diasEsperados';
 import { jornadaVigente } from '../src/utils/vigencias';
 import { rangoReporte } from '../src/utils/fechas';
@@ -27,7 +28,7 @@ async function main() {
   if (!semana) throw new Error('franja de lunes a viernes no encontrada');
   const entradaOriginal = semana.horaEntrada;
 
-  const [festivos, jornadas, cfgPermisos, permisos, materializados] = await Promise.all([
+  const [festivos, jornadas, cfgPermisos, permisos, materializados, registros] = await Promise.all([
     prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: colaborador.empresaId }] } }),
     prisma.jornadaVigencia.findMany(),
     prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: colaborador.empresaId, clave: CLAVE_PERMISOS_REMUNERADOS } } }),
@@ -37,6 +38,7 @@ async function main() {
       select: { fecha: true, programado: true, horaEntrada: true, horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true },
       orderBy: { fecha: 'asc' },
     }),
+    prisma.registro.findMany({ where: { colaboradorId: colaborador.id, fecha: { gte: desdeF, lt: finExclusivo } } }),
   ]);
 
   const festivosDates = festivos.map(f => new Date(f.fecha));
@@ -44,6 +46,7 @@ async function main() {
   const calcular = (dias: any[]) => calcularHorasEsperadas(
     desdeF, finExclusivo, dias, festivosDates, permisos as any, politica, (f) => jornadaVigente(f, jornadas),
   ).minutosEsperados;
+  const tarde = (dias: any[]) => calcularTardanzas(registros, dias, festivos, permisos as any);
 
   const recargarHorario = async () => {
     const c = await prisma.colaborador.findUnique({
@@ -53,20 +56,32 @@ async function main() {
     return c!.horario as any;
   };
 
-  const antes = calcular(combinarDiasEsperados(desdeF, finExclusivo, materializados, await recargarHorario()));
+  const diasAntes = combinarDiasEsperados(desdeF, finExclusivo, materializados, await recargarHorario());
+  const antes = calcular(diasAntes);
+  const tardeAntes = tarde(diasAntes);
   console.log(`Entrada actual del horario: ${entradaOriginal}`);
-  console.log(`Julio 2026 exige: ${fmt(antes)}\n`);
+  console.log(`Julio 2026 exige: ${fmt(antes)}`);
+  console.log(`Tardanzas: ${tardeAntes.diasTarde} día(s), ${tardeAntes.totalMinutos} min\n`);
 
   try {
     await prisma.franjaHorario.update({ where: { id: semana.id }, data: { horaEntrada: '07:00' } });
     console.log('--- El admin adelanta la entrada a 07:00 ---\n');
     const horarioNuevo = await recargarHorario();
 
-    const conHistorial = calcular(combinarDiasEsperados(desdeF, finExclusivo, materializados, horarioNuevo));
-    const sinHistorial = calcular(combinarDiasEsperados(desdeF, finExclusivo, [], horarioNuevo));
+    const conHistorial = combinarDiasEsperados(desdeF, finExclusivo, materializados, horarioNuevo);
+    const sinHistorial = combinarDiasEsperados(desdeF, finExclusivo, [], horarioNuevo);
 
-    console.log(`Leyendo los días materializados : ${fmt(conHistorial)}   ${conHistorial === antes ? '✓ julio NO se movió' : '✗ SE MOVIÓ'}`);
-    console.log(`Recorriendo el horario vigente  : ${fmt(sinHistorial)}   (así se comportaba antes: +${fmt(sinHistorial - antes)} de deuda inventada)`);
+    const espCon = calcular(conHistorial), espSin = calcular(sinHistorial);
+    const tardeCon = tarde(conHistorial), tardeSin = tarde(sinHistorial);
+
+    console.log('HORAS ESPERADAS');
+    console.log(`  Leyendo los días materializados : ${fmt(espCon)}   ${espCon === antes ? '✓ julio NO se movió' : '✗ SE MOVIÓ'}`);
+    console.log(`  Recorriendo el horario vigente  : ${fmt(espSin)}   (así se comportaba antes: +${fmt(espSin - antes)} de deuda inventada)`);
+
+    console.log('\nTARDANZAS');
+    const igual = tardeCon.diasTarde === tardeAntes.diasTarde && tardeCon.totalMinutos === tardeAntes.totalMinutos;
+    console.log(`  Leyendo los días materializados : ${tardeCon.diasTarde} día(s), ${tardeCon.totalMinutos} min   ${igual ? '✓ julio NO se movió' : '✗ SE MOVIÓ'}`);
+    console.log(`  Recorriendo el horario vigente  : ${tardeSin.diasTarde} día(s), ${tardeSin.totalMinutos} min   (así se comportaba antes: +${tardeSin.diasTarde - tardeAntes.diasTarde} días y +${tardeSin.totalMinutos - tardeAntes.totalMinutos} min inventados)`);
   } finally {
     await prisma.franjaHorario.update({ where: { id: semana.id }, data: { horaEntrada: entradaOriginal } });
     const restaurada = await prisma.franjaHorario.findUnique({ where: { id: semana.id } });

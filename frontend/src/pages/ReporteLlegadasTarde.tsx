@@ -8,6 +8,10 @@ type DetalleTardanza = { fecha: string; horaEsperada: string; horaLlegada: strin
 type Drill = {
   colaborador: { nombre: string; apellido: string };
   sinHorario: boolean; horario?: { nombre: string; toleranciaMin: number };
+  // La tolerancia que se APLICÓ en el período, que sale de los días
+  // materializados. No es la de `horario`: esa es la de hoy, y si el admin la
+  // cambió después mostraría un número que no se usó para calcular nada.
+  toleranciaMin?: number;
   detalle: DetalleTardanza[]; totalMinutos: number; diasTarde: number;
 };
 
@@ -57,6 +61,7 @@ export default function ReporteLlegadasTarde() {
       const r = await api.get('/reportes/tardanzas', { params: { colaboradorId: f.colaboradorId, desde, hasta } });
       setDrill({
         colaborador: { nombre: f.nombre, apellido: f.apellido }, sinHorario: r.data.sinHorario, horario: r.data.horario,
+        toleranciaMin: r.data.toleranciaMin,
         detalle: r.data.detalle, totalMinutos: r.data.totalMinutos, diasTarde: r.data.diasTarde,
       });
     } catch {
@@ -169,7 +174,8 @@ export default function ReporteLlegadasTarde() {
                 <h3 className="font-bold text-lg text-ink">{drill.colaborador.nombre} {drill.colaborador.apellido}</h3>
                 <p className="text-xs text-muted">
                   {format(new Date(desde), 'dd/MM/yyyy')} — {format(new Date(hasta), 'dd/MM/yyyy')}
-                  {drill.horario && ` · Horario ${drill.horario.nombre} (${drill.horario.toleranciaMin} min de tolerancia)`}
+                  {drill.horario && ` · Horario ${drill.horario.nombre}`}
+                  {drill.toleranciaMin != null && ` (${drill.toleranciaMin} min de tolerancia)`}
                 </p>
               </div>
               <button onClick={() => setDrill(null)}><X size={20} className="text-gray-400" /></button>

@@ -278,16 +278,27 @@ export default async function reporteRoutes(app: FastifyInstance) {
     }
 
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
-    const [registros, festivos, permisos, jornadas] = await Promise.all([
+    const [registros, festivos, permisos, jornadas, diasMaterializados] = await Promise.all([
       prisma.registro.findMany({
         where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
       prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
       prisma.jornadaVigencia.findMany(),
+      // La hora exigida y la tolerancia de cada día, congeladas. Sin esto,
+      // adelantar la entrada del horario llenaba de tardanzas los meses cerrados.
+      prisma.diaEsperado.findMany({
+        where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: {
+          fecha: true, programado: true, horaEntrada: true, horaSalida: true,
+          toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+        },
+        orderBy: { fecha: 'asc' },
+      }),
     ]);
 
-    const resultado = calcularTardanzas(registros, colaborador.horario, festivos, permisos);
+    const diasEsperados = combinarDiasEsperados(desdeF, finExclusivo, diasMaterializados, colaborador.horario);
+    const resultado = calcularTardanzas(registros, diasEsperados, festivos, permisos);
     // Valor del tiempo llegado tarde, a la tarifa base. Es INFORMATIVO: el
     // descuento real sale del saldo del período (ver /liquidacion), que ya
     // incluye estos minutos. Sumar ambos cobraría la tardanza dos veces.
@@ -306,7 +317,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const empresaId = request.empresaId!;
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
 
-    const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas] = await Promise.all([
+    const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas, diasTodos] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
         include: { horario: { include: { franjas: true } } },
@@ -319,10 +330,21 @@ export default async function reporteRoutes(app: FastifyInstance) {
         select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true },
       }),
       prisma.jornadaVigencia.findMany(),
+      // Los días de TODA la empresa en una sola consulta; se agrupan abajo. Uno
+      // por colaborador serían N consultas para pintar una tabla.
+      prisma.diaEsperado.findMany({
+        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: {
+          colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
+          horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+        },
+        orderBy: { fecha: 'asc' },
+      }),
     ]);
 
     const porColRegistros = agrupar(registrosTodos as any);
     const porColPermisos = agrupar(permisosTodos as any);
+    const porColDias = agrupar(diasTodos);
     // Mismo divisor para todos: la jornada vigente al cierre del período.
     const horasMes = horasMesDeJornada(jornadaVigente(new Date(hasta), jornadas));
 
@@ -332,7 +354,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
       }
       const r = calcularTardanzas(
         (porColRegistros.get(col.id) ?? []) as any,
-        col.horario as any,
+        combinarDiasEsperados(desdeF, finExclusivo, porColDias.get(col.id) ?? [], col.horario),
         festivos,
         (porColPermisos.get(col.id) ?? []) as any
       );

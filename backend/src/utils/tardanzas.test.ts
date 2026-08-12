@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { calcularTardanzas, franjaDelDia, minutosDe, construirExtraConfig, DIAS_SEMANA } from './tardanzas';
+import { calcularDiasEsperados } from './diasEsperados';
+import { rangoReporte } from './fechas';
 
 const bog = (fecha: string, hora: number, min = 0) => {
   const [a, m, d] = fecha.split('-').map(Number);
@@ -23,8 +25,18 @@ const reg = (fecha: string, hora: number, min = 0): any => ({
   salida: bog(fecha, 16),
 });
 
-const tardanzas = (registros: any[], opts: { festivos?: any[]; permisos?: any[]; horario?: any } = {}) =>
-  calcularTardanzas(registros, opts.horario ?? HORARIO, opts.festivos ?? [], opts.permisos ?? []);
+// `calcularTardanzas` ya no recorre el horario: lee los días materializados. Se
+// generan al vuelo con el horario de arriba, que es lo que hace el generador en
+// producción, así las pruebas de siempre siguen midiendo lo mismo.
+const JULIO = rangoReporte('2026-07-01', '2026-07-31');
+const diasDe = (horario: any = HORARIO) => calcularDiasEsperados(JULIO.desdeF, JULIO.finExclusivo, horario);
+
+const tardanzas = (registros: any[], opts: { festivos?: any[]; permisos?: any[]; horario?: any; dias?: any[] } = {}) =>
+  calcularTardanzas(
+    registros,
+    opts.dias ?? diasDe(opts.horario ?? HORARIO),
+    opts.festivos ?? [], opts.permisos ?? [],
+  );
 
 describe('minutosDe', () => {
   it('convierte HH:MM a minutos del día', () => {
@@ -93,6 +105,65 @@ describe('calcularTardanzas', () => {
 
   it('informa la tolerancia aplicada', () => {
     expect(tardanzas([]).toleranciaMin).toBe(3);
+  });
+});
+
+// El mismo problema que en el saldo: mientras las tardanzas se calcularan contra
+// el horario VIGENTE, adelantar la entrada llenaba de tardanzas los meses ya
+// cerrados. Con el día materializado, lo que pasó se queda como pasó.
+describe('calcularTardanzas — el pasado ya no se reescribe', () => {
+  it('adelantar la entrada del horario no inventa tardanzas viejas', () => {
+    const congelado = diasDe(HORARIO); // entrada 08:00
+    const editado = { ...HORARIO, franjas: HORARIO.franjas.map((f: any) => ({ ...f, horaEntrada: '07:00' })) };
+
+    // Llegó 08:00 en punto: puntual con el horario que regía ese día.
+    const registros = [reg('2026-07-06', 8, 0)];
+
+    expect(tardanzas(registros, { dias: congelado }).diasTarde).toBe(0);
+    // Así se comportaba antes: el horario nuevo lo vuelve una hora tarde.
+    expect(tardanzas(registros, { horario: editado }).detalle[0].minutosTarde).toBe(57);
+  });
+
+  it('la tolerancia sale del día, no del horario de hoy', () => {
+    const dias = diasDe({ ...HORARIO, toleranciaMin: 30 });
+    const r = tardanzas([reg('2026-07-06', 8, 40)], { dias });
+    expect(r.detalle[0].minutosTarde).toBe(10); // 40 de retraso − 30 de tolerancia
+    expect(r.detalle[0].toleranciaMin).toBe(30);
+    expect(r.toleranciaMin).toBe(30);
+  });
+
+  it('cada fila informa la tolerancia que se le aplicó', () => {
+    const r = tardanzas([reg('2026-07-06', 8, 25)]);
+    expect(r.detalle[0].toleranciaMin).toBe(3);
+  });
+
+  it('un día ajustado a mano (turno rotativo) manda sobre el horario', () => {
+    const dias = diasDe();
+    const lunes = dias.find(d => d.fecha.toISOString().slice(0, 10) === '2026-07-06')!;
+    Object.assign(lunes, { horaEntrada: '14:00', horaSalida: '22:00' });
+
+    // Llegó a las 14:10 en un turno de tarde: 10 min tarde, no 6 horas.
+    const r = tardanzas([reg('2026-07-06', 14, 10)], { dias });
+    expect(r.detalle[0].horaEsperada).toBe('14:00');
+    expect(r.detalle[0].minutosTarde).toBe(7); // 10 − 3 de tolerancia
+  });
+
+  it('un día sin materializar no genera tardanza', () => {
+    expect(tardanzas([reg('2026-07-06', 10)], { dias: [] }).diasTarde).toBe(0);
+  });
+
+  it('sin días materializados la tolerancia informada es 0', () => {
+    expect(tardanzas([], { dias: [] }).toleranciaMin).toBe(0);
+  });
+
+  it('un rango entero en fin de semana igual informa la tolerancia vigente', () => {
+    // 5 de julio de 2026 es domingo: no se trabaja, pero la tolerancia existe.
+    const domingo = calcularDiasEsperados(
+      rangoReporte('2026-07-05', '2026-07-05').desdeF,
+      rangoReporte('2026-07-05', '2026-07-05').finExclusivo,
+      HORARIO,
+    );
+    expect(tardanzas([], { dias: domingo }).toleranciaMin).toBe(3);
   });
 });
 

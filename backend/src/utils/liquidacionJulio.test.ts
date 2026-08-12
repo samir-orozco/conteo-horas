@@ -158,7 +158,7 @@ describe('julio 2026 — escenario verificado a mano', () => {
   });
 
   it('reporta 2 días tarde y 59 min (ya descontada la tolerancia de 3 min)', () => {
-    const t = calcularTardanzas(REGISTROS as any, HORARIO, FESTIVOS.map(f => ({ fecha: f })) as any, []);
+    const t = calcularTardanzas(REGISTROS as any, DIAS_ESPERADOS, FESTIVOS.map(f => ({ fecha: f })) as any, []);
     expect(t.diasTarde).toBe(2);
     expect(t.totalMinutos).toBe(22 + 37);
   });
