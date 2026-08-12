@@ -5,6 +5,7 @@ import {
   PERMISOS_CONFIGURABLES,
 } from './saldoTiempo';
 import { rangoReporte } from './fechas';
+import { calcularDiasEsperados } from './diasEsperados';
 
 // Horario de apoyo: se le pasa qué días de la semana trabaja y con qué horas.
 const horarioDe = (dias: string[], horaEntrada = '08:00', horaSalida = '16:00', almuerzoMin = 0): any => ({
@@ -17,12 +18,17 @@ const TODOS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'D
 // Jornada legal alta para que el tope semanal no interfiera salvo cuando se prueba.
 const sinTope = () => 200;
 
+// `calcularHorasEsperadas` ya no recorre el horario: lee los días materializados.
+// Para no reescribir las pruebas de siempre, aquí se materializan al vuelo con el
+// horario dado, que es exactamente lo que hace el generador en producción.
 function esperadas(desde: string, hasta: string, horario: any, opts: {
   festivos?: Date[]; permisos?: any[]; politica?: Set<string>; jornada?: (f: Date) => number;
+  dias?: any[];
 } = {}) {
   const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
+  const dias = opts.dias ?? calcularDiasEsperados(desdeF, finExclusivo, horario);
   return calcularHorasEsperadas(
-    desdeF, finExclusivo, horario,
+    desdeF, finExclusivo, dias,
     opts.festivos ?? [], opts.permisos ?? [],
     opts.politica ?? new Set(), opts.jornada ?? sinTope,
   );
@@ -84,6 +90,50 @@ describe('calcularHorasEsperadas — qué días cuenta', () => {
   it('sin horario activo no exige nada', () => {
     const r = esperadas('2026-07-01', '2026-07-31', { ...horarioDe(TODOS), activo: false });
     expect(r.minutosEsperados).toBe(0);
+  });
+});
+
+// La razón de ser de todo esto: el dueño cambió la entrada de 08:00 a 07:00 el 17
+// de julio de 2026 y los reportes de meses anteriores empezaron a mostrar
+// tardanzas y deudas falsas. Mientras el cálculo leía el horario ACTUAL no había
+// forma de evitarlo; leyendo los días materializados, el pasado queda quieto.
+describe('calcularHorasEsperadas — el pasado ya no se reescribe', () => {
+  it('editar el horario después NO cambia lo que se exigía en un día ya materializado', () => {
+    const { desdeF, finExclusivo } = rangoReporte('2026-07-01', '2026-07-31');
+    const original = horarioDe(TODOS, '08:00', '16:00');
+    const yaMaterializado = calcularDiasEsperados(desdeF, finExclusivo, original);
+
+    // El admin adelanta la entrada una hora: el horario vigente pide 9h diarias.
+    const editado = horarioDe(TODOS, '07:00', '16:00');
+
+    const conLoCongelado = esperadas('2026-07-01', '2026-07-31', editado, { dias: yaMaterializado });
+    const conElHorarioNuevo = esperadas('2026-07-01', '2026-07-31', editado);
+
+    expect(conLoCongelado.minutosEsperados).toBe(31 * 8 * 60);
+    expect(conElHorarioNuevo.minutosEsperados).toBe(31 * 9 * 60); // lo que pasaba antes
+  });
+
+  it('un día ajustado a mano (turno rotativo) manda sobre el horario', () => {
+    const { desdeF, finExclusivo } = rangoReporte('2026-07-01', '2026-07-01');
+    const dias = calcularDiasEsperados(desdeF, finExclusivo, horarioDe(['MIERCOLES'], '08:00', '16:00'));
+    dias[0] = { ...dias[0], horaEntrada: '14:00', horaSalida: '22:00', minutosEsperados: 300 };
+
+    const r = esperadas('2026-07-01', '2026-07-01', null, { dias });
+    expect(r.minutosEsperados).toBe(300);
+  });
+
+  it('un día sin materializar no exige nada', () => {
+    // Colaborador que entró a mitad de mes: los días anteriores no tienen fila.
+    const r = esperadas('2026-07-01', '2026-07-31', null, { dias: [] });
+    expect(r.minutosEsperados).toBe(0);
+  });
+
+  it('ignora las filas que caen fuera del rango pedido', () => {
+    const { desdeF, finExclusivo } = rangoReporte('2026-07-01', '2026-07-31');
+    const mesCompleto = calcularDiasEsperados(desdeF, finExclusivo, horarioDe(TODOS, '08:00', '16:00'));
+    // Se piden solo los tres primeros días, pero llegan los 31.
+    const r = esperadas('2026-07-01', '2026-07-03', null, { dias: mesCompleto });
+    expect(r.minutosEsperados).toBe(3 * 8 * 60);
   });
 });
 

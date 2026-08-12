@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcularDiasEsperados } from './diasEsperados';
+import { calcularDiasEsperados, combinarDiasEsperados } from './diasEsperados';
 import { rangoReporte } from './fechas';
 
 // El día esperado se materializa: por cada colaborador y día se guarda lo que su
@@ -98,5 +98,72 @@ describe('calcularDiasEsperados', () => {
     const claves = r.map(d => d.fecha.toISOString());
     expect(claves).toEqual([...claves].sort());
     expect(new Set(claves).size).toBe(claves.length);
+  });
+});
+
+// El backfill no ha corrido para todo el mundo, y hay colaboradores anteriores a
+// la función. Para esos días no hay fila y hay que caer al horario actual: es lo
+// que el sistema hacía siempre, así que nadie ve un cambio. Donde SÍ hay fila,
+// manda la fila, que es de lo que se trata.
+describe('combinarDiasEsperados', () => {
+  const combinar = (desde: string, hasta: string, materializados: any[], horario: any = HORARIO) => {
+    const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
+    return combinarDiasEsperados(desdeF, finExclusivo, materializados, horario);
+  };
+
+  it('sin filas materializadas cae al horario actual, día por día', () => {
+    const r = combinar('2026-07-01', '2026-07-03', []);
+    expect(r).toHaveLength(3);
+    expect(r.every(d => d.programado && d.minutosEsperados === 480)).toBe(true);
+  });
+
+  it('la fila materializada manda sobre el horario', () => {
+    const congelado = {
+      fecha: new Date('2026-07-01T05:00:00.000Z'),
+      programado: true, horaEntrada: '06:00', horaSalida: '10:00',
+      toleranciaMin: 0, almuerzoMin: 0, minutosEsperados: 240,
+    };
+    const [d] = combinar('2026-07-01', '2026-07-01', [congelado]);
+    expect(d.minutosEsperados).toBe(240);
+    expect(d.horaEntrada).toBe('06:00');
+  });
+
+  it('mezcla: los días con fila quedan congelados y el resto sigue el horario', () => {
+    const congelado = {
+      fecha: new Date('2026-07-02T05:00:00.000Z'),
+      programado: false, horaEntrada: null, horaSalida: null,
+      toleranciaMin: 0, almuerzoMin: 0, minutosEsperados: 0,
+    };
+    const r = combinar('2026-07-01', '2026-07-03', [congelado]);
+    expect(r.map(d => d.minutosEsperados)).toEqual([480, 0, 480]);
+  });
+
+  it('empareja por día calendario de Bogotá, no por instante exacto', () => {
+    // MySQL puede devolver la fecha con segundos o milisegundos; sigue siendo el
+    // mismo día y no puede quedar huérfana.
+    const congelado = {
+      fecha: new Date('2026-07-01T05:00:00.123Z'),
+      programado: true, horaEntrada: '06:00', horaSalida: '10:00',
+      toleranciaMin: 0, almuerzoMin: 0, minutosEsperados: 240,
+    };
+    const [d] = combinar('2026-07-01', '2026-07-01', [congelado]);
+    expect(d.minutosEsperados).toBe(240);
+  });
+
+  it('descarta las filas que caen fuera del rango', () => {
+    const fuera = {
+      fecha: new Date('2026-08-01T05:00:00.000Z'),
+      programado: true, horaEntrada: '06:00', horaSalida: '10:00',
+      toleranciaMin: 0, almuerzoMin: 0, minutosEsperados: 240,
+    };
+    const r = combinar('2026-07-01', '2026-07-01', [fuera]);
+    expect(r).toHaveLength(1);
+    expect(r[0].minutosEsperados).toBe(480);
+  });
+
+  it('sin horario y sin filas, deja constancia del día pero no exige nada', () => {
+    const r = combinar('2026-07-01', '2026-07-02', [], null);
+    expect(r).toHaveLength(2);
+    expect(r.every(d => !d.programado && d.minutosEsperados === 0)).toBe(true);
   });
 });

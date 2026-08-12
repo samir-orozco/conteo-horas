@@ -1,4 +1,5 @@
 import { calcularHorasEsperadas } from '../src/utils/saldoTiempo';
+import { calcularDiasEsperados } from '../src/utils/diasEsperados';
 import { rangoReporte } from '../src/utils/fechas';
 
 // ¿Los días que se exigen son los correctos, o están corridos?
@@ -14,7 +15,8 @@ const soloDia = (dia: string): any => ({
 const { desdeF, finExclusivo } = rangoReporte('2026-07-01', '2026-07-01');
 console.log('Rango de UN día: 1 jul 2026, que es MIÉRCOLES\n');
 for (const dia of ['MARTES', 'MIERCOLES', 'JUEVES']) {
-  const r = calcularHorasEsperadas(desdeF, finExclusivo, soloDia(dia), [], [], new Set(), () => 200);
+  const dias = calcularDiasEsperados(desdeF, finExclusivo, soloDia(dia));
+  const r = calcularHorasEsperadas(desdeF, finExclusivo, dias, [], [], new Set(), () => 200);
   console.log(`  horario solo ${dia.padEnd(10)} → exige ${r.minutosEsperados} min ${r.minutosEsperados > 0 ? '  ← contó este día' : ''}`);
 }
 
@@ -22,6 +24,7 @@ for (const dia of ['MARTES', 'MIERCOLES', 'JUEVES']) {
 const r2 = rangoReporte('2026-07-01', '2026-07-02');
 console.log('\nRango 1 → 2 jul (mié y jue). No debe contar el viernes 3:');
 for (const dia of ['MIERCOLES', 'JUEVES', 'VIERNES']) {
-  const r = calcularHorasEsperadas(r2.desdeF, r2.finExclusivo, soloDia(dia), [], [], new Set(), () => 200);
+  const dias = calcularDiasEsperados(r2.desdeF, r2.finExclusivo, soloDia(dia));
+  const r = calcularHorasEsperadas(r2.desdeF, r2.finExclusivo, dias, [], [], new Set(), () => 200);
   console.log(`  horario solo ${dia.padEnd(10)} → exige ${r.minutosEsperados} min ${r.minutosEsperados > 0 ? '  ← contó' : ''}`);
 }

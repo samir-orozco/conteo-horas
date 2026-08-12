@@ -3,7 +3,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './prisma';
 
 import authRoutes from './routes/auth';
 import colaboradorRoutes from './routes/colaboradores';
@@ -26,7 +26,9 @@ import { configurarWebhook } from './utils/telegram';
 import { cerrarTurnosOlvidados } from './utils/cierreTurnos';
 import { estadoEfectivo, accesoPermitido } from './utils/suscripcion';
 
-export const prisma = new PrismaClient();
+// Reexportado por compatibilidad: media base de código hace `import { prisma }
+// from '../index'`. El cliente ahora vive en `./prisma` (ver el porqué allí).
+export { prisma };
 
 export type JwtPayload = {
   id: string;

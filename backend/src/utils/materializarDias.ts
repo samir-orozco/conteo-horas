@@ -1,4 +1,6 @@
-import { prisma } from '../index';
+// Del módulo del cliente, no de `../index`: importar el entrypoint arrancaría el
+// servidor, y esto también corre desde los scripts de `prisma/`.
+import { prisma } from '../prisma';
 import { calcularDiasEsperados } from './diasEsperados';
 import { HorarioConFranjas } from './tardanzas';
 import { rangoDiaBogota } from './fechas';

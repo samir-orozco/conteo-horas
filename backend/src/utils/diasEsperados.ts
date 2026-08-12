@@ -31,6 +31,15 @@ function medianocheBogotaDe(d: Date): Date {
   return new Date(Date.UTC(z.getFullYear(), z.getMonth(), z.getDate(), 5, 0, 0));
 }
 
+// Clave de día calendario Bogotá ("2026-07-01"). Se empareja por día y no por
+// instante a propósito: MySQL puede devolver la fecha con milisegundos, y una
+// fila que no empareje por unos milisegundos quedaría huérfana y el día caería
+// al horario actual sin que nadie se entere.
+function claveDiaBogota(d: Date): string {
+  const z = toZonedTime(d, TZ);
+  return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
+}
+
 export function calcularDiasEsperados(
   desde: Date,
   finExclusivo: Date,
@@ -77,4 +86,30 @@ export function calcularDiasEsperados(
   }
 
   return salida;
+}
+
+// Une lo materializado con el horario vigente para cubrir un rango completo.
+//
+// Donde HAY fila manda la fila: eso es lo que congela el pasado y es la razón de
+// ser de toda la función. Donde NO la hay se cae al horario actual, que es
+// exactamente lo que el sistema hacía antes de existir la tabla: así el backfill
+// puede ir a su ritmo y nadie ve números distintos mientras tanto.
+//
+// Se devuelve una fila por cada día del rango, en orden, sin repetir.
+export function combinarDiasEsperados(
+  desde: Date,
+  finExclusivo: Date,
+  materializados: DiaEsperadoCalculado[],
+  horario: HorarioConFranjas | null,
+): DiaEsperadoCalculado[] {
+  const base = calcularDiasEsperados(desde, finExclusivo, horario);
+  if (materializados.length === 0) return base;
+
+  const porDia = new Map(materializados.map(m => [claveDiaBogota(m.fecha), m]));
+  return base.map(dia => {
+    const congelado = porDia.get(claveDiaBogota(dia.fecha));
+    // La fecha se normaliza a la del rango: si la fila viniera con milisegundos
+    // de la base de datos, aguas abajo se compara por día y no debe arrastrarlos.
+    return congelado ? { ...congelado, fecha: dia.fecha } : dia;
+  });
 }

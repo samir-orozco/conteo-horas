@@ -10,6 +10,7 @@ import { calcularValorHora, CODIGOS_EXTRA } from '../utils/horasColombiana';
 import {
   CLAVE_PERMISOS_REMUNERADOS, parsearPoliticaPermisos, calcularHorasEsperadas, armarSaldo,
 } from '../utils/saldoTiempo';
+import { combinarDiasEsperados } from '../utils/diasEsperados';
 
 const TZ = 'America/Bogota';
 
@@ -139,7 +140,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const { colaboradorId, desde, hasta } = request.query as any;
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
 
-    const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosRango] = await Promise.all([
+    const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosRango, diasMaterializados] = await Promise.all([
       prisma.colaborador.findFirst({
         where: { id: colaboradorId, empresaId: request.empresaId },
         include: { horario: { include: { franjas: true } } },
@@ -160,6 +161,16 @@ export default async function reporteRoutes(app: FastifyInstance) {
       prisma.permiso.findMany({
         where: { colaboradorId, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
         select: { fechaInicio: true, fechaFin: true, tipo: true },
+      }),
+      // Lo que el horario exigía ESE día, congelado cuando se materializó. Es lo
+      // que impide que editar un horario hoy mueva la liquidación de julio.
+      prisma.diaEsperado.findMany({
+        where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: {
+          fecha: true, programado: true, horaEntrada: true, horaSalida: true,
+          toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+        },
+        orderBy: { fecha: 'asc' },
       }),
     ]);
 
@@ -184,8 +195,12 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // sintética ahí contaminaría los totales de todos los reportes.
     const politica = parsearPoliticaPermisos(cfgPermisos?.valor);
     const sinHorario = !horario || !horario.activo;
+    // Los días materializados mandan; los que todavía no lo están (backfill a
+    // medias, colaborador anterior a la función) caen al horario vigente, que es
+    // lo que el sistema hacía siempre. Así nadie ve números nuevos por sorpresa.
+    const diasEsperados = combinarDiasEsperados(desdeF, finExclusivo, diasMaterializados, horario);
     const esperadas = calcularHorasEsperadas(
-      desdeF, finExclusivo, horario, festivosDates, permisosRango, politica,
+      desdeF, finExclusivo, diasEsperados, festivosDates, permisosRango, politica,
       (fecha) => jornadaVigente(fecha, jornadas),
     );
     const saldo = armarSaldo(esperadas, r.minutosOrdinarios, calcularValorHora(colaborador.salarioMensual, horasMes), sinHorario);

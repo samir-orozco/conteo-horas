@@ -3,6 +3,7 @@ import { calcularHorasEsperadas, armarSaldo, parsearPoliticaPermisos, CLAVE_PERM
 import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo, calcularValorHora } from '../src/utils/horasColombiana';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../src/utils/vigencias';
 import { construirExtraConfig, franjaDelDia, DIAS_SEMANA } from '../src/utils/tardanzas';
+import { combinarDiasEsperados } from '../src/utils/diasEsperados';
 import { rangoReporte } from '../src/utils/fechas';
 import { toZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear } from 'date-fns';
@@ -27,7 +28,7 @@ async function main() {
   if (!colaborador) throw new Error('colaborador no encontrado');
   const empresaId = colaborador.empresaId;
 
-  const [registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisos] = await Promise.all([
+  const [registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisos, diasMaterializados] = await Promise.all([
     prisma.registro.findMany({ where: { colaboradorId: colaborador.id, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } }, orderBy: { fecha: 'asc' } }),
     prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
     prisma.tipoHora.findMany(),
@@ -35,6 +36,11 @@ async function main() {
     prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
     prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: CLAVE_PERMISOS_REMUNERADOS } } }),
     prisma.permiso.findMany({ where: { colaboradorId: colaborador.id, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } }, select: { fechaInicio: true, fechaFin: true, tipo: true } }),
+    prisma.diaEsperado.findMany({
+      where: { colaboradorId: colaborador.id, fecha: { gte: desdeF, lt: finExclusivo } },
+      select: { fecha: true, programado: true, horaEntrada: true, horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true },
+      orderBy: { fecha: 'asc' },
+    }),
   ]);
 
   const horario = colaborador.horario as any;
@@ -88,9 +94,15 @@ async function main() {
   liquidacion.forEach(l => console.log(`   ${l.codigo}  ${l.horas}h  ${l.esExtra ? '(EXTRA)' : '(ordinaria)'}  ${cop(l.subtotal)}`));
 
   // --- lado ESPERADO, con y sin la política por defecto ---
+  // Los días llegan MATERIALIZADOS de la tabla; los que aún no lo estén caen al
+  // horario vigente, igual que en GET /liquidacion. La cuenta de abajo dice de
+  // dónde salió cada día: si la materialización no corrió, hay que saberlo.
+  const diasEsperados = combinarDiasEsperados(desdeF, finExclusivo, diasMaterializados, horario);
+  console.log(`\nDías del rango: ${diasEsperados.length} · materializados en tabla: ${diasMaterializados.length} · resueltos con el horario vigente: ${diasEsperados.length - diasMaterializados.length}`);
+
   for (const [etiqueta, valorCfg] of [['PERSONAL remunerado (default)', null], ['PERSONAL NO remunerado', 'CALAMIDAD,MEDICO,OTRO']] as const) {
     const politica = parsearPoliticaPermisos(valorCfg ?? cfgPermisos?.valor);
-    const esperadas = calcularHorasEsperadas(desdeF, finExclusivo, horario, festivosDates, permisos as any, politica, (f) => jornadaVigente(f, jornadas));
+    const esperadas = calcularHorasEsperadas(desdeF, finExclusivo, diasEsperados, festivosDates, permisos as any, politica, (f) => jornadaVigente(f, jornadas));
     const saldo = armarSaldo(esperadas, minutosOrdinarios, valorHora, false);
     console.log(`\n--- ${etiqueta} ---`);
     console.log(`   esperadas (ya sin permisos pagados): ${fmtMin(saldo.minutosEsperados)}`);

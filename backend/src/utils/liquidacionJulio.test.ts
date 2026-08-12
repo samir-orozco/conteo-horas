@@ -3,6 +3,7 @@ import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo, calcul
 import { calcularHorasEsperadas, armarSaldo } from './saldoTiempo';
 import { calcularTardanzas } from './tardanzas';
 import { rangoReporte } from './fechas';
+import { calcularDiasEsperados } from './diasEsperados';
 
 // Prueba de extremo a extremo del motor, sin base de datos, sobre el escenario de
 // julio 2026 que se verificó A MANO contra el reporte real (ver prisma/seed-julio-saldo.ts
@@ -114,6 +115,10 @@ function liquidar() {
 describe('julio 2026 — escenario verificado a mano', () => {
   const { desdeF, finExclusivo } = rangoReporte('2026-07-01', '2026-07-31');
   const { minutosOrdinarios } = liquidar();
+  // Los días esperados llegan materializados, como en producción. Se generan con
+  // el mismo horario de arriba: si materializar cambiara un solo minuto, los
+  // números de este archivo se moverían y la prueba lo cantaría.
+  const DIAS_ESPERADOS = calcularDiasEsperados(desdeF, finExclusivo, HORARIO);
 
   it('trabajó 167h 20min de horas ordinarias', () => {
     expect(minutosOrdinarios).toBe(167 * 60 + 20);
@@ -121,7 +126,7 @@ describe('julio 2026 — escenario verificado a mano', () => {
 
   it('con PERSONAL remunerado: debía 176h y queda debiendo 8h 40min', () => {
     const esp = calcularHorasEsperadas(
-      desdeF, finExclusivo, HORARIO, FESTIVOS, PERMISOS,
+      desdeF, finExclusivo, DIAS_ESPERADOS, FESTIVOS, PERMISOS,
       new Set(['CALAMIDAD', 'MEDICO', 'PERSONAL', 'OTRO']), jornadaDe,
     );
     expect(esp.minutosEsperados).toBe(176 * 60);
@@ -132,7 +137,7 @@ describe('julio 2026 — escenario verificado a mano', () => {
 
   it('con PERSONAL no remunerado: debía 184h y queda debiendo 16h 40min', () => {
     const esp = calcularHorasEsperadas(
-      desdeF, finExclusivo, HORARIO, FESTIVOS, PERMISOS,
+      desdeF, finExclusivo, DIAS_ESPERADOS, FESTIVOS, PERMISOS,
       new Set(['CALAMIDAD', 'MEDICO', 'OTRO']), jornadaDe,
     );
     expect(esp.minutosEsperados).toBe(184 * 60);
@@ -145,7 +150,7 @@ describe('julio 2026 — escenario verificado a mano', () => {
     // Llegó tarde 25 min el 6 y 40 min el 13 (65 en total), pero repuso 25 el día 8.
     // Del permiso no remunerado salen 8h. Total: 8h + 40min.
     const esp = calcularHorasEsperadas(
-      desdeF, finExclusivo, HORARIO, FESTIVOS, PERMISOS,
+      desdeF, finExclusivo, DIAS_ESPERADOS, FESTIVOS, PERMISOS,
       new Set(['CALAMIDAD', 'MEDICO', 'PERSONAL', 'OTRO']), jornadaDe,
     );
     const saldo = armarSaldo(esp, minutosOrdinarios, calcularValorHora(SALARIO, HORAS_MES), false);
@@ -160,7 +165,7 @@ describe('julio 2026 — escenario verificado a mano', () => {
 
   it('el festivo del 20 y las vacaciones del 21 no generan deuda', () => {
     const esp = calcularHorasEsperadas(
-      desdeF, finExclusivo, HORARIO, FESTIVOS, PERMISOS,
+      desdeF, finExclusivo, DIAS_ESPERADOS, FESTIVOS, PERMISOS,
       new Set(['CALAMIDAD', 'MEDICO', 'PERSONAL', 'OTRO']), jornadaDe,
     );
     // Solo el 21 se excusa por vacaciones (8h); el 20 es festivo y no se trabajaba.
