@@ -81,6 +81,8 @@ function PanelFotos({ vista }: { vista: VistaFotos }) {
 export default function ReporteExtras() {
   const [colaboradores, setColaboradores] = useState<{ id: string; nombre: string; apellido: string }[]>([]);
   const [colaboradorId, setColaboradorId] = useState(''); // '' = Todos
+  const [sedeId, setSedeId] = useState(''); // '' = todas las sedes
+  const [sedes, setSedes] = useState<{ id: string; nombre: string }[]>([]);
   const [desde, setDesde] = useState(format(new Date(), 'yyyy-MM-01'));
   const [hasta, setHasta] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [filas, setFilas] = useState<Fila[] | null>(null);
@@ -106,12 +108,13 @@ export default function ReporteExtras() {
   const cerrarDrill = () => { setDrill(null); setVistaFotos(null); };
 
   useEffect(() => { api.get('/colaboradores').then(r => setColaboradores(r.data)); }, []);
+  useEffect(() => { api.get('/sedes').then(r => setSedes(r.data)).catch(() => setSedes([])); }, []);
 
   const buscar = async () => {
     setLoading(true);
     setError('');
     try {
-      const r = await api.get('/reportes/extras-resumen', { params: { desde, hasta } });
+      const r = await api.get('/reportes/extras-resumen', { params: { desde, hasta, ...(sedeId ? { sedeId } : {}) } });
       setFilas(r.data.colaboradores);
     } catch {
       setError('No pudimos calcular el reporte');
@@ -159,7 +162,7 @@ export default function ReporteExtras() {
 
       {/* Filtros */}
       <div className="bg-white rounded-xl shadow p-4 md:p-6 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
           <div className="sm:col-span-2 lg:col-span-1">
             <label className="block text-xs font-medium text-gray-600 mb-1">Colaborador</label>
             <select value={colaboradorId} onChange={e => setColaboradorId(e.target.value)}
@@ -168,6 +171,16 @@ export default function ReporteExtras() {
               {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
             </select>
           </div>
+          {sedes.length > 1 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Sede</label>
+              <select value={sedeId} onChange={e => setSedeId(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="">Todas las sedes</option>
+                {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Desde</label>
             <input type="date" value={desde} onChange={e => setDesde(e.target.value)}

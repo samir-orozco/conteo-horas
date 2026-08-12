@@ -248,7 +248,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
   // Resumen de extras y recargos de TODOS los colaboradores activos en un período
   // (para la vista "Todos" del reporte de Extras; el drill-down de cada uno usa /liquidacion).
   app.get('/extras-resumen', auth, async (request) => {
-    const { desde, hasta } = request.query as any;
+    const { desde, hasta, sedeId } = request.query as any;
     const empresaId = request.empresaId!;
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
     const hastaF = new Date(hasta); // solo para resolver la jornada vigente al cierre
@@ -267,7 +267,13 @@ export default async function reporteRoutes(app: FastifyInstance) {
       // TODA la empresa. Sin el select, las fotos de un mes entero viajaban a
       // memoria en cada carga del reporte.
       prisma.registro.findMany({
-        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } },
+        // El filtro por sede va sobre DÓNDE se marcó (`Registro.sedeId`), no
+        // sobre la sede asignada al colaborador: quien rota entre locales
+        // aparece en el reporte del local donde realmente trabajó ese día.
+        where: {
+          colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null },
+          ...(sedeId ? { sedeId } : {}),
+        },
         select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true },
         orderBy: { fecha: 'asc' },
       }),
@@ -361,7 +367,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
   // Resumen de llegadas tarde de TODOS los colaboradores activos en un período
   // (para la vista "Todos"; el drill-down de cada uno usa /tardanzas).
   app.get('/tardanzas-resumen', auth, async (request) => {
-    const { desde, hasta } = request.query as any;
+    const { desde, hasta, sedeId } = request.query as any;
     const empresaId = request.empresaId!;
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
 
@@ -371,7 +377,12 @@ export default async function reporteRoutes(app: FastifyInstance) {
         include: { horario: { include: { franjas: true } } },
         orderBy: { nombre: 'asc' },
       }),
-      prisma.registro.findMany({ where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } } }),
+      prisma.registro.findMany({
+        where: {
+          colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo },
+          ...(sedeId ? { sedeId } : {}),
+        },
+      }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
       prisma.permiso.findMany({
         where: { colaborador: { empresaId }, aprobado: true },

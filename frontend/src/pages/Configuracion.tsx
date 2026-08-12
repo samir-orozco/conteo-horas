@@ -4,6 +4,7 @@ import TabHorario from './configuracion/TabHorario';
 import TabMarcacion from './configuracion/TabMarcacion';
 import TabConexiones from './configuracion/TabConexiones';
 import TabNovedades from './configuracion/TabNovedades';
+import TabSedes from './configuracion/TabSedes';
 import Suscripcion from './Suscripcion';
 
 const TABS = [
@@ -11,6 +12,7 @@ const TABS = [
   { id: 'horario', label: 'Horario' },
   { id: 'novedades', label: 'Novedades' },
   { id: 'marcacion', label: 'Marcación' },
+  { id: 'sedes', label: 'Sedes' },
   { id: 'conexiones', label: 'Conexiones' },
   { id: 'suscripcion', label: 'Suscripción' },
 ] as const;
@@ -43,6 +45,7 @@ export default function Configuracion() {
       {tab === 'horario' && <TabHorario />}
       {tab === 'novedades' && <TabNovedades />}
       {tab === 'marcacion' && <TabMarcacion />}
+      {tab === 'sedes' && <TabSedes />}
       {tab === 'conexiones' && <TabConexiones />}
       {tab === 'suscripcion' && <Suscripcion />}
     </div>

@@ -31,10 +31,16 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const col = await prisma.colaborador.findFirst({
       where: { id, empresaId: request.empresaId },
-      include: { horario: { include: { franjas: true } } },
+      include: {
+        horario: { include: { franjas: true } },
+        sedes: { select: { sedeId: true } },
+      },
     });
     if (!col) return reply.status(404).send({ error: 'No encontrado' });
-    return col;
+    // Se aplana a una lista de ids: es lo que el selector múltiple necesita, y
+    // evita que el frontend tenga que conocer la tabla de unión.
+    const { sedes, ...resto } = col as any;
+    return { ...resto, sedeIds: (sedes ?? []).map((s: any) => s.sedeId) };
   });
 
   // Valida que el horario asignado sea de la misma empresa
@@ -42,6 +48,24 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (!horarioId) return true;
     const h = await prisma.horario.findFirst({ where: { id: horarioId, empresaId, activo: true } });
     return Boolean(h);
+  }
+
+  // Reemplaza las sedes donde este colaborador puede marcar. Se validan contra
+  // la empresa del token: sin eso, un id de otra empresa colaría a alguien en
+  // una sede ajena. `undefined` significa "no se tocó" y se distingue de `[]`,
+  // que sí quiere decir "quítale todas".
+  async function sincronizarSedes(colaboradorId: string, sedeIds: unknown, empresaId: string) {
+    if (!Array.isArray(sedeIds)) return;
+    const validas = await prisma.sede.findMany({
+      where: { id: { in: sedeIds.filter((x): x is string => typeof x === 'string') }, empresaId, activa: true },
+      select: { id: true },
+    });
+    await prisma.$transaction([
+      prisma.colaboradorSede.deleteMany({ where: { colaboradorId } }),
+      ...(validas.length
+        ? [prisma.colaboradorSede.createMany({ data: validas.map(s => ({ colaboradorId, sedeId: s.id })), skipDuplicates: true })]
+        : []),
+    ]);
   }
 
   // La fecha de nacimiento llega como "YYYY-MM-DD"; la normalizamos a Date (o null)
@@ -53,7 +77,8 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   }
 
   app.post('/', auth, async (request, reply) => {
-    const data = normalizar(request.body as any);
+    const { sedeIds, ...cuerpo } = request.body as any;
+    const data = normalizar(cuerpo);
     if (!(await horarioValido(data.horarioId, request.empresaId!))) {
       return reply.status(400).send({ error: 'Horario inválido' });
     }
@@ -95,6 +120,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
         data: { ...data, activo: true, retiroProgramado: null },
       });
       await materializar(reactivado.id);
+      await sincronizarSedes(reactivado.id, sedeIds, request.empresaId!);
       return reply.status(200).send({ ...reactivado, reactivado: true });
     }
 
@@ -102,6 +128,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       data: { ...data, empresaId: request.empresaId! },
     });
     await materializar(colaborador.id);
+    await sincronizarSedes(colaborador.id, sedeIds, request.empresaId!);
     return reply.status(201).send(colaborador);
   });
 
@@ -109,12 +136,13 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
-    const { empresaId: _ignorar, horario: _rel, ...rest } = request.body as any;
+    const { empresaId: _ignorar, horario: _rel, sedeIds, ...rest } = request.body as any;
     const data = normalizar(rest);
     if (!(await horarioValido(data.horarioId, request.empresaId!))) {
       return reply.status(400).send({ error: 'Horario inválido' });
     }
     const actualizado = await prisma.colaborador.update({ where: { id }, data });
+    await sincronizarSedes(id, sedeIds, request.empresaId!);
 
     // Cambiar a alguien de horario es la otra forma de reescribir el pasado:
     // `Colaborador.horarioId` tampoco tiene historial. Se regenera su futuro —
