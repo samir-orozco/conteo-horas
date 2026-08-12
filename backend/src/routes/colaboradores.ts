@@ -6,6 +6,7 @@ import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { finDeMes } from '../utils/suscripcion';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
+import { regenerarFuturoDeColaborador, mantenerVentanaDeColaborador } from '../utils/materializarDias';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -78,17 +79,29 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       }
     }
 
+    // Se materializa la ventana de una vez, no en la pasada diaria: si alguien
+    // se crea y marca el mismo día, ese día tiene que tener su fila.
+    const materializar = async (colaboradorId: string) => {
+      try {
+        await mantenerVentanaDeColaborador(colaboradorId);
+      } catch (err) {
+        request.log.error(err, 'No se pudo materializar la ventana del colaborador');
+      }
+    };
+
     if (existente) {
       const reactivado = await prisma.colaborador.update({
         where: { id: existente.id },
         data: { ...data, activo: true, retiroProgramado: null },
       });
+      await materializar(reactivado.id);
       return reply.status(200).send({ ...reactivado, reactivado: true });
     }
 
     const colaborador = await prisma.colaborador.create({
       data: { ...data, empresaId: request.empresaId! },
     });
+    await materializar(colaborador.id);
     return reply.status(201).send(colaborador);
   });
 
@@ -101,7 +114,20 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (!(await horarioValido(data.horarioId, request.empresaId!))) {
       return reply.status(400).send({ error: 'Horario inválido' });
     }
-    return prisma.colaborador.update({ where: { id }, data });
+    const actualizado = await prisma.colaborador.update({ where: { id }, data });
+
+    // Cambiar a alguien de horario es la otra forma de reescribir el pasado:
+    // `Colaborador.horarioId` tampoco tiene historial. Se regenera su futuro —
+    // de mañana en adelante — y lo ya materializado se queda como estaba.
+    if (data.horarioId !== undefined && data.horarioId !== existente.horarioId) {
+      try {
+        await regenerarFuturoDeColaborador(id);
+      } catch (err) {
+        request.log.error(err, 'No se pudieron regenerar los días futuros del colaborador');
+      }
+    }
+
+    return actualizado;
   });
 
   // Estilo Notion: si el mes ya está pagado, el colaborador queda cubierto y

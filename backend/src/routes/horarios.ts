@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../index';
 import { jornadaVigente } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
+import { regenerarFuturoDeHorario } from '../utils/materializarDias';
 
 type FranjaInput = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean };
 
@@ -79,7 +80,7 @@ export default async function horarioRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
     }
     // Las franjas se reemplazan completas: es la forma simple y sin ambigüedad
-    return prisma.horario.update({
+    const actualizado = await prisma.horario.update({
       where: { id },
       data: {
         nombre,
@@ -92,6 +93,18 @@ export default async function horarioRoutes(app: FastifyInstance) {
       },
       include: { franjas: true },
     });
+
+    // El cambio aplica de MAÑANA en adelante. Los días ya materializados no se
+    // tocan: son los que sostienen los reportes de nómina ya entregados.
+    // Si esto falla, el horario igual quedó guardado; se reintenta solo en la
+    // pasada diaria de `mantenerVentana`.
+    try {
+      await regenerarFuturoDeHorario(id, app.log);
+    } catch (err) {
+      app.log.error(err, 'No se pudieron regenerar los días futuros del horario');
+    }
+
+    return actualizado;
   });
 
   // Desactiva el horario y lo desasigna de los colaboradores

@@ -75,6 +75,23 @@ export async function materializarColaborador(
   return escritos;
 }
 
+// Materializa la ventana de UN colaborador desde hoy. Para el recién creado:
+// sin esto no tendría filas hasta la siguiente pasada diaria, y ese hueco se
+// resolvería con el horario vigente.
+export async function mantenerVentanaDeColaborador(colaboradorId: string): Promise<number> {
+  const { inicioDia } = rangoDiaBogota();
+  const hasta = new Date(inicioDia.getTime() + DIAS_ADELANTE * 24 * 60 * 60 * 1000);
+  return materializarColaborador(colaboradorId, inicioDia, hasta);
+}
+
+// Regenera los días FUTUROS de UN colaborador. Deja intacto hoy y todo lo
+// anterior: hoy ya empezó y la gente ya marcó contra lo que decía esta mañana.
+export async function regenerarFuturoDeColaborador(colaboradorId: string): Promise<number> {
+  const { finDia } = rangoDiaBogota(); // desde mañana
+  const hasta = new Date(finDia.getTime() + DIAS_ADELANTE * 24 * 60 * 60 * 1000);
+  return materializarColaborador(colaboradorId, finDia, hasta, { pisarExistentes: true });
+}
+
 // Regenera los días FUTUROS de todos los colaboradores de un horario. Se llama
 // cuando el admin edita el horario: aplica de mañana en adelante y deja intacto
 // lo ya liquidado.
@@ -83,15 +100,35 @@ export async function regenerarFuturoDeHorario(horarioId: string, log?: Log): Pr
     where: { horarioId, activo: true },
     select: { id: true },
   });
-  const { finDia } = rangoDiaBogota(); // desde mañana
-  const hasta = new Date(finDia.getTime() + DIAS_ADELANTE * 24 * 60 * 60 * 1000);
 
   let total = 0;
   for (const c of colaboradores) {
-    total += await materializarColaborador(c.id, finDia, hasta, { pisarExistentes: true });
+    total += await regenerarFuturoDeColaborador(c.id);
   }
   log?.info(`Días esperados regenerados por cambio de horario: ${total} en ${colaboradores.length} colaborador(es)`);
   return total;
+}
+
+// Garantiza que UN día concreto tenga su fila. Se llama al crear o corregir un
+// registro: un día con marcación es un día que va a salir en un reporte, y si
+// llega ahí sin fila lo resuelve el horario vigente y vuelve a ser reescribible.
+//
+// No pisa lo que ya existe, así que corregir un registro viejo nunca cambia lo
+// que ese día exigía.
+export async function asegurarDiaMaterializado(colaboradorId: string, fecha: Date): Promise<number> {
+  const { inicioDia, finDia } = rangoDiaBogota(fecha);
+  return materializarColaborador(colaboradorId, inicioDia, finDia);
+}
+
+// Igual que la anterior pero para usar desde una ruta: nunca lanza. Materializar
+// es un efecto secundario, y que falle no puede tumbar la marcación de nadie.
+export async function asegurarDiaSinFallar(colaboradorId: string | undefined, fecha: Date | undefined, log?: Log): Promise<void> {
+  if (!colaboradorId || !fecha) return;
+  try {
+    await asegurarDiaMaterializado(colaboradorId, fecha);
+  } catch (err) {
+    log?.error(err, 'No se pudo materializar el día del registro');
+  }
 }
 
 // Mantiene la ventana hacia adelante de toda la plataforma. Corre al arrancar y
@@ -120,13 +157,36 @@ export async function mantenerVentana(log?: Log): Promise<number> {
 // sola vez, al desplegar la función. Usa el horario ACTUAL de cada quien: es el
 // único dato que existe, porque el sistema nunca guardó cuál era antes.
 export async function backfillColaborador(colaboradorId: string): Promise<number> {
-  const primero = await prisma.registro.findFirst({
-    where: { colaboradorId },
-    orderBy: { fecha: 'asc' },
-    select: { fecha: true },
-  });
-  if (!primero) return 0;
-  const desde = medianocheBogotaDe(primero.fecha);
+  const [primero, colaborador] = await Promise.all([
+    prisma.registro.findFirst({
+      where: { colaboradorId },
+      orderBy: { fecha: 'asc' },
+      select: { fecha: true },
+    }),
+    prisma.colaborador.findUnique({ where: { id: colaboradorId }, select: { creadoEn: true } }),
+  ]);
+  if (!colaborador) return 0;
+
+  // Desde lo más viejo de los dos. Solo la primera marcación no basta: al
+  // corregir el pasado se crean registros ANTERIORES a esa fecha, y esos días
+  // quedarían sin fila y volverían a resolverse con el horario de hoy.
+  const candidatos = [colaborador.creadoEn, primero?.fecha].filter(Boolean) as Date[];
+  if (candidatos.length === 0) return 0;
+  const desde = medianocheBogotaDe(new Date(Math.min(...candidatos.map(d => d.getTime()))));
+
   const { finDia } = rangoDiaBogota();
+  if (desde >= finDia) return 0;
   return materializarColaborador(colaboradorId, desde, finDia);
+}
+
+// Rellena hacia atrás TODA la plataforma. Se corre una sola vez al desplegar la
+// función. Es idempotente: no pisa nada de lo que ya exista.
+export async function backfillTodos(log?: Log): Promise<{ colaboradores: number; dias: number }> {
+  const colaboradores = await prisma.colaborador.findMany({ select: { id: true } });
+  let dias = 0;
+  for (const c of colaboradores) {
+    dias += await backfillColaborador(c.id);
+  }
+  log?.info(`Backfill de días esperados: ${dias} días en ${colaboradores.length} colaborador(es)`);
+  return { colaboradores: colaboradores.length, dias };
 }

@@ -24,6 +24,7 @@ import telegramRoutes from './routes/telegram';
 import notificacionRoutes from './routes/notificaciones';
 import { configurarWebhook } from './utils/telegram';
 import { cerrarTurnosOlvidados } from './utils/cierreTurnos';
+import { mantenerVentana } from './utils/materializarDias';
 import { estadoEfectivo, accesoPermitido } from './utils/suscripcion';
 
 // Reexportado por compatibilidad: media base de código hace `import { prisma }
@@ -184,6 +185,12 @@ const start = async () => {
     // Al arrancar y cada 24h; es idempotente y solo actúa sobre días ya pasados.
     cerrarTurnosOlvidados(app.log);
     setInterval(() => cerrarTurnosOlvidados(app.log), 24 * 60 * 60 * 1000);
+    // Materializa el día esperado de cada colaborador para hoy y las próximas
+    // semanas. Sin esto la tabla se queda vacía y todo se resuelve con el
+    // horario VIGENTE, que es justo lo que reescribía el pasado.
+    // Es idempotente y solo escribe donde falta, así que correr de más no daña.
+    mantenerVentana(app.log);
+    setInterval(() => mantenerVentana(app.log), 24 * 60 * 60 * 1000);
     // Registra el webhook del bot de Telegram (si hay URL configurada)
     if (process.env.TELEGRAM_WEBHOOK_URL) configurarWebhook(process.env.TELEGRAM_WEBHOOK_URL);
   } catch (err) {

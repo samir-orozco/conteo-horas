@@ -30,12 +30,18 @@ Decisiones ya tomadas por el dueño:
 Rama de trabajo: **`mejoras/reportes-y-sedes`**. `master` = producción (alineado y
 desplegado). Volver atrás = volver a `master`.
 
-**Los dos cálculos retroactivos ya leen el historial.** El saldo de tiempo
-(`GET /liquidacion`) y las tardanzas (`GET /tardanzas` y `/tardanzas-resumen`)
-consultan `DiaEsperado` del rango y ya NO recorren el horario vigente. Editar un
-horario deja quieto el pasado.
+**La materialización está viva y cerrada de punta a punta.** Los tres cálculos
+retroactivos leen `DiaEsperado` —saldo, tardanzas y la columna de tardanza de la
+lista de Registros—, y la tabla se llena sola: al arrancar, cada 24h, al editar un
+horario, al cambiar a alguien de horario, al crear un colaborador y al cargar o
+corregir un registro. Editar un horario ya no mueve el pasado.
 
-**Hecho y commiteado (7 commits sobre master):**
+> **El usuario lo probó y seguía fallando**, y tenía razón: los cálculos ya leían la
+> tabla pero **nadie la llenaba**, así que todo caía al respaldo (el horario vigente).
+> Y su pantalla de prueba —Registros— tenía además su propio cálculo en línea, que era
+> una tercera fuga que no estaba en el plan.
+
+**Hecho y commiteado (8 commits sobre master):**
 - `CLAUDE.md` con la estrategia de desarrollo (TDD + ramas + trampas del producto).
 - **Vitest montado**: ahora 92 pruebas en verde + 1 fallo esperado a propósito.
 - Avisos en la pantalla de horarios (editar y eliminar afectan reportes pasados).
@@ -46,8 +52,36 @@ horario deja quieto el pasado.
 - **`calcularTardanzas` lee `DiaEsperado`**: la hora exigida y la tolerancia salen de
   la fila del día. Las dos rutas de tardanzas enganchadas, y el desglose del frontend
   muestra la tolerancia que se APLICÓ, no la del horario de hoy.
+- **La generación enganchada y el backfill**: `GET /registros` deja de calcular la
+  tardanza con el horario vigente, y la tabla se llena sola (ver abajo).
 
 **No desplegado a producción.** La tabla NO existe en el servidor.
+
+### Quién llena la tabla, y cuándo
+
+| Momento | Qué hace | Dónde |
+|---|---|---|
+| Al arrancar y cada 24h | `mantenerVentana`: hoy + 60 días, todos los activos | `index.ts` |
+| `PUT /horarios/:id` | `regenerarFuturoDeHorario`: de MAÑANA en adelante | `routes/horarios.ts` |
+| `PUT /colaboradores/:id` con otro `horarioId` | `regenerarFuturoDeColaborador` | `routes/colaboradores.ts` |
+| `POST /colaboradores` (alta o reactivación) | `mantenerVentanaDeColaborador` | `routes/colaboradores.ts` |
+| `POST /registros`, `PUT /registros/:id`, `POST /registros/entrada` | `asegurarDiaSinFallar`: garantiza la fila de ESE día | `routes/registros.ts` |
+| Una vez, al desplegar | `prisma/backfill-dias-esperados.ts` | script |
+
+Tres decisiones que hay que conocer:
+- **Hoy no se regenera** al editar un horario, solo de mañana en adelante. Hoy ya
+  empezó y la gente ya marcó contra lo que decía esta mañana. Se comprobó en la tabla:
+  con el cambio a las 07:00, el 12 (hoy) se quedó en 08:00 y el 13 y 14 pasaron a
+  07:00. **Si el dueño prefiere que un arreglo de horario aplique el mismo día, es
+  cambiar `finDia` por `inicioDia` en `regenerarFuturoDeColaborador`** — pero entonces
+  un cambio a media mañana mueve las tardanzas de quien ya marcó.
+- **Nada pisa una fila `MANUAL`**, que es la puerta de los turnos rotativos.
+- **Materializar nunca tumba la operación**: en las rutas va en `try/catch` con log.
+  Si falla, `mantenerVentana` lo recoge en la pasada diaria.
+
+El backfill usa el horario ACTUAL de cada quien, que es el único dato que existe.
+O sea: congela el pasado **tal como se ve hoy**. Lo ya dañado por ediciones anteriores
+no se recupera —eso ya estaba asumido— pero de ahí en adelante deja de moverse.
 
 ### Cómo se comporta ahora
 
@@ -149,6 +183,24 @@ Pruebas: 75 → **92 en verde** + 1 `it.fails` a propósito.
 6. **En el navegador**: el desglose de llegadas tarde abre y muestra
    "Horario QA 7-4 (demo extra) (10 min de tolerancia)" con las filas correctas, sin
    errores en consola.
+7. **El backfill no movió nada.** Se tomó una foto de los reportes de los 12
+   colaboradores × 4 rangos (`prisma/foto-reportes.ts`), se corrió el backfill (503
+   días nuevos, 1.254 filas en total) y se volvió a tomar: **diff vacío**. Era lo
+   esperado —el respaldo ya calculaba lo mismo con el horario vigente— pero es
+   justamente la propiedad que había que demostrar antes de tocar producción.
+8. **El escenario que reportó el usuario, por las rutas reales del API**: se cargó a
+   mano un registro de un día pasado (05/08, entrada 08:30 → 27 min tarde), se cambió
+   el horario a 07:00 con `PUT /horarios` y se volvió a mirar todo:
+
+   | | Antes del cambio | Después |
+   |---|---|---|
+   | Tardanza en la lista de Registros | 27 min | **27 min** |
+   | Horas esperadas del período | 3.360 | **3.360** |
+   | Reporte de tardanzas | 1 día / 27 min | **1 día / 27 min** |
+
+   Y el cambio SÍ aplicó hacia adelante: en `dias_esperados`, el 10, 11 y 12 se
+   quedaron en 08:00 y el 13 y 14 pasaron a 07:00. El horario se restauró y el
+   registro de prueba se borró; la foto de reportes volvió a dar diff vacío.
 
 **Datos locales:** se sembraron 31 filas en `dias_esperados` (julio 2026 de Santiago
 Soto García, todas `AUTO`). El resto de colaboradores sigue con 0 filas, o sea con el
@@ -169,6 +221,12 @@ camino de respaldo. Los registros del 12/08/2026 de QA Recargos siguen como se d
 - `resize_window` después de `navigate` no siempre pega: hay que volver a llamarlo
   DESPUÉS de navegar, o el screenshot sale a escala mínima e ilegible.
 - Cuidado con `mysql -e` y comillas en zsh: partir la consulta en varias líneas falla.
+- **Un `DELETE` con `Content-Type: application/json` y sin cuerpo lo rechaza Fastify.**
+  Se creyó borrado el registro de prueba y seguía ahí. Al llamar el API a mano, no
+  mandar ese header en DELETE — y comprobar el `status`, no asumirlo.
+- `Registro.fecha` NO siempre es medianoche: el kiosco guarda el instante real
+  (`fecha: ahora`). Filtrar `dias_esperados` por ese valor crudo deja fuera la fila del
+  día, que está anclada a las 05:00 UTC. Hay que abrir el rango con `rangoDiaBogota`.
 
 **Errores míos en las pruebas (ya corregidos, no repetir):**
 - Ayudante `bog()` construyendo la fecha con cadena ISO: para horas ≥ 19, `hora + 5`
@@ -201,28 +259,27 @@ camino de respaldo. Los registros del 12/08/2026 de QA Recargos siguen como se d
 
 ## Next step
 
-**Enganchar la generación.** Los dos consumidores ya leen `DiaEsperado`, pero **nadie
-la llena automáticamente**: hoy las filas solo existen porque se sembraron a mano.
-Mientras siga así, todo el mundo va por el camino de respaldo y la función no sirve
-para nada en la práctica.
+**Desplegar a producción, y en este orden.** La función está completa y verificada en
+local; lo que falta es sacarla.
 
-1. `mantenerVentana` al arrancar y cada 24h, en `index.ts`, al lado de
-   `cerrarTurnosOlvidados`. Es idempotente. Ya no hay ciclo de imports que lo estorbe
-   (por eso se extrajo `src/prisma.ts`).
-2. `regenerarFuturoDeHorario(horarioId)` en el `PUT` de horarios (`routes/horarios.ts`).
-   Solo toca de mañana en adelante y nunca pisa un día `MANUAL`.
-3. Ojo con lo que HOY no está cubierto: cambiar a un colaborador de horario
-   (`PUT /colaboradores/:id` con otro `horarioId`) también debería regenerar su futuro.
-   Es la causa nº 2 de las tres que se listaron arriba y no la cubre
-   `regenerarFuturoDeHorario`, que va por `horarioId`.
+1. **El DDL de `dias_esperados`, A MANO y ANTES que el código.** `/liquidacion`,
+   `/tardanzas`, `/tardanzas-resumen` y `/registros` ya consultan la tabla: si no
+   existe, esas cuatro rutas responden 500. `prisma migrate deploy` NO sirve (las
+   migraciones están desfasadas del schema, se evolucionó con `db push`).
+2. Compilar y subir backend y frontend por las ramas `*-build`. Ojo con `.env.local`.
+3. **Correr el backfill una vez**: `ts-node prisma/backfill-dias-esperados.ts`, o su
+   equivalente compilado. Es idempotente. En local fueron 503 días en 0,7s para 12
+   colaboradores; en producción hay que mirar el tiempo antes de darlo por hecho.
+4. Comprobar en producción que un reporte de un mes cerrado da lo mismo que antes de
+   desplegar. **Guardar ese número ANTES de subir.**
+
+Pendiente de decisión del dueño (está arriba, en "Quién llena la tabla"): si editar un
+horario debe aplicar **hoy mismo** o solo de mañana en adelante. Hoy es de mañana.
 
 Después:
-- **Seeder de backfill** (`backfillColaborador` ya existe) + el **DDL a mano para
-  producción**.
-  **El DDL va ANTES que el código**: `/liquidacion`, `/tardanzas` y
-  `/tardanzas-resumen` ya consultan `dias_esperados`, y si la tabla no existe las tres
-  rutas responden 500. No se puede desplegar el backend primero.
 - Tapar `almuerzoDelRegistro` (ver los bugs de abajo): es la última fuga retroactiva.
+- El prototipo de turnos rotativos: la pieza técnica ya está lista (`origen = 'MANUAL'`
+  nunca se pisa), falta la pantalla.
 
 ---
 
@@ -268,6 +325,9 @@ De la lista de 5 mejoras que pidió (el punto 5 **ya estaba hecho**: Configuraci
   Sin eso, Prisma dimensiona el pool según las CPU físicas del servidor (64-88).
 
 **Quién usa todavía el horario vigente (para el mapa mental):**
-`dashboard.ts`, `registros.ts` y `cierreTurnos.ts` lo usan para **hoy** — ahí el horario
-actual es lo correcto y no hay nada que cambiar. De los retroactivos ya solo queda
+`dashboard.ts` y `cierreTurnos.ts` lo usan para **hoy** — ahí el horario actual es lo
+correcto y no hay nada que cambiar. De los retroactivos ya solo queda
 `almuerzoDelRegistro`.
+
+**Datos de la BD local:** 1.254 filas en `dias_esperados` tras el backfill, cubriendo
+de junio a octubre de 2026 para los 12 colaboradores. Todas `AUTO`.

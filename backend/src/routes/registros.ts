@@ -1,7 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { toZonedTime } from 'date-fns-tz';
 import { prisma } from '../index';
-import { franjaDelDia, minutosDe, DIAS_SEMANA } from '../utils/tardanzas';
+import { minutosDe } from '../utils/tardanzas';
+import { combinarDiasEsperados } from '../utils/diasEsperados';
+import { asegurarDiaSinFallar } from '../utils/materializarDias';
+import { rangoDiaBogota } from '../utils/fechas';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -54,20 +57,59 @@ export default async function registroRoutes(app: FastifyInstance) {
       if (!actual || r.entrada < actual.entrada!) primeraEntradaDia.set(clave, r.id);
     }
 
+    // Lo que el horario exigía CADA día, congelado. Esta columna se calculaba
+    // contra el horario vigente, así que adelantar la entrada llenaba de
+    // tardanzas los días viejos aunque el reporte ya no lo hiciera.
+    const diasPorColaborador = new Map<string, Map<string, any>>();
+    if (registros.length > 0) {
+      // El rango se abre a los límites del DÍA de Bogotá: el kiosco guarda
+      // `Registro.fecha` con la hora real, y las filas están ancladas a
+      // medianoche, así que filtrar por el instante crudo las dejaría fuera.
+      const fechas = registros.map(r => r.fecha.getTime());
+      const desdeDia = rangoDiaBogota(new Date(Math.min(...fechas))).inicioDia;
+      const hastaDia = rangoDiaBogota(new Date(Math.max(...fechas))).finDia;
+      const materializados = await prisma.diaEsperado.findMany({
+        where: {
+          colaboradorId: { in: [...new Set(registros.map(r => r.colaboradorId))] },
+          fecha: { gte: desdeDia, lt: hastaDia },
+        },
+        select: {
+          colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
+          horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+        },
+      });
+      for (const d of materializados) {
+        if (!diasPorColaborador.has(d.colaboradorId)) diasPorColaborador.set(d.colaboradorId, new Map());
+        diasPorColaborador.get(d.colaboradorId)!.set(toZonedTime(d.fecha, TZ).toDateString(), d);
+      }
+    }
+
+    // Un día sin fila cae al horario vigente, igual que en los reportes: es lo
+    // que el sistema hacía siempre, así que nadie ve un número distinto.
+    const diaEsperadoDe = (registro: typeof registros[number]) => {
+      const clave = toZonedTime(registro.fecha, TZ).toDateString();
+      const congelado = diasPorColaborador.get(registro.colaboradorId)?.get(clave);
+      const { inicioDia, finDia } = rangoDiaBogota(registro.fecha);
+      const [dia] = combinarDiasEsperados(
+        inicioDia, finDia,
+        congelado ? [congelado] : [],
+        registro.colaborador.horario as any,
+      );
+      return dia;
+    };
+
     // Las fotos (base64) no viajan en la lista: solo un indicador; se piden con /:id/fotos.
     // La llegada se evalúa contra el horario asignado (null si no aplica ese día).
     return registros.map(r => {
       const { fotoEntrada, fotoSalida, colaborador, ...resto } = r;
-      const h = colaborador.horario;
       let minutosTarde: number | null = null;
       const clave = `${r.colaboradorId}|${toZonedTime(r.fecha, TZ).toDateString()}`;
       const esPrimeraDelDia = primeraEntradaDia.get(clave) === r.id;
-      if (r.entrada && esPrimeraDelDia && r.tipo !== 'FESTIVO' && h && h.activo) {
-        const diaSemana = DIAS_SEMANA[toZonedTime(r.fecha, TZ).getDay()];
-        const franja = franjaDelDia(h, diaSemana);
-        if (franja) {
+      if (r.entrada && esPrimeraDelDia && r.tipo !== 'FESTIVO') {
+        const dia = diaEsperadoDe(r);
+        if (dia?.programado && dia.horaEntrada) {
           const z = toZonedTime(r.entrada, TZ);
-          const tarde = z.getHours() * 60 + z.getMinutes() - (minutosDe(franja.horaEntrada) + h.toleranciaMin);
+          const tarde = z.getHours() * 60 + z.getMinutes() - (minutosDe(dia.horaEntrada) + dia.toleranciaMin);
           minutosTarde = Math.max(0, tarde);
         }
       }
@@ -110,6 +152,7 @@ export default async function registroRoutes(app: FastifyInstance) {
     const registro = await prisma.registro.create({
       data: { colaboradorId, fecha: ahora, entrada: ahora, tipo: 'NORMAL' },
     });
+    await asegurarDiaSinFallar(colaboradorId, registro.fecha, app.log);
     return reply.status(201).send(registro);
   });
 
@@ -139,6 +182,10 @@ export default async function registroRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Colaborador no encontrado' });
     }
     const registro = await prisma.registro.create({ data: camposRegistro(body, true) as any });
+    // Un día con marcación es un día que va a salir en un reporte. Si llega ahí
+    // sin fila, lo resuelve el horario vigente y vuelve a ser reescribible. Esto
+    // pasa sobre todo al cargar días PASADOS a mano, que es como se corrige.
+    await asegurarDiaSinFallar(registro.colaboradorId, registro.fecha, app.log);
     return reply.status(201).send(registro);
   });
 
@@ -156,10 +203,15 @@ export default async function registroRoutes(app: FastifyInstance) {
     if (body.colaboradorId !== undefined && !(await colaboradorDeEmpresa(body.colaboradorId, request.empresaId!))) {
       return reply.status(404).send({ error: 'Colaborador no encontrado' });
     }
-    return prisma.registro.update({
+    const actualizado = await prisma.registro.update({
       where: { id },
       data: { ...camposRegistro(body, false), editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
     });
+    // Corregir un registro puede moverlo de día o de colaborador; el día nuevo
+    // también necesita su fila. Nunca pisa la que ya exista, así que corregir
+    // el pasado no cambia lo que ese día exigía.
+    await asegurarDiaSinFallar(actualizado.colaboradorId, actualizado.fecha, app.log);
+    return actualizado;
   });
 
   app.delete('/:id', auth, async (request, reply) => {
