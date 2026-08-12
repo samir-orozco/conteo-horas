@@ -43,6 +43,10 @@ function agrupar<T extends { colaboradorId: string }>(filas: T[]): Map<string, T
 }
 
 type DetalleRegistro = {
+  // El id viaja para que el desglose pueda pedir las fotos de verificación con
+  // `GET /registros/:id/fotos`. Sin él, el frontend tenía la fila pero no sabía
+  // a qué marcación pertenecía.
+  id: string;
   fecha: Date; entrada: Date; salida: Date;
   filas: { codigo: string; nombre: string; horas: number; subtotal: number }[];
 };
@@ -52,7 +56,7 @@ type DetalleRegistro = {
 // aplica el motor de horas colombianas registro por registro, y opcionalmente
 // arma el desglose día a día (para el drill-down de "Extras y recargos").
 function liquidarRegistros(
-  registros: { fecha: Date; entrada: Date | null; salida: Date | null }[],
+  registros: { id: string; fecha: Date; entrada: Date | null; salida: Date | null }[],
   horario: HorarioConFranjas | null,
   extraConfig: ReturnType<typeof construirExtraConfig>,
   festivosDates: Date[],
@@ -100,7 +104,7 @@ function liquidarRegistros(
           .filter(l => l.codigo !== 'HOD' && l.horas > 0)
           .map(l => ({ codigo: l.codigo, nombre: l.nombre, horas: l.horas, subtotal: l.subtotal }));
         if (filas.length > 0) {
-          detalleRegistros.push({ fecha: registro.fecha, entrada: registro.entrada, salida: registro.salida, filas });
+          detalleRegistros.push({ id: registro.id, fecha: registro.fecha, entrada: registro.entrada, salida: registro.salida, filas });
         }
       }
 
@@ -145,8 +149,13 @@ export default async function reporteRoutes(app: FastifyInstance) {
         where: { id: colaboradorId, empresaId: request.empresaId },
         include: { horario: { include: { franjas: true } } },
       }),
+      // `select` explícito: sin él vienen también `fotoEntrada` y `fotoSalida`,
+      // que son base64 de cientos de KB cada una. Un mes de marcaciones se
+      // convertía en decenas de MB cargados en memoria para no usarlos. Las
+      // fotos se piden aparte, una a una, con `GET /registros/:id/fotos`.
       prisma.registro.findMany({
         where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } },
+        select: { id: true, fecha: true, entrada: true, salida: true },
         orderBy: { fecha: 'asc' },
       }),
       prisma.diaFestivo.findMany({
@@ -235,8 +244,12 @@ export default async function reporteRoutes(app: FastifyInstance) {
         include: { horario: { include: { franjas: true } } },
         orderBy: { nombre: 'asc' },
       }),
+      // Igual que en /liquidacion, pero aquí pesa más: son los registros de
+      // TODA la empresa. Sin el select, las fotos de un mes entero viajaban a
+      // memoria en cada carga del reporte.
       prisma.registro.findMany({
         where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } },
+        select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true },
         orderBy: { fecha: 'asc' },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),

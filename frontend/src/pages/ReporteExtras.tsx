@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
-import { Search, X, Clock3 } from 'lucide-react';
+import { Search, X, Clock3, Camera, ArrowLeft, ImageOff } from 'lucide-react';
 import api from '../lib/api';
+import { fotosExpiradas, MESES_RETENCION_FOTOS } from '../lib/retencionFotos';
 
 const TZ = 'America/Bogota';
 
@@ -12,7 +13,10 @@ type Fila = {
   totalRecargos: number; totalExtra: number; totalAdicional: number;
 };
 type LineaLiquidacion = { codigo: string; nombre: string; horas: number; valorHora: number; recargo: number; esExtra: boolean; factorPagado: number; subtotal: number };
-type DetalleRegistro = { fecha: string; entrada: string; salida: string; filas: { codigo: string; nombre: string; horas: number; subtotal: number }[] };
+type DetalleRegistro = { id: string; fecha: string; entrada: string; salida: string; filas: { codigo: string; nombre: string; horas: number; subtotal: number }[] };
+// Vista de fotos DENTRO del mismo modal: se guarda el día que se está mirando
+// para poder volver al desglose sin perder el contexto.
+type VistaFotos = { dia: DetalleRegistro; cargando: boolean; entrada: string | null; salida: string | null; error: boolean };
 type Drill = {
   colaborador: { nombre: string; apellido: string };
   liquidacion: LineaLiquidacion[]; totalRecargos: number; totalExtra: number; totalAdicional: number;
@@ -33,6 +37,47 @@ const fmtMin = (m: number) => {
 };
 const fmtHora = (s: string) => format(toZonedTime(new Date(s), TZ), 'HH:mm');
 
+// Una foto del par entrada/salida. Cuando no hay imagen explica POR QUÉ, que es
+// lo que de verdad necesita saber quien audita: no es lo mismo "marcó con
+// cédula" que "la foto existió y ya se borró".
+function Foto({ titulo, src, expirada }: { titulo: string; src: string | null; expirada: boolean }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-muted mb-1.5">{titulo}</p>
+      {src ? (
+        <img src={src} alt={titulo} className="w-full rounded-xl border border-gray-200 bg-gray-50" />
+      ) : (
+        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center">
+          <ImageOff size={22} className="mx-auto text-gray-400 mb-2" />
+          <p className="text-xs text-muted leading-relaxed">
+            {expirada
+              ? <>Las fotos se eliminan automáticamente a los <b>{MESES_RETENCION_FOTOS} meses</b> para no sobrecargar el servidor.</>
+              : <>Sin foto: la marcación se hizo <b>con cédula</b>, no con reconocimiento facial.</>}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PanelFotos({ vista }: { vista: VistaFotos }) {
+  if (vista.cargando) return <p className="text-center text-gray-400 py-10 text-sm">Cargando fotos...</p>;
+  if (vista.error) return <p className="text-center text-red-500 py-10 text-sm">No pudimos cargar las fotos de esta marcación.</p>;
+
+  const expirada = fotosExpiradas(vista.dia.fecha);
+  return (
+    <>
+      <div className="flex items-center justify-center gap-2 text-xs text-muted font-mono mb-4">
+        <span className="text-green-700">{fmtHora(vista.dia.entrada)}</span> — <span className="text-red-600">{fmtHora(vista.dia.salida)}</span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Foto titulo="Entrada" src={vista.entrada} expirada={expirada} />
+        <Foto titulo="Salida" src={vista.salida} expirada={expirada} />
+      </div>
+    </>
+  );
+}
+
 export default function ReporteExtras() {
   const [colaboradores, setColaboradores] = useState<{ id: string; nombre: string; apellido: string }[]>([]);
   const [colaboradorId, setColaboradorId] = useState(''); // '' = Todos
@@ -44,6 +89,21 @@ export default function ReporteExtras() {
 
   const [drill, setDrill] = useState<Drill | null>(null);
   const [drillLoading, setDrillLoading] = useState(false);
+  const [vistaFotos, setVistaFotos] = useState<VistaFotos | null>(null);
+
+  // Abre las fotos de un día sin salir del modal. Se piden al momento y no con
+  // el reporte: son base64 pesados y la mayoría de las veces nadie las mira.
+  const abrirFotos = async (dia: DetalleRegistro) => {
+    setVistaFotos({ dia, cargando: true, entrada: null, salida: null, error: false });
+    try {
+      const r = await api.get(`/registros/${dia.id}/fotos`);
+      setVistaFotos({ dia, cargando: false, entrada: r.data.fotoEntrada, salida: r.data.fotoSalida, error: false });
+    } catch {
+      setVistaFotos({ dia, cargando: false, entrada: null, salida: null, error: true });
+    }
+  };
+
+  const cerrarDrill = () => { setDrill(null); setVistaFotos(null); };
 
   useEffect(() => { api.get('/colaboradores').then(r => setColaboradores(r.data)); }, []);
 
@@ -171,23 +231,43 @@ export default function ReporteExtras() {
 
       {/* Drill-down: desglose de un colaborador */}
       {drill && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDrill(null)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={cerrarDrill}>
           <div className="hp-pop bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 sticky top-0 bg-white">
-              <div>
-                <h3 className="font-bold text-lg text-ink">{drill.colaborador.nombre} {drill.colaborador.apellido}</h3>
-                <p className="text-xs text-muted">
-                  {format(new Date(desde), 'dd/MM/yyyy')} — {format(new Date(hasta), 'dd/MM/yyyy')}
-                </p>
+            <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 sticky top-0 bg-white z-10">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* En la vista de fotos, el botón de volver reemplaza al avatar del
+                    encabezado: se regresa al desglose sin cerrar el modal. */}
+                {vistaFotos && (
+                  <button onClick={() => setVistaFotos(null)}
+                    className="flex items-center gap-1 text-xs font-semibold text-primary-dark hover:underline shrink-0">
+                    <ArrowLeft size={15} /> Volver
+                  </button>
+                )}
+                <div className="min-w-0">
+                  <h3 className="font-bold text-lg text-ink truncate">
+                    {vistaFotos
+                      ? format(toZonedTime(new Date(vistaFotos.dia.fecha), TZ), "EEEE dd 'de' MMMM", { locale: es })
+                      : `${drill.colaborador.nombre} ${drill.colaborador.apellido}`}
+                  </h3>
+                  <p className="text-xs text-muted">
+                    {vistaFotos
+                      ? 'Fotos de verificación facial'
+                      : `${format(new Date(desde), 'dd/MM/yyyy')} — ${format(new Date(hasta), 'dd/MM/yyyy')}`}
+                  </p>
+                </div>
               </div>
-              <button onClick={() => setDrill(null)}><X size={20} className="text-gray-400" /></button>
+              <button onClick={cerrarDrill}><X size={20} className="text-gray-400" /></button>
             </div>
             <div className="p-6">
-              {drillLoading ? (
+              {vistaFotos ? (
+                <PanelFotos vista={vistaFotos} />
+              ) : drillLoading ? (
                 <p className="text-center text-gray-400 py-8">Cargando...</p>
               ) : (
                 <>
-                  <div className="flex gap-4 mb-5 text-sm flex-wrap">
+                  {/* Las tres tarjetas reparten el ancho completo del modal en
+                      lugar de quedar apiladas a la izquierda. */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5 text-sm">
                     <div className="bg-gray-50 rounded-xl px-4 py-2.5"><p className="text-xs text-muted">Recargos</p><p className="font-semibold text-ink">{fmt(drill.totalRecargos)}</p></div>
                     <div className="bg-gray-50 rounded-xl px-4 py-2.5"><p className="text-xs text-muted">Extras</p><p className="font-semibold text-ink">{fmt(drill.totalExtra)}</p></div>
                     <div className="bg-primary/15 rounded-xl px-4 py-2.5"><p className="text-xs text-ink/70">Total a pagar</p><p className="font-bold text-ink">{fmt(drill.totalAdicional)}</p></div>
@@ -201,10 +281,12 @@ export default function ReporteExtras() {
                   )}
                   <div className="space-y-1.5">
                     {drill.detalleRegistros.map((d, i) => (
-                      <div key={i} className="border border-gray-100 rounded-xl px-4 py-3">
+                      <button key={i} type="button" onClick={() => abrirFotos(d)}
+                        className="w-full text-left border border-gray-100 rounded-xl px-4 py-3 hover:border-primary/50 hover:bg-gray-50/60 transition-colors">
                         <div className="flex items-center justify-between gap-3 flex-wrap">
-                          <span className="text-sm font-medium text-ink capitalize">
+                          <span className="text-sm font-medium text-ink capitalize flex items-center gap-1.5">
                             {format(toZonedTime(new Date(d.fecha), TZ), "EEE dd/MM/yyyy", { locale: es })}
+                            <Camera size={13} className="text-muted" />
                           </span>
                           <span className="text-xs text-muted font-mono">
                             <span className="text-green-700">{fmtHora(d.entrada)}</span> — <span className="text-red-600">{fmtHora(d.salida)}</span>
@@ -217,7 +299,7 @@ export default function ReporteExtras() {
                             </span>
                           ))}
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </>
