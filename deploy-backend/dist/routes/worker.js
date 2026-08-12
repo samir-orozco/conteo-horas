@@ -13,6 +13,7 @@ const notificaciones_1 = require("../utils/notificaciones");
 const fechas_1 = require("../utils/fechas");
 const geo_1 = require("../utils/geo");
 const kioscoConfig_1 = require("../utils/kioscoConfig");
+const sedes_1 = require("../utils/sedes");
 const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const minutosDe = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
@@ -120,7 +121,10 @@ async function workerRoutes(app) {
             empresa: empresa.nombre,
             requiereDispositivo: await (0, kioscoConfig_1.exigeDispositivo)(empresa.id),
             permiteCedula: await (0, kioscoConfig_1.permiteCedula)(empresa.id),
-            exigeUbicacion: (await (0, kioscoConfig_1.geocercoConfig)(empresa.id)) !== null,
+            // El kiosco pide el GPS si lo exige la geocerca de la empresa O si hay
+            // alguna sede con ubicación: con sedes, quién marca dónde solo se sabe
+            // por coordenadas, así que hay que pedirlas antes de saber quién es.
+            exigeUbicacion: (await (0, kioscoConfig_1.geocercoConfig)(empresa.id)) !== null || (await (0, kioscoConfig_1.empresaUsaSedes)(empresa.id)),
         };
     });
     // Vincula este dispositivo al kiosco con el código de 6 dígitos que genera el admin
@@ -169,7 +173,18 @@ async function workerRoutes(app) {
         if (!col)
             return reply.code(401).send({ error: 'Cédula no registrada en esta empresa' });
         const token = app.jwt.sign({ id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId }, { expiresIn: '12h' });
-        return { token, colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo } };
+        // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
+        // toca marcar a esta persona, junto al nombre.
+        const sedesDelCol = await index_1.prisma.colaboradorSede.findMany({
+            where: { colaboradorId: col.id, sede: { activa: true } },
+            select: { sede: { select: { id: true, nombre: true } } },
+            orderBy: { sede: { nombre: 'asc' } },
+        });
+        return {
+            token,
+            colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo },
+            sedes: sedesDelCol.map(s => s.sede),
+        };
     });
     // Login del kiosco con reconocimiento facial: el navegador ya calculó el
     // descriptor (128 floats) con face-api.js tras una captura estable. El servidor
@@ -194,7 +209,18 @@ async function workerRoutes(app) {
             return reply.code(401).send({ error: 'Rostro no reconocido. Intenta de nuevo o marca con tu cédula.' });
         const col = match.colaborador;
         const token = app.jwt.sign({ id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId }, { expiresIn: '12h' });
-        return { token, colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo } };
+        // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
+        // toca marcar a esta persona, junto al nombre.
+        const sedesDelCol = await index_1.prisma.colaboradorSede.findMany({
+            where: { colaboradorId: col.id, sede: { activa: true } },
+            select: { sede: { select: { id: true, nombre: true } } },
+            orderBy: { sede: { nombre: 'asc' } },
+        });
+        return {
+            token,
+            colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo },
+            sedes: sedesDelCol.map(s => s.sede),
+        };
     });
     // Estado del día: retorna si hay entrada abierta (sin salida). Select mínimo: no
     // trae las fotos (LongText) ni el resto de columnas que el kiosco no usa.
@@ -247,19 +273,44 @@ async function workerRoutes(app) {
         try {
             const { foto, lat, lng } = (request.body ?? {});
             const fotoGuardar = fotoValida(foto) ? foto : null;
-            // Geocerco: si la empresa lo exige, la marca debe venir dentro del radio.
-            const geo = await (0, kioscoConfig_1.geocercoConfig)(payload.empresaId);
-            if (geo) {
+            // ===== Dónde está marcando =====
+            //
+            // Si tiene sedes asignadas, manda la geocerca de SUS sedes: basta estar
+            // dentro de cualquiera (quien rota entre locales marca en la que le toca
+            // ese día). Si no tiene sedes, rige la geocerca única de la empresa, que
+            // es como funcionó siempre — así nada se rompe antes de migrar.
+            let sedeDeLaMarca = null;
+            const sedesDelTrabajador = await (0, kioscoConfig_1.sedesConGeocercaDe)(payload.id);
+            if (sedesDelTrabajador.length > 0) {
                 const latN = Number(lat), lngN = Number(lng);
                 if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
                     return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
                 }
-                const dist = Math.round((0, geo_1.distanciaMetros)(latN, lngN, geo.lat, geo.lng));
-                if (dist > geo.radio) {
+                const r = (0, sedes_1.resolverSedeDeMarcacion)(sedesDelTrabajador, latN, lngN);
+                if (!r.dentro) {
+                    // Se nombra la sede más cercana y la distancia: "fuera de ubicación" a
+                    // secas no le dice a la persona qué hacer.
                     return reply.code(403).send({
-                        error: `Estás fuera de la ubicación de la empresa (a ${dist} m). Debes marcar desde el sitio de trabajo.`,
-                        codigo: 'FUERA_DE_UBICACION', distancia: dist, radio: geo.radio,
+                        error: `Estás a ${r.distancia} m de ${r.sede?.nombre}. Debes marcar desde una de tus sedes.`,
+                        codigo: 'FUERA_DE_UBICACION', distancia: r.distancia, radio: r.sede?.radio ?? 0,
                     });
+                }
+                sedeDeLaMarca = r.sede?.id ?? null;
+            }
+            else {
+                const geo = await (0, kioscoConfig_1.geocercoConfig)(payload.empresaId);
+                if (geo) {
+                    const latN = Number(lat), lngN = Number(lng);
+                    if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
+                        return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
+                    }
+                    const dist = Math.round((0, geo_1.distanciaMetros)(latN, lngN, geo.lat, geo.lng));
+                    if (dist > geo.radio) {
+                        return reply.code(403).send({
+                            error: `Estás fuera de la ubicación de la empresa (a ${dist} m). Debes marcar desde el sitio de trabajo.`,
+                            codigo: 'FUERA_DE_UBICACION', distancia: dist, radio: geo.radio,
+                        });
+                    }
                 }
             }
             const ahora = new Date();
@@ -288,6 +339,18 @@ async function workerRoutes(app) {
             });
             const tipo = festHoy ? 'FESTIVO' : 'NORMAL';
             if (abierto) {
+                // Entrada y salida en el MISMO sitio. Si abrió turno en El Poblado no
+                // puede cerrarlo en Laureles: el turno pertenece a una sede, y permitir
+                // lo contrario haría imposible saber dónde trabajó realmente.
+                // Los turnos abiertos ANTES de existir las sedes no tienen sede: esos se
+                // dejan cerrar donde sea, o quedarían atrapados sin poder marcar salida.
+                if (abierto.sedeId && sedeDeLaMarca && abierto.sedeId !== sedeDeLaMarca) {
+                    const sedeEntrada = sedesDelTrabajador.find(s => s.id === abierto.sedeId);
+                    return reply.code(403).send({
+                        error: `Abriste el turno en ${sedeEntrada?.nombre ?? 'otra sede'}. La salida debe marcarse en la misma sede.`,
+                        codigo: 'SEDE_DISTINTA',
+                    });
+                }
                 const updated = await index_1.prisma.registro.update({
                     where: { id: abierto.id },
                     data: { salida: ahora, ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}) },
@@ -324,6 +387,9 @@ async function workerRoutes(app) {
                         fecha: inicioDia,
                         entrada: ahora,
                         tipo: tipo,
+                        // Queda guardado DÓNDE marcó, no dónde debía: el filtro por sede de
+                        // los reportes tiene que reflejar la realidad.
+                        ...(sedeDeLaMarca ? { sedeId: sedeDeLaMarca } : {}),
                         ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
                     },
                 });

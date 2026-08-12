@@ -40,6 +40,8 @@ function calcularDiasEsperados(desde, finExclusivo, horario) {
                 toleranciaMin: horario?.toleranciaMin ?? 0,
                 almuerzoMin: 0,
                 minutosEsperados: 0,
+                toleranciaSalidaMin: horario?.toleranciaSalidaMin ?? 0,
+                ajustaEntrada: horario?.ajustaEntrada ?? false,
             });
         }
         else {
@@ -53,6 +55,8 @@ function calcularDiasEsperados(desde, finExclusivo, horario) {
                 toleranciaMin: horario.toleranciaMin ?? 0,
                 almuerzoMin: almuerzo,
                 minutosEsperados: Math.max(0, bruto - almuerzo),
+                toleranciaSalidaMin: horario.toleranciaSalidaMin ?? 0,
+                ajustaEntrada: horario.ajustaEntrada ?? false,
             });
         }
         cursor = new Date(cursor.getTime() + UN_DIA_MS);

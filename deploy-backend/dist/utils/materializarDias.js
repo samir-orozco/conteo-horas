@@ -61,13 +61,15 @@ async function materializarColaborador(colaboradorId, desde, finExclusivo, opcio
             update: {
                 programado: d.programado, horaEntrada: d.horaEntrada, horaSalida: d.horaSalida,
                 toleranciaMin: d.toleranciaMin, almuerzoMin: d.almuerzoMin,
-                minutosEsperados: d.minutosEsperados, horarioId: colaborador.horarioId, origen: 'AUTO',
+                minutosEsperados: d.minutosEsperados, toleranciaSalidaMin: d.toleranciaSalidaMin,
+                ajustaEntrada: d.ajustaEntrada, horarioId: colaborador.horarioId, origen: 'AUTO',
             },
             create: {
                 colaboradorId, fecha: d.fecha,
                 programado: d.programado, horaEntrada: d.horaEntrada, horaSalida: d.horaSalida,
                 toleranciaMin: d.toleranciaMin, almuerzoMin: d.almuerzoMin,
-                minutosEsperados: d.minutosEsperados, horarioId: colaborador.horarioId, origen: 'AUTO',
+                minutosEsperados: d.minutosEsperados, toleranciaSalidaMin: d.toleranciaSalidaMin,
+                ajustaEntrada: d.ajustaEntrada, horarioId: colaborador.horarioId, origen: 'AUTO',
             },
         });
         escritos++;

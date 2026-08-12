@@ -82,6 +82,7 @@ async function registroRoutes(app) {
                 select: {
                     colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
                     horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+                    toleranciaSalidaMin: true, ajustaEntrada: true,
                 },
             });
             for (const d of materializados) {

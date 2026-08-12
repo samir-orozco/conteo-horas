@@ -38,7 +38,7 @@ async function horarioRoutes(app) {
         return { horasSemanales: (0, vigencias_1.jornadaVigente)(new Date(), jornadas) };
     });
     app.post('/', auth, async (request, reply) => {
-        const { nombre, toleranciaMin, almuerzoMin, franjas } = request.body;
+        const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, franjas } = request.body;
         if (!nombre)
             return reply.status(400).send({ error: 'El nombre es obligatorio' });
         if (!validarFranjas(franjas)) {
@@ -58,6 +58,8 @@ async function horarioRoutes(app) {
                 nombre,
                 toleranciaMin: toleranciaMin ?? 10,
                 almuerzoMin: Math.max(0, Number(almuerzoMin) || 0),
+                toleranciaSalidaMin: Math.max(0, Number(toleranciaSalidaMin) || 0),
+                ajustaEntrada: ajustaEntrada === true,
                 franjas: { create: franjas.map(mapFranja) },
             },
             include: { franjas: true },
@@ -69,7 +71,7 @@ async function horarioRoutes(app) {
         const existente = await index_1.prisma.horario.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'Horario no encontrado' });
-        const { nombre, toleranciaMin, almuerzoMin, franjas } = request.body;
+        const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, franjas } = request.body;
         if (!validarFranjas(franjas)) {
             return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
         }
@@ -80,6 +82,8 @@ async function horarioRoutes(app) {
                 nombre,
                 toleranciaMin,
                 almuerzoMin: Math.max(0, Number(almuerzoMin) || 0),
+                toleranciaSalidaMin: Math.max(0, Number(toleranciaSalidaMin) || 0),
+                ajustaEntrada: ajustaEntrada === true,
                 franjas: {
                     deleteMany: {},
                     create: franjas.map(mapFranja),

@@ -15,6 +15,7 @@ exports.FEATURES = [
     { key: 'exportar', label: 'Exportar reportes' },
     { key: 'multiDispositivo', label: 'Varios dispositivos de kiosco' },
     { key: 'multiHorario', label: 'Varios horarios' },
+    { key: 'multiSede', label: 'Varias sedes' },
     { key: 'siigo', label: 'Integración Siigo' },
 ];
 const F = (on) => {
@@ -37,7 +38,7 @@ exports.PLANES = {
     EMPRESARIAL: {
         id: 'EMPRESARIAL', nombre: 'Empresarial', limite: 150,
         precioMensual: 299900, precioAnual: 2999000,
-        features: F(['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo']),
+        features: F(['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo', 'multiSede']),
     },
 };
 const esPlan = (v) => v === 'ESENCIAL' || v === 'PROFESIONAL' || v === 'EMPRESARIAL';

@@ -20,20 +20,30 @@ async function colaboradorRoutes(app) {
     }
     app.get('/', auth, async (request) => {
         await aplicarRetiros(request.empresaId);
-        return index_1.prisma.colaborador.findMany({
+        // Se incluyen las sedes para que el modal de edición de la LISTA pueda
+        // mostrarlas sin pedir cada colaborador por separado.
+        const filas = await index_1.prisma.colaborador.findMany({
             where: { empresaId: request.empresaId, activo: true },
+            include: { sedes: { select: { sedeId: true } } },
             orderBy: { nombre: 'asc' },
         });
+        return filas.map(({ sedes, ...c }) => ({ ...c, sedeIds: sedes.map(s => s.sedeId) }));
     });
     app.get('/:id', auth, async (request, reply) => {
         const { id } = request.params;
         const col = await index_1.prisma.colaborador.findFirst({
             where: { id, empresaId: request.empresaId },
-            include: { horario: { include: { franjas: true } } },
+            include: {
+                horario: { include: { franjas: true } },
+                sedes: { select: { sedeId: true } },
+            },
         });
         if (!col)
             return reply.status(404).send({ error: 'No encontrado' });
-        return col;
+        // Se aplana a una lista de ids: es lo que el selector múltiple necesita, y
+        // evita que el frontend tenga que conocer la tabla de unión.
+        const { sedes, ...resto } = col;
+        return { ...resto, sedeIds: (sedes ?? []).map((s) => s.sedeId) };
     });
     // Valida que el horario asignado sea de la misma empresa
     async function horarioValido(horarioId, empresaId) {
@@ -41,6 +51,24 @@ async function colaboradorRoutes(app) {
             return true;
         const h = await index_1.prisma.horario.findFirst({ where: { id: horarioId, empresaId, activo: true } });
         return Boolean(h);
+    }
+    // Reemplaza las sedes donde este colaborador puede marcar. Se validan contra
+    // la empresa del token: sin eso, un id de otra empresa colaría a alguien en
+    // una sede ajena. `undefined` significa "no se tocó" y se distingue de `[]`,
+    // que sí quiere decir "quítale todas".
+    async function sincronizarSedes(colaboradorId, sedeIds, empresaId) {
+        if (!Array.isArray(sedeIds))
+            return;
+        const validas = await index_1.prisma.sede.findMany({
+            where: { id: { in: sedeIds.filter((x) => typeof x === 'string') }, empresaId, activa: true },
+            select: { id: true },
+        });
+        await index_1.prisma.$transaction([
+            index_1.prisma.colaboradorSede.deleteMany({ where: { colaboradorId } }),
+            ...(validas.length
+                ? [index_1.prisma.colaboradorSede.createMany({ data: validas.map(s => ({ colaboradorId, sedeId: s.id })), skipDuplicates: true })]
+                : []),
+        ]);
     }
     // La fecha de nacimiento llega como "YYYY-MM-DD"; la normalizamos a Date (o null)
     function normalizar(data) {
@@ -50,7 +78,8 @@ async function colaboradorRoutes(app) {
         return data;
     }
     app.post('/', auth, async (request, reply) => {
-        const data = normalizar(request.body);
+        const { sedeIds, ...cuerpo } = request.body;
+        const data = normalizar(cuerpo);
         if (!(await horarioValido(data.horarioId, request.empresaId))) {
             return reply.status(400).send({ error: 'Horario inválido' });
         }
@@ -89,12 +118,14 @@ async function colaboradorRoutes(app) {
                 data: { ...data, activo: true, retiroProgramado: null },
             });
             await materializar(reactivado.id);
+            await sincronizarSedes(reactivado.id, sedeIds, request.empresaId);
             return reply.status(200).send({ ...reactivado, reactivado: true });
         }
         const colaborador = await index_1.prisma.colaborador.create({
             data: { ...data, empresaId: request.empresaId },
         });
         await materializar(colaborador.id);
+        await sincronizarSedes(colaborador.id, sedeIds, request.empresaId);
         return reply.status(201).send(colaborador);
     });
     app.put('/:id', auth, async (request, reply) => {
@@ -102,12 +133,13 @@ async function colaboradorRoutes(app) {
         const existente = await index_1.prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'No encontrado' });
-        const { empresaId: _ignorar, horario: _rel, ...rest } = request.body;
+        const { empresaId: _ignorar, horario: _rel, sedeIds, ...rest } = request.body;
         const data = normalizar(rest);
         if (!(await horarioValido(data.horarioId, request.empresaId))) {
             return reply.status(400).send({ error: 'Horario inválido' });
         }
         const actualizado = await index_1.prisma.colaborador.update({ where: { id }, data });
+        await sincronizarSedes(id, sedeIds, request.empresaId);
         // Cambiar a alguien de horario es la otra forma de reescribir el pasado:
         // `Colaborador.horarioId` tampoco tiene historial. Se regenera su futuro —
         // de mañana en adelante — y lo ya materializado se queda como estaba.

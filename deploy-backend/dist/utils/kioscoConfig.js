@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.exigeDispositivo = exigeDispositivo;
 exports.permiteCedula = permiteCedula;
 exports.geocercoConfig = geocercoConfig;
+exports.sedesConGeocercaDe = sedesConGeocercaDe;
+exports.empresaUsaSedes = empresaUsaSedes;
 exports.dispositivoValido = dispositivoValido;
 const index_1 = require("../index");
 // Lectura de los flags del kiosco (Configuración → Marcación) y validación de
@@ -33,6 +35,24 @@ async function geocercoConfig(empresaId) {
     if (!Number.isFinite(lat) || !Number.isFinite(lng))
         return null; // activado pero sin ubicación fijada
     return { lat, lng, radio };
+}
+async function sedesConGeocercaDe(colaboradorId) {
+    const filas = await index_1.prisma.colaboradorSede.findMany({
+        where: { colaboradorId, sede: { activa: true } },
+        select: { sede: { select: { id: true, nombre: true, lat: true, lng: true, radio: true } } },
+    });
+    return filas
+        .map(f => f.sede)
+        .filter((s) => s.lat !== null && s.lng !== null)
+        .map(s => ({ id: s.id, nombre: s.nombre, lat: s.lat, lng: s.lng, radio: s.radio }));
+}
+// ¿La empresa tiene alguna sede con ubicación fijada? El kiosco lo consulta
+// ANTES de saber quién va a marcar, para decidir si pide el GPS de entrada.
+async function empresaUsaSedes(empresaId) {
+    const n = await index_1.prisma.sede.count({
+        where: { empresaId, activa: true, lat: { not: null }, lng: { not: null } },
+    });
+    return n > 0;
 }
 // ¿El deviceToken corresponde a un dispositivo vinculado de esa empresa?
 async function dispositivoValido(empresaId, deviceToken) {
