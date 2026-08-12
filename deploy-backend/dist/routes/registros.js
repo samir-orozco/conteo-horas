@@ -4,6 +4,9 @@ exports.default = registroRoutes;
 const date_fns_tz_1 = require("date-fns-tz");
 const index_1 = require("../index");
 const tardanzas_1 = require("../utils/tardanzas");
+const diasEsperados_1 = require("../utils/diasEsperados");
+const materializarDias_1 = require("../utils/materializarDias");
+const fechas_1 = require("../utils/fechas");
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
 // Lista blanca de campos que la empresa puede escribir en un registro. Evita
@@ -60,20 +63,54 @@ async function registroRoutes(app) {
             if (!actual || r.entrada < actual.entrada)
                 primeraEntradaDia.set(clave, r.id);
         }
+        // Lo que el horario exigía CADA día, congelado. Esta columna se calculaba
+        // contra el horario vigente, así que adelantar la entrada llenaba de
+        // tardanzas los días viejos aunque el reporte ya no lo hiciera.
+        const diasPorColaborador = new Map();
+        if (registros.length > 0) {
+            // El rango se abre a los límites del DÍA de Bogotá: el kiosco guarda
+            // `Registro.fecha` con la hora real, y las filas están ancladas a
+            // medianoche, así que filtrar por el instante crudo las dejaría fuera.
+            const fechas = registros.map(r => r.fecha.getTime());
+            const desdeDia = (0, fechas_1.rangoDiaBogota)(new Date(Math.min(...fechas))).inicioDia;
+            const hastaDia = (0, fechas_1.rangoDiaBogota)(new Date(Math.max(...fechas))).finDia;
+            const materializados = await index_1.prisma.diaEsperado.findMany({
+                where: {
+                    colaboradorId: { in: [...new Set(registros.map(r => r.colaboradorId))] },
+                    fecha: { gte: desdeDia, lt: hastaDia },
+                },
+                select: {
+                    colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
+                    horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+                },
+            });
+            for (const d of materializados) {
+                if (!diasPorColaborador.has(d.colaboradorId))
+                    diasPorColaborador.set(d.colaboradorId, new Map());
+                diasPorColaborador.get(d.colaboradorId).set((0, date_fns_tz_1.toZonedTime)(d.fecha, TZ).toDateString(), d);
+            }
+        }
+        // Un día sin fila cae al horario vigente, igual que en los reportes: es lo
+        // que el sistema hacía siempre, así que nadie ve un número distinto.
+        const diaEsperadoDe = (registro) => {
+            const clave = (0, date_fns_tz_1.toZonedTime)(registro.fecha, TZ).toDateString();
+            const congelado = diasPorColaborador.get(registro.colaboradorId)?.get(clave);
+            const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(registro.fecha);
+            const [dia] = (0, diasEsperados_1.combinarDiasEsperados)(inicioDia, finDia, congelado ? [congelado] : [], registro.colaborador.horario);
+            return dia;
+        };
         // Las fotos (base64) no viajan en la lista: solo un indicador; se piden con /:id/fotos.
         // La llegada se evalúa contra el horario asignado (null si no aplica ese día).
         return registros.map(r => {
             const { fotoEntrada, fotoSalida, colaborador, ...resto } = r;
-            const h = colaborador.horario;
             let minutosTarde = null;
             const clave = `${r.colaboradorId}|${(0, date_fns_tz_1.toZonedTime)(r.fecha, TZ).toDateString()}`;
             const esPrimeraDelDia = primeraEntradaDia.get(clave) === r.id;
-            if (r.entrada && esPrimeraDelDia && r.tipo !== 'FESTIVO' && h && h.activo) {
-                const diaSemana = tardanzas_1.DIAS_SEMANA[(0, date_fns_tz_1.toZonedTime)(r.fecha, TZ).getDay()];
-                const franja = (0, tardanzas_1.franjaDelDia)(h, diaSemana);
-                if (franja) {
+            if (r.entrada && esPrimeraDelDia && r.tipo !== 'FESTIVO') {
+                const dia = diaEsperadoDe(r);
+                if (dia?.programado && dia.horaEntrada) {
                     const z = (0, date_fns_tz_1.toZonedTime)(r.entrada, TZ);
-                    const tarde = z.getHours() * 60 + z.getMinutes() - ((0, tardanzas_1.minutosDe)(franja.horaEntrada) + h.toleranciaMin);
+                    const tarde = z.getHours() * 60 + z.getMinutes() - ((0, tardanzas_1.minutosDe)(dia.horaEntrada) + dia.toleranciaMin);
                     minutosTarde = Math.max(0, tarde);
                 }
             }
@@ -114,6 +151,7 @@ async function registroRoutes(app) {
         const registro = await index_1.prisma.registro.create({
             data: { colaboradorId, fecha: ahora, entrada: ahora, tipo: 'NORMAL' },
         });
+        await (0, materializarDias_1.asegurarDiaSinFallar)(colaboradorId, registro.fecha, app.log);
         return reply.status(201).send(registro);
     });
     // Registrar salida
@@ -140,6 +178,10 @@ async function registroRoutes(app) {
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
         }
         const registro = await index_1.prisma.registro.create({ data: camposRegistro(body, true) });
+        // Un día con marcación es un día que va a salir en un reporte. Si llega ahí
+        // sin fila, lo resuelve el horario vigente y vuelve a ser reescribible. Esto
+        // pasa sobre todo al cargar días PASADOS a mano, que es como se corrige.
+        await (0, materializarDias_1.asegurarDiaSinFallar)(registro.colaboradorId, registro.fecha, app.log);
         return reply.status(201).send(registro);
     });
     // Corrección manual — deja rastro de auditoría
@@ -157,10 +199,15 @@ async function registroRoutes(app) {
         if (body.colaboradorId !== undefined && !(await colaboradorDeEmpresa(body.colaboradorId, request.empresaId))) {
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
         }
-        return index_1.prisma.registro.update({
+        const actualizado = await index_1.prisma.registro.update({
             where: { id },
             data: { ...camposRegistro(body, false), editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
         });
+        // Corregir un registro puede moverlo de día o de colaborador; el día nuevo
+        // también necesita su fila. Nunca pisa la que ya exista, así que corregir
+        // el pasado no cambia lo que ese día exigía.
+        await (0, materializarDias_1.asegurarDiaSinFallar)(actualizado.colaboradorId, actualizado.fecha, app.log);
+        return actualizado;
     });
     app.delete('/:id', auth, async (request, reply) => {
         const { id } = request.params;

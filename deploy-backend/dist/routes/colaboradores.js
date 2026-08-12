@@ -8,6 +8,7 @@ const vigencias_1 = require("../utils/vigencias");
 const suscripcion_1 = require("../utils/suscripcion");
 const capacidades_1 = require("../utils/capacidades");
 const rostro_1 = require("../utils/rostro");
+const materializarDias_1 = require("../utils/materializarDias");
 async function colaboradorRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     // Aplica los retiros programados que ya vencieron (barrido perezoso)
@@ -72,16 +73,28 @@ async function colaboradorRoutes(app) {
                 });
             }
         }
+        // Se materializa la ventana de una vez, no en la pasada diaria: si alguien
+        // se crea y marca el mismo día, ese día tiene que tener su fila.
+        const materializar = async (colaboradorId) => {
+            try {
+                await (0, materializarDias_1.mantenerVentanaDeColaborador)(colaboradorId);
+            }
+            catch (err) {
+                request.log.error(err, 'No se pudo materializar la ventana del colaborador');
+            }
+        };
         if (existente) {
             const reactivado = await index_1.prisma.colaborador.update({
                 where: { id: existente.id },
                 data: { ...data, activo: true, retiroProgramado: null },
             });
+            await materializar(reactivado.id);
             return reply.status(200).send({ ...reactivado, reactivado: true });
         }
         const colaborador = await index_1.prisma.colaborador.create({
             data: { ...data, empresaId: request.empresaId },
         });
+        await materializar(colaborador.id);
         return reply.status(201).send(colaborador);
     });
     app.put('/:id', auth, async (request, reply) => {
@@ -94,7 +107,19 @@ async function colaboradorRoutes(app) {
         if (!(await horarioValido(data.horarioId, request.empresaId))) {
             return reply.status(400).send({ error: 'Horario inválido' });
         }
-        return index_1.prisma.colaborador.update({ where: { id }, data });
+        const actualizado = await index_1.prisma.colaborador.update({ where: { id }, data });
+        // Cambiar a alguien de horario es la otra forma de reescribir el pasado:
+        // `Colaborador.horarioId` tampoco tiene historial. Se regenera su futuro —
+        // de mañana en adelante — y lo ya materializado se queda como estaba.
+        if (data.horarioId !== undefined && data.horarioId !== existente.horarioId) {
+            try {
+                await (0, materializarDias_1.regenerarFuturoDeColaborador)(id);
+            }
+            catch (err) {
+                request.log.error(err, 'No se pudieron regenerar los días futuros del colaborador');
+            }
+        }
+        return actualizado;
     });
     // Estilo Notion: si el mes ya está pagado, el colaborador queda cubierto y
     // sigue activo hasta fin de mes; el retiro se aplica al iniciar el siguiente.

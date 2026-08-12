@@ -4,6 +4,7 @@ exports.default = horarioRoutes;
 const index_1 = require("../index");
 const vigencias_1 = require("../utils/vigencias");
 const capacidades_1 = require("../utils/capacidades");
+const materializarDias_1 = require("../utils/materializarDias");
 // Cada franja: días válidos, horas HH:MM y al menos un día
 function validarFranjas(franjas) {
     if (!Array.isArray(franjas) || franjas.length === 0)
@@ -73,7 +74,7 @@ async function horarioRoutes(app) {
             return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
         }
         // Las franjas se reemplazan completas: es la forma simple y sin ambigüedad
-        return index_1.prisma.horario.update({
+        const actualizado = await index_1.prisma.horario.update({
             where: { id },
             data: {
                 nombre,
@@ -86,6 +87,17 @@ async function horarioRoutes(app) {
             },
             include: { franjas: true },
         });
+        // El cambio aplica de MAÑANA en adelante. Los días ya materializados no se
+        // tocan: son los que sostienen los reportes de nómina ya entregados.
+        // Si esto falla, el horario igual quedó guardado; se reintenta solo en la
+        // pasada diaria de `mantenerVentana`.
+        try {
+            await (0, materializarDias_1.regenerarFuturoDeHorario)(id, app.log);
+        }
+        catch (err) {
+            app.log.error(err, 'No se pudieron regenerar los días futuros del horario');
+        }
+        return actualizado;
     });
     // Desactiva el horario y lo desasigna de los colaboradores
     app.delete('/:id', auth, async (request, reply) => {

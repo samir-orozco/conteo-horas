@@ -9,7 +9,8 @@ const fastify_1 = __importDefault(require("fastify"));
 const cors_1 = __importDefault(require("@fastify/cors"));
 const jwt_1 = __importDefault(require("@fastify/jwt"));
 const rate_limit_1 = __importDefault(require("@fastify/rate-limit"));
-const client_1 = require("@prisma/client");
+const prisma_1 = require("./prisma");
+Object.defineProperty(exports, "prisma", { enumerable: true, get: function () { return prisma_1.prisma; } });
 const auth_1 = __importDefault(require("./routes/auth"));
 const colaboradores_1 = __importDefault(require("./routes/colaboradores"));
 const registros_1 = __importDefault(require("./routes/registros"));
@@ -29,8 +30,8 @@ const telegram_1 = __importDefault(require("./routes/telegram"));
 const notificaciones_1 = __importDefault(require("./routes/notificaciones"));
 const telegram_2 = require("./utils/telegram");
 const cierreTurnos_1 = require("./utils/cierreTurnos");
+const materializarDias_1 = require("./utils/materializarDias");
 const suscripcion_2 = require("./utils/suscripcion");
-exports.prisma = new client_1.PrismaClient();
 const esProduccion = process.env.NODE_ENV === 'production';
 // En producción los secretos NO pueden venir de valores por defecto del código
 if (esProduccion && !process.env.JWT_SECRET) {
@@ -81,8 +82,8 @@ app.decorate('requireEmpresa', async (request, reply) => {
         return reply.status(403).send({ error: 'Requiere usuario de empresa' });
     }
     const [empresa, suscripcion] = await Promise.all([
-        exports.prisma.empresa.findUnique({ where: { id: payload.empresaId } }),
-        exports.prisma.suscripcion.findUnique({ where: { empresaId: payload.empresaId } }),
+        prisma_1.prisma.empresa.findUnique({ where: { id: payload.empresaId } }),
+        prisma_1.prisma.suscripcion.findUnique({ where: { empresaId: payload.empresaId } }),
     ]);
     if (!empresa?.activa) {
         return reply.status(403).send({ error: 'Empresa inactiva' });
@@ -145,7 +146,7 @@ const DOS_MESES_MS = 60 * 24 * 60 * 60 * 1000;
 async function limpiarFotosAntiguas() {
     try {
         const corte = new Date(Date.now() - DOS_MESES_MS);
-        const { count } = await exports.prisma.registro.updateMany({
+        const { count } = await prisma_1.prisma.registro.updateMany({
             where: {
                 creadoEn: { lt: corte },
                 OR: [{ fotoEntrada: { not: null } }, { fotoSalida: { not: null } }],
@@ -170,6 +171,12 @@ const start = async () => {
         // Al arrancar y cada 24h; es idempotente y solo actúa sobre días ya pasados.
         (0, cierreTurnos_1.cerrarTurnosOlvidados)(app.log);
         setInterval(() => (0, cierreTurnos_1.cerrarTurnosOlvidados)(app.log), 24 * 60 * 60 * 1000);
+        // Materializa el día esperado de cada colaborador para hoy y las próximas
+        // semanas. Sin esto la tabla se queda vacía y todo se resuelve con el
+        // horario VIGENTE, que es justo lo que reescribía el pasado.
+        // Es idempotente y solo escribe donde falta, así que correr de más no daña.
+        (0, materializarDias_1.mantenerVentana)(app.log);
+        setInterval(() => (0, materializarDias_1.mantenerVentana)(app.log), 24 * 60 * 60 * 1000);
         // Registra el webhook del bot de Telegram (si hay URL configurada)
         if (process.env.TELEGRAM_WEBHOOK_URL)
             (0, telegram_2.configurarWebhook)(process.env.TELEGRAM_WEBHOOK_URL);

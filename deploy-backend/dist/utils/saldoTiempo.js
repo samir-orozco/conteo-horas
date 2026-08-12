@@ -80,21 +80,29 @@ function duracionFranjaMin(horaEntrada, horaSalida) {
     const fin = (0, tardanzas_1.minutosDe)(horaSalida);
     return fin > ini ? fin - ini : 24 * 60 - ini + fin;
 }
-// Recorre día por día el rango en calendario Bogotá y suma lo que el horario
-// exigía. Un día suma solo si tiene franja asignada y no es festivo.
+// Suma lo que se le exigía al colaborador en el rango, leyendo los días ya
+// MATERIALIZADOS (`DiaEsperado`) en vez del horario vigente.
 //
-// Dos decisiones que evitan saldos fantasma:
-//  - El total de cada semana ISO se topa a la jornada legal vigente. Si el
-//    horario de la empresa pide más que el tope legal, ese exceso el motor de
-//    horas lo clasifica como EXTRA (y se paga aparte), así que no puede seguir
-//    contando como "esperado" o el colaborador quedaría en deuda permanente.
-//  - Los días cubiertos por un permiso REMUNERADO no se exigen: se pagan como si
-//    se hubieran trabajado. Los no remunerados sí quedan como deuda, que es
-//    justamente lo que se quiere medir.
-function calcularHorasEsperadas(desde, finExclusivo, horario, festivosDates, permisos, politica, jornadaSemanalDe) {
-    if (!horario || !horario.activo) {
-        return { minutosEsperados: 0, minutosPermisoRemunerado: 0, minutosPermisoNoRemunerado: 0 };
-    }
+// Esa es la diferencia que importa: el horario de hoy no dice lo que pedía el
+// horario de julio. Mientras esto recorría el horario actual, editarlo movía
+// dinero ya liquidado — el dueño lo vio cuando cambió una entrada de 08:00 a
+// 07:00 y aparecieron tardanzas en meses cerrados.
+//
+// Lo que NO viaja en la fila y se aplica aquí, al leer, porque no es "lo que
+// pedía el horario" sino contexto de la fecha:
+//  - Festivos: son ley nacional y viven en su propia tabla.
+//  - El tope semanal legal: cada semana ISO se topa a la jornada vigente. Si el
+//    horario de la empresa pide más que el tope, ese exceso el motor de horas lo
+//    clasifica como EXTRA (y se paga aparte), así que no puede seguir contando
+//    como "esperado" o el colaborador quedaría en deuda permanente.
+//  - Los permisos: los días cubiertos por uno REMUNERADO no se exigen, se pagan
+//    como si se hubieran trabajado. Los no remunerados sí quedan como deuda, que
+//    es justamente lo que se quiere medir.
+//
+// Un día sin fila no exige nada. Para que eso no se traduzca en deudas que
+// desaparecen mientras el backfill va a medias, quien llama completa el rango
+// con `combinarDiasEsperados`.
+function calcularHorasEsperadas(desde, finExclusivo, dias, festivosDates, permisos, politica, jornadaSemanalDe) {
     const festSet = new Set(festivosDates.map(claveDia));
     // Se precalculan los rangos de permiso como claves de día para comparar por
     // calendario y no por instante (un permiso guardado a medianoche Bogotá no
@@ -109,44 +117,48 @@ function calcularHorasEsperadas(desde, finExclusivo, horario, festivosDates, per
     let minutosPermisoNoRemunerado = 0;
     const acumSemana = new Map();
     const jornadaSemana = new Map();
-    // Cursor en hora de pared Bogotá; Colombia es UTC-5 fijo, así que avanzar 24h
-    // no arrastra desfases.
-    let z = (0, date_fns_tz_1.toZonedTime)(desde, TZ);
-    const zFin = (0, date_fns_tz_1.toZonedTime)(finExclusivo, TZ);
-    while (z < zFin) {
-        const clave = claveZonificada(z);
-        const franja = (0, tardanzas_1.franjaDelDia)(horario, tardanzas_1.DIAS_SEMANA[z.getDay()]);
+    // Solo los días del rango pedido, y en orden ascendente: el tope semanal se va
+    // gastando día a día, así que recorrerlos desordenados repartiría el recorte
+    // entre días distintos.
+    const delRango = dias
+        .filter(d => d.fecha >= desde && d.fecha < finExclusivo)
+        .sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
+    for (const dia of delRango) {
         // Solo se exige un día programado y no festivo.
-        if (franja && !festSet.has(clave)) {
-            let minutosDia = duracionFranjaMin(franja.horaEntrada, franja.horaSalida);
-            // El almuerzo no se paga: se descuenta igual que en las horas trabajadas,
-            // o la comparación quedaría sesgada ~1h por día.
-            if (franja.tieneAlmuerzo)
-                minutosDia = Math.max(0, minutosDia - (horario.almuerzoMin ?? 0));
-            // Tope semanal legal: lo que pase de ahí ya se liquida como extra.
-            // La jornada se fija UNA vez por semana ISO, en el primer día que se ve de
-            // esa semana, igual que hace el motor de horas. Resolverla día a día
-            // desincronizaría las dos mitades de una semana partida por un cambio de
-            // vigencia (p. ej. la Ley 2101 el 15 de julio) y aparecería un saldo falso.
-            const sk = semanaKeyDeZonificada(z);
-            if (!jornadaSemana.has(sk))
-                jornadaSemana.set(sk, jornadaSemanalDe(z));
-            const topeSemana = jornadaSemana.get(sk) * 60;
-            const yaEnSemana = acumSemana.get(sk) ?? 0;
-            minutosDia = Math.max(0, Math.min(minutosDia, topeSemana - yaEnSemana));
-            acumSemana.set(sk, yaEnSemana + minutosDia);
-            const cubre = rangos.find(r => r.ini <= clave && clave <= r.fin);
-            if (cubre) {
-                if (cubre.remunerado)
-                    minutosPermisoRemunerado += minutosDia;
-                else
-                    minutosPermisoNoRemunerado += minutosDia;
-            }
-            // Un permiso remunerado no se exige; uno no remunerado sí queda como deuda.
-            if (!cubre || !cubre.remunerado)
-                minutosEsperados += minutosDia;
+        if (!dia.programado)
+            continue;
+        // Hora de pared Bogotá: de ahí salen la clave del día, la semana ISO y la
+        // jornada vigente. `dia.fecha` es un instante real (medianoche de Bogotá,
+        // 05:00 UTC), así que `toZonedTime` se aplica aquí una sola vez.
+        const z = (0, date_fns_tz_1.toZonedTime)(dia.fecha, TZ);
+        const clave = claveZonificada(z);
+        if (festSet.has(clave))
+            continue;
+        // El almuerzo ya viene descontado en la fila: se congela con el día porque
+        // también es parte de lo que el horario pedía.
+        let minutosDia = dia.minutosEsperados;
+        // Tope semanal legal: lo que pase de ahí ya se liquida como extra.
+        // La jornada se fija UNA vez por semana ISO, en el primer día que se ve de
+        // esa semana, igual que hace el motor de horas. Resolverla día a día
+        // desincronizaría las dos mitades de una semana partida por un cambio de
+        // vigencia (p. ej. la Ley 2101 el 15 de julio) y aparecería un saldo falso.
+        const sk = semanaKeyDeZonificada(z);
+        if (!jornadaSemana.has(sk))
+            jornadaSemana.set(sk, jornadaSemanalDe(z));
+        const topeSemana = jornadaSemana.get(sk) * 60;
+        const yaEnSemana = acumSemana.get(sk) ?? 0;
+        minutosDia = Math.max(0, Math.min(minutosDia, topeSemana - yaEnSemana));
+        acumSemana.set(sk, yaEnSemana + minutosDia);
+        const cubre = rangos.find(r => r.ini <= clave && clave <= r.fin);
+        if (cubre) {
+            if (cubre.remunerado)
+                minutosPermisoRemunerado += minutosDia;
+            else
+                minutosPermisoNoRemunerado += minutosDia;
         }
-        z = new Date(z.getTime() + 24 * 60 * 60 * 1000);
+        // Un permiso remunerado no se exige; uno no remunerado sí queda como deuda.
+        if (!cubre || !cubre.remunerado)
+            minutosEsperados += minutosDia;
     }
     return { minutosEsperados, minutosPermisoRemunerado, minutosPermisoNoRemunerado };
 }

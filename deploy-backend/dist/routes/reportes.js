@@ -10,6 +10,7 @@ const tardanzas_1 = require("../utils/tardanzas");
 const fechas_1 = require("../utils/fechas");
 const horasColombiana_2 = require("../utils/horasColombiana");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
+const diasEsperados_1 = require("../utils/diasEsperados");
 const TZ = 'America/Bogota';
 function semanaKey(fecha) {
     const z = (0, date_fns_tz_1.toZonedTime)(fecha, TZ);
@@ -112,7 +113,7 @@ async function reporteRoutes(app) {
     app.get('/liquidacion', auth, async (request, reply) => {
         const { colaboradorId, desde, hasta } = request.query;
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
-        const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosRango] = await Promise.all([
+        const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosRango, diasMaterializados] = await Promise.all([
             index_1.prisma.colaborador.findFirst({
                 where: { id: colaboradorId, empresaId: request.empresaId },
                 include: { horario: { include: { franjas: true } } },
@@ -134,6 +135,16 @@ async function reporteRoutes(app) {
                 where: { colaboradorId, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
                 select: { fechaInicio: true, fechaFin: true, tipo: true },
             }),
+            // Lo que el horario exigía ESE día, congelado cuando se materializó. Es lo
+            // que impide que editar un horario hoy mueva la liquidación de julio.
+            index_1.prisma.diaEsperado.findMany({
+                where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
+                select: {
+                    fecha: true, programado: true, horaEntrada: true, horaSalida: true,
+                    toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+                },
+                orderBy: { fecha: 'asc' },
+            }),
         ]);
         if (!colaborador)
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
@@ -153,7 +164,11 @@ async function reporteRoutes(app) {
         // sintética ahí contaminaría los totales de todos los reportes.
         const politica = (0, saldoTiempo_1.parsearPoliticaPermisos)(cfgPermisos?.valor);
         const sinHorario = !horario || !horario.activo;
-        const esperadas = (0, saldoTiempo_1.calcularHorasEsperadas)(desdeF, finExclusivo, horario, festivosDates, permisosRango, politica, (fecha) => (0, vigencias_1.jornadaVigente)(fecha, jornadas));
+        // Los días materializados mandan; los que todavía no lo están (backfill a
+        // medias, colaborador anterior a la función) caen al horario vigente, que es
+        // lo que el sistema hacía siempre. Así nadie ve números nuevos por sorpresa.
+        const diasEsperados = (0, diasEsperados_1.combinarDiasEsperados)(desdeF, finExclusivo, diasMaterializados, horario);
+        const esperadas = (0, saldoTiempo_1.calcularHorasEsperadas)(desdeF, finExclusivo, diasEsperados, festivosDates, permisosRango, politica, (fecha) => (0, vigencias_1.jornadaVigente)(fecha, jornadas));
         const saldo = (0, saldoTiempo_1.armarSaldo)(esperadas, r.minutosOrdinarios, (0, horasColombiana_2.calcularValorHora)(colaborador.salarioMensual, horasMes), sinHorario);
         return {
             colaborador, desde, hasta, liquidacion: r.liquidacion,
@@ -222,15 +237,26 @@ async function reporteRoutes(app) {
             return { sinHorario: true, detalle: [], totalMinutos: 0, diasTarde: 0 };
         }
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
-        const [registros, festivos, permisos, jornadas] = await Promise.all([
+        const [registros, festivos, permisos, jornadas, diasMaterializados] = await Promise.all([
             index_1.prisma.registro.findMany({
                 where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
             }),
             index_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
             index_1.prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
             index_1.prisma.jornadaVigencia.findMany(),
+            // La hora exigida y la tolerancia de cada día, congeladas. Sin esto,
+            // adelantar la entrada del horario llenaba de tardanzas los meses cerrados.
+            index_1.prisma.diaEsperado.findMany({
+                where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
+                select: {
+                    fecha: true, programado: true, horaEntrada: true, horaSalida: true,
+                    toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+                },
+                orderBy: { fecha: 'asc' },
+            }),
         ]);
-        const resultado = (0, tardanzas_1.calcularTardanzas)(registros, colaborador.horario, festivos, permisos);
+        const diasEsperados = (0, diasEsperados_1.combinarDiasEsperados)(desdeF, finExclusivo, diasMaterializados, colaborador.horario);
+        const resultado = (0, tardanzas_1.calcularTardanzas)(registros, diasEsperados, festivos, permisos);
         // Valor del tiempo llegado tarde, a la tarifa base. Es INFORMATIVO: el
         // descuento real sale del saldo del período (ver /liquidacion), que ya
         // incluye estos minutos. Sumar ambos cobraría la tardanza dos veces.
@@ -247,7 +273,7 @@ async function reporteRoutes(app) {
         const { desde, hasta } = request.query;
         const empresaId = request.empresaId;
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
-        const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas] = await Promise.all([
+        const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas, diasTodos] = await Promise.all([
             index_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
                 include: { horario: { include: { franjas: true } } },
@@ -260,16 +286,27 @@ async function reporteRoutes(app) {
                 select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true },
             }),
             index_1.prisma.jornadaVigencia.findMany(),
+            // Los días de TODA la empresa en una sola consulta; se agrupan abajo. Uno
+            // por colaborador serían N consultas para pintar una tabla.
+            index_1.prisma.diaEsperado.findMany({
+                where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+                select: {
+                    colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
+                    horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+                },
+                orderBy: { fecha: 'asc' },
+            }),
         ]);
         const porColRegistros = agrupar(registrosTodos);
         const porColPermisos = agrupar(permisosTodos);
+        const porColDias = agrupar(diasTodos);
         // Mismo divisor para todos: la jornada vigente al cierre del período.
         const horasMes = (0, vigencias_1.horasMesDeJornada)((0, vigencias_1.jornadaVigente)(new Date(hasta), jornadas));
         const resultado = colaboradores.map(col => {
             if (!col.horario || !col.horario.activo) {
                 return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: true, diasTarde: 0, totalMinutos: 0, montoTardanzas: 0 };
             }
-            const r = (0, tardanzas_1.calcularTardanzas)((porColRegistros.get(col.id) ?? []), col.horario, festivos, (porColPermisos.get(col.id) ?? []));
+            const r = (0, tardanzas_1.calcularTardanzas)((porColRegistros.get(col.id) ?? []), (0, diasEsperados_1.combinarDiasEsperados)(desdeF, finExclusivo, porColDias.get(col.id) ?? [], col.horario), festivos, (porColPermisos.get(col.id) ?? []));
             // Valor informativo (ver la nota en /tardanzas): el descuento efectivo
             // viaja en el saldo del período, no aquí.
             const monto = (r.totalMinutos / 60) * (0, horasColombiana_2.calcularValorHora)(col.salarioMensual, horasMes);
