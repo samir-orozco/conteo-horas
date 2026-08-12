@@ -4,7 +4,7 @@
 
 export type FeatureKey =
   | 'gps' | 'telegram' | 'evidencia' | 'exportar'
-  | 'multiDispositivo' | 'multiHorario' | 'siigo';
+  | 'multiDispositivo' | 'multiHorario' | 'siigo' | 'multiSede';
 
 export const FEATURES: { key: FeatureKey; label: string }[] = [
   { key: 'gps', label: 'Marcación por GPS / geocerca' },
@@ -13,6 +13,7 @@ export const FEATURES: { key: FeatureKey; label: string }[] = [
   { key: 'exportar', label: 'Exportar reportes' },
   { key: 'multiDispositivo', label: 'Varios dispositivos de kiosco' },
   { key: 'multiHorario', label: 'Varios horarios' },
+  { key: 'multiSede', label: 'Varias sedes' },
   { key: 'siigo', label: 'Integración Siigo' },
 ];
 
@@ -45,7 +46,7 @@ export const PLANES: Record<PlanId, PlanDef> = {
   EMPRESARIAL: {
     id: 'EMPRESARIAL', nombre: 'Empresarial', limite: 150,
     precioMensual: 299900, precioAnual: 2999000,
-    features: F(['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo']),
+    features: F(['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo', 'multiSede']),
   },
 };
 

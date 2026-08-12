@@ -7,7 +7,8 @@ import { enviarTelegram } from '../utils/telegram';
 import { notificar } from '../utils/notificaciones';
 import { rangoDiaBogota } from '../utils/fechas';
 import { distanciaMetros } from '../utils/geo';
-import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido } from '../utils/kioscoConfig';
+import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes } from '../utils/kioscoConfig';
+import { resolverSedeDeMarcacion } from '../utils/sedes';
 
 const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
@@ -121,7 +122,10 @@ export default async function workerRoutes(app: FastifyInstance) {
       empresa: empresa.nombre,
       requiereDispositivo: await exigeDispositivo(empresa.id),
       permiteCedula: await permiteCedula(empresa.id),
-      exigeUbicacion: (await geocercoConfig(empresa.id)) !== null,
+      // El kiosco pide el GPS si lo exige la geocerca de la empresa O si hay
+      // alguna sede con ubicación: con sedes, quién marca dónde solo se sabe
+      // por coordenadas, así que hay que pedirlas antes de saber quién es.
+      exigeUbicacion: (await geocercoConfig(empresa.id)) !== null || (await empresaUsaSedes(empresa.id)),
     };
   });
 
@@ -267,19 +271,44 @@ export default async function workerRoutes(app: FastifyInstance) {
       const { foto, lat, lng } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown };
       const fotoGuardar = fotoValida(foto) ? foto : null;
 
-      // Geocerco: si la empresa lo exige, la marca debe venir dentro del radio.
-      const geo = await geocercoConfig(payload.empresaId);
-      if (geo) {
+      // ===== Dónde está marcando =====
+      //
+      // Si tiene sedes asignadas, manda la geocerca de SUS sedes: basta estar
+      // dentro de cualquiera (quien rota entre locales marca en la que le toca
+      // ese día). Si no tiene sedes, rige la geocerca única de la empresa, que
+      // es como funcionó siempre — así nada se rompe antes de migrar.
+      let sedeDeLaMarca: string | null = null;
+      const sedesDelTrabajador = await sedesConGeocercaDe(payload.id);
+
+      if (sedesDelTrabajador.length > 0) {
         const latN = Number(lat), lngN = Number(lng);
         if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
           return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
         }
-        const dist = Math.round(distanciaMetros(latN, lngN, geo.lat, geo.lng));
-        if (dist > geo.radio) {
+        const r = resolverSedeDeMarcacion(sedesDelTrabajador, latN, lngN);
+        if (!r.dentro) {
+          // Se nombra la sede más cercana y la distancia: "fuera de ubicación" a
+          // secas no le dice a la persona qué hacer.
           return reply.code(403).send({
-            error: `Estás fuera de la ubicación de la empresa (a ${dist} m). Debes marcar desde el sitio de trabajo.`,
-            codigo: 'FUERA_DE_UBICACION', distancia: dist, radio: geo.radio,
+            error: `Estás a ${r.distancia} m de ${r.sede?.nombre}. Debes marcar desde una de tus sedes.`,
+            codigo: 'FUERA_DE_UBICACION', distancia: r.distancia, radio: r.sede?.radio ?? 0,
           });
+        }
+        sedeDeLaMarca = r.sede?.id ?? null;
+      } else {
+        const geo = await geocercoConfig(payload.empresaId);
+        if (geo) {
+          const latN = Number(lat), lngN = Number(lng);
+          if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
+            return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
+          }
+          const dist = Math.round(distanciaMetros(latN, lngN, geo.lat, geo.lng));
+          if (dist > geo.radio) {
+            return reply.code(403).send({
+              error: `Estás fuera de la ubicación de la empresa (a ${dist} m). Debes marcar desde el sitio de trabajo.`,
+              codigo: 'FUERA_DE_UBICACION', distancia: dist, radio: geo.radio,
+            });
+          }
         }
       }
 
@@ -312,6 +341,18 @@ export default async function workerRoutes(app: FastifyInstance) {
       const tipo = festHoy ? 'FESTIVO' : 'NORMAL';
 
       if (abierto) {
+        // Entrada y salida en el MISMO sitio. Si abrió turno en El Poblado no
+        // puede cerrarlo en Laureles: el turno pertenece a una sede, y permitir
+        // lo contrario haría imposible saber dónde trabajó realmente.
+        // Los turnos abiertos ANTES de existir las sedes no tienen sede: esos se
+        // dejan cerrar donde sea, o quedarían atrapados sin poder marcar salida.
+        if (abierto.sedeId && sedeDeLaMarca && abierto.sedeId !== sedeDeLaMarca) {
+          const sedeEntrada = sedesDelTrabajador.find(s => s.id === abierto.sedeId);
+          return reply.code(403).send({
+            error: `Abriste el turno en ${sedeEntrada?.nombre ?? 'otra sede'}. La salida debe marcarse en la misma sede.`,
+            codigo: 'SEDE_DISTINTA',
+          });
+        }
         const updated = await prisma.registro.update({
           where: { id: abierto.id },
           data: { salida: ahora, ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}) },
@@ -344,6 +385,9 @@ export default async function workerRoutes(app: FastifyInstance) {
             fecha: inicioDia,
             entrada: ahora,
             tipo: tipo as any,
+            // Queda guardado DÓNDE marcó, no dónde debía: el filtro por sede de
+            // los reportes tiene que reflejar la realidad.
+            ...(sedeDeLaMarca ? { sedeId: sedeDeLaMarca } : {}),
             ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
           },
         });

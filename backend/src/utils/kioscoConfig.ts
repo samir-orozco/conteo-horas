@@ -34,6 +34,36 @@ export async function geocercoConfig(empresaId: string): Promise<GeoCfg | null> 
   return { lat, lng, radio };
 }
 
+// ===== Geocerca por sede =====
+//
+// Una empresa con varios locales no puede compartir un solo punto. Cada sede
+// tiene el suyo, y el colaborador marca en cualquiera de las que tenga asignadas.
+//
+// El respaldo es el mismo patrón del historial de horarios: si el colaborador no
+// tiene sedes, rige la geocerca de la empresa, que es como funcionó siempre. Así
+// nada se rompe antes de migrar, y la migración puede ir a su ritmo.
+export type SedeGeo = { id: string; nombre: string; lat: number; lng: number; radio: number };
+
+export async function sedesConGeocercaDe(colaboradorId: string): Promise<SedeGeo[]> {
+  const filas = await prisma.colaboradorSede.findMany({
+    where: { colaboradorId, sede: { activa: true } },
+    select: { sede: { select: { id: true, nombre: true, lat: true, lng: true, radio: true } } },
+  });
+  return filas
+    .map(f => f.sede)
+    .filter((s): s is SedeGeo => s.lat !== null && s.lng !== null)
+    .map(s => ({ id: s.id, nombre: s.nombre, lat: s.lat, lng: s.lng, radio: s.radio }));
+}
+
+// ¿La empresa tiene alguna sede con ubicación fijada? El kiosco lo consulta
+// ANTES de saber quién va a marcar, para decidir si pide el GPS de entrada.
+export async function empresaUsaSedes(empresaId: string): Promise<boolean> {
+  const n = await prisma.sede.count({
+    where: { empresaId, activa: true, lat: { not: null }, lng: { not: null } },
+  });
+  return n > 0;
+}
+
 // ¿El deviceToken corresponde a un dispositivo vinculado de esa empresa?
 export async function dispositivoValido(empresaId: string, deviceToken?: string): Promise<boolean> {
   if (!deviceToken) return false;
