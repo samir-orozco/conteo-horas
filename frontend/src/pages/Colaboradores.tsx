@@ -4,13 +4,14 @@ import { Plus, Edit2, Trash2, X, Eye, ArrowUpRight, MessageCircle } from 'lucide
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useMiPlan } from '../lib/plan';
+import SelectorSedes from '../components/SelectorSedes';
 
-type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null };
+type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[] };
 export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string };
 type Horario = { id: string; nombre: string; franjas: Franja[] };
 type FormData = Omit<Colaborador, 'id' | 'activo'>;
 
-const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '' };
+const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [] };
 
 // La fecha viene del backend como ISO; el input date necesita "YYYY-MM-DD"
 export const soloFecha = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 10) : '');
@@ -44,16 +45,21 @@ export default function Colaboradores() {
   const [form, setForm] = useState<FormData>(EMPTY);
   const [eliminando, setEliminando] = useState<Colaborador | null>(null);
   const [horarios, setHorarios] = useState<Horario[]>([]);
+  const [sedes, setSedes] = useState<{ id: string; nombre: string }[]>([]);
   const [errorForm, setErrorForm] = useState('');
   const [guardando, setGuardando] = useState(false);
 
   const cargar = () => api.get('/colaboradores').then(r => setLista(r.data));
-  useEffect(() => { cargar(); api.get('/horarios').then(r => setHorarios(r.data)); }, []);
+  useEffect(() => {
+    cargar();
+    api.get('/horarios').then(r => setHorarios(r.data));
+    api.get('/sedes').then(r => setSedes(r.data)).catch(() => setSedes([]));
+  }, []);
 
   const abrir = (col?: Colaborador) => {
     setEditando(col || null);
     setErrorForm('');
-    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '' } : EMPTY);
+    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [] } : EMPTY);
     setModal(true);
   };
 
@@ -65,6 +71,7 @@ export default function Colaboradores() {
       const payload = {
         ...form,
         horarioId: form.horarioId || null,
+        sedeIds: (form.sedeIds as string[]) ?? [],
         // Fecha vacía debe ir como null (Prisma rechaza el string vacío en un campo de fecha)
         fechaNacimiento: form.fechaNacimiento ? form.fechaNacimiento : null,
       };
@@ -218,6 +225,10 @@ export default function Colaboradores() {
                   <option value="">Sin horario (no controla llegadas tarde)</option>
                   {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre} · {resumenFranjas(h.franjas)}</option>)}
                 </select>
+              </div>
+              <div className="col-span-2">
+                <SelectorSedes sedes={sedes} valor={(form.sedeIds as string[]) ?? []}
+                  onChange={ids => setForm(p => ({ ...p, sedeIds: ids }))} />
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-muted mb-1">Salario mensual (COP)</label>

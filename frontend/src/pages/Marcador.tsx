@@ -216,7 +216,7 @@ export default function Marcador() {
   }
   return (
     <PantallaMarcar
-      colaborador={sesion.colaborador} ahora={ahora} estado={sesion.estado}
+      colaborador={sesion.colaborador} sedes={sesion.sedes} ahora={ahora} estado={sesion.estado}
       marcar={marcar} marcando={marcando}
       exigeUbicacion={exigeUbicacion} ubicOk={geo.ubicOk} salir={salir}
     />

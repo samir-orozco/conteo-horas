@@ -183,7 +183,18 @@ export default async function workerRoutes(app: FastifyInstance) {
       { id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId },
       { expiresIn: '12h' }
     );
-    return { token, colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo } };
+    // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
+    // toca marcar a esta persona, junto al nombre.
+    const sedesDelCol = await prisma.colaboradorSede.findMany({
+      where: { colaboradorId: col.id, sede: { activa: true } },
+      select: { sede: { select: { id: true, nombre: true } } },
+      orderBy: { sede: { nombre: 'asc' } },
+    });
+    return {
+      token,
+      colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo },
+      sedes: sedesDelCol.map(s => s.sede),
+    };
   });
 
   // Login del kiosco con reconocimiento facial: el navegador ya calculó el
@@ -215,7 +226,18 @@ export default async function workerRoutes(app: FastifyInstance) {
       { id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId },
       { expiresIn: '12h' }
     );
-    return { token, colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo } };
+    // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
+    // toca marcar a esta persona, junto al nombre.
+    const sedesDelCol = await prisma.colaboradorSede.findMany({
+      where: { colaboradorId: col.id, sede: { activa: true } },
+      select: { sede: { select: { id: true, nombre: true } } },
+      orderBy: { sede: { nombre: 'asc' } },
+    });
+    return {
+      token,
+      colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo },
+      sedes: sedesDelCol.map(s => s.sede),
+    };
   });
 
   // Estado del día: retorna si hay entrada abierta (sin salida). Select mínimo: no

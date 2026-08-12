@@ -21,10 +21,14 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
 
   app.get('/', auth, async (request) => {
     await aplicarRetiros(request.empresaId!);
-    return prisma.colaborador.findMany({
+    // Se incluyen las sedes para que el modal de edición de la LISTA pueda
+    // mostrarlas sin pedir cada colaborador por separado.
+    const filas = await prisma.colaborador.findMany({
       where: { empresaId: request.empresaId, activo: true },
+      include: { sedes: { select: { sedeId: true } } },
       orderBy: { nombre: 'asc' },
     });
+    return filas.map(({ sedes, ...c }) => ({ ...c, sedeIds: sedes.map(s => s.sedeId) }));
   });
 
   app.get('/:id', auth, async (request, reply) => {

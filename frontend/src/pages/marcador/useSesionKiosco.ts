@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { loginCedula, loginRostro, getEstado } from './api';
-import type { Colaborador, Estado } from './tipos';
+import type { Colaborador, Estado, Sede } from './tipos';
 
 // Sesión del colaborador en el kiosco: login (cédula o rostro) + estado del día.
 // El login carga el estado ANTES de fijar token/colaborador: si /estado falla (red
@@ -9,6 +9,7 @@ import type { Colaborador, Estado } from './tipos';
 export function useSesionKiosco(marcadorToken: string | undefined) {
   const [token, setToken] = useState<string | null>(null);
   const [colaborador, setColaborador] = useState<Colaborador | null>(null);
+  const [sedes, setSedes] = useState<Sede[]>([]);
   const [estado, setEstado] = useState<Estado | null>(null);
 
   const cargarEstado = async (t: string) => { setEstado(await getEstado(t)); };
@@ -18,6 +19,7 @@ export function useSesionKiosco(marcadorToken: string | undefined) {
     await cargarEstado(r.token);
     setToken(r.token);
     setColaborador(r.colaborador);
+    setSedes(r.sedes ?? []);
   };
 
   const ingresarRostro = async (descriptor: number[], deviceToken?: string) => {
@@ -25,9 +27,10 @@ export function useSesionKiosco(marcadorToken: string | undefined) {
     await cargarEstado(r.token);
     setToken(r.token);
     setColaborador(r.colaborador);
+    setSedes(r.sedes ?? []);
   };
 
   const limpiarSesion = () => { setToken(null); setColaborador(null); setEstado(null); };
 
-  return { token, colaborador, estado, ingresar, ingresarRostro, cargarEstado, limpiarSesion };
+  return { token, colaborador, sedes, estado, ingresar, ingresarRostro, cargarEstado, limpiarSesion };
 }

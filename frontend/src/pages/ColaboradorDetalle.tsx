@@ -11,6 +11,7 @@ import api from '../lib/api';
 import { formatearMiles, parsearMiles, resumenFranjas, type Franja } from './Colaboradores';
 import CamaraRostro from '../components/CamaraRostro';
 import ConfirmDialog from '../components/ConfirmDialog';
+import SelectorSedes from '../components/SelectorSedes';
 import Toast from '../components/Toast';
 import CampoEvidencia, { type CambioEvidencia } from '../components/CampoEvidencia';
 import { TIPO_PERMISO_LABEL } from '../constants/permisos';
@@ -473,36 +474,10 @@ export default function ColaboradorDetalle() {
                   {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre} · {resumenFranjas(h.franjas)}</option>)}
                 </select>
               </div>
-              {/* Sedes donde puede marcar. Selección múltiple a propósito: quien
-                  rota entre locales abre y cierra turno en cualquiera de las
-                  suyas. Fuera de ellas, la marcación no se registra. */}
-              {sedes.length > 0 && (
-                <div className="col-span-2">
-                  <label className="block text-xs font-medium text-muted mb-1">Sedes donde puede marcar</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sedes.map(s => {
-                      const activa = (formEdit.sedeIds ?? []).includes(s.id);
-                      return (
-                        <button key={s.id} type="button"
-                          onClick={() => setFormEdit((p: { sedeIds?: string[] }) => {
-                            const actuales: string[] = p.sedeIds ?? [];
-                            return { ...p, sedeIds: activa ? actuales.filter(x => x !== s.id) : [...actuales, s.id] };
-                          })}
-                          className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
-                            activa ? 'bg-primary/25 border-primary text-ink' : 'bg-white border-gray-300 text-muted hover:border-gray-400'
-                          }`}>
-                          {s.nombre}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="text-[11px] text-muted mt-1.5">
-                    {(formEdit.sedeIds ?? []).length === 0
-                      ? 'Sin sedes: se le aplica la ubicación general de Configuración → Marcación.'
-                      : 'Podrá marcar en cualquiera de las seleccionadas, y debe cerrar el turno en la misma donde lo abrió.'}
-                  </p>
-                </div>
-              )}
+              <div className="col-span-2">
+                <SelectorSedes sedes={sedes} valor={formEdit.sedeIds ?? []}
+                  onChange={ids => setFormEdit((p: object) => ({ ...p, sedeIds: ids }))} />
+              </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-muted mb-1">Salario mensual (COP)</label>
                 <div className="relative">

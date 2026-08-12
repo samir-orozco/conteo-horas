@@ -3,11 +3,14 @@ import { LogIn, LogOut, MapPin, Check } from 'lucide-react';
 import { es } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
 import { horaBog } from '../helpers';
-import { TZ, type Colaborador, type Estado } from '../tipos';
+import { TZ, type Colaborador, type Estado, type Sede } from '../tipos';
 import ConfirmarNuevaEntrada from './ConfirmarNuevaEntrada';
 
 type Props = {
   colaborador: Colaborador;
+  // Sedes donde esta persona puede marcar. Se muestran junto al nombre para que
+  // sepa a qué sitio pertenece su turno antes de presionar el botón.
+  sedes?: Sede[];
   ahora: Date;
   estado: Estado | null;
   marcar: () => void;
@@ -18,7 +21,7 @@ type Props = {
 };
 
 // Pantalla principal: reloj + estado del día + botón grande de entrada/salida.
-export default function PantallaMarcar({ colaborador, ahora, estado, marcar, marcando, exigeUbicacion, ubicOk, salir }: Props) {
+export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado, marcar, marcando, exigeUbicacion, ubicOk, salir }: Props) {
   const dentroAhora = estado?.dentroAhora ?? false;
   const entradaHace = estado?.entradaAbierta?.entrada ? horaBog(estado.entradaAbierta.entrada, 'HH:mm') : null;
   const cerradoHoy = estado?.turnoCerradoHoy ?? null;
@@ -42,6 +45,14 @@ export default function PantallaMarcar({ colaborador, ahora, estado, marcar, mar
           </div>
           <h2 className="text-xl font-bold text-white">{colaborador.nombre} {colaborador.apellido}</h2>
           {colaborador.cargo && <p className="text-sm text-white/50">{colaborador.cargo}</p>}
+          {sedes.length > 0 && (
+            <p className="text-xs text-white/60 mt-2 flex items-center justify-center gap-1.5 flex-wrap">
+              <MapPin size={12} className="shrink-0" />
+              {sedes.length === 1
+                ? sedes[0].nombre
+                : sedes.map(s => s.nombre).join(' · ')}
+            </p>
+          )}
         </div>
 
         <div className="mb-6">

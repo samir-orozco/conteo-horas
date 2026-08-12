@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Colaborador, Estado } from './tipos';
+import type { Sede, Colaborador, Estado } from './tipos';
 
 // Instancia propia del kiosco: es público (sin token de admin) y NO debe usar la
 // instancia compartida ni redirigir a /login ante un 401.
@@ -8,7 +8,7 @@ export const apiKiosco = axios.create({ baseURL: import.meta.env.VITE_API_URL ||
 const authHeader = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } });
 
 type InfoKiosco = { empresa: string; requiereDispositivo: boolean; permiteCedula: boolean; exigeUbicacion: boolean };
-type SesionResp = { token: string; colaborador: Colaborador };
+type SesionResp = { token: string; colaborador: Colaborador; sedes?: Sede[] };
 type MarcaResp = { accion: 'ENTRADA' | 'SALIDA'; hora: string; salidaTemprana?: boolean };
 
 export const infoKiosco = (marcadorToken: string) =>

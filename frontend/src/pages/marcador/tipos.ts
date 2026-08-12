@@ -1,4 +1,6 @@
 // Tipos compartidos del kiosco público (Marcador).
+export type Sede = { id: string; nombre: string };
+
 export type Colaborador = { id: string; nombre: string; apellido: string; cargo: string | null };
 export type Estado = {
   dentroAhora: boolean;
