@@ -179,9 +179,9 @@ model DispositivoKiosco {
 }
 
 model Colaborador {
-  id               String     @id @default(cuid())
+  id               String        @id @default(cuid())
   empresaId        String
-  empresa          Empresa    @relation(fields: [empresaId], references: [id])
+  empresa          Empresa       @relation(fields: [empresaId], references: [id])
   nombre           String
   apellido         String
   cedula           String // marcación en kiosco por cédula
@@ -194,17 +194,49 @@ model Colaborador {
   rostroDescriptor Json?
   rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
   horarioId        String?
-  horario          Horario?   @relation(fields: [horarioId], references: [id])
-  activo           Boolean    @default(true)
+  horario          Horario?      @relation(fields: [horarioId], references: [id])
+  activo           Boolean       @default(true)
   // Si el mes ya está pagado, el "borrado" se programa para fin de mes
   retiroProgramado DateTime?
-  creadoEn         DateTime   @default(now())
-  actualizadoEn    DateTime   @updatedAt
+  creadoEn         DateTime      @default(now())
+  actualizadoEn    DateTime      @updatedAt
   registros        Registro[]
   permisos         Permiso[]
+  diasEsperados    DiaEsperado[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
+}
+
+// Lo que el horario de un colaborador exigía UN día concreto, congelado.
+//
+// Sin esto, editar un horario reescribe el pasado: los reportes de meses
+// anteriores se recalculan con la configuración actual, y desde que existe el
+// descuento por tiempo no remunerado eso mueve dinero ya liquidado.
+//
+// Se genera solo desde el horario asignado. Los días PASADOS no se vuelven a
+// tocar; al cambiar un horario solo se regeneran los días futuros.
+model DiaEsperado {
+  id               String      @id @default(cuid())
+  colaboradorId    String
+  colaborador      Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  fecha            DateTime // medianoche de Bogotá, igual convención que Registro.fecha
+  programado       Boolean     @default(false) // false = ese día no se trabajaba
+  horaEntrada      String? // "08:00"
+  horaSalida       String? // "17:00"
+  toleranciaMin    Int         @default(0)
+  almuerzoMin      Int         @default(0) // el que aplica ESE día
+  minutosEsperados Int         @default(0) // ya neto de almuerzo
+  // De qué horario salió, solo informativo: el horario puede cambiar después.
+  horarioId        String?
+  // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)
+  origen           String      @default("AUTO")
+  creadoEn         DateTime    @default(now())
+  actualizadoEn    DateTime    @updatedAt
+
+  @@unique([colaboradorId, fecha])
+  @@index([colaboradorId, fecha])
+  @@map("dias_esperados")
 }
 
 model Registro {

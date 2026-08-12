@@ -250,6 +250,22 @@ exports.Prisma.ColaboradorScalarFieldEnum = {
   actualizadoEn: 'actualizadoEn'
 };
 
+exports.Prisma.DiaEsperadoScalarFieldEnum = {
+  id: 'id',
+  colaboradorId: 'colaboradorId',
+  fecha: 'fecha',
+  programado: 'programado',
+  horaEntrada: 'horaEntrada',
+  horaSalida: 'horaSalida',
+  toleranciaMin: 'toleranciaMin',
+  almuerzoMin: 'almuerzoMin',
+  minutosEsperados: 'minutosEsperados',
+  horarioId: 'horarioId',
+  origen: 'origen',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
 exports.Prisma.RegistroScalarFieldEnum = {
   id: 'id',
   colaboradorId: 'colaboradorId',
@@ -473,6 +489,7 @@ exports.Prisma.ModelName = {
   FranjaHorario: 'FranjaHorario',
   DispositivoKiosco: 'DispositivoKiosco',
   Colaborador: 'Colaborador',
+  DiaEsperado: 'DiaEsperado',
   Registro: 'Registro',
   Permiso: 'Permiso',
   DiaFestivo: 'DiaFestivo',

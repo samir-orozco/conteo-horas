@@ -31,6 +31,12 @@ model Empresa {
   horarios       Horario[]
   dispositivos   DispositivoKiosco[]
   notificaciones Notificacion[]
+  // Afiliado que trajo a esta empresa (programa de referidos)
+  afiliadoId           String?
+  afiliado             Afiliado?  @relation(fields: [afiliadoId], references: [id])
+  atribuidoEn          DateTime? // cuándo se asoció al afiliado (en el registro)
+  primerPagoComisionEn DateTime? // primer pago que comisionó (ancla la duración)
+  comisiones           Comision[]
 
   @@map("empresas")
 }
@@ -80,6 +86,7 @@ model Pago {
   comprobanteBase64       String?     @db.LongText // foto del soporte (data URL)
   registradoPor           String? // email del super admin que lo registró
   creadoEn                DateTime    @default(now())
+  comision                Comision? // comisión de afiliado generada por este pago (si aplica)
 
   @@map("pagos")
 }
@@ -195,9 +202,41 @@ model Colaborador {
   actualizadoEn    DateTime   @updatedAt
   registros        Registro[]
   permisos         Permiso[]
+  diasEsperados    DiaEsperado[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
+}
+
+// Lo que el horario de un colaborador exigía UN día concreto, congelado.
+//
+// Sin esto, editar un horario reescribe el pasado: los reportes de meses
+// anteriores se recalculan con la configuración actual, y desde que existe el
+// descuento por tiempo no remunerado eso mueve dinero ya liquidado.
+//
+// Se genera solo desde el horario asignado. Los días PASADOS no se vuelven a
+// tocar; al cambiar un horario solo se regeneran los días futuros.
+model DiaEsperado {
+  id               String      @id @default(cuid())
+  colaboradorId    String
+  colaborador      Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  fecha            DateTime // medianoche de Bogotá, igual convención que Registro.fecha
+  programado       Boolean     @default(false) // false = ese día no se trabajaba
+  horaEntrada      String? // "08:00"
+  horaSalida       String? // "17:00"
+  toleranciaMin    Int         @default(0)
+  almuerzoMin      Int         @default(0) // el que aplica ESE día
+  minutosEsperados Int         @default(0) // ya neto de almuerzo
+  // De qué horario salió, solo informativo: el horario puede cambiar después.
+  horarioId        String?
+  // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)
+  origen           String      @default("AUTO")
+  creadoEn         DateTime    @default(now())
+  actualizadoEn    DateTime    @updatedAt
+
+  @@unique([colaboradorId, fecha])
+  @@index([colaboradorId, fecha])
+  @@map("dias_esperados")
 }
 
 model Registro {
@@ -290,6 +329,9 @@ model Usuario {
   id                 String    @id @default(cuid())
   empresaId          String? // null = SUPER_ADMIN (usuario de la plataforma)
   empresa            Empresa?  @relation(fields: [empresaId], references: [id])
+  // Si el usuario es AFILIADO, apunta a su ficha (como empresaId para empresas)
+  afiliadoId         String?
+  afiliado           Afiliado? @relation(fields: [afiliadoId], references: [id])
   email              String    @unique
   password           String
   nombre             String
@@ -305,6 +347,73 @@ model Usuario {
   creadoEn           DateTime  @default(now())
 
   @@map("usuarios")
+}
+
+// ============ Programa de afiliados (referidos) ============
+
+// Afiliado = persona que trae clientes. Sus credenciales viven en Usuario
+// (rol AFILIADO + afiliadoId), igual que los usuarios de empresa usan empresaId.
+model Afiliado {
+  id             String              @id @default(cuid())
+  nombre         String
+  // Código para el link de referido: /?ref=<codigo>
+  codigo         String              @unique
+  // Trato comercial: % sobre cada pago del referido durante N meses desde su
+  // primer pago (duracionMeses null = indefinido). El % se congela en cada comisión.
+  porcentaje     Float               @default(20)
+  duracionMeses  Int?
+  activo         Boolean             @default(true)
+  telefono       String?
+  // Datos para el pago externo de comisiones (billetera)
+  pagoMetodo     MetodoPagoAfiliado?
+  pagoBanco      String? // nombre del banco cuando el método es OTRO
+  pagoTipoCuenta TipoCuentaBancaria? // solo bancos (Nequi/Daviplata no aplica)
+  pagoNumero     String? // número de cuenta, o celular si es Nequi/Daviplata
+  pagoTitular    String?
+  pagoDocumento  String? // cédula/NIT del titular (pago externo + retención)
+  creadoEn       DateTime            @default(now())
+  actualizadoEn  DateTime            @updatedAt
+  usuarios       Usuario[]
+  empresas       Empresa[] // referidos
+  comisiones     Comision[]
+  retiros        SolicitudRetiro[]
+
+  @@map("afiliados")
+}
+
+// Una comisión causada por un pago concreto de un referido (1 pago → 1 comisión).
+model Comision {
+  id         String         @id @default(cuid())
+  afiliadoId String
+  afiliado   Afiliado       @relation(fields: [afiliadoId], references: [id])
+  empresaId  String
+  empresa    Empresa        @relation(fields: [empresaId], references: [id])
+  pagoId     String         @unique
+  pago       Pago           @relation(fields: [pagoId], references: [id])
+  montoBase  Float // monto del pago sobre el que se calculó
+  porcentaje Float // % congelado al momento de causarla
+  monto      Float // comisión = montoBase * porcentaje / 100
+  estado     EstadoComision @default(CAUSADA)
+  creadoEn   DateTime       @default(now())
+
+  @@map("comisiones")
+}
+
+// Solicitud de retiro (egreso externo). El admin la aprueba, paga por fuera y
+// adjunta el comprobante; el afiliado lo ve en su billetera.
+model SolicitudRetiro {
+  id                String       @id @default(cuid())
+  afiliadoId        String
+  afiliado          Afiliado     @relation(fields: [afiliadoId], references: [id])
+  monto             Float
+  estado            EstadoRetiro @default(SOLICITADO)
+  comprobanteBase64 String?      @db.LongText // soporte del pago (data URL)
+  nota              String? // observación del admin (o motivo de rechazo)
+  solicitadoEn      DateTime     @default(now())
+  procesadoEn       DateTime?
+  procesadoPor      String? // email del super admin que la procesó
+
+  @@map("solicitudes_retiro")
 }
 
 // ============ Enums ============
@@ -353,4 +462,29 @@ enum Rol {
   SUPER_ADMIN
   ADMIN
   SUPERVISOR
+  AFILIADO
+}
+
+enum MetodoPagoAfiliado {
+  NEQUI
+  BANCOLOMBIA
+  DAVIPLATA
+  OTRO
+}
+
+enum TipoCuentaBancaria {
+  AHORROS
+  CORRIENTE
+}
+
+enum EstadoComision {
+  CAUSADA
+  ANULADA
+}
+
+enum EstadoRetiro {
+  SOLICITADO
+  APROBADO
+  PAGADO
+  RECHAZADO
 }

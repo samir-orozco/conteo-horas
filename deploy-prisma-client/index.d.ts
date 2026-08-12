@@ -64,6 +64,11 @@ export type DispositivoKiosco = $Result.DefaultSelection<Prisma.$DispositivoKios
  */
 export type Colaborador = $Result.DefaultSelection<Prisma.$ColaboradorPayload>
 /**
+ * Model DiaEsperado
+ * 
+ */
+export type DiaEsperado = $Result.DefaultSelection<Prisma.$DiaEsperadoPayload>
+/**
  * Model Registro
  * 
  */
@@ -477,6 +482,16 @@ export class PrismaClient<
     * ```
     */
   get colaborador(): Prisma.ColaboradorDelegate<ExtArgs>;
+
+  /**
+   * `prisma.diaEsperado`: Exposes CRUD operations for the **DiaEsperado** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DiaEsperados
+    * const diaEsperados = await prisma.diaEsperado.findMany()
+    * ```
+    */
+  get diaEsperado(): Prisma.DiaEsperadoDelegate<ExtArgs>;
 
   /**
    * `prisma.registro`: Exposes CRUD operations for the **Registro** model.
@@ -1018,6 +1033,7 @@ export namespace Prisma {
     FranjaHorario: 'FranjaHorario',
     DispositivoKiosco: 'DispositivoKiosco',
     Colaborador: 'Colaborador',
+    DiaEsperado: 'DiaEsperado',
     Registro: 'Registro',
     Permiso: 'Permiso',
     DiaFestivo: 'DiaFestivo',
@@ -1042,7 +1058,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro"
+      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1703,6 +1719,72 @@ export namespace Prisma {
           count: {
             args: Prisma.ColaboradorCountArgs<ExtArgs>
             result: $Utils.Optional<ColaboradorCountAggregateOutputType> | number
+          }
+        }
+      }
+      DiaEsperado: {
+        payload: Prisma.$DiaEsperadoPayload<ExtArgs>
+        fields: Prisma.DiaEsperadoFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DiaEsperadoFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiaEsperadoPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DiaEsperadoFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiaEsperadoPayload>
+          }
+          findFirst: {
+            args: Prisma.DiaEsperadoFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiaEsperadoPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DiaEsperadoFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiaEsperadoPayload>
+          }
+          findMany: {
+            args: Prisma.DiaEsperadoFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiaEsperadoPayload>[]
+          }
+          create: {
+            args: Prisma.DiaEsperadoCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiaEsperadoPayload>
+          }
+          createMany: {
+            args: Prisma.DiaEsperadoCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.DiaEsperadoDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiaEsperadoPayload>
+          }
+          update: {
+            args: Prisma.DiaEsperadoUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiaEsperadoPayload>
+          }
+          deleteMany: {
+            args: Prisma.DiaEsperadoDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DiaEsperadoUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.DiaEsperadoUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DiaEsperadoPayload>
+          }
+          aggregate: {
+            args: Prisma.DiaEsperadoAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDiaEsperado>
+          }
+          groupBy: {
+            args: Prisma.DiaEsperadoGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DiaEsperadoGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DiaEsperadoCountArgs<ExtArgs>
+            result: $Utils.Optional<DiaEsperadoCountAggregateOutputType> | number
           }
         }
       }
@@ -2628,11 +2710,13 @@ export namespace Prisma {
   export type ColaboradorCountOutputType = {
     registros: number
     permisos: number
+    diasEsperados: number
   }
 
   export type ColaboradorCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     registros?: boolean | ColaboradorCountOutputTypeCountRegistrosArgs
     permisos?: boolean | ColaboradorCountOutputTypeCountPermisosArgs
+    diasEsperados?: boolean | ColaboradorCountOutputTypeCountDiasEsperadosArgs
   }
 
   // Custom InputTypes
@@ -2658,6 +2742,13 @@ export namespace Prisma {
    */
   export type ColaboradorCountOutputTypeCountPermisosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PermisoWhereInput
+  }
+
+  /**
+   * ColaboradorCountOutputType without action
+   */
+  export type ColaboradorCountOutputTypeCountDiasEsperadosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DiaEsperadoWhereInput
   }
 
 
@@ -11738,6 +11829,7 @@ export namespace Prisma {
     horario?: boolean | Colaborador$horarioArgs<ExtArgs>
     registros?: boolean | Colaborador$registrosArgs<ExtArgs>
     permisos?: boolean | Colaborador$permisosArgs<ExtArgs>
+    diasEsperados?: boolean | Colaborador$diasEsperadosArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["colaborador"]>
 
@@ -11767,6 +11859,7 @@ export namespace Prisma {
     horario?: boolean | Colaborador$horarioArgs<ExtArgs>
     registros?: boolean | Colaborador$registrosArgs<ExtArgs>
     permisos?: boolean | Colaborador$permisosArgs<ExtArgs>
+    diasEsperados?: boolean | Colaborador$diasEsperadosArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -11777,6 +11870,7 @@ export namespace Prisma {
       horario: Prisma.$HorarioPayload<ExtArgs> | null
       registros: Prisma.$RegistroPayload<ExtArgs>[]
       permisos: Prisma.$PermisoPayload<ExtArgs>[]
+      diasEsperados: Prisma.$DiaEsperadoPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -12140,6 +12234,7 @@ export namespace Prisma {
     horario<T extends Colaborador$horarioArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$horarioArgs<ExtArgs>>): Prisma__HorarioClient<$Result.GetResult<Prisma.$HorarioPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     registros<T extends Colaborador$registrosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$registrosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findMany"> | Null>
     permisos<T extends Colaborador$permisosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$permisosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PermisoPayload<ExtArgs>, T, "findMany"> | Null>
+    diasEsperados<T extends Colaborador$diasEsperadosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$diasEsperadosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -12540,6 +12635,26 @@ export namespace Prisma {
   }
 
   /**
+   * Colaborador.diasEsperados
+   */
+  export type Colaborador$diasEsperadosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    where?: DiaEsperadoWhereInput
+    orderBy?: DiaEsperadoOrderByWithRelationInput | DiaEsperadoOrderByWithRelationInput[]
+    cursor?: DiaEsperadoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DiaEsperadoScalarFieldEnum | DiaEsperadoScalarFieldEnum[]
+  }
+
+  /**
    * Colaborador without action
    */
   export type ColaboradorDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -12551,6 +12666,1015 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: ColaboradorInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model DiaEsperado
+   */
+
+  export type AggregateDiaEsperado = {
+    _count: DiaEsperadoCountAggregateOutputType | null
+    _avg: DiaEsperadoAvgAggregateOutputType | null
+    _sum: DiaEsperadoSumAggregateOutputType | null
+    _min: DiaEsperadoMinAggregateOutputType | null
+    _max: DiaEsperadoMaxAggregateOutputType | null
+  }
+
+  export type DiaEsperadoAvgAggregateOutputType = {
+    toleranciaMin: number | null
+    almuerzoMin: number | null
+    minutosEsperados: number | null
+  }
+
+  export type DiaEsperadoSumAggregateOutputType = {
+    toleranciaMin: number | null
+    almuerzoMin: number | null
+    minutosEsperados: number | null
+  }
+
+  export type DiaEsperadoMinAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    fecha: Date | null
+    programado: boolean | null
+    horaEntrada: string | null
+    horaSalida: string | null
+    toleranciaMin: number | null
+    almuerzoMin: number | null
+    minutosEsperados: number | null
+    horarioId: string | null
+    origen: string | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type DiaEsperadoMaxAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    fecha: Date | null
+    programado: boolean | null
+    horaEntrada: string | null
+    horaSalida: string | null
+    toleranciaMin: number | null
+    almuerzoMin: number | null
+    minutosEsperados: number | null
+    horarioId: string | null
+    origen: string | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type DiaEsperadoCountAggregateOutputType = {
+    id: number
+    colaboradorId: number
+    fecha: number
+    programado: number
+    horaEntrada: number
+    horaSalida: number
+    toleranciaMin: number
+    almuerzoMin: number
+    minutosEsperados: number
+    horarioId: number
+    origen: number
+    creadoEn: number
+    actualizadoEn: number
+    _all: number
+  }
+
+
+  export type DiaEsperadoAvgAggregateInputType = {
+    toleranciaMin?: true
+    almuerzoMin?: true
+    minutosEsperados?: true
+  }
+
+  export type DiaEsperadoSumAggregateInputType = {
+    toleranciaMin?: true
+    almuerzoMin?: true
+    minutosEsperados?: true
+  }
+
+  export type DiaEsperadoMinAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    fecha?: true
+    programado?: true
+    horaEntrada?: true
+    horaSalida?: true
+    toleranciaMin?: true
+    almuerzoMin?: true
+    minutosEsperados?: true
+    horarioId?: true
+    origen?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type DiaEsperadoMaxAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    fecha?: true
+    programado?: true
+    horaEntrada?: true
+    horaSalida?: true
+    toleranciaMin?: true
+    almuerzoMin?: true
+    minutosEsperados?: true
+    horarioId?: true
+    origen?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type DiaEsperadoCountAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    fecha?: true
+    programado?: true
+    horaEntrada?: true
+    horaSalida?: true
+    toleranciaMin?: true
+    almuerzoMin?: true
+    minutosEsperados?: true
+    horarioId?: true
+    origen?: true
+    creadoEn?: true
+    actualizadoEn?: true
+    _all?: true
+  }
+
+  export type DiaEsperadoAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DiaEsperado to aggregate.
+     */
+    where?: DiaEsperadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiaEsperados to fetch.
+     */
+    orderBy?: DiaEsperadoOrderByWithRelationInput | DiaEsperadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DiaEsperadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiaEsperados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiaEsperados.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DiaEsperados
+    **/
+    _count?: true | DiaEsperadoCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: DiaEsperadoAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: DiaEsperadoSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DiaEsperadoMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DiaEsperadoMaxAggregateInputType
+  }
+
+  export type GetDiaEsperadoAggregateType<T extends DiaEsperadoAggregateArgs> = {
+        [P in keyof T & keyof AggregateDiaEsperado]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDiaEsperado[P]>
+      : GetScalarType<T[P], AggregateDiaEsperado[P]>
+  }
+
+
+
+
+  export type DiaEsperadoGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DiaEsperadoWhereInput
+    orderBy?: DiaEsperadoOrderByWithAggregationInput | DiaEsperadoOrderByWithAggregationInput[]
+    by: DiaEsperadoScalarFieldEnum[] | DiaEsperadoScalarFieldEnum
+    having?: DiaEsperadoScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DiaEsperadoCountAggregateInputType | true
+    _avg?: DiaEsperadoAvgAggregateInputType
+    _sum?: DiaEsperadoSumAggregateInputType
+    _min?: DiaEsperadoMinAggregateInputType
+    _max?: DiaEsperadoMaxAggregateInputType
+  }
+
+  export type DiaEsperadoGroupByOutputType = {
+    id: string
+    colaboradorId: string
+    fecha: Date
+    programado: boolean
+    horaEntrada: string | null
+    horaSalida: string | null
+    toleranciaMin: number
+    almuerzoMin: number
+    minutosEsperados: number
+    horarioId: string | null
+    origen: string
+    creadoEn: Date
+    actualizadoEn: Date
+    _count: DiaEsperadoCountAggregateOutputType | null
+    _avg: DiaEsperadoAvgAggregateOutputType | null
+    _sum: DiaEsperadoSumAggregateOutputType | null
+    _min: DiaEsperadoMinAggregateOutputType | null
+    _max: DiaEsperadoMaxAggregateOutputType | null
+  }
+
+  type GetDiaEsperadoGroupByPayload<T extends DiaEsperadoGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DiaEsperadoGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DiaEsperadoGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DiaEsperadoGroupByOutputType[P]>
+            : GetScalarType<T[P], DiaEsperadoGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DiaEsperadoSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    colaboradorId?: boolean
+    fecha?: boolean
+    programado?: boolean
+    horaEntrada?: boolean
+    horaSalida?: boolean
+    toleranciaMin?: boolean
+    almuerzoMin?: boolean
+    minutosEsperados?: boolean
+    horarioId?: boolean
+    origen?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["diaEsperado"]>
+
+
+  export type DiaEsperadoSelectScalar = {
+    id?: boolean
+    colaboradorId?: boolean
+    fecha?: boolean
+    programado?: boolean
+    horaEntrada?: boolean
+    horaSalida?: boolean
+    toleranciaMin?: boolean
+    almuerzoMin?: boolean
+    minutosEsperados?: boolean
+    horarioId?: boolean
+    origen?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+  }
+
+  export type DiaEsperadoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+  }
+
+  export type $DiaEsperadoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DiaEsperado"
+    objects: {
+      colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      colaboradorId: string
+      fecha: Date
+      programado: boolean
+      horaEntrada: string | null
+      horaSalida: string | null
+      toleranciaMin: number
+      almuerzoMin: number
+      minutosEsperados: number
+      horarioId: string | null
+      origen: string
+      creadoEn: Date
+      actualizadoEn: Date
+    }, ExtArgs["result"]["diaEsperado"]>
+    composites: {}
+  }
+
+  type DiaEsperadoGetPayload<S extends boolean | null | undefined | DiaEsperadoDefaultArgs> = $Result.GetResult<Prisma.$DiaEsperadoPayload, S>
+
+  type DiaEsperadoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<DiaEsperadoFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: DiaEsperadoCountAggregateInputType | true
+    }
+
+  export interface DiaEsperadoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DiaEsperado'], meta: { name: 'DiaEsperado' } }
+    /**
+     * Find zero or one DiaEsperado that matches the filter.
+     * @param {DiaEsperadoFindUniqueArgs} args - Arguments to find a DiaEsperado
+     * @example
+     * // Get one DiaEsperado
+     * const diaEsperado = await prisma.diaEsperado.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DiaEsperadoFindUniqueArgs>(args: SelectSubset<T, DiaEsperadoFindUniqueArgs<ExtArgs>>): Prisma__DiaEsperadoClient<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one DiaEsperado that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {DiaEsperadoFindUniqueOrThrowArgs} args - Arguments to find a DiaEsperado
+     * @example
+     * // Get one DiaEsperado
+     * const diaEsperado = await prisma.diaEsperado.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DiaEsperadoFindUniqueOrThrowArgs>(args: SelectSubset<T, DiaEsperadoFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DiaEsperadoClient<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first DiaEsperado that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiaEsperadoFindFirstArgs} args - Arguments to find a DiaEsperado
+     * @example
+     * // Get one DiaEsperado
+     * const diaEsperado = await prisma.diaEsperado.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DiaEsperadoFindFirstArgs>(args?: SelectSubset<T, DiaEsperadoFindFirstArgs<ExtArgs>>): Prisma__DiaEsperadoClient<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first DiaEsperado that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiaEsperadoFindFirstOrThrowArgs} args - Arguments to find a DiaEsperado
+     * @example
+     * // Get one DiaEsperado
+     * const diaEsperado = await prisma.diaEsperado.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DiaEsperadoFindFirstOrThrowArgs>(args?: SelectSubset<T, DiaEsperadoFindFirstOrThrowArgs<ExtArgs>>): Prisma__DiaEsperadoClient<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more DiaEsperados that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiaEsperadoFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DiaEsperados
+     * const diaEsperados = await prisma.diaEsperado.findMany()
+     * 
+     * // Get first 10 DiaEsperados
+     * const diaEsperados = await prisma.diaEsperado.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const diaEsperadoWithIdOnly = await prisma.diaEsperado.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DiaEsperadoFindManyArgs>(args?: SelectSubset<T, DiaEsperadoFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a DiaEsperado.
+     * @param {DiaEsperadoCreateArgs} args - Arguments to create a DiaEsperado.
+     * @example
+     * // Create one DiaEsperado
+     * const DiaEsperado = await prisma.diaEsperado.create({
+     *   data: {
+     *     // ... data to create a DiaEsperado
+     *   }
+     * })
+     * 
+     */
+    create<T extends DiaEsperadoCreateArgs>(args: SelectSubset<T, DiaEsperadoCreateArgs<ExtArgs>>): Prisma__DiaEsperadoClient<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many DiaEsperados.
+     * @param {DiaEsperadoCreateManyArgs} args - Arguments to create many DiaEsperados.
+     * @example
+     * // Create many DiaEsperados
+     * const diaEsperado = await prisma.diaEsperado.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DiaEsperadoCreateManyArgs>(args?: SelectSubset<T, DiaEsperadoCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a DiaEsperado.
+     * @param {DiaEsperadoDeleteArgs} args - Arguments to delete one DiaEsperado.
+     * @example
+     * // Delete one DiaEsperado
+     * const DiaEsperado = await prisma.diaEsperado.delete({
+     *   where: {
+     *     // ... filter to delete one DiaEsperado
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DiaEsperadoDeleteArgs>(args: SelectSubset<T, DiaEsperadoDeleteArgs<ExtArgs>>): Prisma__DiaEsperadoClient<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one DiaEsperado.
+     * @param {DiaEsperadoUpdateArgs} args - Arguments to update one DiaEsperado.
+     * @example
+     * // Update one DiaEsperado
+     * const diaEsperado = await prisma.diaEsperado.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DiaEsperadoUpdateArgs>(args: SelectSubset<T, DiaEsperadoUpdateArgs<ExtArgs>>): Prisma__DiaEsperadoClient<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more DiaEsperados.
+     * @param {DiaEsperadoDeleteManyArgs} args - Arguments to filter DiaEsperados to delete.
+     * @example
+     * // Delete a few DiaEsperados
+     * const { count } = await prisma.diaEsperado.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DiaEsperadoDeleteManyArgs>(args?: SelectSubset<T, DiaEsperadoDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DiaEsperados.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiaEsperadoUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DiaEsperados
+     * const diaEsperado = await prisma.diaEsperado.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DiaEsperadoUpdateManyArgs>(args: SelectSubset<T, DiaEsperadoUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one DiaEsperado.
+     * @param {DiaEsperadoUpsertArgs} args - Arguments to update or create a DiaEsperado.
+     * @example
+     * // Update or create a DiaEsperado
+     * const diaEsperado = await prisma.diaEsperado.upsert({
+     *   create: {
+     *     // ... data to create a DiaEsperado
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DiaEsperado we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DiaEsperadoUpsertArgs>(args: SelectSubset<T, DiaEsperadoUpsertArgs<ExtArgs>>): Prisma__DiaEsperadoClient<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of DiaEsperados.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiaEsperadoCountArgs} args - Arguments to filter DiaEsperados to count.
+     * @example
+     * // Count the number of DiaEsperados
+     * const count = await prisma.diaEsperado.count({
+     *   where: {
+     *     // ... the filter for the DiaEsperados we want to count
+     *   }
+     * })
+    **/
+    count<T extends DiaEsperadoCountArgs>(
+      args?: Subset<T, DiaEsperadoCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DiaEsperadoCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DiaEsperado.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiaEsperadoAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DiaEsperadoAggregateArgs>(args: Subset<T, DiaEsperadoAggregateArgs>): Prisma.PrismaPromise<GetDiaEsperadoAggregateType<T>>
+
+    /**
+     * Group by DiaEsperado.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DiaEsperadoGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DiaEsperadoGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DiaEsperadoGroupByArgs['orderBy'] }
+        : { orderBy?: DiaEsperadoGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DiaEsperadoGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDiaEsperadoGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DiaEsperado model
+   */
+  readonly fields: DiaEsperadoFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DiaEsperado.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DiaEsperadoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DiaEsperado model
+   */ 
+  interface DiaEsperadoFieldRefs {
+    readonly id: FieldRef<"DiaEsperado", 'String'>
+    readonly colaboradorId: FieldRef<"DiaEsperado", 'String'>
+    readonly fecha: FieldRef<"DiaEsperado", 'DateTime'>
+    readonly programado: FieldRef<"DiaEsperado", 'Boolean'>
+    readonly horaEntrada: FieldRef<"DiaEsperado", 'String'>
+    readonly horaSalida: FieldRef<"DiaEsperado", 'String'>
+    readonly toleranciaMin: FieldRef<"DiaEsperado", 'Int'>
+    readonly almuerzoMin: FieldRef<"DiaEsperado", 'Int'>
+    readonly minutosEsperados: FieldRef<"DiaEsperado", 'Int'>
+    readonly horarioId: FieldRef<"DiaEsperado", 'String'>
+    readonly origen: FieldRef<"DiaEsperado", 'String'>
+    readonly creadoEn: FieldRef<"DiaEsperado", 'DateTime'>
+    readonly actualizadoEn: FieldRef<"DiaEsperado", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DiaEsperado findUnique
+   */
+  export type DiaEsperadoFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    /**
+     * Filter, which DiaEsperado to fetch.
+     */
+    where: DiaEsperadoWhereUniqueInput
+  }
+
+  /**
+   * DiaEsperado findUniqueOrThrow
+   */
+  export type DiaEsperadoFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    /**
+     * Filter, which DiaEsperado to fetch.
+     */
+    where: DiaEsperadoWhereUniqueInput
+  }
+
+  /**
+   * DiaEsperado findFirst
+   */
+  export type DiaEsperadoFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    /**
+     * Filter, which DiaEsperado to fetch.
+     */
+    where?: DiaEsperadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiaEsperados to fetch.
+     */
+    orderBy?: DiaEsperadoOrderByWithRelationInput | DiaEsperadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DiaEsperados.
+     */
+    cursor?: DiaEsperadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiaEsperados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiaEsperados.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DiaEsperados.
+     */
+    distinct?: DiaEsperadoScalarFieldEnum | DiaEsperadoScalarFieldEnum[]
+  }
+
+  /**
+   * DiaEsperado findFirstOrThrow
+   */
+  export type DiaEsperadoFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    /**
+     * Filter, which DiaEsperado to fetch.
+     */
+    where?: DiaEsperadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiaEsperados to fetch.
+     */
+    orderBy?: DiaEsperadoOrderByWithRelationInput | DiaEsperadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DiaEsperados.
+     */
+    cursor?: DiaEsperadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiaEsperados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiaEsperados.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DiaEsperados.
+     */
+    distinct?: DiaEsperadoScalarFieldEnum | DiaEsperadoScalarFieldEnum[]
+  }
+
+  /**
+   * DiaEsperado findMany
+   */
+  export type DiaEsperadoFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    /**
+     * Filter, which DiaEsperados to fetch.
+     */
+    where?: DiaEsperadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DiaEsperados to fetch.
+     */
+    orderBy?: DiaEsperadoOrderByWithRelationInput | DiaEsperadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DiaEsperados.
+     */
+    cursor?: DiaEsperadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DiaEsperados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DiaEsperados.
+     */
+    skip?: number
+    distinct?: DiaEsperadoScalarFieldEnum | DiaEsperadoScalarFieldEnum[]
+  }
+
+  /**
+   * DiaEsperado create
+   */
+  export type DiaEsperadoCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    /**
+     * The data needed to create a DiaEsperado.
+     */
+    data: XOR<DiaEsperadoCreateInput, DiaEsperadoUncheckedCreateInput>
+  }
+
+  /**
+   * DiaEsperado createMany
+   */
+  export type DiaEsperadoCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DiaEsperados.
+     */
+    data: DiaEsperadoCreateManyInput | DiaEsperadoCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DiaEsperado update
+   */
+  export type DiaEsperadoUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    /**
+     * The data needed to update a DiaEsperado.
+     */
+    data: XOR<DiaEsperadoUpdateInput, DiaEsperadoUncheckedUpdateInput>
+    /**
+     * Choose, which DiaEsperado to update.
+     */
+    where: DiaEsperadoWhereUniqueInput
+  }
+
+  /**
+   * DiaEsperado updateMany
+   */
+  export type DiaEsperadoUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DiaEsperados.
+     */
+    data: XOR<DiaEsperadoUpdateManyMutationInput, DiaEsperadoUncheckedUpdateManyInput>
+    /**
+     * Filter which DiaEsperados to update
+     */
+    where?: DiaEsperadoWhereInput
+  }
+
+  /**
+   * DiaEsperado upsert
+   */
+  export type DiaEsperadoUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    /**
+     * The filter to search for the DiaEsperado to update in case it exists.
+     */
+    where: DiaEsperadoWhereUniqueInput
+    /**
+     * In case the DiaEsperado found by the `where` argument doesn't exist, create a new DiaEsperado with this data.
+     */
+    create: XOR<DiaEsperadoCreateInput, DiaEsperadoUncheckedCreateInput>
+    /**
+     * In case the DiaEsperado was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DiaEsperadoUpdateInput, DiaEsperadoUncheckedUpdateInput>
+  }
+
+  /**
+   * DiaEsperado delete
+   */
+  export type DiaEsperadoDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    /**
+     * Filter which DiaEsperado to delete.
+     */
+    where: DiaEsperadoWhereUniqueInput
+  }
+
+  /**
+   * DiaEsperado deleteMany
+   */
+  export type DiaEsperadoDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DiaEsperados to delete
+     */
+    where?: DiaEsperadoWhereInput
+  }
+
+  /**
+   * DiaEsperado without action
+   */
+  export type DiaEsperadoDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
   }
 
 
@@ -21397,6 +22521,25 @@ export namespace Prisma {
   export type ColaboradorScalarFieldEnum = (typeof ColaboradorScalarFieldEnum)[keyof typeof ColaboradorScalarFieldEnum]
 
 
+  export const DiaEsperadoScalarFieldEnum: {
+    id: 'id',
+    colaboradorId: 'colaboradorId',
+    fecha: 'fecha',
+    programado: 'programado',
+    horaEntrada: 'horaEntrada',
+    horaSalida: 'horaSalida',
+    toleranciaMin: 'toleranciaMin',
+    almuerzoMin: 'almuerzoMin',
+    minutosEsperados: 'minutosEsperados',
+    horarioId: 'horarioId',
+    origen: 'origen',
+    creadoEn: 'creadoEn',
+    actualizadoEn: 'actualizadoEn'
+  };
+
+  export type DiaEsperadoScalarFieldEnum = (typeof DiaEsperadoScalarFieldEnum)[keyof typeof DiaEsperadoScalarFieldEnum]
+
+
   export const RegistroScalarFieldEnum: {
     id: 'id',
     colaboradorId: 'colaboradorId',
@@ -22444,6 +23587,7 @@ export namespace Prisma {
     horario?: XOR<HorarioNullableRelationFilter, HorarioWhereInput> | null
     registros?: RegistroListRelationFilter
     permisos?: PermisoListRelationFilter
+    diasEsperados?: DiaEsperadoListRelationFilter
   }
 
   export type ColaboradorOrderByWithRelationInput = {
@@ -22468,6 +23612,7 @@ export namespace Prisma {
     horario?: HorarioOrderByWithRelationInput
     registros?: RegistroOrderByRelationAggregateInput
     permisos?: PermisoOrderByRelationAggregateInput
+    diasEsperados?: DiaEsperadoOrderByRelationAggregateInput
   }
 
   export type ColaboradorWhereUniqueInput = Prisma.AtLeast<{
@@ -22496,6 +23641,7 @@ export namespace Prisma {
     horario?: XOR<HorarioNullableRelationFilter, HorarioWhereInput> | null
     registros?: RegistroListRelationFilter
     permisos?: PermisoListRelationFilter
+    diasEsperados?: DiaEsperadoListRelationFilter
   }, "id" | "empresaId_cedula">
 
   export type ColaboradorOrderByWithAggregationInput = {
@@ -22544,6 +23690,104 @@ export namespace Prisma {
     retiroProgramado?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Colaborador"> | Date | string
+  }
+
+  export type DiaEsperadoWhereInput = {
+    AND?: DiaEsperadoWhereInput | DiaEsperadoWhereInput[]
+    OR?: DiaEsperadoWhereInput[]
+    NOT?: DiaEsperadoWhereInput | DiaEsperadoWhereInput[]
+    id?: StringFilter<"DiaEsperado"> | string
+    colaboradorId?: StringFilter<"DiaEsperado"> | string
+    fecha?: DateTimeFilter<"DiaEsperado"> | Date | string
+    programado?: BoolFilter<"DiaEsperado"> | boolean
+    horaEntrada?: StringNullableFilter<"DiaEsperado"> | string | null
+    horaSalida?: StringNullableFilter<"DiaEsperado"> | string | null
+    toleranciaMin?: IntFilter<"DiaEsperado"> | number
+    almuerzoMin?: IntFilter<"DiaEsperado"> | number
+    minutosEsperados?: IntFilter<"DiaEsperado"> | number
+    horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
+    origen?: StringFilter<"DiaEsperado"> | string
+    creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
+    actualizadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+  }
+
+  export type DiaEsperadoOrderByWithRelationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    programado?: SortOrder
+    horaEntrada?: SortOrderInput | SortOrder
+    horaSalida?: SortOrderInput | SortOrder
+    toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
+    minutosEsperados?: SortOrder
+    horarioId?: SortOrderInput | SortOrder
+    origen?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    colaborador?: ColaboradorOrderByWithRelationInput
+  }
+
+  export type DiaEsperadoWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    colaboradorId_fecha?: DiaEsperadoColaboradorIdFechaCompoundUniqueInput
+    AND?: DiaEsperadoWhereInput | DiaEsperadoWhereInput[]
+    OR?: DiaEsperadoWhereInput[]
+    NOT?: DiaEsperadoWhereInput | DiaEsperadoWhereInput[]
+    colaboradorId?: StringFilter<"DiaEsperado"> | string
+    fecha?: DateTimeFilter<"DiaEsperado"> | Date | string
+    programado?: BoolFilter<"DiaEsperado"> | boolean
+    horaEntrada?: StringNullableFilter<"DiaEsperado"> | string | null
+    horaSalida?: StringNullableFilter<"DiaEsperado"> | string | null
+    toleranciaMin?: IntFilter<"DiaEsperado"> | number
+    almuerzoMin?: IntFilter<"DiaEsperado"> | number
+    minutosEsperados?: IntFilter<"DiaEsperado"> | number
+    horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
+    origen?: StringFilter<"DiaEsperado"> | string
+    creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
+    actualizadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+  }, "id" | "colaboradorId_fecha">
+
+  export type DiaEsperadoOrderByWithAggregationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    programado?: SortOrder
+    horaEntrada?: SortOrderInput | SortOrder
+    horaSalida?: SortOrderInput | SortOrder
+    toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
+    minutosEsperados?: SortOrder
+    horarioId?: SortOrderInput | SortOrder
+    origen?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    _count?: DiaEsperadoCountOrderByAggregateInput
+    _avg?: DiaEsperadoAvgOrderByAggregateInput
+    _max?: DiaEsperadoMaxOrderByAggregateInput
+    _min?: DiaEsperadoMinOrderByAggregateInput
+    _sum?: DiaEsperadoSumOrderByAggregateInput
+  }
+
+  export type DiaEsperadoScalarWhereWithAggregatesInput = {
+    AND?: DiaEsperadoScalarWhereWithAggregatesInput | DiaEsperadoScalarWhereWithAggregatesInput[]
+    OR?: DiaEsperadoScalarWhereWithAggregatesInput[]
+    NOT?: DiaEsperadoScalarWhereWithAggregatesInput | DiaEsperadoScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"DiaEsperado"> | string
+    colaboradorId?: StringWithAggregatesFilter<"DiaEsperado"> | string
+    fecha?: DateTimeWithAggregatesFilter<"DiaEsperado"> | Date | string
+    programado?: BoolWithAggregatesFilter<"DiaEsperado"> | boolean
+    horaEntrada?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
+    horaSalida?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
+    toleranciaMin?: IntWithAggregatesFilter<"DiaEsperado"> | number
+    almuerzoMin?: IntWithAggregatesFilter<"DiaEsperado"> | number
+    minutosEsperados?: IntWithAggregatesFilter<"DiaEsperado"> | number
+    horarioId?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
+    origen?: StringWithAggregatesFilter<"DiaEsperado"> | string
+    creadoEn?: DateTimeWithAggregatesFilter<"DiaEsperado"> | Date | string
+    actualizadoEn?: DateTimeWithAggregatesFilter<"DiaEsperado"> | Date | string
   }
 
   export type RegistroWhereInput = {
@@ -24114,6 +25358,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateInput = {
@@ -24136,6 +25381,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUpdateInput = {
@@ -24158,6 +25404,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateInput = {
@@ -24180,6 +25427,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateManyInput = {
@@ -24236,6 +25484,117 @@ export namespace Prisma {
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiaEsperadoCreateInput = {
+    id?: string
+    fecha: Date | string
+    programado?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    toleranciaMin?: number
+    almuerzoMin?: number
+    minutosEsperados?: number
+    horarioId?: string | null
+    origen?: string
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutDiasEsperadosInput
+  }
+
+  export type DiaEsperadoUncheckedCreateInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    programado?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    toleranciaMin?: number
+    almuerzoMin?: number
+    minutosEsperados?: number
+    horarioId?: string | null
+    origen?: string
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type DiaEsperadoUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    programado?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
+    minutosEsperados?: IntFieldUpdateOperationsInput | number
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    origen?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutDiasEsperadosNestedInput
+  }
+
+  export type DiaEsperadoUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    programado?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
+    minutosEsperados?: IntFieldUpdateOperationsInput | number
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    origen?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiaEsperadoCreateManyInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    programado?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    toleranciaMin?: number
+    almuerzoMin?: number
+    minutosEsperados?: number
+    horarioId?: string | null
+    origen?: string
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type DiaEsperadoUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    programado?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
+    minutosEsperados?: IntFieldUpdateOperationsInput | number
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    origen?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiaEsperadoUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    programado?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
+    minutosEsperados?: IntFieldUpdateOperationsInput | number
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25958,11 +27317,21 @@ export namespace Prisma {
     none?: PermisoWhereInput
   }
 
+  export type DiaEsperadoListRelationFilter = {
+    every?: DiaEsperadoWhereInput
+    some?: DiaEsperadoWhereInput
+    none?: DiaEsperadoWhereInput
+  }
+
   export type RegistroOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type PermisoOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DiaEsperadoOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -26037,16 +27406,81 @@ export namespace Prisma {
     salarioMensual?: SortOrder
   }
 
+  export type ColaboradorRelationFilter = {
+    is?: ColaboradorWhereInput
+    isNot?: ColaboradorWhereInput
+  }
+
+  export type DiaEsperadoColaboradorIdFechaCompoundUniqueInput = {
+    colaboradorId: string
+    fecha: Date | string
+  }
+
+  export type DiaEsperadoCountOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    programado?: SortOrder
+    horaEntrada?: SortOrder
+    horaSalida?: SortOrder
+    toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
+    minutosEsperados?: SortOrder
+    horarioId?: SortOrder
+    origen?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type DiaEsperadoAvgOrderByAggregateInput = {
+    toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
+    minutosEsperados?: SortOrder
+  }
+
+  export type DiaEsperadoMaxOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    programado?: SortOrder
+    horaEntrada?: SortOrder
+    horaSalida?: SortOrder
+    toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
+    minutosEsperados?: SortOrder
+    horarioId?: SortOrder
+    origen?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type DiaEsperadoMinOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    programado?: SortOrder
+    horaEntrada?: SortOrder
+    horaSalida?: SortOrder
+    toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
+    minutosEsperados?: SortOrder
+    horarioId?: SortOrder
+    origen?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type DiaEsperadoSumOrderByAggregateInput = {
+    toleranciaMin?: SortOrder
+    almuerzoMin?: SortOrder
+    minutosEsperados?: SortOrder
+  }
+
   export type EnumTipoRegistroFilter<$PrismaModel = never> = {
     equals?: $Enums.TipoRegistro | EnumTipoRegistroFieldRefInput<$PrismaModel>
     in?: $Enums.TipoRegistro[]
     notIn?: $Enums.TipoRegistro[]
     not?: NestedEnumTipoRegistroFilter<$PrismaModel> | $Enums.TipoRegistro
-  }
-
-  export type ColaboradorRelationFilter = {
-    is?: ColaboradorWhereInput
-    isNot?: ColaboradorWhereInput
   }
 
   export type RegistroCountOrderByAggregateInput = {
@@ -27281,6 +28715,13 @@ export namespace Prisma {
     connect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
   }
 
+  export type DiaEsperadoCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<DiaEsperadoCreateWithoutColaboradorInput, DiaEsperadoUncheckedCreateWithoutColaboradorInput> | DiaEsperadoCreateWithoutColaboradorInput[] | DiaEsperadoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: DiaEsperadoCreateOrConnectWithoutColaboradorInput | DiaEsperadoCreateOrConnectWithoutColaboradorInput[]
+    createMany?: DiaEsperadoCreateManyColaboradorInputEnvelope
+    connect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+  }
+
   export type RegistroUncheckedCreateNestedManyWithoutColaboradorInput = {
     create?: XOR<RegistroCreateWithoutColaboradorInput, RegistroUncheckedCreateWithoutColaboradorInput> | RegistroCreateWithoutColaboradorInput[] | RegistroUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: RegistroCreateOrConnectWithoutColaboradorInput | RegistroCreateOrConnectWithoutColaboradorInput[]
@@ -27293,6 +28734,13 @@ export namespace Prisma {
     connectOrCreate?: PermisoCreateOrConnectWithoutColaboradorInput | PermisoCreateOrConnectWithoutColaboradorInput[]
     createMany?: PermisoCreateManyColaboradorInputEnvelope
     connect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+  }
+
+  export type DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<DiaEsperadoCreateWithoutColaboradorInput, DiaEsperadoUncheckedCreateWithoutColaboradorInput> | DiaEsperadoCreateWithoutColaboradorInput[] | DiaEsperadoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: DiaEsperadoCreateOrConnectWithoutColaboradorInput | DiaEsperadoCreateOrConnectWithoutColaboradorInput[]
+    createMany?: DiaEsperadoCreateManyColaboradorInputEnvelope
+    connect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
   }
 
   export type EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput = {
@@ -27341,6 +28789,20 @@ export namespace Prisma {
     deleteMany?: PermisoScalarWhereInput | PermisoScalarWhereInput[]
   }
 
+  export type DiaEsperadoUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<DiaEsperadoCreateWithoutColaboradorInput, DiaEsperadoUncheckedCreateWithoutColaboradorInput> | DiaEsperadoCreateWithoutColaboradorInput[] | DiaEsperadoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: DiaEsperadoCreateOrConnectWithoutColaboradorInput | DiaEsperadoCreateOrConnectWithoutColaboradorInput[]
+    upsert?: DiaEsperadoUpsertWithWhereUniqueWithoutColaboradorInput | DiaEsperadoUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: DiaEsperadoCreateManyColaboradorInputEnvelope
+    set?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    disconnect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    delete?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    connect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    update?: DiaEsperadoUpdateWithWhereUniqueWithoutColaboradorInput | DiaEsperadoUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: DiaEsperadoUpdateManyWithWhereWithoutColaboradorInput | DiaEsperadoUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
+  }
+
   export type RegistroUncheckedUpdateManyWithoutColaboradorNestedInput = {
     create?: XOR<RegistroCreateWithoutColaboradorInput, RegistroUncheckedCreateWithoutColaboradorInput> | RegistroCreateWithoutColaboradorInput[] | RegistroUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: RegistroCreateOrConnectWithoutColaboradorInput | RegistroCreateOrConnectWithoutColaboradorInput[]
@@ -27367,6 +28829,34 @@ export namespace Prisma {
     update?: PermisoUpdateWithWhereUniqueWithoutColaboradorInput | PermisoUpdateWithWhereUniqueWithoutColaboradorInput[]
     updateMany?: PermisoUpdateManyWithWhereWithoutColaboradorInput | PermisoUpdateManyWithWhereWithoutColaboradorInput[]
     deleteMany?: PermisoScalarWhereInput | PermisoScalarWhereInput[]
+  }
+
+  export type DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<DiaEsperadoCreateWithoutColaboradorInput, DiaEsperadoUncheckedCreateWithoutColaboradorInput> | DiaEsperadoCreateWithoutColaboradorInput[] | DiaEsperadoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: DiaEsperadoCreateOrConnectWithoutColaboradorInput | DiaEsperadoCreateOrConnectWithoutColaboradorInput[]
+    upsert?: DiaEsperadoUpsertWithWhereUniqueWithoutColaboradorInput | DiaEsperadoUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: DiaEsperadoCreateManyColaboradorInputEnvelope
+    set?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    disconnect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    delete?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    connect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    update?: DiaEsperadoUpdateWithWhereUniqueWithoutColaboradorInput | DiaEsperadoUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: DiaEsperadoUpdateManyWithWhereWithoutColaboradorInput | DiaEsperadoUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
+  }
+
+  export type ColaboradorCreateNestedOneWithoutDiasEsperadosInput = {
+    create?: XOR<ColaboradorCreateWithoutDiasEsperadosInput, ColaboradorUncheckedCreateWithoutDiasEsperadosInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutDiasEsperadosInput
+    connect?: ColaboradorWhereUniqueInput
+  }
+
+  export type ColaboradorUpdateOneRequiredWithoutDiasEsperadosNestedInput = {
+    create?: XOR<ColaboradorCreateWithoutDiasEsperadosInput, ColaboradorUncheckedCreateWithoutDiasEsperadosInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutDiasEsperadosInput
+    upsert?: ColaboradorUpsertWithoutDiasEsperadosInput
+    connect?: ColaboradorWhereUniqueInput
+    update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutDiasEsperadosInput, ColaboradorUpdateWithoutDiasEsperadosInput>, ColaboradorUncheckedUpdateWithoutDiasEsperadosInput>
   }
 
   export type ColaboradorCreateNestedOneWithoutRegistrosInput = {
@@ -28217,6 +29707,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutEmpresaInput = {
@@ -28238,6 +29729,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutEmpresaInput = {
@@ -29315,6 +30807,7 @@ export namespace Prisma {
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutHorarioInput = {
@@ -29336,6 +30829,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutHorarioInput = {
@@ -29779,6 +31273,46 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type DiaEsperadoCreateWithoutColaboradorInput = {
+    id?: string
+    fecha: Date | string
+    programado?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    toleranciaMin?: number
+    almuerzoMin?: number
+    minutosEsperados?: number
+    horarioId?: string | null
+    origen?: string
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type DiaEsperadoUncheckedCreateWithoutColaboradorInput = {
+    id?: string
+    fecha: Date | string
+    programado?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    toleranciaMin?: number
+    almuerzoMin?: number
+    minutosEsperados?: number
+    horarioId?: string | null
+    origen?: string
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type DiaEsperadoCreateOrConnectWithoutColaboradorInput = {
+    where: DiaEsperadoWhereUniqueInput
+    create: XOR<DiaEsperadoCreateWithoutColaboradorInput, DiaEsperadoUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type DiaEsperadoCreateManyColaboradorInputEnvelope = {
+    data: DiaEsperadoCreateManyColaboradorInput | DiaEsperadoCreateManyColaboradorInput[]
+    skipDuplicates?: boolean
+  }
+
   export type EmpresaUpsertWithoutColaboradoresInput = {
     update: XOR<EmpresaUpdateWithoutColaboradoresInput, EmpresaUncheckedUpdateWithoutColaboradoresInput>
     create: XOR<EmpresaCreateWithoutColaboradoresInput, EmpresaUncheckedCreateWithoutColaboradoresInput>
@@ -29939,6 +31473,145 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Permiso"> | Date | string
   }
 
+  export type DiaEsperadoUpsertWithWhereUniqueWithoutColaboradorInput = {
+    where: DiaEsperadoWhereUniqueInput
+    update: XOR<DiaEsperadoUpdateWithoutColaboradorInput, DiaEsperadoUncheckedUpdateWithoutColaboradorInput>
+    create: XOR<DiaEsperadoCreateWithoutColaboradorInput, DiaEsperadoUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type DiaEsperadoUpdateWithWhereUniqueWithoutColaboradorInput = {
+    where: DiaEsperadoWhereUniqueInput
+    data: XOR<DiaEsperadoUpdateWithoutColaboradorInput, DiaEsperadoUncheckedUpdateWithoutColaboradorInput>
+  }
+
+  export type DiaEsperadoUpdateManyWithWhereWithoutColaboradorInput = {
+    where: DiaEsperadoScalarWhereInput
+    data: XOR<DiaEsperadoUpdateManyMutationInput, DiaEsperadoUncheckedUpdateManyWithoutColaboradorInput>
+  }
+
+  export type DiaEsperadoScalarWhereInput = {
+    AND?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
+    OR?: DiaEsperadoScalarWhereInput[]
+    NOT?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
+    id?: StringFilter<"DiaEsperado"> | string
+    colaboradorId?: StringFilter<"DiaEsperado"> | string
+    fecha?: DateTimeFilter<"DiaEsperado"> | Date | string
+    programado?: BoolFilter<"DiaEsperado"> | boolean
+    horaEntrada?: StringNullableFilter<"DiaEsperado"> | string | null
+    horaSalida?: StringNullableFilter<"DiaEsperado"> | string | null
+    toleranciaMin?: IntFilter<"DiaEsperado"> | number
+    almuerzoMin?: IntFilter<"DiaEsperado"> | number
+    minutosEsperados?: IntFilter<"DiaEsperado"> | number
+    horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
+    origen?: StringFilter<"DiaEsperado"> | string
+    creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
+    actualizadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
+  }
+
+  export type ColaboradorCreateWithoutDiasEsperadosInput = {
+    id?: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    activo?: boolean
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    horario?: HorarioCreateNestedOneWithoutColaboradoresInput
+    registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorUncheckedCreateWithoutDiasEsperadosInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    horarioId?: string | null
+    activo?: boolean
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorCreateOrConnectWithoutDiasEsperadosInput = {
+    where: ColaboradorWhereUniqueInput
+    create: XOR<ColaboradorCreateWithoutDiasEsperadosInput, ColaboradorUncheckedCreateWithoutDiasEsperadosInput>
+  }
+
+  export type ColaboradorUpsertWithoutDiasEsperadosInput = {
+    update: XOR<ColaboradorUpdateWithoutDiasEsperadosInput, ColaboradorUncheckedUpdateWithoutDiasEsperadosInput>
+    create: XOR<ColaboradorCreateWithoutDiasEsperadosInput, ColaboradorUncheckedCreateWithoutDiasEsperadosInput>
+    where?: ColaboradorWhereInput
+  }
+
+  export type ColaboradorUpdateToOneWithWhereWithoutDiasEsperadosInput = {
+    where?: ColaboradorWhereInput
+    data: XOR<ColaboradorUpdateWithoutDiasEsperadosInput, ColaboradorUncheckedUpdateWithoutDiasEsperadosInput>
+  }
+
+  export type ColaboradorUpdateWithoutDiasEsperadosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
+    registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorUncheckedUpdateWithoutDiasEsperadosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
   export type ColaboradorCreateWithoutRegistrosInput = {
     id?: string
     nombre: string
@@ -29958,6 +31631,7 @@ export namespace Prisma {
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutRegistrosInput = {
@@ -29979,6 +31653,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutRegistrosInput = {
@@ -30016,6 +31691,7 @@ export namespace Prisma {
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutRegistrosInput = {
@@ -30037,6 +31713,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateWithoutPermisosInput = {
@@ -30058,6 +31735,7 @@ export namespace Prisma {
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutPermisosInput = {
@@ -30079,6 +31757,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutPermisosInput = {
@@ -30116,6 +31795,7 @@ export namespace Prisma {
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutPermisosInput = {
@@ -30137,6 +31817,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type EmpresaCreateWithoutFestivosInput = {
@@ -31496,6 +33177,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutEmpresaInput = {
@@ -31517,6 +33199,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateManyWithoutEmpresaInput = {
@@ -31833,6 +33516,7 @@ export namespace Prisma {
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutHorarioInput = {
@@ -31854,6 +33538,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateManyWithoutHorarioInput = {
@@ -31901,6 +33586,21 @@ export namespace Prisma {
     evidenciaTipo?: string | null
     evidenciaNombre?: string | null
     creadoEn?: Date | string
+  }
+
+  export type DiaEsperadoCreateManyColaboradorInput = {
+    id?: string
+    fecha: Date | string
+    programado?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    toleranciaMin?: number
+    almuerzoMin?: number
+    minutosEsperados?: number
+    horarioId?: string | null
+    origen?: string
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
   }
 
   export type RegistroUpdateWithoutColaboradorInput = {
@@ -31985,6 +33685,51 @@ export namespace Prisma {
     evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
     evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiaEsperadoUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    programado?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
+    minutosEsperados?: IntFieldUpdateOperationsInput | number
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    origen?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiaEsperadoUncheckedUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    programado?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
+    minutosEsperados?: IntFieldUpdateOperationsInput | number
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    origen?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiaEsperadoUncheckedUpdateManyWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    programado?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
+    minutosEsperados?: IntFieldUpdateOperationsInput | number
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    origen?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UsuarioCreateManyAfiliadoInput = {
@@ -32282,6 +34027,10 @@ export namespace Prisma {
      * @deprecated Use ColaboradorDefaultArgs instead
      */
     export type ColaboradorArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ColaboradorDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use DiaEsperadoDefaultArgs instead
+     */
+    export type DiaEsperadoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DiaEsperadoDefaultArgs<ExtArgs>
     /**
      * @deprecated Use RegistroDefaultArgs instead
      */
