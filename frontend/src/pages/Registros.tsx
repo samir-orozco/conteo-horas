@@ -31,6 +31,24 @@ export default function Registros() {
   const [fotosDe, setFotosDe] = useState<Registro | null>(null);
   const [fotos, setFotos] = useState<Fotos | null>(null);
   const [eliminarId, setEliminarId] = useState<string | null>(null);
+  // Otros registros que ya existen en el día que se está creando/editando. La
+  // tardanza solo se evalúa sobre la PRIMERA entrada del día, así que si ya hay
+  // una anterior, la que se está agregando no va a mostrar minutos tarde. Sin
+  // este aviso el usuario cree que el cálculo falló.
+  const [otrosDelDia, setOtrosDelDia] = useState<Registro[]>([]);
+
+  useEffect(() => {
+    if (!modal || !form.colaboradorId || !form.fecha) { setOtrosDelDia([]); return; }
+    let vigente = true;
+    api.get('/registros', { params: { colaboradorId: form.colaboradorId, desde: form.fecha, hasta: form.fecha } })
+      .then(r => {
+        if (!vigente) return;
+        const otros = (r.data as Registro[]).filter(x => x.id !== editando?.id && x.entrada);
+        setOtrosDelDia(otros.sort((a, b) => (a.entrada! < b.entrada! ? -1 : 1)));
+      })
+      .catch(() => { if (vigente) setOtrosDelDia([]); });
+    return () => { vigente = false; };
+  }, [modal, form.colaboradorId, form.fecha, editando?.id]);
 
   const cargar = () => {
     const params: any = { desde, hasta };
@@ -215,6 +233,27 @@ export default function Registros() {
                 <label className="block text-xs font-medium text-gray-600 mb-1">Observación</label>
                 <input value={form.observacion} onChange={e => setForm(p => ({ ...p, observacion: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
+
+              {/* La tardanza se evalúa solo sobre la primera entrada del día (para
+                  que volver del almuerzo no cuente como llegar tarde). Si ya hay
+                  una anterior, este registro no va a mostrar minutos tarde, y sin
+                  avisarlo parece que el cálculo falló. */}
+              {otrosDelDia.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+                  <Info size={16} className="mt-0.5 shrink-0" />
+                  <span>
+                    Ese día ya tiene {otrosDelDia.length === 1 ? 'un registro' : `${otrosDelDia.length} registros`} con entrada
+                    a las <b>{otrosDelDia.map(o => fmtHora(o.entrada)).join(', ')}</b>.
+                    {form.entrada && fmtHora(otrosDelDia[0].entrada) < form.entrada ? (
+                      <> La llegada tarde se calcula sobre la primera entrada del día,
+                      así que <b>este registro no mostrará minutos tarde</b>. Si vas a corregir la
+                      hora de llegada, edita el registro de las {fmtHora(otrosDelDia[0].entrada)}.</>
+                    ) : (
+                      <> La llegada tarde se calcula sobre la primera entrada del día.</>
+                    )}
+                  </span>
+                </div>
+              )}
               <div className="flex gap-3 justify-end">
                 <button type="button" onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
                 <button type="submit" className="px-4 py-2 text-sm bg-blue-800 text-white rounded-lg hover:bg-blue-700">Guardar</button>
