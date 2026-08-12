@@ -64,6 +64,16 @@ export type DispositivoKiosco = $Result.DefaultSelection<Prisma.$DispositivoKios
  */
 export type Colaborador = $Result.DefaultSelection<Prisma.$ColaboradorPayload>
 /**
+ * Model Sede
+ * 
+ */
+export type Sede = $Result.DefaultSelection<Prisma.$SedePayload>
+/**
+ * Model ColaboradorSede
+ * 
+ */
+export type ColaboradorSede = $Result.DefaultSelection<Prisma.$ColaboradorSedePayload>
+/**
  * Model DiaEsperado
  * 
  */
@@ -482,6 +492,26 @@ export class PrismaClient<
     * ```
     */
   get colaborador(): Prisma.ColaboradorDelegate<ExtArgs>;
+
+  /**
+   * `prisma.sede`: Exposes CRUD operations for the **Sede** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Sedes
+    * const sedes = await prisma.sede.findMany()
+    * ```
+    */
+  get sede(): Prisma.SedeDelegate<ExtArgs>;
+
+  /**
+   * `prisma.colaboradorSede`: Exposes CRUD operations for the **ColaboradorSede** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ColaboradorSedes
+    * const colaboradorSedes = await prisma.colaboradorSede.findMany()
+    * ```
+    */
+  get colaboradorSede(): Prisma.ColaboradorSedeDelegate<ExtArgs>;
 
   /**
    * `prisma.diaEsperado`: Exposes CRUD operations for the **DiaEsperado** model.
@@ -1033,6 +1063,8 @@ export namespace Prisma {
     FranjaHorario: 'FranjaHorario',
     DispositivoKiosco: 'DispositivoKiosco',
     Colaborador: 'Colaborador',
+    Sede: 'Sede',
+    ColaboradorSede: 'ColaboradorSede',
     DiaEsperado: 'DiaEsperado',
     Registro: 'Registro',
     Permiso: 'Permiso',
@@ -1058,7 +1090,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro"
+      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1719,6 +1751,138 @@ export namespace Prisma {
           count: {
             args: Prisma.ColaboradorCountArgs<ExtArgs>
             result: $Utils.Optional<ColaboradorCountAggregateOutputType> | number
+          }
+        }
+      }
+      Sede: {
+        payload: Prisma.$SedePayload<ExtArgs>
+        fields: Prisma.SedeFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SedeFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SedePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SedeFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SedePayload>
+          }
+          findFirst: {
+            args: Prisma.SedeFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SedePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SedeFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SedePayload>
+          }
+          findMany: {
+            args: Prisma.SedeFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SedePayload>[]
+          }
+          create: {
+            args: Prisma.SedeCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SedePayload>
+          }
+          createMany: {
+            args: Prisma.SedeCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SedeDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SedePayload>
+          }
+          update: {
+            args: Prisma.SedeUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SedePayload>
+          }
+          deleteMany: {
+            args: Prisma.SedeDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SedeUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SedeUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SedePayload>
+          }
+          aggregate: {
+            args: Prisma.SedeAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSede>
+          }
+          groupBy: {
+            args: Prisma.SedeGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SedeGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SedeCountArgs<ExtArgs>
+            result: $Utils.Optional<SedeCountAggregateOutputType> | number
+          }
+        }
+      }
+      ColaboradorSede: {
+        payload: Prisma.$ColaboradorSedePayload<ExtArgs>
+        fields: Prisma.ColaboradorSedeFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ColaboradorSedeFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ColaboradorSedePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ColaboradorSedeFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ColaboradorSedePayload>
+          }
+          findFirst: {
+            args: Prisma.ColaboradorSedeFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ColaboradorSedePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ColaboradorSedeFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ColaboradorSedePayload>
+          }
+          findMany: {
+            args: Prisma.ColaboradorSedeFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ColaboradorSedePayload>[]
+          }
+          create: {
+            args: Prisma.ColaboradorSedeCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ColaboradorSedePayload>
+          }
+          createMany: {
+            args: Prisma.ColaboradorSedeCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ColaboradorSedeDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ColaboradorSedePayload>
+          }
+          update: {
+            args: Prisma.ColaboradorSedeUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ColaboradorSedePayload>
+          }
+          deleteMany: {
+            args: Prisma.ColaboradorSedeDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ColaboradorSedeUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ColaboradorSedeUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ColaboradorSedePayload>
+          }
+          aggregate: {
+            args: Prisma.ColaboradorSedeAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateColaboradorSede>
+          }
+          groupBy: {
+            args: Prisma.ColaboradorSedeGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ColaboradorSedeGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ColaboradorSedeCountArgs<ExtArgs>
+            result: $Utils.Optional<ColaboradorSedeCountAggregateOutputType> | number
           }
         }
       }
@@ -2548,6 +2712,7 @@ export namespace Prisma {
     festivos: number
     configuracion: number
     horarios: number
+    sedes: number
     dispositivos: number
     notificaciones: number
     comisiones: number
@@ -2559,6 +2724,7 @@ export namespace Prisma {
     festivos?: boolean | EmpresaCountOutputTypeCountFestivosArgs
     configuracion?: boolean | EmpresaCountOutputTypeCountConfiguracionArgs
     horarios?: boolean | EmpresaCountOutputTypeCountHorariosArgs
+    sedes?: boolean | EmpresaCountOutputTypeCountSedesArgs
     dispositivos?: boolean | EmpresaCountOutputTypeCountDispositivosArgs
     notificaciones?: boolean | EmpresaCountOutputTypeCountNotificacionesArgs
     comisiones?: boolean | EmpresaCountOutputTypeCountComisionesArgs
@@ -2608,6 +2774,13 @@ export namespace Prisma {
    */
   export type EmpresaCountOutputTypeCountHorariosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: HorarioWhereInput
+  }
+
+  /**
+   * EmpresaCountOutputType without action
+   */
+  export type EmpresaCountOutputTypeCountSedesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SedeWhereInput
   }
 
   /**
@@ -2711,12 +2884,14 @@ export namespace Prisma {
     registros: number
     permisos: number
     diasEsperados: number
+    sedes: number
   }
 
   export type ColaboradorCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     registros?: boolean | ColaboradorCountOutputTypeCountRegistrosArgs
     permisos?: boolean | ColaboradorCountOutputTypeCountPermisosArgs
     diasEsperados?: boolean | ColaboradorCountOutputTypeCountDiasEsperadosArgs
+    sedes?: boolean | ColaboradorCountOutputTypeCountSedesArgs
   }
 
   // Custom InputTypes
@@ -2749,6 +2924,53 @@ export namespace Prisma {
    */
   export type ColaboradorCountOutputTypeCountDiasEsperadosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DiaEsperadoWhereInput
+  }
+
+  /**
+   * ColaboradorCountOutputType without action
+   */
+  export type ColaboradorCountOutputTypeCountSedesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ColaboradorSedeWhereInput
+  }
+
+
+  /**
+   * Count Type SedeCountOutputType
+   */
+
+  export type SedeCountOutputType = {
+    colaboradores: number
+    registros: number
+  }
+
+  export type SedeCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    colaboradores?: boolean | SedeCountOutputTypeCountColaboradoresArgs
+    registros?: boolean | SedeCountOutputTypeCountRegistrosArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * SedeCountOutputType without action
+   */
+  export type SedeCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SedeCountOutputType
+     */
+    select?: SedeCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * SedeCountOutputType without action
+   */
+  export type SedeCountOutputTypeCountColaboradoresArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ColaboradorSedeWhereInput
+  }
+
+  /**
+   * SedeCountOutputType without action
+   */
+  export type SedeCountOutputTypeCountRegistrosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RegistroWhereInput
   }
 
 
@@ -3048,6 +3270,7 @@ export namespace Prisma {
     configuracion?: boolean | Empresa$configuracionArgs<ExtArgs>
     suscripcion?: boolean | Empresa$suscripcionArgs<ExtArgs>
     horarios?: boolean | Empresa$horariosArgs<ExtArgs>
+    sedes?: boolean | Empresa$sedesArgs<ExtArgs>
     dispositivos?: boolean | Empresa$dispositivosArgs<ExtArgs>
     notificaciones?: boolean | Empresa$notificacionesArgs<ExtArgs>
     afiliado?: boolean | Empresa$afiliadoArgs<ExtArgs>
@@ -3079,6 +3302,7 @@ export namespace Prisma {
     configuracion?: boolean | Empresa$configuracionArgs<ExtArgs>
     suscripcion?: boolean | Empresa$suscripcionArgs<ExtArgs>
     horarios?: boolean | Empresa$horariosArgs<ExtArgs>
+    sedes?: boolean | Empresa$sedesArgs<ExtArgs>
     dispositivos?: boolean | Empresa$dispositivosArgs<ExtArgs>
     notificaciones?: boolean | Empresa$notificacionesArgs<ExtArgs>
     afiliado?: boolean | Empresa$afiliadoArgs<ExtArgs>
@@ -3095,6 +3319,7 @@ export namespace Prisma {
       configuracion: Prisma.$ConfiguracionPayload<ExtArgs>[]
       suscripcion: Prisma.$SuscripcionPayload<ExtArgs> | null
       horarios: Prisma.$HorarioPayload<ExtArgs>[]
+      sedes: Prisma.$SedePayload<ExtArgs>[]
       dispositivos: Prisma.$DispositivoKioscoPayload<ExtArgs>[]
       notificaciones: Prisma.$NotificacionPayload<ExtArgs>[]
       afiliado: Prisma.$AfiliadoPayload<ExtArgs> | null
@@ -3460,6 +3685,7 @@ export namespace Prisma {
     configuracion<T extends Empresa$configuracionArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$configuracionArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConfiguracionPayload<ExtArgs>, T, "findMany"> | Null>
     suscripcion<T extends Empresa$suscripcionArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$suscripcionArgs<ExtArgs>>): Prisma__SuscripcionClient<$Result.GetResult<Prisma.$SuscripcionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     horarios<T extends Empresa$horariosArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$horariosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HorarioPayload<ExtArgs>, T, "findMany"> | Null>
+    sedes<T extends Empresa$sedesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$sedesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findMany"> | Null>
     dispositivos<T extends Empresa$dispositivosArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$dispositivosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DispositivoKioscoPayload<ExtArgs>, T, "findMany"> | Null>
     notificaciones<T extends Empresa$notificacionesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$notificacionesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NotificacionPayload<ExtArgs>, T, "findMany"> | Null>
     afiliado<T extends Empresa$afiliadoArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$afiliadoArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
@@ -3917,6 +4143,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: HorarioScalarFieldEnum | HorarioScalarFieldEnum[]
+  }
+
+  /**
+   * Empresa.sedes
+   */
+  export type Empresa$sedesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    where?: SedeWhereInput
+    orderBy?: SedeOrderByWithRelationInput | SedeOrderByWithRelationInput[]
+    cursor?: SedeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SedeScalarFieldEnum | SedeScalarFieldEnum[]
   }
 
   /**
@@ -8785,11 +9031,13 @@ export namespace Prisma {
   export type HorarioAvgAggregateOutputType = {
     toleranciaMin: number | null
     almuerzoMin: number | null
+    toleranciaSalidaMin: number | null
   }
 
   export type HorarioSumAggregateOutputType = {
     toleranciaMin: number | null
     almuerzoMin: number | null
+    toleranciaSalidaMin: number | null
   }
 
   export type HorarioMinAggregateOutputType = {
@@ -8798,6 +9046,8 @@ export namespace Prisma {
     nombre: string | null
     toleranciaMin: number | null
     almuerzoMin: number | null
+    toleranciaSalidaMin: number | null
+    ajustaEntrada: boolean | null
     activo: boolean | null
     creadoEn: Date | null
   }
@@ -8808,6 +9058,8 @@ export namespace Prisma {
     nombre: string | null
     toleranciaMin: number | null
     almuerzoMin: number | null
+    toleranciaSalidaMin: number | null
+    ajustaEntrada: boolean | null
     activo: boolean | null
     creadoEn: Date | null
   }
@@ -8818,6 +9070,8 @@ export namespace Prisma {
     nombre: number
     toleranciaMin: number
     almuerzoMin: number
+    toleranciaSalidaMin: number
+    ajustaEntrada: number
     activo: number
     creadoEn: number
     _all: number
@@ -8827,11 +9081,13 @@ export namespace Prisma {
   export type HorarioAvgAggregateInputType = {
     toleranciaMin?: true
     almuerzoMin?: true
+    toleranciaSalidaMin?: true
   }
 
   export type HorarioSumAggregateInputType = {
     toleranciaMin?: true
     almuerzoMin?: true
+    toleranciaSalidaMin?: true
   }
 
   export type HorarioMinAggregateInputType = {
@@ -8840,6 +9096,8 @@ export namespace Prisma {
     nombre?: true
     toleranciaMin?: true
     almuerzoMin?: true
+    toleranciaSalidaMin?: true
+    ajustaEntrada?: true
     activo?: true
     creadoEn?: true
   }
@@ -8850,6 +9108,8 @@ export namespace Prisma {
     nombre?: true
     toleranciaMin?: true
     almuerzoMin?: true
+    toleranciaSalidaMin?: true
+    ajustaEntrada?: true
     activo?: true
     creadoEn?: true
   }
@@ -8860,6 +9120,8 @@ export namespace Prisma {
     nombre?: true
     toleranciaMin?: true
     almuerzoMin?: true
+    toleranciaSalidaMin?: true
+    ajustaEntrada?: true
     activo?: true
     creadoEn?: true
     _all?: true
@@ -8957,6 +9219,8 @@ export namespace Prisma {
     nombre: string
     toleranciaMin: number
     almuerzoMin: number
+    toleranciaSalidaMin: number
+    ajustaEntrada: boolean
     activo: boolean
     creadoEn: Date
     _count: HorarioCountAggregateOutputType | null
@@ -8986,6 +9250,8 @@ export namespace Prisma {
     nombre?: boolean
     toleranciaMin?: boolean
     almuerzoMin?: boolean
+    toleranciaSalidaMin?: boolean
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: boolean
     empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
@@ -9001,6 +9267,8 @@ export namespace Prisma {
     nombre?: boolean
     toleranciaMin?: boolean
     almuerzoMin?: boolean
+    toleranciaSalidaMin?: boolean
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: boolean
   }
@@ -9025,6 +9293,8 @@ export namespace Prisma {
       nombre: string
       toleranciaMin: number
       almuerzoMin: number
+      toleranciaSalidaMin: number
+      ajustaEntrada: boolean
       activo: boolean
       creadoEn: Date
     }, ExtArgs["result"]["horario"]>
@@ -9404,6 +9674,8 @@ export namespace Prisma {
     readonly nombre: FieldRef<"Horario", 'String'>
     readonly toleranciaMin: FieldRef<"Horario", 'Int'>
     readonly almuerzoMin: FieldRef<"Horario", 'Int'>
+    readonly toleranciaSalidaMin: FieldRef<"Horario", 'Int'>
+    readonly ajustaEntrada: FieldRef<"Horario", 'Boolean'>
     readonly activo: FieldRef<"Horario", 'Boolean'>
     readonly creadoEn: FieldRef<"Horario", 'DateTime'>
   }
@@ -11830,6 +12102,7 @@ export namespace Prisma {
     registros?: boolean | Colaborador$registrosArgs<ExtArgs>
     permisos?: boolean | Colaborador$permisosArgs<ExtArgs>
     diasEsperados?: boolean | Colaborador$diasEsperadosArgs<ExtArgs>
+    sedes?: boolean | Colaborador$sedesArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["colaborador"]>
 
@@ -11860,6 +12133,7 @@ export namespace Prisma {
     registros?: boolean | Colaborador$registrosArgs<ExtArgs>
     permisos?: boolean | Colaborador$permisosArgs<ExtArgs>
     diasEsperados?: boolean | Colaborador$diasEsperadosArgs<ExtArgs>
+    sedes?: boolean | Colaborador$sedesArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -11871,6 +12145,7 @@ export namespace Prisma {
       registros: Prisma.$RegistroPayload<ExtArgs>[]
       permisos: Prisma.$PermisoPayload<ExtArgs>[]
       diasEsperados: Prisma.$DiaEsperadoPayload<ExtArgs>[]
+      sedes: Prisma.$ColaboradorSedePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -12235,6 +12510,7 @@ export namespace Prisma {
     registros<T extends Colaborador$registrosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$registrosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findMany"> | Null>
     permisos<T extends Colaborador$permisosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$permisosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PermisoPayload<ExtArgs>, T, "findMany"> | Null>
     diasEsperados<T extends Colaborador$diasEsperadosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$diasEsperadosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findMany"> | Null>
+    sedes<T extends Colaborador$sedesArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$sedesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -12655,6 +12931,26 @@ export namespace Prisma {
   }
 
   /**
+   * Colaborador.sedes
+   */
+  export type Colaborador$sedesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    where?: ColaboradorSedeWhereInput
+    orderBy?: ColaboradorSedeOrderByWithRelationInput | ColaboradorSedeOrderByWithRelationInput[]
+    cursor?: ColaboradorSedeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ColaboradorSedeScalarFieldEnum | ColaboradorSedeScalarFieldEnum[]
+  }
+
+  /**
    * Colaborador without action
    */
   export type ColaboradorDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -12666,6 +12962,1893 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: ColaboradorInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model Sede
+   */
+
+  export type AggregateSede = {
+    _count: SedeCountAggregateOutputType | null
+    _avg: SedeAvgAggregateOutputType | null
+    _sum: SedeSumAggregateOutputType | null
+    _min: SedeMinAggregateOutputType | null
+    _max: SedeMaxAggregateOutputType | null
+  }
+
+  export type SedeAvgAggregateOutputType = {
+    lat: number | null
+    lng: number | null
+    radio: number | null
+  }
+
+  export type SedeSumAggregateOutputType = {
+    lat: number | null
+    lng: number | null
+    radio: number | null
+  }
+
+  export type SedeMinAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    nombre: string | null
+    direccion: string | null
+    lat: number | null
+    lng: number | null
+    radio: number | null
+    activa: boolean | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type SedeMaxAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    nombre: string | null
+    direccion: string | null
+    lat: number | null
+    lng: number | null
+    radio: number | null
+    activa: boolean | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type SedeCountAggregateOutputType = {
+    id: number
+    empresaId: number
+    nombre: number
+    direccion: number
+    lat: number
+    lng: number
+    radio: number
+    activa: number
+    creadoEn: number
+    actualizadoEn: number
+    _all: number
+  }
+
+
+  export type SedeAvgAggregateInputType = {
+    lat?: true
+    lng?: true
+    radio?: true
+  }
+
+  export type SedeSumAggregateInputType = {
+    lat?: true
+    lng?: true
+    radio?: true
+  }
+
+  export type SedeMinAggregateInputType = {
+    id?: true
+    empresaId?: true
+    nombre?: true
+    direccion?: true
+    lat?: true
+    lng?: true
+    radio?: true
+    activa?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type SedeMaxAggregateInputType = {
+    id?: true
+    empresaId?: true
+    nombre?: true
+    direccion?: true
+    lat?: true
+    lng?: true
+    radio?: true
+    activa?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type SedeCountAggregateInputType = {
+    id?: true
+    empresaId?: true
+    nombre?: true
+    direccion?: true
+    lat?: true
+    lng?: true
+    radio?: true
+    activa?: true
+    creadoEn?: true
+    actualizadoEn?: true
+    _all?: true
+  }
+
+  export type SedeAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Sede to aggregate.
+     */
+    where?: SedeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Sedes to fetch.
+     */
+    orderBy?: SedeOrderByWithRelationInput | SedeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SedeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Sedes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Sedes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Sedes
+    **/
+    _count?: true | SedeCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SedeAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SedeSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SedeMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SedeMaxAggregateInputType
+  }
+
+  export type GetSedeAggregateType<T extends SedeAggregateArgs> = {
+        [P in keyof T & keyof AggregateSede]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSede[P]>
+      : GetScalarType<T[P], AggregateSede[P]>
+  }
+
+
+
+
+  export type SedeGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SedeWhereInput
+    orderBy?: SedeOrderByWithAggregationInput | SedeOrderByWithAggregationInput[]
+    by: SedeScalarFieldEnum[] | SedeScalarFieldEnum
+    having?: SedeScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SedeCountAggregateInputType | true
+    _avg?: SedeAvgAggregateInputType
+    _sum?: SedeSumAggregateInputType
+    _min?: SedeMinAggregateInputType
+    _max?: SedeMaxAggregateInputType
+  }
+
+  export type SedeGroupByOutputType = {
+    id: string
+    empresaId: string
+    nombre: string
+    direccion: string | null
+    lat: number | null
+    lng: number | null
+    radio: number
+    activa: boolean
+    creadoEn: Date
+    actualizadoEn: Date
+    _count: SedeCountAggregateOutputType | null
+    _avg: SedeAvgAggregateOutputType | null
+    _sum: SedeSumAggregateOutputType | null
+    _min: SedeMinAggregateOutputType | null
+    _max: SedeMaxAggregateOutputType | null
+  }
+
+  type GetSedeGroupByPayload<T extends SedeGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SedeGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SedeGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SedeGroupByOutputType[P]>
+            : GetScalarType<T[P], SedeGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SedeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    empresaId?: boolean
+    nombre?: boolean
+    direccion?: boolean
+    lat?: boolean
+    lng?: boolean
+    radio?: boolean
+    activa?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    colaboradores?: boolean | Sede$colaboradoresArgs<ExtArgs>
+    registros?: boolean | Sede$registrosArgs<ExtArgs>
+    _count?: boolean | SedeCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["sede"]>
+
+
+  export type SedeSelectScalar = {
+    id?: boolean
+    empresaId?: boolean
+    nombre?: boolean
+    direccion?: boolean
+    lat?: boolean
+    lng?: boolean
+    radio?: boolean
+    activa?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+  }
+
+  export type SedeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    colaboradores?: boolean | Sede$colaboradoresArgs<ExtArgs>
+    registros?: boolean | Sede$registrosArgs<ExtArgs>
+    _count?: boolean | SedeCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $SedePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Sede"
+    objects: {
+      empresa: Prisma.$EmpresaPayload<ExtArgs>
+      colaboradores: Prisma.$ColaboradorSedePayload<ExtArgs>[]
+      registros: Prisma.$RegistroPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      empresaId: string
+      nombre: string
+      direccion: string | null
+      lat: number | null
+      lng: number | null
+      radio: number
+      activa: boolean
+      creadoEn: Date
+      actualizadoEn: Date
+    }, ExtArgs["result"]["sede"]>
+    composites: {}
+  }
+
+  type SedeGetPayload<S extends boolean | null | undefined | SedeDefaultArgs> = $Result.GetResult<Prisma.$SedePayload, S>
+
+  type SedeCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<SedeFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: SedeCountAggregateInputType | true
+    }
+
+  export interface SedeDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Sede'], meta: { name: 'Sede' } }
+    /**
+     * Find zero or one Sede that matches the filter.
+     * @param {SedeFindUniqueArgs} args - Arguments to find a Sede
+     * @example
+     * // Get one Sede
+     * const sede = await prisma.sede.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SedeFindUniqueArgs>(args: SelectSubset<T, SedeFindUniqueArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Sede that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {SedeFindUniqueOrThrowArgs} args - Arguments to find a Sede
+     * @example
+     * // Get one Sede
+     * const sede = await prisma.sede.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SedeFindUniqueOrThrowArgs>(args: SelectSubset<T, SedeFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Sede that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SedeFindFirstArgs} args - Arguments to find a Sede
+     * @example
+     * // Get one Sede
+     * const sede = await prisma.sede.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SedeFindFirstArgs>(args?: SelectSubset<T, SedeFindFirstArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Sede that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SedeFindFirstOrThrowArgs} args - Arguments to find a Sede
+     * @example
+     * // Get one Sede
+     * const sede = await prisma.sede.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SedeFindFirstOrThrowArgs>(args?: SelectSubset<T, SedeFindFirstOrThrowArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Sedes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SedeFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Sedes
+     * const sedes = await prisma.sede.findMany()
+     * 
+     * // Get first 10 Sedes
+     * const sedes = await prisma.sede.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const sedeWithIdOnly = await prisma.sede.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SedeFindManyArgs>(args?: SelectSubset<T, SedeFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Sede.
+     * @param {SedeCreateArgs} args - Arguments to create a Sede.
+     * @example
+     * // Create one Sede
+     * const Sede = await prisma.sede.create({
+     *   data: {
+     *     // ... data to create a Sede
+     *   }
+     * })
+     * 
+     */
+    create<T extends SedeCreateArgs>(args: SelectSubset<T, SedeCreateArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Sedes.
+     * @param {SedeCreateManyArgs} args - Arguments to create many Sedes.
+     * @example
+     * // Create many Sedes
+     * const sede = await prisma.sede.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SedeCreateManyArgs>(args?: SelectSubset<T, SedeCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Sede.
+     * @param {SedeDeleteArgs} args - Arguments to delete one Sede.
+     * @example
+     * // Delete one Sede
+     * const Sede = await prisma.sede.delete({
+     *   where: {
+     *     // ... filter to delete one Sede
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SedeDeleteArgs>(args: SelectSubset<T, SedeDeleteArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Sede.
+     * @param {SedeUpdateArgs} args - Arguments to update one Sede.
+     * @example
+     * // Update one Sede
+     * const sede = await prisma.sede.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SedeUpdateArgs>(args: SelectSubset<T, SedeUpdateArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Sedes.
+     * @param {SedeDeleteManyArgs} args - Arguments to filter Sedes to delete.
+     * @example
+     * // Delete a few Sedes
+     * const { count } = await prisma.sede.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SedeDeleteManyArgs>(args?: SelectSubset<T, SedeDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Sedes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SedeUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Sedes
+     * const sede = await prisma.sede.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SedeUpdateManyArgs>(args: SelectSubset<T, SedeUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Sede.
+     * @param {SedeUpsertArgs} args - Arguments to update or create a Sede.
+     * @example
+     * // Update or create a Sede
+     * const sede = await prisma.sede.upsert({
+     *   create: {
+     *     // ... data to create a Sede
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Sede we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SedeUpsertArgs>(args: SelectSubset<T, SedeUpsertArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of Sedes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SedeCountArgs} args - Arguments to filter Sedes to count.
+     * @example
+     * // Count the number of Sedes
+     * const count = await prisma.sede.count({
+     *   where: {
+     *     // ... the filter for the Sedes we want to count
+     *   }
+     * })
+    **/
+    count<T extends SedeCountArgs>(
+      args?: Subset<T, SedeCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SedeCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Sede.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SedeAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SedeAggregateArgs>(args: Subset<T, SedeAggregateArgs>): Prisma.PrismaPromise<GetSedeAggregateType<T>>
+
+    /**
+     * Group by Sede.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SedeGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SedeGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SedeGroupByArgs['orderBy'] }
+        : { orderBy?: SedeGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SedeGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSedeGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Sede model
+   */
+  readonly fields: SedeFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Sede.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SedeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    empresa<T extends EmpresaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EmpresaDefaultArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    colaboradores<T extends Sede$colaboradoresArgs<ExtArgs> = {}>(args?: Subset<T, Sede$colaboradoresArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findMany"> | Null>
+    registros<T extends Sede$registrosArgs<ExtArgs> = {}>(args?: Subset<T, Sede$registrosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Sede model
+   */ 
+  interface SedeFieldRefs {
+    readonly id: FieldRef<"Sede", 'String'>
+    readonly empresaId: FieldRef<"Sede", 'String'>
+    readonly nombre: FieldRef<"Sede", 'String'>
+    readonly direccion: FieldRef<"Sede", 'String'>
+    readonly lat: FieldRef<"Sede", 'Float'>
+    readonly lng: FieldRef<"Sede", 'Float'>
+    readonly radio: FieldRef<"Sede", 'Int'>
+    readonly activa: FieldRef<"Sede", 'Boolean'>
+    readonly creadoEn: FieldRef<"Sede", 'DateTime'>
+    readonly actualizadoEn: FieldRef<"Sede", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Sede findUnique
+   */
+  export type SedeFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    /**
+     * Filter, which Sede to fetch.
+     */
+    where: SedeWhereUniqueInput
+  }
+
+  /**
+   * Sede findUniqueOrThrow
+   */
+  export type SedeFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    /**
+     * Filter, which Sede to fetch.
+     */
+    where: SedeWhereUniqueInput
+  }
+
+  /**
+   * Sede findFirst
+   */
+  export type SedeFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    /**
+     * Filter, which Sede to fetch.
+     */
+    where?: SedeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Sedes to fetch.
+     */
+    orderBy?: SedeOrderByWithRelationInput | SedeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Sedes.
+     */
+    cursor?: SedeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Sedes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Sedes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Sedes.
+     */
+    distinct?: SedeScalarFieldEnum | SedeScalarFieldEnum[]
+  }
+
+  /**
+   * Sede findFirstOrThrow
+   */
+  export type SedeFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    /**
+     * Filter, which Sede to fetch.
+     */
+    where?: SedeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Sedes to fetch.
+     */
+    orderBy?: SedeOrderByWithRelationInput | SedeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Sedes.
+     */
+    cursor?: SedeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Sedes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Sedes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Sedes.
+     */
+    distinct?: SedeScalarFieldEnum | SedeScalarFieldEnum[]
+  }
+
+  /**
+   * Sede findMany
+   */
+  export type SedeFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    /**
+     * Filter, which Sedes to fetch.
+     */
+    where?: SedeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Sedes to fetch.
+     */
+    orderBy?: SedeOrderByWithRelationInput | SedeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Sedes.
+     */
+    cursor?: SedeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Sedes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Sedes.
+     */
+    skip?: number
+    distinct?: SedeScalarFieldEnum | SedeScalarFieldEnum[]
+  }
+
+  /**
+   * Sede create
+   */
+  export type SedeCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Sede.
+     */
+    data: XOR<SedeCreateInput, SedeUncheckedCreateInput>
+  }
+
+  /**
+   * Sede createMany
+   */
+  export type SedeCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Sedes.
+     */
+    data: SedeCreateManyInput | SedeCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Sede update
+   */
+  export type SedeUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Sede.
+     */
+    data: XOR<SedeUpdateInput, SedeUncheckedUpdateInput>
+    /**
+     * Choose, which Sede to update.
+     */
+    where: SedeWhereUniqueInput
+  }
+
+  /**
+   * Sede updateMany
+   */
+  export type SedeUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Sedes.
+     */
+    data: XOR<SedeUpdateManyMutationInput, SedeUncheckedUpdateManyInput>
+    /**
+     * Filter which Sedes to update
+     */
+    where?: SedeWhereInput
+  }
+
+  /**
+   * Sede upsert
+   */
+  export type SedeUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Sede to update in case it exists.
+     */
+    where: SedeWhereUniqueInput
+    /**
+     * In case the Sede found by the `where` argument doesn't exist, create a new Sede with this data.
+     */
+    create: XOR<SedeCreateInput, SedeUncheckedCreateInput>
+    /**
+     * In case the Sede was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SedeUpdateInput, SedeUncheckedUpdateInput>
+  }
+
+  /**
+   * Sede delete
+   */
+  export type SedeDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    /**
+     * Filter which Sede to delete.
+     */
+    where: SedeWhereUniqueInput
+  }
+
+  /**
+   * Sede deleteMany
+   */
+  export type SedeDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Sedes to delete
+     */
+    where?: SedeWhereInput
+  }
+
+  /**
+   * Sede.colaboradores
+   */
+  export type Sede$colaboradoresArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    where?: ColaboradorSedeWhereInput
+    orderBy?: ColaboradorSedeOrderByWithRelationInput | ColaboradorSedeOrderByWithRelationInput[]
+    cursor?: ColaboradorSedeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ColaboradorSedeScalarFieldEnum | ColaboradorSedeScalarFieldEnum[]
+  }
+
+  /**
+   * Sede.registros
+   */
+  export type Sede$registrosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Registro
+     */
+    select?: RegistroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroInclude<ExtArgs> | null
+    where?: RegistroWhereInput
+    orderBy?: RegistroOrderByWithRelationInput | RegistroOrderByWithRelationInput[]
+    cursor?: RegistroWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RegistroScalarFieldEnum | RegistroScalarFieldEnum[]
+  }
+
+  /**
+   * Sede without action
+   */
+  export type SedeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ColaboradorSede
+   */
+
+  export type AggregateColaboradorSede = {
+    _count: ColaboradorSedeCountAggregateOutputType | null
+    _min: ColaboradorSedeMinAggregateOutputType | null
+    _max: ColaboradorSedeMaxAggregateOutputType | null
+  }
+
+  export type ColaboradorSedeMinAggregateOutputType = {
+    colaboradorId: string | null
+    sedeId: string | null
+    creadoEn: Date | null
+  }
+
+  export type ColaboradorSedeMaxAggregateOutputType = {
+    colaboradorId: string | null
+    sedeId: string | null
+    creadoEn: Date | null
+  }
+
+  export type ColaboradorSedeCountAggregateOutputType = {
+    colaboradorId: number
+    sedeId: number
+    creadoEn: number
+    _all: number
+  }
+
+
+  export type ColaboradorSedeMinAggregateInputType = {
+    colaboradorId?: true
+    sedeId?: true
+    creadoEn?: true
+  }
+
+  export type ColaboradorSedeMaxAggregateInputType = {
+    colaboradorId?: true
+    sedeId?: true
+    creadoEn?: true
+  }
+
+  export type ColaboradorSedeCountAggregateInputType = {
+    colaboradorId?: true
+    sedeId?: true
+    creadoEn?: true
+    _all?: true
+  }
+
+  export type ColaboradorSedeAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ColaboradorSede to aggregate.
+     */
+    where?: ColaboradorSedeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ColaboradorSedes to fetch.
+     */
+    orderBy?: ColaboradorSedeOrderByWithRelationInput | ColaboradorSedeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ColaboradorSedeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ColaboradorSedes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ColaboradorSedes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ColaboradorSedes
+    **/
+    _count?: true | ColaboradorSedeCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ColaboradorSedeMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ColaboradorSedeMaxAggregateInputType
+  }
+
+  export type GetColaboradorSedeAggregateType<T extends ColaboradorSedeAggregateArgs> = {
+        [P in keyof T & keyof AggregateColaboradorSede]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateColaboradorSede[P]>
+      : GetScalarType<T[P], AggregateColaboradorSede[P]>
+  }
+
+
+
+
+  export type ColaboradorSedeGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ColaboradorSedeWhereInput
+    orderBy?: ColaboradorSedeOrderByWithAggregationInput | ColaboradorSedeOrderByWithAggregationInput[]
+    by: ColaboradorSedeScalarFieldEnum[] | ColaboradorSedeScalarFieldEnum
+    having?: ColaboradorSedeScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ColaboradorSedeCountAggregateInputType | true
+    _min?: ColaboradorSedeMinAggregateInputType
+    _max?: ColaboradorSedeMaxAggregateInputType
+  }
+
+  export type ColaboradorSedeGroupByOutputType = {
+    colaboradorId: string
+    sedeId: string
+    creadoEn: Date
+    _count: ColaboradorSedeCountAggregateOutputType | null
+    _min: ColaboradorSedeMinAggregateOutputType | null
+    _max: ColaboradorSedeMaxAggregateOutputType | null
+  }
+
+  type GetColaboradorSedeGroupByPayload<T extends ColaboradorSedeGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ColaboradorSedeGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ColaboradorSedeGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ColaboradorSedeGroupByOutputType[P]>
+            : GetScalarType<T[P], ColaboradorSedeGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ColaboradorSedeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    colaboradorId?: boolean
+    sedeId?: boolean
+    creadoEn?: boolean
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    sede?: boolean | SedeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["colaboradorSede"]>
+
+
+  export type ColaboradorSedeSelectScalar = {
+    colaboradorId?: boolean
+    sedeId?: boolean
+    creadoEn?: boolean
+  }
+
+  export type ColaboradorSedeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    sede?: boolean | SedeDefaultArgs<ExtArgs>
+  }
+
+  export type $ColaboradorSedePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ColaboradorSede"
+    objects: {
+      colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+      sede: Prisma.$SedePayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      colaboradorId: string
+      sedeId: string
+      creadoEn: Date
+    }, ExtArgs["result"]["colaboradorSede"]>
+    composites: {}
+  }
+
+  type ColaboradorSedeGetPayload<S extends boolean | null | undefined | ColaboradorSedeDefaultArgs> = $Result.GetResult<Prisma.$ColaboradorSedePayload, S>
+
+  type ColaboradorSedeCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ColaboradorSedeFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ColaboradorSedeCountAggregateInputType | true
+    }
+
+  export interface ColaboradorSedeDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ColaboradorSede'], meta: { name: 'ColaboradorSede' } }
+    /**
+     * Find zero or one ColaboradorSede that matches the filter.
+     * @param {ColaboradorSedeFindUniqueArgs} args - Arguments to find a ColaboradorSede
+     * @example
+     * // Get one ColaboradorSede
+     * const colaboradorSede = await prisma.colaboradorSede.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ColaboradorSedeFindUniqueArgs>(args: SelectSubset<T, ColaboradorSedeFindUniqueArgs<ExtArgs>>): Prisma__ColaboradorSedeClient<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ColaboradorSede that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ColaboradorSedeFindUniqueOrThrowArgs} args - Arguments to find a ColaboradorSede
+     * @example
+     * // Get one ColaboradorSede
+     * const colaboradorSede = await prisma.colaboradorSede.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ColaboradorSedeFindUniqueOrThrowArgs>(args: SelectSubset<T, ColaboradorSedeFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ColaboradorSedeClient<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ColaboradorSede that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ColaboradorSedeFindFirstArgs} args - Arguments to find a ColaboradorSede
+     * @example
+     * // Get one ColaboradorSede
+     * const colaboradorSede = await prisma.colaboradorSede.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ColaboradorSedeFindFirstArgs>(args?: SelectSubset<T, ColaboradorSedeFindFirstArgs<ExtArgs>>): Prisma__ColaboradorSedeClient<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ColaboradorSede that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ColaboradorSedeFindFirstOrThrowArgs} args - Arguments to find a ColaboradorSede
+     * @example
+     * // Get one ColaboradorSede
+     * const colaboradorSede = await prisma.colaboradorSede.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ColaboradorSedeFindFirstOrThrowArgs>(args?: SelectSubset<T, ColaboradorSedeFindFirstOrThrowArgs<ExtArgs>>): Prisma__ColaboradorSedeClient<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ColaboradorSedes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ColaboradorSedeFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ColaboradorSedes
+     * const colaboradorSedes = await prisma.colaboradorSede.findMany()
+     * 
+     * // Get first 10 ColaboradorSedes
+     * const colaboradorSedes = await prisma.colaboradorSede.findMany({ take: 10 })
+     * 
+     * // Only select the `colaboradorId`
+     * const colaboradorSedeWithColaboradorIdOnly = await prisma.colaboradorSede.findMany({ select: { colaboradorId: true } })
+     * 
+     */
+    findMany<T extends ColaboradorSedeFindManyArgs>(args?: SelectSubset<T, ColaboradorSedeFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ColaboradorSede.
+     * @param {ColaboradorSedeCreateArgs} args - Arguments to create a ColaboradorSede.
+     * @example
+     * // Create one ColaboradorSede
+     * const ColaboradorSede = await prisma.colaboradorSede.create({
+     *   data: {
+     *     // ... data to create a ColaboradorSede
+     *   }
+     * })
+     * 
+     */
+    create<T extends ColaboradorSedeCreateArgs>(args: SelectSubset<T, ColaboradorSedeCreateArgs<ExtArgs>>): Prisma__ColaboradorSedeClient<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ColaboradorSedes.
+     * @param {ColaboradorSedeCreateManyArgs} args - Arguments to create many ColaboradorSedes.
+     * @example
+     * // Create many ColaboradorSedes
+     * const colaboradorSede = await prisma.colaboradorSede.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ColaboradorSedeCreateManyArgs>(args?: SelectSubset<T, ColaboradorSedeCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ColaboradorSede.
+     * @param {ColaboradorSedeDeleteArgs} args - Arguments to delete one ColaboradorSede.
+     * @example
+     * // Delete one ColaboradorSede
+     * const ColaboradorSede = await prisma.colaboradorSede.delete({
+     *   where: {
+     *     // ... filter to delete one ColaboradorSede
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ColaboradorSedeDeleteArgs>(args: SelectSubset<T, ColaboradorSedeDeleteArgs<ExtArgs>>): Prisma__ColaboradorSedeClient<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ColaboradorSede.
+     * @param {ColaboradorSedeUpdateArgs} args - Arguments to update one ColaboradorSede.
+     * @example
+     * // Update one ColaboradorSede
+     * const colaboradorSede = await prisma.colaboradorSede.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ColaboradorSedeUpdateArgs>(args: SelectSubset<T, ColaboradorSedeUpdateArgs<ExtArgs>>): Prisma__ColaboradorSedeClient<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ColaboradorSedes.
+     * @param {ColaboradorSedeDeleteManyArgs} args - Arguments to filter ColaboradorSedes to delete.
+     * @example
+     * // Delete a few ColaboradorSedes
+     * const { count } = await prisma.colaboradorSede.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ColaboradorSedeDeleteManyArgs>(args?: SelectSubset<T, ColaboradorSedeDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ColaboradorSedes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ColaboradorSedeUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ColaboradorSedes
+     * const colaboradorSede = await prisma.colaboradorSede.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ColaboradorSedeUpdateManyArgs>(args: SelectSubset<T, ColaboradorSedeUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ColaboradorSede.
+     * @param {ColaboradorSedeUpsertArgs} args - Arguments to update or create a ColaboradorSede.
+     * @example
+     * // Update or create a ColaboradorSede
+     * const colaboradorSede = await prisma.colaboradorSede.upsert({
+     *   create: {
+     *     // ... data to create a ColaboradorSede
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ColaboradorSede we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ColaboradorSedeUpsertArgs>(args: SelectSubset<T, ColaboradorSedeUpsertArgs<ExtArgs>>): Prisma__ColaboradorSedeClient<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ColaboradorSedes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ColaboradorSedeCountArgs} args - Arguments to filter ColaboradorSedes to count.
+     * @example
+     * // Count the number of ColaboradorSedes
+     * const count = await prisma.colaboradorSede.count({
+     *   where: {
+     *     // ... the filter for the ColaboradorSedes we want to count
+     *   }
+     * })
+    **/
+    count<T extends ColaboradorSedeCountArgs>(
+      args?: Subset<T, ColaboradorSedeCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ColaboradorSedeCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ColaboradorSede.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ColaboradorSedeAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ColaboradorSedeAggregateArgs>(args: Subset<T, ColaboradorSedeAggregateArgs>): Prisma.PrismaPromise<GetColaboradorSedeAggregateType<T>>
+
+    /**
+     * Group by ColaboradorSede.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ColaboradorSedeGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ColaboradorSedeGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ColaboradorSedeGroupByArgs['orderBy'] }
+        : { orderBy?: ColaboradorSedeGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ColaboradorSedeGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetColaboradorSedeGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ColaboradorSede model
+   */
+  readonly fields: ColaboradorSedeFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ColaboradorSede.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ColaboradorSedeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    sede<T extends SedeDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SedeDefaultArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ColaboradorSede model
+   */ 
+  interface ColaboradorSedeFieldRefs {
+    readonly colaboradorId: FieldRef<"ColaboradorSede", 'String'>
+    readonly sedeId: FieldRef<"ColaboradorSede", 'String'>
+    readonly creadoEn: FieldRef<"ColaboradorSede", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ColaboradorSede findUnique
+   */
+  export type ColaboradorSedeFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    /**
+     * Filter, which ColaboradorSede to fetch.
+     */
+    where: ColaboradorSedeWhereUniqueInput
+  }
+
+  /**
+   * ColaboradorSede findUniqueOrThrow
+   */
+  export type ColaboradorSedeFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    /**
+     * Filter, which ColaboradorSede to fetch.
+     */
+    where: ColaboradorSedeWhereUniqueInput
+  }
+
+  /**
+   * ColaboradorSede findFirst
+   */
+  export type ColaboradorSedeFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    /**
+     * Filter, which ColaboradorSede to fetch.
+     */
+    where?: ColaboradorSedeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ColaboradorSedes to fetch.
+     */
+    orderBy?: ColaboradorSedeOrderByWithRelationInput | ColaboradorSedeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ColaboradorSedes.
+     */
+    cursor?: ColaboradorSedeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ColaboradorSedes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ColaboradorSedes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ColaboradorSedes.
+     */
+    distinct?: ColaboradorSedeScalarFieldEnum | ColaboradorSedeScalarFieldEnum[]
+  }
+
+  /**
+   * ColaboradorSede findFirstOrThrow
+   */
+  export type ColaboradorSedeFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    /**
+     * Filter, which ColaboradorSede to fetch.
+     */
+    where?: ColaboradorSedeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ColaboradorSedes to fetch.
+     */
+    orderBy?: ColaboradorSedeOrderByWithRelationInput | ColaboradorSedeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ColaboradorSedes.
+     */
+    cursor?: ColaboradorSedeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ColaboradorSedes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ColaboradorSedes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ColaboradorSedes.
+     */
+    distinct?: ColaboradorSedeScalarFieldEnum | ColaboradorSedeScalarFieldEnum[]
+  }
+
+  /**
+   * ColaboradorSede findMany
+   */
+  export type ColaboradorSedeFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    /**
+     * Filter, which ColaboradorSedes to fetch.
+     */
+    where?: ColaboradorSedeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ColaboradorSedes to fetch.
+     */
+    orderBy?: ColaboradorSedeOrderByWithRelationInput | ColaboradorSedeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ColaboradorSedes.
+     */
+    cursor?: ColaboradorSedeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ColaboradorSedes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ColaboradorSedes.
+     */
+    skip?: number
+    distinct?: ColaboradorSedeScalarFieldEnum | ColaboradorSedeScalarFieldEnum[]
+  }
+
+  /**
+   * ColaboradorSede create
+   */
+  export type ColaboradorSedeCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ColaboradorSede.
+     */
+    data: XOR<ColaboradorSedeCreateInput, ColaboradorSedeUncheckedCreateInput>
+  }
+
+  /**
+   * ColaboradorSede createMany
+   */
+  export type ColaboradorSedeCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ColaboradorSedes.
+     */
+    data: ColaboradorSedeCreateManyInput | ColaboradorSedeCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ColaboradorSede update
+   */
+  export type ColaboradorSedeUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ColaboradorSede.
+     */
+    data: XOR<ColaboradorSedeUpdateInput, ColaboradorSedeUncheckedUpdateInput>
+    /**
+     * Choose, which ColaboradorSede to update.
+     */
+    where: ColaboradorSedeWhereUniqueInput
+  }
+
+  /**
+   * ColaboradorSede updateMany
+   */
+  export type ColaboradorSedeUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ColaboradorSedes.
+     */
+    data: XOR<ColaboradorSedeUpdateManyMutationInput, ColaboradorSedeUncheckedUpdateManyInput>
+    /**
+     * Filter which ColaboradorSedes to update
+     */
+    where?: ColaboradorSedeWhereInput
+  }
+
+  /**
+   * ColaboradorSede upsert
+   */
+  export type ColaboradorSedeUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ColaboradorSede to update in case it exists.
+     */
+    where: ColaboradorSedeWhereUniqueInput
+    /**
+     * In case the ColaboradorSede found by the `where` argument doesn't exist, create a new ColaboradorSede with this data.
+     */
+    create: XOR<ColaboradorSedeCreateInput, ColaboradorSedeUncheckedCreateInput>
+    /**
+     * In case the ColaboradorSede was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ColaboradorSedeUpdateInput, ColaboradorSedeUncheckedUpdateInput>
+  }
+
+  /**
+   * ColaboradorSede delete
+   */
+  export type ColaboradorSedeDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
+    /**
+     * Filter which ColaboradorSede to delete.
+     */
+    where: ColaboradorSedeWhereUniqueInput
+  }
+
+  /**
+   * ColaboradorSede deleteMany
+   */
+  export type ColaboradorSedeDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ColaboradorSedes to delete
+     */
+    where?: ColaboradorSedeWhereInput
+  }
+
+  /**
+   * ColaboradorSede without action
+   */
+  export type ColaboradorSedeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ColaboradorSede
+     */
+    select?: ColaboradorSedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ColaboradorSedeInclude<ExtArgs> | null
   }
 
 
@@ -12685,12 +14868,14 @@ export namespace Prisma {
     toleranciaMin: number | null
     almuerzoMin: number | null
     minutosEsperados: number | null
+    toleranciaSalidaMin: number | null
   }
 
   export type DiaEsperadoSumAggregateOutputType = {
     toleranciaMin: number | null
     almuerzoMin: number | null
     minutosEsperados: number | null
+    toleranciaSalidaMin: number | null
   }
 
   export type DiaEsperadoMinAggregateOutputType = {
@@ -12703,6 +14888,8 @@ export namespace Prisma {
     toleranciaMin: number | null
     almuerzoMin: number | null
     minutosEsperados: number | null
+    toleranciaSalidaMin: number | null
+    ajustaEntrada: boolean | null
     horarioId: string | null
     origen: string | null
     creadoEn: Date | null
@@ -12719,6 +14906,8 @@ export namespace Prisma {
     toleranciaMin: number | null
     almuerzoMin: number | null
     minutosEsperados: number | null
+    toleranciaSalidaMin: number | null
+    ajustaEntrada: boolean | null
     horarioId: string | null
     origen: string | null
     creadoEn: Date | null
@@ -12735,6 +14924,8 @@ export namespace Prisma {
     toleranciaMin: number
     almuerzoMin: number
     minutosEsperados: number
+    toleranciaSalidaMin: number
+    ajustaEntrada: number
     horarioId: number
     origen: number
     creadoEn: number
@@ -12747,12 +14938,14 @@ export namespace Prisma {
     toleranciaMin?: true
     almuerzoMin?: true
     minutosEsperados?: true
+    toleranciaSalidaMin?: true
   }
 
   export type DiaEsperadoSumAggregateInputType = {
     toleranciaMin?: true
     almuerzoMin?: true
     minutosEsperados?: true
+    toleranciaSalidaMin?: true
   }
 
   export type DiaEsperadoMinAggregateInputType = {
@@ -12765,6 +14958,8 @@ export namespace Prisma {
     toleranciaMin?: true
     almuerzoMin?: true
     minutosEsperados?: true
+    toleranciaSalidaMin?: true
+    ajustaEntrada?: true
     horarioId?: true
     origen?: true
     creadoEn?: true
@@ -12781,6 +14976,8 @@ export namespace Prisma {
     toleranciaMin?: true
     almuerzoMin?: true
     minutosEsperados?: true
+    toleranciaSalidaMin?: true
+    ajustaEntrada?: true
     horarioId?: true
     origen?: true
     creadoEn?: true
@@ -12797,6 +14994,8 @@ export namespace Prisma {
     toleranciaMin?: true
     almuerzoMin?: true
     minutosEsperados?: true
+    toleranciaSalidaMin?: true
+    ajustaEntrada?: true
     horarioId?: true
     origen?: true
     creadoEn?: true
@@ -12900,6 +15099,8 @@ export namespace Prisma {
     toleranciaMin: number
     almuerzoMin: number
     minutosEsperados: number
+    toleranciaSalidaMin: number
+    ajustaEntrada: boolean
     horarioId: string | null
     origen: string
     creadoEn: Date
@@ -12935,6 +15136,8 @@ export namespace Prisma {
     toleranciaMin?: boolean
     almuerzoMin?: boolean
     minutosEsperados?: boolean
+    toleranciaSalidaMin?: boolean
+    ajustaEntrada?: boolean
     horarioId?: boolean
     origen?: boolean
     creadoEn?: boolean
@@ -12953,6 +15156,8 @@ export namespace Prisma {
     toleranciaMin?: boolean
     almuerzoMin?: boolean
     minutosEsperados?: boolean
+    toleranciaSalidaMin?: boolean
+    ajustaEntrada?: boolean
     horarioId?: boolean
     origen?: boolean
     creadoEn?: boolean
@@ -12978,6 +15183,8 @@ export namespace Prisma {
       toleranciaMin: number
       almuerzoMin: number
       minutosEsperados: number
+      toleranciaSalidaMin: number
+      ajustaEntrada: boolean
       horarioId: string | null
       origen: string
       creadoEn: Date
@@ -13361,6 +15568,8 @@ export namespace Prisma {
     readonly toleranciaMin: FieldRef<"DiaEsperado", 'Int'>
     readonly almuerzoMin: FieldRef<"DiaEsperado", 'Int'>
     readonly minutosEsperados: FieldRef<"DiaEsperado", 'Int'>
+    readonly toleranciaSalidaMin: FieldRef<"DiaEsperado", 'Int'>
+    readonly ajustaEntrada: FieldRef<"DiaEsperado", 'Boolean'>
     readonly horarioId: FieldRef<"DiaEsperado", 'String'>
     readonly origen: FieldRef<"DiaEsperado", 'String'>
     readonly creadoEn: FieldRef<"DiaEsperado", 'DateTime'>
@@ -13691,6 +15900,7 @@ export namespace Prisma {
   export type RegistroMinAggregateOutputType = {
     id: string | null
     colaboradorId: string | null
+    sedeId: string | null
     fecha: Date | null
     entrada: Date | null
     salida: Date | null
@@ -13707,6 +15917,7 @@ export namespace Prisma {
   export type RegistroMaxAggregateOutputType = {
     id: string | null
     colaboradorId: string | null
+    sedeId: string | null
     fecha: Date | null
     entrada: Date | null
     salida: Date | null
@@ -13723,6 +15934,7 @@ export namespace Prisma {
   export type RegistroCountAggregateOutputType = {
     id: number
     colaboradorId: number
+    sedeId: number
     fecha: number
     entrada: number
     salida: number
@@ -13741,6 +15953,7 @@ export namespace Prisma {
   export type RegistroMinAggregateInputType = {
     id?: true
     colaboradorId?: true
+    sedeId?: true
     fecha?: true
     entrada?: true
     salida?: true
@@ -13757,6 +15970,7 @@ export namespace Prisma {
   export type RegistroMaxAggregateInputType = {
     id?: true
     colaboradorId?: true
+    sedeId?: true
     fecha?: true
     entrada?: true
     salida?: true
@@ -13773,6 +15987,7 @@ export namespace Prisma {
   export type RegistroCountAggregateInputType = {
     id?: true
     colaboradorId?: true
+    sedeId?: true
     fecha?: true
     entrada?: true
     salida?: true
@@ -13862,6 +16077,7 @@ export namespace Prisma {
   export type RegistroGroupByOutputType = {
     id: string
     colaboradorId: string
+    sedeId: string | null
     fecha: Date
     entrada: Date | null
     salida: Date | null
@@ -13895,6 +16111,7 @@ export namespace Prisma {
   export type RegistroSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     colaboradorId?: boolean
+    sedeId?: boolean
     fecha?: boolean
     entrada?: boolean
     salida?: boolean
@@ -13907,12 +16124,14 @@ export namespace Prisma {
     editadoEn?: boolean
     creadoEn?: boolean
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    sede?: boolean | Registro$sedeArgs<ExtArgs>
   }, ExtArgs["result"]["registro"]>
 
 
   export type RegistroSelectScalar = {
     id?: boolean
     colaboradorId?: boolean
+    sedeId?: boolean
     fecha?: boolean
     entrada?: boolean
     salida?: boolean
@@ -13928,16 +16147,19 @@ export namespace Prisma {
 
   export type RegistroInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    sede?: boolean | Registro$sedeArgs<ExtArgs>
   }
 
   export type $RegistroPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Registro"
     objects: {
       colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+      sede: Prisma.$SedePayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       colaboradorId: string
+      sedeId: string | null
       fecha: Date
       entrada: Date | null
       salida: Date | null
@@ -14290,6 +16512,7 @@ export namespace Prisma {
   export interface Prisma__RegistroClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    sede<T extends Registro$sedeArgs<ExtArgs> = {}>(args?: Subset<T, Registro$sedeArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -14321,6 +16544,7 @@ export namespace Prisma {
   interface RegistroFieldRefs {
     readonly id: FieldRef<"Registro", 'String'>
     readonly colaboradorId: FieldRef<"Registro", 'String'>
+    readonly sedeId: FieldRef<"Registro", 'String'>
     readonly fecha: FieldRef<"Registro", 'DateTime'>
     readonly entrada: FieldRef<"Registro", 'DateTime'>
     readonly salida: FieldRef<"Registro", 'DateTime'>
@@ -14628,6 +16852,21 @@ export namespace Prisma {
      * Filter which Registros to delete
      */
     where?: RegistroWhereInput
+  }
+
+  /**
+   * Registro.sede
+   */
+  export type Registro$sedeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    where?: SedeWhereInput
   }
 
   /**
@@ -22467,6 +24706,8 @@ export namespace Prisma {
     nombre: 'nombre',
     toleranciaMin: 'toleranciaMin',
     almuerzoMin: 'almuerzoMin',
+    toleranciaSalidaMin: 'toleranciaSalidaMin',
+    ajustaEntrada: 'ajustaEntrada',
     activo: 'activo',
     creadoEn: 'creadoEn'
   };
@@ -22521,6 +24762,31 @@ export namespace Prisma {
   export type ColaboradorScalarFieldEnum = (typeof ColaboradorScalarFieldEnum)[keyof typeof ColaboradorScalarFieldEnum]
 
 
+  export const SedeScalarFieldEnum: {
+    id: 'id',
+    empresaId: 'empresaId',
+    nombre: 'nombre',
+    direccion: 'direccion',
+    lat: 'lat',
+    lng: 'lng',
+    radio: 'radio',
+    activa: 'activa',
+    creadoEn: 'creadoEn',
+    actualizadoEn: 'actualizadoEn'
+  };
+
+  export type SedeScalarFieldEnum = (typeof SedeScalarFieldEnum)[keyof typeof SedeScalarFieldEnum]
+
+
+  export const ColaboradorSedeScalarFieldEnum: {
+    colaboradorId: 'colaboradorId',
+    sedeId: 'sedeId',
+    creadoEn: 'creadoEn'
+  };
+
+  export type ColaboradorSedeScalarFieldEnum = (typeof ColaboradorSedeScalarFieldEnum)[keyof typeof ColaboradorSedeScalarFieldEnum]
+
+
   export const DiaEsperadoScalarFieldEnum: {
     id: 'id',
     colaboradorId: 'colaboradorId',
@@ -22531,6 +24797,8 @@ export namespace Prisma {
     toleranciaMin: 'toleranciaMin',
     almuerzoMin: 'almuerzoMin',
     minutosEsperados: 'minutosEsperados',
+    toleranciaSalidaMin: 'toleranciaSalidaMin',
+    ajustaEntrada: 'ajustaEntrada',
     horarioId: 'horarioId',
     origen: 'origen',
     creadoEn: 'creadoEn',
@@ -22543,6 +24811,7 @@ export namespace Prisma {
   export const RegistroScalarFieldEnum: {
     id: 'id',
     colaboradorId: 'colaboradorId',
+    sedeId: 'sedeId',
     fecha: 'fecha',
     entrada: 'entrada',
     salida: 'salida',
@@ -22867,6 +25136,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionListRelationFilter
     suscripcion?: XOR<SuscripcionNullableRelationFilter, SuscripcionWhereInput> | null
     horarios?: HorarioListRelationFilter
+    sedes?: SedeListRelationFilter
     dispositivos?: DispositivoKioscoListRelationFilter
     notificaciones?: NotificacionListRelationFilter
     afiliado?: XOR<AfiliadoNullableRelationFilter, AfiliadoWhereInput> | null
@@ -22893,6 +25163,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionOrderByRelationAggregateInput
     suscripcion?: SuscripcionOrderByWithRelationInput
     horarios?: HorarioOrderByRelationAggregateInput
+    sedes?: SedeOrderByRelationAggregateInput
     dispositivos?: DispositivoKioscoOrderByRelationAggregateInput
     notificaciones?: NotificacionOrderByRelationAggregateInput
     afiliado?: AfiliadoOrderByWithRelationInput
@@ -22922,6 +25193,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionListRelationFilter
     suscripcion?: XOR<SuscripcionNullableRelationFilter, SuscripcionWhereInput> | null
     horarios?: HorarioListRelationFilter
+    sedes?: SedeListRelationFilter
     dispositivos?: DispositivoKioscoListRelationFilter
     notificaciones?: NotificacionListRelationFilter
     afiliado?: XOR<AfiliadoNullableRelationFilter, AfiliadoWhereInput> | null
@@ -23378,6 +25650,8 @@ export namespace Prisma {
     nombre?: StringFilter<"Horario"> | string
     toleranciaMin?: IntFilter<"Horario"> | number
     almuerzoMin?: IntFilter<"Horario"> | number
+    toleranciaSalidaMin?: IntFilter<"Horario"> | number
+    ajustaEntrada?: BoolFilter<"Horario"> | boolean
     activo?: BoolFilter<"Horario"> | boolean
     creadoEn?: DateTimeFilter<"Horario"> | Date | string
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
@@ -23391,6 +25665,8 @@ export namespace Prisma {
     nombre?: SortOrder
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
     empresa?: EmpresaOrderByWithRelationInput
@@ -23407,6 +25683,8 @@ export namespace Prisma {
     nombre?: StringFilter<"Horario"> | string
     toleranciaMin?: IntFilter<"Horario"> | number
     almuerzoMin?: IntFilter<"Horario"> | number
+    toleranciaSalidaMin?: IntFilter<"Horario"> | number
+    ajustaEntrada?: BoolFilter<"Horario"> | boolean
     activo?: BoolFilter<"Horario"> | boolean
     creadoEn?: DateTimeFilter<"Horario"> | Date | string
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
@@ -23420,6 +25698,8 @@ export namespace Prisma {
     nombre?: SortOrder
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
     _count?: HorarioCountOrderByAggregateInput
@@ -23438,6 +25718,8 @@ export namespace Prisma {
     nombre?: StringWithAggregatesFilter<"Horario"> | string
     toleranciaMin?: IntWithAggregatesFilter<"Horario"> | number
     almuerzoMin?: IntWithAggregatesFilter<"Horario"> | number
+    toleranciaSalidaMin?: IntWithAggregatesFilter<"Horario"> | number
+    ajustaEntrada?: BoolWithAggregatesFilter<"Horario"> | boolean
     activo?: BoolWithAggregatesFilter<"Horario"> | boolean
     creadoEn?: DateTimeWithAggregatesFilter<"Horario"> | Date | string
   }
@@ -23588,6 +25870,7 @@ export namespace Prisma {
     registros?: RegistroListRelationFilter
     permisos?: PermisoListRelationFilter
     diasEsperados?: DiaEsperadoListRelationFilter
+    sedes?: ColaboradorSedeListRelationFilter
   }
 
   export type ColaboradorOrderByWithRelationInput = {
@@ -23613,6 +25896,7 @@ export namespace Prisma {
     registros?: RegistroOrderByRelationAggregateInput
     permisos?: PermisoOrderByRelationAggregateInput
     diasEsperados?: DiaEsperadoOrderByRelationAggregateInput
+    sedes?: ColaboradorSedeOrderByRelationAggregateInput
   }
 
   export type ColaboradorWhereUniqueInput = Prisma.AtLeast<{
@@ -23642,6 +25926,7 @@ export namespace Prisma {
     registros?: RegistroListRelationFilter
     permisos?: PermisoListRelationFilter
     diasEsperados?: DiaEsperadoListRelationFilter
+    sedes?: ColaboradorSedeListRelationFilter
   }, "id" | "empresaId_cedula">
 
   export type ColaboradorOrderByWithAggregationInput = {
@@ -23692,6 +25977,143 @@ export namespace Prisma {
     actualizadoEn?: DateTimeWithAggregatesFilter<"Colaborador"> | Date | string
   }
 
+  export type SedeWhereInput = {
+    AND?: SedeWhereInput | SedeWhereInput[]
+    OR?: SedeWhereInput[]
+    NOT?: SedeWhereInput | SedeWhereInput[]
+    id?: StringFilter<"Sede"> | string
+    empresaId?: StringFilter<"Sede"> | string
+    nombre?: StringFilter<"Sede"> | string
+    direccion?: StringNullableFilter<"Sede"> | string | null
+    lat?: FloatNullableFilter<"Sede"> | number | null
+    lng?: FloatNullableFilter<"Sede"> | number | null
+    radio?: IntFilter<"Sede"> | number
+    activa?: BoolFilter<"Sede"> | boolean
+    creadoEn?: DateTimeFilter<"Sede"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Sede"> | Date | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    colaboradores?: ColaboradorSedeListRelationFilter
+    registros?: RegistroListRelationFilter
+  }
+
+  export type SedeOrderByWithRelationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    nombre?: SortOrder
+    direccion?: SortOrderInput | SortOrder
+    lat?: SortOrderInput | SortOrder
+    lng?: SortOrderInput | SortOrder
+    radio?: SortOrder
+    activa?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    empresa?: EmpresaOrderByWithRelationInput
+    colaboradores?: ColaboradorSedeOrderByRelationAggregateInput
+    registros?: RegistroOrderByRelationAggregateInput
+  }
+
+  export type SedeWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: SedeWhereInput | SedeWhereInput[]
+    OR?: SedeWhereInput[]
+    NOT?: SedeWhereInput | SedeWhereInput[]
+    empresaId?: StringFilter<"Sede"> | string
+    nombre?: StringFilter<"Sede"> | string
+    direccion?: StringNullableFilter<"Sede"> | string | null
+    lat?: FloatNullableFilter<"Sede"> | number | null
+    lng?: FloatNullableFilter<"Sede"> | number | null
+    radio?: IntFilter<"Sede"> | number
+    activa?: BoolFilter<"Sede"> | boolean
+    creadoEn?: DateTimeFilter<"Sede"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Sede"> | Date | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    colaboradores?: ColaboradorSedeListRelationFilter
+    registros?: RegistroListRelationFilter
+  }, "id">
+
+  export type SedeOrderByWithAggregationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    nombre?: SortOrder
+    direccion?: SortOrderInput | SortOrder
+    lat?: SortOrderInput | SortOrder
+    lng?: SortOrderInput | SortOrder
+    radio?: SortOrder
+    activa?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    _count?: SedeCountOrderByAggregateInput
+    _avg?: SedeAvgOrderByAggregateInput
+    _max?: SedeMaxOrderByAggregateInput
+    _min?: SedeMinOrderByAggregateInput
+    _sum?: SedeSumOrderByAggregateInput
+  }
+
+  export type SedeScalarWhereWithAggregatesInput = {
+    AND?: SedeScalarWhereWithAggregatesInput | SedeScalarWhereWithAggregatesInput[]
+    OR?: SedeScalarWhereWithAggregatesInput[]
+    NOT?: SedeScalarWhereWithAggregatesInput | SedeScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Sede"> | string
+    empresaId?: StringWithAggregatesFilter<"Sede"> | string
+    nombre?: StringWithAggregatesFilter<"Sede"> | string
+    direccion?: StringNullableWithAggregatesFilter<"Sede"> | string | null
+    lat?: FloatNullableWithAggregatesFilter<"Sede"> | number | null
+    lng?: FloatNullableWithAggregatesFilter<"Sede"> | number | null
+    radio?: IntWithAggregatesFilter<"Sede"> | number
+    activa?: BoolWithAggregatesFilter<"Sede"> | boolean
+    creadoEn?: DateTimeWithAggregatesFilter<"Sede"> | Date | string
+    actualizadoEn?: DateTimeWithAggregatesFilter<"Sede"> | Date | string
+  }
+
+  export type ColaboradorSedeWhereInput = {
+    AND?: ColaboradorSedeWhereInput | ColaboradorSedeWhereInput[]
+    OR?: ColaboradorSedeWhereInput[]
+    NOT?: ColaboradorSedeWhereInput | ColaboradorSedeWhereInput[]
+    colaboradorId?: StringFilter<"ColaboradorSede"> | string
+    sedeId?: StringFilter<"ColaboradorSede"> | string
+    creadoEn?: DateTimeFilter<"ColaboradorSede"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    sede?: XOR<SedeRelationFilter, SedeWhereInput>
+  }
+
+  export type ColaboradorSedeOrderByWithRelationInput = {
+    colaboradorId?: SortOrder
+    sedeId?: SortOrder
+    creadoEn?: SortOrder
+    colaborador?: ColaboradorOrderByWithRelationInput
+    sede?: SedeOrderByWithRelationInput
+  }
+
+  export type ColaboradorSedeWhereUniqueInput = Prisma.AtLeast<{
+    colaboradorId_sedeId?: ColaboradorSedeColaboradorIdSedeIdCompoundUniqueInput
+    AND?: ColaboradorSedeWhereInput | ColaboradorSedeWhereInput[]
+    OR?: ColaboradorSedeWhereInput[]
+    NOT?: ColaboradorSedeWhereInput | ColaboradorSedeWhereInput[]
+    colaboradorId?: StringFilter<"ColaboradorSede"> | string
+    sedeId?: StringFilter<"ColaboradorSede"> | string
+    creadoEn?: DateTimeFilter<"ColaboradorSede"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    sede?: XOR<SedeRelationFilter, SedeWhereInput>
+  }, "colaboradorId_sedeId">
+
+  export type ColaboradorSedeOrderByWithAggregationInput = {
+    colaboradorId?: SortOrder
+    sedeId?: SortOrder
+    creadoEn?: SortOrder
+    _count?: ColaboradorSedeCountOrderByAggregateInput
+    _max?: ColaboradorSedeMaxOrderByAggregateInput
+    _min?: ColaboradorSedeMinOrderByAggregateInput
+  }
+
+  export type ColaboradorSedeScalarWhereWithAggregatesInput = {
+    AND?: ColaboradorSedeScalarWhereWithAggregatesInput | ColaboradorSedeScalarWhereWithAggregatesInput[]
+    OR?: ColaboradorSedeScalarWhereWithAggregatesInput[]
+    NOT?: ColaboradorSedeScalarWhereWithAggregatesInput | ColaboradorSedeScalarWhereWithAggregatesInput[]
+    colaboradorId?: StringWithAggregatesFilter<"ColaboradorSede"> | string
+    sedeId?: StringWithAggregatesFilter<"ColaboradorSede"> | string
+    creadoEn?: DateTimeWithAggregatesFilter<"ColaboradorSede"> | Date | string
+  }
+
   export type DiaEsperadoWhereInput = {
     AND?: DiaEsperadoWhereInput | DiaEsperadoWhereInput[]
     OR?: DiaEsperadoWhereInput[]
@@ -23705,6 +26127,8 @@ export namespace Prisma {
     toleranciaMin?: IntFilter<"DiaEsperado"> | number
     almuerzoMin?: IntFilter<"DiaEsperado"> | number
     minutosEsperados?: IntFilter<"DiaEsperado"> | number
+    toleranciaSalidaMin?: IntFilter<"DiaEsperado"> | number
+    ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
@@ -23722,6 +26146,8 @@ export namespace Prisma {
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
     minutosEsperados?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
     horarioId?: SortOrderInput | SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -23743,6 +26169,8 @@ export namespace Prisma {
     toleranciaMin?: IntFilter<"DiaEsperado"> | number
     almuerzoMin?: IntFilter<"DiaEsperado"> | number
     minutosEsperados?: IntFilter<"DiaEsperado"> | number
+    toleranciaSalidaMin?: IntFilter<"DiaEsperado"> | number
+    ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
@@ -23760,6 +26188,8 @@ export namespace Prisma {
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
     minutosEsperados?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
     horarioId?: SortOrderInput | SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -23784,6 +26214,8 @@ export namespace Prisma {
     toleranciaMin?: IntWithAggregatesFilter<"DiaEsperado"> | number
     almuerzoMin?: IntWithAggregatesFilter<"DiaEsperado"> | number
     minutosEsperados?: IntWithAggregatesFilter<"DiaEsperado"> | number
+    toleranciaSalidaMin?: IntWithAggregatesFilter<"DiaEsperado"> | number
+    ajustaEntrada?: BoolWithAggregatesFilter<"DiaEsperado"> | boolean
     horarioId?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
     origen?: StringWithAggregatesFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeWithAggregatesFilter<"DiaEsperado"> | Date | string
@@ -23796,6 +26228,7 @@ export namespace Prisma {
     NOT?: RegistroWhereInput | RegistroWhereInput[]
     id?: StringFilter<"Registro"> | string
     colaboradorId?: StringFilter<"Registro"> | string
+    sedeId?: StringNullableFilter<"Registro"> | string | null
     fecha?: DateTimeFilter<"Registro"> | Date | string
     entrada?: DateTimeNullableFilter<"Registro"> | Date | string | null
     salida?: DateTimeNullableFilter<"Registro"> | Date | string | null
@@ -23808,11 +26241,13 @@ export namespace Prisma {
     editadoEn?: DateTimeNullableFilter<"Registro"> | Date | string | null
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    sede?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
   }
 
   export type RegistroOrderByWithRelationInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
+    sedeId?: SortOrderInput | SortOrder
     fecha?: SortOrder
     entrada?: SortOrderInput | SortOrder
     salida?: SortOrderInput | SortOrder
@@ -23825,6 +26260,7 @@ export namespace Prisma {
     editadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     colaborador?: ColaboradorOrderByWithRelationInput
+    sede?: SedeOrderByWithRelationInput
   }
 
   export type RegistroWhereUniqueInput = Prisma.AtLeast<{
@@ -23833,6 +26269,7 @@ export namespace Prisma {
     OR?: RegistroWhereInput[]
     NOT?: RegistroWhereInput | RegistroWhereInput[]
     colaboradorId?: StringFilter<"Registro"> | string
+    sedeId?: StringNullableFilter<"Registro"> | string | null
     fecha?: DateTimeFilter<"Registro"> | Date | string
     entrada?: DateTimeNullableFilter<"Registro"> | Date | string | null
     salida?: DateTimeNullableFilter<"Registro"> | Date | string | null
@@ -23845,11 +26282,13 @@ export namespace Prisma {
     editadoEn?: DateTimeNullableFilter<"Registro"> | Date | string | null
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    sede?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
   }, "id">
 
   export type RegistroOrderByWithAggregationInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
+    sedeId?: SortOrderInput | SortOrder
     fecha?: SortOrder
     entrada?: SortOrderInput | SortOrder
     salida?: SortOrderInput | SortOrder
@@ -23872,6 +26311,7 @@ export namespace Prisma {
     NOT?: RegistroScalarWhereWithAggregatesInput | RegistroScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Registro"> | string
     colaboradorId?: StringWithAggregatesFilter<"Registro"> | string
+    sedeId?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     fecha?: DateTimeWithAggregatesFilter<"Registro"> | Date | string
     entrada?: DateTimeNullableWithAggregatesFilter<"Registro"> | Date | string | null
     salida?: DateTimeNullableWithAggregatesFilter<"Registro"> | Date | string | null
@@ -24555,6 +26995,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -24581,6 +27022,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -24605,6 +27047,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -24631,6 +27074,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -25142,6 +27586,8 @@ export namespace Prisma {
     nombre: string
     toleranciaMin?: number
     almuerzoMin?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutHorariosInput
@@ -25155,6 +27601,8 @@ export namespace Prisma {
     nombre: string
     toleranciaMin?: number
     almuerzoMin?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioUncheckedCreateNestedManyWithoutHorarioInput
@@ -25166,6 +27614,8 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutHorariosNestedInput
@@ -25179,6 +27629,8 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUncheckedUpdateManyWithoutHorarioNestedInput
@@ -25191,6 +27643,8 @@ export namespace Prisma {
     nombre: string
     toleranciaMin?: number
     almuerzoMin?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: Date | string
   }
@@ -25200,6 +27654,8 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25210,6 +27666,8 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25359,6 +27817,7 @@ export namespace Prisma {
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateInput = {
@@ -25382,6 +27841,7 @@ export namespace Prisma {
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUpdateInput = {
@@ -25405,6 +27865,7 @@ export namespace Prisma {
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateInput = {
@@ -25428,6 +27889,7 @@ export namespace Prisma {
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateManyInput = {
@@ -25488,6 +27950,144 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type SedeCreateInput = {
+    id?: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutSedesInput
+    colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
+    registros?: RegistroCreateNestedManyWithoutSedeInput
+  }
+
+  export type SedeUncheckedCreateInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
+    registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
+  }
+
+  export type SedeUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
+    colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
+    registros?: RegistroUpdateManyWithoutSedeNestedInput
+  }
+
+  export type SedeUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
+    registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
+  }
+
+  export type SedeCreateManyInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type SedeUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SedeUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ColaboradorSedeCreateInput = {
+    creadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutSedesInput
+    sede: SedeCreateNestedOneWithoutColaboradoresInput
+  }
+
+  export type ColaboradorSedeUncheckedCreateInput = {
+    colaboradorId: string
+    sedeId: string
+    creadoEn?: Date | string
+  }
+
+  export type ColaboradorSedeUpdateInput = {
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutSedesNestedInput
+    sede?: SedeUpdateOneRequiredWithoutColaboradoresNestedInput
+  }
+
+  export type ColaboradorSedeUncheckedUpdateInput = {
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    sedeId?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ColaboradorSedeCreateManyInput = {
+    colaboradorId: string
+    sedeId: string
+    creadoEn?: Date | string
+  }
+
+  export type ColaboradorSedeUpdateManyMutationInput = {
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ColaboradorSedeUncheckedUpdateManyInput = {
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    sedeId?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type DiaEsperadoCreateInput = {
     id?: string
     fecha: Date | string
@@ -25497,6 +28097,8 @@ export namespace Prisma {
     toleranciaMin?: number
     almuerzoMin?: number
     minutosEsperados?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -25514,6 +28116,8 @@ export namespace Prisma {
     toleranciaMin?: number
     almuerzoMin?: number
     minutosEsperados?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -25529,6 +28133,8 @@ export namespace Prisma {
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     minutosEsperados?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25546,6 +28152,8 @@ export namespace Prisma {
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     minutosEsperados?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25562,6 +28170,8 @@ export namespace Prisma {
     toleranciaMin?: number
     almuerzoMin?: number
     minutosEsperados?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -25577,6 +28187,8 @@ export namespace Prisma {
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     minutosEsperados?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25593,6 +28205,8 @@ export namespace Prisma {
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     minutosEsperados?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25613,11 +28227,13 @@ export namespace Prisma {
     editadoEn?: Date | string | null
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
+    sede?: SedeCreateNestedOneWithoutRegistrosInput
   }
 
   export type RegistroUncheckedCreateInput = {
     id?: string
     colaboradorId: string
+    sedeId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -25645,11 +28261,13 @@ export namespace Prisma {
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
+    sede?: SedeUpdateOneWithoutRegistrosNestedInput
   }
 
   export type RegistroUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     colaboradorId?: StringFieldUpdateOperationsInput | string
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -25666,6 +28284,7 @@ export namespace Prisma {
   export type RegistroCreateManyInput = {
     id?: string
     colaboradorId: string
+    sedeId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -25697,6 +28316,7 @@ export namespace Prisma {
   export type RegistroUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     colaboradorId?: StringFieldUpdateOperationsInput | string
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -26513,6 +29133,12 @@ export namespace Prisma {
     none?: HorarioWhereInput
   }
 
+  export type SedeListRelationFilter = {
+    every?: SedeWhereInput
+    some?: SedeWhereInput
+    none?: SedeWhereInput
+  }
+
   export type DispositivoKioscoListRelationFilter = {
     every?: DispositivoKioscoWhereInput
     some?: DispositivoKioscoWhereInput
@@ -26558,6 +29184,10 @@ export namespace Prisma {
   }
 
   export type HorarioOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SedeOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -27209,6 +29839,8 @@ export namespace Prisma {
     nombre?: SortOrder
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
   }
@@ -27216,6 +29848,7 @@ export namespace Prisma {
   export type HorarioAvgOrderByAggregateInput = {
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
   }
 
   export type HorarioMaxOrderByAggregateInput = {
@@ -27224,6 +29857,8 @@ export namespace Prisma {
     nombre?: SortOrder
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
   }
@@ -27234,6 +29869,8 @@ export namespace Prisma {
     nombre?: SortOrder
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
   }
@@ -27241,6 +29878,7 @@ export namespace Prisma {
   export type HorarioSumOrderByAggregateInput = {
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
   }
 
   export type HorarioRelationFilter = {
@@ -27323,6 +29961,12 @@ export namespace Prisma {
     none?: DiaEsperadoWhereInput
   }
 
+  export type ColaboradorSedeListRelationFilter = {
+    every?: ColaboradorSedeWhereInput
+    some?: ColaboradorSedeWhereInput
+    none?: ColaboradorSedeWhereInput
+  }
+
   export type RegistroOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -27332,6 +29976,10 @@ export namespace Prisma {
   }
 
   export type DiaEsperadoOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ColaboradorSedeOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -27406,9 +30054,115 @@ export namespace Prisma {
     salarioMensual?: SortOrder
   }
 
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type SedeCountOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    nombre?: SortOrder
+    direccion?: SortOrder
+    lat?: SortOrder
+    lng?: SortOrder
+    radio?: SortOrder
+    activa?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type SedeAvgOrderByAggregateInput = {
+    lat?: SortOrder
+    lng?: SortOrder
+    radio?: SortOrder
+  }
+
+  export type SedeMaxOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    nombre?: SortOrder
+    direccion?: SortOrder
+    lat?: SortOrder
+    lng?: SortOrder
+    radio?: SortOrder
+    activa?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type SedeMinOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    nombre?: SortOrder
+    direccion?: SortOrder
+    lat?: SortOrder
+    lng?: SortOrder
+    radio?: SortOrder
+    activa?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type SedeSumOrderByAggregateInput = {
+    lat?: SortOrder
+    lng?: SortOrder
+    radio?: SortOrder
+  }
+
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+
   export type ColaboradorRelationFilter = {
     is?: ColaboradorWhereInput
     isNot?: ColaboradorWhereInput
+  }
+
+  export type SedeRelationFilter = {
+    is?: SedeWhereInput
+    isNot?: SedeWhereInput
+  }
+
+  export type ColaboradorSedeColaboradorIdSedeIdCompoundUniqueInput = {
+    colaboradorId: string
+    sedeId: string
+  }
+
+  export type ColaboradorSedeCountOrderByAggregateInput = {
+    colaboradorId?: SortOrder
+    sedeId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type ColaboradorSedeMaxOrderByAggregateInput = {
+    colaboradorId?: SortOrder
+    sedeId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type ColaboradorSedeMinOrderByAggregateInput = {
+    colaboradorId?: SortOrder
+    sedeId?: SortOrder
+    creadoEn?: SortOrder
   }
 
   export type DiaEsperadoColaboradorIdFechaCompoundUniqueInput = {
@@ -27426,6 +30180,8 @@ export namespace Prisma {
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
     minutosEsperados?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
     horarioId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -27436,6 +30192,7 @@ export namespace Prisma {
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
     minutosEsperados?: SortOrder
+    toleranciaSalidaMin?: SortOrder
   }
 
   export type DiaEsperadoMaxOrderByAggregateInput = {
@@ -27448,6 +30205,8 @@ export namespace Prisma {
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
     minutosEsperados?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
     horarioId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -27464,6 +30223,8 @@ export namespace Prisma {
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
     minutosEsperados?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
     horarioId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -27474,6 +30235,7 @@ export namespace Prisma {
     toleranciaMin?: SortOrder
     almuerzoMin?: SortOrder
     minutosEsperados?: SortOrder
+    toleranciaSalidaMin?: SortOrder
   }
 
   export type EnumTipoRegistroFilter<$PrismaModel = never> = {
@@ -27483,9 +30245,15 @@ export namespace Prisma {
     not?: NestedEnumTipoRegistroFilter<$PrismaModel> | $Enums.TipoRegistro
   }
 
+  export type SedeNullableRelationFilter = {
+    is?: SedeWhereInput | null
+    isNot?: SedeWhereInput | null
+  }
+
   export type RegistroCountOrderByAggregateInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
+    sedeId?: SortOrder
     fecha?: SortOrder
     entrada?: SortOrder
     salida?: SortOrder
@@ -27502,6 +30270,7 @@ export namespace Prisma {
   export type RegistroMaxOrderByAggregateInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
+    sedeId?: SortOrder
     fecha?: SortOrder
     entrada?: SortOrder
     salida?: SortOrder
@@ -27518,6 +30287,7 @@ export namespace Prisma {
   export type RegistroMinOrderByAggregateInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
+    sedeId?: SortOrder
     fecha?: SortOrder
     entrada?: SortOrder
     salida?: SortOrder
@@ -28062,6 +30832,13 @@ export namespace Prisma {
     connect?: HorarioWhereUniqueInput | HorarioWhereUniqueInput[]
   }
 
+  export type SedeCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<SedeCreateWithoutEmpresaInput, SedeUncheckedCreateWithoutEmpresaInput> | SedeCreateWithoutEmpresaInput[] | SedeUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: SedeCreateOrConnectWithoutEmpresaInput | SedeCreateOrConnectWithoutEmpresaInput[]
+    createMany?: SedeCreateManyEmpresaInputEnvelope
+    connect?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+  }
+
   export type DispositivoKioscoCreateNestedManyWithoutEmpresaInput = {
     create?: XOR<DispositivoKioscoCreateWithoutEmpresaInput, DispositivoKioscoUncheckedCreateWithoutEmpresaInput> | DispositivoKioscoCreateWithoutEmpresaInput[] | DispositivoKioscoUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: DispositivoKioscoCreateOrConnectWithoutEmpresaInput | DispositivoKioscoCreateOrConnectWithoutEmpresaInput[]
@@ -28128,6 +30905,13 @@ export namespace Prisma {
     connectOrCreate?: HorarioCreateOrConnectWithoutEmpresaInput | HorarioCreateOrConnectWithoutEmpresaInput[]
     createMany?: HorarioCreateManyEmpresaInputEnvelope
     connect?: HorarioWhereUniqueInput | HorarioWhereUniqueInput[]
+  }
+
+  export type SedeUncheckedCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<SedeCreateWithoutEmpresaInput, SedeUncheckedCreateWithoutEmpresaInput> | SedeCreateWithoutEmpresaInput[] | SedeUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: SedeCreateOrConnectWithoutEmpresaInput | SedeCreateOrConnectWithoutEmpresaInput[]
+    createMany?: SedeCreateManyEmpresaInputEnvelope
+    connect?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
   }
 
   export type DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput = {
@@ -28249,6 +31033,20 @@ export namespace Prisma {
     update?: HorarioUpdateWithWhereUniqueWithoutEmpresaInput | HorarioUpdateWithWhereUniqueWithoutEmpresaInput[]
     updateMany?: HorarioUpdateManyWithWhereWithoutEmpresaInput | HorarioUpdateManyWithWhereWithoutEmpresaInput[]
     deleteMany?: HorarioScalarWhereInput | HorarioScalarWhereInput[]
+  }
+
+  export type SedeUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<SedeCreateWithoutEmpresaInput, SedeUncheckedCreateWithoutEmpresaInput> | SedeCreateWithoutEmpresaInput[] | SedeUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: SedeCreateOrConnectWithoutEmpresaInput | SedeCreateOrConnectWithoutEmpresaInput[]
+    upsert?: SedeUpsertWithWhereUniqueWithoutEmpresaInput | SedeUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: SedeCreateManyEmpresaInputEnvelope
+    set?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+    disconnect?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+    delete?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+    connect?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+    update?: SedeUpdateWithWhereUniqueWithoutEmpresaInput | SedeUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: SedeUpdateManyWithWhereWithoutEmpresaInput | SedeUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: SedeScalarWhereInput | SedeScalarWhereInput[]
   }
 
   export type DispositivoKioscoUpdateManyWithoutEmpresaNestedInput = {
@@ -28381,6 +31179,20 @@ export namespace Prisma {
     update?: HorarioUpdateWithWhereUniqueWithoutEmpresaInput | HorarioUpdateWithWhereUniqueWithoutEmpresaInput[]
     updateMany?: HorarioUpdateManyWithWhereWithoutEmpresaInput | HorarioUpdateManyWithWhereWithoutEmpresaInput[]
     deleteMany?: HorarioScalarWhereInput | HorarioScalarWhereInput[]
+  }
+
+  export type SedeUncheckedUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<SedeCreateWithoutEmpresaInput, SedeUncheckedCreateWithoutEmpresaInput> | SedeCreateWithoutEmpresaInput[] | SedeUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: SedeCreateOrConnectWithoutEmpresaInput | SedeCreateOrConnectWithoutEmpresaInput[]
+    upsert?: SedeUpsertWithWhereUniqueWithoutEmpresaInput | SedeUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: SedeCreateManyEmpresaInputEnvelope
+    set?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+    disconnect?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+    delete?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+    connect?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+    update?: SedeUpdateWithWhereUniqueWithoutEmpresaInput | SedeUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: SedeUpdateManyWithWhereWithoutEmpresaInput | SedeUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: SedeScalarWhereInput | SedeScalarWhereInput[]
   }
 
   export type DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput = {
@@ -28722,6 +31534,13 @@ export namespace Prisma {
     connect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
   }
 
+  export type ColaboradorSedeCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<ColaboradorSedeCreateWithoutColaboradorInput, ColaboradorSedeUncheckedCreateWithoutColaboradorInput> | ColaboradorSedeCreateWithoutColaboradorInput[] | ColaboradorSedeUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutColaboradorInput | ColaboradorSedeCreateOrConnectWithoutColaboradorInput[]
+    createMany?: ColaboradorSedeCreateManyColaboradorInputEnvelope
+    connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+  }
+
   export type RegistroUncheckedCreateNestedManyWithoutColaboradorInput = {
     create?: XOR<RegistroCreateWithoutColaboradorInput, RegistroUncheckedCreateWithoutColaboradorInput> | RegistroCreateWithoutColaboradorInput[] | RegistroUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: RegistroCreateOrConnectWithoutColaboradorInput | RegistroCreateOrConnectWithoutColaboradorInput[]
@@ -28741,6 +31560,13 @@ export namespace Prisma {
     connectOrCreate?: DiaEsperadoCreateOrConnectWithoutColaboradorInput | DiaEsperadoCreateOrConnectWithoutColaboradorInput[]
     createMany?: DiaEsperadoCreateManyColaboradorInputEnvelope
     connect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+  }
+
+  export type ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<ColaboradorSedeCreateWithoutColaboradorInput, ColaboradorSedeUncheckedCreateWithoutColaboradorInput> | ColaboradorSedeCreateWithoutColaboradorInput[] | ColaboradorSedeUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutColaboradorInput | ColaboradorSedeCreateOrConnectWithoutColaboradorInput[]
+    createMany?: ColaboradorSedeCreateManyColaboradorInputEnvelope
+    connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
   }
 
   export type EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput = {
@@ -28803,6 +31629,20 @@ export namespace Prisma {
     deleteMany?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
   }
 
+  export type ColaboradorSedeUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<ColaboradorSedeCreateWithoutColaboradorInput, ColaboradorSedeUncheckedCreateWithoutColaboradorInput> | ColaboradorSedeCreateWithoutColaboradorInput[] | ColaboradorSedeUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutColaboradorInput | ColaboradorSedeCreateOrConnectWithoutColaboradorInput[]
+    upsert?: ColaboradorSedeUpsertWithWhereUniqueWithoutColaboradorInput | ColaboradorSedeUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: ColaboradorSedeCreateManyColaboradorInputEnvelope
+    set?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    disconnect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    delete?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    update?: ColaboradorSedeUpdateWithWhereUniqueWithoutColaboradorInput | ColaboradorSedeUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: ColaboradorSedeUpdateManyWithWhereWithoutColaboradorInput | ColaboradorSedeUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: ColaboradorSedeScalarWhereInput | ColaboradorSedeScalarWhereInput[]
+  }
+
   export type RegistroUncheckedUpdateManyWithoutColaboradorNestedInput = {
     create?: XOR<RegistroCreateWithoutColaboradorInput, RegistroUncheckedCreateWithoutColaboradorInput> | RegistroCreateWithoutColaboradorInput[] | RegistroUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: RegistroCreateOrConnectWithoutColaboradorInput | RegistroCreateOrConnectWithoutColaboradorInput[]
@@ -28845,6 +31685,154 @@ export namespace Prisma {
     deleteMany?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
   }
 
+  export type ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<ColaboradorSedeCreateWithoutColaboradorInput, ColaboradorSedeUncheckedCreateWithoutColaboradorInput> | ColaboradorSedeCreateWithoutColaboradorInput[] | ColaboradorSedeUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutColaboradorInput | ColaboradorSedeCreateOrConnectWithoutColaboradorInput[]
+    upsert?: ColaboradorSedeUpsertWithWhereUniqueWithoutColaboradorInput | ColaboradorSedeUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: ColaboradorSedeCreateManyColaboradorInputEnvelope
+    set?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    disconnect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    delete?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    update?: ColaboradorSedeUpdateWithWhereUniqueWithoutColaboradorInput | ColaboradorSedeUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: ColaboradorSedeUpdateManyWithWhereWithoutColaboradorInput | ColaboradorSedeUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: ColaboradorSedeScalarWhereInput | ColaboradorSedeScalarWhereInput[]
+  }
+
+  export type EmpresaCreateNestedOneWithoutSedesInput = {
+    create?: XOR<EmpresaCreateWithoutSedesInput, EmpresaUncheckedCreateWithoutSedesInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutSedesInput
+    connect?: EmpresaWhereUniqueInput
+  }
+
+  export type ColaboradorSedeCreateNestedManyWithoutSedeInput = {
+    create?: XOR<ColaboradorSedeCreateWithoutSedeInput, ColaboradorSedeUncheckedCreateWithoutSedeInput> | ColaboradorSedeCreateWithoutSedeInput[] | ColaboradorSedeUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutSedeInput | ColaboradorSedeCreateOrConnectWithoutSedeInput[]
+    createMany?: ColaboradorSedeCreateManySedeInputEnvelope
+    connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+  }
+
+  export type RegistroCreateNestedManyWithoutSedeInput = {
+    create?: XOR<RegistroCreateWithoutSedeInput, RegistroUncheckedCreateWithoutSedeInput> | RegistroCreateWithoutSedeInput[] | RegistroUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: RegistroCreateOrConnectWithoutSedeInput | RegistroCreateOrConnectWithoutSedeInput[]
+    createMany?: RegistroCreateManySedeInputEnvelope
+    connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+  }
+
+  export type ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput = {
+    create?: XOR<ColaboradorSedeCreateWithoutSedeInput, ColaboradorSedeUncheckedCreateWithoutSedeInput> | ColaboradorSedeCreateWithoutSedeInput[] | ColaboradorSedeUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutSedeInput | ColaboradorSedeCreateOrConnectWithoutSedeInput[]
+    createMany?: ColaboradorSedeCreateManySedeInputEnvelope
+    connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+  }
+
+  export type RegistroUncheckedCreateNestedManyWithoutSedeInput = {
+    create?: XOR<RegistroCreateWithoutSedeInput, RegistroUncheckedCreateWithoutSedeInput> | RegistroCreateWithoutSedeInput[] | RegistroUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: RegistroCreateOrConnectWithoutSedeInput | RegistroCreateOrConnectWithoutSedeInput[]
+    createMany?: RegistroCreateManySedeInputEnvelope
+    connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+  }
+
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type EmpresaUpdateOneRequiredWithoutSedesNestedInput = {
+    create?: XOR<EmpresaCreateWithoutSedesInput, EmpresaUncheckedCreateWithoutSedesInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutSedesInput
+    upsert?: EmpresaUpsertWithoutSedesInput
+    connect?: EmpresaWhereUniqueInput
+    update?: XOR<XOR<EmpresaUpdateToOneWithWhereWithoutSedesInput, EmpresaUpdateWithoutSedesInput>, EmpresaUncheckedUpdateWithoutSedesInput>
+  }
+
+  export type ColaboradorSedeUpdateManyWithoutSedeNestedInput = {
+    create?: XOR<ColaboradorSedeCreateWithoutSedeInput, ColaboradorSedeUncheckedCreateWithoutSedeInput> | ColaboradorSedeCreateWithoutSedeInput[] | ColaboradorSedeUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutSedeInput | ColaboradorSedeCreateOrConnectWithoutSedeInput[]
+    upsert?: ColaboradorSedeUpsertWithWhereUniqueWithoutSedeInput | ColaboradorSedeUpsertWithWhereUniqueWithoutSedeInput[]
+    createMany?: ColaboradorSedeCreateManySedeInputEnvelope
+    set?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    disconnect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    delete?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    update?: ColaboradorSedeUpdateWithWhereUniqueWithoutSedeInput | ColaboradorSedeUpdateWithWhereUniqueWithoutSedeInput[]
+    updateMany?: ColaboradorSedeUpdateManyWithWhereWithoutSedeInput | ColaboradorSedeUpdateManyWithWhereWithoutSedeInput[]
+    deleteMany?: ColaboradorSedeScalarWhereInput | ColaboradorSedeScalarWhereInput[]
+  }
+
+  export type RegistroUpdateManyWithoutSedeNestedInput = {
+    create?: XOR<RegistroCreateWithoutSedeInput, RegistroUncheckedCreateWithoutSedeInput> | RegistroCreateWithoutSedeInput[] | RegistroUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: RegistroCreateOrConnectWithoutSedeInput | RegistroCreateOrConnectWithoutSedeInput[]
+    upsert?: RegistroUpsertWithWhereUniqueWithoutSedeInput | RegistroUpsertWithWhereUniqueWithoutSedeInput[]
+    createMany?: RegistroCreateManySedeInputEnvelope
+    set?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    disconnect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    delete?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    update?: RegistroUpdateWithWhereUniqueWithoutSedeInput | RegistroUpdateWithWhereUniqueWithoutSedeInput[]
+    updateMany?: RegistroUpdateManyWithWhereWithoutSedeInput | RegistroUpdateManyWithWhereWithoutSedeInput[]
+    deleteMany?: RegistroScalarWhereInput | RegistroScalarWhereInput[]
+  }
+
+  export type ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput = {
+    create?: XOR<ColaboradorSedeCreateWithoutSedeInput, ColaboradorSedeUncheckedCreateWithoutSedeInput> | ColaboradorSedeCreateWithoutSedeInput[] | ColaboradorSedeUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutSedeInput | ColaboradorSedeCreateOrConnectWithoutSedeInput[]
+    upsert?: ColaboradorSedeUpsertWithWhereUniqueWithoutSedeInput | ColaboradorSedeUpsertWithWhereUniqueWithoutSedeInput[]
+    createMany?: ColaboradorSedeCreateManySedeInputEnvelope
+    set?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    disconnect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    delete?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+    update?: ColaboradorSedeUpdateWithWhereUniqueWithoutSedeInput | ColaboradorSedeUpdateWithWhereUniqueWithoutSedeInput[]
+    updateMany?: ColaboradorSedeUpdateManyWithWhereWithoutSedeInput | ColaboradorSedeUpdateManyWithWhereWithoutSedeInput[]
+    deleteMany?: ColaboradorSedeScalarWhereInput | ColaboradorSedeScalarWhereInput[]
+  }
+
+  export type RegistroUncheckedUpdateManyWithoutSedeNestedInput = {
+    create?: XOR<RegistroCreateWithoutSedeInput, RegistroUncheckedCreateWithoutSedeInput> | RegistroCreateWithoutSedeInput[] | RegistroUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: RegistroCreateOrConnectWithoutSedeInput | RegistroCreateOrConnectWithoutSedeInput[]
+    upsert?: RegistroUpsertWithWhereUniqueWithoutSedeInput | RegistroUpsertWithWhereUniqueWithoutSedeInput[]
+    createMany?: RegistroCreateManySedeInputEnvelope
+    set?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    disconnect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    delete?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    update?: RegistroUpdateWithWhereUniqueWithoutSedeInput | RegistroUpdateWithWhereUniqueWithoutSedeInput[]
+    updateMany?: RegistroUpdateManyWithWhereWithoutSedeInput | RegistroUpdateManyWithWhereWithoutSedeInput[]
+    deleteMany?: RegistroScalarWhereInput | RegistroScalarWhereInput[]
+  }
+
+  export type ColaboradorCreateNestedOneWithoutSedesInput = {
+    create?: XOR<ColaboradorCreateWithoutSedesInput, ColaboradorUncheckedCreateWithoutSedesInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutSedesInput
+    connect?: ColaboradorWhereUniqueInput
+  }
+
+  export type SedeCreateNestedOneWithoutColaboradoresInput = {
+    create?: XOR<SedeCreateWithoutColaboradoresInput, SedeUncheckedCreateWithoutColaboradoresInput>
+    connectOrCreate?: SedeCreateOrConnectWithoutColaboradoresInput
+    connect?: SedeWhereUniqueInput
+  }
+
+  export type ColaboradorUpdateOneRequiredWithoutSedesNestedInput = {
+    create?: XOR<ColaboradorCreateWithoutSedesInput, ColaboradorUncheckedCreateWithoutSedesInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutSedesInput
+    upsert?: ColaboradorUpsertWithoutSedesInput
+    connect?: ColaboradorWhereUniqueInput
+    update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutSedesInput, ColaboradorUpdateWithoutSedesInput>, ColaboradorUncheckedUpdateWithoutSedesInput>
+  }
+
+  export type SedeUpdateOneRequiredWithoutColaboradoresNestedInput = {
+    create?: XOR<SedeCreateWithoutColaboradoresInput, SedeUncheckedCreateWithoutColaboradoresInput>
+    connectOrCreate?: SedeCreateOrConnectWithoutColaboradoresInput
+    upsert?: SedeUpsertWithoutColaboradoresInput
+    connect?: SedeWhereUniqueInput
+    update?: XOR<XOR<SedeUpdateToOneWithWhereWithoutColaboradoresInput, SedeUpdateWithoutColaboradoresInput>, SedeUncheckedUpdateWithoutColaboradoresInput>
+  }
+
   export type ColaboradorCreateNestedOneWithoutDiasEsperadosInput = {
     create?: XOR<ColaboradorCreateWithoutDiasEsperadosInput, ColaboradorUncheckedCreateWithoutDiasEsperadosInput>
     connectOrCreate?: ColaboradorCreateOrConnectWithoutDiasEsperadosInput
@@ -28865,6 +31853,12 @@ export namespace Prisma {
     connect?: ColaboradorWhereUniqueInput
   }
 
+  export type SedeCreateNestedOneWithoutRegistrosInput = {
+    create?: XOR<SedeCreateWithoutRegistrosInput, SedeUncheckedCreateWithoutRegistrosInput>
+    connectOrCreate?: SedeCreateOrConnectWithoutRegistrosInput
+    connect?: SedeWhereUniqueInput
+  }
+
   export type EnumTipoRegistroFieldUpdateOperationsInput = {
     set?: $Enums.TipoRegistro
   }
@@ -28875,6 +31869,16 @@ export namespace Prisma {
     upsert?: ColaboradorUpsertWithoutRegistrosInput
     connect?: ColaboradorWhereUniqueInput
     update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutRegistrosInput, ColaboradorUpdateWithoutRegistrosInput>, ColaboradorUncheckedUpdateWithoutRegistrosInput>
+  }
+
+  export type SedeUpdateOneWithoutRegistrosNestedInput = {
+    create?: XOR<SedeCreateWithoutRegistrosInput, SedeUncheckedCreateWithoutRegistrosInput>
+    connectOrCreate?: SedeCreateOrConnectWithoutRegistrosInput
+    upsert?: SedeUpsertWithoutRegistrosInput
+    disconnect?: SedeWhereInput | boolean
+    delete?: SedeWhereInput | boolean
+    connect?: SedeWhereUniqueInput
+    update?: XOR<XOR<SedeUpdateToOneWithWhereWithoutRegistrosInput, SedeUpdateWithoutRegistrosInput>, SedeUncheckedUpdateWithoutRegistrosInput>
   }
 
   export type ColaboradorCreateNestedOneWithoutPermisosInput = {
@@ -29527,6 +32531,22 @@ export namespace Prisma {
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+
   export type NestedEnumTipoRegistroFilter<$PrismaModel = never> = {
     equals?: $Enums.TipoRegistro | EnumTipoRegistroFieldRefInput<$PrismaModel>
     in?: $Enums.TipoRegistro[]
@@ -29708,6 +32728,7 @@ export namespace Prisma {
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutEmpresaInput = {
@@ -29730,6 +32751,7 @@ export namespace Prisma {
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutEmpresaInput = {
@@ -29840,6 +32862,8 @@ export namespace Prisma {
     nombre: string
     toleranciaMin?: number
     almuerzoMin?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioCreateNestedManyWithoutHorarioInput
@@ -29851,6 +32875,8 @@ export namespace Prisma {
     nombre: string
     toleranciaMin?: number
     almuerzoMin?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioUncheckedCreateNestedManyWithoutHorarioInput
@@ -29864,6 +32890,44 @@ export namespace Prisma {
 
   export type HorarioCreateManyEmpresaInputEnvelope = {
     data: HorarioCreateManyEmpresaInput | HorarioCreateManyEmpresaInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SedeCreateWithoutEmpresaInput = {
+    id?: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
+    registros?: RegistroCreateNestedManyWithoutSedeInput
+  }
+
+  export type SedeUncheckedCreateWithoutEmpresaInput = {
+    id?: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
+    registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
+  }
+
+  export type SedeCreateOrConnectWithoutEmpresaInput = {
+    where: SedeWhereUniqueInput
+    create: XOR<SedeCreateWithoutEmpresaInput, SedeUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type SedeCreateManyEmpresaInputEnvelope = {
+    data: SedeCreateManyEmpresaInput | SedeCreateManyEmpresaInput[]
     skipDuplicates?: boolean
   }
 
@@ -30212,8 +33276,42 @@ export namespace Prisma {
     nombre?: StringFilter<"Horario"> | string
     toleranciaMin?: IntFilter<"Horario"> | number
     almuerzoMin?: IntFilter<"Horario"> | number
+    toleranciaSalidaMin?: IntFilter<"Horario"> | number
+    ajustaEntrada?: BoolFilter<"Horario"> | boolean
     activo?: BoolFilter<"Horario"> | boolean
     creadoEn?: DateTimeFilter<"Horario"> | Date | string
+  }
+
+  export type SedeUpsertWithWhereUniqueWithoutEmpresaInput = {
+    where: SedeWhereUniqueInput
+    update: XOR<SedeUpdateWithoutEmpresaInput, SedeUncheckedUpdateWithoutEmpresaInput>
+    create: XOR<SedeCreateWithoutEmpresaInput, SedeUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type SedeUpdateWithWhereUniqueWithoutEmpresaInput = {
+    where: SedeWhereUniqueInput
+    data: XOR<SedeUpdateWithoutEmpresaInput, SedeUncheckedUpdateWithoutEmpresaInput>
+  }
+
+  export type SedeUpdateManyWithWhereWithoutEmpresaInput = {
+    where: SedeScalarWhereInput
+    data: XOR<SedeUpdateManyMutationInput, SedeUncheckedUpdateManyWithoutEmpresaInput>
+  }
+
+  export type SedeScalarWhereInput = {
+    AND?: SedeScalarWhereInput | SedeScalarWhereInput[]
+    OR?: SedeScalarWhereInput[]
+    NOT?: SedeScalarWhereInput | SedeScalarWhereInput[]
+    id?: StringFilter<"Sede"> | string
+    empresaId?: StringFilter<"Sede"> | string
+    nombre?: StringFilter<"Sede"> | string
+    direccion?: StringNullableFilter<"Sede"> | string | null
+    lat?: FloatNullableFilter<"Sede"> | number | null
+    lng?: FloatNullableFilter<"Sede"> | number | null
+    radio?: IntFilter<"Sede"> | number
+    activa?: BoolFilter<"Sede"> | boolean
+    creadoEn?: DateTimeFilter<"Sede"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Sede"> | Date | string
   }
 
   export type DispositivoKioscoUpsertWithWhereUniqueWithoutEmpresaInput = {
@@ -30378,6 +33476,7 @@ export namespace Prisma {
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -30403,6 +33502,7 @@ export namespace Prisma {
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -30484,6 +33584,7 @@ export namespace Prisma {
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -30509,6 +33610,7 @@ export namespace Prisma {
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -30727,6 +33829,7 @@ export namespace Prisma {
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -30752,6 +33855,7 @@ export namespace Prisma {
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -30808,6 +33912,7 @@ export namespace Prisma {
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutHorarioInput = {
@@ -30830,6 +33935,7 @@ export namespace Prisma {
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutHorarioInput = {
@@ -30871,6 +33977,7 @@ export namespace Prisma {
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -30896,6 +34003,7 @@ export namespace Prisma {
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -30950,6 +34058,8 @@ export namespace Prisma {
     nombre: string
     toleranciaMin?: number
     almuerzoMin?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutHorariosInput
@@ -30962,6 +34072,8 @@ export namespace Prisma {
     nombre: string
     toleranciaMin?: number
     almuerzoMin?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: Date | string
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutHorarioInput
@@ -30988,6 +34100,8 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutHorariosNestedInput
@@ -31000,6 +34114,8 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutHorarioNestedInput
@@ -31024,6 +34140,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
@@ -31049,6 +34166,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
@@ -31088,6 +34206,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
@@ -31113,6 +34232,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
@@ -31135,6 +34255,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -31160,6 +34281,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -31175,6 +34297,8 @@ export namespace Prisma {
     nombre: string
     toleranciaMin?: number
     almuerzoMin?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutHorariosInput
@@ -31187,6 +34311,8 @@ export namespace Prisma {
     nombre: string
     toleranciaMin?: number
     almuerzoMin?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioUncheckedCreateNestedManyWithoutHorarioInput
@@ -31210,10 +34336,12 @@ export namespace Prisma {
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
+    sede?: SedeCreateNestedOneWithoutRegistrosInput
   }
 
   export type RegistroUncheckedCreateWithoutColaboradorInput = {
     id?: string
+    sedeId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -31282,6 +34410,8 @@ export namespace Prisma {
     toleranciaMin?: number
     almuerzoMin?: number
     minutosEsperados?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -31297,6 +34427,8 @@ export namespace Prisma {
     toleranciaMin?: number
     almuerzoMin?: number
     minutosEsperados?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -31310,6 +34442,26 @@ export namespace Prisma {
 
   export type DiaEsperadoCreateManyColaboradorInputEnvelope = {
     data: DiaEsperadoCreateManyColaboradorInput | DiaEsperadoCreateManyColaboradorInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ColaboradorSedeCreateWithoutColaboradorInput = {
+    creadoEn?: Date | string
+    sede: SedeCreateNestedOneWithoutColaboradoresInput
+  }
+
+  export type ColaboradorSedeUncheckedCreateWithoutColaboradorInput = {
+    sedeId: string
+    creadoEn?: Date | string
+  }
+
+  export type ColaboradorSedeCreateOrConnectWithoutColaboradorInput = {
+    where: ColaboradorSedeWhereUniqueInput
+    create: XOR<ColaboradorSedeCreateWithoutColaboradorInput, ColaboradorSedeUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type ColaboradorSedeCreateManyColaboradorInputEnvelope = {
+    data: ColaboradorSedeCreateManyColaboradorInput | ColaboradorSedeCreateManyColaboradorInput[]
     skipDuplicates?: boolean
   }
 
@@ -31342,6 +34494,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -31367,6 +34520,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -31388,6 +34542,8 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutHorariosNestedInput
@@ -31400,6 +34556,8 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUncheckedUpdateManyWithoutHorarioNestedInput
@@ -31427,6 +34585,7 @@ export namespace Prisma {
     NOT?: RegistroScalarWhereInput | RegistroScalarWhereInput[]
     id?: StringFilter<"Registro"> | string
     colaboradorId?: StringFilter<"Registro"> | string
+    sedeId?: StringNullableFilter<"Registro"> | string | null
     fecha?: DateTimeFilter<"Registro"> | Date | string
     entrada?: DateTimeNullableFilter<"Registro"> | Date | string | null
     salida?: DateTimeNullableFilter<"Registro"> | Date | string | null
@@ -31502,10 +34661,427 @@ export namespace Prisma {
     toleranciaMin?: IntFilter<"DiaEsperado"> | number
     almuerzoMin?: IntFilter<"DiaEsperado"> | number
     minutosEsperados?: IntFilter<"DiaEsperado"> | number
+    toleranciaSalidaMin?: IntFilter<"DiaEsperado"> | number
+    ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
     actualizadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
+  }
+
+  export type ColaboradorSedeUpsertWithWhereUniqueWithoutColaboradorInput = {
+    where: ColaboradorSedeWhereUniqueInput
+    update: XOR<ColaboradorSedeUpdateWithoutColaboradorInput, ColaboradorSedeUncheckedUpdateWithoutColaboradorInput>
+    create: XOR<ColaboradorSedeCreateWithoutColaboradorInput, ColaboradorSedeUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type ColaboradorSedeUpdateWithWhereUniqueWithoutColaboradorInput = {
+    where: ColaboradorSedeWhereUniqueInput
+    data: XOR<ColaboradorSedeUpdateWithoutColaboradorInput, ColaboradorSedeUncheckedUpdateWithoutColaboradorInput>
+  }
+
+  export type ColaboradorSedeUpdateManyWithWhereWithoutColaboradorInput = {
+    where: ColaboradorSedeScalarWhereInput
+    data: XOR<ColaboradorSedeUpdateManyMutationInput, ColaboradorSedeUncheckedUpdateManyWithoutColaboradorInput>
+  }
+
+  export type ColaboradorSedeScalarWhereInput = {
+    AND?: ColaboradorSedeScalarWhereInput | ColaboradorSedeScalarWhereInput[]
+    OR?: ColaboradorSedeScalarWhereInput[]
+    NOT?: ColaboradorSedeScalarWhereInput | ColaboradorSedeScalarWhereInput[]
+    colaboradorId?: StringFilter<"ColaboradorSede"> | string
+    sedeId?: StringFilter<"ColaboradorSede"> | string
+    creadoEn?: DateTimeFilter<"ColaboradorSede"> | Date | string
+  }
+
+  export type EmpresaCreateWithoutSedesInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaUncheckedCreateWithoutSedesInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaCreateOrConnectWithoutSedesInput = {
+    where: EmpresaWhereUniqueInput
+    create: XOR<EmpresaCreateWithoutSedesInput, EmpresaUncheckedCreateWithoutSedesInput>
+  }
+
+  export type ColaboradorSedeCreateWithoutSedeInput = {
+    creadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutSedesInput
+  }
+
+  export type ColaboradorSedeUncheckedCreateWithoutSedeInput = {
+    colaboradorId: string
+    creadoEn?: Date | string
+  }
+
+  export type ColaboradorSedeCreateOrConnectWithoutSedeInput = {
+    where: ColaboradorSedeWhereUniqueInput
+    create: XOR<ColaboradorSedeCreateWithoutSedeInput, ColaboradorSedeUncheckedCreateWithoutSedeInput>
+  }
+
+  export type ColaboradorSedeCreateManySedeInputEnvelope = {
+    data: ColaboradorSedeCreateManySedeInput | ColaboradorSedeCreateManySedeInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RegistroCreateWithoutSedeInput = {
+    id?: string
+    fecha: Date | string
+    entrada?: Date | string | null
+    salida?: Date | string | null
+    tipo?: $Enums.TipoRegistro
+    observacion?: string | null
+    salidaEstimada?: boolean
+    fotoEntrada?: string | null
+    fotoSalida?: string | null
+    editadoPor?: string | null
+    editadoEn?: Date | string | null
+    creadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
+  }
+
+  export type RegistroUncheckedCreateWithoutSedeInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    entrada?: Date | string | null
+    salida?: Date | string | null
+    tipo?: $Enums.TipoRegistro
+    observacion?: string | null
+    salidaEstimada?: boolean
+    fotoEntrada?: string | null
+    fotoSalida?: string | null
+    editadoPor?: string | null
+    editadoEn?: Date | string | null
+    creadoEn?: Date | string
+  }
+
+  export type RegistroCreateOrConnectWithoutSedeInput = {
+    where: RegistroWhereUniqueInput
+    create: XOR<RegistroCreateWithoutSedeInput, RegistroUncheckedCreateWithoutSedeInput>
+  }
+
+  export type RegistroCreateManySedeInputEnvelope = {
+    data: RegistroCreateManySedeInput | RegistroCreateManySedeInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type EmpresaUpsertWithoutSedesInput = {
+    update: XOR<EmpresaUpdateWithoutSedesInput, EmpresaUncheckedUpdateWithoutSedesInput>
+    create: XOR<EmpresaCreateWithoutSedesInput, EmpresaUncheckedCreateWithoutSedesInput>
+    where?: EmpresaWhereInput
+  }
+
+  export type EmpresaUpdateToOneWithWhereWithoutSedesInput = {
+    where?: EmpresaWhereInput
+    data: XOR<EmpresaUpdateWithoutSedesInput, EmpresaUncheckedUpdateWithoutSedesInput>
+  }
+
+  export type EmpresaUpdateWithoutSedesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type EmpresaUncheckedUpdateWithoutSedesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type ColaboradorSedeUpsertWithWhereUniqueWithoutSedeInput = {
+    where: ColaboradorSedeWhereUniqueInput
+    update: XOR<ColaboradorSedeUpdateWithoutSedeInput, ColaboradorSedeUncheckedUpdateWithoutSedeInput>
+    create: XOR<ColaboradorSedeCreateWithoutSedeInput, ColaboradorSedeUncheckedCreateWithoutSedeInput>
+  }
+
+  export type ColaboradorSedeUpdateWithWhereUniqueWithoutSedeInput = {
+    where: ColaboradorSedeWhereUniqueInput
+    data: XOR<ColaboradorSedeUpdateWithoutSedeInput, ColaboradorSedeUncheckedUpdateWithoutSedeInput>
+  }
+
+  export type ColaboradorSedeUpdateManyWithWhereWithoutSedeInput = {
+    where: ColaboradorSedeScalarWhereInput
+    data: XOR<ColaboradorSedeUpdateManyMutationInput, ColaboradorSedeUncheckedUpdateManyWithoutSedeInput>
+  }
+
+  export type RegistroUpsertWithWhereUniqueWithoutSedeInput = {
+    where: RegistroWhereUniqueInput
+    update: XOR<RegistroUpdateWithoutSedeInput, RegistroUncheckedUpdateWithoutSedeInput>
+    create: XOR<RegistroCreateWithoutSedeInput, RegistroUncheckedCreateWithoutSedeInput>
+  }
+
+  export type RegistroUpdateWithWhereUniqueWithoutSedeInput = {
+    where: RegistroWhereUniqueInput
+    data: XOR<RegistroUpdateWithoutSedeInput, RegistroUncheckedUpdateWithoutSedeInput>
+  }
+
+  export type RegistroUpdateManyWithWhereWithoutSedeInput = {
+    where: RegistroScalarWhereInput
+    data: XOR<RegistroUpdateManyMutationInput, RegistroUncheckedUpdateManyWithoutSedeInput>
+  }
+
+  export type ColaboradorCreateWithoutSedesInput = {
+    id?: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    activo?: boolean
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    horario?: HorarioCreateNestedOneWithoutColaboradoresInput
+    registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorUncheckedCreateWithoutSedesInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    horarioId?: string | null
+    activo?: boolean
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorCreateOrConnectWithoutSedesInput = {
+    where: ColaboradorWhereUniqueInput
+    create: XOR<ColaboradorCreateWithoutSedesInput, ColaboradorUncheckedCreateWithoutSedesInput>
+  }
+
+  export type SedeCreateWithoutColaboradoresInput = {
+    id?: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutSedesInput
+    registros?: RegistroCreateNestedManyWithoutSedeInput
+  }
+
+  export type SedeUncheckedCreateWithoutColaboradoresInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
+  }
+
+  export type SedeCreateOrConnectWithoutColaboradoresInput = {
+    where: SedeWhereUniqueInput
+    create: XOR<SedeCreateWithoutColaboradoresInput, SedeUncheckedCreateWithoutColaboradoresInput>
+  }
+
+  export type ColaboradorUpsertWithoutSedesInput = {
+    update: XOR<ColaboradorUpdateWithoutSedesInput, ColaboradorUncheckedUpdateWithoutSedesInput>
+    create: XOR<ColaboradorCreateWithoutSedesInput, ColaboradorUncheckedCreateWithoutSedesInput>
+    where?: ColaboradorWhereInput
+  }
+
+  export type ColaboradorUpdateToOneWithWhereWithoutSedesInput = {
+    where?: ColaboradorWhereInput
+    data: XOR<ColaboradorUpdateWithoutSedesInput, ColaboradorUncheckedUpdateWithoutSedesInput>
+  }
+
+  export type ColaboradorUpdateWithoutSedesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
+    registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorUncheckedUpdateWithoutSedesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type SedeUpsertWithoutColaboradoresInput = {
+    update: XOR<SedeUpdateWithoutColaboradoresInput, SedeUncheckedUpdateWithoutColaboradoresInput>
+    create: XOR<SedeCreateWithoutColaboradoresInput, SedeUncheckedCreateWithoutColaboradoresInput>
+    where?: SedeWhereInput
+  }
+
+  export type SedeUpdateToOneWithWhereWithoutColaboradoresInput = {
+    where?: SedeWhereInput
+    data: XOR<SedeUpdateWithoutColaboradoresInput, SedeUncheckedUpdateWithoutColaboradoresInput>
+  }
+
+  export type SedeUpdateWithoutColaboradoresInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
+    registros?: RegistroUpdateManyWithoutSedeNestedInput
+  }
+
+  export type SedeUncheckedUpdateWithoutColaboradoresInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
   }
 
   export type ColaboradorCreateWithoutDiasEsperadosInput = {
@@ -31528,6 +35104,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutDiasEsperadosInput = {
@@ -31550,6 +35127,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutDiasEsperadosInput = {
@@ -31588,6 +35166,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutDiasEsperadosInput = {
@@ -31610,6 +35189,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateWithoutRegistrosInput = {
@@ -31632,6 +35212,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutRegistrosInput = {
@@ -31654,11 +35235,45 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutRegistrosInput = {
     where: ColaboradorWhereUniqueInput
     create: XOR<ColaboradorCreateWithoutRegistrosInput, ColaboradorUncheckedCreateWithoutRegistrosInput>
+  }
+
+  export type SedeCreateWithoutRegistrosInput = {
+    id?: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutSedesInput
+    colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
+  }
+
+  export type SedeUncheckedCreateWithoutRegistrosInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
+  }
+
+  export type SedeCreateOrConnectWithoutRegistrosInput = {
+    where: SedeWhereUniqueInput
+    create: XOR<SedeCreateWithoutRegistrosInput, SedeUncheckedCreateWithoutRegistrosInput>
   }
 
   export type ColaboradorUpsertWithoutRegistrosInput = {
@@ -31692,6 +35307,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutRegistrosInput = {
@@ -31714,6 +35330,46 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type SedeUpsertWithoutRegistrosInput = {
+    update: XOR<SedeUpdateWithoutRegistrosInput, SedeUncheckedUpdateWithoutRegistrosInput>
+    create: XOR<SedeCreateWithoutRegistrosInput, SedeUncheckedCreateWithoutRegistrosInput>
+    where?: SedeWhereInput
+  }
+
+  export type SedeUpdateToOneWithWhereWithoutRegistrosInput = {
+    where?: SedeWhereInput
+    data: XOR<SedeUpdateWithoutRegistrosInput, SedeUncheckedUpdateWithoutRegistrosInput>
+  }
+
+  export type SedeUpdateWithoutRegistrosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
+    colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
+  }
+
+  export type SedeUncheckedUpdateWithoutRegistrosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
   }
 
   export type ColaboradorCreateWithoutPermisosInput = {
@@ -31736,6 +35392,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutPermisosInput = {
@@ -31758,6 +35415,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutPermisosInput = {
@@ -31796,6 +35454,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutPermisosInput = {
@@ -31818,6 +35477,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type EmpresaCreateWithoutFestivosInput = {
@@ -31838,6 +35498,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -31863,6 +35524,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -31902,6 +35564,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -31927,6 +35590,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -31950,6 +35614,7 @@ export namespace Prisma {
     festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -31975,6 +35640,7 @@ export namespace Prisma {
     festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -32014,6 +35680,7 @@ export namespace Prisma {
     festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -32039,6 +35706,7 @@ export namespace Prisma {
     festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -32063,6 +35731,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
@@ -32088,6 +35757,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
@@ -32127,6 +35797,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
@@ -32152,6 +35823,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
@@ -32174,6 +35846,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -32199,6 +35872,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -32285,6 +35959,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -32310,6 +35985,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -32429,6 +36105,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
@@ -32453,6 +36130,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -32696,6 +36374,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -32721,6 +36400,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
   }
@@ -32850,6 +36530,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -32875,6 +36556,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
@@ -33075,8 +36757,22 @@ export namespace Prisma {
     nombre: string
     toleranciaMin?: number
     almuerzoMin?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     activo?: boolean
     creadoEn?: Date | string
+  }
+
+  export type SedeCreateManyEmpresaInput = {
+    id?: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
   }
 
   export type DispositivoKioscoCreateManyEmpresaInput = {
@@ -33178,6 +36874,7 @@ export namespace Prisma {
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutEmpresaInput = {
@@ -33200,6 +36897,7 @@ export namespace Prisma {
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateManyWithoutEmpresaInput = {
@@ -33265,6 +36963,8 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUpdateManyWithoutHorarioNestedInput
@@ -33276,6 +36976,8 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUncheckedUpdateManyWithoutHorarioNestedInput
@@ -33287,8 +36989,50 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SedeUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
+    registros?: RegistroUpdateManyWithoutSedeNestedInput
+  }
+
+  export type SedeUncheckedUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
+    registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
+  }
+
+  export type SedeUncheckedUpdateManyWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DispositivoKioscoUpdateWithoutEmpresaInput = {
@@ -33517,6 +37261,7 @@ export namespace Prisma {
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutHorarioInput = {
@@ -33539,6 +37284,7 @@ export namespace Prisma {
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateManyWithoutHorarioInput = {
@@ -33562,6 +37308,7 @@ export namespace Prisma {
 
   export type RegistroCreateManyColaboradorInput = {
     id?: string
+    sedeId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -33597,10 +37344,17 @@ export namespace Prisma {
     toleranciaMin?: number
     almuerzoMin?: number
     minutosEsperados?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+  }
+
+  export type ColaboradorSedeCreateManyColaboradorInput = {
+    sedeId: string
+    creadoEn?: Date | string
   }
 
   export type RegistroUpdateWithoutColaboradorInput = {
@@ -33616,10 +37370,12 @@ export namespace Prisma {
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    sede?: SedeUpdateOneWithoutRegistrosNestedInput
   }
 
   export type RegistroUncheckedUpdateWithoutColaboradorInput = {
     id?: StringFieldUpdateOperationsInput | string
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -33635,6 +37391,7 @@ export namespace Prisma {
 
   export type RegistroUncheckedUpdateManyWithoutColaboradorInput = {
     id?: StringFieldUpdateOperationsInput | string
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -33696,6 +37453,8 @@ export namespace Prisma {
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     minutosEsperados?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33711,6 +37470,8 @@ export namespace Prisma {
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     minutosEsperados?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33726,10 +37487,111 @@ export namespace Prisma {
     toleranciaMin?: IntFieldUpdateOperationsInput | number
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     minutosEsperados?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ColaboradorSedeUpdateWithoutColaboradorInput = {
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    sede?: SedeUpdateOneRequiredWithoutColaboradoresNestedInput
+  }
+
+  export type ColaboradorSedeUncheckedUpdateWithoutColaboradorInput = {
+    sedeId?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ColaboradorSedeUncheckedUpdateManyWithoutColaboradorInput = {
+    sedeId?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ColaboradorSedeCreateManySedeInput = {
+    colaboradorId: string
+    creadoEn?: Date | string
+  }
+
+  export type RegistroCreateManySedeInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    entrada?: Date | string | null
+    salida?: Date | string | null
+    tipo?: $Enums.TipoRegistro
+    observacion?: string | null
+    salidaEstimada?: boolean
+    fotoEntrada?: string | null
+    fotoSalida?: string | null
+    editadoPor?: string | null
+    editadoEn?: Date | string | null
+    creadoEn?: Date | string
+  }
+
+  export type ColaboradorSedeUpdateWithoutSedeInput = {
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutSedesNestedInput
+  }
+
+  export type ColaboradorSedeUncheckedUpdateWithoutSedeInput = {
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ColaboradorSedeUncheckedUpdateManyWithoutSedeInput = {
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RegistroUpdateWithoutSedeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
+  }
+
+  export type RegistroUncheckedUpdateWithoutSedeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RegistroUncheckedUpdateManyWithoutSedeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type UsuarioCreateManyAfiliadoInput = {
@@ -33852,6 +37714,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
@@ -33876,6 +37739,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -33984,6 +37848,10 @@ export namespace Prisma {
      */
     export type ColaboradorCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
     /**
+     * @deprecated Use SedeCountOutputTypeDefaultArgs instead
+     */
+    export type SedeCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SedeCountOutputTypeDefaultArgs<ExtArgs>
+    /**
      * @deprecated Use AfiliadoCountOutputTypeDefaultArgs instead
      */
     export type AfiliadoCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = AfiliadoCountOutputTypeDefaultArgs<ExtArgs>
@@ -34027,6 +37895,14 @@ export namespace Prisma {
      * @deprecated Use ColaboradorDefaultArgs instead
      */
     export type ColaboradorArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ColaboradorDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use SedeDefaultArgs instead
+     */
+    export type SedeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SedeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ColaboradorSedeDefaultArgs instead
+     */
+    export type ColaboradorSedeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ColaboradorSedeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use DiaEsperadoDefaultArgs instead
      */

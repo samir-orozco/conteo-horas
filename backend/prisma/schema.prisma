@@ -29,6 +29,7 @@ model Empresa {
   configuracion  Configuracion[]
   suscripcion    Suscripcion?
   horarios       Horario[]
+  sedes          Sede[]
   dispositivos   DispositivoKiosco[]
   notificaciones Notificacion[]
   // Afiliado que trajo a esta empresa (programa de referidos)
@@ -143,6 +144,14 @@ model Horario {
   nombre        String
   toleranciaMin Int             @default(10) // minutos de gracia antes de contar tardanza
   almuerzoMin   Int             @default(0) // minutos de almuerzo que NO se pagan (se descuentan de la jornada)
+  // Minutos que alguien puede quedarse de más SIN que se paguen como extra: por
+  // debajo del umbral se toma la hora de salida programada. 0 = desactivado, que
+  // es el valor por defecto para no cambiarle el cálculo a nadie.
+  toleranciaSalidaMin Int       @default(0)
+  // Si también se aplica a las entradas tempranas. Apagado por defecto: dejarlo
+  // solo en la salida sería asimétrico a favor de la empresa, así que la
+  // simetría existe pero se elige a propósito.
+  ajustaEntrada Boolean         @default(false)
   activo        Boolean         @default(true)
   creadoEn      DateTime        @default(now())
   // Un horario tiene varias franjas: ej. L-V 08:00-17:00 y Sáb 08:00-12:00
@@ -203,9 +212,54 @@ model Colaborador {
   registros        Registro[]
   permisos         Permiso[]
   diasEsperados    DiaEsperado[]
+  sedes            ColaboradorSede[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
+}
+
+// Sede física de la empresa (plan Empresarial). Cada una tiene su propia
+// geocerca, así que una empresa con varios locales deja de compartir un único
+// punto para todos.
+//
+// Un colaborador puede estar en VARIAS sedes: quien rota entre locales abre y
+// cierra turno en cualquiera de las suyas. Marcar fuera de ellas no se registra.
+model Sede {
+  id            String            @id @default(cuid())
+  empresaId     String
+  empresa       Empresa           @relation(fields: [empresaId], references: [id])
+  nombre        String
+  direccion     String?
+  // Geocerca propia. Sin lat/lng la sede no exige ubicación (útil para oficinas
+  // sin GPS o mientras se configura).
+  lat           Float?
+  lng           Float?
+  radio         Int               @default(150)
+  activa        Boolean           @default(true)
+  creadoEn      DateTime          @default(now())
+  actualizadoEn DateTime          @updatedAt
+
+  colaboradores ColaboradorSede[]
+  registros     Registro[]
+
+  @@index([empresaId])
+  @@map("sedes")
+}
+
+// Qué colaborador puede marcar en qué sede. Es una tabla explícita y no una
+// relación implícita de Prisma porque el DDL de producción se escribe a mano:
+// una tabla con nombre y columnas propias es la que se puede crear sin adivinar
+// convenciones internas del ORM.
+model ColaboradorSede {
+  colaboradorId String
+  sedeId        String
+  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  sede          Sede        @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+  creadoEn      DateTime    @default(now())
+
+  @@id([colaboradorId, sedeId])
+  @@index([sedeId])
+  @@map("colaboradores_sedes")
 }
 
 // Lo que el horario de un colaborador exigía UN día concreto, congelado.
@@ -227,6 +281,10 @@ model DiaEsperado {
   toleranciaMin    Int         @default(0)
   almuerzoMin      Int         @default(0) // el que aplica ESE día
   minutosEsperados Int         @default(0) // ya neto de almuerzo
+  // La tolerancia de salida también se congela: es política de la empresa, y si
+  // la cambian mañana no puede mover lo que ya se liquidó.
+  toleranciaSalidaMin Int      @default(0)
+  ajustaEntrada    Boolean     @default(false)
   // De qué horario salió, solo informativo: el horario puede cambiar después.
   horarioId        String?
   // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)
@@ -243,6 +301,11 @@ model Registro {
   id             String       @id @default(cuid())
   colaboradorId  String
   colaborador    Colaborador  @relation(fields: [colaboradorId], references: [id])
+  // Sede donde OCURRIÓ la marcación. Es distinto de las sedes asignadas al
+  // colaborador: el filtro por sede de los reportes tiene que decir dónde marcó
+  // de verdad, no dónde debería. Null en todo lo anterior a la función.
+  sedeId         String?
+  sede           Sede?        @relation(fields: [sedeId], references: [id])
   fecha          DateTime
   entrada        DateTime?
   salida         DateTime?
