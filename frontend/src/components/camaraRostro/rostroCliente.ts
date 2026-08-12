@@ -4,7 +4,7 @@ import * as faceapi from 'face-api.js';
 // CamaraRostro.tsx para poder ajustar/probar umbrales sin montar el componente.
 
 export type Modo = 'login' | 'enrolar';
-export type Estado = 'cargando' | 'guiando' | 'preview' | 'exito' | 'error';
+export type Estado = 'cargando' | 'calibrando' | 'guiando' | 'preview' | 'exito' | 'error';
 export type TipoPose = 'frontal' | 'derecha' | 'izquierda';
 export type PasoEnrolar = { id: string; etiqueta: string; texto: string; tipo: TipoPose };
 export type Encuadre = 'CENTRA' | 'ACERCATE' | 'ALEJATE' | 'OK';
@@ -73,6 +73,121 @@ export const MSG_ENCUADRE: Record<Exclude<Encuadre, 'OK'>, string> = {
   ACERCATE: 'Acércate un poco',
   ALEJATE: 'Aléjate un poco',
 };
+
+// ===== Arranque estable de la cámara =====
+//
+// Al encender, muchos teléfonos entregan un primer cuadro con una resolución y a
+// los pocos cientos de milisegundos renegocian a otra. Con `object-cover` eso
+// cambia el recorte y se ve como si la imagen se acercara y se alejara sola. No
+// es un bug de nuestro dibujo: es el track cambiando debajo.
+//
+// La solución es no enseñar el video hasta que su tamaño real deje de moverse.
+
+export const MS_CALIBRACION_MAX = 2500;   // techo: nunca dejar la pantalla pegada
+const MS_MUESTREO_TAMANO = 80;
+const MUESTRAS_ESTABLES = 4;              // ~320ms sin cambios
+
+// Restricciones de captura. La relación de aspecto se pide EXPLÍCITA: sin ella
+// el navegador puede entregar 4:3 y luego 16:9, y ahí es donde salta el recorte.
+export const RESTRICCIONES_VIDEO: MediaStreamConstraints = {
+  video: {
+    facingMode: 'user',
+    width: { ideal: 640 },
+    height: { ideal: 480 },
+    aspectRatio: { ideal: 4 / 3 },
+    frameRate: { ideal: 24, max: 30 },
+  },
+};
+
+// Algunos Android exponen zoom digital y arrancan con un valor > 1. Se baja al
+// mínimo para que el encuadre sea el que el sensor ve de verdad.
+export async function fijarZoomMinimo(stream: MediaStream): Promise<void> {
+  const track = stream.getVideoTracks()[0];
+  if (!track?.getCapabilities) return;
+  try {
+    // `zoom` es una extensión (Image Capture) que TypeScript no conoce todavía.
+    const caps = track.getCapabilities() as MediaTrackCapabilities & { zoom?: { min: number } };
+    if (caps.zoom?.min === undefined) return;
+    await track.applyConstraints({ advanced: [{ zoom: caps.zoom.min }] } as unknown as MediaTrackConstraints);
+  } catch {
+    // El dispositivo no deja fijarlo: se sigue igual, solo se pierde la mejora.
+  }
+}
+
+// Espera a que `videoWidth`/`videoHeight` se repitan varias veces seguidas.
+// Devuelve las dimensiones con las que quedó, o null si nunca dio una imagen.
+export async function esperarVideoEstable(
+  video: HTMLVideoElement,
+  ahora: () => number = () => performance.now(),
+): Promise<{ ancho: number; alto: number } | null> {
+  const inicio = ahora();
+  let ultimo = '';
+  let estables = 0;
+
+  while (ahora() - inicio < MS_CALIBRACION_MAX) {
+    const actual = `${video.videoWidth}x${video.videoHeight}`;
+    if (video.videoWidth > 0 && actual === ultimo) {
+      if (++estables >= MUESTRAS_ESTABLES) break;
+    } else {
+      estables = 0;
+      ultimo = actual;
+    }
+    await new Promise(r => setTimeout(r, MS_MUESTREO_TAMANO));
+  }
+
+  return video.videoWidth > 0 ? { ancho: video.videoWidth, alto: video.videoHeight } : null;
+}
+
+// ===== Guía de encuadre estable =====
+//
+// El cuadro de detección tiembla de un fotograma a otro y cerca de un umbral el
+// mensaje salta entre estados.
+//
+// Se amortigua la MEDICIÓN, no el veredicto. Amortiguar el veredicto —exigir que
+// el nuevo se repita N veces— parece equivalente pero deja el mensaje pegado en
+// uno viejo mientras la lectura oscila: se le diría "centra tu rostro" a alguien
+// cuyo problema es la distancia. Promediando la posición y el tamaño no hay
+// estado obsoleto posible, y de paso la oscilación desaparece en el origen.
+const MUESTRAS_SUAVIZADO = 4;
+// Ya encuadrado se tolera un poco más antes de volver a molestar: evita entrar y
+// salir del "OK" por unos píxeles de temblor.
+const HOLGURA_HISTERESIS = 0.03;
+
+export function crearEstabilizadorEncuadre(muestras = MUESTRAS_SUAVIZADO) {
+  const proporciones: number[] = [];
+  const centrosX: number[] = [];
+  const centrosY: number[] = [];
+  let enOk = false;
+
+  const agregar = (arr: number[], v: number) => { arr.push(v); if (arr.length > muestras) arr.shift(); };
+  const media = (arr: number[]) => arr.reduce((s, v) => s + v, 0) / arr.length;
+
+  return {
+    siguiente(box: faceapi.Box, vw: number, vh: number): Encuadre {
+      agregar(proporciones, box.width / vw);
+      agregar(centrosX, (box.x + box.width / 2) / vw);
+      agregar(centrosY, (box.y + box.height / 2) / vh);
+
+      const h = enOk ? HOLGURA_HISTERESIS : 0;
+      const prop = media(proporciones);
+      const desviacionX = Math.abs(media(centrosX) - 0.5);
+      const desviacionY = Math.abs(media(centrosY) - 0.5);
+
+      let veredicto: Encuadre;
+      if (desviacionX > 0.28 + h || desviacionY > 0.3 + h) veredicto = 'CENTRA';
+      else if (prop < 0.16 - h) veredicto = 'ACERCATE';
+      else if (prop > 0.8 + h) veredicto = 'ALEJATE';
+      else veredicto = 'OK';
+
+      enOk = veredicto === 'OK';
+      return veredicto;
+    },
+    reiniciar() {
+      proporciones.length = 0; centrosX.length = 0; centrosY.length = 0;
+      enOk = false;
+    },
+  };
+}
 
 // ¿La pose actual (según el yaw) cumple lo que pide el paso?
 export function poseCumple(tipo: TipoPose, dev: number): boolean {

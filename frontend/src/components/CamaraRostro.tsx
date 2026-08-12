@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
-import { cargarModelosLigeros, cargarModeloRostro } from '../lib/faceapi';
+import { cargarModelosLigeros, cargarModeloRostro, modelosEnCache } from '../lib/faceapi';
 import { Camera, AlertTriangle, Check } from 'lucide-react';
 import PreviewEnrolamiento from './camaraRostro/PreviewEnrolamiento';
 import {
   SEG_FALLBACK_CEDULA, opcionesDeteccion, opcionesCaptura, MS_QUIETO_ENROLAR, MS_QUIETO_LOGIN,
   MIN_MUESTRAS_POSE, MS_MIN_CUADRO, desviacionYaw, promediarDescriptores, capturarFoto,
-  evaluarEncuadre, MSG_ENCUADRE, poseCumple, type Modo, type Estado, type PasoEnrolar,
+  MSG_ENCUADRE, poseCumple, RESTRICCIONES_VIDEO, fijarZoomMinimo,
+  esperarVideoEstable, crearEstabilizadorEncuadre,
+  type Modo, type Estado, type PasoEnrolar,
 } from './camaraRostro/rostroCliente';
 
 type Props = {
@@ -39,6 +41,15 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
   const [tomas, setTomas] = useState<string[]>([]); // fotos del preview (enrolar)
   const descsPreview = useRef<number[][]>([]);   // descriptores esperando aceptación
   const [progModelos, setProgModelos] = useState(0); // 0..1 carga de los modelos livianos
+  // Descarga del modelo pesado. Se refleja en React —y no solo en la variable del
+  // bucle— para poder avisar SIEMPRE que sigue preparándose, aunque el encuadre
+  // todavía no esté bien. Antes ese aviso solo salía si el rostro ya estaba
+  // centrado, que es justo cuando la persona ya no necesita que se lo digan.
+  const [progRostroUI, setProgRostroUI] = useState(0);
+  const [rostroListoUI, setRostroListoUI] = useState(false);
+  // ¿Este teléfono ya tiene los modelos guardados? Si los tiene no hay espera que
+  // anunciar, y prometer uno la vuelve sospechosa. `null` = todavía no se sabe.
+  const [primeraVez, setPrimeraVez] = useState<boolean | null>(null);
   const [metrica, setMetrica] = useState<{ camara?: number; rostro?: number }>({}); // solo dev
 
   const pasos: PasoEnrolar[] = modo === 'enrolar'
@@ -65,7 +76,7 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     let holdInicio: number | null = null; // cuándo empezó a quedarse quieto
     let buffer: number[][] = [];           // descriptores acumulados en el hold
     let rostroListo = false;               // ¿ya cargó el modelo de reconocimiento?
-    let progRostro = 0;                    // 0..1 de su descarga en segundo plano
+    const encuadreEstable = crearEstabilizadorEncuadre();
 
     const detenerCamara = () => {
       if (cuadroId !== null) cancelAnimationFrame(cuadroId);
@@ -84,28 +95,38 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     (async () => {
       try {
         const t0 = performance.now();
+        modelosEnCache().then(hay => { if (activo) setPrimeraVez(!hay); });
         // 1) Modelos livianos (detector + landmarks): con esto ya enciende la cámara.
         await cargarModelosLigeros(p => { if (activo) setProgModelos(p); });
         if (!activo) return;
         // 2) Reconocimiento (~6.1MB) en segundo plano: solo hace falta al capturar.
-        cargarModeloRostro(p => { progRostro = p; })
+        cargarModeloRostro(p => { if (activo) setProgRostroUI(p); })
           .then(() => {
             if (!activo) return;
             rostroListo = true;
+            setRostroListoUI(true);
             setMetrica(m => ({ ...m, rostro: Math.round(performance.now() - t0) }));
           })
           .catch(() => { /* si falla, el hold seguirá esperando; el padre maneja el error */ });
 
-        // Resolución "ideal" (no exacta): evita que iOS arranque en un lente y
-        // cambie a otro (gran angular → normal) y reduce el zoom/recorte del sensor.
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-        });
+        stream = await navigator.mediaDevices.getUserMedia(RESTRICCIONES_VIDEO);
         if (!activo) { stream.getTracks().forEach(t => t.stop()); return; }
+        await fijarZoomMinimo(stream);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
+        if (!activo) return;
+
+        // El track suele renegociar la resolución en los primeros cientos de
+        // milisegundos, y con `object-cover` eso se ve como si la imagen se
+        // acercara y se alejara sola. Se espera a que deje de moverse ANTES de
+        // enseñarla, y mientras tanto se dice qué está pasando.
+        setEstado('calibrando');
+        setMensaje('Calibrando la cámara…');
+        if (videoRef.current) await esperarVideoEstable(videoRef.current);
+        if (!activo) return;
+
         setEstado('guiando');
         setMensaje('Ubica tu rostro dentro del óvalo');
         setMetrica(m => ({ ...m, camara: Math.round(performance.now() - t0) }));
@@ -138,12 +159,17 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
             if (!deteccion) {
               setEncuadreOk(false);
               setMensaje('Ubica tu rostro dentro del óvalo');
+              encuadreEstable.reiniciar();
               resetHold();
               programarSiguiente();
               return;
             }
 
-            const encuadre = evaluarEncuadre(deteccion.detection.box, video.videoWidth, video.videoHeight);
+            // El cuadro detectado tiembla; el estabilizador promedia posición y
+            // tamaño antes de decidir, así el mensaje no salta cerca del umbral.
+            const encuadre = encuadreEstable.siguiente(
+              deteccion.detection.box, video.videoWidth, video.videoHeight,
+            );
             if (encuadre !== 'OK') {
               setEncuadreOk(false);
               setMensaje(MSG_ENCUADRE[encuadre]);
@@ -167,8 +193,9 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
 
             // La captura del descriptor necesita el modelo de reconocimiento (pesado).
             // Si aún está bajando, mantenemos el encuadre y esperamos con su %.
+            // El porcentaje lo lleva el aviso fijo de abajo, que se ve siempre.
             if (!rostroListo) {
-              setMensaje(`Preparando reconocimiento… ${Math.round(progRostro * 100)}%`);
+              setMensaje('Ya casi: terminando de preparar el reconocimiento');
               resetHold();
               programarSiguiente();
               return;
@@ -293,7 +320,19 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
               <div className="h-full bg-primary transition-[width] duration-200 ease-out" style={{ width: `${Math.round(progModelos * 100)}%` }} />
             </div>
             <p className="text-white/85 text-sm font-medium">Preparando la cámara… {Math.round(progModelos * 100)}%</p>
-            <p className="text-white/40 text-xs">Esto solo pasa la primera vez en este teléfono</p>
+            {primeraVez !== false && (
+              <p className="text-white/40 text-xs">Esto solo pasa la primera vez en este teléfono</p>
+            )}
+          </div>
+        )}
+
+        {/* Calibración: el track todavía puede cambiar de resolución y el recorte
+            saltaría a la vista. Se tapa mientras se estabiliza y se explica. */}
+        {estado === 'calibrando' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center bg-ink/80 backdrop-blur-sm">
+            <Camera className="text-white/60 animate-pulse" size={34} />
+            <p className="text-white/85 text-sm font-medium">Calibrando la cámara…</p>
+            <p className="text-white/40 text-xs">Un segundo, estamos ajustando el enfoque</p>
           </div>
         )}
 
@@ -364,6 +403,25 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
         {estado === 'error' && <AlertTriangle size={14} className="inline mr-1 -mt-0.5" />}
         {errorExterno ?? mensaje}
       </p>
+
+      {/* Aviso fijo mientras baja el modelo pesado. Va aquí y no dentro del bucle
+          de cuadros porque allí solo aparecía cuando el encuadre ya estaba bien:
+          quien se está acomodando —el que de verdad necesita saber que falta— no
+          lo veía nunca, y la espera parecía que el kiosco estuviera colgado. */}
+      {!rostroListoUI && primeraVez === true && (estado === 'guiando' || estado === 'calibrando') && !hayError && (
+        <div className="w-full max-w-md flex items-center gap-2.5 px-3 py-2 rounded-xl bg-primary/15">
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-ink/80">
+              Preparando el reconocimiento… {Math.round(progRostroUI * 100)}%
+            </p>
+            <div className="mt-1 h-1 rounded-full bg-black/10 overflow-hidden">
+              <div className="h-full bg-primary transition-[width] duration-200 ease-out"
+                style={{ width: `${Math.round(progRostroUI * 100)}%` }} />
+            </div>
+          </div>
+          <span className="text-[10px] text-muted whitespace-nowrap">solo la 1ª vez</span>
+        </div>
+      )}
 
       {/* Respaldo: si tarda en reconocer, marcar con cédula tomando la foto del momento */}
       {modo === 'login' && permiteFallbackCedula && mostrarFallback && (estado === 'guiando' || !!errorExterno) && (
