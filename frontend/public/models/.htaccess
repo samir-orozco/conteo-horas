@@ -20,10 +20,19 @@
 # `SetOutputFilter DEFLATE` estaba aquí y NO hacía nada (mod_deflate no está).
 # Se cambia por darles un tipo MIME, que es lo que LiteSpeed mira.
 #
+# Se declara `text/plain` y no `application/octet-stream` aposta: octet-stream
+# significa "binario opaco" y por eso está FUERA de la lista de comprimibles de
+# casi todos los servidores, LiteSpeed incluido. text/plain sí está dentro.
+# Mentir en el tipo aquí es inocuo: estos archivos solo los lee face-api, y lo
+# hace con `arrayBuffer()`, que ignora el Content-Type. Nadie más los consume.
+#
 # Para comprobar si funcionó, después de desplegar:
 #   curl -sI -H "Accept-Encoding: gzip" https://horapro.co/models/face_recognition_model-shard1 | grep -i "content-encoding\|content-length"
-# Si aparece `content-encoding: gzip`, ganamos un 37% en la primera descarga.
-# Si NO aparece, no se pierde nada: el service worker ya evita que se repita.
+# Si aparece `content-encoding: gzip` y el content-length baja, ganamos ~37% en
+# la primera descarga de cada dispositivo.
+# Si NO aparece, no se pierde nada —el service worker ya evita que se repita— y
+# queda el plan B: precomprimir los modelos a .gz en el build y que el service
+# worker los descomprima con DecompressionStream, sin depender del servidor.
 <FilesMatch "-shard[0-9]+$">
-  ForceType application/octet-stream
+  ForceType text/plain
 </FilesMatch>
