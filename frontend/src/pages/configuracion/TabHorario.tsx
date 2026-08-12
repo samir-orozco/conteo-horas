@@ -309,6 +309,20 @@ export default function TabHorario() {
               <h3 className="font-bold text-lg text-ink">{editandoHorario ? 'Editar horario' : 'Nuevo horario'}</h3>
               <button onClick={() => setModalHorario(false)}><X size={20} className="text-gray-400" /></button>
             </div>
+            {/* Hoy el horario no guarda historial: los reportes de meses pasados
+                se recalculan con la configuración actual. Hasta que eso cambie,
+                al menos que el admin sepa lo que está tocando. */}
+            {editandoHorario && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 flex items-start gap-2 text-sm text-amber-900">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                <span>
+                  Este cambio también afecta los <b>reportes de meses anteriores</b>: se recalculan
+                  con el horario nuevo. Si el horario cambió en una fecha concreta, ten en cuenta que
+                  las liquidaciones ya entregadas pueden mostrar otros números.
+                </span>
+              </div>
+            )}
+
             <form onSubmit={guardarHorario} className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-muted mb-1">Nombre (ej: Oficina, Turno nocturno)</label>
@@ -426,7 +440,9 @@ export default function TabHorario() {
         abierto={!!eliminandoHorario}
         peligro
         titulo="¿Eliminar horario?"
-        subtitulo={eliminandoHorario ? `"${eliminandoHorario.nombre}" se eliminará y los colaboradores que lo tienen quedarán sin horario asignado (sin control de tardanzas).` : ''}
+        subtitulo={eliminandoHorario
+          ? `"${eliminandoHorario.nombre}" se eliminará y ${eliminandoHorario._count?.colaboradores ?? 0} colaborador${(eliminandoHorario._count?.colaboradores ?? 0) === 1 ? '' : 'es'} quedará${(eliminandoHorario._count?.colaboradores ?? 0) === 1 ? '' : 'n'} sin horario: dejan de tener control de tardanzas y sus reportes pasados dejarán de calcular el descuento por tiempo no trabajado.`
+          : ''}
         textoContinuar="Sí, eliminar"
         onContinuar={eliminarHorario}
         onCancelar={() => setEliminandoHorario(null)}
