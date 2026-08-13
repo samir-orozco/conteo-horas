@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Eye, ArrowUpRight, MessageCircle } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { useMiPlan } from '../lib/plan';
+import SelectorSedes from '../components/SelectorSedes';
 
-type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null };
+type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[] };
 export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string };
 type Horario = { id: string; nombre: string; franjas: Franja[] };
 type FormData = Omit<Colaborador, 'id' | 'activo'>;
 
-const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '' };
+const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [] };
 
 // La fecha viene del backend como ISO; el input date necesita "YYYY-MM-DD"
 export const soloFecha = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 10) : '');
@@ -32,31 +34,56 @@ export function resumenFranjas(franjas?: Franja[]): string {
   }).join(' · ');
 }
 
+const WPP_MAS_150 = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
+
 export default function Colaboradores() {
   const navigate = useNavigate();
+  const { plan } = useMiPlan();
   const [lista, setLista] = useState<Colaborador[]>([]);
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Colaborador | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY);
   const [eliminando, setEliminando] = useState<Colaborador | null>(null);
   const [horarios, setHorarios] = useState<Horario[]>([]);
+  const [sedes, setSedes] = useState<{ id: string; nombre: string }[]>([]);
+  const [errorForm, setErrorForm] = useState('');
+  const [guardando, setGuardando] = useState(false);
 
   const cargar = () => api.get('/colaboradores').then(r => setLista(r.data));
-  useEffect(() => { cargar(); api.get('/horarios').then(r => setHorarios(r.data)); }, []);
+  useEffect(() => {
+    cargar();
+    api.get('/horarios').then(r => setHorarios(r.data));
+    api.get('/sedes').then(r => setSedes(r.data)).catch(() => setSedes([]));
+  }, []);
 
   const abrir = (col?: Colaborador) => {
     setEditando(col || null);
-    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '' } : EMPTY);
+    setErrorForm('');
+    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [] } : EMPTY);
     setModal(true);
   };
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form, horarioId: form.horarioId || null };
-    if (editando) await api.put(`/colaboradores/${editando.id}`, payload);
-    else await api.post('/colaboradores', payload);
-    setModal(false);
-    cargar();
+    setGuardando(true);
+    setErrorForm('');
+    try {
+      const payload = {
+        ...form,
+        horarioId: form.horarioId || null,
+        sedeIds: (form.sedeIds as string[]) ?? [],
+        // Fecha vacía debe ir como null (Prisma rechaza el string vacío en un campo de fecha)
+        fechaNacimiento: form.fechaNacimiento ? form.fechaNacimiento : null,
+      };
+      if (editando) await api.put(`/colaboradores/${editando.id}`, payload);
+      else await api.post('/colaboradores', payload);
+      setModal(false);
+      cargar();
+    } catch (err: any) {
+      setErrorForm(err.response?.data?.error ?? 'No pudimos guardar el colaborador. Revisa los datos e intenta de nuevo.');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const confirmarEliminar = async () => {
@@ -68,14 +95,53 @@ export default function Colaboradores() {
 
   const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
+  const limite = plan && !plan.ilimitado ? plan.limite : null; // null = ilimitado
+  const usados = lista.length;
+  const topado = limite != null && usados >= limite;
+  const esEmpresarial = plan?.plan === 'EMPRESARIAL';
+  const pct = limite ? Math.min(100, Math.round((usados / limite) * 100)) : 0;
+
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-4">
         <h2 className="text-2xl font-bold text-ink">Colaboradores</h2>
-        <button onClick={() => abrir()} className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl text-sm font-semibold">
-          <Plus size={16} />Agregar
-        </button>
+        {topado ? (
+          esEmpresarial ? (
+            <a href={WPP_MAS_150} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-[#25D366] hover:brightness-95 text-white px-4 py-2 rounded-xl text-sm font-semibold">
+              <MessageCircle size={16} /> ¿Más de {limite}? Escríbenos
+            </a>
+          ) : (
+            <button onClick={() => navigate('/app/configuracion?tab=suscripcion')}
+              className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl text-sm font-semibold">
+              <ArrowUpRight size={16} /> Subir de plan
+            </button>
+          )
+        ) : (
+          <button onClick={() => abrir()} className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl text-sm font-semibold">
+            <Plus size={16} />Agregar
+          </button>
+        )}
       </div>
+
+      {limite != null && (
+        <div className="bg-white rounded-card border border-gray-200 p-4 mb-4">
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="text-muted">Plan <b className="text-ink">{plan?.nombrePlan}</b> · usas <b className="text-ink">{usados}</b> de <b className="text-ink">{limite}</b> colaboradores</span>
+            {topado && <span className="text-xs font-semibold text-orange-600">Cupo lleno</span>}
+          </div>
+          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${topado ? 'bg-orange-500' : pct >= 80 ? 'bg-amber-400' : 'bg-primary'}`} style={{ width: `${pct}%` }} />
+          </div>
+          {topado && (
+            <p className="text-xs text-muted mt-2">
+              {esEmpresarial
+                ? 'Llegaste al máximo de tu plan. Escríbenos por WhatsApp para un plan a la medida.'
+                : 'Llegaste al límite de tu plan. Sube de plan para agregar más colaboradores.'}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
@@ -161,6 +227,10 @@ export default function Colaboradores() {
                 </select>
               </div>
               <div className="col-span-2">
+                <SelectorSedes sedes={sedes} valor={(form.sedeIds as string[]) ?? []}
+                  onChange={ids => setForm(p => ({ ...p, sedeIds: ids }))} />
+              </div>
+              <div className="col-span-2">
                 <label className="block text-xs font-medium text-muted mb-1">Salario mensual (COP)</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">$</span>
@@ -175,9 +245,10 @@ export default function Colaboradores() {
                   />
                 </div>
               </div>
+              {errorForm && <p className="col-span-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{errorForm}</p>}
               <div className="col-span-2 flex gap-3 justify-end mt-2">
                 <button type="button" onClick={() => setModal(false)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                <button type="submit" className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark">Guardar</button>
+                <button type="submit" disabled={guardando} className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark disabled:opacity-60">{guardando ? 'Guardando...' : 'Guardar'}</button>
               </div>
             </form>
           </div>

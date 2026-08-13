@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Wallet, Power, Link as LinkIcon, Infinity as InfinityIcon, ImagePlus, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, X, Wallet, Power, Link as LinkIcon, Infinity as InfinityIcon, ImagePlus, Trash2, ChevronDown, CalendarClock, Tag, MoreVertical } from 'lucide-react';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
@@ -15,7 +15,7 @@ type EmpresaRow = {
   marcadorToken: string; exentaPago: boolean; activa: boolean;
   colaboradoresActivos: number; tarifaMensual: number;
   estadoSuscripcion: string | null; diasMora: number;
-  pagadoHasta: string | null; finPrueba: string | null;
+  pagadoHasta: string | null; finPrueba: string | null; precioModo: string | null;
 };
 type Cobro = { tipo: string; monto: number; diasRestantes: number; diasMes: number; cubreHasta: string; tarifaMesCompleto: number };
 
@@ -46,6 +46,23 @@ export default function AdminEmpresas() {
   const [cobro, setCobro] = useState<Cobro | null>(null);
   const [formPago, setFormPago] = useState({ monto: 0, metodo: 'MANUAL', nota: '', comprobanteBase64: '' });
   const [guardandoPago, setGuardandoPago] = useState(false);
+  // Ampliar prueba
+  const [ampliando, setAmpliando] = useState<EmpresaRow | null>(null);
+  const [nuevaFecha, setNuevaFecha] = useState('');
+  const [guardandoPrueba, setGuardandoPrueba] = useState(false);
+  // Precio del cliente
+  const [preciando, setPreciando] = useState<EmpresaRow | null>(null);
+  const [formPrecio, setFormPrecio] = useState({ modo: 'GLOBAL', precioFijo: 0, precioTramo1: 0, limiteTramo1: 0, precioTramo2: 0 });
+  const [guardandoPrecio, setGuardandoPrecio] = useState(false);
+  // Menú "más opciones" por fila (posición fija calculada desde el botón)
+  const [menu, setMenu] = useState<{ emp: EmpresaRow; x: number; y: number } | null>(null);
+
+  const abrirMenu = (emp: EmpresaRow, ev: React.MouseEvent) => {
+    const r = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    setMenu({ emp, x: r.right, y: r.bottom + 6 });
+  };
+  // Ejecuta una acción del menú y lo cierra
+  const accionMenu = (fn: () => void) => { fn(); setMenu(null); };
 
   const cargar = () => api.get('/admin/empresas').then(r => setEmpresas(r.data));
   useEffect(() => { cargar(); }, []);
@@ -119,6 +136,53 @@ export default function AdminEmpresas() {
     cargar();
   };
 
+  const abrirAmpliar = (emp: EmpresaRow) => {
+    // Sugiere +7 días desde la fecha de fin de prueba actual (o desde hoy)
+    const base = emp.finPrueba ? new Date(emp.finPrueba) : new Date();
+    const sugerida = new Date(Math.max(base.getTime(), Date.now()) + 7 * 86400000);
+    setNuevaFecha(sugerida.toISOString().slice(0, 10));
+    setAmpliando(emp);
+  };
+
+  const guardarAmpliar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ampliando || !nuevaFecha) return;
+    setGuardandoPrueba(true);
+    try {
+      // Fin del día seleccionado (23:59 Bogotá) para que la prueba cubra ese día completo
+      await api.put(`/admin/empresas/${ampliando.id}/prueba`, { finPrueba: new Date(`${nuevaFecha}T23:59:00-05:00`).toISOString() });
+      setToast('Prueba ampliada');
+      setAmpliando(null);
+      cargar();
+    } finally { setGuardandoPrueba(false); }
+  };
+
+  const abrirPrecio = async (emp: EmpresaRow) => {
+    setPreciando(emp);
+    // Trae el detalle para prellenar el override actual
+    const r = await api.get(`/admin/empresas/${emp.id}`);
+    const s = r.data.suscripcion ?? {};
+    setFormPrecio({
+      modo: s.precioModo ?? 'GLOBAL',
+      precioFijo: s.precioFijo ?? 0,
+      precioTramo1: s.precioTramo1 ?? 0,
+      limiteTramo1: s.limiteTramo1 ?? 0,
+      precioTramo2: s.precioTramo2 ?? 0,
+    });
+  };
+
+  const guardarPrecio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!preciando) return;
+    setGuardandoPrecio(true);
+    try {
+      await api.put(`/admin/empresas/${preciando.id}/precio`, formPrecio);
+      setToast('Precio del cliente actualizado');
+      setPreciando(null);
+      cargar();
+    } finally { setGuardandoPrecio(false); }
+  };
+
   const copiarLinkMarcador = async (emp: EmpresaRow) => {
     await copiarTexto(`${window.location.origin}/marcador/${emp.marcadorToken}`);
     setToast('Link del marcador copiado con éxito');
@@ -166,7 +230,7 @@ export default function AdminEmpresas() {
                 </td>
                 <td className="px-5 py-3.5">
                   {e.estadoSuscripcion && (
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${ESTADO_CHIP[e.estadoSuscripcion] ?? ''}`}>
+                    <span className={`inline-block whitespace-nowrap text-xs font-bold px-2.5 py-1 rounded-full ${ESTADO_CHIP[e.estadoSuscripcion] ?? ''}`}>
                       {e.estadoSuscripcion}{e.estadoSuscripcion === 'EN_MORA' ? ` (${e.diasMora}d)` : ''}
                     </span>
                   )}
@@ -187,17 +251,13 @@ export default function AdminEmpresas() {
                       className="p-2 rounded-lg text-muted hover:bg-primary/30 hover:text-ink">
                       <LinkIcon size={16} />
                     </button>
-                    <button onClick={() => setCambiandoIlimitado(e)} title={e.exentaPago ? 'Quitar acceso ilimitado' : 'Dar acceso ilimitado (no paga)'}
-                      className={`p-2 rounded-lg ${e.exentaPago ? 'text-purple-600 bg-purple-50 hover:bg-purple-100' : 'text-muted hover:bg-purple-50 hover:text-purple-600'}`}>
-                      <InfinityIcon size={16} />
-                    </button>
                     <button onClick={() => abrirPago(e)} title="Registrar pago" disabled={e.exentaPago}
                       className="p-2 rounded-lg text-muted hover:bg-primary/30 hover:text-ink disabled:opacity-30">
                       <Wallet size={16} />
                     </button>
-                    <button onClick={() => setCambiandoEstado(e)} title={e.activa ? 'Desactivar' : 'Activar'}
-                      className={`p-2 rounded-lg ${e.activa ? 'text-muted hover:bg-red-50 hover:text-red-600' : 'text-red-500 hover:bg-green-50 hover:text-green-600'}`}>
-                      <Power size={16} />
+                    <button onClick={ev => abrirMenu(e, ev)} title="Más opciones"
+                      className={`p-2 rounded-lg ${menu?.emp.id === e.id ? 'bg-gray-100 text-ink' : 'text-muted hover:bg-gray-100 hover:text-ink'}`}>
+                      <MoreVertical size={16} />
                     </button>
                   </div>
                 </td>
@@ -300,6 +360,133 @@ export default function AdminEmpresas() {
         onContinuar={confirmarEstado}
         onCancelar={() => setCambiandoEstado(null)}
       />
+
+      {/* Menú "más opciones" de una empresa */}
+      {menu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setMenu(null)} />
+          <div className="fixed z-50 w-56 bg-white rounded-xl border border-gray-200 shadow-xl py-1.5 text-sm"
+            style={{ top: menu.y, left: Math.max(8, menu.x - 224) }}>
+            <button onClick={() => accionMenu(() => setCambiandoIlimitado(menu.emp))}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left hover:bg-gray-50 text-ink">
+              <InfinityIcon size={15} className={menu.emp.exentaPago ? 'text-purple-600' : 'text-muted'} />
+              {menu.emp.exentaPago ? 'Quitar acceso ilimitado' : 'Dar acceso ilimitado'}
+            </button>
+            <button onClick={() => accionMenu(() => abrirAmpliar(menu.emp))}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left hover:bg-gray-50 text-ink">
+              <CalendarClock size={15} className="text-muted" /> Ampliar prueba
+            </button>
+            <button onClick={() => accionMenu(() => abrirPrecio(menu.emp))}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left hover:bg-gray-50 text-ink">
+              <Tag size={15} className={menu.emp.precioModo ? 'text-emerald-600' : 'text-muted'} /> Precio del cliente
+            </button>
+            <div className="border-t border-gray-100 my-1" />
+            <button onClick={() => accionMenu(() => setCambiandoEstado(menu.emp))}
+              className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-left hover:bg-gray-50 ${menu.emp.activa ? 'text-red-600' : 'text-green-700'}`}>
+              <Power size={15} /> {menu.emp.activa ? 'Desactivar empresa' : 'Activar empresa'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Modal ampliar prueba */}
+      {ampliando && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setAmpliando(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={ev => ev.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-lg text-ink flex items-center gap-2"><CalendarClock size={18} className="text-primary-dark" /> Ampliar prueba</h3>
+              <button onClick={() => setAmpliando(null)} className="text-muted hover:text-ink"><X size={20} /></button>
+            </div>
+            <p className="text-sm text-muted mb-4">
+              {ampliando.nombre} · prueba actual hasta {ampliando.finPrueba ? new Date(ampliando.finPrueba).toLocaleDateString('es-CO') : '—'}.
+            </p>
+            <form onSubmit={guardarAmpliar} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">Nueva fecha de fin de prueba</label>
+                <input type="date" value={nuevaFecha} onChange={ev => setNuevaFecha(ev.target.value)} required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              {!ampliando.pagadoHasta && (ampliando.estadoSuscripcion === 'SUSPENDIDA' || ampliando.estadoSuscripcion === 'EN_MORA') && (
+                <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">Esto reactivará la empresa (volverá a estado de prueba).</p>
+              )}
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setAmpliando(null)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                <button type="submit" disabled={guardandoPrueba}
+                  className="px-4 py-2 text-sm bg-primary hover:bg-primary-dark text-ink font-semibold rounded-lg disabled:opacity-60">
+                  {guardandoPrueba ? 'Guardando...' : 'Ampliar prueba'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal precio del cliente */}
+      {preciando && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPreciando(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={ev => ev.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-lg text-ink flex items-center gap-2"><Tag size={18} className="text-emerald-600" /> Precio del cliente</h3>
+              <button onClick={() => setPreciando(null)} className="text-muted hover:text-ink"><X size={20} /></button>
+            </div>
+            <p className="text-sm text-muted mb-4">{preciando.nombre} · define un precio propio o usa el global de la plataforma.</p>
+            <form onSubmit={guardarPrecio} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">Modo de precio</label>
+                <select value={formPrecio.modo} onChange={ev => setFormPrecio(p => ({ ...p, modo: ev.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                  <option value="GLOBAL">Precio global de la plataforma</option>
+                  <option value="FIJO">Precio fijo mensual</option>
+                  <option value="TRAMOS">Tarifa por colaborador propia</option>
+                </select>
+              </div>
+
+              {formPrecio.modo === 'FIJO' && (
+                <div>
+                  <label className="block text-xs font-medium text-muted mb-1">Valor fijo mensual (COP)</label>
+                  <input inputMode="numeric" value={formatearMiles(formPrecio.precioFijo)}
+                    onChange={ev => setFormPrecio(p => ({ ...p, precioFijo: parsearMiles(ev.target.value) }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                  <p className="text-xs text-muted mt-1">Se cobra igual sin importar cuántos colaboradores tenga.</p>
+                </div>
+              )}
+
+              {formPrecio.modo === 'TRAMOS' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-muted mb-1">Precio por colaborador (tramo 1)</label>
+                      <input inputMode="numeric" value={formatearMiles(formPrecio.precioTramo1)}
+                        onChange={ev => setFormPrecio(p => ({ ...p, precioTramo1: parsearMiles(ev.target.value) }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted mb-1">Hasta cuántos colaboradores</label>
+                      <input type="number" min={1} step={1} value={formPrecio.limiteTramo1}
+                        onChange={ev => setFormPrecio(p => ({ ...p, limiteTramo1: Number(ev.target.value) }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted mb-1">Precio por colaborador extra (tramo 2)</label>
+                    <input inputMode="numeric" value={formatearMiles(formPrecio.precioTramo2)}
+                      onChange={ev => setFormPrecio(p => ({ ...p, precioTramo2: parsearMiles(ev.target.value) }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button type="button" onClick={() => setPreciando(null)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                <button type="submit" disabled={guardandoPrecio}
+                  className="px-4 py-2 text-sm bg-primary hover:bg-primary-dark text-ink font-semibold rounded-lg disabled:opacity-60">
+                  {guardandoPrecio ? 'Guardando...' : 'Guardar precio'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Confirmación acceso ilimitado */}
       <ConfirmDialog

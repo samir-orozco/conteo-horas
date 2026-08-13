@@ -2,12 +2,14 @@ import { FastifyInstance } from 'fastify';
 import { prisma, JwtPayload } from '../index';
 import {
   estadoEfectivo, diasDeMora, sincronizarEstado, aplicarPagoAprobado,
-  obtenerPrecios, calcularCobro,
+  obtenerPrecios, calcularCobro, prorrateo,
 } from '../utils/suscripcion';
 import {
-  wompiConfigurado, referenciaPago, firmaIntegridad, empresaIdDeReferencia,
+  wompiConfigurado, referenciaPago, referenciaUpgrade, planDeReferencia, firmaIntegridad, empresaIdDeReferencia,
   consultarTransaccion, consultarPorReferencia, WOMPI_CHECKOUT_URL, WOMPI_PUBLIC_KEY, WOMPI_PRIVATE_KEY,
 } from '../utils/wompi';
+import { capacidadesEmpresa } from '../utils/capacidades';
+import { esPlan, precioMensualDe, obtenerPlanes, PLAN_IDS } from '../utils/planes';
 
 // Estado de cuenta y pago de la propia empresa.
 // No usa requireEmpresa: una empresa SUSPENDIDA necesita entrar aquí para pagar.
@@ -26,6 +28,70 @@ export default async function suscripcionRoutes(app: FastifyInstance) {
     }
     return payload.empresaId;
   }
+
+  // Plan, cupo y funciones activas de la empresa (para bloquear/mostrar en la app)
+  app.get('/mi-plan', async (request, reply) => {
+    const empresaId = await empresaDelToken(request, reply);
+    if (!empresaId) return;
+    const [cap, colaboradores, planesMap] = await Promise.all([
+      capacidadesEmpresa(empresaId),
+      prisma.colaborador.count({ where: { empresaId, activo: true } }),
+      obtenerPlanes(prisma),
+    ]);
+    return {
+      ...cap,
+      limite: cap.limite === Infinity ? null : cap.limite, // null = ilimitado (JSON no maneja Infinity)
+      colaboradores,
+      // Los 3 planes con precios/límites reales (para la pantalla de cambio de plan)
+      planes: PLAN_IDS.map(id => planesMap[id]),
+    };
+  });
+
+  // Cambiar de plan. Si sube de plan estando al día, cobra la diferencia
+  // prorrateada por los días que faltan del mes; si no, cambia directo.
+  app.post('/cambiar-plan', async (request, reply) => {
+    const empresaId = await empresaDelToken(request, reply);
+    if (!empresaId) return;
+    const { plan } = (request.body ?? {}) as { plan?: string };
+    if (!esPlan(plan)) return reply.status(400).send({ error: 'Plan inválido' });
+
+    const empresa = await prisma.empresa.findUnique({ where: { id: empresaId }, include: { suscripcion: true } });
+    if (!empresa?.suscripcion) return reply.status(404).send({ error: 'Sin suscripción' });
+    if (empresa.exentaPago) return reply.status(400).send({ error: 'Esta empresa tiene acceso ilimitado; el plan lo maneja el administrador de HoraPro.' });
+
+    const susc = empresa.suscripcion;
+    if (susc.plan === plan) return reply.status(400).send({ error: 'Ya tienes ese plan' });
+
+    const planes = await obtenerPlanes(prisma);
+    const ahora = new Date();
+    const alDia = !!susc.pagadoHasta && susc.pagadoHasta > ahora;
+    const precioActual = precioMensualDe(susc, false, planes);
+    const precioNuevo = planes[plan].precioMensual;
+
+    // Cambio directo (sin cobro): en prueba, bajando de plan, o si Wompi no está configurado
+    if (!alDia || precioNuevo <= precioActual || !wompiConfigurado()) {
+      await prisma.suscripcion.update({ where: { empresaId }, data: { plan } });
+      return { cambiado: true };
+    }
+
+    // Sube de plan estando al día → diferencia prorrateada
+    const { factor, diasRestantes, diasMes } = prorrateo(ahora);
+    const diferencia = Math.max(0, Math.round((precioNuevo - precioActual) * factor));
+    if (diferencia <= 0) {
+      await prisma.suscripcion.update({ where: { empresaId }, data: { plan } });
+      return { cambiado: true };
+    }
+    const reference = referenciaUpgrade(empresaId, plan, susc.pagadoHasta!);
+    const amountInCents = diferencia * 100;
+    return {
+      requierePago: true, plan, nombrePlan: planes[plan].nombre, diferencia, diasRestantes, diasMes,
+      checkout: {
+        url: WOMPI_CHECKOUT_URL, publicKey: WOMPI_PUBLIC_KEY, currency: 'COP',
+        amountInCents, reference, signature: firmaIntegridad(reference, amountInCents),
+        verificacionDisponible: Boolean(WOMPI_PRIVATE_KEY),
+      },
+    };
+  });
 
   // Estado de cuenta + cobro del período + datos para el Web Checkout de Wompi
   app.get('/', async (request, reply) => {
@@ -99,6 +165,11 @@ export default async function suscripcionRoutes(app: FastifyInstance) {
       metodo: 'LINK_WOMPI',
       wompiTransaccionId: tx.id,
     });
+    // Si era un pago de cambio de plan, aplica el plan destino
+    const planUpg = planDeReferencia(tx.reference);
+    if (planUpg && esPlan(planUpg)) {
+      await prisma.suscripcion.update({ where: { empresaId }, data: { plan: planUpg } });
+    }
     return { estado: 'APPROVED', pago };
   });
 

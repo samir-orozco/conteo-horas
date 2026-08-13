@@ -3,7 +3,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './prisma';
 
 import authRoutes from './routes/auth';
 import colaboradorRoutes from './routes/colaboradores';
@@ -14,20 +14,32 @@ import configuracionRoutes from './routes/configuracion';
 import reporteRoutes from './routes/reportes';
 import workerRoutes from './routes/worker';
 import adminRoutes from './routes/admin';
+import afiliadoAdminRoutes from './routes/afiliados';
+import afiliadoPanelRoutes from './routes/afiliado-panel';
 import wompiRoutes from './routes/wompi';
 import suscripcionRoutes from './routes/suscripcion';
 import horarioRoutes from './routes/horarios';
+import sedeRoutes from './routes/sedes';
 import dashboardRoutes from './routes/dashboard';
+import telegramRoutes from './routes/telegram';
+import notificacionRoutes from './routes/notificaciones';
+import { configurarWebhook } from './utils/telegram';
+import { cerrarTurnosOlvidados } from './utils/cierreTurnos';
+import { avisarAlmuerzosSinRegreso } from './utils/cierreAlmuerzo';
+import { mantenerVentana } from './utils/materializarDias';
 import { estadoEfectivo, accesoPermitido } from './utils/suscripcion';
 
-export const prisma = new PrismaClient();
+// Reexportado por compatibilidad: media base de código hace `import { prisma }
+// from '../index'`. El cliente ahora vive en `./prisma` (ver el porqué allí).
+export { prisma };
 
 export type JwtPayload = {
   id: string;
   email?: string;
-  rol: 'SUPER_ADMIN' | 'ADMIN' | 'SUPERVISOR' | 'WORKER';
+  rol: 'SUPER_ADMIN' | 'ADMIN' | 'SUPERVISOR' | 'WORKER' | 'AFILIADO';
   nombre: string;
   empresaId: string | null;
+  afiliadoId?: string | null;
 };
 
 const esProduccion = process.env.NODE_ENV === 'production';
@@ -111,6 +123,20 @@ app.decorate('requireSuperAdmin', async (request: any, reply: any) => {
   }
 });
 
+// Afiliado (programa de referidos): exige rol AFILIADO con su afiliadoId
+app.decorate('requireAfiliado', async (request: any, reply: any) => {
+  try {
+    await request.jwtVerify();
+  } catch {
+    return reply.status(401).send({ error: 'No autorizado' });
+  }
+  const payload = request.user as JwtPayload;
+  if (payload.rol !== 'AFILIADO' || !payload.afiliadoId) {
+    return reply.status(403).send({ error: 'Requiere cuenta de afiliado' });
+  }
+  request.afiliadoId = payload.afiliadoId;
+});
+
 app.register(authRoutes, { prefix: '/api/auth' });
 app.register(colaboradorRoutes, { prefix: '/api/colaboradores' });
 app.register(registroRoutes, { prefix: '/api/registros' });
@@ -118,12 +144,17 @@ app.register(permisoRoutes, { prefix: '/api/permisos' });
 app.register(festivoRoutes, { prefix: '/api/festivos' });
 app.register(configuracionRoutes, { prefix: '/api/configuracion' });
 app.register(reporteRoutes, { prefix: '/api/reportes' });
+app.register(sedeRoutes, { prefix: '/api/sedes' });
 app.register(workerRoutes, { prefix: '/api/worker' });
 app.register(adminRoutes, { prefix: '/api/admin' });
+app.register(afiliadoAdminRoutes, { prefix: '/api/admin/afiliados' });
+app.register(afiliadoPanelRoutes, { prefix: '/api/afiliado' });
 app.register(wompiRoutes, { prefix: '/api/wompi' });
 app.register(suscripcionRoutes, { prefix: '/api/suscripcion' });
 app.register(horarioRoutes, { prefix: '/api/horarios' });
 app.register(dashboardRoutes, { prefix: '/api/dashboard' });
+app.register(telegramRoutes, { prefix: '/api/telegram' });
+app.register(notificacionRoutes, { prefix: '/api/notificaciones' });
 
 app.get('/api/health', async () => ({ status: 'ok' }));
 
@@ -153,6 +184,24 @@ const start = async () => {
     console.log('HoraPro API corriendo en puerto 3001');
     limpiarFotosAntiguas();
     setInterval(limpiarFotosAntiguas, 24 * 60 * 60 * 1000);
+    // Cierra turnos que quedaron sin salida (marca "No marcó salida" para revisar).
+    // Al arrancar y cada 24h; es idempotente y solo actúa sobre días ya pasados.
+    cerrarTurnosOlvidados(app.log);
+    setInterval(() => cerrarTurnosOlvidados(app.log), 24 * 60 * 60 * 1000);
+
+    // Almuerzos que quedaron sin regreso. No se cierran solos: la evidencia de
+    // quien volvió y no marcó es idéntica a la de quien se fue para la casa, así
+    // que darle la tarde por buena sería fabricar horas pagadas. Se avisa.
+    avisarAlmuerzosSinRegreso(app.log);
+    setInterval(() => avisarAlmuerzosSinRegreso(app.log), 24 * 60 * 60 * 1000);
+    // Materializa el día esperado de cada colaborador para hoy y las próximas
+    // semanas. Sin esto la tabla se queda vacía y todo se resuelve con el
+    // horario VIGENTE, que es justo lo que reescribía el pasado.
+    // Es idempotente y solo escribe donde falta, así que correr de más no daña.
+    mantenerVentana(app.log);
+    setInterval(() => mantenerVentana(app.log), 24 * 60 * 60 * 1000);
+    // Registra el webhook del bot de Telegram (si hay URL configurada)
+    if (process.env.TELEGRAM_WEBHOOK_URL) configurarWebhook(process.env.TELEGRAM_WEBHOOK_URL);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

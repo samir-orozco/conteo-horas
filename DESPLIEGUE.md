@@ -2,18 +2,16 @@
 
 Guía paso a paso. Sigue el orden.
 
-> **Dominio del despliegue inicial: `horapro.krumlab.com`** (subdominio de krumlab.com).
-> Donde la guía diga `horapro.krumlab.com`, cuando actives horapro.co bastará con cambiar
-> 4 valores: `FRONTEND_ORIGIN` (backend), `VITE_API_URL` (frontend, requiere re-build),
-> la **URL de Eventos** en el panel de Wompi y el link del kiosco que compartan las empresas.
+> **Dominio: `horapro.co`** (migrado desde el despliegue inicial en el subdominio
+> `horapro.krumlab.com`, que se dejó como redirección 301 durante la transición).
 
 ## 1. Subdominio y SSL (obligatorio)
 
 1. cPanel de krumlab.com → **Domains** (o **Subdomains**) → Create a New Domain:
-   - Dominio: `horapro.krumlab.com`
-   - Document Root: `public_html/horapro` (ahí vivirá el frontend)
-2. cPanel → **SSL/TLS Status** → activa **AutoSSL** para `horapro.krumlab.com` (suele activarse solo a los pocos minutos de crear el subdominio).
-3. Verifica que `https://horapro.krumlab.com` responda con candado. **Sin HTTPS el reconocimiento facial no funciona** (los navegadores bloquean la cámara en sitios sin candado).
+   - Dominio: `horapro.co`
+   - Document Root: **`~/horapro.co/`** (ahí vivirá el frontend — OJO: es esta carpeta, NO `public_html/horapro`; cPanel crea el docroot del subdominio en `~/horapro.co/`)
+2. cPanel → **SSL/TLS Status** → activa **AutoSSL** para `horapro.co` (suele activarse solo a los pocos minutos de crear el subdominio).
+3. Verifica que `https://horapro.co` responda con candado. **Sin HTTPS el reconocimiento facial no funciona** (los navegadores bloquean la cámara en sitios sin candado).
 
 ## 2. Base de datos MySQL
 
@@ -38,21 +36,21 @@ Guía paso a paso. Sigue el orden.
    ```
    > Guarda la contraseña del super admin que imprime el seed: no se vuelve a mostrar.
 3. Reinicia la app en Setup Node.js App.
-4. Prueba: `https://horapro.krumlab.com/api/health` debe responder `{"status":"ok"}`.
-   (Si el panel de Node no publica en `/api`, crea la app con URL `horapro.krumlab.com/api`.)
+4. Prueba: `https://horapro.co/api/health` debe responder `{"status":"ok"}`.
+   (Si el panel de Node no publica en `/api`, crea la app con URL `horapro.co/api`.)
 
 ## 4. Frontend (React estático)
 
 En tu máquina:
 ```bash
 cd frontend
-cp .env.example .env          # VITE_API_URL=https://horapro.krumlab.com/api
+cp .env.example .env          # VITE_API_URL=https://horapro.co/api
 npm install
 npm run build
 ```
-Sube el contenido de `frontend/dist/` a `public_html/horapro/` (incluida la carpeta `models/` con los pesos del reconocimiento facial).
+Sube el contenido de `frontend/dist/` a **`~/horapro.co/`** (el docroot real del subdominio, incluida la carpeta `models/` con los pesos del reconocimiento facial). En deploys posteriores: `rm -rf ~/horapro.co/assets && cp -R ~/horapro-repo/frontend/dist/. ~/horapro.co/` (no borres `.htaccess`, `models/` ni `api/`).
 
-Crea `public_html/horapro/.htaccess` para que React Router maneje las rutas:
+Crea `~/horapro.co/.htaccess` para que React Router maneje las rutas:
 ```apache
 RewriteEngine On
 RewriteBase /
@@ -73,12 +71,40 @@ RewriteRule . /index.html [L]
 
 | Variable | Valor en producción |
 |---|---|
-| `DATABASE_URL` | `mysql://usuario:clave@localhost:3306/bd` |
+| `DATABASE_URL` | `mysql://usuario:clave@localhost:3306/bd?connection_limit=5&pool_timeout=10` (⚠️ ver 6.1, no lo pongas sin los parámetros) |
 | `JWT_SECRET` | `openssl rand -hex 32` (el servidor **no arranca** sin él) |
 | `NODE_ENV` | `production` |
-| `FRONTEND_ORIGIN` | `https://horapro.krumlab.com` (restringe CORS y arma los links de correo) |
+| `FRONTEND_ORIGIN` | `https://horapro.co` (restringe CORS y arma los links de correo) |
+| `TOKIO_WORKER_THREADS` | `1` (ver 6.1) |
+| `UV_THREADPOOL_SIZE` | `2` (ver 6.1) |
 | `WOMPI_*` | llaves de **producción** (ver sección 7) |
 | `SMTP_*` | buzón creado en el paso 5 |
+
+### 6.1 ⚠️ Prisma en Banahosting: por qué estas variables son obligatorias, no opcionales
+
+El motor de Prisma es un binario nativo (Rust) que dimensiona sus hilos y su pool
+de conexiones según las CPU que **ve el sistema físico** del servidor — no las que
+tiene asignada tu cuenta. En Banahosting eso son 64-88 CPUs (medido en dos
+servidores distintos), así que sin estas variables Prisma intenta abrir más de
+100 conexiones a MySQL contra un usuario que normalmente tiene un tope de 10-25,
+y usa el mismo criterio para abrir hilos del sistema operativo — contra el límite
+`NPROC` de CloudLinux. **El 24/07/2026 esto tumbó los procesos de toda una cuenta
+de Banahosting** (otro proyecto, misma cuenta que hospeda HoraPro):
+`bash: fork: Resource temporarily unavailable` en SSH y en la Terminal de cPanel,
+sin poder ni entrar a arreglarlo.
+
+- **`DATABASE_URL` con `?connection_limit=5&pool_timeout=10`:** limita el pool de
+  conexiones de Prisma a 5 (de sobra para el tráfico de HoraPro) y hace que una
+  consulta sin conexión libre falle a los 10s en vez de colgarse indefinidamente.
+- **`TOKIO_WORKER_THREADS=1` y `UV_THREADPOOL_SIZE=2`** (cPanel → Setup Node.js
+  App → Environment variables, **no** en el `.env`): limitan los hilos del
+  runtime async de Rust (Tokio, usado por el motor de Prisma) y del threadpool de
+  libuv de Node. Sin esto, ambos se dimensionan solos según las CPU físicas del
+  host, igual que el pool de conexiones.
+
+**Aplica las cuatro en cualquier app Node de esta cuenta que use Prisma** — no
+solo en `horapro-co-api`. Si hay una app vieja corriendo en paralelo (ver nota del
+dominio, arriba) y usa Prisma, confirma que también las tenga.
 
 ## 7. Wompi en producción
 
@@ -93,7 +119,7 @@ RewriteRule . /index.html [L]
    - `WOMPI_INTEGRITY_SECRET` = botón Mostrar de "Integridad"
    - `WOMPI_API_URL` = `https://production.wompi.co/v1`
 2. En la misma sección, en **Seguimiento de transacciones → URL de Eventos**, escribe
-   `https://horapro.krumlab.com/api/wompi/eventos` y presiona Guardar — así los pagos se confirman
+   `https://horapro.co/api/wompi/eventos` y presiona Guardar — así los pagos se confirman
    solos aunque el cliente cierre la pestaña. (Se puede guardar desde ya, aunque el dominio
    aún no esté publicado; Wompi empezará a entregar eventos cuando el sitio responda.)
 3. Reinicia la app Node y haz un pago real de prueba (puedes pagar tú mismo el plan de una empresa de prueba y luego reembolsarlo desde el panel de Wompi).
@@ -105,8 +131,8 @@ Las fotos de verificación facial viven en la BD y se auto-eliminan a los 2 mese
 
 ## 9. Checklist final antes de anunciar
 
-- [ ] `https://horapro.krumlab.com` con candado (SSL)
-- [ ] `https://horapro.krumlab.com/api/health` responde ok
+- [ ] `https://horapro.co` con candado (SSL)
+- [ ] `https://horapro.co/api/health` responde ok
 - [ ] Registro de una empresa nueva funciona de punta a punta
 - [ ] Kiosco: marcación con cédula y con rostro **desde la tablet real**
 - [ ] "¿Olvidaste tu contraseña?" llega al correo

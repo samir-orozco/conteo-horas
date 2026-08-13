@@ -1,22 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import {
   ArrowLeft, Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
-  ScanFace, Check, Trash2, ShieldCheck,
+  ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Download, Lock,
 } from 'lucide-react';
 import api from '../lib/api';
 import { formatearMiles, parsearMiles, resumenFranjas, type Franja } from './Colaboradores';
 import CamaraRostro from '../components/CamaraRostro';
 import ConfirmDialog from '../components/ConfirmDialog';
+import SelectorSedes from '../components/SelectorSedes';
 import Toast from '../components/Toast';
+import CampoEvidencia, { type CambioEvidencia } from '../components/CampoEvidencia';
+import { TIPO_PERMISO_LABEL } from '../constants/permisos';
+import { useMiPlan } from '../lib/plan';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
 type Colaborador = {
   id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
   email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean;
   horarioId?: string | null; horario?: Horario | null; rostroEnroladoEn?: string | null;
+  sedeIds?: string[];
 };
 type Tardanzas = {
   sinHorario: boolean;
@@ -26,7 +32,7 @@ type Tardanzas = {
 
 const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`);
 type Registro = { id: string; fecha: string; entrada?: string; salida?: string; tipo: string; observacion?: string };
-type Permiso = { id: string; fechaInicio: string; fechaFin: string; tipo: string; descripcion?: string; aprobado: boolean };
+type Permiso = { id: string; fechaInicio: string; fechaFin: string; tipo: string; descripcion?: string; aprobado: boolean; evidenciaTipo?: string | null; evidenciaNombre?: string | null };
 type Liquidacion = {
   liquidacion: { codigo: string; nombre: string; horas: number; recargo: number; esExtra: boolean; factorPagado: number; subtotal: number }[];
   salarioBase: number; totalRecargos: number; totalExtra: number; totalAdicional: number;
@@ -35,19 +41,9 @@ type Liquidacion = {
 
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
-export const TIPO_PERMISO_LABEL: Record<string, string> = {
-  VACACIONES: 'Vacaciones',
-  INCAPACIDAD_EPS: 'Incapacidad (EPS)',
-  INCAPACIDAD_ARL: 'Incapacidad laboral (ARL)',
-  LICENCIA_MATERNIDAD: 'Licencia de maternidad',
-  LICENCIA_PATERNIDAD: 'Licencia de paternidad',
-  LICENCIA_LUTO: 'Licencia por luto',
-  CALAMIDAD: 'Calamidad doméstica',
-  MEDICO: 'Cita médica',
-  PERSONAL: 'Permiso personal',
-  NO_REMUNERADO: 'Permiso no remunerado',
-  OTRO: 'Otro',
-};
+// Reexportado para no romper a Reportes/Marcador, que aún lo importan desde aquí.
+// La definición vive en constants/permisos.ts (arriba se importa a este scope).
+export { TIPO_PERMISO_LABEL };
 
 const EMPTY_NOVEDAD = { tipo: 'VACACIONES', fechaInicio: '', fechaFin: '', descripcion: '', aprobado: true };
 
@@ -55,17 +51,27 @@ export default function ColaboradorDetalle() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const { plan } = useMiPlan();
   const [col, setCol] = useState<Colaborador | null>(null);
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [permisos, setPermisos] = useState<Permiso[]>([]);
   const [liq, setLiq] = useState<Liquidacion | null>(null);
   const [tardanzas, setTardanzas] = useState<Tardanzas | null>(null);
   const [horarios, setHorarios] = useState<Horario[]>([]);
+  const [sedes, setSedes] = useState<{ id: string; nombre: string }[]>([]);
 
   const [modalEditar, setModalEditar] = useState(false);
   const [formEdit, setFormEdit] = useState<any>(null);
   const [modalNovedad, setModalNovedad] = useState(false);
   const [novedad, setNovedad] = useState(EMPTY_NOVEDAD);
+  const [errorNovedad, setErrorNovedad] = useState('');
+  const [guardandoNovedad, setGuardandoNovedad] = useState(false);
+  const [verNovedad, setVerNovedad] = useState<Permiso | null>(null);
+  const [editandoNovedad, setEditandoNovedad] = useState<Permiso | null>(null);
+  const [aprobando, setAprobando] = useState(false);
+  const [cambioEvidencia, setCambioEvidencia] = useState<CambioEvidencia>({ tipo: 'sin-cambio' });
+  const [evidenciaVer, setEvidenciaVer] = useState<{ data: string; tipo: string; nombre?: string | null } | null>(null);
+  const [cargandoEvidencia, setCargandoEvidencia] = useState(false);
 
   const [consentimientoRostro, setConsentimientoRostro] = useState(false);
   const [usaGafas, setUsaGafas] = useState(false);
@@ -88,22 +94,52 @@ export default function ColaboradorDetalle() {
     api.get('/reportes/liquidacion', { params: { colaboradorId: id, desde: iso(inicioMes), hasta: iso(hoy) } }).then(r => setLiq(r.data));
     api.get('/reportes/tardanzas', { params: { colaboradorId: id, desde: iso(inicioMes), hasta: iso(hoy) } }).then(r => setTardanzas(r.data));
     api.get('/horarios').then(r => setHorarios(r.data));
+    api.get('/sedes').then(r => setSedes(r.data)).catch(() => setSedes([]));
   }, [id]);
   useEffect(() => { cargar(); }, [cargar]);
 
   const guardarEdicion = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api.put(`/colaboradores/${id}`, { ...formEdit, horarioId: formEdit.horarioId || null });
+    await api.put(`/colaboradores/${id}`, { ...formEdit, horarioId: formEdit.horarioId || null, sedeIds: formEdit.sedeIds ?? [] });
     setModalEditar(false);
     cargar();
   };
 
   const guardarNovedad = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api.post('/permisos', { ...novedad, colaboradorId: id });
-    setModalNovedad(false);
-    setNovedad(EMPTY_NOVEDAD);
-    cargar();
+    if (novedad.fechaFin < novedad.fechaInicio) {
+      setErrorNovedad('La fecha "Hasta" no puede ser anterior a "Desde".');
+      return;
+    }
+    setGuardandoNovedad(true);
+    setErrorNovedad('');
+    try {
+      const datos: any = {
+        ...novedad,
+        colaboradorId: id,
+        // Medianoche de Bogotá (Colombia siempre es UTC-5, sin horario de verano):
+        // evita que la fecha se corra un día por zona horaria.
+        fechaInicio: new Date(`${novedad.fechaInicio}T00:00:00-05:00`),
+        fechaFin: new Date(`${novedad.fechaFin}T00:00:00-05:00`),
+      };
+      if (cambioEvidencia.tipo === 'nuevo') {
+        datos.evidencia = cambioEvidencia.evidencia.data;
+        datos.evidenciaNombre = cambioEvidencia.evidencia.nombre;
+      } else if (cambioEvidencia.tipo === 'quitar') {
+        datos.evidencia = null;
+      }
+      if (editandoNovedad) await api.put(`/permisos/${editandoNovedad.id}`, datos);
+      else await api.post('/permisos', datos);
+      setModalNovedad(false);
+      setNovedad(EMPTY_NOVEDAD);
+      setEditandoNovedad(null);
+      setToast(editandoNovedad ? 'Novedad actualizada' : 'Novedad registrada');
+      cargar();
+    } catch (err: any) {
+      setErrorNovedad(err.response?.data?.error ?? 'No pudimos guardar la novedad. Intenta de nuevo.');
+    } finally {
+      setGuardandoNovedad(false);
+    }
   };
 
   const capturarRostro = async (descriptores: number[][]) => {
@@ -127,6 +163,51 @@ export default function ColaboradorDetalle() {
     setConfirmarEliminarRostro(false);
     setToast('Registro facial eliminado');
     cargar();
+  };
+
+  const aprobarNovedad = async () => {
+    if (!verNovedad) return;
+    setAprobando(true);
+    try {
+      await api.put(`/permisos/${verNovedad.id}`, { aprobado: true });
+      setVerNovedad(null);
+      setToast('Novedad aprobada');
+      cargar();
+    } catch {
+      setToast('No pudimos aprobar la novedad');
+    } finally {
+      setAprobando(false);
+    }
+  };
+
+  // Abre el formulario de novedad pre-llenado para editar una existente
+  const editarNovedad = (p: Permiso) => {
+    const aFecha = (iso: string) => format(toZonedTime(new Date(iso), 'America/Bogota'), 'yyyy-MM-dd');
+    setEditandoNovedad(p);
+    setNovedad({
+      tipo: p.tipo,
+      fechaInicio: aFecha(p.fechaInicio),
+      fechaFin: aFecha(p.fechaFin),
+      descripcion: p.descripcion ?? '',
+      aprobado: p.aprobado,
+    });
+    setCambioEvidencia({ tipo: 'sin-cambio' });
+    setErrorNovedad('');
+    setVerNovedad(null);
+    setModalNovedad(true);
+  };
+
+  // Trae la evidencia (base64) de una novedad para verla/descargarla
+  const verEvidencia = async (permisoId: string) => {
+    setCargandoEvidencia(true);
+    try {
+      const r = await api.get(`/permisos/${permisoId}/evidencia`);
+      setEvidenciaVer({ data: r.data.evidencia, tipo: r.data.evidenciaTipo, nombre: r.data.evidenciaNombre });
+    } catch {
+      setToast('No pudimos abrir la evidencia');
+    } finally {
+      setCargandoEvidencia(false);
+    }
   };
 
   if (!col) return <div className="p-8 text-muted">Cargando...</div>;
@@ -162,7 +243,7 @@ export default function ColaboradorDetalle() {
           <div className="flex items-center justify-between mb-3">
             <p className="font-semibold text-ink">Datos</p>
             <button
-              onClick={() => { setFormEdit({ nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: col.fechaNacimiento ? new Date(col.fechaNacimiento).toISOString().slice(0, 10) : '', salarioMensual: col.salarioMensual, horarioId: col.horarioId || '' }); setModalEditar(true); }}
+              onClick={() => { setFormEdit({ nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: col.fechaNacimiento ? new Date(col.fechaNacimiento).toISOString().slice(0, 10) : '', salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [] }); setModalEditar(true); }}
               className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary/40 hover:bg-primary px-2.5 py-1.5 rounded-lg">
               <Edit2 size={13} /> Editar
             </button>
@@ -299,7 +380,7 @@ export default function ColaboradorDetalle() {
         <div className="bg-white rounded-card border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="font-semibold text-ink flex items-center gap-2"><CalendarOff size={16} /> Novedades</p>
-            <button onClick={() => setModalNovedad(true)}
+            <button onClick={() => { setErrorNovedad(''); setEditandoNovedad(null); setNovedad(EMPTY_NOVEDAD); setCambioEvidencia({ tipo: 'sin-cambio' }); setModalNovedad(true); }}
               className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-2.5 py-1.5 rounded-lg">
               <Plus size={13} /> Agregar
             </button>
@@ -308,18 +389,19 @@ export default function ColaboradorDetalle() {
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {permisos.length === 0 && <p className="text-sm text-muted">Sin novedades registradas.</p>}
             {permisos.map(p => (
-              <div key={p.id} className="flex items-start justify-between gap-2 bg-gray-50 rounded-xl px-3.5 py-2.5">
-                <div>
+              <button key={p.id} onClick={() => setVerNovedad(p)}
+                className="w-full flex items-start justify-between gap-2 bg-gray-50 hover:bg-gray-100 rounded-xl px-3.5 py-2.5 text-left transition-colors">
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink">{TIPO_PERMISO_LABEL[p.tipo] ?? p.tipo}</p>
-                  <p className="text-xs text-muted">
+                  <p className="text-xs text-muted truncate">
                     {format(new Date(p.fechaInicio), 'd MMM', { locale: es })} → {format(new Date(p.fechaFin), 'd MMM yyyy', { locale: es })}
                     {p.descripcion ? ` · ${p.descripcion}` : ''}
                   </p>
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${p.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
                   {p.aprobado ? 'APROBADA' : 'PENDIENTE'}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -393,6 +475,10 @@ export default function ColaboradorDetalle() {
                 </select>
               </div>
               <div className="col-span-2">
+                <SelectorSedes sedes={sedes} valor={formEdit.sedeIds ?? []}
+                  onChange={ids => setFormEdit((p: object) => ({ ...p, sedeIds: ids }))} />
+              </div>
+              <div className="col-span-2">
                 <label className="block text-xs font-medium text-muted mb-1">Salario mensual (COP)</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">$</span>
@@ -415,8 +501,8 @@ export default function ColaboradorDetalle() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg text-ink">Nueva novedad</h3>
-              <button onClick={() => setModalNovedad(false)}><X size={20} className="text-gray-400" /></button>
+              <h3 className="font-bold text-lg text-ink">{editandoNovedad ? 'Editar novedad' : 'Nueva novedad'}</h3>
+              <button onClick={() => { setModalNovedad(false); setEditandoNovedad(null); }}><X size={20} className="text-gray-400" /></button>
             </div>
             <form onSubmit={guardarNovedad} className="space-y-4">
               <div>
@@ -439,15 +525,104 @@ export default function ColaboradorDetalle() {
                 <label className="block text-xs font-medium text-muted mb-1">Descripción (opcional)</label>
                 <input value={novedad.descripcion} onChange={e => setNovedad(p => ({ ...p, descripcion: e.target.value }))} className={input} placeholder="Ej: vacaciones anuales" />
               </div>
+              {(!plan || plan.features.evidencia) ? (
+                <div>
+                  <label className="block text-xs font-medium text-muted mb-1">Evidencia (opcional)</label>
+                  <CampoEvidencia
+                    existente={editandoNovedad?.evidenciaTipo ? { tipo: editandoNovedad.evidenciaTipo, nombre: editandoNovedad.evidenciaNombre } : null}
+                    onCambio={setCambioEvidencia}
+                  />
+                </div>
+              ) : (
+                <button type="button" onClick={() => navigate('/app/configuracion?tab=suscripcion')}
+                  className="w-full flex items-center gap-3 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-left hover:bg-gray-50">
+                  <Lock size={16} className="text-muted shrink-0" />
+                  <span className="flex-1 text-sm text-muted">¿Quieres adjuntar <b className="text-ink">evidencia</b> (incapacidad, permiso)? Cambia al plan <b className="text-ink">Profesional</b> o <b className="text-ink">Empresarial</b>.</span>
+                  <span className="text-xs font-semibold text-ink bg-primary/40 px-2.5 py-1 rounded-lg shrink-0">Subir de plan</span>
+                </button>
+              )}
               <label className="flex items-center gap-2 text-sm cursor-pointer text-ink">
                 <input type="checkbox" checked={novedad.aprobado} onChange={e => setNovedad(p => ({ ...p, aprobado: e.target.checked }))} className="rounded" />
                 Aprobada
               </label>
+              {errorNovedad && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{errorNovedad}</p>}
               <div className="flex gap-3 justify-end">
-                <button type="button" onClick={() => setModalNovedad(false)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                <button type="submit" className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark">Guardar</button>
+                <button type="button" onClick={() => { setModalNovedad(false); setEditandoNovedad(null); }} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                <button type="submit" disabled={guardandoNovedad} className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark disabled:opacity-60">{guardandoNovedad ? 'Guardando...' : 'Guardar'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Detalle de novedad: ver descripción, fechas y aprobar si está pendiente */}
+      {verNovedad && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setVerNovedad(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-bold text-lg text-ink">{TIPO_PERMISO_LABEL[verNovedad.tipo] ?? verNovedad.tipo}</h3>
+              <button onClick={() => setVerNovedad(null)}><X size={20} className="text-gray-400" /></button>
+            </div>
+            <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mb-4 ${verNovedad.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+              {verNovedad.aprobado ? 'APROBADA' : 'PENDIENTE'}
+            </span>
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-xs text-muted">Fechas</p>
+                <p className="text-ink font-medium">
+                  {format(new Date(verNovedad.fechaInicio), "d 'de' MMMM yyyy", { locale: es })}
+                  {' → '}{format(new Date(verNovedad.fechaFin), "d 'de' MMMM yyyy", { locale: es })}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted">Descripción / motivo</p>
+                <p className="text-ink whitespace-pre-wrap">{verNovedad.descripcion || <span className="text-muted">Sin descripción.</span>}</p>
+              </div>
+              {verNovedad.evidenciaTipo && (
+                <div>
+                  <p className="text-xs text-muted mb-1">Evidencia</p>
+                  <button onClick={() => verEvidencia(verNovedad.id)} disabled={cargandoEvidencia}
+                    className="flex items-center gap-2 text-sm font-medium text-primary-dark border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 disabled:opacity-60">
+                    {verNovedad.evidenciaTipo === 'application/pdf' ? <FileText size={16} className="text-red-500" /> : <ImageIcon size={16} />}
+                    {cargandoEvidencia ? 'Abriendo...' : (verNovedad.evidenciaNombre || 'Ver evidencia')}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-3 justify-end mt-6">
+              <button onClick={() => setVerNovedad(null)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cerrar</button>
+              <button onClick={() => editarNovedad(verNovedad)}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 font-medium">
+                <Edit2 size={15} /> Editar
+              </button>
+              {!verNovedad.aprobado && (
+                <button onClick={aprobarNovedad} disabled={aprobando}
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg disabled:opacity-60">
+                  <Check size={15} /> {aprobando ? 'Aprobando...' : 'Aprobar'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visor de evidencia (imagen inline o PDF) */}
+      {evidenciaVer && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setEvidenciaVer(null)}>
+          <div className="hp-pop bg-white rounded-2xl p-4 w-full max-w-2xl shadow-xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <p className="text-sm font-semibold text-ink truncate">{evidenciaVer.nombre || 'Evidencia'}</p>
+              <div className="flex items-center gap-1">
+                <a href={evidenciaVer.data} download={evidenciaVer.nombre || 'evidencia'} title="Descargar"
+                  className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"><Download size={18} /></a>
+                <button onClick={() => setEvidenciaVer(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
+              </div>
+            </div>
+            {evidenciaVer.tipo === 'application/pdf' ? (
+              <iframe src={evidenciaVer.data} title="Evidencia PDF" className="w-full flex-1 min-h-[60vh] rounded-lg border border-gray-200" />
+            ) : (
+              <img src={evidenciaVer.data} alt="Evidencia" className="w-full object-contain rounded-lg max-h-[75vh]" />
+            )}
           </div>
         </div>
       )}

@@ -3,6 +3,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay 
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Trash2, X, Scale } from 'lucide-react';
 import api from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 // empresaId null = festivo legal nacional (Ley Emiliani, no editable)
 type Festivo = { id: string; fecha: string; nombre: string; empresaId: string | null };
@@ -13,21 +14,24 @@ export default function Festivos() {
   const [festivos, setFestivos] = useState<Festivo[]>([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ fecha: '', nombre: '' });
+  const [aEliminar, setAEliminar] = useState<Festivo | null>(null);
 
   const cargar = () => api.get('/festivos', { params: { anio: mes.getFullYear() } }).then(r => setFestivos(r.data));
   useEffect(() => { cargar(); }, [mes.getFullYear()]);
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api.post('/festivos', form);
+    // Medianoche de Bogotá (Colombia siempre UTC-5): evita que la fecha se corra un día.
+    await api.post('/festivos', { ...form, fecha: new Date(`${form.fecha}T00:00:00-05:00`) });
     setModal(false);
     setForm({ fecha: '', nombre: '' });
     cargar();
   };
 
-  const eliminar = async (id: string) => {
-    if (!confirm('¿Eliminar este día no laboral?')) return;
-    await api.delete(`/festivos/${id}`);
+  const confirmarEliminar = async () => {
+    if (!aEliminar) return;
+    await api.delete(`/festivos/${aEliminar.id}`);
+    setAEliminar(null);
     cargar();
   };
 
@@ -98,7 +102,7 @@ export default function Festivos() {
                   <p className="text-xs text-red-600">{format(new Date(f.fecha), "d 'de' MMMM", { locale: es })}</p>
                 </div>
                 {f.empresaId ? (
-                  <button onClick={() => eliminar(f.id)} className="p-1 text-red-400 hover:text-red-600 flex-shrink-0" title="Eliminar día propio">
+                  <button onClick={() => setAEliminar(f)} className="p-1 text-red-400 hover:text-red-600 flex-shrink-0" title="Eliminar día propio">
                     <Trash2 size={14} />
                   </button>
                 ) : (
@@ -136,6 +140,16 @@ export default function Festivos() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={!!aEliminar}
+        peligro
+        titulo="¿Eliminar este día no laboral?"
+        subtitulo={aEliminar ? `${aEliminar.nombre} · ${format(new Date(aEliminar.fecha), "d 'de' MMMM", { locale: es })}` : ''}
+        textoContinuar="Eliminar"
+        onContinuar={confirmarEliminar}
+        onCancelar={() => setAEliminar(null)}
+      />
     </div>
   );
 }

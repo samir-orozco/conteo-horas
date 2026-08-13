@@ -133,6 +133,13 @@ body {
 .hp-pop-out { animation: hp-pop-out 0.32s cubic-bezier(0.4, 0, 1, 1) both; }
 .hp-scan-line { animation: hp-scan 2.1s ease-in-out infinite; }
 
+/* Panel de notificaciones: emerge desde su esquina superior-izquierda (el botón) */
+@keyframes hp-notif-pop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.hp-notif-pop { animation: hp-notif-pop 0.16s cubic-bezier(0.2, 0.9, 0.3, 1) both; transform-origin: top left; }
+
 /* Landing: flotación, giro lento, entrada al hacer scroll */
 @keyframes hp-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
 @keyframes hp-float-slow { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-22px) rotate(6deg); } }

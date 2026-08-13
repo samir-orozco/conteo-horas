@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { ChevronLeft, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { rutaInicio } from '../lib/rutas';
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
 import CreditoKrumlab from '../components/CreditoKrumlab';
@@ -17,7 +18,7 @@ export default function Login() {
 
   // Si ya hay sesión, no mostramos el login (evita volver aquí con "atrás")
   if (!authLoading && usuario) {
-    return <Navigate to={usuario.rol === 'SUPER_ADMIN' ? '/admin' : '/app'} replace />;
+    return <Navigate to={rutaInicio(usuario.rol)} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,7 +28,7 @@ export default function Login() {
     try {
       const usuario = await login(email, password);
       // replace: reemplaza /login en el historial, así "atrás" no regresa aquí
-      navigate(usuario.rol === 'SUPER_ADMIN' ? '/admin' : '/app', { replace: true });
+      navigate(rutaInicio(usuario.rol), { replace: true });
     } catch {
       setError('Email o contraseña incorrectos');
     } finally {

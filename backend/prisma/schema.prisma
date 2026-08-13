@@ -11,25 +11,33 @@ datasource db {
 // ============ SaaS / Multi-tenant ============
 
 model Empresa {
-  id            String        @id @default(cuid())
-  nombre        String
-  nit           String        @unique
-  email         String
-  telefono      String?
+  id             String              @id @default(cuid())
+  nombre         String
+  nit            String              @unique
+  email          String
+  telefono       String?
   // Token del link único del kiosco de marcación: /marcador/<token>
-  marcadorToken String        @unique @default(cuid())
+  marcadorToken  String              @unique @default(cuid())
   // Acceso ilimitado (cortesía): nunca se le cobra ni se bloquea
-  exentaPago    Boolean       @default(false)
-  activa        Boolean       @default(true)
-  creadoEn      DateTime      @default(now())
-  actualizadoEn DateTime      @updatedAt
-  usuarios      Usuario[]
-  colaboradores Colaborador[]
-  festivos      DiaFestivo[]
-  configuracion Configuracion[]
-  suscripcion   Suscripcion?
-  horarios      Horario[]
-  dispositivos  DispositivoKiosco[]
+  exentaPago     Boolean             @default(false)
+  activa         Boolean             @default(true)
+  creadoEn       DateTime            @default(now())
+  actualizadoEn  DateTime            @updatedAt
+  usuarios       Usuario[]
+  colaboradores  Colaborador[]
+  festivos       DiaFestivo[]
+  configuracion  Configuracion[]
+  suscripcion    Suscripcion?
+  horarios       Horario[]
+  sedes          Sede[]
+  dispositivos   DispositivoKiosco[]
+  notificaciones Notificacion[]
+  // Afiliado que trajo a esta empresa (programa de referidos)
+  afiliadoId           String?
+  afiliado             Afiliado?  @relation(fields: [afiliadoId], references: [id])
+  atribuidoEn          DateTime? // cuándo se asoció al afiliado (en el registro)
+  primerPagoComisionEn DateTime? // primer pago que comisionó (ancla la duración)
+  comisiones           Comision[]
 
   @@map("empresas")
 }
@@ -42,6 +50,19 @@ model Suscripcion {
   finPrueba         DateTime // 7 días desde la creación
   pagadoHasta       DateTime? // fin del último período pagado
   suspendidaEn      DateTime?
+  // Plan contratado y ciclo de facturación
+  plan              String            @default("PROFESIONAL") // ESENCIAL | PROFESIONAL | EMPRESARIAL
+  cicloPago         String            @default("MENSUAL") // MENSUAL | ANUAL
+  // Personalización por cliente (super admin). null = usa lo del plan.
+  limiteOverride    Int? // sobrescribe el límite de colaboradores del plan
+  funcionesOverride Json? // { gps: true, telegram: false, ... } sobre las del plan
+  // Precio personalizado por cliente. null = usa el precio del plan.
+  // FIJO = precioFijo mensual
+  precioModo        String? // null | "FIJO"
+  precioFijo        Int?
+  precioTramo1      Int?
+  limiteTramo1      Int?
+  precioTramo2      Int?
   // Wompi: fuente de pago tokenizada para cobro recurrente (null = paga por link)
   wompiFuentePagoId String?
   creadoEn          DateTime          @default(now())
@@ -66,6 +87,7 @@ model Pago {
   comprobanteBase64       String?     @db.LongText // foto del soporte (data URL)
   registradoPor           String? // email del super admin que lo registró
   creadoEn                DateTime    @default(now())
+  comision                Comision? // comisión de afiliado generada por este pago (si aplica)
 
   @@map("pagos")
 }
@@ -73,9 +95,12 @@ model Pago {
 // Precios del SaaS — editables por el super admin (fila única id=1)
 model ConfiguracionPlataforma {
   id           Int   @id @default(1)
-  precioTramo1 Float @default(10000) // COP por colaborador, tramo inicial
-  limiteTramo1 Int   @default(15) // tamaño del tramo inicial
-  precioTramo2 Float @default(2000) // COP por colaborador adicional
+  precioTramo1 Float @default(10000) // (legado) COP por colaborador, tramo inicial
+  limiteTramo1 Int   @default(15) // (legado) tamaño del tramo inicial
+  precioTramo2 Float @default(2000) // (legado) COP por colaborador adicional
+  // Overrides de los planes editables desde el super admin (precio, límite, funciones).
+  // null = usa los valores por defecto del código.
+  planes       Json?
 
   @@map("configuracion_plataforma")
 }
@@ -93,16 +118,16 @@ model JornadaVigencia {
 
 // Tipos de hora y recargos — CST + Ley 2466 de 2025, con vigencias por fecha
 model TipoHora {
-  id            String    @id @default(cuid())
-  nombre        String
-  codigo        String // HOD, HON, HED, HEN, HDD, HND, HEDD, HEND
-  horaInicio    Int // 0-23
-  horaFin       Int // 0-23
-  recargo       Float // factor sobre hora ordinaria (ej: 1.35)
-  aplica        Json // ["LUNES",...,"DOMINGO","FESTIVO"] — MySQL no soporta arrays escalares
-  vigenteDesde  DateTime
-  vigenteHasta  DateTime? // null = vigente indefinidamente
-  activo        Boolean   @default(true)
+  id           String    @id @default(cuid())
+  nombre       String
+  codigo       String // HOD, HON, HED, HEN, HDD, HND, HEDD, HEND
+  horaInicio   Int // 0-23
+  horaFin      Int // 0-23
+  recargo      Float // factor sobre hora ordinaria (ej: 1.35)
+  aplica       Json // ["LUNES",...,"DOMINGO","FESTIVO"] — MySQL no soporta arrays escalares
+  vigenteDesde DateTime
+  vigenteHasta DateTime? // null = vigente indefinidamente
+  activo       Boolean   @default(true)
 
   @@unique([codigo, vigenteDesde])
   @@map("tipos_hora")
@@ -118,6 +143,15 @@ model Horario {
   empresa       Empresa         @relation(fields: [empresaId], references: [id])
   nombre        String
   toleranciaMin Int             @default(10) // minutos de gracia antes de contar tardanza
+  almuerzoMin   Int             @default(0) // minutos de almuerzo que NO se pagan (se descuentan de la jornada)
+  // Minutos que alguien puede quedarse de más SIN que se paguen como extra: por
+  // debajo del umbral se toma la hora de salida programada. 0 = desactivado, que
+  // es el valor por defecto para no cambiarle el cálculo a nadie.
+  toleranciaSalidaMin Int       @default(0)
+  // Si también se aplica a las entradas tempranas. Apagado por defecto: dejarlo
+  // solo en la salida sería asimétrico a favor de la empresa, así que la
+  // simetría existe pero se elige a propósito.
+  ajustaEntrada Boolean         @default(false)
   activo        Boolean         @default(true)
   creadoEn      DateTime        @default(now())
   // Un horario tiene varias franjas: ej. L-V 08:00-17:00 y Sáb 08:00-12:00
@@ -128,12 +162,18 @@ model Horario {
 }
 
 model FranjaHorario {
-  id          String  @id @default(cuid())
-  horarioId   String
-  horario     Horario @relation(fields: [horarioId], references: [id], onDelete: Cascade)
-  dias        Json // ["LUNES",...,"SABADO"]
-  horaEntrada String // "08:00" hora local Bogotá
-  horaSalida  String // "17:00" (puede cruzar medianoche, ej. "21:00"→"05:00")
+  id            String  @id @default(cuid())
+  horarioId     String
+  horario       Horario @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+  dias          Json // ["LUNES",...,"SABADO"]
+  horaEntrada   String // "08:00" hora local Bogotá
+  horaSalida    String // "17:00" (puede cruzar medianoche, ej. "21:00"→"05:00")
+  tieneAlmuerzo Boolean @default(true) // si esta franja descuenta el almuerzo del horario (ej. sábado corto = false)
+  // Ventana de almuerzo de ESTE día: "12:00" → "13:00". Va en la franja y no en
+  // el horario porque el sábado corto puede no tener, y un turno nocturno
+  // almuerza en la madrugada. Vacía = comportamiento histórico (minutos fijos).
+  almuerzoInicio String?
+  almuerzoFin    String?
 
   @@map("franjas_horario")
 }
@@ -153,75 +193,185 @@ model DispositivoKiosco {
 }
 
 model Colaborador {
-  id             String     @id @default(cuid())
-  empresaId      String
-  empresa        Empresa    @relation(fields: [empresaId], references: [id])
-  nombre         String
-  apellido       String
-  cedula         String // marcación en kiosco por cédula
-  cargo          String?
-  email          String?
-  telefono       String?
-  fechaNacimiento DateTime?
-  salarioMensual Float
+  id               String     @id @default(cuid())
+  empresaId        String
+  empresa          Empresa    @relation(fields: [empresaId], references: [id])
+  nombre           String
+  apellido         String
+  cedula           String // marcación en kiosco por cédula
+  cargo            String?
+  email            String?
+  telefono         String?
+  fechaNacimiento  DateTime?
+  salarioMensual   Float
   // Reconocimiento facial: descriptor matemático (128 floats), nunca la imagen
   rostroDescriptor Json?
   rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
-  horarioId      String?
-  horario        Horario?   @relation(fields: [horarioId], references: [id])
-  activo         Boolean    @default(true)
+  horarioId        String?
+  horario          Horario?   @relation(fields: [horarioId], references: [id])
+  activo           Boolean    @default(true)
   // Si el mes ya está pagado, el "borrado" se programa para fin de mes
   retiroProgramado DateTime?
-  creadoEn       DateTime   @default(now())
-  actualizadoEn  DateTime   @updatedAt
-  registros      Registro[]
-  permisos       Permiso[]
+  creadoEn         DateTime   @default(now())
+  actualizadoEn    DateTime   @updatedAt
+  registros        Registro[]
+  permisos         Permiso[]
+  diasEsperados    DiaEsperado[]
+  sedes            ColaboradorSede[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
 }
 
-model Registro {
-  id            String       @id @default(cuid())
+// Sede física de la empresa (plan Empresarial). Cada una tiene su propia
+// geocerca, así que una empresa con varios locales deja de compartir un único
+// punto para todos.
+//
+// Un colaborador puede estar en VARIAS sedes: quien rota entre locales abre y
+// cierra turno en cualquiera de las suyas. Marcar fuera de ellas no se registra.
+model Sede {
+  id            String            @id @default(cuid())
+  empresaId     String
+  empresa       Empresa           @relation(fields: [empresaId], references: [id])
+  nombre        String
+  direccion     String?
+  // Geocerca propia. Sin lat/lng la sede no exige ubicación (útil para oficinas
+  // sin GPS o mientras se configura).
+  lat           Float?
+  lng           Float?
+  radio         Int               @default(150)
+  activa        Boolean           @default(true)
+  creadoEn      DateTime          @default(now())
+  actualizadoEn DateTime          @updatedAt
+
+  colaboradores ColaboradorSede[]
+  registros     Registro[]
+
+  @@index([empresaId])
+  @@map("sedes")
+}
+
+// Qué colaborador puede marcar en qué sede. Es una tabla explícita y no una
+// relación implícita de Prisma porque el DDL de producción se escribe a mano:
+// una tabla con nombre y columnas propias es la que se puede crear sin adivinar
+// convenciones internas del ORM.
+model ColaboradorSede {
   colaboradorId String
-  colaborador   Colaborador  @relation(fields: [colaboradorId], references: [id])
-  fecha         DateTime
-  entrada       DateTime?
-  salida        DateTime?
-  tipo          TipoRegistro @default(NORMAL)
-  observacion   String?
+  sedeId        String
+  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  sede          Sede        @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+  creadoEn      DateTime    @default(now())
+
+  @@id([colaboradorId, sedeId])
+  @@index([sedeId])
+  @@map("colaboradores_sedes")
+}
+
+// Lo que el horario de un colaborador exigía UN día concreto, congelado.
+//
+// Sin esto, editar un horario reescribe el pasado: los reportes de meses
+// anteriores se recalculan con la configuración actual, y desde que existe el
+// descuento por tiempo no remunerado eso mueve dinero ya liquidado.
+//
+// Se genera solo desde el horario asignado. Los días PASADOS no se vuelven a
+// tocar; al cambiar un horario solo se regeneran los días futuros.
+model DiaEsperado {
+  id               String      @id @default(cuid())
+  colaboradorId    String
+  colaborador      Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  fecha            DateTime // medianoche de Bogotá, igual convención que Registro.fecha
+  programado       Boolean     @default(false) // false = ese día no se trabajaba
+  horaEntrada      String? // "08:00"
+  horaSalida       String? // "17:00"
+  toleranciaMin    Int         @default(0)
+  almuerzoMin      Int         @default(0) // el que aplica ESE día
+  minutosEsperados Int         @default(0) // ya neto de almuerzo
+  // La tolerancia de salida también se congela: es política de la empresa, y si
+  // la cambian mañana no puede mover lo que ya se liquidó.
+  toleranciaSalidaMin Int      @default(0)
+  ajustaEntrada    Boolean     @default(false)
+  // La ventana de almuerzo también se congela: cambiarla mañana no puede mover
+  // lo ya liquidado. Vacía en todo lo anterior a la función.
+  almuerzoInicio   String?
+  almuerzoFin      String?
+  // De qué horario salió, solo informativo: el horario puede cambiar después.
+  horarioId        String?
+  // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)
+  origen           String      @default("AUTO")
+  creadoEn         DateTime    @default(now())
+  actualizadoEn    DateTime    @updatedAt
+
+  @@unique([colaboradorId, fecha])
+  @@index([colaboradorId, fecha])
+  @@map("dias_esperados")
+}
+
+model Registro {
+  id             String       @id @default(cuid())
+  colaboradorId  String
+  colaborador    Colaborador  @relation(fields: [colaboradorId], references: [id])
+  // Sede donde OCURRIÓ la marcación. Es distinto de las sedes asignadas al
+  // colaborador: el filtro por sede de los reportes tiene que decir dónde marcó
+  // de verdad, no dónde debería. Null en todo lo anterior a la función.
+  sedeId         String?
+  sede           Sede?        @relation(fields: [sedeId], references: [id])
+  fecha          DateTime
+  entrada        DateTime?
+  salida         DateTime?
+  tipo           TipoRegistro @default(NORMAL)
+  observacion    String?
+  // Salida generada por el auto-cierre (la persona no marcó): se muestra como chip
+  // "No marcó salida" en la columna Salida para que el admin la revise. No toca `tipo`,
+  // así la liquidación del día sigue siendo correcta (NORMAL/FESTIVO).
+  salidaEstimada Boolean      @default(false)
+  // La salida fue a almorzar, no el fin de la jornada. Lo dice el propio
+  // colaborador en el kiosco: el sistema no puede adivinarlo.
+  salidaAlmuerzo Boolean      @default(false)
+  // El regreso del almuerzo lo puso el sistema porque nadie lo marcó. Va en el
+  // dato y no solo en el color: el día que alguien reclame, el registro tiene
+  // que poder decir que esa hora no la marcó una persona.
+  entradaEstimada Boolean     @default(false)
   // Foto de verificación facial al marcar (se elimina automáticamente a los 2 meses)
-  fotoEntrada   String?      @db.LongText
-  fotoSalida    String?      @db.LongText
+  fotoEntrada    String?      @db.LongText
+  fotoSalida     String?      @db.LongText
   // Auditoría de correcciones manuales
-  editadoPor    String?
-  editadoEn     DateTime?
-  creadoEn      DateTime     @default(now())
+  editadoPor     String?
+  editadoEn      DateTime?
+  creadoEn       DateTime     @default(now())
 
   @@map("registros")
 }
 
 model Permiso {
-  id            String      @id @default(cuid())
-  colaboradorId String
-  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id])
-  fechaInicio   DateTime
-  fechaFin      DateTime
-  tipo          TipoPermiso
-  descripcion   String?
-  aprobado      Boolean     @default(false)
-  creadoEn      DateTime    @default(now())
+  id              String      @id @default(cuid())
+  colaboradorId   String
+  colaborador     Colaborador @relation(fields: [colaboradorId], references: [id])
+  fechaInicio     DateTime
+  fechaFin        DateTime
+  // Novedad de parte del día ("cita médica de 14:00 a 17:00"). Vacías = día
+  // completo, como siempre. Solo aplican a novedades de UN día: para vacaciones
+  // de una semana no significan nada.
+  horaInicio      String?
+  horaFin         String?
+  tipo            TipoPermiso
+  descripcion     String?
+  aprobado        Boolean     @default(false)
+  // Evidencia opcional (imagen o PDF) en base64 data URI. LongText por tamaño.
+  evidencia       String?     @db.LongText
+  evidenciaTipo   String? // mime, ej. image/jpeg o application/pdf
+  evidenciaNombre String?
+  creadoEn        DateTime    @default(now())
 
   @@map("permisos")
 }
 
 model DiaFestivo {
-  id           String   @id @default(cuid())
-  empresaId    String? // null = festivo legal nacional (generado por algoritmo)
-  empresa      Empresa? @relation(fields: [empresaId], references: [id])
-  fecha        DateTime
-  nombre       String
-  creadoEn     DateTime @default(now())
+  id        String   @id @default(cuid())
+  empresaId String? // null = festivo legal nacional (generado por algoritmo)
+  empresa   Empresa? @relation(fields: [empresaId], references: [id])
+  fecha     DateTime
+  nombre    String
+  creadoEn  DateTime @default(now())
 
   @@unique([empresaId, fecha])
   @@map("dias_festivos")
@@ -238,25 +388,116 @@ model Configuracion {
   @@map("configuracion")
 }
 
+// Aviso interno para el admin (campana del menú). Se genera por eventos del sistema.
+model Notificacion {
+  id        String    @id @default(cuid())
+  empresaId String
+  empresa   Empresa   @relation(fields: [empresaId], references: [id])
+  // NO_MARCO_SALIDA | LLEGADA_TARDE | NOVEDAD_PENDIENTE (string por flexibilidad)
+  tipo      String
+  titulo    String
+  cuerpo    String?   @db.Text
+  // Enlace opcional para abrir el detalle desde la campana
+  entidad   String? // 'registro' | 'permiso' | 'colaborador'
+  entidadId String?
+  leida     Boolean   @default(false)
+  leidaEn   DateTime?
+  creadoEn  DateTime  @default(now())
+
+  @@index([empresaId, leida])
+  @@index([empresaId, creadoEn])
+  @@map("notificaciones")
+}
+
 model Usuario {
-  id        String   @id @default(cuid())
-  empresaId String? // null = SUPER_ADMIN (usuario de la plataforma)
-  empresa   Empresa? @relation(fields: [empresaId], references: [id])
-  email     String   @unique
-  password  String
-  nombre    String
-  rol       Rol      @default(ADMIN)
-  activo    Boolean  @default(true)
+  id                 String    @id @default(cuid())
+  empresaId          String? // null = SUPER_ADMIN (usuario de la plataforma)
+  empresa            Empresa?  @relation(fields: [empresaId], references: [id])
+  // Si el usuario es AFILIADO, apunta a su ficha (como empresaId para empresas)
+  afiliadoId         String?
+  afiliado           Afiliado? @relation(fields: [afiliadoId], references: [id])
+  email              String    @unique
+  password           String
+  nombre             String
+  rol                Rol       @default(ADMIN)
+  activo             Boolean   @default(true)
   // Recuperación de contraseña: token de un solo uso con vencimiento
-  resetToken  String?   @unique
-  resetExpira DateTime?
+  resetToken         String?   @unique
+  resetExpira        DateTime?
   // Verificación del correo al registrarse (evita cuentas con correos falsos)
-  emailVerificado    Boolean @default(false)
+  emailVerificado    Boolean   @default(false)
   verificacionCodigo String? // 6 dígitos, se valida junto con el email (no único: puede repetirse entre cuentas)
   verificacionExpira DateTime?
-  creadoEn  DateTime @default(now())
+  creadoEn           DateTime  @default(now())
 
   @@map("usuarios")
+}
+
+// ============ Programa de afiliados (referidos) ============
+
+// Afiliado = persona que trae clientes. Sus credenciales viven en Usuario
+// (rol AFILIADO + afiliadoId), igual que los usuarios de empresa usan empresaId.
+model Afiliado {
+  id             String              @id @default(cuid())
+  nombre         String
+  // Código para el link de referido: /?ref=<codigo>
+  codigo         String              @unique
+  // Trato comercial: % sobre cada pago del referido durante N meses desde su
+  // primer pago (duracionMeses null = indefinido). El % se congela en cada comisión.
+  porcentaje     Float               @default(20)
+  duracionMeses  Int?
+  activo         Boolean             @default(true)
+  telefono       String?
+  // Datos para el pago externo de comisiones (billetera)
+  pagoMetodo     MetodoPagoAfiliado?
+  pagoBanco      String? // nombre del banco cuando el método es OTRO
+  pagoTipoCuenta TipoCuentaBancaria? // solo bancos (Nequi/Daviplata no aplica)
+  pagoNumero     String? // número de cuenta, o celular si es Nequi/Daviplata
+  pagoTitular    String?
+  pagoDocumento  String? // cédula/NIT del titular (pago externo + retención)
+  creadoEn       DateTime            @default(now())
+  actualizadoEn  DateTime            @updatedAt
+  usuarios       Usuario[]
+  empresas       Empresa[] // referidos
+  comisiones     Comision[]
+  retiros        SolicitudRetiro[]
+
+  @@map("afiliados")
+}
+
+// Una comisión causada por un pago concreto de un referido (1 pago → 1 comisión).
+model Comision {
+  id         String         @id @default(cuid())
+  afiliadoId String
+  afiliado   Afiliado       @relation(fields: [afiliadoId], references: [id])
+  empresaId  String
+  empresa    Empresa        @relation(fields: [empresaId], references: [id])
+  pagoId     String         @unique
+  pago       Pago           @relation(fields: [pagoId], references: [id])
+  montoBase  Float // monto del pago sobre el que se calculó
+  porcentaje Float // % congelado al momento de causarla
+  monto      Float // comisión = montoBase * porcentaje / 100
+  estado     EstadoComision @default(CAUSADA)
+  creadoEn   DateTime       @default(now())
+
+  @@map("comisiones")
+}
+
+// Solicitud de retiro (egreso externo). El admin la aprueba, paga por fuera y
+// adjunta el comprobante; el afiliado lo ve en su billetera.
+model SolicitudRetiro {
+  id                String       @id @default(cuid())
+  afiliadoId        String
+  afiliado          Afiliado     @relation(fields: [afiliadoId], references: [id])
+  monto             Float
+  estado            EstadoRetiro @default(SOLICITADO)
+  comprobanteBase64 String?      @db.LongText // soporte del pago (data URL)
+  nota              String? // observación del admin (o motivo de rechazo)
+  solicitadoEn      DateTime     @default(now())
+  procesadoEn       DateTime?
+  procesadoPor      String? // email del super admin que la procesó
+
+  @@map("solicitudes_retiro")
 }
 
 // ============ Enums ============
@@ -305,4 +546,29 @@ enum Rol {
   SUPER_ADMIN
   ADMIN
   SUPERVISOR
+  AFILIADO
+}
+
+enum MetodoPagoAfiliado {
+  NEQUI
+  BANCOLOMBIA
+  DAVIPLATA
+  OTRO
+}
+
+enum TipoCuentaBancaria {
+  AHORROS
+  CORRIENTE
+}
+
+enum EstadoComision {
+  CAUSADA
+  ANULADA
+}
+
+enum EstadoRetiro {
+  SOLICITADO
+  APROBADO
+  PAGADO
+  RECHAZADO
 }
