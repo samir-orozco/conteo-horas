@@ -62,53 +62,33 @@ function CeldaAlmuerzo({ r, ancla }: { r: Registro; ancla: Registro | undefined 
     );
   }
 
+  // Una sola etiqueta por fila. El detalle —cuánto se descuenta, por qué, si el
+  // regreso lo puso el sistema— vive en el modal, a un clic. En una tabla de
+  // cuarenta personas, dos renglones por celda es ruido que nadie lee.
   if (a.estado === 'ABIERTO') {
     return (
       <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 whitespace-nowrap">
-        Salió {hhmm(a.salida)} · sin regreso
+        Sin regreso
       </span>
     );
   }
 
   if (a.estado === 'MARCADO') {
     return (
-      <div className="leading-tight">
-        <span className="font-mono text-xs text-gray-700 whitespace-nowrap">
-          {hhmm(a.salida)} → {hhmm(a.regreso)}
-        </span>
-        <p className={`text-[10px] ${a.seExcedio ? 'text-amber-700 font-semibold' : 'text-muted'}`}>
-          {enHoras(a.minutos ?? 0)}
-          {/* Por cuánto se pasó, no solo que se pasó: dos minutos y media hora
-              no son lo mismo y el administrador decide distinto en cada caso.
-              El número viene del backend: "pasarse" es respecto al FIN de la
-              ventana, no a su duración, y esa cuenta no se hace aquí. */}
-          {a.seExcedio && ` · se pasó ${enHoras(a.minutosDeMas)}`}
-          {a.regresoEstimado && ' · regreso estimado'}
-        </p>
-      </div>
+      <span className={`font-mono text-xs whitespace-nowrap ${a.seExcedio ? 'text-amber-700 font-semibold' : 'text-gray-700'}`}>
+        {hhmm(a.salida)} → {hhmm(a.regreso)}
+      </span>
     );
   }
 
-  // Sin ventana pero con descuento: es el caso de la mayoría hoy. Ese descuento
-  // existe todos los días y hasta ahora no se veía en ninguna pantalla.
   if (a.estado === 'SIN_VENTANA') {
-    return (
-      <div className="leading-tight">
-        <span className="text-xs text-gray-700">{enHoras(a.minutosDescontados)} fija</span>
-        <p className="text-[10px] text-muted">sin horario definido</p>
-      </div>
-    );
+    // Sin ventana pero con descuento: el caso de la mayoría. Ese descuento
+    // existe todos los días y hasta ahora no se veía en ninguna pantalla.
+    return <span className="text-xs text-gray-600 whitespace-nowrap">−{enHoras(a.minutosDescontados)}</span>;
   }
 
   // NO_MARCADO
-  return (
-    <div className="leading-tight">
-      <span className="text-xs text-gray-500">No marcó</span>
-      <p className="text-[10px] text-muted">
-        {a.minutosDescontados > 0 ? `se descuenta ${enHoras(a.minutosDescontados)}` : 'sin descuento'}
-      </p>
-    </div>
-  );
+  return <span className="text-xs text-gray-500">No marcó</span>;
 }
 
 export default function Registros() {

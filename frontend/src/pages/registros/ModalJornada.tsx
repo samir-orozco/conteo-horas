@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
 import {
-  X, Edit2, Trash2, Camera, ArrowLeft, ImageOff, MapPin, UtensilsCrossed,
+  X, Edit2, Trash2, Camera, ImageOff, MapPin, UtensilsCrossed,
   Clock3, Info, CalendarClock,
 } from 'lucide-react';
 import api from '../../lib/api';
@@ -95,7 +95,6 @@ type Props = {
 export default function ModalJornada({ registroId, onCerrar, onEditar, onEliminar, onCambiarDeTramo }: Props) {
   const [j, setJ] = useState<Jornada | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [viendoFotos, setViendoFotos] = useState(false);
   const [fotos, setFotos] = useState<{ fotoEntrada: string | null; fotoSalida: string | null } | null>(null);
 
   // Al saltar a otro tramo el componente se remonta (lleva `key={registroId}`),
@@ -113,12 +112,17 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
     return () => { vigente = false; };
   }, [registroId]);
 
-  const verFotos = async () => {
-    setViendoFotos(true);
-    if (fotos) return;
-    const r = await api.get(`/registros/${registroId}/fotos`);
-    setFotos(r.data);
-  };
+  // Las fotos se piden aparte (son base64 pesado) y se pintan al final de la
+  // información, no en una vista que reemplaza el cuerpo: son evidencia de esta
+  // marcación, no un tema distinto.
+  useEffect(() => {
+    if (!j?.registro.tieneFotoEntrada && !j?.registro.tieneFotoSalida) return;
+    let vigente = true;
+    api.get(`/registros/${registroId}/fotos`)
+      .then(r => { if (vigente) setFotos(r.data); })
+      .catch(() => { /* la foto es evidencia opcional: no rompe el detalle */ });
+    return () => { vigente = false; };
+  }, [registroId, j?.registro.tieneFotoEntrada, j?.registro.tieneFotoSalida]);
 
   const r = j?.registro;
   const entrada = hhmm(r?.entrada ?? null);
@@ -137,14 +141,8 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
       >
         <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-3 border-b border-gray-100 sticky top-0 bg-white z-10">
           <div className="min-w-0">
-            {viendoFotos && (
-              <button onClick={() => setViendoFotos(false)}
-                className="flex items-center gap-1 text-xs font-semibold text-ink hover:underline mb-1">
-                <ArrowLeft size={14} /> Volver
-              </button>
-            )}
             <h3 className="font-bold text-lg text-ink truncate">
-              {viendoFotos ? 'Verificación facial' : entrada ? `Marcación de las ${entrada}` : 'Marcación sin hora de entrada'}
+              {entrada ? `Marcación de las ${entrada}` : 'Marcación sin hora de entrada'}
             </h3>
             {j && (
               <p className="text-xs text-muted capitalize truncate">
@@ -159,35 +157,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
         {error && <p className="text-center text-red-500 py-10 text-sm px-6">{error}</p>}
         {!j && !error && <p className="text-center text-gray-400 py-10 text-sm">Cargando la jornada...</p>}
 
-        {j && r && viendoFotos && (
-          <div className="p-6">
-            {!fotos ? (
-              <p className="text-center text-gray-400 py-10 text-sm">Cargando fotos...</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[{ foto: fotos.fotoEntrada, label: 'Entrada', hora: entrada },
-                  { foto: fotos.fotoSalida, label: 'Salida', hora: salida }].map(({ foto, label, hora }) => (
-                  <div key={label}>
-                    <p className="text-xs font-semibold text-muted uppercase mb-1.5">{label}{hora && ` · ${hora}`}</p>
-                    {foto ? (
-                      <img src={foto} alt={`Foto de ${label.toLowerCase()}`} className="w-full rounded-xl border border-gray-200 [transform:scaleX(-1)]" />
-                    ) : (
-                      <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center">
-                        <ImageOff size={22} className="mx-auto text-gray-400 mb-2" />
-                        <p className="text-xs text-muted">Sin foto: se marcó con cédula o fue un registro manual.</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-[11px] text-muted mt-4 flex items-center gap-1.5">
-              <Info size={12} /> Las fotos se eliminan automáticamente a los 2 meses.
-            </p>
-          </div>
-        )}
-
-        {j && r && !viendoFotos && (
+        {j && r && (
           <div className="p-6 space-y-5">
             {/* Estado de un vistazo */}
             <div className="flex flex-wrap gap-1.5">
@@ -210,7 +180,10 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               <Dato rotulo="Entró"><span className="font-mono text-green-700">{primeraEntrada ?? '—'}</span></Dato>
               <Dato rotulo="Salió"><span className="font-mono text-red-600">{ultimaSalida ?? '—'}</span></Dato>
               <Dato rotulo="Almuerzo">
-                {a && a.minutosDescontados > 0 ? `−${enHoras(a.minutosDescontados)}` : <span className="text-gray-400">—</span>}
+                {a && a.minutosDescontados > 0
+                  ? <>−{enHoras(a.minutosDescontados)}
+                      {!a.ventana && <p className="text-[11px] text-muted">fijo del horario</p>}</>
+                  : <span className="text-gray-400">—</span>}
               </Dato>
               <Dato rotulo="Contado ese día">
                 <b className="text-base">{enHoras(j.minutosDelDia)}</b>
@@ -238,22 +211,22 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
 
             {/* Esta marcación */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
+              {/* Las horas van en el encabezado, no en un bloque aparte: son la
+                  identidad de esta marcación. Sin ellas, saltar de una a otra
+                  desde la lista de abajo parecía no hacer nada —lo único que
+                  cambiaba era el título, fuera de la vista— porque el resto del
+                  modal es del día y es idéntico para las dos. */}
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5 flex-wrap">
                 <Clock3 size={13} /> Esta marcación
+                {(entrada || salida) && (
+                  <span className="font-mono normal-case tracking-normal">
+                    · <span className="text-green-700">{entrada ?? '—'}</span>
+                    <span className="text-gray-300"> → </span>
+                    <span className="text-red-600">{salida ?? '—'}</span>
+                  </span>
+                )}
               </p>
               <div className="border border-gray-100 rounded-xl px-4 py-3 space-y-2.5">
-                <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                  <span className="font-mono text-lg">
-                    <span className="text-green-700">{entrada ?? '— sin marcar —'}</span>
-                    <span className="text-gray-300 mx-2">→</span>
-                    <span className="text-red-600">{salida ?? '— sin marcar —'}</span>
-                  </span>
-                  {r.entrada && r.salida && (
-                    <span className="font-semibold text-ink">
-                      {enHoras(Math.round((new Date(r.salida).getTime() - new Date(r.entrada).getTime()) / 60000))}
-                    </span>
-                  )}
-                </div>
                 {r.salidaEstimada && (
                   <p className="text-[11px] text-amber-700">
                     La hora de salida la puso el sistema porque nadie la marcó. Conviene revisarla.
@@ -296,33 +269,19 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   <p className="text-sm text-ink bg-gray-50 rounded-lg px-3 py-2">{r.observacion}</p>
                 )}
 
-                {(r.tieneFotoEntrada || r.tieneFotoSalida) && (
-                  <button onClick={verFotos}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:underline">
-                    <Camera size={14} /> Ver fotos de verificación facial
-                  </button>
-                )}
               </div>
             </div>
 
             {/* Almuerzo del día */}
-            {a && (a.estado !== 'SIN_VENTANA' || a.minutosDescontados > 0) && (
+            {a?.ventana && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
                   <UtensilsCrossed size={13} /> Almuerzo de este día
                 </p>
                 <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-1.5 text-sm">
-                  <p>
-                    {a.ventana
-                      ? <>Horario de almuerzo de ese día: <b>{a.ventana.inicio} a {a.ventana.fin}</b></>
-                      : <>Ese día no tenía horario de almuerzo definido: se descuenta <b>{enHoras(a.minutosDescontados)}</b> fija</>}
-                  </p>
-                  {a.estado === 'MARCADO' && (
-                    <p>
-                      Salió a las <b>{hhmm(a.salida)}</b> y regresó a las <b>{hhmm(a.regreso)}</b>
-                      {a.regresoEstimado && <span className="text-amber-700"> (regreso puesto por el sistema)</span>}
-                      {a.seExcedio && <span className="text-amber-700"> · volvió {enHoras(a.minutosDeMas)} después del fin</span>}
-                    </p>
+                  <p>Horario de almuerzo de ese día: <b>{a.ventana.inicio} a {a.ventana.fin}</b></p>
+                  {a.estado === 'MARCADO' && a.seExcedio && (
+                    <p className="text-amber-700">Volvió <b>{enHoras(a.minutosDeMas)}</b> después de que terminara.</p>
                   )}
                   {a.estado === 'ABIERTO' && <p><b>Salió a almorzar y no volvió a marcar.</b></p>}
                   {a.estado === 'NO_MARCADO' && a.ventana && <p><b>No marcó</b> su salida a almuerzo.</p>}
@@ -357,10 +316,20 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                         className={`w-full text-left border rounded-xl px-3 py-2 text-sm transition-colors ${
                           esEste ? 'border-primary ring-1 ring-primary/40 bg-primary/5 cursor-default'
                                  : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'}`}>
-                        <span className="text-muted">{i + 1}.</span>{' '}
-                        <span className="font-mono">{hhmm(t.entrada) ?? '—'} → {hhmm(t.salida) ?? '—'}</span>
-                        {t.salidaAlmuerzo && <span className="text-[11px] text-yellow-700"> · salió a almorzar</span>}
-                        {t.salidaEstimada && <span className="text-[11px] text-amber-700"> · salida estimada</span>}
+                        <span className="flex items-baseline justify-between gap-2 flex-wrap">
+                          <span>
+                            <span className="text-muted">{i + 1}.</span>{' '}
+                            <span className="font-mono">{hhmm(t.entrada) ?? '—'} → {hhmm(t.salida) ?? '—'}</span>
+                            {t.salidaAlmuerzo && <span className="text-[11px] text-yellow-700"> · salió a almorzar</span>}
+                            {t.salidaEstimada && <span className="text-[11px] text-amber-700"> · salida estimada</span>}
+                            {t.entradaEstimada && <span className="text-[11px] text-amber-700"> · regreso estimado</span>}
+                          </span>
+                          {t.entrada && t.salida && (
+                            <span className="text-xs text-muted shrink-0">
+                              {enHoras(Math.round((new Date(t.salida).getTime() - new Date(t.entrada).getTime()) / 60000))}
+                            </span>
+                          )}
+                        </span>
                       </button>
                     );
                   })}
@@ -381,8 +350,8 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   {j.dia.programado ? (
                     <p>
                       Entrada {j.dia.horaEntrada} · Salida {j.dia.horaSalida} ·
-                      Tolerancia de llegada {j.dia.toleranciaMin} min ·
-                      Pedía <b>{enHoras(j.dia.minutosEsperados)}</b>
+                      Tolerancia de llegada {j.dia.toleranciaMin} min
+                      {j.dia.toleranciaSalidaMin > 0 && ` · Tolerancia de salida ${j.dia.toleranciaSalidaMin} min`}
                     </p>
                   ) : (
                     <p>Ese día no estaba programado en su horario.</p>
@@ -394,6 +363,40 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                     </p>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Verificación facial: la evidencia de esta marcación, al final de
+                todo lo demás. Antes vivía en una vista aparte que reemplazaba el
+                cuerpo, y ver la foto costaba perder de vista el resto. */}
+            {(r.tieneFotoEntrada || r.tieneFotoSalida) && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
+                  <Camera size={13} /> Verificación facial
+                </p>
+                {!fotos ? (
+                  <p className="text-sm text-gray-400 py-6 text-center">Cargando fotos...</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {[{ foto: fotos.fotoEntrada, label: 'Entrada', hora: entrada },
+                      { foto: fotos.fotoSalida, label: 'Salida', hora: salida }].map(({ foto, label, hora }) => (
+                      <div key={label}>
+                        <p className="text-[10px] font-semibold text-muted uppercase mb-1.5">{label}{hora && ` · ${hora}`}</p>
+                        {foto ? (
+                          /* Espejada: así se vio la persona a sí misma al marcar. */
+                          <img src={foto} alt={`Foto de ${label.toLowerCase()}`}
+                            className="w-full rounded-xl border border-gray-200 [transform:scaleX(-1)]" />
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center">
+                            <ImageOff size={20} className="mx-auto text-gray-400 mb-1.5" />
+                            <p className="text-[11px] text-muted">Sin foto: marcó con cédula o se cargó a mano.</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-[11px] text-muted mt-2">Las fotos se eliminan automáticamente a los 2 meses.</p>
               </div>
             )}
 
