@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import BloqueoPago from './BloqueoPago';
 import VerificarCorreo from './VerificarCorreo';
 import GuiaBienvenida from './GuiaBienvenida';
+import Novedades from './Novedades';
 import CampanaNav from '../features/notificaciones/CampanaNav';
 import ReportesNav from './ReportesNav';
 import { useNotificaciones } from '../features/notificaciones/useNotificaciones';
@@ -152,6 +153,9 @@ export default function Layout() {
       {!esSuperAdmin && <BloqueoPago />}
       {!esSuperAdmin && <VerificarCorreo />}
       {!esSuperAdmin && <GuiaBienvenida />}
+      {/* Va después de la guía: si el usuario es nuevo, se calla y le deja el
+          video, porque para él todo es nuevo. */}
+      {!esSuperAdmin && <Novedades />}
     </div>
   );
 }
