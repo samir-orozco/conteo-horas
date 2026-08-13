@@ -162,13 +162,18 @@ model Horario {
 }
 
 model FranjaHorario {
-  id            String  @id @default(cuid())
-  horarioId     String
-  horario       Horario @relation(fields: [horarioId], references: [id], onDelete: Cascade)
-  dias          Json // ["LUNES",...,"SABADO"]
-  horaEntrada   String // "08:00" hora local Bogotá
-  horaSalida    String // "17:00" (puede cruzar medianoche, ej. "21:00"→"05:00")
-  tieneAlmuerzo Boolean @default(true) // si esta franja descuenta el almuerzo del horario (ej. sábado corto = false)
+  id             String  @id @default(cuid())
+  horarioId      String
+  horario        Horario @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+  dias           Json // ["LUNES",...,"SABADO"]
+  horaEntrada    String // "08:00" hora local Bogotá
+  horaSalida     String // "17:00" (puede cruzar medianoche, ej. "21:00"→"05:00")
+  tieneAlmuerzo  Boolean @default(true) // si esta franja descuenta el almuerzo del horario (ej. sábado corto = false)
+  // Ventana de almuerzo de ESTE día: "12:00" → "13:00". Va en la franja y no en
+  // el horario porque el sábado corto puede no tener, y un turno nocturno
+  // almuerza en la madrugada. Vacía = comportamiento histórico (minutos fijos).
+  almuerzoInicio String?
+  almuerzoFin    String?
 
   @@map("franjas_horario")
 }
@@ -285,6 +290,10 @@ model DiaEsperado {
   // la cambian mañana no puede mover lo que ya se liquidó.
   toleranciaSalidaMin Int         @default(0)
   ajustaEntrada       Boolean     @default(false)
+  // La ventana de almuerzo también se congela: cambiarla mañana no puede mover
+  // lo ya liquidado. Vacía en todo lo anterior a la función.
+  almuerzoInicio      String?
+  almuerzoFin         String?
   // De qué horario salió, solo informativo: el horario puede cambiar después.
   horarioId           String?
   // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)
@@ -298,30 +307,37 @@ model DiaEsperado {
 }
 
 model Registro {
-  id             String       @id @default(cuid())
-  colaboradorId  String
-  colaborador    Colaborador  @relation(fields: [colaboradorId], references: [id])
+  id              String       @id @default(cuid())
+  colaboradorId   String
+  colaborador     Colaborador  @relation(fields: [colaboradorId], references: [id])
   // Sede donde OCURRIÓ la marcación. Es distinto de las sedes asignadas al
   // colaborador: el filtro por sede de los reportes tiene que decir dónde marcó
   // de verdad, no dónde debería. Null en todo lo anterior a la función.
-  sedeId         String?
-  sede           Sede?        @relation(fields: [sedeId], references: [id])
-  fecha          DateTime
-  entrada        DateTime?
-  salida         DateTime?
-  tipo           TipoRegistro @default(NORMAL)
-  observacion    String?
+  sedeId          String?
+  sede            Sede?        @relation(fields: [sedeId], references: [id])
+  fecha           DateTime
+  entrada         DateTime?
+  salida          DateTime?
+  tipo            TipoRegistro @default(NORMAL)
+  observacion     String?
   // Salida generada por el auto-cierre (la persona no marcó): se muestra como chip
   // "No marcó salida" en la columna Salida para que el admin la revise. No toca `tipo`,
   // así la liquidación del día sigue siendo correcta (NORMAL/FESTIVO).
-  salidaEstimada Boolean      @default(false)
+  salidaEstimada  Boolean      @default(false)
+  // La salida fue a almorzar, no el fin de la jornada. Lo dice el propio
+  // colaborador en el kiosco: el sistema no puede adivinarlo.
+  salidaAlmuerzo  Boolean      @default(false)
+  // El regreso del almuerzo lo puso el sistema porque nadie lo marcó. Va en el
+  // dato y no solo en el color: el día que alguien reclame, el registro tiene
+  // que poder decir que esa hora no la marcó una persona.
+  entradaEstimada Boolean      @default(false)
   // Foto de verificación facial al marcar (se elimina automáticamente a los 2 meses)
-  fotoEntrada    String?      @db.LongText
-  fotoSalida     String?      @db.LongText
+  fotoEntrada     String?      @db.LongText
+  fotoSalida      String?      @db.LongText
   // Auditoría de correcciones manuales
-  editadoPor     String?
-  editadoEn      DateTime?
-  creadoEn       DateTime     @default(now())
+  editadoPor      String?
+  editadoEn       DateTime?
+  creadoEn        DateTime     @default(now())
 
   @@map("registros")
 }
@@ -332,6 +348,11 @@ model Permiso {
   colaborador     Colaborador @relation(fields: [colaboradorId], references: [id])
   fechaInicio     DateTime
   fechaFin        DateTime
+  // Novedad de parte del día ("cita médica de 14:00 a 17:00"). Vacías = día
+  // completo, como siempre. Solo aplican a novedades de UN día: para vacaciones
+  // de una semana no significan nada.
+  horaInicio      String?
+  horaFin         String?
   tipo            TipoPermiso
   descripcion     String?
   aprobado        Boolean     @default(false)

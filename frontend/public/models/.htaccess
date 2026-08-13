@@ -1,0 +1,38 @@
+# Modelos de reconocimiento facial (face-api). Sus nombres son fijos, así que se
+# cachean por 1 año. Va DENTRO de /models para no tocar el .htaccess raíz de
+# React Router, que vive solo en el servidor.
+#
+# Ojo: la caché de verdad la sostiene el service worker (frontend/public/sw.js),
+# que los guarda en Cache Storage. Esta cabecera es el respaldo para navegadores
+# sin service worker; la caché HTTP de un móvil desaloja 6,7 MB con facilidad.
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000"
+</IfModule>
+
+# COMPRESIÓN — leer antes de tocar.
+#
+# El servidor es LiteSpeed y comprime por tipo MIME. Los archivos `*-shard1` no
+# tienen extensión, así que salen SIN Content-Type y quedan fuera de la lista de
+# comprimibles: hoy viajan crudos (6,7 MB en vez de ~4,2 MB). El manifest .json
+# sí viaja comprimido, lo que confirma que el mecanismo funciona y que el
+# problema es el MIME ausente.
+#
+# `SetOutputFilter DEFLATE` estaba aquí y NO hacía nada (mod_deflate no está).
+# Se cambia por darles un tipo MIME, que es lo que LiteSpeed mira.
+#
+# Se declara `text/plain` y no `application/octet-stream` aposta: octet-stream
+# significa "binario opaco" y por eso está FUERA de la lista de comprimibles de
+# casi todos los servidores, LiteSpeed incluido. text/plain sí está dentro.
+# Mentir en el tipo aquí es inocuo: estos archivos solo los lee face-api, y lo
+# hace con `arrayBuffer()`, que ignora el Content-Type. Nadie más los consume.
+#
+# Para comprobar si funcionó, después de desplegar:
+#   curl -sI -H "Accept-Encoding: gzip" https://horapro.co/models/face_recognition_model-shard1 | grep -i "content-encoding\|content-length"
+# Si aparece `content-encoding: gzip` y el content-length baja, ganamos ~37% en
+# la primera descarga de cada dispositivo.
+# Si NO aparece, no se pierde nada —el service worker ya evita que se repita— y
+# queda el plan B: precomprimir los modelos a .gz en el build y que el service
+# worker los descomprima con DecompressionStream, sin depender del servidor.
+<FilesMatch "-shard[0-9]+$">
+  ForceType text/plain
+</FilesMatch>

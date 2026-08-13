@@ -10047,6 +10047,8 @@ export namespace Prisma {
     horaEntrada: string | null
     horaSalida: string | null
     tieneAlmuerzo: boolean | null
+    almuerzoInicio: string | null
+    almuerzoFin: string | null
   }
 
   export type FranjaHorarioMaxAggregateOutputType = {
@@ -10055,6 +10057,8 @@ export namespace Prisma {
     horaEntrada: string | null
     horaSalida: string | null
     tieneAlmuerzo: boolean | null
+    almuerzoInicio: string | null
+    almuerzoFin: string | null
   }
 
   export type FranjaHorarioCountAggregateOutputType = {
@@ -10064,6 +10068,8 @@ export namespace Prisma {
     horaEntrada: number
     horaSalida: number
     tieneAlmuerzo: number
+    almuerzoInicio: number
+    almuerzoFin: number
     _all: number
   }
 
@@ -10074,6 +10080,8 @@ export namespace Prisma {
     horaEntrada?: true
     horaSalida?: true
     tieneAlmuerzo?: true
+    almuerzoInicio?: true
+    almuerzoFin?: true
   }
 
   export type FranjaHorarioMaxAggregateInputType = {
@@ -10082,6 +10090,8 @@ export namespace Prisma {
     horaEntrada?: true
     horaSalida?: true
     tieneAlmuerzo?: true
+    almuerzoInicio?: true
+    almuerzoFin?: true
   }
 
   export type FranjaHorarioCountAggregateInputType = {
@@ -10091,6 +10101,8 @@ export namespace Prisma {
     horaEntrada?: true
     horaSalida?: true
     tieneAlmuerzo?: true
+    almuerzoInicio?: true
+    almuerzoFin?: true
     _all?: true
   }
 
@@ -10173,6 +10185,8 @@ export namespace Prisma {
     horaEntrada: string
     horaSalida: string
     tieneAlmuerzo: boolean
+    almuerzoInicio: string | null
+    almuerzoFin: string | null
     _count: FranjaHorarioCountAggregateOutputType | null
     _min: FranjaHorarioMinAggregateOutputType | null
     _max: FranjaHorarioMaxAggregateOutputType | null
@@ -10199,6 +10213,8 @@ export namespace Prisma {
     horaEntrada?: boolean
     horaSalida?: boolean
     tieneAlmuerzo?: boolean
+    almuerzoInicio?: boolean
+    almuerzoFin?: boolean
     horario?: boolean | HorarioDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["franjaHorario"]>
 
@@ -10210,6 +10226,8 @@ export namespace Prisma {
     horaEntrada?: boolean
     horaSalida?: boolean
     tieneAlmuerzo?: boolean
+    almuerzoInicio?: boolean
+    almuerzoFin?: boolean
   }
 
   export type FranjaHorarioInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -10228,6 +10246,8 @@ export namespace Prisma {
       horaEntrada: string
       horaSalida: string
       tieneAlmuerzo: boolean
+      almuerzoInicio: string | null
+      almuerzoFin: string | null
     }, ExtArgs["result"]["franjaHorario"]>
     composites: {}
   }
@@ -10604,6 +10624,8 @@ export namespace Prisma {
     readonly horaEntrada: FieldRef<"FranjaHorario", 'String'>
     readonly horaSalida: FieldRef<"FranjaHorario", 'String'>
     readonly tieneAlmuerzo: FieldRef<"FranjaHorario", 'Boolean'>
+    readonly almuerzoInicio: FieldRef<"FranjaHorario", 'String'>
+    readonly almuerzoFin: FieldRef<"FranjaHorario", 'String'>
   }
     
 
@@ -14890,6 +14912,8 @@ export namespace Prisma {
     minutosEsperados: number | null
     toleranciaSalidaMin: number | null
     ajustaEntrada: boolean | null
+    almuerzoInicio: string | null
+    almuerzoFin: string | null
     horarioId: string | null
     origen: string | null
     creadoEn: Date | null
@@ -14908,6 +14932,8 @@ export namespace Prisma {
     minutosEsperados: number | null
     toleranciaSalidaMin: number | null
     ajustaEntrada: boolean | null
+    almuerzoInicio: string | null
+    almuerzoFin: string | null
     horarioId: string | null
     origen: string | null
     creadoEn: Date | null
@@ -14926,6 +14952,8 @@ export namespace Prisma {
     minutosEsperados: number
     toleranciaSalidaMin: number
     ajustaEntrada: number
+    almuerzoInicio: number
+    almuerzoFin: number
     horarioId: number
     origen: number
     creadoEn: number
@@ -14960,6 +14988,8 @@ export namespace Prisma {
     minutosEsperados?: true
     toleranciaSalidaMin?: true
     ajustaEntrada?: true
+    almuerzoInicio?: true
+    almuerzoFin?: true
     horarioId?: true
     origen?: true
     creadoEn?: true
@@ -14978,6 +15008,8 @@ export namespace Prisma {
     minutosEsperados?: true
     toleranciaSalidaMin?: true
     ajustaEntrada?: true
+    almuerzoInicio?: true
+    almuerzoFin?: true
     horarioId?: true
     origen?: true
     creadoEn?: true
@@ -14996,6 +15028,8 @@ export namespace Prisma {
     minutosEsperados?: true
     toleranciaSalidaMin?: true
     ajustaEntrada?: true
+    almuerzoInicio?: true
+    almuerzoFin?: true
     horarioId?: true
     origen?: true
     creadoEn?: true
@@ -15101,6 +15135,8 @@ export namespace Prisma {
     minutosEsperados: number
     toleranciaSalidaMin: number
     ajustaEntrada: boolean
+    almuerzoInicio: string | null
+    almuerzoFin: string | null
     horarioId: string | null
     origen: string
     creadoEn: Date
@@ -15138,6 +15174,8 @@ export namespace Prisma {
     minutosEsperados?: boolean
     toleranciaSalidaMin?: boolean
     ajustaEntrada?: boolean
+    almuerzoInicio?: boolean
+    almuerzoFin?: boolean
     horarioId?: boolean
     origen?: boolean
     creadoEn?: boolean
@@ -15158,6 +15196,8 @@ export namespace Prisma {
     minutosEsperados?: boolean
     toleranciaSalidaMin?: boolean
     ajustaEntrada?: boolean
+    almuerzoInicio?: boolean
+    almuerzoFin?: boolean
     horarioId?: boolean
     origen?: boolean
     creadoEn?: boolean
@@ -15185,6 +15225,8 @@ export namespace Prisma {
       minutosEsperados: number
       toleranciaSalidaMin: number
       ajustaEntrada: boolean
+      almuerzoInicio: string | null
+      almuerzoFin: string | null
       horarioId: string | null
       origen: string
       creadoEn: Date
@@ -15570,6 +15612,8 @@ export namespace Prisma {
     readonly minutosEsperados: FieldRef<"DiaEsperado", 'Int'>
     readonly toleranciaSalidaMin: FieldRef<"DiaEsperado", 'Int'>
     readonly ajustaEntrada: FieldRef<"DiaEsperado", 'Boolean'>
+    readonly almuerzoInicio: FieldRef<"DiaEsperado", 'String'>
+    readonly almuerzoFin: FieldRef<"DiaEsperado", 'String'>
     readonly horarioId: FieldRef<"DiaEsperado", 'String'>
     readonly origen: FieldRef<"DiaEsperado", 'String'>
     readonly creadoEn: FieldRef<"DiaEsperado", 'DateTime'>
@@ -15907,6 +15951,8 @@ export namespace Prisma {
     tipo: $Enums.TipoRegistro | null
     observacion: string | null
     salidaEstimada: boolean | null
+    salidaAlmuerzo: boolean | null
+    entradaEstimada: boolean | null
     fotoEntrada: string | null
     fotoSalida: string | null
     editadoPor: string | null
@@ -15924,6 +15970,8 @@ export namespace Prisma {
     tipo: $Enums.TipoRegistro | null
     observacion: string | null
     salidaEstimada: boolean | null
+    salidaAlmuerzo: boolean | null
+    entradaEstimada: boolean | null
     fotoEntrada: string | null
     fotoSalida: string | null
     editadoPor: string | null
@@ -15941,6 +15989,8 @@ export namespace Prisma {
     tipo: number
     observacion: number
     salidaEstimada: number
+    salidaAlmuerzo: number
+    entradaEstimada: number
     fotoEntrada: number
     fotoSalida: number
     editadoPor: number
@@ -15960,6 +16010,8 @@ export namespace Prisma {
     tipo?: true
     observacion?: true
     salidaEstimada?: true
+    salidaAlmuerzo?: true
+    entradaEstimada?: true
     fotoEntrada?: true
     fotoSalida?: true
     editadoPor?: true
@@ -15977,6 +16029,8 @@ export namespace Prisma {
     tipo?: true
     observacion?: true
     salidaEstimada?: true
+    salidaAlmuerzo?: true
+    entradaEstimada?: true
     fotoEntrada?: true
     fotoSalida?: true
     editadoPor?: true
@@ -15994,6 +16048,8 @@ export namespace Prisma {
     tipo?: true
     observacion?: true
     salidaEstimada?: true
+    salidaAlmuerzo?: true
+    entradaEstimada?: true
     fotoEntrada?: true
     fotoSalida?: true
     editadoPor?: true
@@ -16084,6 +16140,8 @@ export namespace Prisma {
     tipo: $Enums.TipoRegistro
     observacion: string | null
     salidaEstimada: boolean
+    salidaAlmuerzo: boolean
+    entradaEstimada: boolean
     fotoEntrada: string | null
     fotoSalida: string | null
     editadoPor: string | null
@@ -16118,6 +16176,8 @@ export namespace Prisma {
     tipo?: boolean
     observacion?: boolean
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: boolean
     fotoSalida?: boolean
     editadoPor?: boolean
@@ -16138,6 +16198,8 @@ export namespace Prisma {
     tipo?: boolean
     observacion?: boolean
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: boolean
     fotoSalida?: boolean
     editadoPor?: boolean
@@ -16166,6 +16228,8 @@ export namespace Prisma {
       tipo: $Enums.TipoRegistro
       observacion: string | null
       salidaEstimada: boolean
+      salidaAlmuerzo: boolean
+      entradaEstimada: boolean
       fotoEntrada: string | null
       fotoSalida: string | null
       editadoPor: string | null
@@ -16551,6 +16615,8 @@ export namespace Prisma {
     readonly tipo: FieldRef<"Registro", 'TipoRegistro'>
     readonly observacion: FieldRef<"Registro", 'String'>
     readonly salidaEstimada: FieldRef<"Registro", 'Boolean'>
+    readonly salidaAlmuerzo: FieldRef<"Registro", 'Boolean'>
+    readonly entradaEstimada: FieldRef<"Registro", 'Boolean'>
     readonly fotoEntrada: FieldRef<"Registro", 'String'>
     readonly fotoSalida: FieldRef<"Registro", 'String'>
     readonly editadoPor: FieldRef<"Registro", 'String'>
@@ -16899,6 +16965,8 @@ export namespace Prisma {
     colaboradorId: string | null
     fechaInicio: Date | null
     fechaFin: Date | null
+    horaInicio: string | null
+    horaFin: string | null
     tipo: $Enums.TipoPermiso | null
     descripcion: string | null
     aprobado: boolean | null
@@ -16913,6 +16981,8 @@ export namespace Prisma {
     colaboradorId: string | null
     fechaInicio: Date | null
     fechaFin: Date | null
+    horaInicio: string | null
+    horaFin: string | null
     tipo: $Enums.TipoPermiso | null
     descripcion: string | null
     aprobado: boolean | null
@@ -16927,6 +16997,8 @@ export namespace Prisma {
     colaboradorId: number
     fechaInicio: number
     fechaFin: number
+    horaInicio: number
+    horaFin: number
     tipo: number
     descripcion: number
     aprobado: number
@@ -16943,6 +17015,8 @@ export namespace Prisma {
     colaboradorId?: true
     fechaInicio?: true
     fechaFin?: true
+    horaInicio?: true
+    horaFin?: true
     tipo?: true
     descripcion?: true
     aprobado?: true
@@ -16957,6 +17031,8 @@ export namespace Prisma {
     colaboradorId?: true
     fechaInicio?: true
     fechaFin?: true
+    horaInicio?: true
+    horaFin?: true
     tipo?: true
     descripcion?: true
     aprobado?: true
@@ -16971,6 +17047,8 @@ export namespace Prisma {
     colaboradorId?: true
     fechaInicio?: true
     fechaFin?: true
+    horaInicio?: true
+    horaFin?: true
     tipo?: true
     descripcion?: true
     aprobado?: true
@@ -17058,6 +17136,8 @@ export namespace Prisma {
     colaboradorId: string
     fechaInicio: Date
     fechaFin: Date
+    horaInicio: string | null
+    horaFin: string | null
     tipo: $Enums.TipoPermiso
     descripcion: string | null
     aprobado: boolean
@@ -17089,6 +17169,8 @@ export namespace Prisma {
     colaboradorId?: boolean
     fechaInicio?: boolean
     fechaFin?: boolean
+    horaInicio?: boolean
+    horaFin?: boolean
     tipo?: boolean
     descripcion?: boolean
     aprobado?: boolean
@@ -17105,6 +17187,8 @@ export namespace Prisma {
     colaboradorId?: boolean
     fechaInicio?: boolean
     fechaFin?: boolean
+    horaInicio?: boolean
+    horaFin?: boolean
     tipo?: boolean
     descripcion?: boolean
     aprobado?: boolean
@@ -17128,6 +17212,8 @@ export namespace Prisma {
       colaboradorId: string
       fechaInicio: Date
       fechaFin: Date
+      horaInicio: string | null
+      horaFin: string | null
       tipo: $Enums.TipoPermiso
       descripcion: string | null
       aprobado: boolean
@@ -17509,6 +17595,8 @@ export namespace Prisma {
     readonly colaboradorId: FieldRef<"Permiso", 'String'>
     readonly fechaInicio: FieldRef<"Permiso", 'DateTime'>
     readonly fechaFin: FieldRef<"Permiso", 'DateTime'>
+    readonly horaInicio: FieldRef<"Permiso", 'String'>
+    readonly horaFin: FieldRef<"Permiso", 'String'>
     readonly tipo: FieldRef<"Permiso", 'TipoPermiso'>
     readonly descripcion: FieldRef<"Permiso", 'String'>
     readonly aprobado: FieldRef<"Permiso", 'Boolean'>
@@ -24721,7 +24809,9 @@ export namespace Prisma {
     dias: 'dias',
     horaEntrada: 'horaEntrada',
     horaSalida: 'horaSalida',
-    tieneAlmuerzo: 'tieneAlmuerzo'
+    tieneAlmuerzo: 'tieneAlmuerzo',
+    almuerzoInicio: 'almuerzoInicio',
+    almuerzoFin: 'almuerzoFin'
   };
 
   export type FranjaHorarioScalarFieldEnum = (typeof FranjaHorarioScalarFieldEnum)[keyof typeof FranjaHorarioScalarFieldEnum]
@@ -24799,6 +24889,8 @@ export namespace Prisma {
     minutosEsperados: 'minutosEsperados',
     toleranciaSalidaMin: 'toleranciaSalidaMin',
     ajustaEntrada: 'ajustaEntrada',
+    almuerzoInicio: 'almuerzoInicio',
+    almuerzoFin: 'almuerzoFin',
     horarioId: 'horarioId',
     origen: 'origen',
     creadoEn: 'creadoEn',
@@ -24818,6 +24910,8 @@ export namespace Prisma {
     tipo: 'tipo',
     observacion: 'observacion',
     salidaEstimada: 'salidaEstimada',
+    salidaAlmuerzo: 'salidaAlmuerzo',
+    entradaEstimada: 'entradaEstimada',
     fotoEntrada: 'fotoEntrada',
     fotoSalida: 'fotoSalida',
     editadoPor: 'editadoPor',
@@ -24833,6 +24927,8 @@ export namespace Prisma {
     colaboradorId: 'colaboradorId',
     fechaInicio: 'fechaInicio',
     fechaFin: 'fechaFin',
+    horaInicio: 'horaInicio',
+    horaFin: 'horaFin',
     tipo: 'tipo',
     descripcion: 'descripcion',
     aprobado: 'aprobado',
@@ -25734,6 +25830,8 @@ export namespace Prisma {
     horaEntrada?: StringFilter<"FranjaHorario"> | string
     horaSalida?: StringFilter<"FranjaHorario"> | string
     tieneAlmuerzo?: BoolFilter<"FranjaHorario"> | boolean
+    almuerzoInicio?: StringNullableFilter<"FranjaHorario"> | string | null
+    almuerzoFin?: StringNullableFilter<"FranjaHorario"> | string | null
     horario?: XOR<HorarioRelationFilter, HorarioWhereInput>
   }
 
@@ -25744,6 +25842,8 @@ export namespace Prisma {
     horaEntrada?: SortOrder
     horaSalida?: SortOrder
     tieneAlmuerzo?: SortOrder
+    almuerzoInicio?: SortOrderInput | SortOrder
+    almuerzoFin?: SortOrderInput | SortOrder
     horario?: HorarioOrderByWithRelationInput
   }
 
@@ -25757,6 +25857,8 @@ export namespace Prisma {
     horaEntrada?: StringFilter<"FranjaHorario"> | string
     horaSalida?: StringFilter<"FranjaHorario"> | string
     tieneAlmuerzo?: BoolFilter<"FranjaHorario"> | boolean
+    almuerzoInicio?: StringNullableFilter<"FranjaHorario"> | string | null
+    almuerzoFin?: StringNullableFilter<"FranjaHorario"> | string | null
     horario?: XOR<HorarioRelationFilter, HorarioWhereInput>
   }, "id">
 
@@ -25767,6 +25869,8 @@ export namespace Prisma {
     horaEntrada?: SortOrder
     horaSalida?: SortOrder
     tieneAlmuerzo?: SortOrder
+    almuerzoInicio?: SortOrderInput | SortOrder
+    almuerzoFin?: SortOrderInput | SortOrder
     _count?: FranjaHorarioCountOrderByAggregateInput
     _max?: FranjaHorarioMaxOrderByAggregateInput
     _min?: FranjaHorarioMinOrderByAggregateInput
@@ -25782,6 +25886,8 @@ export namespace Prisma {
     horaEntrada?: StringWithAggregatesFilter<"FranjaHorario"> | string
     horaSalida?: StringWithAggregatesFilter<"FranjaHorario"> | string
     tieneAlmuerzo?: BoolWithAggregatesFilter<"FranjaHorario"> | boolean
+    almuerzoInicio?: StringNullableWithAggregatesFilter<"FranjaHorario"> | string | null
+    almuerzoFin?: StringNullableWithAggregatesFilter<"FranjaHorario"> | string | null
   }
 
   export type DispositivoKioscoWhereInput = {
@@ -26129,6 +26235,8 @@ export namespace Prisma {
     minutosEsperados?: IntFilter<"DiaEsperado"> | number
     toleranciaSalidaMin?: IntFilter<"DiaEsperado"> | number
     ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
+    almuerzoInicio?: StringNullableFilter<"DiaEsperado"> | string | null
+    almuerzoFin?: StringNullableFilter<"DiaEsperado"> | string | null
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
@@ -26148,6 +26256,8 @@ export namespace Prisma {
     minutosEsperados?: SortOrder
     toleranciaSalidaMin?: SortOrder
     ajustaEntrada?: SortOrder
+    almuerzoInicio?: SortOrderInput | SortOrder
+    almuerzoFin?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -26171,6 +26281,8 @@ export namespace Prisma {
     minutosEsperados?: IntFilter<"DiaEsperado"> | number
     toleranciaSalidaMin?: IntFilter<"DiaEsperado"> | number
     ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
+    almuerzoInicio?: StringNullableFilter<"DiaEsperado"> | string | null
+    almuerzoFin?: StringNullableFilter<"DiaEsperado"> | string | null
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
@@ -26190,6 +26302,8 @@ export namespace Prisma {
     minutosEsperados?: SortOrder
     toleranciaSalidaMin?: SortOrder
     ajustaEntrada?: SortOrder
+    almuerzoInicio?: SortOrderInput | SortOrder
+    almuerzoFin?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -26216,6 +26330,8 @@ export namespace Prisma {
     minutosEsperados?: IntWithAggregatesFilter<"DiaEsperado"> | number
     toleranciaSalidaMin?: IntWithAggregatesFilter<"DiaEsperado"> | number
     ajustaEntrada?: BoolWithAggregatesFilter<"DiaEsperado"> | boolean
+    almuerzoInicio?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
+    almuerzoFin?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
     horarioId?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
     origen?: StringWithAggregatesFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeWithAggregatesFilter<"DiaEsperado"> | Date | string
@@ -26235,6 +26351,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFilter<"Registro"> | $Enums.TipoRegistro
     observacion?: StringNullableFilter<"Registro"> | string | null
     salidaEstimada?: BoolFilter<"Registro"> | boolean
+    salidaAlmuerzo?: BoolFilter<"Registro"> | boolean
+    entradaEstimada?: BoolFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableFilter<"Registro"> | string | null
     fotoSalida?: StringNullableFilter<"Registro"> | string | null
     editadoPor?: StringNullableFilter<"Registro"> | string | null
@@ -26254,6 +26372,8 @@ export namespace Prisma {
     tipo?: SortOrder
     observacion?: SortOrderInput | SortOrder
     salidaEstimada?: SortOrder
+    salidaAlmuerzo?: SortOrder
+    entradaEstimada?: SortOrder
     fotoEntrada?: SortOrderInput | SortOrder
     fotoSalida?: SortOrderInput | SortOrder
     editadoPor?: SortOrderInput | SortOrder
@@ -26276,6 +26396,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFilter<"Registro"> | $Enums.TipoRegistro
     observacion?: StringNullableFilter<"Registro"> | string | null
     salidaEstimada?: BoolFilter<"Registro"> | boolean
+    salidaAlmuerzo?: BoolFilter<"Registro"> | boolean
+    entradaEstimada?: BoolFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableFilter<"Registro"> | string | null
     fotoSalida?: StringNullableFilter<"Registro"> | string | null
     editadoPor?: StringNullableFilter<"Registro"> | string | null
@@ -26295,6 +26417,8 @@ export namespace Prisma {
     tipo?: SortOrder
     observacion?: SortOrderInput | SortOrder
     salidaEstimada?: SortOrder
+    salidaAlmuerzo?: SortOrder
+    entradaEstimada?: SortOrder
     fotoEntrada?: SortOrderInput | SortOrder
     fotoSalida?: SortOrderInput | SortOrder
     editadoPor?: SortOrderInput | SortOrder
@@ -26318,6 +26442,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroWithAggregatesFilter<"Registro"> | $Enums.TipoRegistro
     observacion?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     salidaEstimada?: BoolWithAggregatesFilter<"Registro"> | boolean
+    salidaAlmuerzo?: BoolWithAggregatesFilter<"Registro"> | boolean
+    entradaEstimada?: BoolWithAggregatesFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     fotoSalida?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     editadoPor?: StringNullableWithAggregatesFilter<"Registro"> | string | null
@@ -26333,6 +26459,8 @@ export namespace Prisma {
     colaboradorId?: StringFilter<"Permiso"> | string
     fechaInicio?: DateTimeFilter<"Permiso"> | Date | string
     fechaFin?: DateTimeFilter<"Permiso"> | Date | string
+    horaInicio?: StringNullableFilter<"Permiso"> | string | null
+    horaFin?: StringNullableFilter<"Permiso"> | string | null
     tipo?: EnumTipoPermisoFilter<"Permiso"> | $Enums.TipoPermiso
     descripcion?: StringNullableFilter<"Permiso"> | string | null
     aprobado?: BoolFilter<"Permiso"> | boolean
@@ -26348,6 +26476,8 @@ export namespace Prisma {
     colaboradorId?: SortOrder
     fechaInicio?: SortOrder
     fechaFin?: SortOrder
+    horaInicio?: SortOrderInput | SortOrder
+    horaFin?: SortOrderInput | SortOrder
     tipo?: SortOrder
     descripcion?: SortOrderInput | SortOrder
     aprobado?: SortOrder
@@ -26366,6 +26496,8 @@ export namespace Prisma {
     colaboradorId?: StringFilter<"Permiso"> | string
     fechaInicio?: DateTimeFilter<"Permiso"> | Date | string
     fechaFin?: DateTimeFilter<"Permiso"> | Date | string
+    horaInicio?: StringNullableFilter<"Permiso"> | string | null
+    horaFin?: StringNullableFilter<"Permiso"> | string | null
     tipo?: EnumTipoPermisoFilter<"Permiso"> | $Enums.TipoPermiso
     descripcion?: StringNullableFilter<"Permiso"> | string | null
     aprobado?: BoolFilter<"Permiso"> | boolean
@@ -26381,6 +26513,8 @@ export namespace Prisma {
     colaboradorId?: SortOrder
     fechaInicio?: SortOrder
     fechaFin?: SortOrder
+    horaInicio?: SortOrderInput | SortOrder
+    horaFin?: SortOrderInput | SortOrder
     tipo?: SortOrder
     descripcion?: SortOrderInput | SortOrder
     aprobado?: SortOrder
@@ -26401,6 +26535,8 @@ export namespace Prisma {
     colaboradorId?: StringWithAggregatesFilter<"Permiso"> | string
     fechaInicio?: DateTimeWithAggregatesFilter<"Permiso"> | Date | string
     fechaFin?: DateTimeWithAggregatesFilter<"Permiso"> | Date | string
+    horaInicio?: StringNullableWithAggregatesFilter<"Permiso"> | string | null
+    horaFin?: StringNullableWithAggregatesFilter<"Permiso"> | string | null
     tipo?: EnumTipoPermisoWithAggregatesFilter<"Permiso"> | $Enums.TipoPermiso
     descripcion?: StringNullableWithAggregatesFilter<"Permiso"> | string | null
     aprobado?: BoolWithAggregatesFilter<"Permiso"> | boolean
@@ -27678,6 +27814,8 @@ export namespace Prisma {
     horaEntrada: string
     horaSalida: string
     tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
     horario: HorarioCreateNestedOneWithoutFranjasInput
   }
 
@@ -27688,6 +27826,8 @@ export namespace Prisma {
     horaEntrada: string
     horaSalida: string
     tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
   }
 
   export type FranjaHorarioUpdateInput = {
@@ -27696,6 +27836,8 @@ export namespace Prisma {
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     horario?: HorarioUpdateOneRequiredWithoutFranjasNestedInput
   }
 
@@ -27706,6 +27848,8 @@ export namespace Prisma {
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FranjaHorarioCreateManyInput = {
@@ -27715,6 +27859,8 @@ export namespace Prisma {
     horaEntrada: string
     horaSalida: string
     tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
   }
 
   export type FranjaHorarioUpdateManyMutationInput = {
@@ -27723,6 +27869,8 @@ export namespace Prisma {
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FranjaHorarioUncheckedUpdateManyInput = {
@@ -27732,6 +27880,8 @@ export namespace Prisma {
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type DispositivoKioscoCreateInput = {
@@ -28099,6 +28249,8 @@ export namespace Prisma {
     minutosEsperados?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -28118,6 +28270,8 @@ export namespace Prisma {
     minutosEsperados?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -28135,6 +28289,8 @@ export namespace Prisma {
     minutosEsperados?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28154,6 +28310,8 @@ export namespace Prisma {
     minutosEsperados?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28172,6 +28330,8 @@ export namespace Prisma {
     minutosEsperados?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -28189,6 +28349,8 @@ export namespace Prisma {
     minutosEsperados?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28207,6 +28369,8 @@ export namespace Prisma {
     minutosEsperados?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28221,6 +28385,8 @@ export namespace Prisma {
     tipo?: $Enums.TipoRegistro
     observacion?: string | null
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
     editadoPor?: string | null
@@ -28240,6 +28406,8 @@ export namespace Prisma {
     tipo?: $Enums.TipoRegistro
     observacion?: string | null
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
     editadoPor?: string | null
@@ -28255,6 +28423,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28274,6 +28444,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28291,6 +28463,8 @@ export namespace Prisma {
     tipo?: $Enums.TipoRegistro
     observacion?: string | null
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
     editadoPor?: string | null
@@ -28306,6 +28480,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28323,6 +28499,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28334,6 +28512,8 @@ export namespace Prisma {
     id?: string
     fechaInicio: Date | string
     fechaFin: Date | string
+    horaInicio?: string | null
+    horaFin?: string | null
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
@@ -28349,6 +28529,8 @@ export namespace Prisma {
     colaboradorId: string
     fechaInicio: Date | string
     fechaFin: Date | string
+    horaInicio?: string | null
+    horaFin?: string | null
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
@@ -28362,6 +28544,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    horaFin?: NullableStringFieldUpdateOperationsInput | string | null
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
@@ -28377,6 +28561,8 @@ export namespace Prisma {
     colaboradorId?: StringFieldUpdateOperationsInput | string
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    horaFin?: NullableStringFieldUpdateOperationsInput | string | null
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
@@ -28391,6 +28577,8 @@ export namespace Prisma {
     colaboradorId: string
     fechaInicio: Date | string
     fechaFin: Date | string
+    horaInicio?: string | null
+    horaFin?: string | null
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
@@ -28404,6 +28592,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    horaFin?: NullableStringFieldUpdateOperationsInput | string | null
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
@@ -28418,6 +28608,8 @@ export namespace Prisma {
     colaboradorId?: StringFieldUpdateOperationsInput | string
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    horaFin?: NullableStringFieldUpdateOperationsInput | string | null
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
@@ -29893,6 +30085,8 @@ export namespace Prisma {
     horaEntrada?: SortOrder
     horaSalida?: SortOrder
     tieneAlmuerzo?: SortOrder
+    almuerzoInicio?: SortOrder
+    almuerzoFin?: SortOrder
   }
 
   export type FranjaHorarioMaxOrderByAggregateInput = {
@@ -29901,6 +30095,8 @@ export namespace Prisma {
     horaEntrada?: SortOrder
     horaSalida?: SortOrder
     tieneAlmuerzo?: SortOrder
+    almuerzoInicio?: SortOrder
+    almuerzoFin?: SortOrder
   }
 
   export type FranjaHorarioMinOrderByAggregateInput = {
@@ -29909,6 +30105,8 @@ export namespace Prisma {
     horaEntrada?: SortOrder
     horaSalida?: SortOrder
     tieneAlmuerzo?: SortOrder
+    almuerzoInicio?: SortOrder
+    almuerzoFin?: SortOrder
   }
 
   export type DispositivoKioscoCountOrderByAggregateInput = {
@@ -30182,6 +30380,8 @@ export namespace Prisma {
     minutosEsperados?: SortOrder
     toleranciaSalidaMin?: SortOrder
     ajustaEntrada?: SortOrder
+    almuerzoInicio?: SortOrder
+    almuerzoFin?: SortOrder
     horarioId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -30207,6 +30407,8 @@ export namespace Prisma {
     minutosEsperados?: SortOrder
     toleranciaSalidaMin?: SortOrder
     ajustaEntrada?: SortOrder
+    almuerzoInicio?: SortOrder
+    almuerzoFin?: SortOrder
     horarioId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -30225,6 +30427,8 @@ export namespace Prisma {
     minutosEsperados?: SortOrder
     toleranciaSalidaMin?: SortOrder
     ajustaEntrada?: SortOrder
+    almuerzoInicio?: SortOrder
+    almuerzoFin?: SortOrder
     horarioId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -30260,6 +30464,8 @@ export namespace Prisma {
     tipo?: SortOrder
     observacion?: SortOrder
     salidaEstimada?: SortOrder
+    salidaAlmuerzo?: SortOrder
+    entradaEstimada?: SortOrder
     fotoEntrada?: SortOrder
     fotoSalida?: SortOrder
     editadoPor?: SortOrder
@@ -30277,6 +30483,8 @@ export namespace Prisma {
     tipo?: SortOrder
     observacion?: SortOrder
     salidaEstimada?: SortOrder
+    salidaAlmuerzo?: SortOrder
+    entradaEstimada?: SortOrder
     fotoEntrada?: SortOrder
     fotoSalida?: SortOrder
     editadoPor?: SortOrder
@@ -30294,6 +30502,8 @@ export namespace Prisma {
     tipo?: SortOrder
     observacion?: SortOrder
     salidaEstimada?: SortOrder
+    salidaAlmuerzo?: SortOrder
+    entradaEstimada?: SortOrder
     fotoEntrada?: SortOrder
     fotoSalida?: SortOrder
     editadoPor?: SortOrder
@@ -30323,6 +30533,8 @@ export namespace Prisma {
     colaboradorId?: SortOrder
     fechaInicio?: SortOrder
     fechaFin?: SortOrder
+    horaInicio?: SortOrder
+    horaFin?: SortOrder
     tipo?: SortOrder
     descripcion?: SortOrder
     aprobado?: SortOrder
@@ -30337,6 +30549,8 @@ export namespace Prisma {
     colaboradorId?: SortOrder
     fechaInicio?: SortOrder
     fechaFin?: SortOrder
+    horaInicio?: SortOrder
+    horaFin?: SortOrder
     tipo?: SortOrder
     descripcion?: SortOrder
     aprobado?: SortOrder
@@ -30351,6 +30565,8 @@ export namespace Prisma {
     colaboradorId?: SortOrder
     fechaInicio?: SortOrder
     fechaFin?: SortOrder
+    horaInicio?: SortOrder
+    horaFin?: SortOrder
     tipo?: SortOrder
     descripcion?: SortOrder
     aprobado?: SortOrder
@@ -33872,6 +34088,8 @@ export namespace Prisma {
     horaEntrada: string
     horaSalida: string
     tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
   }
 
   export type FranjaHorarioUncheckedCreateWithoutHorarioInput = {
@@ -33880,6 +34098,8 @@ export namespace Prisma {
     horaEntrada: string
     horaSalida: string
     tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
   }
 
   export type FranjaHorarioCreateOrConnectWithoutHorarioInput = {
@@ -34035,6 +34255,8 @@ export namespace Prisma {
     horaEntrada?: StringFilter<"FranjaHorario"> | string
     horaSalida?: StringFilter<"FranjaHorario"> | string
     tieneAlmuerzo?: BoolFilter<"FranjaHorario"> | boolean
+    almuerzoInicio?: StringNullableFilter<"FranjaHorario"> | string | null
+    almuerzoFin?: StringNullableFilter<"FranjaHorario"> | string | null
   }
 
   export type ColaboradorUpsertWithWhereUniqueWithoutHorarioInput = {
@@ -34331,6 +34553,8 @@ export namespace Prisma {
     tipo?: $Enums.TipoRegistro
     observacion?: string | null
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
     editadoPor?: string | null
@@ -34348,6 +34572,8 @@ export namespace Prisma {
     tipo?: $Enums.TipoRegistro
     observacion?: string | null
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
     editadoPor?: string | null
@@ -34369,6 +34595,8 @@ export namespace Prisma {
     id?: string
     fechaInicio: Date | string
     fechaFin: Date | string
+    horaInicio?: string | null
+    horaFin?: string | null
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
@@ -34382,6 +34610,8 @@ export namespace Prisma {
     id?: string
     fechaInicio: Date | string
     fechaFin: Date | string
+    horaInicio?: string | null
+    horaFin?: string | null
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
@@ -34412,6 +34642,8 @@ export namespace Prisma {
     minutosEsperados?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -34429,6 +34661,8 @@ export namespace Prisma {
     minutosEsperados?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -34592,6 +34826,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFilter<"Registro"> | $Enums.TipoRegistro
     observacion?: StringNullableFilter<"Registro"> | string | null
     salidaEstimada?: BoolFilter<"Registro"> | boolean
+    salidaAlmuerzo?: BoolFilter<"Registro"> | boolean
+    entradaEstimada?: BoolFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableFilter<"Registro"> | string | null
     fotoSalida?: StringNullableFilter<"Registro"> | string | null
     editadoPor?: StringNullableFilter<"Registro"> | string | null
@@ -34623,6 +34859,8 @@ export namespace Prisma {
     colaboradorId?: StringFilter<"Permiso"> | string
     fechaInicio?: DateTimeFilter<"Permiso"> | Date | string
     fechaFin?: DateTimeFilter<"Permiso"> | Date | string
+    horaInicio?: StringNullableFilter<"Permiso"> | string | null
+    horaFin?: StringNullableFilter<"Permiso"> | string | null
     tipo?: EnumTipoPermisoFilter<"Permiso"> | $Enums.TipoPermiso
     descripcion?: StringNullableFilter<"Permiso"> | string | null
     aprobado?: BoolFilter<"Permiso"> | boolean
@@ -34663,6 +34901,8 @@ export namespace Prisma {
     minutosEsperados?: IntFilter<"DiaEsperado"> | number
     toleranciaSalidaMin?: IntFilter<"DiaEsperado"> | number
     ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
+    almuerzoInicio?: StringNullableFilter<"DiaEsperado"> | string | null
+    almuerzoFin?: StringNullableFilter<"DiaEsperado"> | string | null
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
@@ -34777,6 +35017,8 @@ export namespace Prisma {
     tipo?: $Enums.TipoRegistro
     observacion?: string | null
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
     editadoPor?: string | null
@@ -34794,6 +35036,8 @@ export namespace Prisma {
     tipo?: $Enums.TipoRegistro
     observacion?: string | null
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
     editadoPor?: string | null
@@ -37196,6 +37440,8 @@ export namespace Prisma {
     horaEntrada: string
     horaSalida: string
     tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
   }
 
   export type ColaboradorCreateManyHorarioInput = {
@@ -37223,6 +37469,8 @@ export namespace Prisma {
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FranjaHorarioUncheckedUpdateWithoutHorarioInput = {
@@ -37231,6 +37479,8 @@ export namespace Prisma {
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FranjaHorarioUncheckedUpdateManyWithoutHorarioInput = {
@@ -37239,6 +37489,8 @@ export namespace Prisma {
     horaEntrada?: StringFieldUpdateOperationsInput | string
     horaSalida?: StringFieldUpdateOperationsInput | string
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ColaboradorUpdateWithoutHorarioInput = {
@@ -37315,6 +37567,8 @@ export namespace Prisma {
     tipo?: $Enums.TipoRegistro
     observacion?: string | null
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
     editadoPor?: string | null
@@ -37326,6 +37580,8 @@ export namespace Prisma {
     id?: string
     fechaInicio: Date | string
     fechaFin: Date | string
+    horaInicio?: string | null
+    horaFin?: string | null
     tipo: $Enums.TipoPermiso
     descripcion?: string | null
     aprobado?: boolean
@@ -37346,6 +37602,8 @@ export namespace Prisma {
     minutosEsperados?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -37365,6 +37623,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
@@ -37382,6 +37642,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
@@ -37398,6 +37660,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
@@ -37409,6 +37673,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    horaFin?: NullableStringFieldUpdateOperationsInput | string | null
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
@@ -37422,6 +37688,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    horaFin?: NullableStringFieldUpdateOperationsInput | string | null
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
@@ -37435,6 +37703,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    horaFin?: NullableStringFieldUpdateOperationsInput | string | null
     tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
     descripcion?: NullableStringFieldUpdateOperationsInput | string | null
     aprobado?: BoolFieldUpdateOperationsInput | boolean
@@ -37455,6 +37725,8 @@ export namespace Prisma {
     minutosEsperados?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -37472,6 +37744,8 @@ export namespace Prisma {
     minutosEsperados?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -37489,6 +37763,8 @@ export namespace Prisma {
     minutosEsperados?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -37524,6 +37800,8 @@ export namespace Prisma {
     tipo?: $Enums.TipoRegistro
     observacion?: string | null
     salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
     editadoPor?: string | null
@@ -37554,6 +37832,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
@@ -37571,6 +37851,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
@@ -37587,6 +37869,8 @@ export namespace Prisma {
     tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null

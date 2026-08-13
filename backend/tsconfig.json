@@ -11,6 +11,9 @@
     "resolveJsonModule": true
   },
   "include": ["src/**/*"],
+  // Las pruebas viven junto al código que prueban, pero NO se compilan: `tsc`
+  // las metería en dist/ y viajarían al servidor con cada despliegue.
+  "exclude": ["src/**/*.test.ts"],
   "ts-node": {
     "files": true
   }

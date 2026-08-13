@@ -220,7 +220,9 @@ exports.Prisma.FranjaHorarioScalarFieldEnum = {
   dias: 'dias',
   horaEntrada: 'horaEntrada',
   horaSalida: 'horaSalida',
-  tieneAlmuerzo: 'tieneAlmuerzo'
+  tieneAlmuerzo: 'tieneAlmuerzo',
+  almuerzoInicio: 'almuerzoInicio',
+  almuerzoFin: 'almuerzoFin'
 };
 
 exports.Prisma.DispositivoKioscoScalarFieldEnum = {
@@ -283,6 +285,8 @@ exports.Prisma.DiaEsperadoScalarFieldEnum = {
   minutosEsperados: 'minutosEsperados',
   toleranciaSalidaMin: 'toleranciaSalidaMin',
   ajustaEntrada: 'ajustaEntrada',
+  almuerzoInicio: 'almuerzoInicio',
+  almuerzoFin: 'almuerzoFin',
   horarioId: 'horarioId',
   origen: 'origen',
   creadoEn: 'creadoEn',
@@ -299,6 +303,8 @@ exports.Prisma.RegistroScalarFieldEnum = {
   tipo: 'tipo',
   observacion: 'observacion',
   salidaEstimada: 'salidaEstimada',
+  salidaAlmuerzo: 'salidaAlmuerzo',
+  entradaEstimada: 'entradaEstimada',
   fotoEntrada: 'fotoEntrada',
   fotoSalida: 'fotoSalida',
   editadoPor: 'editadoPor',
@@ -311,6 +317,8 @@ exports.Prisma.PermisoScalarFieldEnum = {
   colaboradorId: 'colaboradorId',
   fechaInicio: 'fechaInicio',
   fechaFin: 'fechaFin',
+  horaInicio: 'horaInicio',
+  horaFin: 'horaFin',
   tipo: 'tipo',
   descripcion: 'descripcion',
   aprobado: 'aprobado',

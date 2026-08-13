@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import { Plus, Edit2, Trash2, X, Camera, Info } from 'lucide-react';
 import api from '../lib/api';
+import ConfirmDialog from '../components/ConfirmDialog';
+import ModalJornada from './registros/ModalJornada';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
@@ -13,8 +15,101 @@ type Registro = {
   // null = sin horario asignado o día que no aplica; 0 = a tiempo; >0 = minutos tarde
   minutosTarde: number | null;
   tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
+  // El sistema cerró el turno (la persona no marcó salida): la hora es estimada y hay que revisarla
+  salidaEstimada?: boolean;
+  salidaAlmuerzo?: boolean;
+  // El almuerzo es del DÍA: viaja repetido en cada fila de ese día, pero se
+  // pinta en una sola (la ancla) para que nadie lo lea dos veces.
+  almuerzo: Almuerzo | null;
+  almuerzoEnEstaFila: boolean;
+};
+type Almuerzo = {
+  estado: 'SIN_VENTANA' | 'MARCADO' | 'ABIERTO' | 'NO_MARCADO';
+  ventana: { inicio: string; fin: string } | null;
+  salida: string | null;
+  regreso: string | null;
+  minutos: number | null;      // lo que se tomó de verdad
+  minutosDescontados: number;  // lo que le cuesta al día
+  regresoEstimado: boolean;
+  seExcedio: boolean;
+  minutosDeMas: number;
 };
 type Fotos = { fotoEntrada: string | null; fotoSalida: string | null };
+
+// "1 h", "45 min", "1 h 25 min"
+const enHoras = (min: number) => {
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+};
+
+// Celda de almuerzo. Se pinta una sola vez por día (en la fila ancla); las demás
+// filas del mismo día apuntan a ella en vez de repetir el número, porque son
+// minutos de plata y repetidos invitan a sumarlos.
+function CeldaAlmuerzo({ r, ancla }: { r: Registro; ancla: Registro | undefined }) {
+  const a = r.almuerzo;
+  const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '';
+
+  if (!a || (a.estado === 'SIN_VENTANA' && a.minutosDescontados === 0)) {
+    return <span className="text-gray-300">—</span>;
+  }
+  if (!r.almuerzoEnEstaFila) {
+    // Sin tooltip: en la tablet de recepción los tooltips no existen.
+    return (
+      <span className="text-[11px] text-gray-400">
+        {ancla?.entrada ? `ver ${hhmm(ancla.entrada)}` : 'ver arriba'}
+      </span>
+    );
+  }
+
+  if (a.estado === 'ABIERTO') {
+    return (
+      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 whitespace-nowrap">
+        Salió {hhmm(a.salida)} · sin regreso
+      </span>
+    );
+  }
+
+  if (a.estado === 'MARCADO') {
+    return (
+      <div className="leading-tight">
+        <span className="font-mono text-xs text-gray-700 whitespace-nowrap">
+          {hhmm(a.salida)} → {hhmm(a.regreso)}
+        </span>
+        <p className={`text-[10px] ${a.seExcedio ? 'text-amber-700 font-semibold' : 'text-muted'}`}>
+          {enHoras(a.minutos ?? 0)}
+          {/* Por cuánto se pasó, no solo que se pasó: dos minutos y media hora
+              no son lo mismo y el administrador decide distinto en cada caso.
+              El número viene del backend: "pasarse" es respecto al FIN de la
+              ventana, no a su duración, y esa cuenta no se hace aquí. */}
+          {a.seExcedio && ` · se pasó ${enHoras(a.minutosDeMas)}`}
+          {a.regresoEstimado && ' · regreso estimado'}
+        </p>
+      </div>
+    );
+  }
+
+  // Sin ventana pero con descuento: es el caso de la mayoría hoy. Ese descuento
+  // existe todos los días y hasta ahora no se veía en ninguna pantalla.
+  if (a.estado === 'SIN_VENTANA') {
+    return (
+      <div className="leading-tight">
+        <span className="text-xs text-gray-700">{enHoras(a.minutosDescontados)} fija</span>
+        <p className="text-[10px] text-muted">sin horario definido</p>
+      </div>
+    );
+  }
+
+  // NO_MARCADO
+  return (
+    <div className="leading-tight">
+      <span className="text-xs text-gray-500">No marcó</span>
+      <p className="text-[10px] text-muted">
+        {a.minutosDescontados > 0 ? `se descuenta ${enHoras(a.minutosDescontados)}` : 'sin descuento'}
+      </p>
+    </div>
+  );
+}
 
 export default function Registros() {
   const [registros, setRegistros] = useState<Registro[]>([]);
@@ -27,6 +122,29 @@ export default function Registros() {
   const [form, setForm] = useState({ colaboradorId: '', fecha: '', entrada: '', salida: '', tipo: 'NORMAL', observacion: '' });
   const [fotosDe, setFotosDe] = useState<Registro | null>(null);
   const [fotos, setFotos] = useState<Fotos | null>(null);
+  const [eliminarId, setEliminarId] = useState<string | null>(null);
+  // Detalle de una marcación. La fila de la tabla no se explica sola: el
+  // almuerzo vive en el hueco entre dos filas y la tardanza solo se mide en la
+  // primera entrada del día.
+  const [jornadaId, setJornadaId] = useState<string | null>(null);
+  // Otros registros que ya existen en el día que se está creando/editando. La
+  // tardanza solo se evalúa sobre la PRIMERA entrada del día, así que si ya hay
+  // una anterior, la que se está agregando no va a mostrar minutos tarde. Sin
+  // este aviso el usuario cree que el cálculo falló.
+  const [otrosDelDia, setOtrosDelDia] = useState<Registro[]>([]);
+
+  useEffect(() => {
+    if (!modal || !form.colaboradorId || !form.fecha) { setOtrosDelDia([]); return; }
+    let vigente = true;
+    api.get('/registros', { params: { colaboradorId: form.colaboradorId, desde: form.fecha, hasta: form.fecha } })
+      .then(r => {
+        if (!vigente) return;
+        const otros = (r.data as Registro[]).filter(x => x.id !== editando?.id && x.entrada);
+        setOtrosDelDia(otros.sort((a, b) => (a.entrada! < b.entrada! ? -1 : 1)));
+      })
+      .catch(() => { if (vigente) setOtrosDelDia([]); });
+    return () => { vigente = false; };
+  }, [modal, form.colaboradorId, form.fecha, editando?.id]);
 
   const cargar = () => {
     const params: any = { desde, hasta };
@@ -61,11 +179,29 @@ export default function Registros() {
     cargar();
   };
 
-  const eliminar = async (id: string) => {
-    if (!confirm('¿Eliminar este registro?')) return;
-    await api.delete(`/registros/${id}`);
+  const confirmarEliminar = async () => {
+    if (!eliminarId) return;
+    await api.delete(`/registros/${eliminarId}`);
+    setEliminarId(null);
     cargar();
   };
+
+  // La columna de Almuerzo aparece cuando ese día descuenta almuerzo, tenga o no
+  // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
+  // 60 min" sin decir de qué hora a qué hora: exigir la ventana escondería la
+  // columna justo donde el descuento es invisible.
+  const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.almuerzo.minutosDescontados > 0));
+
+  // Fila de cada día donde se pinta el almuerzo, para que las demás la señalen.
+  const anclaPorDia = useMemo(() => {
+    const m = new Map<string, Registro>();
+    for (const r of registros) {
+      if (r.almuerzoEnEstaFila) m.set(`${r.colaboradorId}|${format(toZonedTime(new Date(r.fecha), TZ), 'yyyy-MM-dd')}`, r);
+    }
+    return m;
+  }, [registros]);
+  const anclaDe = (r: Registro) =>
+    anclaPorDia.get(`${r.colaboradorId}|${format(toZonedTime(new Date(r.fecha), TZ), 'yyyy-MM-dd')}`);
 
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
   const duracion = (entrada: string | null, salida: string | null) => {
@@ -105,13 +241,15 @@ export default function Registros() {
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[680px]">
           <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
             <tr>
               <th className="px-4 py-3 text-left">Colaborador</th>
               <th className="px-4 py-3 text-left">Fecha</th>
               <th className="px-4 py-3 text-center">Entrada</th>
               <th className="px-4 py-3 text-center">Salida</th>
+              {hayAlmuerzo && <th className="px-4 py-3 text-center">Almuerzo</th>}
               <th className="px-4 py-3 text-center">Llegada</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Duración</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Tipo</th>
@@ -120,11 +258,23 @@ export default function Registros() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {registros.map(r => (
-              <tr key={r.id} className="hover:bg-gray-50">
+              <tr key={r.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setJornadaId(r.id)}>
                 <td className="px-4 py-3 font-medium text-gray-800">{r.colaborador.nombre} {r.colaborador.apellido}</td>
                 <td className="px-4 py-3 text-gray-600 capitalize">{format(toZonedTime(new Date(r.fecha), TZ), "d MMM yyyy", { locale: es })}</td>
                 <td className="px-4 py-3 text-center text-green-700 font-mono">{fmtHora(r.entrada)}</td>
-                <td className="px-4 py-3 text-center text-red-600 font-mono">{fmtHora(r.salida)}</td>
+                <td className="px-4 py-3 text-center">
+                  {r.salidaEstimada ? (
+                    <span title="El sistema cerró el turno porque no marcó salida. Revisa la hora."
+                      className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 whitespace-nowrap">
+                      No marcó salida{r.salida ? ` · ~${fmtHora(r.salida)}` : ''}
+                    </span>
+                  ) : (
+                    <span className="text-red-600 font-mono">{fmtHora(r.salida)}</span>
+                  )}
+                </td>
+                {hayAlmuerzo && (
+                  <td className="px-4 py-3 text-center"><CeldaAlmuerzo r={r} ancla={anclaDe(r)} /></td>
+                )}
                 <td className="px-4 py-3 text-center">
                   {r.minutosTarde === null ? (
                     <span className="text-gray-300">—</span>
@@ -141,19 +291,22 @@ export default function Registros() {
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.tipo === 'NORMAL' ? 'bg-blue-50 text-blue-700' : r.tipo === 'PERMISO' ? 'bg-yellow-50 text-yellow-700' : 'bg-purple-50 text-purple-700'}`}>{r.tipo}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center justify-center gap-2">
+                  {/* Los botones tienen su propia acción: sin esto, tocarlos
+                      dispararía además el modal de la fila. */}
+                  <div className="flex items-center justify-center gap-2" onClick={e => e.stopPropagation()}>
                     {(r.tieneFotoEntrada || r.tieneFotoSalida) && (
                       <button onClick={() => verFotos(r)} title="Ver fotos de verificación facial"
                         className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"><Camera size={15} /></button>
                     )}
                     <button onClick={() => abrir(r)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={15} /></button>
-                    <button onClick={() => eliminar(r.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
+                    <button onClick={() => setEliminarId(r.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
         {registros.length === 0 && <p className="text-center text-gray-400 py-8">No hay registros para el período seleccionado</p>}
       </div>
 
@@ -199,6 +352,27 @@ export default function Registros() {
                 <label className="block text-xs font-medium text-gray-600 mb-1">Observación</label>
                 <input value={form.observacion} onChange={e => setForm(p => ({ ...p, observacion: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
+
+              {/* La tardanza se evalúa solo sobre la primera entrada del día (para
+                  que volver del almuerzo no cuente como llegar tarde). Si ya hay
+                  una anterior, este registro no va a mostrar minutos tarde, y sin
+                  avisarlo parece que el cálculo falló. */}
+              {otrosDelDia.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+                  <Info size={16} className="mt-0.5 shrink-0" />
+                  <span>
+                    Ese día ya tiene {otrosDelDia.length === 1 ? 'un registro' : `${otrosDelDia.length} registros`} con entrada
+                    a las <b>{otrosDelDia.map(o => fmtHora(o.entrada)).join(', ')}</b>.
+                    {form.entrada && fmtHora(otrosDelDia[0].entrada) < form.entrada ? (
+                      <> La llegada tarde se calcula sobre la primera entrada del día,
+                      así que <b>este registro no mostrará minutos tarde</b>. Si vas a corregir la
+                      hora de llegada, edita el registro de las {fmtHora(otrosDelDia[0].entrada)}.</>
+                    ) : (
+                      <> La llegada tarde se calcula sobre la primera entrada del día.</>
+                    )}
+                  </span>
+                </div>
+              )}
               <div className="flex gap-3 justify-end">
                 <button type="button" onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
                 <button type="submit" className="px-4 py-2 text-sm bg-blue-800 text-white rounded-lg hover:bg-blue-700">Guardar</button>
@@ -244,6 +418,29 @@ export default function Registros() {
           </div>
         </div>
       )}
+
+      {jornadaId && (
+        <ModalJornada
+          key={jornadaId}
+          registroId={jornadaId}
+          onCerrar={() => setJornadaId(null)}
+          onCambiarDeTramo={setJornadaId}
+          onEditar={reg => abrir(reg as Registro)}
+          // El detalle se cierra al eliminar: si no, queda encima mostrando una
+          // marcación que ya no existe y el siguiente clic falla con un 404.
+          onEliminar={id => { setJornadaId(null); setEliminarId(id); }}
+        />
+      )}
+
+      <ConfirmDialog
+        abierto={eliminarId !== null}
+        titulo="¿Eliminar este registro?"
+        subtitulo="Esta acción no se puede deshacer."
+        textoContinuar="Eliminar"
+        peligro
+        onContinuar={confirmarEliminar}
+        onCancelar={() => setEliminarId(null)}
+      />
     </div>
   );
 }

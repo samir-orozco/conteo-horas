@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Copy, Check, ExternalLink, MonitorSmartphone, ScanFace, ShieldCheck, KeyRound, Trash2, TabletSmartphone } from 'lucide-react';
+import { Copy, Check, ExternalLink, MonitorSmartphone, ScanFace, ShieldCheck, KeyRound, Trash2, TabletSmartphone, Pencil, X, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useMiPlan } from '../lib/plan';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -8,11 +10,15 @@ type Dispositivo = { id: string; nombre: string; creadoEn: string; ultimoUso: st
 // Página del panel empresa: link único del kiosco + seguridad por dispositivos.
 export default function MarcadorLink() {
   const [token, setToken] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { plan } = useMiPlan();
   const [soloDispositivos, setSoloDispositivos] = useState(false);
   const [dispositivos, setDispositivos] = useState<Dispositivo[]>([]);
   const [codigo, setCodigo] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [revocando, setRevocando] = useState<Dispositivo | null>(null);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [nombreEdit, setNombreEdit] = useState('');
 
   const cargar = () => {
     api.get('/configuracion/marcador-link').then(r => {
@@ -38,15 +44,32 @@ export default function MarcadorLink() {
     setSoloDispositivos(nuevo);
   };
 
+  const [errorDisp, setErrorDisp] = useState('');
   const generarCodigo = async () => {
-    const r = await api.post('/configuracion/dispositivos/codigo');
-    setCodigo(r.data.codigo);
+    setErrorDisp('');
+    try {
+      const r = await api.post('/configuracion/dispositivos/codigo');
+      setCodigo(r.data.codigo);
+    } catch (err: any) {
+      setErrorDisp(err.response?.data?.error ?? 'No pudimos generar el código.');
+    }
   };
+
+  const sinCupoDispositivos = !!plan && !plan.features.multiDispositivo && dispositivos.length >= 1;
 
   const revocar = async () => {
     if (!revocando) return;
     await api.delete(`/configuracion/dispositivos/${revocando.id}`);
     setRevocando(null);
+    cargar();
+  };
+
+  const abrirEdicion = (d: Dispositivo) => { setEditandoId(d.id); setNombreEdit(d.nombre); };
+  const guardarNombre = async (id: string) => {
+    const limpio = nombreEdit.trim();
+    if (!limpio) return;
+    await api.put(`/configuracion/dispositivos/${id}`, { nombre: limpio });
+    setEditandoId(null);
     cargar();
   };
 
@@ -97,6 +120,15 @@ export default function MarcadorLink() {
 
         {soloDispositivos && (
           <div className="mt-5 border-t border-gray-100 pt-5">
+            {sinCupoDispositivos ? (
+              <div className="mb-4 bg-gray-50 border border-dashed border-gray-300 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                <p className="text-sm text-muted flex items-center gap-2">
+                  <Lock size={15} /> Tu plan permite <b className="text-ink">un solo dispositivo</b>. Elimina el actual o sube de plan para vincular más.
+                </p>
+                <button onClick={() => navigate('/app/configuracion?tab=suscripcion')}
+                  className="shrink-0 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-3 py-1.5 rounded-lg">Subir de plan</button>
+              </div>
+            ) : (
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
               <button onClick={generarCodigo}
                 className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink font-semibold px-4 py-2.5 rounded-xl text-sm">
@@ -109,6 +141,8 @@ export default function MarcadorLink() {
                 </div>
               )}
             </div>
+            )}
+            {errorDisp && <p className="text-sm text-red-600 mb-3">{errorDisp}</p>}
 
             <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Dispositivos vinculados</p>
             {dispositivos.length === 0 ? (
@@ -117,17 +151,37 @@ export default function MarcadorLink() {
               <div className="space-y-2">
                 {dispositivos.map(d => (
                   <div key={d.id} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-2.5">
-                    <TabletSmartphone size={16} className="text-muted" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-ink">{d.nombre}</p>
-                      <p className="text-xs text-muted">
-                        Vinculado el {new Date(d.creadoEn).toLocaleDateString('es-CO')}
-                        {d.ultimoUso && ` · último uso ${new Date(d.ultimoUso).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
-                      </p>
+                    <TabletSmartphone size={16} className="text-muted shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      {editandoId === d.id ? (
+                        <div className="flex items-center gap-2">
+                          <input autoFocus value={nombreEdit} maxLength={60}
+                            onChange={e => setNombreEdit(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') guardarNombre(d.id); if (e.key === 'Escape') setEditandoId(null); }}
+                            className="flex-1 min-w-0 border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                          <button onClick={() => guardarNombre(d.id)} title="Guardar" className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Check size={16} /></button>
+                          <button onClick={() => setEditandoId(null)} title="Cancelar" className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={16} /></button>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium text-ink truncate">{d.nombre}</p>
+                          <p className="text-xs text-muted">
+                            Vinculado el {new Date(d.creadoEn).toLocaleDateString('es-CO')}
+                            {d.ultimoUso && ` · último uso ${new Date(d.ultimoUso).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+                          </p>
+                        </>
+                      )}
                     </div>
-                    <button onClick={() => setRevocando(d)} title="Revocar" className="p-2 text-red-400 hover:bg-red-50 rounded-lg">
-                      <Trash2 size={15} />
-                    </button>
+                    {editandoId !== d.id && (
+                      <>
+                        <button onClick={() => abrirEdicion(d)} title="Renombrar" className="p-2 text-gray-400 hover:bg-gray-100 hover:text-ink rounded-lg">
+                          <Pencil size={15} />
+                        </button>
+                        <button onClick={() => setRevocando(d)} title="Revocar" className="p-2 text-red-400 hover:bg-red-50 rounded-lg">
+                          <Trash2 size={15} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
