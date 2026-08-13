@@ -448,8 +448,8 @@ export default function TabHorario() {
                           <p className="text-xs font-medium text-muted">Horario de almuerzo</p>
                           {(f.almuerzoInicio || f.almuerzoFin) && (
                             <button type="button" onClick={() => setFranja(i, { almuerzoInicio: '', almuerzoFin: '' })}
-                              className="text-[11px] font-medium text-muted hover:text-ink underline underline-offset-2">
-                              Quitar
+                              className="text-[11px] font-semibold text-red-500 hover:text-red-600 underline underline-offset-2">
+                              Limpiar
                             </button>
                           )}
                         </div>
