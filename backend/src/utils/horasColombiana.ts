@@ -163,6 +163,39 @@ export function calcularValorHora(salarioMensual: number, horasMes: number): num
 // y su hora base ya está incluida en el salario mensual.
 export const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
 
+// Descuenta minutos de almuerzo repartiéndolos entre las horas ORDINARIAS del
+// día, no solo entre las diurnas.
+//
+// `descontarAlmuerzo` (arriba) busca literalmente 'HOD', así que un turno 100%
+// nocturno o dominical nunca pierde su almuerzo: se le paga una hora que no
+// trabajó. Afecta a vigilancia y a salud, que es justo donde más turnos así hay.
+//
+// Esta versión se usa solo cuando el día tiene ventana de almuerzo configurada.
+// Los días anteriores siguen por el camino viejo A PROPÓSITO: corregirlos
+// retroactivamente bajaría la paga de gente a la que ya se le liquidó, y eso se
+// decide con el dueño, no se cuela en un despliegue.
+export function descontarAlmuerzoOrdinarias(
+  resultado: TipoHoraCalculo[],
+  almuerzoMin: number
+): { descontado: number } {
+  if (almuerzoMin <= 0) return { descontado: 0 };
+  let porRestar = almuerzoMin;
+  let descontado = 0;
+  // Se empieza por las diurnas ordinarias: son las más baratas, así que quitar
+  // de ahí es lo que menos castiga al trabajador cuando el turno mezcla tipos.
+  const orden = ['HOD', 'HON', 'HDD', 'HND'];
+  for (const codigo of orden) {
+    if (porRestar <= 0) break;
+    const t = resultado.find(x => x.codigo === codigo);
+    if (!t || t.minutos <= 0) continue;
+    const restar = Math.min(porRestar, t.minutos);
+    t.minutos -= restar;
+    porRestar -= restar;
+    descontado += restar;
+  }
+  return { descontado };
+}
+
 // Liquidación de lo que se paga ADEMÁS del salario:
 //  - Ordinaria diurna (HOD): $0, ya está en el salario.
 //  - Ordinaria nocturna / dominical / festiva: solo el recargo (factor − 1).

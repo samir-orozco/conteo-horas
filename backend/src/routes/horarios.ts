@@ -4,7 +4,12 @@ import { jornadaVigente } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { regenerarFuturoDeHorario } from '../utils/materializarDias';
 
-type FranjaInput = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean };
+type FranjaInput = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean; almuerzoInicio?: string; almuerzoFin?: string };
+
+// "HH:MM" o nada. Media ventana no define un almuerzo, así que o vienen las dos
+// horas o no viene ninguna: guardar una sola dejaría una configuración que no se
+// puede cumplir y que nadie sabría interpretar.
+const hora = (v: unknown): string | null => (typeof v === 'string' && /^\d{2}:\d{2}$/.test(v) ? v : null);
 
 // Cada franja: días válidos, horas HH:MM y al menos un día
 function validarFranjas(franjas: unknown): franjas is FranjaInput[] {
@@ -15,12 +20,19 @@ function validarFranjas(franjas: unknown): franjas is FranjaInput[] {
   );
 }
 
-const mapFranja = (f: FranjaInput) => ({
-  dias: f.dias,
-  horaEntrada: f.horaEntrada,
-  horaSalida: f.horaSalida,
-  tieneAlmuerzo: f.tieneAlmuerzo !== false, // por defecto sí descuenta almuerzo
-});
+const mapFranja = (f: FranjaInput) => {
+  const ini = hora(f.almuerzoInicio);
+  const fin = hora(f.almuerzoFin);
+  const completa = ini !== null && fin !== null && ini !== fin;
+  return {
+    dias: f.dias,
+    horaEntrada: f.horaEntrada,
+    horaSalida: f.horaSalida,
+    tieneAlmuerzo: f.tieneAlmuerzo !== false, // por defecto sí descuenta almuerzo
+    almuerzoInicio: completa ? ini : null,
+    almuerzoFin: completa ? fin : null,
+  };
+};
 
 // Horarios de trabajo de la empresa (se asignan a cada colaborador). Un horario
 // agrupa varias franjas: ej. "Oficina" = L-V 08:00-17:00 + Sáb 08:00-12:00.

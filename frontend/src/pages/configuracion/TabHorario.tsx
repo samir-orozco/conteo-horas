@@ -5,7 +5,7 @@ import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { useMiPlan } from '../../lib/plan';
 
-export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean };
+export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean; almuerzoInicio?: string | null; almuerzoFin?: string | null };
 export type Horario = {
   id: string; nombre: string; toleranciaMin: number; almuerzoMin?: number;
   toleranciaSalidaMin?: number; ajustaEntrada?: boolean;
@@ -79,7 +79,7 @@ export default function TabHorario() {
     setEditandoHorario(h ?? null);
     setErrorHorario('');
     setFormHorario(h
-      ? { nombre: h.nombre, toleranciaMin: h.toleranciaMin, almuerzoMin: h.almuerzoMin ?? 0, toleranciaSalidaMin: h.toleranciaSalidaMin ?? 0, ajustaEntrada: h.ajustaEntrada ?? false, franjas: h.franjas.map(f => ({ dias: [...f.dias], horaEntrada: f.horaEntrada, horaSalida: f.horaSalida, tieneAlmuerzo: f.tieneAlmuerzo !== false })) }
+      ? { nombre: h.nombre, toleranciaMin: h.toleranciaMin, almuerzoMin: h.almuerzoMin ?? 0, toleranciaSalidaMin: h.toleranciaSalidaMin ?? 0, ajustaEntrada: h.ajustaEntrada ?? false, franjas: h.franjas.map(f => ({ dias: [...f.dias], horaEntrada: f.horaEntrada, horaSalida: f.horaSalida, tieneAlmuerzo: f.tieneAlmuerzo !== false, almuerzoInicio: f.almuerzoInicio ?? '', almuerzoFin: f.almuerzoFin ?? '' })) }
       : { ...HORARIO_VACIO, franjas: [{ ...FRANJA_LV, dias: [...FRANJA_LV.dias] }] });
     setModalHorario(true);
   };
@@ -428,6 +428,41 @@ export default function TabHorario() {
                         Descontar almuerzo ({formHorario.almuerzoMin} min) en estos días
                         <span className="text-muted">— desmárcalo para días cortos (ej. sábado)</span>
                       </label>
+                    )}
+                    {/* Ventana de almuerzo: convierte el almuerzo de "cuánto" en
+                        "cuándo". Con ella, quien se va temprano deja de perder un
+                        almuerzo que nunca tomó, y quien lo marca deja de pagarlo
+                        dos veces. Vacía = como siempre. */}
+                    {formHorario.almuerzoMin > 0 && f.tieneAlmuerzo !== false && (
+                      <div className="border-t border-gray-100 pt-3 mt-1">
+                        <div className="flex items-end gap-2 flex-wrap">
+                          <div>
+                            <label className="block text-[11px] font-medium text-muted mb-1">Almuerzo desde</label>
+                            <input type="time" value={f.almuerzoInicio ?? ''}
+                              onChange={e => setFranja(i, { almuerzoInicio: e.target.value })}
+                              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-medium text-muted mb-1">hasta</label>
+                            <input type="time" value={f.almuerzoFin ?? ''}
+                              onChange={e => setFranja(i, { almuerzoFin: e.target.value })}
+                              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm" />
+                          </div>
+                          {(f.almuerzoInicio || f.almuerzoFin) && (
+                            <button type="button" onClick={() => setFranja(i, { almuerzoInicio: '', almuerzoFin: '' })}
+                              className="text-[11px] text-muted hover:text-ink underline pb-2">quitar</button>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-muted mt-1.5 leading-relaxed">
+                          {f.almuerzoInicio && f.almuerzoFin ? (
+                            <>Solo se descuenta el almuerzo de quien esté trabajando entre esas horas. Quien salga antes
+                            no lo paga, y quien lo marque no lo paga dos veces.</>
+                          ) : (
+                            <>Opcional. Sin horas se descuentan los {formHorario.almuerzoMin} min a todo el que trabaje
+                            ese día, aunque se haya ido temprano.</>
+                          )}
+                        </p>
+                      </div>
                     )}
                   </div>
                 ))}

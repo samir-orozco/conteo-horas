@@ -76,7 +76,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         select: {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
-          toleranciaSalidaMin: true, ajustaEntrada: true,
+          toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
         },
       });
       for (const d of materializados) {

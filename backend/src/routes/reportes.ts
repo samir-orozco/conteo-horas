@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { toZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear } from 'date-fns';
 import { prisma } from '../index';
-import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo } from '../utils/horasColombiana';
+import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo, descontarAlmuerzoOrdinarias } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
 import { calcularTardanzas, franjaDelDia, DIAS_SEMANA, HorarioConFranjas, construirExtraConfig } from '../utils/tardanzas';
 import { rangoReporte } from '../utils/fechas';
@@ -12,6 +12,7 @@ import {
 } from '../utils/saldoTiempo';
 import { combinarDiasEsperados, type DiaEsperadoCalculado } from '../utils/diasEsperados';
 import { ajustarAJornada } from '../utils/ajusteJornada';
+import { minutosAlmuerzoADescontar } from '../utils/almuerzo';
 
 const TZ = 'America/Bogota';
 
@@ -71,6 +72,23 @@ function liquidarRegistros(
   diasEsperados: DiaEsperadoCalculado[] = [],
 ) {
   const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
+
+  // El almuerzo se resuelve por DÍA, no por registro: la regla nueva mira todos
+  // los tramos del día a la vez para saber cuánto de la ventana estuvo la
+  // persona marcada. Se precalcula aquí y luego se descuenta una sola vez.
+  const almuerzoPorDia = new Map<string, number>();
+  const tramosPorDia = new Map<string, { entrada: Date; salida: Date }[]>();
+  for (const r of registros) {
+    if (!r.entrada || !r.salida) continue;
+    const k = claveDiaBogota(r.entrada);
+    if (!tramosPorDia.has(k)) tramosPorDia.set(k, []);
+    tramosPorDia.get(k)!.push({ entrada: r.entrada, salida: r.salida });
+  }
+  for (const [k, tramos] of tramosPorDia) {
+    const d = diaPorClave.get(k);
+    if (!d) continue;
+    almuerzoPorDia.set(k, minutosAlmuerzoADescontar(tramos, d));
+  }
   const porSemana = new Map<string, typeof registros>();
   for (const reg of registros) {
     const key = semanaKey(reg.fecha);
@@ -103,9 +121,16 @@ function liquidarRegistros(
         entrada, salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfig
       );
       let ordDelRegistro = minutosOrdinariosTrabajados;
-      const almuerzo = almuerzoDelRegistro(horario, registro.entrada);
+      // Sin fila del día no hay ventana ni almuerzo congelado: se cae al
+      // horario vigente, igual que antes de existir `DiaEsperado`.
+      const conVentana = !!diaDelRegistro?.almuerzoInicio && !!diaDelRegistro?.almuerzoFin;
+      const almuerzo = diaDelRegistro
+        ? (almuerzoPorDia.get(claveDia) ?? 0)
+        : almuerzoDelRegistro(horario, registro.entrada);
       if (almuerzo > 0 && !diasConAlmuerzo.has(claveDia)) {
-        const { descontado } = descontarAlmuerzo(resultado, almuerzo);
+        const { descontado } = conVentana
+          ? descontarAlmuerzoOrdinarias(resultado, almuerzo)
+          : descontarAlmuerzo(resultado, almuerzo);
         if (descontado > 0) {
           diasConAlmuerzo.add(claveDia);
           ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
@@ -193,7 +218,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         select: {
           fecha: true, programado: true, horaEntrada: true, horaSalida: true,
           toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
-          toleranciaSalidaMin: true, ajustaEntrada: true,
+          toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -290,7 +315,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         select: {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
-          toleranciaSalidaMin: true, ajustaEntrada: true,
+          toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -345,7 +370,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         select: {
           fecha: true, programado: true, horaEntrada: true, horaSalida: true,
           toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
-          toleranciaSalidaMin: true, ajustaEntrada: true,
+          toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -396,7 +421,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         select: {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
-          toleranciaSalidaMin: true, ajustaEntrada: true,
+          toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
         },
         orderBy: { fecha: 'asc' },
       }),

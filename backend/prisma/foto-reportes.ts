@@ -34,7 +34,7 @@ async function main() {
         prisma.permiso.findMany({ where: { colaboradorId: col.id, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } }, select: { fechaInicio: true, fechaFin: true, tipo: true } }),
         prisma.diaEsperado.findMany({
           where: { colaboradorId: col.id, fecha: { gte: desdeF, lt: finExclusivo } },
-          select: { fecha: true, programado: true, horaEntrada: true, horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true, toleranciaSalidaMin: true, ajustaEntrada: true },
+          select: { fecha: true, programado: true, horaEntrada: true, horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true, toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true },
           orderBy: { fecha: 'asc' },
         }),
         prisma.registro.findMany({ where: { colaboradorId: col.id, fecha: { gte: desdeF, lt: finExclusivo } } }),
