@@ -25,6 +25,7 @@ import telegramRoutes from './routes/telegram';
 import notificacionRoutes from './routes/notificaciones';
 import { configurarWebhook } from './utils/telegram';
 import { cerrarTurnosOlvidados } from './utils/cierreTurnos';
+import { avisarAlmuerzosSinRegreso } from './utils/cierreAlmuerzo';
 import { mantenerVentana } from './utils/materializarDias';
 import { estadoEfectivo, accesoPermitido } from './utils/suscripcion';
 
@@ -187,6 +188,12 @@ const start = async () => {
     // Al arrancar y cada 24h; es idempotente y solo actúa sobre días ya pasados.
     cerrarTurnosOlvidados(app.log);
     setInterval(() => cerrarTurnosOlvidados(app.log), 24 * 60 * 60 * 1000);
+
+    // Almuerzos que quedaron sin regreso. No se cierran solos: la evidencia de
+    // quien volvió y no marcó es idéntica a la de quien se fue para la casa, así
+    // que darle la tarde por buena sería fabricar horas pagadas. Se avisa.
+    avisarAlmuerzosSinRegreso(app.log);
+    setInterval(() => avisarAlmuerzosSinRegreso(app.log), 24 * 60 * 60 * 1000);
     // Materializa el día esperado de cada colaborador para hoy y las próximas
     // semanas. Sin esto la tabla se queda vacía y todo se resuelve con el
     // horario VIGENTE, que es justo lo que reescribía el pasado.

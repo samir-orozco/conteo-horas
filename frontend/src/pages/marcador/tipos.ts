@@ -15,6 +15,9 @@ export type Estado = {
   // Salió a almorzar y todavía no vuelve.
   enAlmuerzo: boolean;
   salidaAlmuerzo: string | null;
+  // Se le pasó la hora de volver: el kiosco le pregunta a qué hora regresó en
+  // vez de abrirle el turno a esta hora. null = está a tiempo, nada que preguntar.
+  regresoSugerido: string | null;
 };
 export type Flash =
   | { tipo: 'ok'; accion: 'ENTRADA' | 'SALIDA'; hora: string; nombre: string; almuerzo?: boolean }

@@ -10,6 +10,7 @@ import { distanciaMetros } from '../utils/geo';
 import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes } from '../utils/kioscoConfig';
 import { resolverSedeDeMarcacion } from '../utils/sedes';
 import { puedeSalirAAlmorzar } from '../utils/almuerzo';
+import { almuerzoSinRegreso } from '../utils/cierreAlmuerzo';
 
 const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
@@ -314,6 +315,24 @@ export default async function workerRoutes(app: FastifyInstance) {
     const almuerzo = await almuerzoDelTurno(payload.id, abierto?.fecha ?? inicioDia);
     const enAlmuerzo = !abierto && ultimoCerrado?.salidaAlmuerzo === true;
 
+    // ¿Se le pasó la hora de volver? Si sí, el kiosco le pregunta a qué hora
+    // regresó en vez de abrirle el turno a esta hora: quien marca a las 17:00 el
+    // regreso de un almuerzo de las 12:00 perdería la tarde entera.
+    let regresoSugerido: Date | null = null;
+    if (enAlmuerzo && ultimoCerrado?.salida) {
+      const diaDelAlmuerzo = await prisma.diaEsperado.findFirst({
+        where: {
+          colaboradorId: payload.id,
+          fecha: { gte: rangoDiaBogota(ultimoCerrado.salida).inicioDia, lt: rangoDiaBogota(ultimoCerrado.salida).finDia },
+        },
+        select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true },
+      });
+      if (diaDelAlmuerzo) {
+        const p = almuerzoSinRegreso(ultimoCerrado.salida, diaDelAlmuerzo, new Date());
+        if (p.vencido) regresoSugerido = p.finVentana;
+      }
+    }
+
     return {
       entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
       dentroAhora: !!abierto,
@@ -325,6 +344,8 @@ export default async function workerRoutes(app: FastifyInstance) {
         : null,
       enAlmuerzo,
       salidaAlmuerzo: enAlmuerzo ? ultimoCerrado!.salida : null,
+      // Con hora: se le pregunta a qué hora volvió. Sin ella: está a tiempo.
+      regresoSugerido,
     };
   });
 
@@ -340,9 +361,14 @@ export default async function workerRoutes(app: FastifyInstance) {
     }
     marcandoAhora.add(payload.id);
     try {
-      const { foto, lat, lng, almuerzo } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown; almuerzo?: unknown };
+      const { foto, lat, lng, almuerzo, regresoA } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown; almuerzo?: unknown; regresoA?: unknown };
       const fotoGuardar = fotoValida(foto) ? foto : null;
       const pidioAlmuerzo = almuerzo === true;
+      // Hora de regreso del almuerzo que la propia persona confirma en el
+      // kiosco cuando se le olvidó marcarla. Solo se acepta un instante válido;
+      // más abajo se comprueba además que caiga donde debe.
+      const regresoPedido = typeof regresoA === 'string' && !Number.isNaN(Date.parse(regresoA))
+        ? new Date(regresoA) : null;
 
       // ===== Dónde está marcando =====
       //
@@ -476,14 +502,43 @@ export default async function workerRoutes(app: FastifyInstance) {
             salida: { not: null, gte: new Date(ahora.getTime() - VENTANA_TURNO_MS) },
           },
           orderBy: { salida: 'desc' },
-          select: { fecha: true },
+          select: { fecha: true, salida: true },
         });
+
+        // Regreso del almuerzo con hora corregida por la propia persona. Se
+        // valida contra la ventana de SU día, no contra lo que mande el cliente:
+        // tiene que estar después de la salida a almorzar, no puede ser futura,
+        // y no puede pasarse del fin de su ventana. Así lo peor que alguien
+        // puede conseguir manipulando el navegador es declarar que volvió a la
+        // hora a la que le tocaba, que es exactamente lo que el kiosco propone.
+        let entradaReal = ahora;
+        let esRegresoEstimado = false;
+        if (regresoPedido && volviendoDeAlmorzar?.salida) {
+          const rango = rangoDiaBogota(volviendoDeAlmorzar.fecha);
+          const diaAlm = await prisma.diaEsperado.findFirst({
+            where: { colaboradorId: payload.id, fecha: { gte: rango.inicioDia, lt: rango.finDia } },
+            select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true },
+          });
+          const p = diaAlm ? almuerzoSinRegreso(volviendoDeAlmorzar.salida, diaAlm, ahora) : null;
+          const tope = p?.finVentana;
+          const dentro = tope
+            && regresoPedido > volviendoDeAlmorzar.salida
+            && regresoPedido <= ahora
+            && regresoPedido <= tope;
+          if (dentro) {
+            entradaReal = regresoPedido;
+            // Queda en el DATO que esa hora no la marcó nadie en su momento: el
+            // día que alguien reclame, el registro tiene que poder decirlo.
+            esRegresoEstimado = true;
+          }
+        }
 
         const nuevo = await prisma.registro.create({
           data: {
             colaboradorId: payload.id,
             fecha: volviendoDeAlmorzar?.fecha ?? inicioDia,
-            entrada: ahora,
+            entrada: entradaReal,
+            ...(esRegresoEstimado ? { entradaEstimada: true } : {}),
             tipo: tipo as any,
             // Queda guardado DÓNDE marcó, no dónde debía: el filtro por sede de
             // los reportes tiene que reflejar la realidad.
@@ -511,7 +566,7 @@ export default async function workerRoutes(app: FastifyInstance) {
             }
           }
         }
-        return { accion: 'ENTRADA', registro: nuevo, hora: ahora };
+        return { accion: 'ENTRADA', registro: nuevo, hora: entradaReal, regresoEstimado: esRegresoEstimado };
       }
     } finally {
       marcandoAhora.delete(payload.id);

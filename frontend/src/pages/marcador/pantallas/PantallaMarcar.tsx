@@ -15,6 +15,8 @@ type Props = {
   ahora: Date;
   estado: Estado | null;
   marcar: (opciones?: { almuerzo?: boolean }) => void;
+  // Volvió del almuerzo con la hora ya pasada: hay que preguntarle cuándo.
+  onRegresoOlvidado: () => void;
   marcando: boolean;
   exigeUbicacion: boolean;
   ubicOk: { lat: number; lng: number } | null;
@@ -22,7 +24,7 @@ type Props = {
 };
 
 // Pantalla principal: reloj + estado del día + botón grande de entrada/salida.
-export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado, marcar, marcando, exigeUbicacion, ubicOk, salir }: Props) {
+export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado, marcar, marcando, exigeUbicacion, ubicOk, salir, onRegresoOlvidado }: Props) {
   const dentroAhora = estado?.dentroAhora ?? false;
   const entradaHace = estado?.entradaAbierta?.entrada ? horaBog(estado.entradaAbierta.entrada, 'HH:mm') : null;
   const cerradoHoy = estado?.turnoCerradoHoy ?? null;
@@ -35,8 +37,11 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
     // Saliendo con ventana de almuerzo disponible: hay dos salidas posibles y
     // solo la persona sabe cuál es.
     if (dentroAhora && almuerzo) { setEligiendoSalida(true); return; }
-    // Volviendo del almuerzo: es la misma jornada, no un turno nuevo. Preguntar
-    // "¿otra entrada?" ahí sería ruido sobre algo que el sistema ya sabe.
+    // Volviendo del almuerzo con la hora ya pasada: se le pregunta a qué hora
+    // regresó. Marcarlo ahora le borraría toda la tarde.
+    if (enAlmuerzo && estado?.regresoSugerido) { onRegresoOlvidado(); return; }
+    // Volviendo del almuerzo a tiempo: es la misma jornada, no un turno nuevo.
+    // Preguntar "¿otra entrada?" ahí sería ruido sobre algo que el sistema sabe.
     if (!dentroAhora && cerradoHoy && !enAlmuerzo) { setConfirmando(true); return; }
     marcar();
   };

@@ -110,7 +110,7 @@ export function resumirAlmuerzoDelDia(
 // madrugada del día SIGUIENTE al que ancla la fila. Si la salida a almorzar ya
 // pasó el fin calculado, la ventana que aplica es la del día siguiente — es el
 // mismo almuerzo, contado desde el otro extremo.
-function finDeLaVentana(salida: Date, dia: DiaParaAlmuerzo): number {
+export function finDeLaVentana(salida: Date, dia: DiaParaAlmuerzo): number {
   const inicio = dia.fecha.getTime() + minutosDe(dia.almuerzoInicio!) * MS_MIN;
   let fin = dia.fecha.getTime() + minutosDe(dia.almuerzoFin!) * MS_MIN;
   if (fin <= inicio) fin += UN_DIA_MS;

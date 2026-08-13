@@ -9,7 +9,7 @@ const authHeader = (token: string) => ({ headers: { Authorization: `Bearer ${tok
 
 type InfoKiosco = { empresa: string; requiereDispositivo: boolean; permiteCedula: boolean; exigeUbicacion: boolean };
 type SesionResp = { token: string; colaborador: Colaborador; sedes?: Sede[] };
-type MarcaResp = { accion: 'ENTRADA' | 'SALIDA'; hora: string; salidaTemprana?: boolean; salidaAlmuerzo?: boolean };
+type MarcaResp = { accion: 'ENTRADA' | 'SALIDA'; hora: string; salidaTemprana?: boolean; salidaAlmuerzo?: boolean; regresoEstimado?: boolean };
 
 export const infoKiosco = (marcadorToken: string) =>
   apiKiosco.get(`/worker/kiosco/${marcadorToken}`).then(r => r.data as InfoKiosco);
@@ -26,7 +26,7 @@ export const loginRostro = (body: { descriptor: number[]; marcadorToken: string;
 export const getEstado = (token: string) =>
   apiKiosco.get('/worker/estado', authHeader(token)).then(r => r.data as Estado);
 
-export const marcar = (token: string, body: { foto?: string; lat?: number; lng?: number; almuerzo?: boolean }) =>
+export const marcar = (token: string, body: { foto?: string; lat?: number; lng?: number; almuerzo?: boolean; regresoA?: string }) =>
   apiKiosco.post('/worker/marcar', body, authHeader(token)).then(r => r.data as MarcaResp);
 
 export const enviarNovedad = (token: string, body: { tipo: string; descripcion: string }) =>

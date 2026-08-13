@@ -1,4 +1,4 @@
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 
 // Tipos de aviso interno que alimentan la campana del menú del admin.
 export type TipoNotif = 'NO_MARCO_SALIDA' | 'LLEGADA_TARDE' | 'NOVEDAD_PENDIENTE';

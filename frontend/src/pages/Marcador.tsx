@@ -12,6 +12,7 @@ import PantallaUbicacion from './marcador/pantallas/PantallaUbicacion';
 import PantallaLogin from './marcador/pantallas/PantallaLogin';
 import PantallaSalidaTemprana from './marcador/pantallas/PantallaSalidaTemprana';
 import PantallaMarcar from './marcador/pantallas/PantallaMarcar';
+import RegresoOlvidado from './marcador/pantallas/RegresoOlvidado';
 
 // Kiosco HoraPro — se abre con el link único de cada empresa: /marcador/<token>
 // Orquesta los hooks (sesión, geolocalización, dispositivo, flash) y decide qué
@@ -128,7 +129,12 @@ export default function Marcador() {
     }
   };
 
-  const marcar = async (opciones?: { almuerzo?: boolean }) => {
+  // Volvió del almuerzo pero se le pasó la hora: antes de abrir el turno se le
+  // pregunta a qué hora regresó. Si no, marcar a las 17:00 el regreso de un
+  // almuerzo de las 12:00 le borraría la tarde entera.
+  const [preguntandoRegreso, setPreguntandoRegreso] = useState(false);
+
+  const marcar = async (opciones?: { almuerzo?: boolean; regresoA?: string }) => {
     if (!sesion.token || marcando) return;
     setMarcando(true);
     geo.setErrorUbic(null);
@@ -146,6 +152,7 @@ export default function Marcador() {
       const r = await apiMarcar(sesion.token, {
         foto: fotoRostro ?? undefined, ...ubic,
         ...(opciones?.almuerzo ? { almuerzo: true } : {}),
+        ...(opciones?.regresoA ? { regresoA: opciones.regresoA } : {}),
       });
       // Si salió antes de su horario, primero pedimos el motivo (queda como novedad).
       // Salir a almorzar nunca pide motivo: el servidor ya no lo marca como temprana.
@@ -209,6 +216,18 @@ export default function Marcador() {
       />
     );
   }
+  if (preguntandoRegreso && sesion.estado?.salidaAlmuerzo && sesion.estado.regresoSugerido) {
+    return (
+      <RegresoOlvidado
+        salida={sesion.estado.salidaAlmuerzo}
+        sugerido={sesion.estado.regresoSugerido}
+        ahora={ahora}
+        marcando={marcando}
+        onConfirmar={regresoA => { setPreguntandoRegreso(false); marcar({ regresoA }); }}
+        onCancelar={() => setPreguntandoRegreso(false)}
+      />
+    );
+  }
   if (salidaTemprana) {
     return (
       <PantallaSalidaTemprana
@@ -222,6 +241,7 @@ export default function Marcador() {
     <PantallaMarcar
       colaborador={sesion.colaborador} sedes={sesion.sedes} ahora={ahora} estado={sesion.estado}
       marcar={marcar} marcando={marcando}
+      onRegresoOlvidado={() => setPreguntandoRegreso(true)}
       exigeUbicacion={exigeUbicacion} ubicOk={geo.ubicOk} salir={salir}
     />
   );
