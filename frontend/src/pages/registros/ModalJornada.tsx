@@ -88,11 +88,9 @@ type Props = {
   // y buscarla allí dejaba el botón sin hacer nada.
   onEditar: (registro: RegistroEditable) => void;
   onEliminar: (registroId: string) => void;
-  // Para saltar a otro tramo del mismo día sin cerrar el modal.
-  onCambiarDeTramo: (registroId: string) => void;
 };
 
-export default function ModalJornada({ registroId, onCerrar, onEditar, onEliminar, onCambiarDeTramo }: Props) {
+export default function ModalJornada({ registroId, onCerrar, onEditar, onEliminar }: Props) {
   const [j, setJ] = useState<Jornada | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fotos, setFotos] = useState<{ fotoEntrada: string | null; fotoSalida: string | null } | null>(null);
@@ -311,11 +309,14 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   {j.tramos.map((t, i) => {
                     const esEste = t.id === r.id;
                     return (
-                      <button key={t.id} disabled={esEste}
-                        onClick={() => onCambiarDeTramo(t.id)}
-                        className={`w-full text-left border rounded-xl px-3 py-2 text-sm transition-colors ${
-                          esEste ? 'border-primary ring-1 ring-primary/40 bg-primary/5 cursor-default'
-                                 : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'}`}>
+                      /* Información, no acción: antes eran botones que llevaban a
+                         la otra marcación, pero el resto del modal es del día y
+                         apenas cambiaban dos líneas. Prometían más de lo que
+                         daban. Para ver otra marcación se cierra y se toca su
+                         fila en la tabla, que es de donde se entró. */
+                      <div key={t.id}
+                        className={`w-full border rounded-xl px-3 py-2 text-sm ${
+                          esEste ? 'border-primary bg-primary/5' : 'border-gray-100'}`}>
                         <span className="flex items-baseline justify-between gap-2 flex-wrap">
                           <span>
                             <span className="text-muted">{i + 1}.</span>{' '}
@@ -330,7 +331,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                             </span>
                           )}
                         </span>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>

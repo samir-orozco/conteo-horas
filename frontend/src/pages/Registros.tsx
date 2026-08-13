@@ -404,7 +404,6 @@ export default function Registros() {
           key={jornadaId}
           registroId={jornadaId}
           onCerrar={() => setJornadaId(null)}
-          onCambiarDeTramo={setJornadaId}
           onEditar={reg => abrir(reg as Registro)}
           // El detalle se cierra al eliminar: si no, queda encima mostrando una
           // marcación que ya no existe y el siguiente clic falla con un 404.
