@@ -5,6 +5,7 @@ import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
+import { resumirAlmuerzoDelDia, type ResumenAlmuerzo } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -99,6 +100,23 @@ export default async function registroRoutes(app: FastifyInstance) {
       return dia;
     };
 
+    // El almuerzo es del DÍA, no de la fila: vive en el hueco entre dos tramos.
+    // Se resuelve una vez por colaborador+día y viaja repetido en cada fila de
+    // ese día, para que la tabla y el detalle no puedan contar historias
+    // distintas del mismo almuerzo.
+    const registrosPorDia = new Map<string, typeof registros>();
+    for (const r of registros) {
+      const clave = `${r.colaboradorId}|${toZonedTime(r.fecha, TZ).toDateString()}`;
+      if (!registrosPorDia.has(clave)) registrosPorDia.set(clave, []);
+      registrosPorDia.get(clave)!.push(r);
+    }
+    const almuerzoPorDia = new Map<string, ResumenAlmuerzo>();
+    for (const [clave, delDia] of registrosPorDia) {
+      const dia = diaEsperadoDe(delDia[0]);
+      if (!dia) continue;
+      almuerzoPorDia.set(clave, resumirAlmuerzoDelDia(delDia, dia));
+    }
+
     // Las fotos (base64) no viajan en la lista: solo un indicador; se piden con /:id/fotos.
     // La llegada se evalúa contra el horario asignado (null si no aplica ese día).
     return registros.map(r => {
@@ -120,6 +138,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         minutosTarde,
         tieneFotoEntrada: !!fotoEntrada,
         tieneFotoSalida: !!fotoSalida,
+        almuerzo: almuerzoPorDia.get(clave) ?? null,
       };
     });
   });
