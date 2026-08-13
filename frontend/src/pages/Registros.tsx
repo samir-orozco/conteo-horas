@@ -5,6 +5,7 @@ import { es } from 'date-fns/locale';
 import { Plus, Edit2, Trash2, X, Camera, Info } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ModalJornada from './registros/ModalJornada';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
@@ -122,6 +123,10 @@ export default function Registros() {
   const [fotosDe, setFotosDe] = useState<Registro | null>(null);
   const [fotos, setFotos] = useState<Fotos | null>(null);
   const [eliminarId, setEliminarId] = useState<string | null>(null);
+  // Detalle de una marcación. La fila de la tabla no se explica sola: el
+  // almuerzo vive en el hueco entre dos filas y la tardanza solo se mide en la
+  // primera entrada del día.
+  const [jornadaId, setJornadaId] = useState<string | null>(null);
   // Otros registros que ya existen en el día que se está creando/editando. La
   // tardanza solo se evalúa sobre la PRIMERA entrada del día, así que si ya hay
   // una anterior, la que se está agregando no va a mostrar minutos tarde. Sin
@@ -253,7 +258,7 @@ export default function Registros() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {registros.map(r => (
-              <tr key={r.id} className="hover:bg-gray-50">
+              <tr key={r.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setJornadaId(r.id)}>
                 <td className="px-4 py-3 font-medium text-gray-800">{r.colaborador.nombre} {r.colaborador.apellido}</td>
                 <td className="px-4 py-3 text-gray-600 capitalize">{format(toZonedTime(new Date(r.fecha), TZ), "d MMM yyyy", { locale: es })}</td>
                 <td className="px-4 py-3 text-center text-green-700 font-mono">{fmtHora(r.entrada)}</td>
@@ -286,7 +291,9 @@ export default function Registros() {
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.tipo === 'NORMAL' ? 'bg-blue-50 text-blue-700' : r.tipo === 'PERMISO' ? 'bg-yellow-50 text-yellow-700' : 'bg-purple-50 text-purple-700'}`}>{r.tipo}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center justify-center gap-2">
+                  {/* Los botones tienen su propia acción: sin esto, tocarlos
+                      dispararía además el modal de la fila. */}
+                  <div className="flex items-center justify-center gap-2" onClick={e => e.stopPropagation()}>
                     {(r.tieneFotoEntrada || r.tieneFotoSalida) && (
                       <button onClick={() => verFotos(r)} title="Ver fotos de verificación facial"
                         className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"><Camera size={15} /></button>
@@ -410,6 +417,20 @@ export default function Registros() {
             </p>
           </div>
         </div>
+      )}
+
+      {jornadaId && (
+        <ModalJornada
+          key={jornadaId}
+          registroId={jornadaId}
+          onCerrar={() => setJornadaId(null)}
+          onCambiarDeTramo={setJornadaId}
+          onEditar={id => {
+            const reg = registros.find(x => x.id === id);
+            if (reg) abrir(reg);
+          }}
+          onEliminar={setEliminarId}
+        />
       )}
 
       <ConfirmDialog

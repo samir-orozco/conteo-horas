@@ -5,7 +5,7 @@ import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
-import { resumirAlmuerzoDelDia, type ResumenAlmuerzo } from '../utils/jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, type ResumenAlmuerzo } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -153,6 +153,126 @@ export default async function registroRoutes(app: FastifyInstance) {
         almuerzoEnEstaFila: filaDelAlmuerzo.get(clave) === r.id,
       };
     });
+  });
+
+  // Detalle de UNA marcación, con el día alrededor.
+  //
+  // Existe porque la fila de la tabla no se explica sola: el almuerzo vive en el
+  // hueco entre dos filas, la tardanza solo se mide en la primera entrada del
+  // día, y una hora puede haberla puesto el sistema y no una persona. Todo eso
+  // se calcula aquí y no en el navegador.
+  //
+  // Lo que NO devuelve, a propósito: el desglose en horas ordinarias y extra con
+  // su plata. Esa clasificación depende de lo que la persona llevara acumulado
+  // en la semana, así que cambiaría según el rango que el administrador tenga
+  // filtrado en pantalla — la misma marcación diría dos cifras distintas. Eso
+  // vive en el reporte, que sí liquida un período completo.
+  app.get('/:id/jornada', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    // `select` explícito: las fotos son LongText de hasta 300 KB cada una y este
+    // endpoint se repide al cambiar de tramo y después de cada guardado.
+    const registro = await prisma.registro.findFirst({
+      where: { id, colaborador: { empresaId: request.empresaId } },
+      select: {
+        id: true, colaboradorId: true, fecha: true, entrada: true, salida: true,
+        tipo: true, observacion: true, salidaEstimada: true, salidaAlmuerzo: true,
+        entradaEstimada: true, creadoEn: true, editadoPor: true, editadoEn: true,
+        fotoEntrada: false, fotoSalida: false,
+        sede: { select: { nombre: true, activa: true } },
+        colaborador: {
+          select: {
+            nombre: true, apellido: true, cargo: true, empresaId: true,
+            horario: { include: { franjas: true } },
+          },
+        },
+      },
+    });
+    if (!registro) return reply.status(404).send({ error: 'Registro no encontrado' });
+
+    const { inicioDia, finDia } = rangoDiaBogota(registro.fecha);
+
+    const [delDia, congelado, festivo, novedad, fotos] = await Promise.all([
+      prisma.registro.findMany({
+        where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
+        orderBy: { entrada: 'asc' },
+        select: {
+          id: true, entrada: true, salida: true, salidaAlmuerzo: true,
+          entradaEstimada: true, salidaEstimada: true,
+        },
+      }),
+      prisma.diaEsperado.findFirst({
+        where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
+      }),
+      prisma.diaFestivo.findFirst({
+        where: {
+          fecha: { gte: inicioDia, lt: finDia },
+          OR: [{ empresaId: null }, { empresaId: registro.colaborador.empresaId }],
+        },
+        select: { nombre: true },
+      }),
+      prisma.permiso.findFirst({
+        where: {
+          colaboradorId: registro.colaboradorId,
+          fechaInicio: { lt: finDia },
+          fechaFin: { gte: inicioDia },
+        },
+        select: { tipo: true, descripcion: true, aprobado: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true },
+      }),
+      prisma.registro.findUnique({
+        where: { id },
+        select: { fotoEntrada: true, fotoSalida: true },
+      }),
+    ]);
+
+    const [dia] = combinarDiasEsperados(
+      inicioDia, finDia,
+      congelado ? [congelado as any] : [],
+      registro.colaborador.horario as any,
+    );
+
+    // ¿La fila se escribió ESE día o se reconstruyó después? El backfill llenó
+    // todo el pasado con el horario que estaba vigente al correrlo, así que
+    // "existe fila" no significa "quedó congelado entonces". La fecha de
+    // creación es lo único que distingue una cosa de la otra.
+    const fueCongelado = !!congelado && congelado.creadoEn.getTime() <= finDia.getTime();
+
+    const almuerzo = resumirAlmuerzoDelDia(delDia, dia);
+
+    // La tardanza se mide solo en la primera entrada del día: volver del
+    // almuerzo no es llegar tarde. Cuando no aplica se dice POR QUÉ, que un
+    // guion mudo en una columna de asistencia solo genera dudas.
+    const primera = delDia.find(r => r.entrada);
+    let minutosTarde: number | null = null;
+    let motivoSinTardanza: string | null = null;
+    if (!registro.entrada) motivoSinTardanza = 'SIN_ENTRADA';
+    else if (primera && primera.id !== registro.id) motivoSinTardanza = 'NO_ES_PRIMERA';
+    else if (registro.tipo === 'FESTIVO' || festivo) motivoSinTardanza = 'FESTIVO';
+    else if (!dia?.programado || !dia.horaEntrada) motivoSinTardanza = 'NO_PROGRAMADO';
+    else if (!registro.colaborador.horario?.activo && !congelado) motivoSinTardanza = 'SIN_HORARIO';
+    else {
+      const z = toZonedTime(registro.entrada, TZ);
+      minutosTarde = Math.max(0, z.getHours() * 60 + z.getMinutes() - (minutosDe(dia.horaEntrada) + dia.toleranciaMin));
+    }
+
+    const { colaborador, ...datosRegistro } = registro;
+    return {
+      registro: {
+        ...datosRegistro,
+        tieneFotoEntrada: !!fotos?.fotoEntrada,
+        tieneFotoSalida: !!fotos?.fotoSalida,
+      },
+      colaborador: { nombre: colaborador.nombre, apellido: colaborador.apellido, cargo: colaborador.cargo },
+      fecha: inicioDia,
+      dia: dia ? { ...dia, congelado: fueCongelado } : null,
+      tramos: delDia,
+      almuerzo,
+      minutosDelDia: minutosContadosDelDia(delDia, dia),
+      minutosTarde,
+      motivoSinTardanza,
+      festivo,
+      novedad,
+    };
   });
 
   // Fotos de verificación facial de un registro (se conservan 2 meses)

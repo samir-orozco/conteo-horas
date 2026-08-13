@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resumirAlmuerzoDelDia } from './jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia } from './jornada';
 
 // El almuerzo no vive en un registro: vive en el HUECO entre dos. Un día con
 // almuerzo son dos tramos —08:00-12:00 y 13:00-17:00— y lo que hay en medio es
@@ -183,5 +183,73 @@ describe('resumirAlmuerzoDelDia — casos que podrían confundirla', () => {
     expect(r.estado).toBe('MARCADO');
     expect(r.minutos).toBe(30);
     expect(r.seExcedio).toBe(false);
+  });
+});
+
+// "¿Trabajó sus ocho horas o no?" es la pregunta por la que se abre la pantalla,
+// y hoy no se responde en ningún lado: la tabla muestra cada tramo por separado
+// y deja al administrador sumando de cabeza, cuarenta veces al día.
+//
+// Este total NO depende de lo que la persona llevara acumulado esa semana: el
+// acumulado cambia cómo se CLASIFICAN los minutos (ordinaria u extra), no
+// cuántos son. Por eso se puede mostrar sin que el número baile según el filtro
+// de fechas que tenga puesto la pantalla.
+describe('minutosContadosDelDia', () => {
+  const diaCompleto = (extra: Record<string, unknown> = {}) => ({
+    fecha: bog(0),
+    programado: true,
+    horaEntrada: '08:00' as string | null,
+    horaSalida: '17:00' as string | null,
+    toleranciaSalidaMin: 0,
+    ajustaEntrada: false,
+    almuerzoMin: 60,
+    almuerzoInicio: '12:00' as string | null,
+    almuerzoFin: '13:00' as string | null,
+    ...extra,
+  });
+
+  it('suma los tramos y descuenta el almuerzo una sola vez', () => {
+    const r = minutosContadosDelDia(
+      [reg(bog(8), bog(12), { salidaAlmuerzo: true }), reg(bog(13), bog(17))],
+      diaCompleto(),
+    );
+    // 4h + 4h = 480. El hueco ya está fuera, así que no se vuelve a restar.
+    expect(r).toBe(480);
+  });
+
+  it('jornada corrida sin marcar almuerzo: se le descuenta la ventana', () => {
+    const r = minutosContadosDelDia([reg(bog(8), bog(17))], diaCompleto());
+    expect(r).toBe(480); // 540 trabajados − 60 de ventana
+  });
+
+  it('se fue temprano y nunca llegó a la ventana: no paga almuerzo', () => {
+    // El error que originó todo esto: dos horas trabajadas contaban como una.
+    const r = minutosContadosDelDia([reg(bog(8), bog(10))], diaCompleto());
+    expect(r).toBe(120);
+  });
+
+  it('aplica la tolerancia de salida, igual que la liquidación', () => {
+    // Se quedó 10 minutos de más con 15 de tolerancia: no se pagan como extra,
+    // así que tampoco se cuentan aquí. Si este total los contara, contradiría
+    // al reporte de nómina en la misma pantalla.
+    const r = minutosContadosDelDia(
+      [reg(bog(8), bog(17, 10))],
+      diaCompleto({ toleranciaSalidaMin: 15 }),
+    );
+    expect(r).toBe(480);
+  });
+
+  it('un tramo todavía abierto no suma nada', () => {
+    const r = minutosContadosDelDia([reg(bog(8), null)], diaCompleto());
+    expect(r).toBe(0);
+  });
+
+  it('nunca devuelve un número negativo', () => {
+    // Media hora trabajada con una hora de almuerzo fijo: la resta da -30.
+    const r = minutosContadosDelDia(
+      [reg(bog(8), bog(8, 30))],
+      diaCompleto({ almuerzoInicio: null, almuerzoFin: null }),
+    );
+    expect(r).toBe(0);
   });
 });

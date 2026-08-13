@@ -1,4 +1,5 @@
 import { minutosAlmuerzoADescontar, type DiaParaAlmuerzo } from './almuerzo';
+import { ajustarAJornada, type DiaParaAjuste } from './ajusteJornada';
 import { minutosDe } from './tardanzas';
 
 // Qué pasó con el almuerzo de UN día.
@@ -114,4 +115,39 @@ function finDeLaVentana(salida: Date, dia: DiaParaAlmuerzo): number {
   let fin = dia.fecha.getTime() + minutosDe(dia.almuerzoFin!) * MS_MIN;
   if (fin <= inicio) fin += UN_DIA_MS;
   return salida.getTime() > fin ? fin + UN_DIA_MS : fin;
+}
+
+// Cuánto tiempo se le contó a alguien en un día: la suma de sus tramos, ya
+// ajustada por la tolerancia de salida y ya descontado el almuerzo.
+//
+// Es la pregunta por la que se abre la pantalla —"¿trabajó sus ocho horas o
+// no?"— y hoy no se responde en ningún lado: la tabla muestra cada tramo por
+// separado y deja al administrador sumando de cabeza.
+//
+// Se puede mostrar sin miedo a contradecir la nómina porque este total NO
+// depende de lo que la persona llevara acumulado esa semana. El acumulado
+// decide cómo se CLASIFICAN los minutos (ordinaria, extra, nocturna), no
+// cuántos son. Por eso el número no baila según el filtro de fechas de la
+// pantalla, que es justo lo que lo haría indefendible.
+//
+// Lo que este número NO es: plata. Para eso está el reporte, donde esos mismos
+// minutos ya vienen repartidos por tipo de hora y con sus recargos.
+export function minutosContadosDelDia(
+  registros: RegistroDeDia[],
+  dia: DiaParaAlmuerzo & DiaParaAjuste,
+): number {
+  const tramos = registros
+    .filter(r => r.entrada && r.salida)
+    .map(r => ajustarAJornada(r.entrada!, r.salida!, dia));
+  if (tramos.length === 0) return 0;
+
+  const trabajados = tramos.reduce(
+    (s, t) => s + (t.salida.getTime() - t.entrada.getTime()) / MS_MIN, 0,
+  );
+  const almuerzo = minutosAlmuerzoADescontar(
+    tramos.map(t => ({ entrada: t.entrada, salida: t.salida })), dia,
+  );
+  // Media jornada con una hora de almuerzo fijo daría negativo. Cero es la
+  // respuesta honesta; un número en rojo sería una invención.
+  return Math.max(0, Math.round(trabajados - almuerzo));
 }
