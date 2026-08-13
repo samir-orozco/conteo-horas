@@ -441,23 +441,31 @@ export default function TabHorario() {
                         dos veces. Vacía = como siempre. */}
                     {f.tieneAlmuerzo !== false && (
                       <div className="border-t border-gray-100 pt-3 mt-1">
-                        <div className="flex items-end gap-2 flex-wrap">
-                          <div>
-                            <label className="block text-[11px] font-medium text-muted mb-1">Almuerzo desde</label>
-                            <input type="time" value={f.almuerzoInicio ?? ''}
-                              onChange={e => setFranja(i, { almuerzoInicio: e.target.value })}
-                              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm" />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-medium text-muted mb-1">hasta</label>
-                            <input type="time" value={f.almuerzoFin ?? ''}
-                              onChange={e => setFranja(i, { almuerzoFin: e.target.value })}
-                              className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm" />
-                          </div>
+                        {/* Mismas proporciones que Entrada/Salida de arriba: los
+                            campos de hora son del mismo tipo y deben verse igual.
+                            "Quitar" sube al encabezado para no robarle ancho. */}
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-medium text-muted">Horario de almuerzo</p>
                           {(f.almuerzoInicio || f.almuerzoFin) && (
                             <button type="button" onClick={() => setFranja(i, { almuerzoInicio: '', almuerzoFin: '' })}
-                              className="text-[11px] text-muted hover:text-ink underline pb-2">quitar</button>
+                              className="text-[11px] font-medium text-muted hover:text-ink underline underline-offset-2">
+                              Quitar
+                            </button>
                           )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-muted mb-1">Desde</label>
+                            <input type="time" value={f.almuerzoInicio ?? ''}
+                              onChange={e => setFranja(i, { almuerzoInicio: e.target.value })}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-muted mb-1">Hasta</label>
+                            <input type="time" value={f.almuerzoFin ?? ''}
+                              onChange={e => setFranja(i, { almuerzoFin: e.target.value })}
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                          </div>
                         </div>
                         <p className="text-[11px] text-muted mt-1.5 leading-relaxed">
                           {f.almuerzoInicio && f.almuerzoFin ? (
