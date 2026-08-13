@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
@@ -43,23 +43,20 @@ const enHoras = (min: number) => {
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 };
 
-// Celda de almuerzo. Se pinta una sola vez por día (en la fila ancla); las demás
-// filas del mismo día apuntan a ella en vez de repetir el número, porque son
-// minutos de plata y repetidos invitan a sumarlos.
-function CeldaAlmuerzo({ r, ancla }: { r: Registro; ancla: Registro | undefined }) {
+// Celda de almuerzo. El almuerzo es del DÍA y viaja repetido en cada fila de ese
+// día, pero se pinta en una sola: la que lo produjo. En las demás va el mismo
+// guion que usa el resto de la tabla cuando no hay nada que mostrar.
+//
+// Antes decían "ver 08:00", apuntando a la fila que sí lo trae. Nadie entendió
+// qué significaba: resolvía el riesgo de que alguien sumara dos veces el mismo
+// almuerzo, pero a cambio de una etiqueta que había que descifrar. Y ese riesgo
+// casi desapareció al pasar la celda a un rango horario en vez de un número.
+function CeldaAlmuerzo({ r }: { r: Registro }) {
   const a = r.almuerzo;
   const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '';
 
-  if (!a || (a.estado === 'SIN_VENTANA' && a.minutosDescontados === 0)) {
+  if (!a || !r.almuerzoEnEstaFila || (a.estado === 'SIN_VENTANA' && a.minutosDescontados === 0)) {
     return <span className="text-gray-300">—</span>;
-  }
-  if (!r.almuerzoEnEstaFila) {
-    // Sin tooltip: en la tablet de recepción los tooltips no existen.
-    return (
-      <span className="text-[11px] text-gray-400">
-        {ancla?.entrada ? `ver ${hhmm(ancla.entrada)}` : 'ver arriba'}
-      </span>
-    );
   }
 
   // Una sola etiqueta por fila. El detalle —cuánto se descuenta, por qué, si el
@@ -172,17 +169,6 @@ export default function Registros() {
   // columna justo donde el descuento es invisible.
   const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.almuerzo.minutosDescontados > 0));
 
-  // Fila de cada día donde se pinta el almuerzo, para que las demás la señalen.
-  const anclaPorDia = useMemo(() => {
-    const m = new Map<string, Registro>();
-    for (const r of registros) {
-      if (r.almuerzoEnEstaFila) m.set(`${r.colaboradorId}|${format(toZonedTime(new Date(r.fecha), TZ), 'yyyy-MM-dd')}`, r);
-    }
-    return m;
-  }, [registros]);
-  const anclaDe = (r: Registro) =>
-    anclaPorDia.get(`${r.colaboradorId}|${format(toZonedTime(new Date(r.fecha), TZ), 'yyyy-MM-dd')}`);
-
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
   const duracion = (entrada: string | null, salida: string | null) => {
     if (!entrada || !salida) return '-';
@@ -253,7 +239,7 @@ export default function Registros() {
                   )}
                 </td>
                 {hayAlmuerzo && (
-                  <td className="px-4 py-3 text-center"><CeldaAlmuerzo r={r} ancla={anclaDe(r)} /></td>
+                  <td className="px-4 py-3 text-center"><CeldaAlmuerzo r={r} /></td>
                 )}
                 <td className="px-4 py-3 text-center">
                   {r.minutosTarde === null ? (
