@@ -77,7 +77,15 @@ export function calcularDiasEsperados(
         almuerzoFin: null,
       });
     } else {
-      const almuerzo = (franja as any).tieneAlmuerzo ? (horario!.almuerzoMin ?? 0) : 0;
+      // La ventana manda sobre los minutos sueltos: si el admin dijo "de 12:00 a
+      // 13:00", el almuerzo dura eso. `almuerzoMin` queda como respaldo para las
+      // franjas sin ventana, que es como funcionó siempre.
+      const ini = (franja as any).almuerzoInicio as string | null;
+      const fin = (franja as any).almuerzoFin as string | null;
+      const conVentana = !!ini && !!fin;
+      const almuerzo = (franja as any).tieneAlmuerzo
+        ? (conVentana ? duracionFranjaMin(ini!, fin!) : (horario!.almuerzoMin ?? 0))
+        : 0;
       const bruto = duracionFranjaMin((franja as any).horaEntrada, (franja as any).horaSalida);
       salida.push({
         fecha: cursor,
@@ -89,9 +97,11 @@ export function calcularDiasEsperados(
         minutosEsperados: Math.max(0, bruto - almuerzo),
         toleranciaSalidaMin: horario!.toleranciaSalidaMin ?? 0,
         ajustaEntrada: horario!.ajustaEntrada ?? false,
-        // La ventana solo aplica si esta franja descuenta almuerzo.
-        almuerzoInicio: almuerzo > 0 ? ((franja as any).almuerzoInicio ?? null) : null,
-        almuerzoFin: almuerzo > 0 ? ((franja as any).almuerzoFin ?? null) : null,
+        // La ventana solo aplica si esta franja descuenta almuerzo. Ya NO depende
+        // de que haya minutos configurados: era circular — había que poner los
+        // minutos que la ventana venía a reemplazar.
+        almuerzoInicio: (franja as any).tieneAlmuerzo && conVentana ? ini : null,
+        almuerzoFin: (franja as any).tieneAlmuerzo && conVentana ? fin : null,
       });
     }
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { minutosAlmuerzoADescontar } from './almuerzo';
+import { calcularDiasEsperados } from './diasEsperados';
 
 // El almuerzo deja de ser un número suelto y pasa a ser una VENTANA horaria.
 // Con eso, una sola regla resuelve cuatro problemas que hoy son distintos:
@@ -99,5 +100,43 @@ describe('minutosAlmuerzoADescontar — turno que cruza medianoche', () => {
     const d = dia({ almuerzoInicio: '01:00', almuerzoFin: '01:30', almuerzoMin: 30 });
     const tramos = [{ entrada: bog(5, 21, 0), salida: bog(6, 0, 30) }];
     expect(minutosAlmuerzoADescontar(tramos, d)).toBe(0);
+  });
+});
+
+// La ventana define su propia duración: el admin pone las horas y el sistema
+// calcula los minutos. Antes había que escribir los minutos aparte, lo que era
+// circular —la ventana venía justamente a reemplazarlos— y además dejaba dos
+// fuentes de verdad que podían contradecirse.
+describe('la ventana manda sobre los minutos sueltos', () => {
+  it('el almuerzo dura lo que dice la ventana, no lo que diga almuerzoMin', () => {
+    const horario: any = {
+      activo: true, toleranciaMin: 0, almuerzoMin: 0, // ← cero a propósito
+      franjas: [{
+        dias: ['MIERCOLES'], horaEntrada: '08:00', horaSalida: '17:00',
+        tieneAlmuerzo: true, almuerzoInicio: '12:00', almuerzoFin: '13:00',
+      }],
+    };
+    const [d] = calcularDiasEsperados(
+      new Date(Date.UTC(2026, 6, 1, 5, 0, 0)),
+      new Date(Date.UTC(2026, 6, 2, 5, 0, 0)),
+      horario,
+    );
+    expect(d.almuerzoMin).toBe(60);          // derivado de la ventana
+    expect(d.minutosEsperados).toBe(480);     // 9h de franja − 1h de almuerzo
+    expect(d.almuerzoInicio).toBe('12:00');   // y la ventana se congela
+  });
+
+  it('sin ventana se conservan los minutos configurados', () => {
+    const horario: any = {
+      activo: true, toleranciaMin: 0, almuerzoMin: 45,
+      franjas: [{ dias: ['MIERCOLES'], horaEntrada: '08:00', horaSalida: '17:00', tieneAlmuerzo: true }],
+    };
+    const [d] = calcularDiasEsperados(
+      new Date(Date.UTC(2026, 6, 1, 5, 0, 0)),
+      new Date(Date.UTC(2026, 6, 2, 5, 0, 0)),
+      horario,
+    );
+    expect(d.almuerzoMin).toBe(45);
+    expect(d.almuerzoInicio).toBeNull();
   });
 });

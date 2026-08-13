@@ -15,6 +15,14 @@ export type Horario = {
 // Minutos de "HH:MM"; si la salida es menor o igual, cruza medianoche.
 const aMin = (s: string) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
 const duracionFranjaMin = (f: Franja) => { let fin = aMin(f.horaSalida); const ini = aMin(f.horaEntrada); if (fin <= ini) fin += 1440; return fin - ini; };
+// Duración de la ventana de almuerzo, si está configurada. Es la que manda sobre
+// los minutos sueltos: el admin pone las horas y el sistema calcula el tiempo.
+const minutosVentana = (f: Franja): number => {
+  if (!f.almuerzoInicio || !f.almuerzoFin) return 0;
+  let fin = aMin(f.almuerzoFin); const ini = aMin(f.almuerzoInicio);
+  if (fin <= ini) fin += 1440;
+  return fin - ini;
+};
 
 export const DIAS_SEMANA = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 export const DIA_CORTO: Record<string, string> = {
@@ -134,7 +142,7 @@ export default function TabHorario() {
 
   // Resumen en vivo del horario que se está editando (horas por semana/mes ya sin almuerzo)
   const semanaMin = formHorario.franjas.reduce(
-    (s, f) => s + f.dias.length * Math.max(0, duracionFranjaMin(f) - (f.tieneAlmuerzo !== false ? formHorario.almuerzoMin : 0)),
+    (s, f) => s + f.dias.length * Math.max(0, duracionFranjaMin(f) - (f.tieneAlmuerzo !== false ? (minutosVentana(f) || formHorario.almuerzoMin) : 0)),
     0
   );
   const semanaH = semanaMin / 60;
@@ -338,7 +346,7 @@ export default function TabHorario() {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted mb-1">Almuerzo (min, no pagado)</label>
+                  <label className="block text-xs font-medium text-muted mb-1">Almuerzo por defecto (min)</label>
                   <input type="number" min={0} max={240} step={1} value={formHorario.almuerzoMin}
                     onChange={e => setFormHorario(p => ({ ...p, almuerzoMin: Math.max(0, Number(e.target.value) || 0) }))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
@@ -421,19 +429,17 @@ export default function TabHorario() {
                         </span>
                       </div>
                     )}
-                    {formHorario.almuerzoMin > 0 && (
-                      <label className="flex items-center gap-2 text-xs text-ink cursor-pointer">
-                        <input type="checkbox" checked={f.tieneAlmuerzo !== false}
-                          onChange={e => setFranja(i, { tieneAlmuerzo: e.target.checked })} className="rounded" />
-                        Descontar almuerzo ({formHorario.almuerzoMin} min) en estos días
-                        <span className="text-muted">— desmárcalo para días cortos (ej. sábado)</span>
-                      </label>
-                    )}
+                    <label className="flex items-center gap-2 text-xs text-ink cursor-pointer">
+                      <input type="checkbox" checked={f.tieneAlmuerzo !== false}
+                        onChange={e => setFranja(i, { tieneAlmuerzo: e.target.checked })} className="rounded" />
+                      Descontar almuerzo en estos días
+                      <span className="text-muted">— desmárcalo para días cortos (ej. sábado)</span>
+                    </label>
                     {/* Ventana de almuerzo: convierte el almuerzo de "cuánto" en
                         "cuándo". Con ella, quien se va temprano deja de perder un
                         almuerzo que nunca tomó, y quien lo marca deja de pagarlo
                         dos veces. Vacía = como siempre. */}
-                    {formHorario.almuerzoMin > 0 && f.tieneAlmuerzo !== false && (
+                    {f.tieneAlmuerzo !== false && (
                       <div className="border-t border-gray-100 pt-3 mt-1">
                         <div className="flex items-end gap-2 flex-wrap">
                           <div>
@@ -455,11 +461,11 @@ export default function TabHorario() {
                         </div>
                         <p className="text-[11px] text-muted mt-1.5 leading-relaxed">
                           {f.almuerzoInicio && f.almuerzoFin ? (
-                            <>Solo se descuenta el almuerzo de quien esté trabajando entre esas horas. Quien salga antes
-                            no lo paga, y quien lo marque no lo paga dos veces.</>
+                            <>Almuerzo de <b>{minutosVentana(f)} min</b>. Solo se le descuenta a quien esté trabajando
+                            entre esas horas: quien salga antes no lo paga, y quien lo marque no lo paga dos veces.</>
                           ) : (
-                            <>Opcional. Sin horas se descuentan los {formHorario.almuerzoMin} min a todo el que trabaje
-                            ese día, aunque se haya ido temprano.</>
+                            <>Sin horas se descuentan los <b>{formHorario.almuerzoMin} min</b> de arriba a todo el que
+                            trabaje ese día, aunque se haya ido temprano. Pon las horas para que sea exacto.</>
                           )}
                         </p>
                       </div>
