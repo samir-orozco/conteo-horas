@@ -119,7 +119,9 @@ const NOVEDADES: Novedad[] = [
   },
 ];
 
-export default function Novedades() {
+// `forzado` la abre desde el botón de ayuda del menú. Cerrarla sin querer no
+// puede significar perderse lo que cambió.
+export default function Novedades({ forzado = false, onCerrar }: { forzado?: boolean; onCerrar?: () => void }) {
   const { usuario } = useAuth();
   const navigate = useNavigate();
   const [cerrado, setCerrado] = useState(false);
@@ -138,12 +140,12 @@ export default function Novedades() {
 
   // Si se muestran o no se DERIVA, no se guarda en estado: son lecturas que no
   // cambian mientras la pantalla está viva.
-  const abierto = !cerrado
-    && !!usuario
+  const solas = !!usuario
     && usuario.rol !== 'SUPER_ADMIN'
     && !localStorage.getItem(apagadoKey(usuario.id))
     && !localStorage.getItem(vistaKey(usuario.id))
     && !!localStorage.getItem(`horapro_guia_vista_${usuario.id}`);
+  const abierto = !cerrado && (forzado || solas);
 
   const cerrar = () => {
     if (usuario) {
@@ -151,6 +153,7 @@ export default function Novedades() {
       if (noMostrar) localStorage.setItem(apagadoKey(usuario.id), '1');
     }
     setCerrado(true);
+    onCerrar?.();
   };
 
   const irA = (a: string) => { cerrar(); navigate(a); };
@@ -164,21 +167,21 @@ export default function Novedades() {
     <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4" onClick={cerrar}>
       <div
         onClick={e => e.stopPropagation()}
-        className="hp-pop bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden"
+        className="hp-pop bg-white rounded-2xl w-full max-w-xl shadow-xl overflow-hidden"
       >
-        <div className="flex items-center justify-between px-5 pt-4">
+        <div className="flex items-center justify-between px-6 pt-5">
           <p className="text-[11px] font-bold uppercase tracking-wide text-muted">Novedades de HoraPro</p>
           <button onClick={cerrar} aria-label="Cerrar"><X size={18} className="text-gray-400" /></button>
         </div>
 
         {/* Vista previa sobre el amarillo de la marca */}
-        <div className="mx-5 mt-3 rounded-xl bg-gradient-to-br from-primary/70 via-primary/40 to-amber-100 h-44 flex items-center justify-center p-4">
+        <div className="mx-6 mt-3 rounded-xl bg-gradient-to-br from-primary/70 via-primary/40 to-amber-100 h-56 flex items-center justify-center p-5">
           {n.vista}
         </div>
 
-        <div className="px-5 pt-4 pb-3">
-          <h3 className="font-bold text-lg text-ink flex items-start gap-2">
-            <Icono size={18} className="mt-1 shrink-0 text-ink/70" />
+        <div className="px-6 pt-5 pb-3">
+          <h3 className="font-bold text-xl text-ink flex items-start gap-2.5">
+            <Icono size={20} className="mt-1 shrink-0 text-ink/70" />
             {n.titulo}
           </h3>
           <p className="text-sm text-muted mt-1.5 leading-relaxed">{n.texto}</p>
@@ -192,13 +195,13 @@ export default function Novedades() {
           )}
         </div>
 
-        <label className="flex items-center gap-2 px-5 pb-3 cursor-pointer">
+        <label className="flex items-center gap-2 px-6 pb-3 cursor-pointer">
           <input type="checkbox" checked={noMostrar} onChange={e => setNoMostrar(e.target.checked)}
             className="rounded accent-primary" />
           <span className="text-xs text-muted">No volver a mostrarme las novedades</span>
         </label>
 
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-gray-100">
+        <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-100">
           <button onClick={() => setI(x => x - 1)} disabled={i === 0}
             className="px-4 py-2 rounded-xl border border-gray-300 text-sm font-semibold text-ink hover:bg-gray-50 disabled:opacity-0 disabled:pointer-events-none">
             Anterior
