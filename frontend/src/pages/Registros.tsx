@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
@@ -16,8 +16,99 @@ type Registro = {
   tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
   // El sistema cerró el turno (la persona no marcó salida): la hora es estimada y hay que revisarla
   salidaEstimada?: boolean;
+  salidaAlmuerzo?: boolean;
+  // El almuerzo es del DÍA: viaja repetido en cada fila de ese día, pero se
+  // pinta en una sola (la ancla) para que nadie lo lea dos veces.
+  almuerzo: Almuerzo | null;
+  almuerzoEnEstaFila: boolean;
+};
+type Almuerzo = {
+  estado: 'SIN_VENTANA' | 'MARCADO' | 'ABIERTO' | 'NO_MARCADO';
+  ventana: { inicio: string; fin: string } | null;
+  salida: string | null;
+  regreso: string | null;
+  minutos: number | null;      // lo que se tomó de verdad
+  minutosDescontados: number;  // lo que le cuesta al día
+  regresoEstimado: boolean;
+  seExcedio: boolean;
+  minutosDeMas: number;
 };
 type Fotos = { fotoEntrada: string | null; fotoSalida: string | null };
+
+// "1 h", "45 min", "1 h 25 min"
+const enHoras = (min: number) => {
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+};
+
+// Celda de almuerzo. Se pinta una sola vez por día (en la fila ancla); las demás
+// filas del mismo día apuntan a ella en vez de repetir el número, porque son
+// minutos de plata y repetidos invitan a sumarlos.
+function CeldaAlmuerzo({ r, ancla }: { r: Registro; ancla: Registro | undefined }) {
+  const a = r.almuerzo;
+  const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '';
+
+  if (!a || (a.estado === 'SIN_VENTANA' && a.minutosDescontados === 0)) {
+    return <span className="text-gray-300">—</span>;
+  }
+  if (!r.almuerzoEnEstaFila) {
+    // Sin tooltip: en la tablet de recepción los tooltips no existen.
+    return (
+      <span className="text-[11px] text-gray-400">
+        {ancla?.entrada ? `ver ${hhmm(ancla.entrada)}` : 'ver arriba'}
+      </span>
+    );
+  }
+
+  if (a.estado === 'ABIERTO') {
+    return (
+      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 whitespace-nowrap">
+        Salió {hhmm(a.salida)} · sin regreso
+      </span>
+    );
+  }
+
+  if (a.estado === 'MARCADO') {
+    return (
+      <div className="leading-tight">
+        <span className="font-mono text-xs text-gray-700 whitespace-nowrap">
+          {hhmm(a.salida)} → {hhmm(a.regreso)}
+        </span>
+        <p className={`text-[10px] ${a.seExcedio ? 'text-amber-700 font-semibold' : 'text-muted'}`}>
+          {enHoras(a.minutos ?? 0)}
+          {/* Por cuánto se pasó, no solo que se pasó: dos minutos y media hora
+              no son lo mismo y el administrador decide distinto en cada caso.
+              El número viene del backend: "pasarse" es respecto al FIN de la
+              ventana, no a su duración, y esa cuenta no se hace aquí. */}
+          {a.seExcedio && ` · se pasó ${enHoras(a.minutosDeMas)}`}
+          {a.regresoEstimado && ' · regreso estimado'}
+        </p>
+      </div>
+    );
+  }
+
+  // Sin ventana pero con descuento: es el caso de la mayoría hoy. Ese descuento
+  // existe todos los días y hasta ahora no se veía en ninguna pantalla.
+  if (a.estado === 'SIN_VENTANA') {
+    return (
+      <div className="leading-tight">
+        <span className="text-xs text-gray-700">{enHoras(a.minutosDescontados)} fija</span>
+        <p className="text-[10px] text-muted">sin horario definido</p>
+      </div>
+    );
+  }
+
+  // NO_MARCADO
+  return (
+    <div className="leading-tight">
+      <span className="text-xs text-gray-500">No marcó</span>
+      <p className="text-[10px] text-muted">
+        {a.minutosDescontados > 0 ? `se descuenta ${enHoras(a.minutosDescontados)}` : 'sin descuento'}
+      </p>
+    </div>
+  );
+}
 
 export default function Registros() {
   const [registros, setRegistros] = useState<Registro[]>([]);
@@ -90,6 +181,23 @@ export default function Registros() {
     cargar();
   };
 
+  // La columna de Almuerzo aparece cuando ese día descuenta almuerzo, tenga o no
+  // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
+  // 60 min" sin decir de qué hora a qué hora: exigir la ventana escondería la
+  // columna justo donde el descuento es invisible.
+  const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.almuerzo.minutosDescontados > 0));
+
+  // Fila de cada día donde se pinta el almuerzo, para que las demás la señalen.
+  const anclaPorDia = useMemo(() => {
+    const m = new Map<string, Registro>();
+    for (const r of registros) {
+      if (r.almuerzoEnEstaFila) m.set(`${r.colaboradorId}|${format(toZonedTime(new Date(r.fecha), TZ), 'yyyy-MM-dd')}`, r);
+    }
+    return m;
+  }, [registros]);
+  const anclaDe = (r: Registro) =>
+    anclaPorDia.get(`${r.colaboradorId}|${format(toZonedTime(new Date(r.fecha), TZ), 'yyyy-MM-dd')}`);
+
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
   const duracion = (entrada: string | null, salida: string | null) => {
     if (!entrada || !salida) return '-';
@@ -136,6 +244,7 @@ export default function Registros() {
               <th className="px-4 py-3 text-left">Fecha</th>
               <th className="px-4 py-3 text-center">Entrada</th>
               <th className="px-4 py-3 text-center">Salida</th>
+              {hayAlmuerzo && <th className="px-4 py-3 text-center">Almuerzo</th>}
               <th className="px-4 py-3 text-center">Llegada</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Duración</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Tipo</th>
@@ -158,6 +267,9 @@ export default function Registros() {
                     <span className="text-red-600 font-mono">{fmtHora(r.salida)}</span>
                   )}
                 </td>
+                {hayAlmuerzo && (
+                  <td className="px-4 py-3 text-center"><CeldaAlmuerzo r={r} ancla={anclaDe(r)} /></td>
+                )}
                 <td className="px-4 py-3 text-center">
                   {r.minutosTarde === null ? (
                     <span className="text-gray-300">—</span>

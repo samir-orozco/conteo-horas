@@ -34,9 +34,20 @@ describe('resumirAlmuerzoDelDia — sin ventana', () => {
   });
 
   it('aun sin ventana informa lo que se descuenta, que son los minutos fijos', () => {
-    // Es el histórico entero: hay descuento, pero no hay hora que mostrar.
+    // Es el caso de la mayoría de las empresas hoy: "descontar almuerzo: sí,
+    // 60 min", sin decir de qué hora a qué hora. Ese descuento existe y hasta
+    // ahora era invisible.
     const r = resumirAlmuerzoDelDia([reg(bog(8), bog(17))], dia({ almuerzoInicio: null, almuerzoFin: null }));
     expect(r.minutosDescontados).toBe(60);
+  });
+
+  it('un turno todavía abierto no ha pagado ningún almuerzo', () => {
+    // `minutosAlmuerzoADescontar` devuelve los minutos fijos ANTES de mirar los
+    // tramos, así que un día con la persona adentro afirmaría un descuento que
+    // la liquidación no hizo: el motor solo mete al cálculo los días con algún
+    // tramo cerrado.
+    const r = resumirAlmuerzoDelDia([reg(bog(8), null)], dia({ almuerzoInicio: null, almuerzoFin: null }));
+    expect(r.minutosDescontados).toBe(0);
   });
 });
 
@@ -67,13 +78,26 @@ describe('resumirAlmuerzoDelDia — con ventana', () => {
     expect(r.minutosDescontados).toBe(40);
   });
 
-  it('se le pasó la hora: se marca como excedido', () => {
+  it('se le pasó la hora: se marca como excedido y por cuánto', () => {
     const r = resumirAlmuerzoDelDia(
       [reg(bog(8), bog(12), { salidaAlmuerzo: true }), reg(bog(13, 25), bog(17))],
       dia(),
     );
     expect(r.minutos).toBe(85);
     expect(r.seExcedio).toBe(true);
+    expect(r.minutosDeMas).toBe(25); // volvió 25 min después de las 13:00
+  });
+
+  it('pasarse es respecto al FIN de la ventana, no a su duración', () => {
+    // Salió a las 11:30 y volvió a las 12:50: almorzó 80 minutos, veinte más de
+    // los que dura la ventana, y aun así llegó antes de las 13:00. No se pasó.
+    const r = resumirAlmuerzoDelDia(
+      [reg(bog(8), bog(11, 30), { salidaAlmuerzo: true }), reg(bog(12, 50), bog(17))],
+      dia(),
+    );
+    expect(r.minutos).toBe(80);
+    expect(r.seExcedio).toBe(false);
+    expect(r.minutosDeMas).toBe(0);
   });
 
   it('el regreso lo puso el sistema: eso tiene que constar', () => {

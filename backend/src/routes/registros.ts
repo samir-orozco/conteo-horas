@@ -111,10 +111,21 @@ export default async function registroRoutes(app: FastifyInstance) {
       registrosPorDia.get(clave)!.push(r);
     }
     const almuerzoPorDia = new Map<string, ResumenAlmuerzo>();
+    // En qué fila del día se pinta el almuerzo. `minutos` y `minutosDescontados`
+    // son plata: repetidos en las dos filas de un día partido, alguien los suma.
+    const filaDelAlmuerzo = new Map<string, string>(); // clave del día -> registro.id
     for (const [clave, delDia] of registrosPorDia) {
       const dia = diaEsperadoDe(delDia[0]);
       if (!dia) continue;
-      almuerzoPorDia.set(clave, resumirAlmuerzoDelDia(delDia, dia));
+      const resumen = resumirAlmuerzoDelDia(delDia, dia);
+      almuerzoPorDia.set(clave, resumen);
+      // Si hubo salida a almorzar, va en esa fila: es la marcación que la
+      // produjo. Si no, en la primera entrada del día, que es donde el
+      // administrador va a mirar primero.
+      const ancla = resumen.salida
+        ? delDia.find(r => r.salidaAlmuerzo)?.id
+        : primeraEntradaDia.get(clave);
+      if (ancla) filaDelAlmuerzo.set(clave, ancla);
     }
 
     // Las fotos (base64) no viajan en la lista: solo un indicador; se piden con /:id/fotos.
@@ -139,6 +150,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         tieneFotoEntrada: !!fotoEntrada,
         tieneFotoSalida: !!fotoSalida,
         almuerzo: almuerzoPorDia.get(clave) ?? null,
+        almuerzoEnEstaFila: filaDelAlmuerzo.get(clave) === r.id,
       };
     });
   });

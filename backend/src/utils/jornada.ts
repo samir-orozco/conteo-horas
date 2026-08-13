@@ -43,6 +43,11 @@ export type ResumenAlmuerzo = {
   minutosDescontados: number;  // lo que le cuesta al día
   regresoEstimado: boolean;    // el regreso lo puso el sistema, no una persona
   seExcedio: boolean;          // volvió después del fin de la ventana
+  // Cuántos minutos después del FIN de la ventana volvió. Ojo: no es lo mismo
+  // que "almorzó más de lo que dura la ventana". Quien sale a las 11:30 y
+  // vuelve a las 12:50 almorzó 80 minutos —veinte más de los que dura— y aun
+  // así llegó antes de las 13:00: no se pasó de nada.
+  minutosDeMas: number;
 };
 
 export function resumirAlmuerzoDelDia(
@@ -54,14 +59,18 @@ export function resumirAlmuerzoDelDia(
   const tramos = registros
     .filter(r => r.entrada && r.salida)
     .map(r => ({ entrada: r.entrada!, salida: r.salida! }));
-  const minutosDescontados = minutosAlmuerzoADescontar(tramos, dia);
+  // Un día sin ningún tramo cerrado no ha pagado nada, así que tampoco ha
+  // descontado nada. Hay que decirlo aquí porque `minutosAlmuerzoADescontar`
+  // devuelve los minutos fijos antes de mirar los tramos; el motor no se entera
+  // porque solo mete al cálculo los días con algún tramo cerrado (reportes.ts).
+  const minutosDescontados = tramos.length > 0 ? minutosAlmuerzoADescontar(tramos, dia) : 0;
 
   const conVentana = !!dia.almuerzoInicio && !!dia.almuerzoFin;
   const base: ResumenAlmuerzo = {
     estado: conVentana ? 'NO_MARCADO' : 'SIN_VENTANA',
     ventana: conVentana ? { inicio: dia.almuerzoInicio!, fin: dia.almuerzoFin! } : null,
     salida: null, regreso: null, minutos: null,
-    minutosDescontados, regresoEstimado: false, seExcedio: false,
+    minutosDescontados, regresoEstimado: false, seExcedio: false, minutosDeMas: 0,
   };
   if (!conVentana) return base;
 
@@ -80,13 +89,15 @@ export function resumirAlmuerzoDelDia(
 
   const regreso = regresoReg.entrada!;
   const minutos = Math.round((regreso.getTime() - salida.getTime()) / MS_MIN);
+  const minutosDeMas = Math.max(0, Math.round((regreso.getTime() - finDeLaVentana(salida, dia)) / MS_MIN));
 
   return {
     ...base,
     estado: 'MARCADO',
     salida, regreso, minutos,
     regresoEstimado: regresoReg.entradaEstimada,
-    seExcedio: regreso.getTime() > finDeLaVentana(salida, dia),
+    seExcedio: minutosDeMas > 0,
+    minutosDeMas,
   };
 }
 
