@@ -171,3 +171,26 @@ describe('la ventana manda sobre los minutos sueltos', () => {
     expect(d.almuerzoInicio).toBeNull();
   });
 });
+
+// Una fila de día puede contener DOS tramos de noches distintas: el regreso del
+// almuerzo de la noche anterior (madrugada) y la noche siguiente completa. Sus
+// almuerzos caen en madrugadas distintas, así que hay que contar las dos
+// posiciones de la ventana, no elegir una.
+describe('turno nocturno con dos tramos en la misma fila', () => {
+  const U = (d: number, h: number, m = 0) => new Date(Date.UTC(2026, 7, d, h + 5, m, 0));
+  const diaMartes = { fecha: U(11, 0), almuerzoMin: 60, almuerzoInicio: '01:00', almuerzoFin: '02:00' };
+  const regresoDelLunes = { entrada: U(11, 1, 30), salida: U(11, 6, 0) };
+  const nocheDelMartes = { entrada: U(11, 22, 0), salida: U(12, 6, 0) };
+
+  it('cada tramo por separado da lo suyo', () => {
+    expect(minutosAlmuerzoADescontar([regresoDelLunes], diaMartes)).toBe(30);
+    expect(minutosAlmuerzoADescontar([nocheDelMartes], diaMartes)).toBe(60);
+  });
+
+  it('juntos suman, no se tapan', () => {
+    // Antes devolvía 30: el solape directo cortaba el cálculo y la ventana
+    // corrida un día —donde estaba el almuerzo no marcado de la noche del
+    // martes— no se probaba nunca. Esos 60 minutos se pagaban como nocturnos.
+    expect(minutosAlmuerzoADescontar([regresoDelLunes, nocheDelMartes], diaMartes)).toBe(90);
+  });
+});

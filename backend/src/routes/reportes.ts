@@ -82,7 +82,14 @@ function liquidarRegistros(
     if (!r.entrada || !r.salida) continue;
     const k = claveDiaBogota(r.entrada);
     if (!tramosPorDia.has(k)) tramosPorDia.set(k, []);
-    tramosPorDia.get(k)!.push({ entrada: r.entrada, salida: r.salida });
+    // Los tramos van YA AJUSTADOS por la tolerancia de salida, igual que los que
+    // entran al motor de horas más abajo. Con los crudos, el solape del almuerzo
+    // se mediría sobre minutos que la liquidación ya recortó: quien sale 12:10
+    // teniendo salida programada a las 12:00 y tolerancia de 15 pagaría 10
+    // minutos de almuerzo de un tiempo que no se le está contando.
+    const d = diaPorClave.get(k);
+    const t = d ? ajustarAJornada(r.entrada, r.salida, d) : { entrada: r.entrada, salida: r.salida };
+    tramosPorDia.get(k)!.push({ entrada: t.entrada, salida: t.salida });
   }
   for (const [k, tramos] of tramosPorDia) {
     const d = diaPorClave.get(k);

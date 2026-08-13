@@ -9,7 +9,36 @@ type FranjaInput = { dias: string[]; horaEntrada: string; horaSalida: string; ti
 // "HH:MM" o nada. Media ventana no define un almuerzo, así que o vienen las dos
 // horas o no viene ninguna: guardar una sola dejaría una configuración que no se
 // puede cumplir y que nadie sabría interpretar.
-const hora = (v: unknown): string | null => (typeof v === 'string' && /^\d{2}:\d{2}$/.test(v) ? v : null);
+const hora = (v: unknown): string | null => {
+  if (typeof v !== 'string' || !/^\d{2}:\d{2}$/.test(v)) return null;
+  const [h, m] = v.split(':').map(Number);
+  // "99:99" pasa la regex. Sin este rango, minutosDe daría 6039 y la ventana
+  // duraría días.
+  return h >= 0 && h <= 23 && m >= 0 && m <= 59 ? v : null;
+};
+
+const aMin = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+const duracion = (desde: string, hasta: string) => {
+  let fin = aMin(hasta); const ini = aMin(desde);
+  if (fin <= ini) fin += 1440; // cruza medianoche
+  return fin - ini;
+};
+
+// La ventana tiene que caber DENTRO de la franja de ese día. Sin esta
+// comprobación, una ventana invertida por un dedazo ("de 13:00 a 12:00", o
+// "de 12 a 1" tecleado como 12:00-01:00) se guarda como un almuerzo de 23 horas:
+// la jornada esperada del día queda en 0, se descuentan horas que nadie tomó, y
+// como el día se congela al materializarse, corregir el horario después ya no
+// arregla lo que se guardó mal. Es exactamente el tipo de error que aquí sale
+// como un número plausible en una nómina.
+function ventanaValida(f: FranjaInput, ini: string, fin: string): boolean {
+  const jornada = duracion(f.horaEntrada, f.horaSalida);
+  const almuerzo = duracion(ini, fin);
+  if (almuerzo >= jornada) return false;
+  // Y tiene que caer dentro de la franja, no en mitad de la noche de una jornada diurna.
+  const desdeEntrada = (aMin(ini) - aMin(f.horaEntrada) + 1440) % 1440;
+  return desdeEntrada + almuerzo <= jornada;
+}
 
 // Cada franja: días válidos, horas HH:MM y al menos un día
 function validarFranjas(franjas: unknown): franjas is FranjaInput[] {
@@ -18,6 +47,28 @@ function validarFranjas(franjas: unknown): franjas is FranjaInput[] {
     Array.isArray(f?.dias) && f.dias.length > 0 &&
     /^\d{2}:\d{2}$/.test(f?.horaEntrada) && /^\d{2}:\d{2}$/.test(f?.horaSalida)
   );
+}
+
+// Franjas cuya ventana de almuerzo no se puede cumplir. Se devuelven para que
+// la ruta responda 400 con un mensaje concreto en vez de guardar algo imposible.
+function franjasConVentanaImposible(franjas: FranjaInput[]): string[] {
+  const malas: string[] = [];
+  for (const f of franjas) {
+    // Vacío o ausente = sin ventana, que es una configuración legítima.
+    const escrito = (v: unknown) => typeof v === 'string' && v.trim() !== '';
+    const hayAlgo = escrito(f.almuerzoInicio) || escrito(f.almuerzoFin);
+    if (!hayAlgo) continue;
+
+    const ini = hora(f.almuerzoInicio);
+    const fin = hora(f.almuerzoFin);
+    // Escribió algo que no es una hora válida, o solo media ventana. Antes esto
+    // se descartaba en silencio: el admin creía haber configurado el almuerzo y
+    // el kiosco no le preguntaba nada a nadie.
+    if (!ini || !fin || ini === fin || !ventanaValida(f, ini, fin)) {
+      malas.push(`${f.horaEntrada}-${f.horaSalida} (almuerzo ${f.almuerzoInicio ?? '—'}-${f.almuerzoFin ?? '—'})`);
+    }
+  }
+  return malas;
 }
 
 const mapFranja = (f: FranjaInput) => {
@@ -62,6 +113,12 @@ export default async function horarioRoutes(app: FastifyInstance) {
     if (!validarFranjas(franjas)) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
     }
+    const imposibles = franjasConVentanaImposible(franjas);
+    if (imposibles.length > 0) {
+      return reply.status(400).send({
+        error: `El horario de almuerzo no cabe dentro de la jornada: ${imposibles.join(', ')}. Revisa que la hora de inicio sea anterior a la de fin.`,
+      });
+    }
     // Gating: varios horarios requieren plan Profesional o superior
     const cap = await capacidadesEmpresa(request.empresaId!);
     if (!cap.features.multiHorario) {
@@ -92,6 +149,12 @@ export default async function horarioRoutes(app: FastifyInstance) {
     const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, franjas } = request.body as any;
     if (!validarFranjas(franjas)) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
+    }
+    const imposibles = franjasConVentanaImposible(franjas);
+    if (imposibles.length > 0) {
+      return reply.status(400).send({
+        error: `El horario de almuerzo no cabe dentro de la jornada: ${imposibles.join(', ')}. Revisa que la hora de inicio sea anterior a la de fin.`,
+      });
     }
     // Las franjas se reemplazan completas: es la forma simple y sin ambigüedad
     const actualizado = await prisma.horario.update({

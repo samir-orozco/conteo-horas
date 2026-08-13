@@ -462,10 +462,27 @@ export default async function workerRoutes(app: FastifyInstance) {
         const entradasPrevias = await prisma.registro.count({
           where: { colaboradorId: payload.id, fecha: { gte: inicioDia, lt: finDia }, entrada: { not: null } },
         });
+
+        // Volver del almuerzo es la MISMA jornada, así que el tramo pertenece al
+        // día en que se entró, no al día en que se vuelve. Solo se nota en un
+        // turno nocturno, donde el almuerzo cae después de medianoche: sin esto
+        // el regreso quedaba anclado al día siguiente, la jornada se partía en
+        // dos días y el reporte contaba media noche en cada uno. En el turno de
+        // día `fecha` es la misma y esto no cambia nada.
+        const volviendoDeAlmorzar = await prisma.registro.findFirst({
+          where: {
+            colaboradorId: payload.id,
+            salidaAlmuerzo: true,
+            salida: { not: null, gte: new Date(ahora.getTime() - VENTANA_TURNO_MS) },
+          },
+          orderBy: { salida: 'desc' },
+          select: { fecha: true },
+        });
+
         const nuevo = await prisma.registro.create({
           data: {
             colaboradorId: payload.id,
-            fecha: inicioDia,
+            fecha: volviendoDeAlmorzar?.fecha ?? inicioDia,
             entrada: ahora,
             tipo: tipo as any,
             // Queda guardado DÓNDE marcó, no dónde debía: el filtro por sede de

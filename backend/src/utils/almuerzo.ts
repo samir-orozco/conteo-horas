@@ -56,14 +56,22 @@ export function minutosAlmuerzoADescontar(
   if (fin <= inicio) fin += UN_DIA_MS;
 
   // El almuerzo de un turno nocturno cae en la madrugada del día SIGUIENTE al
-  // que ancla la fila. Si ningún tramo toca la ventana tal cual, se prueba
-  // corrida un día: es el mismo almuerzo, contado desde el otro extremo.
+  // que ancla la fila, así que la ventana tiene DOS ubicaciones posibles y hay
+  // que contar las dos.
+  //
+  // Se suman en vez de elegir una. Una fila de día puede contener tramos de dos
+  // noches distintas —el regreso del almuerzo de la noche anterior y la noche
+  // siguiente completa— y sus almuerzos caen en madrugadas distintas. Probar
+  // solo la primera que diera algo dejaba el otro almuerzo sin descontar: 60
+  // minutos nocturnos pagados como trabajados, cada vez que alguien marcaba su
+  // almuerzo una noche y no la siguiente.
+  //
+  // Sumar es seguro: las dos ventanas están a 24 h de distancia, así que un
+  // tramo tendría que durar más de un día para caer en ambas.
   const cruza = (ini: number, f: number) =>
     tramos.reduce((s, t) => s + solape(t.entrada.getTime(), t.salida.getTime(), ini, f), 0);
 
-  const directo = cruza(inicio, fin);
-  if (directo > 0) return Math.round(directo);
-  return Math.round(cruza(inicio + UN_DIA_MS, fin + UN_DIA_MS));
+  return Math.round(cruza(inicio, fin) + cruza(inicio + UN_DIA_MS, fin + UN_DIA_MS));
 }
 
 // ¿Este turno puede cerrarse como "salgo a almorzar"?

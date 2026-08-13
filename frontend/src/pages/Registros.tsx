@@ -425,11 +425,10 @@ export default function Registros() {
           registroId={jornadaId}
           onCerrar={() => setJornadaId(null)}
           onCambiarDeTramo={setJornadaId}
-          onEditar={id => {
-            const reg = registros.find(x => x.id === id);
-            if (reg) abrir(reg);
-          }}
-          onEliminar={setEliminarId}
+          onEditar={reg => abrir(reg as Registro)}
+          // El detalle se cierra al eliminar: si no, queda encima mostrando una
+          // marcación que ya no existe y el siguiente clic falla con un 404.
+          onEliminar={id => { setJornadaId(null); setEliminarId(id); }}
         />
       )}
 

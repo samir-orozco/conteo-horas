@@ -75,10 +75,18 @@ function Dato({ rotulo, children }: { rotulo: string; children: React.ReactNode 
   );
 }
 
+export type RegistroEditable = {
+  id: string; colaboradorId: string; fecha: string;
+  entrada: string | null; salida: string | null; tipo: string; observacion: string | null;
+};
+
 type Props = {
   registroId: string;
   onCerrar: () => void;
-  onEditar: (registroId: string) => void;
+  // Se entregan los datos, no solo el id: la marcación puede no estar en la
+  // lista que tiene la tabla cargada (otro tramo del día, otro rango de fechas),
+  // y buscarla allí dejaba el botón sin hacer nada.
+  onEditar: (registro: RegistroEditable) => void;
   onEliminar: (registroId: string) => void;
   // Para saltar a otro tramo del mismo día sin cerrar el modal.
   onCambiarDeTramo: (registroId: string) => void;
@@ -406,7 +414,10 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   className="flex items-center gap-1.5 text-sm text-red-600 border border-red-200 rounded-lg px-4 py-2 hover:bg-red-50">
                   <Trash2 size={14} /> Eliminar
                 </button>
-                <button onClick={() => onEditar(r.id)}
+                <button onClick={() => onEditar({
+                  id: r.id, colaboradorId: r.colaboradorId, fecha: r.fecha,
+                  entrada: r.entrada, salida: r.salida, tipo: r.tipo, observacion: r.observacion,
+                })}
                   className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-lg text-sm font-semibold">
                   <Edit2 size={14} /> Editar
                 </button>
