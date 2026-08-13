@@ -1,40 +1,143 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma } from '@prisma/client';
-import { toZonedTime } from 'date-fns-tz';
 import crypto from 'crypto';
 import { prisma } from '../index';
 import { esDescriptorValido, mejorCoincidencia } from '../utils/rostro';
+import { enviarTelegram } from '../utils/telegram';
+import { notificar } from '../utils/notificaciones';
+import { rangoDiaBogota } from '../utils/fechas';
+import { distanciaMetros } from '../utils/geo';
+import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes } from '../utils/kioscoConfig';
+import { resolverSedeDeMarcacion } from '../utils/sedes';
+import { puedeSalirAAlmorzar } from '../utils/almuerzo';
+import { almuerzoSinRegreso } from '../utils/cierreAlmuerzo';
 
-const TZ = 'America/Bogota';
+const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
 
-// ¿La empresa exige dispositivos autorizados para el kiosco?
-async function exigeDispositivo(empresaId: string): Promise<boolean> {
-  const cfg = await prisma.configuracion.findUnique({
-    where: { empresaId_clave: { empresaId, clave: 'KIOSCO_SOLO_DISPOSITIVOS' } },
+// Motivos de novedad válidos (mismos de la vista interna del colaborador)
+const TIPOS_NOVEDAD = new Set([
+  'VACACIONES', 'INCAPACIDAD_EPS', 'INCAPACIDAD_ARL', 'LICENCIA_MATERNIDAD', 'LICENCIA_PATERNIDAD',
+  'LICENCIA_LUTO', 'CALAMIDAD', 'MEDICO', 'PERSONAL', 'NO_REMUNERADO', 'OTRO',
+]);
+
+// Ventana máxima para considerar que una entrada abierta es el turno en curso al
+// marcar salida. Cubre turnos que cruzan medianoche (ej. 22:00→06:00) sin atar por
+// error una salida a un turno olvidado de días atrás (que el auto-cierre ya maneja).
+const VENTANA_TURNO_MS = 18 * 60 * 60 * 1000;
+
+// Candado en memoria contra marcas dobles concurrentes del mismo colaborador
+// (reintento de red, doble pestaña). El kiosco corre en un único proceso Node.
+const marcandoAhora = new Set<string>();
+
+// Límite de rate para los endpoints públicos del kiosco (anti fuerza bruta / enumeración)
+const rlPublico = { config: { rateLimit: { max: 12, timeWindow: '1 minute' } } };
+
+// Cachea los descriptores faciales enrolados por empresa unos segundos: los
+// reintentos de login-rostro (lo normal es 2-3 seguidos) no vuelven a golpear la BD.
+// TTL corto para que un enrolamiento nuevo entre en efecto casi de inmediato.
+const CACHE_ROSTROS_MS = 30_000;
+type Enrolado = { id: string; nombre: string; apellido: string; cargo: string | null; cedula: string; empresaId: string; rostroDescriptor: Prisma.JsonValue };
+const cacheRostros = new Map<string, { ts: number; enrolados: Enrolado[] }>();
+async function enroladosDeEmpresa(empresaId: string): Promise<Enrolado[]> {
+  const hit = cacheRostros.get(empresaId);
+  if (hit && Date.now() - hit.ts < CACHE_ROSTROS_MS) return hit.enrolados;
+  const enrolados = await prisma.colaborador.findMany({
+    where: { empresaId, activo: true, rostroDescriptor: { not: Prisma.DbNull } },
+    select: { id: true, nombre: true, apellido: true, cargo: true, cedula: true, empresaId: true, rostroDescriptor: true },
   });
-  return cfg?.valor === '1';
+  cacheRostros.set(empresaId, { ts: Date.now(), enrolados });
+  return enrolados;
 }
 
-// ¿La empresa permite marcar con cédula? (por defecto sí; se desactiva en Configuración → Marcación)
-async function permiteCedula(empresaId: string): Promise<boolean> {
-  const cfg = await prisma.configuracion.findUnique({
-    where: { empresaId_clave: { empresaId, clave: 'KIOSCO_PERMITE_CEDULA' } },
-  });
-  return cfg?.valor !== '0';
-}
-
-// Foto de verificación facial: JPEG base64 pequeño tomado en el navegador al marcar
+// Foto de verificación facial: data URI JPEG pequeño tomado en el navegador al
+// marcar. Valida el prefijo, el tamaño y que los bytes empiecen con la firma JPEG
+// (FF D8 FF), para no almacenar datos arbitrarios en la columna.
 function fotoValida(foto: unknown): foto is string {
-  return typeof foto === 'string' && foto.startsWith('data:image/jpeg;base64,') && foto.length < 300_000;
+  const PREFIJO = 'data:image/jpeg;base64,';
+  if (typeof foto !== 'string' || !foto.startsWith(PREFIJO) || foto.length > 300_000) return false;
+  try {
+    const cabecera = Buffer.from(foto.slice(PREFIJO.length, PREFIJO.length + 24), 'base64');
+    return cabecera.length >= 3 && cabecera[0] === 0xff && cabecera[1] === 0xd8 && cabecera[2] === 0xff;
+  } catch {
+    return false;
+  }
 }
 
-async function dispositivoValido(empresaId: string, deviceToken?: string): Promise<boolean> {
-  if (!deviceToken) return false;
-  const disp = await prisma.dispositivoKiosco.findUnique({ where: { token: deviceToken } });
-  if (!disp || disp.empresaId !== empresaId) return false;
-  await prisma.dispositivoKiosco.update({ where: { id: disp.id }, data: { ultimoUso: new Date() } });
-  return true;
+// Ventana de almuerzo del turno en curso y si esa salida ya se marcó.
+//
+// La ventana sale de `dias_esperados`, NO del horario vigente. Si el admin la
+// configuró hoy, el día de hoy ya se congeló sin ella y su descuento se sigue
+// haciendo a la manera vieja (minutos fijos); ofrecer el almuerzo ahí lo cobraría
+// dos veces. Aplica desde mañana, igual que cualquier cambio de horario.
+//
+// `fechaAncla` es la del turno abierto, no la de hoy: un turno nocturno que
+// almuerza a la 01:00 pertenece al día en que ENTRÓ, y su ventana vive en la
+// fila de ese día.
+async function almuerzoDelTurno(colaboradorId: string, fechaAncla: Date) {
+  const { inicioDia, finDia } = rangoDiaBogota(fechaAncla);
+  const [dia, marcados] = await Promise.all([
+    // Por rango y no por clave exacta: MySQL puede devolver la fecha con
+    // milisegundos y una fila así quedaría huérfana sin que nadie se entere.
+    prisma.diaEsperado.findFirst({
+      where: { colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
+      select: { almuerzoInicio: true, almuerzoFin: true },
+    }),
+    prisma.registro.count({
+      where: { colaboradorId, salidaAlmuerzo: true, salida: { gte: new Date(Date.now() - VENTANA_TURNO_MS) } },
+    }),
+  ]);
+  const yaAlmorzo = marcados > 0;
+  return { ventana: dia, yaAlmorzo, puede: puedeSalirAAlmorzar(dia, yaAlmorzo) };
 }
+
+// Alerta de llegada tarde por Telegram (si la empresa lo activó). No bloquea la marca.
+async function alertarTardanzaTelegram(empresaId: string, nombre: string, ahoraBog: Date, minutosTarde: number) {
+  const cfgs = await prisma.configuracion.findMany({
+    where: { empresaId, clave: { in: ['TELEGRAM_ALERTAS_TARDE', 'TELEGRAM_CHAT_ID'] } },
+  });
+  const map = Object.fromEntries(cfgs.map(c => [c.clave, c.valor]));
+  if (map.TELEGRAM_ALERTAS_TARDE !== '1' || !map.TELEGRAM_CHAT_ID) return;
+  const h = ahoraBog.getHours();
+  const hora = `${h % 12 || 12}:${String(ahoraBog.getMinutes()).padStart(2, '0')} ${h >= 12 ? 'p.m.' : 'a.m.'}`;
+  const tardeTxt = minutosTarde >= 60 ? `${Math.floor(minutosTarde / 60)}h ${minutosTarde % 60}min` : `${minutosTarde} min`;
+  await enviarTelegram(map.TELEGRAM_CHAT_ID, `⚠️ <b>${nombre}</b> llegó tarde\n🕐 ${hora} · ${tardeTxt} tarde`);
+}
+
+// Esquemas de body: rechazan tipos inesperados (p. ej. `cedula` como objeto de
+// filtro Prisma) ANTES del handler → cierran la inyección de operadores.
+const loginSchema = {
+  body: {
+    type: 'object', additionalProperties: false,
+    required: ['cedula', 'marcadorToken'],
+    properties: {
+      cedula: { type: 'string', minLength: 1, maxLength: 30 },
+      marcadorToken: { type: 'string', minLength: 1, maxLength: 100 },
+      deviceToken: { type: 'string', maxLength: 100 },
+    },
+  },
+};
+const loginRostroSchema = {
+  body: {
+    type: 'object', additionalProperties: false,
+    required: ['descriptor', 'marcadorToken'],
+    properties: {
+      descriptor: { type: 'array', items: { type: 'number' }, maxItems: 256 },
+      marcadorToken: { type: 'string', minLength: 1, maxLength: 100 },
+      deviceToken: { type: 'string', maxLength: 100 },
+    },
+  },
+};
+const vincularSchema = {
+  body: {
+    type: 'object', additionalProperties: false,
+    required: ['marcadorToken', 'codigo'],
+    properties: {
+      marcadorToken: { type: 'string', minLength: 1, maxLength: 100 },
+      codigo: { type: 'string', minLength: 1, maxLength: 12 },
+    },
+  },
+};
 
 // Nota: el kiosco NUNCA se bloquea por mora o suspensión — los colaboradores
 // siguen marcando sus horas; el cobro se gestiona en el panel del admin.
@@ -48,11 +151,15 @@ export default async function workerRoutes(app: FastifyInstance) {
       empresa: empresa.nombre,
       requiereDispositivo: await exigeDispositivo(empresa.id),
       permiteCedula: await permiteCedula(empresa.id),
+      // El kiosco pide el GPS si lo exige la geocerca de la empresa O si hay
+      // alguna sede con ubicación: con sedes, quién marca dónde solo se sabe
+      // por coordenadas, así que hay que pedirlas antes de saber quién es.
+      exigeUbicacion: (await geocercoConfig(empresa.id)) !== null || (await empresaUsaSedes(empresa.id)),
     };
   });
 
   // Vincula este dispositivo al kiosco con el código de 6 dígitos que genera el admin
-  app.post('/vincular', async (request, reply) => {
+  app.post('/vincular', { ...rlPublico, schema: vincularSchema }, async (request, reply) => {
     const { marcadorToken, codigo } = request.body as { marcadorToken: string; codigo: string };
     const empresa = await prisma.empresa.findUnique({ where: { marcadorToken } });
     if (!empresa || !empresa.activa) return reply.code(404).send({ error: 'Link de marcación inválido' });
@@ -79,9 +186,8 @@ export default async function workerRoutes(app: FastifyInstance) {
   });
 
   // Login del kiosco con cédula, amarrado al link único de la empresa
-  app.post('/login', async (request, reply) => {
+  app.post('/login', { ...rlPublico, schema: loginSchema }, async (request, reply) => {
     const { cedula, marcadorToken, deviceToken } = request.body as { cedula: string; marcadorToken: string; deviceToken?: string };
-    if (!marcadorToken) return reply.code(400).send({ error: 'Link de marcación inválido' });
 
     const empresa = await prisma.empresa.findUnique({ where: { marcadorToken } });
     if (!empresa || !empresa.activa) return reply.code(404).send({ error: 'Link de marcación inválido' });
@@ -106,17 +212,30 @@ export default async function workerRoutes(app: FastifyInstance) {
       { id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId },
       { expiresIn: '12h' }
     );
-    return { token, colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo } };
+    // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
+    // toca marcar a esta persona, junto al nombre.
+    const sedesDelCol = await prisma.colaboradorSede.findMany({
+      where: { colaboradorId: col.id, sede: { activa: true } },
+      select: { sede: { select: { id: true, nombre: true } } },
+      orderBy: { sede: { nombre: 'asc' } },
+    });
+    return {
+      token,
+      colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo },
+      sedes: sedesDelCol.map(s => s.sede),
+    };
   });
 
   // Login del kiosco con reconocimiento facial: el navegador ya calculó el
-  // descriptor (128 floats) con face-api.js y ya pasó la prueba de vida
-  // (parpadeo). El servidor solo compara contra los enrolados de esa empresa.
-  app.post('/login-rostro', async (request, reply) => {
+  // descriptor (128 floats) con face-api.js tras una captura estable. El servidor
+  // compara contra los enrolados de esa empresa.
+  // OJO: el descriptor lo calcula el cliente; hoy no hay liveness ni anti-replay en
+  // el servidor, así que la foto adjunta debe tomarse como evidencia, no como
+  // prueba fuerte de identidad (pendiente: liveness real / reto firmado).
+  app.post('/login-rostro', { ...rlPublico, schema: loginRostroSchema }, async (request, reply) => {
     const { descriptor, marcadorToken, deviceToken } = request.body as {
       descriptor: unknown; marcadorToken: string; deviceToken?: string;
     };
-    if (!marcadorToken) return reply.code(400).send({ error: 'Link de marcación inválido' });
     if (!esDescriptorValido(descriptor)) return reply.code(400).send({ error: 'Rostro no capturado correctamente' });
 
     const empresa = await prisma.empresa.findUnique({ where: { marcadorToken } });
@@ -128,11 +247,7 @@ export default async function workerRoutes(app: FastifyInstance) {
       }
     }
 
-    const enrolados = await prisma.colaborador.findMany({
-      where: { empresaId: empresa.id, activo: true, rostroDescriptor: { not: Prisma.DbNull } },
-      select: { id: true, nombre: true, apellido: true, cargo: true, cedula: true, empresaId: true, rostroDescriptor: true },
-    });
-    const match = mejorCoincidencia(descriptor, enrolados);
+    const match = mejorCoincidencia(descriptor, await enroladosDeEmpresa(empresa.id));
     if (!match) return reply.code(401).send({ error: 'Rostro no reconocido. Intenta de nuevo o marca con tu cédula.' });
 
     const col = match.colaborador;
@@ -140,88 +255,356 @@ export default async function workerRoutes(app: FastifyInstance) {
       { id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId },
       { expiresIn: '12h' }
     );
-    return { token, colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo } };
+    // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
+    // toca marcar a esta persona, junto al nombre.
+    const sedesDelCol = await prisma.colaboradorSede.findMany({
+      where: { colaboradorId: col.id, sede: { activa: true } },
+      select: { sede: { select: { id: true, nombre: true } } },
+      orderBy: { sede: { nombre: 'asc' } },
+    });
+    return {
+      token,
+      colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo },
+      sedes: sedesDelCol.map(s => s.sede),
+    };
   });
 
-  // Estado del día: retorna si hay entrada abierta (sin salida)
+  // Estado del día: retorna si hay entrada abierta (sin salida). Select mínimo: no
+  // trae las fotos (LongText) ni el resto de columnas que el kiosco no usa.
   app.get('/estado', { preHandler: [app.authenticate] }, async (request) => {
     const payload = (request as any).user as { id: string; rol: string };
     if (payload.rol !== 'WORKER') return { error: 'No autorizado' };
 
-    const ahoraBog = toZonedTime(new Date(), TZ);
-    const inicioDia = new Date(Date.UTC(
-      ahoraBog.getFullYear(), ahoraBog.getMonth(), ahoraBog.getDate(), 5, 0, 0
-    )); // 00:00 Bogotá = 05:00 UTC
-    const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
+    const { inicioDia, finDia } = rangoDiaBogota();
+    const [abierto, cerradoHoy, ultimoCerrado] = await Promise.all([
+      prisma.registro.findFirst({
+        where: {
+          colaboradorId: payload.id,
+          entrada: { gte: new Date(Date.now() - VENTANA_TURNO_MS) },
+          salida: null,
+        },
+        orderBy: { creadoEn: 'desc' },
+        select: { entrada: true, fecha: true },
+      }),
+      // Último turno YA COMPLETO de hoy (entrada + salida). El kiosco lo usa para
+      // mostrar el resumen del día y para confirmar antes de abrir un turno nuevo
+      // (evita la entrada duplicada de quien cree que no le quedó la salida).
+      prisma.registro.findFirst({
+        where: {
+          colaboradorId: payload.id,
+          fecha: { gte: inicioDia, lt: finDia },
+          entrada: { not: null },
+          salida: { not: null },
+        },
+        orderBy: { salida: 'desc' },
+        select: { entrada: true, salida: true },
+      }),
+      // Último turno cerrado del TURNO en curso (no del día calendario): si fue
+      // una salida a almorzar, la persona está en su almuerzo ahora mismo.
+      prisma.registro.findFirst({
+        where: {
+          colaboradorId: payload.id,
+          salida: { not: null, gte: new Date(Date.now() - VENTANA_TURNO_MS) },
+        },
+        orderBy: { salida: 'desc' },
+        select: { salida: true, salidaAlmuerzo: true },
+      }),
+    ]);
 
-    const registrosHoy = await prisma.registro.findMany({
-      where: {
-        colaboradorId: payload.id,
-        fecha: { gte: inicioDia, lt: finDia },
-      },
-      orderBy: { creadoEn: 'asc' },
-    });
+    // La ventana se ancla al turno abierto; sin turno abierto, al día de hoy.
+    const almuerzo = await almuerzoDelTurno(payload.id, abierto?.fecha ?? inicioDia);
+    const enAlmuerzo = !abierto && ultimoCerrado?.salidaAlmuerzo === true;
 
-    const abierto = registrosHoy.find(r => r.entrada && !r.salida) ?? null;
+    // ¿Se le pasó la hora de volver? Si sí, el kiosco le pregunta a qué hora
+    // regresó en vez de abrirle el turno a esta hora: quien marca a las 17:00 el
+    // regreso de un almuerzo de las 12:00 perdería la tarde entera.
+    let regresoSugerido: Date | null = null;
+    if (enAlmuerzo && ultimoCerrado?.salida) {
+      const diaDelAlmuerzo = await prisma.diaEsperado.findFirst({
+        where: {
+          colaboradorId: payload.id,
+          fecha: { gte: rangoDiaBogota(ultimoCerrado.salida).inicioDia, lt: rangoDiaBogota(ultimoCerrado.salida).finDia },
+        },
+        select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true },
+      });
+      if (diaDelAlmuerzo) {
+        const p = almuerzoSinRegreso(ultimoCerrado.salida, diaDelAlmuerzo, new Date());
+        if (p.vencido) regresoSugerido = p.finVentana;
+      }
+    }
+
     return {
-      registrosHoy,
-      entradaAbierta: abierto,
+      entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
       dentroAhora: !!abierto,
+      turnoCerradoHoy: cerradoHoy ? { entrada: cerradoHoy.entrada, salida: cerradoHoy.salida } : null,
+      // Solo se manda la ventana cuando de verdad se puede usar: el kiosco
+      // pregunta exactamente cuando el servidor va a creerle.
+      almuerzo: almuerzo.puede
+        ? { inicio: almuerzo.ventana!.almuerzoInicio!, fin: almuerzo.ventana!.almuerzoFin! }
+        : null,
+      enAlmuerzo,
+      salidaAlmuerzo: enAlmuerzo ? ultimoCerrado!.salida : null,
+      // Con hora: se le pregunta a qué hora volvió. Sin ella: está a tiempo.
+      regresoSugerido,
     };
   });
 
   // Registrar entrada o salida. Si el login fue con rostro, llega la foto de
   // verificación (se conserva 2 meses y luego se borra automáticamente).
   app.post('/marcar', { preHandler: [app.authenticate] }, async (request, reply) => {
-    const payload = (request as any).user as { id: string; rol: string };
+    const payload = (request as any).user as { id: string; rol: string; empresaId: string };
     if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
-    const { foto } = (request.body ?? {}) as { foto?: unknown };
-    const fotoGuardar = fotoValida(foto) ? foto : null;
 
-    const ahora = new Date();
-    const ahoraBog = toZonedTime(ahora, TZ);
-    const inicioDia = new Date(Date.UTC(
-      ahoraBog.getFullYear(), ahoraBog.getMonth(), ahoraBog.getDate(), 5, 0, 0
-    ));
-    const finDia = new Date(inicioDia.getTime() + 24 * 60 * 60 * 1000);
+    // Evita marcas dobles concurrentes del mismo colaborador (reintento/doble tap).
+    if (marcandoAhora.has(payload.id)) {
+      return reply.code(409).send({ error: 'Tu marca se está procesando, espera un momento.' });
+    }
+    marcandoAhora.add(payload.id);
+    try {
+      const { foto, lat, lng, almuerzo, regresoA } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown; almuerzo?: unknown; regresoA?: unknown };
+      const fotoGuardar = fotoValida(foto) ? foto : null;
+      const pidioAlmuerzo = almuerzo === true;
+      // Hora de regreso del almuerzo que la propia persona confirma en el
+      // kiosco cuando se le olvidó marcarla. Solo se acepta un instante válido;
+      // más abajo se comprueba además que caiga donde debe.
+      const regresoPedido = typeof regresoA === 'string' && !Number.isNaN(Date.parse(regresoA))
+        ? new Date(regresoA) : null;
 
-    const abierto = await prisma.registro.findFirst({
-      where: {
-        colaboradorId: payload.id,
-        fecha: { gte: inicioDia, lt: finDia },
-        entrada: { not: null },
-        salida: null,
-      },
-      orderBy: { creadoEn: 'asc' },
-    });
+      // ===== Dónde está marcando =====
+      //
+      // Si tiene sedes asignadas, manda la geocerca de SUS sedes: basta estar
+      // dentro de cualquiera (quien rota entre locales marca en la que le toca
+      // ese día). Si no tiene sedes, rige la geocerca única de la empresa, que
+      // es como funcionó siempre — así nada se rompe antes de migrar.
+      let sedeDeLaMarca: string | null = null;
+      const sedesDelTrabajador = await sedesConGeocercaDe(payload.id);
 
-    // Festivo legal (global) o propio de la empresa del colaborador
-    const col = await prisma.colaborador.findUnique({ where: { id: payload.id } });
-    const festHoy = await prisma.diaFestivo.findFirst({
-      where: {
-        fecha: { gte: inicioDia, lt: finDia },
-        OR: [{ empresaId: null }, { empresaId: col?.empresaId }],
-      },
-    });
-    const tipo = festHoy ? 'FESTIVO' : 'NORMAL';
+      if (sedesDelTrabajador.length > 0) {
+        const latN = Number(lat), lngN = Number(lng);
+        if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
+          return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
+        }
+        const r = resolverSedeDeMarcacion(sedesDelTrabajador, latN, lngN);
+        if (!r.dentro) {
+          // Se nombra la sede más cercana y la distancia: "fuera de ubicación" a
+          // secas no le dice a la persona qué hacer.
+          return reply.code(403).send({
+            error: `Estás a ${r.distancia} m de ${r.sede?.nombre}. Debes marcar desde una de tus sedes.`,
+            codigo: 'FUERA_DE_UBICACION', distancia: r.distancia, radio: r.sede?.radio ?? 0,
+          });
+        }
+        sedeDeLaMarca = r.sede?.id ?? null;
+      } else {
+        const geo = await geocercoConfig(payload.empresaId);
+        if (geo) {
+          const latN = Number(lat), lngN = Number(lng);
+          if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
+            return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
+          }
+          const dist = Math.round(distanciaMetros(latN, lngN, geo.lat, geo.lng));
+          if (dist > geo.radio) {
+            return reply.code(403).send({
+              error: `Estás fuera de la ubicación de la empresa (a ${dist} m). Debes marcar desde el sitio de trabajo.`,
+              codigo: 'FUERA_DE_UBICACION', distancia: dist, radio: geo.radio,
+            });
+          }
+        }
+      }
 
-    if (abierto) {
-      const updated = await prisma.registro.update({
-        where: { id: abierto.id },
-        data: { salida: ahora, ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}) },
-      });
-      return { accion: 'SALIDA', registro: updated, hora: ahora };
-    } else {
-      const nuevo = await prisma.registro.create({
-        data: {
+      const ahora = new Date();
+      const { ahoraBog, inicioDia, finDia } = rangoDiaBogota(ahora);
+
+      // Turno abierto en curso: se busca por ventana (no por día calendario), para
+      // que un turno que cruzó medianoche encuentre su entrada y registre salida en
+      // vez de crear una entrada nueva.
+      const abierto = await prisma.registro.findFirst({
+        where: {
           colaboradorId: payload.id,
-          fecha: inicioDia,
-          entrada: ahora,
-          tipo: tipo as any,
-          ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
+          entrada: { gte: new Date(ahora.getTime() - VENTANA_TURNO_MS) },
+          salida: null,
+        },
+        orderBy: { creadoEn: 'desc' },
+      });
+
+      // Festivo legal (global) o propio de la empresa del colaborador
+      const col = await prisma.colaborador.findUnique({
+        where: { id: payload.id },
+        include: { horario: { include: { franjas: true } } },
+      });
+      const festHoy = await prisma.diaFestivo.findFirst({
+        where: {
+          fecha: { gte: inicioDia, lt: finDia },
+          OR: [{ empresaId: null }, { empresaId: col?.empresaId }],
         },
       });
-      return { accion: 'ENTRADA', registro: nuevo, hora: ahora };
+      const tipo = festHoy ? 'FESTIVO' : 'NORMAL';
+
+      if (abierto) {
+        // Entrada y salida en el MISMO sitio. Si abrió turno en El Poblado no
+        // puede cerrarlo en Laureles: el turno pertenece a una sede, y permitir
+        // lo contrario haría imposible saber dónde trabajó realmente.
+        // Los turnos abiertos ANTES de existir las sedes no tienen sede: esos se
+        // dejan cerrar donde sea, o quedarían atrapados sin poder marcar salida.
+        if (abierto.sedeId && sedeDeLaMarca && abierto.sedeId !== sedeDeLaMarca) {
+          const sedeEntrada = sedesDelTrabajador.find(s => s.id === abierto.sedeId);
+          return reply.code(403).send({
+            error: `Abriste el turno en ${sedeEntrada?.nombre ?? 'otra sede'}. La salida debe marcarse en la misma sede.`,
+            codigo: 'SEDE_DISTINTA',
+          });
+        }
+        // Salida a almorzar: se valida contra el día congelado y contra si ya
+        // almorzó. Que lo diga el cliente no basta — el flag decide cómo se lee
+        // el día después, y nadie debería poder inventarlo desde el navegador.
+        const esAlmuerzo = pidioAlmuerzo && (await almuerzoDelTurno(payload.id, abierto.fecha)).puede;
+
+        const updated = await prisma.registro.update({
+          where: { id: abierto.id },
+          data: {
+            salida: ahora,
+            ...(esAlmuerzo ? { salidaAlmuerzo: true } : {}),
+            ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
+          },
+        });
+        // ¿Salió antes de la hora de fin de su franja? (para pedir motivo).
+        // Normaliza franjas que cruzan medianoche (fin < inicio) sumando 24h.
+        // Irse a almorzar no es irse temprano: ahí no se pide ninguna novedad.
+        let salidaTemprana = false;
+        const horario = col?.horario;
+        if (!esAlmuerzo && horario && horario.activo && !festHoy) {
+          const franja = horario.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
+          if (franja) {
+            const iniMin = minutosDe(franja.horaEntrada);
+            let finMin = minutosDe(franja.horaSalida);
+            const cruzaMedianoche = finMin <= iniMin;
+            if (cruzaMedianoche) finMin += 1440;
+            let salidaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
+            if (cruzaMedianoche && salidaMin < iniMin) salidaMin += 1440; // salió pasada la medianoche
+            if (salidaMin < finMin - (horario.toleranciaMin ?? 0)) salidaTemprana = true;
+          }
+        }
+        return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo };
+      } else {
+        // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
+        const entradasPrevias = await prisma.registro.count({
+          where: { colaboradorId: payload.id, fecha: { gte: inicioDia, lt: finDia }, entrada: { not: null } },
+        });
+
+        // Volver del almuerzo es la MISMA jornada, así que el tramo pertenece al
+        // día en que se entró, no al día en que se vuelve. Solo se nota en un
+        // turno nocturno, donde el almuerzo cae después de medianoche: sin esto
+        // el regreso quedaba anclado al día siguiente, la jornada se partía en
+        // dos días y el reporte contaba media noche en cada uno. En el turno de
+        // día `fecha` es la misma y esto no cambia nada.
+        const volviendoDeAlmorzar = await prisma.registro.findFirst({
+          where: {
+            colaboradorId: payload.id,
+            salidaAlmuerzo: true,
+            salida: { not: null, gte: new Date(ahora.getTime() - VENTANA_TURNO_MS) },
+          },
+          orderBy: { salida: 'desc' },
+          select: { fecha: true, salida: true },
+        });
+
+        // Regreso del almuerzo con hora corregida por la propia persona. Se
+        // valida contra la ventana de SU día, no contra lo que mande el cliente:
+        // tiene que estar después de la salida a almorzar, no puede ser futura,
+        // y no puede pasarse del fin de su ventana. Así lo peor que alguien
+        // puede conseguir manipulando el navegador es declarar que volvió a la
+        // hora a la que le tocaba, que es exactamente lo que el kiosco propone.
+        let entradaReal = ahora;
+        let esRegresoEstimado = false;
+        if (regresoPedido && volviendoDeAlmorzar?.salida) {
+          const rango = rangoDiaBogota(volviendoDeAlmorzar.fecha);
+          const diaAlm = await prisma.diaEsperado.findFirst({
+            where: { colaboradorId: payload.id, fecha: { gte: rango.inicioDia, lt: rango.finDia } },
+            select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true },
+          });
+          const p = diaAlm ? almuerzoSinRegreso(volviendoDeAlmorzar.salida, diaAlm, ahora) : null;
+          const tope = p?.finVentana;
+          const dentro = tope
+            && regresoPedido > volviendoDeAlmorzar.salida
+            && regresoPedido <= ahora
+            && regresoPedido <= tope;
+          if (dentro) {
+            entradaReal = regresoPedido;
+            // Queda en el DATO que esa hora no la marcó nadie en su momento: el
+            // día que alguien reclame, el registro tiene que poder decirlo.
+            esRegresoEstimado = true;
+          }
+        }
+
+        const nuevo = await prisma.registro.create({
+          data: {
+            colaboradorId: payload.id,
+            fecha: volviendoDeAlmorzar?.fecha ?? inicioDia,
+            entrada: entradaReal,
+            ...(esRegresoEstimado ? { entradaEstimada: true } : {}),
+            tipo: tipo as any,
+            // Queda guardado DÓNDE marcó, no dónde debía: el filtro por sede de
+            // los reportes tiene que reflejar la realidad.
+            ...(sedeDeLaMarca ? { sedeId: sedeDeLaMarca } : {}),
+            ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
+          },
+        });
+
+        // Alerta de llegada tarde por Telegram (primera entrada del día, día laboral)
+        const horarioE = col?.horario;
+        if (entradasPrevias === 0 && col && !festHoy && horarioE?.activo) {
+          const franja = horarioE.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
+          if (franja) {
+            const entradaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
+            const tarde = entradaMin - (minutosDe(franja.horaEntrada) + (horarioE.toleranciaMin ?? 0));
+            if (tarde > 0) {
+              alertarTardanzaTelegram(col.empresaId, `${col.nombre} ${col.apellido}`, ahoraBog, tarde).catch(() => {});
+              const tardeTxt = tarde >= 60 ? `${Math.floor(tarde / 60)}h ${tarde % 60}min` : `${tarde} min`;
+              notificar(col.empresaId, {
+                tipo: 'LLEGADA_TARDE',
+                titulo: `${col.nombre} ${col.apellido} llegó tarde`,
+                cuerpo: `Marcó entrada con ${tardeTxt} de retraso.`,
+                entidad: 'colaborador', entidadId: col.id,
+              });
+            }
+          }
+        }
+        return { accion: 'ENTRADA', registro: nuevo, hora: entradaReal, regresoEstimado: esRegresoEstimado };
+      }
+    } finally {
+      marcandoAhora.delete(payload.id);
     }
+  });
+
+  // El colaborador reporta el motivo de una salida temprana desde el kiosco.
+  // Crea una novedad del día, pendiente de aprobación por el administrador.
+  app.post('/novedad', { preHandler: [app.authenticate] }, async (request, reply) => {
+    const payload = (request as any).user as { id: string; rol: string };
+    if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
+    const { tipo, descripcion } = (request.body ?? {}) as { tipo?: string; descripcion?: string };
+    if (!tipo || !TIPOS_NOVEDAD.has(tipo)) return reply.code(400).send({ error: 'Motivo inválido' });
+
+    const { inicioDia } = rangoDiaBogota();
+    const permiso = await prisma.permiso.create({
+      data: {
+        colaboradorId: payload.id,
+        tipo: tipo as any,
+        descripcion: (descripcion || '').trim() || null,
+        fechaInicio: inicioDia,
+        fechaFin: inicioDia,
+        aprobado: false,
+      },
+    });
+    // Avisa al admin que hay una novedad por aprobar (campana del menú)
+    const quien = await prisma.colaborador.findUnique({
+      where: { id: payload.id },
+      select: { nombre: true, apellido: true, empresaId: true },
+    });
+    if (quien) {
+      notificar(quien.empresaId, {
+        tipo: 'NOVEDAD_PENDIENTE',
+        titulo: `Novedad por aprobar: ${quien.nombre} ${quien.apellido}`,
+        cuerpo: `Reportó una novedad (${tipo}) pendiente de tu aprobación.`,
+        entidad: 'colaborador', entidadId: payload.id,
+      });
+    }
+    return reply.code(201).send({ ok: true, id: permiso.id });
   });
 }

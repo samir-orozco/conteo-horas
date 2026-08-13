@@ -85,13 +85,60 @@ body {
   85% { opacity: 1; }
   100% { transform: translateY(100%); opacity: 0; }
 }
+/* Slider de la calculadora de precio: riel grueso tipo píldora con relleno
+   degradado hasta el thumb (el degradado se pinta inline según el valor) */
+.hp-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+}
+.hp-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #FFD85E;
+  border: 3px solid #ffffff;
+  box-shadow: 0 1px 6px rgba(48, 48, 48, 0.3);
+  transition: transform 0.15s ease;
+}
+.hp-slider::-webkit-slider-thumb:active { transform: scale(1.12); }
+.hp-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #FFD85E;
+  border: 3px solid #ffffff;
+  box-shadow: 0 1px 6px rgba(48, 48, 48, 0.3);
+}
+.hp-slider::-moz-range-track { background: transparent; }
+
+/* Temblor sutil (~1px) para cifras que cambian, ej. calculadora de precio */
+@keyframes hp-shake-suave {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-1px); }
+  70% { transform: translateX(1px); }
+}
 .hp-pop { animation: hp-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 .hp-ripple { animation: hp-ripple 1s ease-out infinite; }
 .hp-shake { animation: hp-shake 0.5s ease-in-out both; }
+.hp-shake-suave { animation: hp-shake-suave 0.18s ease-in-out; }
 .hp-fade-bg { animation: hp-fade-bg 0.4s ease-out both; }
 .hp-fade-out { animation: hp-fade-out 0.35s ease-in both; }
 .hp-pop-out { animation: hp-pop-out 0.32s cubic-bezier(0.4, 0, 1, 1) both; }
 .hp-scan-line { animation: hp-scan 2.1s ease-in-out infinite; }
+
+/* Panel de notificaciones: emerge desde su esquina superior-izquierda (el botón) */
+@keyframes hp-notif-pop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.hp-notif-pop { animation: hp-notif-pop 0.16s cubic-bezier(0.2, 0.9, 0.3, 1) both; transform-origin: top left; }
 
 /* Landing: flotación, giro lento, entrada al hacer scroll */
 @keyframes hp-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }

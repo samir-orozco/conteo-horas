@@ -1,14 +1,21 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  Clock, Users, Calendar, Settings, BarChart2, LogOut, Menu, X,
-  Building2, CreditCard, LayoutDashboard, AlertTriangle, Home,
+  Clock, Users, Calendar, Settings, BarChart2, FileBarChart2, Bell, LogOut, Menu, X,
+  Building2, CreditCard, LayoutDashboard, AlertTriangle, Home, Handshake,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import BloqueoPago from './BloqueoPago';
+import VerificarCorreo from './VerificarCorreo';
+import GuiaBienvenida from './GuiaBienvenida';
+import CampanaNav from '../features/notificaciones/CampanaNav';
+import ReportesNav from './ReportesNav';
+import { useNotificaciones } from '../features/notificaciones/useNotificaciones';
 import logoCompleto from '../assets/logo-completo.svg';
 
-type NavItem = { to: string; label: string; icon: any };
+// `panel: true` = ítem que abre un panel (campana), no una ruta.
+// `submenu: true` = ítem que abre un modal con varias rutas para elegir (Reportes).
+type NavItem = { to?: string; label: string; icon: any; panel?: boolean; submenu?: boolean };
 type NavSection = { titulo: string; items: NavItem[] };
 
 const navEmpresa: NavSection[] = [
@@ -16,6 +23,7 @@ const navEmpresa: NavSection[] = [
     titulo: 'General',
     items: [
       { to: '/app', label: 'Inicio', icon: Home },
+      { label: 'Notificaciones', icon: Bell, panel: true },
       { to: '/app/kiosco', label: 'Marcador', icon: Clock },
       { to: '/app/colaboradores', label: 'Colaboradores', icon: Users },
       { to: '/app/registros', label: 'Registros', icon: BarChart2 },
@@ -25,7 +33,7 @@ const navEmpresa: NavSection[] = [
     titulo: 'Herramientas',
     items: [
       { to: '/app/festivos', label: 'Festivos', icon: Calendar },
-      { to: '/app/reportes', label: 'Reportes', icon: BarChart2 },
+      { label: 'Reportes', icon: FileBarChart2, submenu: true },
       { to: '/app/configuracion', label: 'Configuración', icon: Settings },
     ],
   },
@@ -37,6 +45,7 @@ const navSuperAdmin: NavSection[] = [
     items: [
       { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/admin/empresas', label: 'Empresas', icon: Building2 },
+      { to: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
       { to: '/admin/pagos', label: 'Pagos', icon: CreditCard },
       { to: '/admin/configuracion', label: 'Precios', icon: Settings },
     ],
@@ -55,6 +64,7 @@ export default function Layout() {
   const esSuperAdmin = usuario?.rol === 'SUPER_ADMIN';
   const secciones = esSuperAdmin ? navSuperAdmin : navEmpresa;
   const enMora = usuario?.estadoSuscripcion === 'EN_MORA';
+  const notif = useNotificaciones(!esSuperAdmin);
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -69,9 +79,13 @@ export default function Layout() {
         <div key={sec.titulo}>
           <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{sec.titulo}</p>
           <div className="space-y-1">
-            {sec.items.map(({ to, label, icon: Icon }) => (
-              <NavLink key={to} to={to} end={to === '/app' || to === '/admin'} onClick={onNav} className={linkClass}>
-                <Icon size={18} />{label}
+            {sec.items.map(item => item.panel ? (
+              <CampanaNav key={item.label} notif={notif} onNav={onNav} />
+            ) : item.submenu ? (
+              <ReportesNav key={item.label} onNav={onNav} />
+            ) : (
+              <NavLink key={item.to} to={item.to!} end={item.to === '/app' || item.to === '/admin'} onClick={onNav} className={linkClass}>
+                <item.icon size={18} />{item.label}
               </NavLink>
             ))}
           </div>
@@ -136,6 +150,8 @@ export default function Layout() {
 
       {/* Bloqueo total del panel cuando la suscripción está vencida */}
       {!esSuperAdmin && <BloqueoPago />}
+      {!esSuperAdmin && <VerificarCorreo />}
+      {!esSuperAdmin && <GuiaBienvenida />}
     </div>
   );
 }

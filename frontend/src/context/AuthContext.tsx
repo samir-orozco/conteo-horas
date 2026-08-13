@@ -7,10 +7,12 @@ type Usuario = {
   nombre: string;
   rol: string;
   empresaId: string | null;
+  afiliadoId?: string | null;
   empresaNombre: string | null;
   estadoSuscripcion: string | null;
+  emailVerificado?: boolean;
 };
-type DatosRegistro = { empresa: string; nit: string; nombre: string; email: string; password: string; telefono?: string };
+type DatosRegistro = { empresa: string; nit: string; nombre: string; email: string; password: string; telefono?: string; ref?: string };
 type AuthCtx = {
   usuario: Usuario | null;
   login: (email: string, password: string) => Promise<Usuario>;

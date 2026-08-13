@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { ChevronLeft, Eye, EyeOff, ArrowRight, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { capturarRef, obtenerRef, limpiarRef } from '../lib/ref';
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
 import CreditoKrumlab from '../components/CreditoKrumlab';
@@ -12,9 +13,16 @@ export default function Registro() {
   const { registrar, usuario, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY);
+  const [codigoRef, setCodigoRef] = useState('');
   const [verPass, setVerPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Captura el ?ref= (por si entraron directo a /registro?ref=) y precarga el campo
+  useEffect(() => {
+    capturarRef();
+    setCodigoRef(obtenerRef());
+  }, []);
 
   if (!authLoading && usuario) {
     return <Navigate to={usuario.rol === 'SUPER_ADMIN' ? '/admin' : '/app'} replace />;
@@ -27,7 +35,8 @@ export default function Registro() {
     setError('');
     setLoading(true);
     try {
-      await registrar(form);
+      await registrar({ ...form, ref: codigoRef.trim() || undefined });
+      limpiarRef();
       navigate('/app', { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.error ?? 'No pudimos crear tu cuenta. Intenta de nuevo.');
@@ -101,6 +110,11 @@ export default function Registro() {
                   {verPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1">Código de referido <span className="text-gray-400">(opcional)</span></label>
+              <input className={`${input} uppercase`} value={codigoRef} onChange={e => setCodigoRef(e.target.value.toUpperCase())} placeholder="Si alguien te lo compartió" />
             </div>
 
             {error && <p className="text-red-600 text-sm">{error}</p>}

@@ -3,7 +3,9 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { prisma } from '../index';
 import { estadoEfectivo, sincronizarEstado, DIAS_PRUEBA, obtenerPrecios } from '../utils/suscripcion';
-import { enviarCorreo, plantillaCorreo } from '../utils/correo';
+import { obtenerPlanes, PLAN_IDS } from '../utils/planes';
+import { enviarCorreo, plantillaCorreo, correoConfigurado } from '../utils/correo';
+import { limpiarPago } from '../utils/afiliados';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 // Vencimiento de la sesión del panel (el kiosco usa su propio token de 12h)
@@ -11,18 +13,38 @@ const SESION = '7d';
 // Límite anti fuerza bruta para endpoints sensibles
 const limite = (max: number) => ({ rateLimit: { max, timeWindow: '1 minute' } });
 
+const MIN_VERIFICACION = 15;
+
+function generarCodigo(): string {
+  return String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+}
+
+async function enviarCorreoCodigo(email: string, nombre: string, codigo: string) {
+  await enviarCorreo({
+    para: email,
+    asunto: `${codigo} — Tu código de verificación de HoraPro`,
+    html: plantillaCorreo('Confirma tu correo', `
+      <p style="font-size:14px;color:#303030">Hola ${nombre},</p>
+      <p style="font-size:14px;color:#303030">Este es tu código para activar tu cuenta en HoraPro. Vence en ${MIN_VERIFICACION} minutos:</p>
+      <p style="margin:24px 0;text-align:center;font-size:22px;font-weight:800;color:#303030;font-family:monospace;letter-spacing:8px">${codigo}</p>
+      <p style="font-size:12px;color:#898989;text-align:center">Escríbelo en la ventana de verificación de tu panel.</p>
+      <p style="font-size:12px;color:#898989">Si no creaste esta cuenta, ignora este correo.</p>
+    `),
+  });
+}
+
 export default async function authRoutes(app: FastifyInstance) {
   // Precios públicos para la landing (se leen de la config del super admin)
   app.get('/precios', async () => {
-    const p = await obtenerPrecios(prisma);
-    return { ...p, diasPrueba: DIAS_PRUEBA };
+    const [p, planesMap] = await Promise.all([obtenerPrecios(prisma), obtenerPlanes(prisma)]);
+    return { ...p, diasPrueba: DIAS_PRUEBA, planes: PLAN_IDS.map(id => planesMap[id]) };
   });
 
   // Registro self-service: crea empresa + 7 días de prueba + usuario admin,
   // y devuelve el token para entrar de inmediato.
   app.post('/registro', { config: limite(5) }, async (request, reply) => {
-    const { empresa, nit, nombre, email, password, telefono } = request.body as {
-      empresa: string; nit: string; nombre: string; email: string; password: string; telefono?: string;
+    const { empresa, nit, nombre, email, password, telefono, ref } = request.body as {
+      empresa: string; nit: string; nombre: string; email: string; password: string; telefono?: string; ref?: string;
     };
     if (!empresa || !nit || !nombre || !email || !password) {
       return reply.status(400).send({ error: 'Faltan datos obligatorios' });
@@ -39,16 +61,36 @@ export default async function authRoutes(app: FastifyInstance) {
     if (nitExiste) return reply.status(409).send({ error: 'Ya hay una empresa registrada con ese NIT' });
 
     const hash = await bcrypt.hash(password, 10);
+    // Verificación de correo: si el SMTP no está configurado (ej. desarrollo),
+    // la cuenta nace verificada para no bloquear a nadie sin poder enviar el código.
+    const codigo = correoConfigurado ? generarCodigo() : null;
+    // Atribución al afiliado: si llegó un código de referido válido y activo, se
+    // asocia la empresa a ese afiliado. Un código inválido no bloquea el registro.
+    const afiliado = ref
+      ? await prisma.afiliado.findFirst({ where: { codigo: String(ref).trim().toUpperCase(), activo: true }, select: { id: true } })
+      : null;
     const nuevo = await prisma.$transaction(async (tx) => {
-      const emp = await tx.empresa.create({ data: { nombre: empresa, nit, email, telefono } });
+      const emp = await tx.empresa.create({
+        data: {
+          nombre: empresa, nit, email, telefono,
+          afiliadoId: afiliado?.id, atribuidoEn: afiliado ? new Date() : undefined,
+        },
+      });
       await tx.suscripcion.create({
         data: { empresaId: emp.id, estado: 'PRUEBA', finPrueba: new Date(Date.now() + DIAS_PRUEBA * DIA_MS) },
       });
       const user = await tx.usuario.create({
-        data: { email, password: hash, nombre, rol: 'ADMIN', empresaId: emp.id },
+        data: {
+          email, password: hash, nombre, rol: 'ADMIN', empresaId: emp.id,
+          emailVerificado: !codigo,
+          verificacionCodigo: codigo,
+          verificacionExpira: codigo ? new Date(Date.now() + MIN_VERIFICACION * 60 * 1000) : null,
+        },
       });
       return { emp, user };
     });
+
+    if (codigo) await enviarCorreoCodigo(email, nombre, codigo);
 
     const token = app.jwt.sign({
       id: nuevo.user.id, email: nuevo.user.email, rol: 'ADMIN', nombre: nuevo.user.nombre, empresaId: nuevo.emp.id,
@@ -58,8 +100,121 @@ export default async function authRoutes(app: FastifyInstance) {
       usuario: {
         id: nuevo.user.id, email: nuevo.user.email, nombre: nuevo.user.nombre, rol: 'ADMIN',
         empresaId: nuevo.emp.id, empresaNombre: nuevo.emp.nombre, estadoSuscripcion: 'PRUEBA',
+        emailVerificado: nuevo.user.emailVerificado,
       },
     });
+  });
+
+  // Auto-registro de afiliado (invitado por el super admin). Valida el token de
+  // invitación y devuelve el trato para mostrarlo en el formulario.
+  app.get('/invitacion-afiliado', async (request, reply) => {
+    const { token } = request.query as { token?: string };
+    if (!token) return reply.status(400).send({ error: 'Invitación inválida' });
+    let payload: any;
+    try { payload = app.jwt.verify(token); } catch { return reply.status(400).send({ error: 'Invitación inválida o vencida' }); }
+    if (payload?.t !== 'reg' || !payload.afiliadoId) return reply.status(400).send({ error: 'Invitación inválida' });
+    const afiliado = await prisma.afiliado.findUnique({
+      where: { id: payload.afiliadoId },
+      include: { usuarios: { select: { id: true } } },
+    });
+    if (!afiliado) return reply.status(404).send({ error: 'Invitación no encontrada' });
+    return {
+      valido: true,
+      yaRegistrado: afiliado.usuarios.length > 0,
+      nombre: afiliado.nombre === 'Registro pendiente' ? '' : afiliado.nombre,
+      porcentaje: afiliado.porcentaje,
+      duracionMeses: afiliado.duracionMeses,
+    };
+  });
+
+  // El afiliado completa su registro con el token de invitación: crea su cuenta
+  // (rol AFILIADO) y llena sus datos. Devuelve sesión para entrar de inmediato.
+  app.post('/registro-afiliado', { config: limite(5) }, async (request, reply) => {
+    const b = request.body as any;
+    const token = b.token as string | undefined;
+    if (!token) return reply.status(400).send({ error: 'Invitación inválida' });
+    let payload: any;
+    try { payload = app.jwt.verify(token); } catch { return reply.status(400).send({ error: 'Invitación inválida o vencida' }); }
+    if (payload?.t !== 'reg' || !payload.afiliadoId) return reply.status(400).send({ error: 'Invitación inválida' });
+    const afiliado = await prisma.afiliado.findUnique({
+      where: { id: payload.afiliadoId },
+      include: { usuarios: { select: { id: true } } },
+    });
+    if (!afiliado) return reply.status(404).send({ error: 'Invitación no encontrada' });
+    if (afiliado.usuarios.length > 0) return reply.status(409).send({ error: 'Esta invitación ya fue usada' });
+
+    const nombre = b.nombre?.trim();
+    const email = b.email?.trim().toLowerCase();
+    const password = b.password ?? '';
+    if (!nombre || !email || !password) return reply.status(400).send({ error: 'Faltan datos obligatorios' });
+    if (password.length < 6) return reply.status(400).send({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    if (await prisma.usuario.findUnique({ where: { email } })) {
+      return reply.status(409).send({ error: 'Ya existe una cuenta con ese correo' });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    const pago = limpiarPago(b);
+    const usuario = await prisma.$transaction(async (tx) => {
+      await tx.afiliado.update({
+        where: { id: afiliado.id },
+        data: { nombre, telefono: b.telefono?.trim() || null, ...pago },
+      });
+      return tx.usuario.create({
+        data: { email, password: hash, nombre, rol: 'AFILIADO', afiliadoId: afiliado.id, emailVerificado: true },
+      });
+    });
+
+    const tokenSesion = app.jwt.sign(
+      { id: usuario.id, email, rol: 'AFILIADO', nombre, empresaId: null, afiliadoId: afiliado.id },
+      { expiresIn: SESION }
+    );
+    return reply.status(201).send({
+      token: tokenSesion,
+      usuario: { id: usuario.id, email, nombre, rol: 'AFILIADO', empresaId: null, afiliadoId: afiliado.id, empresaNombre: null, estadoSuscripcion: null, emailVerificado: true },
+    });
+  });
+
+  // Confirma el correo con el código de 6 dígitos enviado al registrarse.
+  // Requiere sesión: el código se valida contra EL usuario logueado (no hace
+  // falta mandar el email, y evita que alguien pruebe códigos a lo loco).
+  app.post('/verificar-email', { preHandler: [app.authenticate], config: limite(10) }, async (request, reply) => {
+    const payload = request.user as any;
+    const { codigo } = request.body as { codigo: string };
+    if (!codigo) return reply.status(400).send({ error: 'Falta el código' });
+    const usuario = await prisma.usuario.findUnique({ where: { id: payload.id } });
+    if (!usuario) return reply.status(404).send({ error: 'Usuario no encontrado' });
+    if (usuario.emailVerificado) return { ok: true };
+    if (!usuario.verificacionCodigo || !usuario.verificacionExpira || usuario.verificacionExpira < new Date()) {
+      return reply.status(400).send({ error: 'El código venció. Pide uno nuevo.' });
+    }
+    if (usuario.verificacionCodigo !== codigo) {
+      return reply.status(400).send({ error: 'El código no es correcto' });
+    }
+    await prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { emailVerificado: true, verificacionCodigo: null, verificacionExpira: null },
+    });
+    return { ok: true };
+  });
+
+  // Reenvía el código de verificación al usuario logueado
+  app.post('/reenviar-verificacion', { preHandler: [app.authenticate], config: limite(3) }, async (request, reply) => {
+    const payload = request.user as any;
+    const usuario = await prisma.usuario.findUnique({ where: { id: payload.id } });
+    if (!usuario) return reply.status(404).send({ error: 'Usuario no encontrado' });
+    if (usuario.emailVerificado) return { ok: true, yaVerificado: true };
+    if (!correoConfigurado) {
+      // Sin SMTP no podemos enviar: verificamos directo para no dejarlo atrapado
+      await prisma.usuario.update({ where: { id: usuario.id }, data: { emailVerificado: true, verificacionCodigo: null, verificacionExpira: null } });
+      return { ok: true, yaVerificado: true };
+    }
+    const codigo = generarCodigo();
+    await prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { verificacionCodigo: codigo, verificacionExpira: new Date(Date.now() + MIN_VERIFICACION * 60 * 1000) },
+    });
+    await enviarCorreoCodigo(usuario.email, usuario.nombre, codigo);
+    return { ok: true };
   });
 
   app.post('/login', { config: limite(10) }, async (request, reply) => {
@@ -91,6 +246,7 @@ export default async function authRoutes(app: FastifyInstance) {
       rol: usuario.rol,
       nombre: usuario.nombre,
       empresaId: usuario.empresaId,
+      afiliadoId: usuario.afiliadoId,
     }, { expiresIn: SESION });
     return {
       token,
@@ -100,8 +256,10 @@ export default async function authRoutes(app: FastifyInstance) {
         nombre: usuario.nombre,
         rol: usuario.rol,
         empresaId: usuario.empresaId,
+        afiliadoId: usuario.afiliadoId,
         empresaNombre: usuario.empresa?.nombre ?? null,
         estadoSuscripcion,
+        emailVerificado: usuario.emailVerificado,
       },
     };
   });
@@ -111,7 +269,7 @@ export default async function authRoutes(app: FastifyInstance) {
     const usuario = await prisma.usuario.findUnique({
       where: { id: payload.id },
       select: {
-        id: true, email: true, nombre: true, rol: true, empresaId: true,
+        id: true, email: true, nombre: true, rol: true, empresaId: true, afiliadoId: true, emailVerificado: true,
         empresa: { select: { nombre: true, exentaPago: true, suscripcion: true } },
       },
     });
@@ -122,7 +280,9 @@ export default async function authRoutes(app: FastifyInstance) {
       nombre: usuario.nombre,
       rol: usuario.rol,
       empresaId: usuario.empresaId,
+      afiliadoId: usuario.afiliadoId,
       empresaNombre: usuario.empresa?.nombre ?? null,
+      emailVerificado: usuario.emailVerificado,
       estadoSuscripcion: usuario.empresa?.exentaPago
         ? 'ILIMITADA'
         : usuario.empresa?.suscripcion

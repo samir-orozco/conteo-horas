@@ -4,7 +4,9 @@ import { prisma } from '../index';
 import { calcularValorHora } from '../utils/horasColombiana';
 import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { finDeMes } from '../utils/suscripcion';
-import { esDescriptorValido } from '../utils/rostro';
+import { capacidadesEmpresa } from '../utils/capacidades';
+import { esListaDescriptoresValida } from '../utils/rostro';
+import { regenerarFuturoDeColaborador, mantenerVentanaDeColaborador } from '../utils/materializarDias';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -19,20 +21,30 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
 
   app.get('/', auth, async (request) => {
     await aplicarRetiros(request.empresaId!);
-    return prisma.colaborador.findMany({
+    // Se incluyen las sedes para que el modal de edición de la LISTA pueda
+    // mostrarlas sin pedir cada colaborador por separado.
+    const filas = await prisma.colaborador.findMany({
       where: { empresaId: request.empresaId, activo: true },
+      include: { sedes: { select: { sedeId: true } } },
       orderBy: { nombre: 'asc' },
     });
+    return filas.map(({ sedes, ...c }) => ({ ...c, sedeIds: sedes.map(s => s.sedeId) }));
   });
 
   app.get('/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
     const col = await prisma.colaborador.findFirst({
       where: { id, empresaId: request.empresaId },
-      include: { horario: { include: { franjas: true } } },
+      include: {
+        horario: { include: { franjas: true } },
+        sedes: { select: { sedeId: true } },
+      },
     });
     if (!col) return reply.status(404).send({ error: 'No encontrado' });
-    return col;
+    // Se aplana a una lista de ids: es lo que el selector múltiple necesita, y
+    // evita que el frontend tenga que conocer la tabla de unión.
+    const { sedes, ...resto } = col as any;
+    return { ...resto, sedeIds: (sedes ?? []).map((s: any) => s.sedeId) };
   });
 
   // Valida que el horario asignado sea de la misma empresa
@@ -40,6 +52,24 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (!horarioId) return true;
     const h = await prisma.horario.findFirst({ where: { id: horarioId, empresaId, activo: true } });
     return Boolean(h);
+  }
+
+  // Reemplaza las sedes donde este colaborador puede marcar. Se validan contra
+  // la empresa del token: sin eso, un id de otra empresa colaría a alguien en
+  // una sede ajena. `undefined` significa "no se tocó" y se distingue de `[]`,
+  // que sí quiere decir "quítale todas".
+  async function sincronizarSedes(colaboradorId: string, sedeIds: unknown, empresaId: string) {
+    if (!Array.isArray(sedeIds)) return;
+    const validas = await prisma.sede.findMany({
+      where: { id: { in: sedeIds.filter((x): x is string => typeof x === 'string') }, empresaId, activa: true },
+      select: { id: true },
+    });
+    await prisma.$transaction([
+      prisma.colaboradorSede.deleteMany({ where: { colaboradorId } }),
+      ...(validas.length
+        ? [prisma.colaboradorSede.createMany({ data: validas.map(s => ({ colaboradorId, sedeId: s.id })), skipDuplicates: true })]
+        : []),
+    ]);
   }
 
   // La fecha de nacimiento llega como "YYYY-MM-DD"; la normalizamos a Date (o null)
@@ -51,7 +81,8 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   }
 
   app.post('/', auth, async (request, reply) => {
-    const data = normalizar(request.body as any);
+    const { sedeIds, ...cuerpo } = request.body as any;
+    const data = normalizar(cuerpo);
     if (!(await horarioValido(data.horarioId, request.empresaId!))) {
       return reply.status(400).send({ error: 'Horario inválido' });
     }
@@ -61,20 +92,47 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     const existente = await prisma.colaborador.findUnique({
       where: { empresaId_cedula: { empresaId: request.empresaId!, cedula: data.cedula } },
     });
-    if (existente) {
-      if (existente.activo) {
-        return reply.status(409).send({ error: `La cédula ${data.cedula} ya está registrada para ${existente.nombre} ${existente.apellido}` });
+    if (existente?.activo) {
+      return reply.status(409).send({ error: `La cédula ${data.cedula} ya está registrada para ${existente.nombre} ${existente.apellido}` });
+    }
+
+    // Límite de colaboradores según el plan (crear o reactivar suma un activo)
+    const cap = await capacidadesEmpresa(request.empresaId!);
+    if (cap.limite !== Infinity) {
+      const activos = await prisma.colaborador.count({ where: { empresaId: request.empresaId!, activo: true } });
+      if (activos >= cap.limite) {
+        return reply.status(403).send({
+          error: `Tu plan ${cap.nombrePlan} permite hasta ${cap.limite} colaboradores.`,
+          codigo: 'LIMITE_PLAN', limite: cap.limite, plan: cap.plan,
+        });
       }
+    }
+
+    // Se materializa la ventana de una vez, no en la pasada diaria: si alguien
+    // se crea y marca el mismo día, ese día tiene que tener su fila.
+    const materializar = async (colaboradorId: string) => {
+      try {
+        await mantenerVentanaDeColaborador(colaboradorId);
+      } catch (err) {
+        request.log.error(err, 'No se pudo materializar la ventana del colaborador');
+      }
+    };
+
+    if (existente) {
       const reactivado = await prisma.colaborador.update({
         where: { id: existente.id },
         data: { ...data, activo: true, retiroProgramado: null },
       });
+      await materializar(reactivado.id);
+      await sincronizarSedes(reactivado.id, sedeIds, request.empresaId!);
       return reply.status(200).send({ ...reactivado, reactivado: true });
     }
 
     const colaborador = await prisma.colaborador.create({
       data: { ...data, empresaId: request.empresaId! },
     });
+    await materializar(colaborador.id);
+    await sincronizarSedes(colaborador.id, sedeIds, request.empresaId!);
     return reply.status(201).send(colaborador);
   });
 
@@ -82,12 +140,26 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
-    const { empresaId: _ignorar, horario: _rel, ...rest } = request.body as any;
+    const { empresaId: _ignorar, horario: _rel, sedeIds, ...rest } = request.body as any;
     const data = normalizar(rest);
     if (!(await horarioValido(data.horarioId, request.empresaId!))) {
       return reply.status(400).send({ error: 'Horario inválido' });
     }
-    return prisma.colaborador.update({ where: { id }, data });
+    const actualizado = await prisma.colaborador.update({ where: { id }, data });
+    await sincronizarSedes(id, sedeIds, request.empresaId!);
+
+    // Cambiar a alguien de horario es la otra forma de reescribir el pasado:
+    // `Colaborador.horarioId` tampoco tiene historial. Se regenera su futuro —
+    // de mañana en adelante — y lo ya materializado se queda como estaba.
+    if (data.horarioId !== undefined && data.horarioId !== existente.horarioId) {
+      try {
+        await regenerarFuturoDeColaborador(id);
+      } catch (err) {
+        request.log.error(err, 'No se pudieron regenerar los días futuros del colaborador');
+      }
+    }
+
+    return actualizado;
   });
 
   // Estilo Notion: si el mes ya está pagado, el colaborador queda cubierto y
@@ -115,20 +187,21 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     return { ...colaborador, retiroInmediato: true };
   });
 
-  // Enrolamiento facial: guarda el descriptor (128 floats) capturado en el
-  // navegador. La imagen nunca llega al servidor. rostroEnroladoEn queda como
-  // evidencia de que hubo consentimiento explícito (dato biométrico, Ley 1581).
+  // Enrolamiento facial guiado: guarda VARIAS muestras (frente, perfiles,
+  // con/sin gafas — 128 floats cada una) capturadas en el navegador. La imagen
+  // nunca llega al servidor. rostroEnroladoEn queda como evidencia de que hubo
+  // consentimiento explícito (dato biométrico, Ley 1581).
   app.post('/:id/rostro', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { descriptor } = request.body as { descriptor: unknown };
+    const { descriptores } = request.body as { descriptores: unknown };
     const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
-    if (!esDescriptorValido(descriptor)) {
-      return reply.status(400).send({ error: 'Descriptor facial inválido' });
+    if (!esListaDescriptoresValida(descriptores)) {
+      return reply.status(400).send({ error: 'Muestras faciales inválidas' });
     }
     const colaborador = await prisma.colaborador.update({
       where: { id },
-      data: { rostroDescriptor: descriptor, rostroEnroladoEn: new Date() },
+      data: { rostroDescriptor: descriptores, rostroEnroladoEn: new Date() },
     });
     return { ok: true, rostroEnroladoEn: colaborador.rostroEnroladoEn };
   });

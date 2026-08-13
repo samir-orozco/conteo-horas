@@ -1,8 +1,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CreditCard, CheckCircle, AlertTriangle, Clock, X, Receipt } from 'lucide-react';
+import { CreditCard, CheckCircle, AlertTriangle, Clock, X, Receipt, Check, MessageCircle } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useMiPlan, invalidarMiPlan } from '../lib/plan';
+
+type CheckoutData = { url: string; publicKey: string; currency: string; amountInCents: number; reference: string; signature: string };
+
+const PLANES_UI = [
+  { id: 'ESENCIAL', nombre: 'Esencial', mensual: 99900, limite: 10, incluye: ['Hasta 10 colaboradores', 'Rostro o cédula', 'Liquidación y reportes'] },
+  { id: 'PROFESIONAL', nombre: 'Profesional', mensual: 169900, limite: 30, incluye: ['Hasta 30 colaboradores', 'GPS + Telegram', 'Evidencia y exportar'] },
+  { id: 'EMPRESARIAL', nombre: 'Empresarial', mensual: 299900, limite: 150, incluye: ['Hasta 150 colaboradores', 'Todo lo Profesional', 'Siigo (pronto) + prioritario'] },
+];
+const WPP_150 = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
 
 const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -38,6 +48,7 @@ const ESTADO_UI: Record<string, { label: string; clase: string }> = {
 
 export default function Suscripcion() {
   const { usuario } = useAuth();
+  const { plan: miPlan, recargar: recargarPlan } = useMiPlan();
   const [params, setParams] = useSearchParams();
   const [cuenta, setCuenta] = useState<Cuenta | null>(null);
   const [confirmando, setConfirmando] = useState(false);
@@ -65,9 +76,7 @@ export default function Suscripcion() {
   // El Web Checkout de Wompi lee los parámetros por GET (query string).
   // Su firewall rechaza redirect-url hacia localhost, así que en desarrollo
   // se abre en otra pestaña y el pago se confirma con "Verificar pago".
-  const irAWompi = () => {
-    if (!cuenta?.checkout) return;
-    const c = cuenta.checkout;
+  const abrirWompi = (c: CheckoutData) => {
     const form = document.createElement('form');
     form.method = 'GET';
     form.action = c.url;
@@ -90,6 +99,26 @@ export default function Suscripcion() {
     document.body.appendChild(form);
     form.submit();
     if (esLocalhost) setRecibo(false);
+  };
+  const irAWompi = () => { if (cuenta?.checkout) abrirWompi(cuenta.checkout); };
+
+  const [cambiando, setCambiando] = useState('');
+  const cambiarPlan = async (planId: string) => {
+    setCambiando(planId);
+    setResultado(null);
+    try {
+      const r = await api.post('/suscripcion/cambiar-plan', { plan: planId });
+      if (r.data.requierePago && r.data.checkout) {
+        setResultado({ ok: true, msg: `Te llevamos a pagar la diferencia (${cop(r.data.diferencia)}) para subir a ${r.data.nombrePlan}.` });
+        abrirWompi(r.data.checkout);
+      } else {
+        invalidarMiPlan(); recargarPlan();
+        setResultado({ ok: true, msg: 'Tu plan quedó actualizado.' });
+        cargar();
+      }
+    } catch (err: any) {
+      setResultado({ ok: false, msg: err.response?.data?.error ?? 'No pudimos cambiar el plan.' });
+    } finally { setCambiando(''); }
   };
 
   // Confirmación manual por referencia (necesaria en desarrollo, donde Wompi no redirige)
@@ -117,7 +146,7 @@ export default function Suscripcion() {
   const mesNombre = new Date().toLocaleDateString('es-CO', { month: 'long' });
 
   return (
-    <div className="p-6 md:p-8 space-y-6 max-w-4xl">
+    <div className="p-6 md:p-8 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-ink">Suscripción</h1>
         <p className="text-sm text-muted">Estado de cuenta de tu empresa en HoraPro · facturación por mes calendario</p>
@@ -147,14 +176,52 @@ export default function Suscripcion() {
         </div>
 
         <div className="bg-white rounded-card border border-gray-200 p-5">
-          <p className="text-sm text-muted mb-1">Tarifa de mes completo</p>
-          <p className="text-2xl font-bold text-ink">{cop(cobro.tarifaMesCompleto)}</p>
+          <p className="text-sm text-muted mb-1">Plan {miPlan?.nombrePlan ?? ''}</p>
+          <p className="text-2xl font-bold text-ink">{cop(cobro.tarifaMesCompleto)}<span className="text-sm font-medium text-muted"> /mes</span></p>
           <p className="text-xs text-muted mt-1">
-            {base} colaborador{base === 1 ? '' : 'es'} × {cop(precios.precioTramo1)}
-            {extra > 0 && <> + {extra} × {cop(precios.precioTramo2)}</>}
+            {cobro.colaboradoresActivos} de {miPlan?.limite ?? '—'} colaboradores
           </p>
         </div>
       </div>
+
+      {/* Cambiar de plan */}
+      {!miPlan?.ilimitado && (
+        <div className="bg-white rounded-card border border-gray-200 p-6">
+          <h2 className="font-bold text-ink mb-1">Tu plan</h2>
+          <p className="text-sm text-muted mb-5">Sube de plan para más colaboradores y funciones. Al subir estando al día, solo pagas la diferencia de lo que resta del mes.</p>
+          <div className="grid md:grid-cols-3 gap-4">
+            {PLANES_UI.map(p => {
+              const pd = miPlan?.planes?.find(x => x.id === p.id);
+              const mensual = pd?.precioMensual ?? p.mensual;
+              const actual = miPlan?.plan === p.id;
+              const subir = !!miPlan && mensual > (miPlan.precioMensual || 0);
+              return (
+                <div key={p.id} className={`rounded-2xl border p-5 flex flex-col ${actual ? 'border-primary bg-primary/5' : 'border-gray-200'}`}>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-ink">{p.nombre}</h3>
+                    {actual && <span className="text-[10px] font-bold bg-primary text-ink px-2 py-0.5 rounded-full">TU PLAN</span>}
+                  </div>
+                  <p className="text-2xl font-extrabold text-ink mt-2">{cop(mensual)}<span className="text-sm font-medium text-muted"> /mes</span></p>
+                  <ul className="mt-3 space-y-1.5 text-sm flex-1">
+                    {p.incluye.map(f => <li key={f} className="flex items-start gap-1.5"><Check size={14} className="mt-0.5 text-green-600 shrink-0" /> {f}</li>)}
+                  </ul>
+                  {actual ? (
+                    <span className="mt-4 text-center text-xs font-semibold text-muted py-2.5">Plan actual</span>
+                  ) : (
+                    <button onClick={() => cambiarPlan(p.id)} disabled={cambiando === p.id}
+                      className={`mt-4 py-2.5 rounded-xl text-sm font-bold disabled:opacity-60 ${subir ? 'bg-primary hover:bg-primary-dark text-ink' : 'border border-gray-300 text-ink hover:bg-gray-50'}`}>
+                      {cambiando === p.id ? 'Procesando...' : subir ? 'Subir a este plan' : 'Cambiar a este plan'}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <a href={WPP_150} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-ink">
+            <MessageCircle size={15} className="text-[#25D366]" /> ¿Más de 150 colaboradores? Escríbenos por WhatsApp
+          </a>
+        </div>
+      )}
 
       {cuenta.wompiConfigurado ? (
         cobro.monto > 0 ? (

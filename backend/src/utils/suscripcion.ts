@@ -1,4 +1,5 @@
 import { PrismaClient, Suscripcion, EstadoSuscripcion } from '@prisma/client';
+import { precioMensualDe, obtenerPlanes } from './planes';
 
 export const DIAS_PRUEBA = 7;
 export const DIAS_GRACIA_MORA = 5;
@@ -20,6 +21,13 @@ export function calcularTarifaMensual(colaboradores: number, p: Precios): number
   const tramo1 = Math.min(colaboradores, p.limiteTramo1) * p.precioTramo1;
   const tramo2 = Math.max(0, colaboradores - p.limiteTramo1) * p.precioTramo2;
   return tramo1 + tramo2;
+}
+
+// Tarifa mensual efectiva de una empresa según su plan (o precio fijo a la medida).
+// El precio ya no depende del número de colaboradores; es plano por plan.
+// `planes` opcional: los planes ya resueltos desde config (si no, usa los del código).
+export function tarifaEmpresa(_colaboradores: number, _global: Precios, s: any, exentaPago = false, planes?: any): number {
+  return precioMensualDe(s, exentaPago, planes);
 }
 
 // ===== Mes calendario (Bogotá): todos los cobros van hasta fin de mes =====
@@ -98,13 +106,14 @@ export type Cobro = {
 };
 
 export async function calcularCobro(prisma: PrismaClient, empresaId: string, precios: Precios, ahora = new Date()): Promise<Cobro> {
-  const [empresa, activos, susc] = await Promise.all([
+  const [empresa, activos, susc, planes] = await Promise.all([
     prisma.empresa.findUnique({ where: { id: empresaId } }),
     prisma.colaborador.count({ where: { empresaId, activo: true } }),
     prisma.suscripcion.findUnique({ where: { empresaId }, include: { pagos: true } }),
+    obtenerPlanes(prisma),
   ]);
   const { diasMes, diasRestantes, factor } = prorrateo(ahora);
-  const tarifaMesCompleto = calcularTarifaMensual(activos, precios);
+  const tarifaMesCompleto = tarifaEmpresa(activos, precios, susc, empresa?.exentaPago ?? false, planes);
   const cubreHasta = finDeMes(ahora);
 
   // Empresa exenta (acceso ilimitado): nunca debe nada
@@ -133,7 +142,7 @@ export async function calcularCobro(prisma: PrismaClient, empresaId: string, pre
       tarifaMesCompleto, monto: 0, diasMes, diasRestantes, cubreHasta: susc!.pagadoHasta!,
     };
   }
-  const diferencia = tarifaMesCompleto - calcularTarifaMensual(facturados, precios);
+  const diferencia = tarifaMesCompleto - tarifaEmpresa(facturados, precios, susc, empresa?.exentaPago ?? false, planes);
   return {
     tipo: 'ADICIONAL', colaboradoresActivos: activos, colaboradoresFacturados: facturados,
     tarifaMesCompleto, monto: Math.round(diferencia * factor),
@@ -189,5 +198,64 @@ export async function aplicarPagoAprobado(
       data: { estado: 'ACTIVA', pagadoHasta: periodoFin, suspendidaEn: null },
     }),
   ]);
+
+  // Comisión de afiliado (si la empresa vino por un referido). Nunca debe tumbar
+  // el registro del pago: si falla, se registra y sigue.
+  try {
+    await causarComisionAfiliado(prisma, empresaId, pago);
+  } catch (e) {
+    console.error('Error causando comisión de afiliado:', e);
+  }
   return pago;
+}
+
+// Causa la comisión del afiliado por un pago aprobado, si la empresa tiene un
+// afiliado activo y el pago cae dentro de la ventana de duración del trato.
+// Idempotente: la FK única pagoId evita duplicar la comisión de un mismo pago.
+export async function causarComisionAfiliado(
+  prisma: PrismaClient,
+  empresaId: string,
+  pago: { id: string; monto: number; creadoEn: Date }
+) {
+  const empresa = await prisma.empresa.findUnique({
+    where: { id: empresaId },
+    select: {
+      afiliadoId: true,
+      primerPagoComisionEn: true,
+      afiliado: { select: { activo: true, porcentaje: true, duracionMeses: true } },
+    },
+  });
+  if (!empresa?.afiliadoId || !empresa.afiliado?.activo) return;
+
+  if (await prisma.comision.findUnique({ where: { pagoId: pago.id } })) return; // ya comisionado
+
+  // La duración cuenta desde el primer pago que comisionó. En ese primer pago se
+  // fija el ancla; los siguientes solo comisionan dentro de la ventana.
+  const fechaPago = pago.creadoEn;
+  const ancla = empresa.primerPagoComisionEn ?? fechaPago;
+  if (empresa.afiliado.duracionMeses != null) {
+    const fin = new Date(ancla);
+    fin.setMonth(fin.getMonth() + empresa.afiliado.duracionMeses);
+    if (fechaPago > fin) return; // fuera de la ventana → no comisiona
+  }
+
+  const porcentaje = empresa.afiliado.porcentaje;
+  const monto = Math.round((pago.monto * porcentaje) / 100);
+
+  await prisma.$transaction([
+    prisma.comision.create({
+      data: {
+        afiliadoId: empresa.afiliadoId,
+        empresaId,
+        pagoId: pago.id,
+        montoBase: pago.monto,
+        porcentaje,
+        monto,
+        estado: 'CAUSADA',
+      },
+    }),
+    ...(empresa.primerPagoComisionEn
+      ? []
+      : [prisma.empresa.update({ where: { id: empresaId }, data: { primerPagoComisionEn: fechaPago } })]),
+  ]);
 }

@@ -1,58 +1,86 @@
 import { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
-import { cargarModelosFaceApi } from '../lib/faceapi';
+import { cargarModelosLigeros, cargarModeloRostro, modelosEnCache } from '../lib/faceapi';
 import { Camera, AlertTriangle, Check } from 'lucide-react';
-
-type Estado = 'cargando' | 'buscando' | 'detectado' | 'procesando' | 'exito' | 'error';
+import PreviewEnrolamiento from './camaraRostro/PreviewEnrolamiento';
+import {
+  SEG_FALLBACK_CEDULA, opcionesDeteccion, opcionesCaptura, MS_QUIETO_ENROLAR, MS_QUIETO_LOGIN,
+  MIN_MUESTRAS_POSE, MS_MIN_CUADRO, desviacionYaw, promediarDescriptores, capturarFoto,
+  MSG_ENCUADRE, poseCumple, RESTRICCIONES_VIDEO, fijarZoomMinimo,
+  esperarVideoEstable, crearEstabilizadorEncuadre,
+  type Modo, type Estado, type PasoEnrolar,
+} from './camaraRostro/rostroCliente';
 
 type Props = {
-  // foto: JPEG base64 pequeño del momento de la verificación (evidencia de la marcación)
-  onCapturado: (descriptor: number[], foto: string) => void;
+  // login: captura rápida quedándose quieto (sin gestos)
+  // enrolar: captura guiada de varias poses con preview para aceptar/repetir
+  modo?: Modo;
+  // Enrolamiento: agrega una toma final sin gafas (para quien las usa a diario)
+  pasoGafas?: boolean;
+  // Siempre entrega la lista de muestras; en login la lista tiene 1 elemento.
+  // foto: JPEG pequeño del momento (evidencia de la marcación)
+  onCapturado: (descriptores: number[][], foto: string) => void;
   onError?: (mensaje: string) => void;
-  // Error reportado por el padre (ej. "rostro no reconocido"): pinta el recuadro en rojo
+  // Error reportado por el padre (ej. "rostro no reconocido"): pinta el óvalo en rojo
   errorExterno?: string | null;
+  // Login: si la empresa permite cédula, tras unos segundos ofrece un respaldo
+  // que toma la foto del momento y deja marcar digitando la cédula.
+  permiteFallbackCedula?: boolean;
+  onUsarCedula?: (foto: string) => void;
 };
 
-// Distancia entre dos puntos de landmark
-const dist = (a: faceapi.Point, b: faceapi.Point) => Math.hypot(a.x - b.x, a.y - b.y);
-
-// Eye Aspect Ratio: cae cuando el ojo se cierra. Usamos su caída y
-// recuperación como prueba de vida (parpadeo) — una foto no puede parpadear.
-function ear(ojo: faceapi.Point[]): number {
-  return (dist(ojo[1], ojo[5]) + dist(ojo[2], ojo[4])) / (2 * dist(ojo[0], ojo[3]));
-}
-
-// Cámara + reconocimiento facial con prueba de vida por parpadeo.
-// Todo corre en el navegador (face-api.js/TensorFlow.js): la imagen nunca
-// sale del dispositivo, solo el descriptor matemático (128 floats) que se
-// entrega en onCapturado.
-// Captura un JPEG pequeño del cuadro actual del video (máx ~320px de ancho)
-function capturarFoto(video: HTMLVideoElement): string {
-  const ancho = 320;
-  const alto = Math.round((video.videoHeight / video.videoWidth) * ancho) || 240;
-  const canvas = document.createElement('canvas');
-  canvas.width = ancho;
-  canvas.height = alto;
-  canvas.getContext('2d')!.drawImage(video, 0, 0, ancho, alto);
-  return canvas.toDataURL('image/jpeg', 0.7);
-}
-
-export default function CamaraRostro({ onCapturado, onError, errorExterno }: Props) {
+export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapturado, onError, errorExterno, permiteFallbackCedula = false, onUsarCedula }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [mostrarFallback, setMostrarFallback] = useState(false);
   const [estado, setEstado] = useState<Estado>('cargando');
   const [mensaje, setMensaje] = useState('Cargando cámara...');
+  const [encuadreOk, setEncuadreOk] = useState(false);
+  const [pasoActual, setPasoActual] = useState(0);
+  const [progreso, setProgreso] = useState(0); // 0..1 del "quédate quieto"
+  const [intento, setIntento] = useState(0);    // se incrementa al "Repetir"
+  const [tomas, setTomas] = useState<string[]>([]); // fotos del preview (enrolar)
+  const descsPreview = useRef<number[][]>([]);   // descriptores esperando aceptación
+  const [progModelos, setProgModelos] = useState(0); // 0..1 carga de los modelos livianos
+  // Descarga del modelo pesado. Se refleja en React —y no solo en la variable del
+  // bucle— para poder avisar SIEMPRE que sigue preparándose, aunque el encuadre
+  // todavía no esté bien. Antes ese aviso solo salía si el rostro ya estaba
+  // centrado, que es justo cuando la persona ya no necesita que se lo digan.
+  const [progRostroUI, setProgRostroUI] = useState(0);
+  const [rostroListoUI, setRostroListoUI] = useState(false);
+  // ¿Este teléfono ya tiene los modelos guardados? Si los tiene no hay espera que
+  // anunciar, y prometer uno la vuelve sospechosa. `null` = todavía no se sabe.
+  const [primeraVez, setPrimeraVez] = useState<boolean | null>(null);
+  const [metrica, setMetrica] = useState<{ camara?: number; rostro?: number }>({}); // solo dev
+
+  const pasos: PasoEnrolar[] = modo === 'enrolar'
+    ? [
+        { id: 'frente', etiqueta: 'Frente', texto: 'Mira de frente a la cámara', tipo: 'frontal' },
+        { id: 'derecha', etiqueta: 'Derecha', texto: 'Gira tu rostro a la derecha', tipo: 'derecha' },
+        { id: 'izquierda', etiqueta: 'Izquierda', texto: 'Gira tu rostro a la izquierda', tipo: 'izquierda' },
+        ...(pasoGafas ? [{ id: 'singafas', etiqueta: 'Sin gafas', texto: 'Quítate las gafas y mira de frente', tipo: 'frontal' as const }] : []),
+      ]
+    : [];
 
   useEffect(() => {
     let activo = true;
-    let capturado = false;
-    let baseline: number | null = null;
-    const muestrasBaseline: number[] = [];
-    let ojosCerrados = false;
+    let terminado = false;
     let stream: MediaStream | null = null;
     let cuadroId: number | null = null;
+    let cuadroTimeout: ReturnType<typeof setTimeout> | null = null;
+    let erroresSeguidos = 0;
+
+    // Estado del flujo (fuera de React para no re-renderizar por cuadro)
+    const descriptoresPorPose: number[][] = [];
+    const fotosPorPose: string[] = [];
+    let idxPaso = 0;
+    let holdInicio: number | null = null; // cuándo empezó a quedarse quieto
+    let buffer: number[][] = [];           // descriptores acumulados en el hold
+    let rostroListo = false;               // ¿ya cargó el modelo de reconocimiento?
+    const encuadreEstable = crearEstabilizadorEncuadre();
 
     const detenerCamara = () => {
       if (cuadroId !== null) cancelAnimationFrame(cuadroId);
+      if (cuadroTimeout !== null) clearTimeout(cuadroTimeout);
       stream?.getTracks().forEach(t => t.stop());
     };
 
@@ -62,90 +90,173 @@ export default function CamaraRostro({ onCapturado, onError, errorExterno }: Pro
       onError?.(msg);
     };
 
+    const resetHold = () => { holdInicio = null; buffer = []; setProgreso(0); };
+
     (async () => {
       try {
-        await cargarModelosFaceApi();
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 480, height: 360 } });
+        const t0 = performance.now();
+        modelosEnCache().then(hay => { if (activo) setPrimeraVez(!hay); });
+        // 1) Modelos livianos (detector + landmarks): con esto ya enciende la cámara.
+        await cargarModelosLigeros(p => { if (activo) setProgModelos(p); });
+        if (!activo) return;
+        // 2) Reconocimiento (~6.1MB) en segundo plano: solo hace falta al capturar.
+        cargarModeloRostro(p => { if (activo) setProgRostroUI(p); })
+          .then(() => {
+            if (!activo) return;
+            rostroListo = true;
+            setRostroListoUI(true);
+            setMetrica(m => ({ ...m, rostro: Math.round(performance.now() - t0) }));
+          })
+          .catch(() => { /* si falla, el hold seguirá esperando; el padre maneja el error */ });
+
+        stream = await navigator.mediaDevices.getUserMedia(RESTRICCIONES_VIDEO);
         if (!activo) { stream.getTracks().forEach(t => t.stop()); return; }
+        await fijarZoomMinimo(stream);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
-        setEstado('buscando');
-        setMensaje('Ubica tu rostro frente a la cámara');
+        if (!activo) return;
 
-        // Bucle continuo (no un intervalo fijo): un parpadeo real dura apenas
-        // 100-150ms, así que hay que revisar cuadro a cuadro para no saltárselo.
+        // El track suele renegociar la resolución en los primeros cientos de
+        // milisegundos, y con `object-cover` eso se ve como si la imagen se
+        // acercara y se alejara sola. Se espera a que deje de moverse ANTES de
+        // enseñarla, y mientras tanto se dice qué está pasando.
+        setEstado('calibrando');
+        setMensaje('Calibrando la cámara…');
+        if (videoRef.current) await esperarVideoEstable(videoRef.current);
+        if (!activo) return;
+
+        setEstado('guiando');
+        setMensaje('Ubica tu rostro dentro del óvalo');
+        setMetrica(m => ({ ...m, camara: Math.round(performance.now() - t0) }));
+
+        function programarSiguiente() {
+          if (!activo || terminado) return;
+          // En captura ("hold") vamos a máxima fluidez; el resto con un piso de ~120ms.
+          if (holdInicio !== null) {
+            cuadroId = requestAnimationFrame(analizarCuadro);
+          } else {
+            cuadroTimeout = setTimeout(() => { cuadroId = requestAnimationFrame(analizarCuadro); }, MS_MIN_CUADRO);
+          }
+        }
+
         const analizarCuadro = async () => {
-          if (!activo) return;
-          if (capturado || !videoRef.current) {
-            cuadroId = requestAnimationFrame(analizarCuadro);
-            return;
-          }
+          if (!activo || terminado) return;
+          const video = videoRef.current;
+          if (!video) { programarSiguiente(); return; }
 
-          const deteccion = await faceapi
-            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-            .withFaceLandmarks();
+          try {
+            const enHold = holdInicio !== null;
+            // En el hold detectamos con más resolución y ya pedimos el descriptor.
+            const deteccion = enHold
+              ? await faceapi.detectSingleFace(video, opcionesCaptura()).withFaceLandmarks().withFaceDescriptor()
+              : await faceapi.detectSingleFace(video, opcionesDeteccion()).withFaceLandmarks();
+            erroresSeguidos = 0; // el cuadro se procesó sin lanzar
 
-          if (!activo || capturado) return;
+            if (!activo || terminado) return;
 
-          if (!deteccion) {
-            baseline = null;
-            muestrasBaseline.length = 0;
-            ojosCerrados = false;
-            setEstado('buscando');
-            setMensaje('Ubica tu rostro frente a la cámara');
-            cuadroId = requestAnimationFrame(analizarCuadro);
-            return;
-          }
-
-          const earActual = (ear(deteccion.landmarks.getLeftEye()) + ear(deteccion.landmarks.getRightEye())) / 2;
-
-          if (baseline === null) {
-            muestrasBaseline.push(earActual);
-            if (muestrasBaseline.length >= 5) {
-              baseline = muestrasBaseline.reduce((a, b) => a + b, 0) / muestrasBaseline.length;
-            }
-            setEstado('detectado');
-            setMensaje('Ahora parpadea para continuar');
-            cuadroId = requestAnimationFrame(analizarCuadro);
-            return;
-          }
-
-          if (!ojosCerrados && earActual < baseline * 0.88) {
-            ojosCerrados = true;
-          } else if (ojosCerrados && earActual > baseline * 0.90) {
-            // Parpadeo confirmado: capturamos el descriptor con este cuadro (ojos abiertos)
-            capturado = true;
-            setEstado('procesando');
-            setMensaje('Verificando...');
-            const conDescriptor = await faceapi
-              .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-              .withFaceLandmarks()
-              .withFaceDescriptor();
-            if (!activo) return;
-            if (!conDescriptor) {
-              capturado = false;
-              ojosCerrados = false;
-              setEstado('buscando');
-              setMensaje('No pudimos leer tu rostro, intenta de nuevo');
-              cuadroId = requestAnimationFrame(analizarCuadro);
+            if (!deteccion) {
+              setEncuadreOk(false);
+              setMensaje('Ubica tu rostro dentro del óvalo');
+              encuadreEstable.reiniciar();
+              resetHold();
+              programarSiguiente();
               return;
             }
-            const descriptorFinal = Array.from(conDescriptor.descriptor);
-            const foto = capturarFoto(videoRef.current);
-            setEstado('exito');
-            setMensaje('¡Rostro verificado!');
-            // Pequeña pausa para que se vea la animación de éxito antes de continuar
-            setTimeout(() => {
-              if (!activo) return;
-              detenerCamara();
-              onCapturado(descriptorFinal, foto);
-            }, 700);
-            return;
-          }
 
-          cuadroId = requestAnimationFrame(analizarCuadro);
+            // El cuadro detectado tiembla; el estabilizador promedia posición y
+            // tamaño antes de decidir, así el mensaje no salta cerca del umbral.
+            const encuadre = encuadreEstable.siguiente(
+              deteccion.detection.box, video.videoWidth, video.videoHeight,
+            );
+            if (encuadre !== 'OK') {
+              setEncuadreOk(false);
+              setMensaje(MSG_ENCUADRE[encuadre]);
+              resetHold();
+              programarSiguiente();
+              return;
+            }
+            setEncuadreOk(true);
+
+            // ¿Se cumple la condición para (seguir) capturando?
+            const paso = modo === 'enrolar' ? pasos[idxPaso] : null;
+            const condicionOk = paso ? poseCumple(paso.tipo, desviacionYaw(deteccion.landmarks)) : true;
+
+            if (!condicionOk) {
+              // Rompió la pose: reinicia el conteo de "quieto"
+              if (paso) setMensaje(paso.texto);
+              resetHold();
+              programarSiguiente();
+              return;
+            }
+
+            // La captura del descriptor necesita el modelo de reconocimiento (pesado).
+            // Si aún está bajando, mantenemos el encuadre y esperamos con su %.
+            // El porcentaje lo lleva el aviso fijo de abajo, que se ve siempre.
+            if (!rostroListo) {
+              setMensaje('Ya casi: terminando de preparar el reconocimiento');
+              resetHold();
+              programarSiguiente();
+              return;
+            }
+
+            // Arranca o continúa el "quédate quieto"
+            if (holdInicio === null) {
+              holdInicio = performance.now();
+              buffer = [];
+            }
+            // Si esta detección trajo descriptor (estamos en hold), lo guardamos
+            const desc = (deteccion as any).descriptor as Float32Array | undefined;
+            if (desc) buffer.push(Array.from(desc));
+
+            const objetivo = modo === 'enrolar' ? MS_QUIETO_ENROLAR : MS_QUIETO_LOGIN;
+            const transcurrido = performance.now() - holdInicio;
+            setProgreso(Math.min(1, transcurrido / objetivo));
+            setMensaje(paso ? `${paso.texto} · mantente quieto` : 'Quédate quieto un momento...');
+
+            if (transcurrido >= objetivo && buffer.length >= MIN_MUESTRAS_POSE) {
+              const muestra = promediarDescriptores(buffer);
+              const foto = capturarFoto(video);
+
+              if (modo === 'enrolar') {
+                descriptoresPorPose.push(muestra);
+                fotosPorPose.push(foto);
+                idxPaso += 1;
+                setPasoActual(idxPaso);
+                resetHold();
+                if (idxPaso >= pasos.length) {
+                  // Todas las poses listas → preview para aceptar/repetir
+                  terminado = true;
+                  detenerCamara();
+                  descsPreview.current = descriptoresPorPose;
+                  setTomas(fotosPorPose);
+                  setEstado('preview');
+                  return;
+                }
+              } else {
+                // Login: una sola muestra promediada → listo
+                terminado = true;
+                setEstado('exito');
+                setMensaje('¡Rostro verificado!');
+                setTimeout(() => {
+                  if (!activo) return;
+                  detenerCamara();
+                  onCapturado([muestra], foto);
+                }, 400);
+                return;
+              }
+            }
+
+            programarSiguiente();
+          } catch {
+            if (!activo || terminado) return;
+            // Error transitorio (video aún en 0x0, hipo del modelo): reintenta el
+            // siguiente cuadro; si es persistente, muestra error en vez de congelarse.
+            erroresSeguidos++;
+            if (erroresSeguidos >= 20) { fallar('La cámara tuvo un problema. Toca Reintentar.'); return; }
+            programarSiguiente();
+          }
         };
         cuadroId = requestAnimationFrame(analizarCuadro);
       } catch (e: any) {
@@ -160,20 +271,100 @@ export default function CamaraRostro({ onCapturado, onError, errorExterno }: Pro
       activo = false;
       detenerCamara();
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modo, pasoGafas, intento]);
+
+  // Login: tras unos segundos sin reconocer, ofrece el respaldo con cédula.
+  useEffect(() => {
+    if (modo !== 'login' || !permiteFallbackCedula) return;
+    setMostrarFallback(false);
+    const t = setTimeout(() => setMostrarFallback(true), SEG_FALLBACK_CEDULA * 1000);
+    return () => clearTimeout(t);
+  }, [modo, permiteFallbackCedula, intento]);
+
+  const usarCedula = () => {
+    const v = videoRef.current;
+    onUsarCedula?.(v ? capturarFoto(v) : '');
+  };
+
+  const aceptarPreview = () => {
+    onCapturado(descsPreview.current, tomas[0]);
+  };
+  const repetir = () => {
+    descsPreview.current = [];
+    setTomas([]);
+    setPasoActual(0);
+    setProgreso(0);
+    setEncuadreOk(false);
+    setMensaje('Cargando cámara...');
+    setEstado('cargando');
+    setIntento(i => i + 1);
+  };
 
   const hayError = estado === 'error' || !!errorExterno;
+  const colorOvalo = hayError ? '#f87171' : estado === 'exito' ? '#4ade80' : encuadreOk ? '#4ade80' : '#FFD85E';
+
+  // ===== Preview de enrolamiento: aceptar o repetir =====
+  if (estado === 'preview') {
+    return <PreviewEnrolamiento tomas={tomas} pasos={pasos} onAceptar={aceptarPreview} onRepetir={repetir} />;
+  }
 
   return (
     <div className="flex flex-col items-center gap-3 w-full">
-      <div className={`relative w-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden bg-ink flex items-center justify-center transition-shadow ${hayError ? 'ring-4 ring-red-500' : estado === 'exito' ? 'ring-4 ring-green-500' : estado === 'detectado' || estado === 'procesando' ? 'ring-4 ring-green-400' : ''}`}>
+      <div className="relative w-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden bg-ink flex items-center justify-center">
         <video ref={videoRef} className="w-full h-full object-cover [transform:scaleX(-1)]" muted playsInline />
-        {estado === 'cargando' && <Camera className="absolute text-white/60" size={40} />}
-        {(estado === 'buscando' || estado === 'detectado') && !hayError && (
-          <div className="hp-scan-line absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_12px_2px_rgba(255,216,94,0.8)]" />
+        {estado === 'cargando' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center">
+            <Camera className="text-white/50 animate-pulse" size={34} />
+            <div className="w-44 h-1.5 rounded-full bg-white/15 overflow-hidden">
+              <div className="h-full bg-primary transition-[width] duration-200 ease-out" style={{ width: `${Math.round(progModelos * 100)}%` }} />
+            </div>
+            <p className="text-white/85 text-sm font-medium">Preparando la cámara… {Math.round(progModelos * 100)}%</p>
+            {primeraVez !== false && (
+              <p className="text-white/40 text-xs">Esto solo pasa la primera vez en este teléfono</p>
+            )}
+          </div>
         )}
-        {estado === 'exito' && !hayError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-green-600/20">
+
+        {/* Calibración: el track todavía puede cambiar de resolución y el recorte
+            saltaría a la vista. Se tapa mientras se estabiliza y se explica. */}
+        {estado === 'calibrando' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center bg-ink/80 backdrop-blur-sm">
+            <Camera className="text-white/60 animate-pulse" size={34} />
+            <p className="text-white/85 text-sm font-medium">Calibrando la cámara…</p>
+            <p className="text-white/40 text-xs">Un segundo, estamos ajustando el enfoque</p>
+          </div>
+        )}
+
+        {/* Óvalo guía: oscurece alrededor y marca dónde debe ir el rostro */}
+        {(estado === 'guiando' || estado === 'exito' || hayError) && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 75" preserveAspectRatio="none" aria-hidden="true">
+            <path
+              d="M0 0 H100 V75 H0 Z M50 37.5 m-23 0 a23 30 0 1 0 46 0 a23 30 0 1 0 -46 0"
+              fill="rgba(0,0,0,0.45)"
+              fillRule="evenodd"
+            />
+            <ellipse cx="50" cy="37.5" rx="23" ry="30" fill="none" stroke={colorOvalo} strokeWidth="1.4"
+              strokeDasharray={estado === 'guiando' && !encuadreOk ? '4 2.5' : undefined} />
+          </svg>
+        )}
+
+        {/* Línea de escaneo mientras lee el rostro (CSS puro; funciona en Android) */}
+        {estado === 'guiando' && encuadreOk && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="hp-scan-line absolute left-[18%] right-[18%] h-0.5 bg-green-400/80 rounded-full shadow-[0_0_8px_rgba(74,222,128,0.9)]" />
+          </div>
+        )}
+
+        {/* Barra de progreso del "quédate quieto" (robusta, sin pathLength) */}
+        {progreso > 0 && estado === 'guiando' && (
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
+            <div className="h-full bg-green-400 transition-[width] duration-100 ease-linear" style={{ width: `${Math.round(progreso * 100)}%` }} />
+          </div>
+        )}
+
+        {estado === 'exito' && (
+          <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative w-20 h-20">
               <div className="hp-ripple absolute inset-0 rounded-full bg-green-400/50" />
               <div className="hp-pop relative w-20 h-20 rounded-full bg-white flex items-center justify-center">
@@ -190,10 +381,62 @@ export default function CamaraRostro({ onCapturado, onError, errorExterno }: Pro
           </div>
         )}
       </div>
+
+      {/* Progreso del enrolamiento: un chip por pose */}
+      {modo === 'enrolar' && !hayError && (
+        <div className="flex flex-wrap justify-center gap-1.5">
+          {pasos.map((p, i) => (
+            <span key={p.id}
+              className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
+                i < pasoActual ? 'bg-green-100 text-green-700'
+                : i === pasoActual ? 'bg-primary/30 text-ink'
+                : 'bg-gray-100 text-muted'
+              }`}>
+              {i < pasoActual && <Check size={12} strokeWidth={3} />}
+              {p.etiqueta}
+            </span>
+          ))}
+        </div>
+      )}
+
       <p className={`text-sm font-medium text-center ${hayError ? 'text-red-500' : estado === 'exito' ? 'text-green-600' : 'text-muted'}`}>
         {estado === 'error' && <AlertTriangle size={14} className="inline mr-1 -mt-0.5" />}
         {errorExterno ?? mensaje}
       </p>
+
+      {/* Aviso fijo mientras baja el modelo pesado. Va aquí y no dentro del bucle
+          de cuadros porque allí solo aparecía cuando el encuadre ya estaba bien:
+          quien se está acomodando —el que de verdad necesita saber que falta— no
+          lo veía nunca, y la espera parecía que el kiosco estuviera colgado. */}
+      {!rostroListoUI && primeraVez === true && (estado === 'guiando' || estado === 'calibrando') && !hayError && (
+        <div className="w-full max-w-md flex items-center gap-2.5 px-3 py-2 rounded-xl bg-primary/15">
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-ink/80">
+              Preparando el reconocimiento… {Math.round(progRostroUI * 100)}%
+            </p>
+            <div className="mt-1 h-1 rounded-full bg-black/10 overflow-hidden">
+              <div className="h-full bg-primary transition-[width] duration-200 ease-out"
+                style={{ width: `${Math.round(progRostroUI * 100)}%` }} />
+            </div>
+          </div>
+          <span className="text-[10px] text-muted whitespace-nowrap">solo la 1ª vez</span>
+        </div>
+      )}
+
+      {/* Respaldo: si tarda en reconocer, marcar con cédula tomando la foto del momento */}
+      {modo === 'login' && permiteFallbackCedula && mostrarFallback && (estado === 'guiando' || !!errorExterno) && (
+        <button onClick={usarCedula}
+          className="text-xs font-medium text-white/60 hover:text-white underline underline-offset-2 decoration-white/30">
+          ¿Problemas? Marcar con cédula
+        </button>
+      )}
+
+      {/* Cronómetro de carga — SOLO en desarrollo (banco de pruebas). En prod no aparece. */}
+      {import.meta.env.DEV && (metrica.camara != null || metrica.rostro != null) && (
+        <p className="text-[10px] font-mono text-white/30">
+          ⏱ cámara {metrica.camara ?? '…'}ms · reconocimiento {metrica.rostro ?? '…'}ms
+        </p>
+      )}
     </div>
   );
 }

@@ -7,6 +7,9 @@ import nodemailer from 'nodemailer';
 
 const smtpConfigurado = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 
+// Otros módulos deciden según esto (ej: si no hay correo, no se exige verificación)
+export const correoConfigurado = smtpConfigurado;
+
 const transporter = smtpConfigurado
   ? nodemailer.createTransport({
       host: process.env.SMTP_HOST,
