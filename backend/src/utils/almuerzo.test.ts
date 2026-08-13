@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { minutosAlmuerzoADescontar } from './almuerzo';
+import { minutosAlmuerzoADescontar, puedeSalirAAlmorzar } from './almuerzo';
 import { calcularDiasEsperados } from './diasEsperados';
 
 // El almuerzo deja de ser un número suelto y pasa a ser una VENTANA horaria.
@@ -100,6 +100,37 @@ describe('minutosAlmuerzoADescontar — turno que cruza medianoche', () => {
     const d = dia({ almuerzoInicio: '01:00', almuerzoFin: '01:30', almuerzoMin: 30 });
     const tramos = [{ entrada: bog(5, 21, 0), salida: bog(6, 0, 30) }];
     expect(minutosAlmuerzoADescontar(tramos, d)).toBe(0);
+  });
+});
+
+// Una sola compuerta decide si el kiosco ofrece "salgo a almorzar" y si el
+// servidor le cree a esa marca. Van juntas a propósito: si la pantalla ofreciera
+// algo que el servidor rechaza, la persona marcaría creyendo que almorzó.
+describe('puedeSalirAAlmorzar', () => {
+  const conVentana = { almuerzoInicio: '12:00', almuerzoFin: '13:00' };
+
+  it('sin día materializado no se ofrece', () => {
+    expect(puedeSalirAAlmorzar(null, false)).toBe(false);
+  });
+
+  it('el día sin ventana no ofrece almuerzo', () => {
+    // Es el caso de todo el histórico y del día en curso cuando el admin recién
+    // configuró la ventana: ese día ya se congeló sin ella.
+    expect(puedeSalirAAlmorzar({ almuerzoInicio: null, almuerzoFin: null }, false)).toBe(false);
+  });
+
+  it('media ventana no es una ventana', () => {
+    expect(puedeSalirAAlmorzar({ almuerzoInicio: '12:00', almuerzoFin: null }, false)).toBe(false);
+  });
+
+  it('con ventana y sin haber almorzado, se ofrece', () => {
+    expect(puedeSalirAAlmorzar(conVentana, false)).toBe(true);
+  });
+
+  it('quien ya almorzó no vuelve a ver la pregunta', () => {
+    // La segunda salida del día es el fin de la jornada: preguntar de nuevo
+    // sobraría, y peor, dejaría partir el día en tres tramos por error.
+    expect(puedeSalirAAlmorzar(conVentana, true)).toBe(false);
   });
 });
 

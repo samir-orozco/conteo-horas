@@ -65,3 +65,21 @@ export function minutosAlmuerzoADescontar(
   if (directo > 0) return Math.round(directo);
   return Math.round(cruza(inicio + UN_DIA_MS, fin + UN_DIA_MS));
 }
+
+// ¿Este turno puede cerrarse como "salgo a almorzar"?
+//
+// La usan los dos extremos: el kiosco para mostrar la pregunta y el servidor
+// para creerle a la marca. Si estuvieran separadas podrían discrepar, y la
+// persona marcaría un almuerzo que el servidor descarta sin decir nada.
+//
+// No mira la hora a propósito. Quien sale a las 11:40 a almorzar no debería
+// pelear con el reloj, y responder no cuesta nada: la marca de almuerzo no
+// cambia cuánto se descuenta —eso lo decide `minutosAlmuerzoADescontar` por
+// solape— solo deja constancia de qué fue esa salida.
+export function puedeSalirAAlmorzar(
+  dia: { almuerzoInicio: string | null; almuerzoFin: string | null } | null,
+  yaAlmorzo: boolean,
+): boolean {
+  if (!dia?.almuerzoInicio || !dia.almuerzoFin) return false;
+  return !yaAlmorzo;
+}

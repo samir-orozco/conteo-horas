@@ -20,8 +20,8 @@ export function useFlashResultado(onCerrarOk: () => void) {
     }, 320);
   };
 
-  const mostrarFlashOk = (accion: 'ENTRADA' | 'SALIDA', hora: string, nombre: string) => {
-    setFlash({ tipo: 'ok', accion, hora: formatInTimeZone(new Date(hora), TZ, 'HH:mm:ss'), nombre });
+  const mostrarFlashOk = (accion: 'ENTRADA' | 'SALIDA', hora: string, nombre: string, almuerzo?: boolean) => {
+    setFlash({ tipo: 'ok', accion, hora: formatInTimeZone(new Date(hora), TZ, 'HH:mm:ss'), nombre, almuerzo });
     // Confirmación breve y reset suave (sin recargar la página).
     setTimeout(() => cerrarFlash(() => cerrarOkRef.current()), 1500);
   };

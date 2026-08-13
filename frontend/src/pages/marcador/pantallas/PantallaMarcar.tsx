@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { LogIn, LogOut, MapPin, Check } from 'lucide-react';
+import { LogIn, LogOut, MapPin, Check, UtensilsCrossed } from 'lucide-react';
 import { es } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
 import { horaBog } from '../helpers';
 import { TZ, type Colaborador, type Estado, type Sede } from '../tipos';
 import ConfirmarNuevaEntrada from './ConfirmarNuevaEntrada';
+import ElegirTipoDeSalida from './ElegirTipoDeSalida';
 
 type Props = {
   colaborador: Colaborador;
@@ -13,7 +14,7 @@ type Props = {
   sedes?: Sede[];
   ahora: Date;
   estado: Estado | null;
-  marcar: () => void;
+  marcar: (opciones?: { almuerzo?: boolean }) => void;
   marcando: boolean;
   exigeUbicacion: boolean;
   ubicOk: { lat: number; lng: number } | null;
@@ -25,12 +26,18 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
   const dentroAhora = estado?.dentroAhora ?? false;
   const entradaHace = estado?.entradaAbierta?.entrada ? horaBog(estado.entradaAbierta.entrada, 'HH:mm') : null;
   const cerradoHoy = estado?.turnoCerradoHoy ?? null;
+  const almuerzo = estado?.almuerzo ?? null;
+  const enAlmuerzo = estado?.enAlmuerzo ?? false;
   const [confirmando, setConfirmando] = useState(false);
+  const [eligiendoSalida, setEligiendoSalida] = useState(false);
 
-  // Si el día ya tiene un turno completo y no hay uno abierto, confirmamos antes de
-  // abrir otro (evita la entrada duplicada de quien cree que no le quedó la salida).
   const alPresionar = () => {
-    if (!dentroAhora && cerradoHoy) { setConfirmando(true); return; }
+    // Saliendo con ventana de almuerzo disponible: hay dos salidas posibles y
+    // solo la persona sabe cuál es.
+    if (dentroAhora && almuerzo) { setEligiendoSalida(true); return; }
+    // Volviendo del almuerzo: es la misma jornada, no un turno nuevo. Preguntar
+    // "¿otra entrada?" ahí sería ruido sobre algo que el sistema ya sabe.
+    if (!dentroAhora && cerradoHoy && !enAlmuerzo) { setConfirmando(true); return; }
     marcar();
   };
 
@@ -64,8 +71,16 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
           </p>
         </div>
 
-        <div className={`mb-6 rounded-xl px-4 py-2 text-sm font-medium ${dentroAhora || cerradoHoy ? 'bg-green-500/10 text-green-400' : 'bg-white/5 text-white/50'}`}>
-          {dentroAhora ? (
+        <div className={`mb-6 rounded-xl px-4 py-2 text-sm font-medium ${
+          enAlmuerzo ? 'bg-amber-400/10 text-amber-300'
+            : dentroAhora || cerradoHoy ? 'bg-green-500/10 text-green-400'
+            : 'bg-white/5 text-white/50'
+        }`}>
+          {enAlmuerzo && estado?.salidaAlmuerzo ? (
+            <span className="flex items-center justify-center gap-1.5">
+              <UtensilsCrossed size={14} /> En almuerzo desde las {horaBog(estado.salidaAlmuerzo, 'HH:mm')}
+            </span>
+          ) : dentroAhora ? (
             `Entrada registrada a las ${entradaHace}`
           ) : cerradoHoy ? (
             <span className="flex items-center justify-center gap-1.5">
@@ -86,7 +101,11 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
             }`}
         >
           {dentroAhora ? <LogOut size={28} /> : <LogIn size={28} />}
-          {marcando ? (exigeUbicacion ? 'Ubicando...' : 'Registrando...') : (dentroAhora ? 'Registrar Salida' : 'Registrar Entrada')}
+          {marcando
+            ? (exigeUbicacion ? 'Ubicando...' : 'Registrando...')
+            : dentroAhora ? 'Registrar Salida'
+            : enAlmuerzo ? 'Volví del almuerzo'
+            : 'Registrar Entrada'}
         </button>
 
         {exigeUbicacion && ubicOk && (
@@ -105,6 +124,15 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
           turno={cerradoHoy}
           onConfirmar={() => { setConfirmando(false); marcar(); }}
           onCancelar={() => setConfirmando(false)}
+        />
+      )}
+
+      {eligiendoSalida && almuerzo && (
+        <ElegirTipoDeSalida
+          ventana={almuerzo}
+          onAlmuerzo={() => { setEligiendoSalida(false); marcar({ almuerzo: true }); }}
+          onFinJornada={() => { setEligiendoSalida(false); marcar(); }}
+          onCancelar={() => setEligiendoSalida(false)}
         />
       )}
     </div>

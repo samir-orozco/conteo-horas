@@ -128,7 +128,7 @@ export default function Marcador() {
     }
   };
 
-  const marcar = async () => {
+  const marcar = async (opciones?: { almuerzo?: boolean }) => {
     if (!sesion.token || marcando) return;
     setMarcando(true);
     geo.setErrorUbic(null);
@@ -143,14 +143,18 @@ export default function Marcador() {
           if (geo.ubicOk) ubic = geo.ubicOk;
         }
       }
-      const r = await apiMarcar(sesion.token, { foto: fotoRostro ?? undefined, ...ubic });
-      // Si salió antes de su horario, primero pedimos el motivo (queda como novedad)
+      const r = await apiMarcar(sesion.token, {
+        foto: fotoRostro ?? undefined, ...ubic,
+        ...(opciones?.almuerzo ? { almuerzo: true } : {}),
+      });
+      // Si salió antes de su horario, primero pedimos el motivo (queda como novedad).
+      // Salir a almorzar nunca pide motivo: el servidor ya no lo marca como temprana.
       if (r.accion === 'SALIDA' && r.salidaTemprana) {
         setNovedadTipo('MEDICO');
         setNovedadDesc('');
         setSalidaTemprana({ accion: r.accion, hora: r.hora });
       } else {
-        mostrarFlashOk(r.accion, r.hora, nombreColab);
+        mostrarFlashOk(r.accion, r.hora, nombreColab, r.salidaAlmuerzo);
       }
     } catch (err: any) {
       mostrarFlashError(err.response?.data?.error ?? 'No pudimos registrar tu marcación. Intenta de nuevo.');

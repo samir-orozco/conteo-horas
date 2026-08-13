@@ -9,6 +9,7 @@ import { rangoDiaBogota } from '../utils/fechas';
 import { distanciaMetros } from '../utils/geo';
 import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes } from '../utils/kioscoConfig';
 import { resolverSedeDeMarcacion } from '../utils/sedes';
+import { puedeSalirAAlmorzar } from '../utils/almuerzo';
 
 const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
@@ -60,6 +61,33 @@ function fotoValida(foto: unknown): foto is string {
   } catch {
     return false;
   }
+}
+
+// Ventana de almuerzo del turno en curso y si esa salida ya se marcó.
+//
+// La ventana sale de `dias_esperados`, NO del horario vigente. Si el admin la
+// configuró hoy, el día de hoy ya se congeló sin ella y su descuento se sigue
+// haciendo a la manera vieja (minutos fijos); ofrecer el almuerzo ahí lo cobraría
+// dos veces. Aplica desde mañana, igual que cualquier cambio de horario.
+//
+// `fechaAncla` es la del turno abierto, no la de hoy: un turno nocturno que
+// almuerza a la 01:00 pertenece al día en que ENTRÓ, y su ventana vive en la
+// fila de ese día.
+async function almuerzoDelTurno(colaboradorId: string, fechaAncla: Date) {
+  const { inicioDia, finDia } = rangoDiaBogota(fechaAncla);
+  const [dia, marcados] = await Promise.all([
+    // Por rango y no por clave exacta: MySQL puede devolver la fecha con
+    // milisegundos y una fila así quedaría huérfana sin que nadie se entere.
+    prisma.diaEsperado.findFirst({
+      where: { colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
+      select: { almuerzoInicio: true, almuerzoFin: true },
+    }),
+    prisma.registro.count({
+      where: { colaboradorId, salidaAlmuerzo: true, salida: { gte: new Date(Date.now() - VENTANA_TURNO_MS) } },
+    }),
+  ]);
+  const yaAlmorzo = marcados > 0;
+  return { ventana: dia, yaAlmorzo, puede: puedeSalirAAlmorzar(dia, yaAlmorzo) };
 }
 
 // Alerta de llegada tarde por Telegram (si la empresa lo activó). No bloquea la marca.
@@ -247,7 +275,7 @@ export default async function workerRoutes(app: FastifyInstance) {
     if (payload.rol !== 'WORKER') return { error: 'No autorizado' };
 
     const { inicioDia, finDia } = rangoDiaBogota();
-    const [abierto, cerradoHoy] = await Promise.all([
+    const [abierto, cerradoHoy, ultimoCerrado] = await Promise.all([
       prisma.registro.findFirst({
         where: {
           colaboradorId: payload.id,
@@ -255,7 +283,7 @@ export default async function workerRoutes(app: FastifyInstance) {
           salida: null,
         },
         orderBy: { creadoEn: 'desc' },
-        select: { entrada: true },
+        select: { entrada: true, fecha: true },
       }),
       // Último turno YA COMPLETO de hoy (entrada + salida). El kiosco lo usa para
       // mostrar el resumen del día y para confirmar antes de abrir un turno nuevo
@@ -270,11 +298,33 @@ export default async function workerRoutes(app: FastifyInstance) {
         orderBy: { salida: 'desc' },
         select: { entrada: true, salida: true },
       }),
+      // Último turno cerrado del TURNO en curso (no del día calendario): si fue
+      // una salida a almorzar, la persona está en su almuerzo ahora mismo.
+      prisma.registro.findFirst({
+        where: {
+          colaboradorId: payload.id,
+          salida: { not: null, gte: new Date(Date.now() - VENTANA_TURNO_MS) },
+        },
+        orderBy: { salida: 'desc' },
+        select: { salida: true, salidaAlmuerzo: true },
+      }),
     ]);
+
+    // La ventana se ancla al turno abierto; sin turno abierto, al día de hoy.
+    const almuerzo = await almuerzoDelTurno(payload.id, abierto?.fecha ?? inicioDia);
+    const enAlmuerzo = !abierto && ultimoCerrado?.salidaAlmuerzo === true;
+
     return {
       entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
       dentroAhora: !!abierto,
       turnoCerradoHoy: cerradoHoy ? { entrada: cerradoHoy.entrada, salida: cerradoHoy.salida } : null,
+      // Solo se manda la ventana cuando de verdad se puede usar: el kiosco
+      // pregunta exactamente cuando el servidor va a creerle.
+      almuerzo: almuerzo.puede
+        ? { inicio: almuerzo.ventana!.almuerzoInicio!, fin: almuerzo.ventana!.almuerzoFin! }
+        : null,
+      enAlmuerzo,
+      salidaAlmuerzo: enAlmuerzo ? ultimoCerrado!.salida : null,
     };
   });
 
@@ -290,8 +340,9 @@ export default async function workerRoutes(app: FastifyInstance) {
     }
     marcandoAhora.add(payload.id);
     try {
-      const { foto, lat, lng } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown };
+      const { foto, lat, lng, almuerzo } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown; almuerzo?: unknown };
       const fotoGuardar = fotoValida(foto) ? foto : null;
+      const pidioAlmuerzo = almuerzo === true;
 
       // ===== Dónde está marcando =====
       //
@@ -375,15 +426,25 @@ export default async function workerRoutes(app: FastifyInstance) {
             codigo: 'SEDE_DISTINTA',
           });
         }
+        // Salida a almorzar: se valida contra el día congelado y contra si ya
+        // almorzó. Que lo diga el cliente no basta — el flag decide cómo se lee
+        // el día después, y nadie debería poder inventarlo desde el navegador.
+        const esAlmuerzo = pidioAlmuerzo && (await almuerzoDelTurno(payload.id, abierto.fecha)).puede;
+
         const updated = await prisma.registro.update({
           where: { id: abierto.id },
-          data: { salida: ahora, ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}) },
+          data: {
+            salida: ahora,
+            ...(esAlmuerzo ? { salidaAlmuerzo: true } : {}),
+            ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
+          },
         });
         // ¿Salió antes de la hora de fin de su franja? (para pedir motivo).
         // Normaliza franjas que cruzan medianoche (fin < inicio) sumando 24h.
+        // Irse a almorzar no es irse temprano: ahí no se pide ninguna novedad.
         let salidaTemprana = false;
         const horario = col?.horario;
-        if (horario && horario.activo && !festHoy) {
+        if (!esAlmuerzo && horario && horario.activo && !festHoy) {
           const franja = horario.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
           if (franja) {
             const iniMin = minutosDe(franja.horaEntrada);
@@ -395,7 +456,7 @@ export default async function workerRoutes(app: FastifyInstance) {
             if (salidaMin < finMin - (horario.toleranciaMin ?? 0)) salidaTemprana = true;
           }
         }
-        return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana };
+        return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo };
       } else {
         // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
         const entradasPrevias = await prisma.registro.count({
