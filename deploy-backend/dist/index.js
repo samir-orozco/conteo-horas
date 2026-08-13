@@ -31,6 +31,7 @@ const telegram_1 = __importDefault(require("./routes/telegram"));
 const notificaciones_1 = __importDefault(require("./routes/notificaciones"));
 const telegram_2 = require("./utils/telegram");
 const cierreTurnos_1 = require("./utils/cierreTurnos");
+const cierreAlmuerzo_1 = require("./utils/cierreAlmuerzo");
 const materializarDias_1 = require("./utils/materializarDias");
 const suscripcion_2 = require("./utils/suscripcion");
 const esProduccion = process.env.NODE_ENV === 'production';
@@ -173,6 +174,11 @@ const start = async () => {
         // Al arrancar y cada 24h; es idempotente y solo actúa sobre días ya pasados.
         (0, cierreTurnos_1.cerrarTurnosOlvidados)(app.log);
         setInterval(() => (0, cierreTurnos_1.cerrarTurnosOlvidados)(app.log), 24 * 60 * 60 * 1000);
+        // Almuerzos que quedaron sin regreso. No se cierran solos: la evidencia de
+        // quien volvió y no marcó es idéntica a la de quien se fue para la casa, así
+        // que darle la tarde por buena sería fabricar horas pagadas. Se avisa.
+        (0, cierreAlmuerzo_1.avisarAlmuerzosSinRegreso)(app.log);
+        setInterval(() => (0, cierreAlmuerzo_1.avisarAlmuerzosSinRegreso)(app.log), 24 * 60 * 60 * 1000);
         // Materializa el día esperado de cada colaborador para hoy y las próximas
         // semanas. Sin esto la tabla se queda vacía y todo se resuelve con el
         // horario VIGENTE, que es justo lo que reescribía el pasado.

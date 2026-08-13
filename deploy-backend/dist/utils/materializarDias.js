@@ -62,14 +62,16 @@ async function materializarColaborador(colaboradorId, desde, finExclusivo, opcio
                 programado: d.programado, horaEntrada: d.horaEntrada, horaSalida: d.horaSalida,
                 toleranciaMin: d.toleranciaMin, almuerzoMin: d.almuerzoMin,
                 minutosEsperados: d.minutosEsperados, toleranciaSalidaMin: d.toleranciaSalidaMin,
-                ajustaEntrada: d.ajustaEntrada, horarioId: colaborador.horarioId, origen: 'AUTO',
+                ajustaEntrada: d.ajustaEntrada, almuerzoInicio: d.almuerzoInicio, almuerzoFin: d.almuerzoFin,
+                horarioId: colaborador.horarioId, origen: 'AUTO',
             },
             create: {
                 colaboradorId, fecha: d.fecha,
                 programado: d.programado, horaEntrada: d.horaEntrada, horaSalida: d.horaSalida,
                 toleranciaMin: d.toleranciaMin, almuerzoMin: d.almuerzoMin,
                 minutosEsperados: d.minutosEsperados, toleranciaSalidaMin: d.toleranciaSalidaMin,
-                ajustaEntrada: d.ajustaEntrada, horarioId: colaborador.horarioId, origen: 'AUTO',
+                ajustaEntrada: d.ajustaEntrada, almuerzoInicio: d.almuerzoInicio, almuerzoFin: d.almuerzoFin,
+                horarioId: colaborador.horarioId, origen: 'AUTO',
             },
         });
         escritos++;

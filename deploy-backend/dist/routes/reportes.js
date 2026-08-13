@@ -12,6 +12,7 @@ const horasColombiana_2 = require("../utils/horasColombiana");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
 const diasEsperados_1 = require("../utils/diasEsperados");
 const ajusteJornada_1 = require("../utils/ajusteJornada");
+const almuerzo_1 = require("../utils/almuerzo");
 const TZ = 'America/Bogota';
 function semanaKey(fecha) {
     const z = (0, date_fns_tz_1.toZonedTime)(fecha, TZ);
@@ -48,6 +49,32 @@ function liquidarRegistros(registros, horario, extraConfig, festivosDates, tipos
 // la tolerancia. Si no llegan, la tolerancia sencillamente no se aplica.
 diasEsperados = []) {
     const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
+    // El almuerzo se resuelve por DÍA, no por registro: la regla nueva mira todos
+    // los tramos del día a la vez para saber cuánto de la ventana estuvo la
+    // persona marcada. Se precalcula aquí y luego se descuenta una sola vez.
+    const almuerzoPorDia = new Map();
+    const tramosPorDia = new Map();
+    for (const r of registros) {
+        if (!r.entrada || !r.salida)
+            continue;
+        const k = claveDiaBogota(r.entrada);
+        if (!tramosPorDia.has(k))
+            tramosPorDia.set(k, []);
+        // Los tramos van YA AJUSTADOS por la tolerancia de salida, igual que los que
+        // entran al motor de horas más abajo. Con los crudos, el solape del almuerzo
+        // se mediría sobre minutos que la liquidación ya recortó: quien sale 12:10
+        // teniendo salida programada a las 12:00 y tolerancia de 15 pagaría 10
+        // minutos de almuerzo de un tiempo que no se le está contando.
+        const d = diaPorClave.get(k);
+        const t = d ? (0, ajusteJornada_1.ajustarAJornada)(r.entrada, r.salida, d) : { entrada: r.entrada, salida: r.salida };
+        tramosPorDia.get(k).push({ entrada: t.entrada, salida: t.salida });
+    }
+    for (const [k, tramos] of tramosPorDia) {
+        const d = diaPorClave.get(k);
+        if (!d)
+            continue;
+        almuerzoPorDia.set(k, (0, almuerzo_1.minutosAlmuerzoADescontar)(tramos, d));
+    }
     const porSemana = new Map();
     for (const reg of registros) {
         const key = semanaKey(reg.fecha);
@@ -76,9 +103,16 @@ diasEsperados = []) {
             const tiposDelDia = (0, vigencias_1.tiposVigentes)(registro.fecha, tiposHoraTodos);
             const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(entrada, salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana, extraConfig);
             let ordDelRegistro = minutosOrdinariosTrabajados;
-            const almuerzo = almuerzoDelRegistro(horario, registro.entrada);
+            // Sin fila del día no hay ventana ni almuerzo congelado: se cae al
+            // horario vigente, igual que antes de existir `DiaEsperado`.
+            const conVentana = !!diaDelRegistro?.almuerzoInicio && !!diaDelRegistro?.almuerzoFin;
+            const almuerzo = diaDelRegistro
+                ? (almuerzoPorDia.get(claveDia) ?? 0)
+                : almuerzoDelRegistro(horario, registro.entrada);
             if (almuerzo > 0 && !diasConAlmuerzo.has(claveDia)) {
-                const { descontado } = (0, horasColombiana_1.descontarAlmuerzo)(resultado, almuerzo);
+                const { descontado } = conVentana
+                    ? (0, horasColombiana_1.descontarAlmuerzoOrdinarias)(resultado, almuerzo)
+                    : (0, horasColombiana_1.descontarAlmuerzo)(resultado, almuerzo);
                 if (descontado > 0) {
                     diasConAlmuerzo.add(claveDia);
                     ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
@@ -160,7 +194,7 @@ async function reporteRoutes(app) {
                 select: {
                     fecha: true, programado: true, horaEntrada: true, horaSalida: true,
                     toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
-                    toleranciaSalidaMin: true, ajustaEntrada: true,
+                    toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
@@ -246,7 +280,7 @@ async function reporteRoutes(app) {
                 select: {
                     colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
                     horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
-                    toleranciaSalidaMin: true, ajustaEntrada: true,
+                    toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
@@ -297,7 +331,7 @@ async function reporteRoutes(app) {
                 select: {
                     fecha: true, programado: true, horaEntrada: true, horaSalida: true,
                     toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
-                    toleranciaSalidaMin: true, ajustaEntrada: true,
+                    toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
@@ -345,7 +379,7 @@ async function reporteRoutes(app) {
                 select: {
                     colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
                     horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
-                    toleranciaSalidaMin: true, ajustaEntrada: true,
+                    toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
