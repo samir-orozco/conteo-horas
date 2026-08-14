@@ -55,7 +55,7 @@ export default function ReportesNav({ onNav }: { onNav?: () => void }) {
           calendario de festivos, etc). Montarlo en el body evita el problema de raíz. */}
       {abierto && createPortal(
         <>
-          <div className="fixed inset-0 z-[200]" onClick={() => setAbierto(false)} />
+          <div className="fixed inset-0 !mt-0 z-[200]" onClick={() => setAbierto(false)} />
           <div
             style={estilo}
             className="fixed z-[201] bg-white rounded-2xl shadow-2xl border border-gray-200/70 overflow-hidden hp-notif-pop"

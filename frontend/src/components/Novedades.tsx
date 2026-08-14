@@ -164,7 +164,7 @@ export default function Novedades({ forzado = false, onCerrar }: { forzado?: boo
   const ultima = i === NOVEDADES.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4" onClick={cerrar}>
+    <div className="fixed inset-0 !mt-0 z-[60] bg-black/50 flex items-center justify-center p-4" onClick={cerrar}>
       <div
         onClick={e => e.stopPropagation()}
         className="hp-pop bg-white rounded-2xl w-full max-w-xl shadow-xl overflow-hidden"

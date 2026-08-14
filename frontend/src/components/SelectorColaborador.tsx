@@ -43,7 +43,7 @@ export default function SelectorColaborador({
 
       {abierto && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => { setAbierto(false); setBusca(''); }} />
+          <div className="fixed inset-0 !mt-0 z-30" onClick={() => { setAbierto(false); setBusca(''); }} />
           <div className="absolute top-full mt-1 left-0 z-40 w-64 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100">
               <Search size={14} className="text-muted shrink-0" />

@@ -229,7 +229,7 @@ export default function ReporteExtras() {
 
       {/* Drill-down: desglose de un colaborador */}
       {drill && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={cerrarDrill}>
+        <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={cerrarDrill}>
           <div className="hp-pop bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 sticky top-0 bg-white z-10">
               <div className="flex items-center gap-3 min-w-0">

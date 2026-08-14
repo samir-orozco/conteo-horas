@@ -272,7 +272,7 @@ export default function AdminEmpresas() {
 
       {/* Modal registrar pago */}
       {pagando && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 !mt-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="hp-pop bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-lg font-bold text-ink">Registrar pago</h2>
@@ -364,7 +364,7 @@ export default function AdminEmpresas() {
       {/* Menú "más opciones" de una empresa */}
       {menu && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setMenu(null)} />
+          <div className="fixed inset-0 !mt-0 z-40" onClick={() => setMenu(null)} />
           <div className="fixed z-50 w-56 bg-white rounded-xl border border-gray-200 shadow-xl py-1.5 text-sm"
             style={{ top: menu.y, left: Math.max(8, menu.x - 224) }}>
             <button onClick={() => accionMenu(() => setCambiandoIlimitado(menu.emp))}
@@ -391,7 +391,7 @@ export default function AdminEmpresas() {
 
       {/* Modal ampliar prueba */}
       {ampliando && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setAmpliando(null)}>
+        <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setAmpliando(null)}>
           <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={ev => ev.stopPropagation()}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-bold text-lg text-ink flex items-center gap-2"><CalendarClock size={18} className="text-primary-dark" /> Ampliar prueba</h3>
@@ -423,7 +423,7 @@ export default function AdminEmpresas() {
 
       {/* Modal precio del cliente */}
       {preciando && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPreciando(null)}>
+        <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setPreciando(null)}>
           <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={ev => ev.stopPropagation()}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-bold text-lg text-ink flex items-center gap-2"><Tag size={18} className="text-emerald-600" /> Precio del cliente</h3>
@@ -504,7 +504,7 @@ export default function AdminEmpresas() {
 
       {/* Modal nueva empresa */}
       {modal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 !mt-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-ink">Nueva empresa</h2>

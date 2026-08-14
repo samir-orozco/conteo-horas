@@ -26,7 +26,7 @@ export default function GuiaBienvenida({ forzado = false, onCerrar }: { forzado?
   if (!abierto) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4" onClick={cerrar}>
+    <div className="fixed inset-0 !mt-0 z-[60] bg-black/50 flex items-center justify-center p-4" onClick={cerrar}>
       <div className="hp-pop bg-white rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-gray-100">
           <div>

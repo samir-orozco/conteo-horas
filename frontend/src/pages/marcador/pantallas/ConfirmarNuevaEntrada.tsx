@@ -11,7 +11,7 @@ type Props = {
 // Evita la entrada duplicada de quien cree que su salida no quedó registrada.
 export default function ConfirmarNuevaEntrada({ turno, onConfirmar, onCancelar }: Props) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onCancelar}>
+    <div className="fixed inset-0 !mt-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onCancelar}>
       <div
         onClick={e => e.stopPropagation()}
         className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-ink shadow-2xl p-8 text-center"

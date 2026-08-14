@@ -281,7 +281,7 @@ export default function Suscripcion() {
 
       {/* Recibo previo al pago: resumen tipo factura antes de ir a Wompi */}
       {recibo && cuenta.checkout && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setRecibo(false)}>
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setRecibo(false)}>
           <div className="hp-pop bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-ink px-6 py-4 flex items-center justify-between">
               <p className="text-white font-bold flex items-center gap-2"><Receipt size={17} /> Resumen de tu pago</p>

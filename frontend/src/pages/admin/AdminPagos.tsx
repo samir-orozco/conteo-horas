@@ -88,14 +88,14 @@ export default function AdminPagos() {
       </div>
 
       {cargandoDetalle && (
-        <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 !mt-0 bg-black/20 z-50 flex items-center justify-center">
           <div className="bg-white rounded-xl px-6 py-4 text-sm text-muted shadow-lg">Cargando pago...</div>
         </div>
       )}
 
       {/* Detalle del pago (invoice) */}
       {detalle && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDetalle(null)}>
+        <div className="fixed inset-0 !mt-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setDetalle(null)}>
           <div className="hp-pop bg-white rounded-2xl w-full max-w-lg overflow-hidden max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="bg-ink px-6 py-4 flex items-center justify-between sticky top-0">
               <p className="text-white font-bold flex items-center gap-2">

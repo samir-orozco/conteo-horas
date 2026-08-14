@@ -121,7 +121,7 @@ export default function Layout() {
           {menuAyuda && (
             <>
               {/* Capa para cerrar tocando fuera, sin escuchar en todo el documento */}
-              <div className="fixed inset-0 z-30" onClick={() => setMenuAyuda(false)} />
+              <div className="fixed inset-0 !mt-0 z-30" onClick={() => setMenuAyuda(false)} />
               <div className="absolute bottom-full mb-1 left-4 right-4 z-40 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
                 <button onClick={() => abrirAyuda('guia')}
                   className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-gray-50 text-left">
@@ -165,7 +165,7 @@ export default function Layout() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden fixed inset-0 bg-white z-40 pt-16 flex flex-col">
+        <div className="md:hidden fixed inset-0 !mt-0 bg-white z-40 pt-16 flex flex-col">
           <NavContent onNav={() => setMenuOpen(false)} />
           <button onClick={() => abrirAyuda('guia')} className="flex items-center gap-3 px-7 py-4 text-muted text-sm border-t border-gray-100">
             <PlayCircle size={16} />Guía de bienvenida

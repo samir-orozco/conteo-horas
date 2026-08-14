@@ -15,7 +15,7 @@ type Props = {
 // turno nuevo y el día terminaría contando dos jornadas.
 export default function ElegirTipoDeSalida({ ventana, onAlmuerzo, onFinJornada, onCancelar }: Props) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onCancelar}>
+    <div className="fixed inset-0 !mt-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onCancelar}>
       <div
         onClick={e => e.stopPropagation()}
         className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-ink shadow-2xl p-8 text-center"

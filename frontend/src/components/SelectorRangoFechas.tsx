@@ -108,7 +108,7 @@ export default function SelectorRangoFechas({ desde, hasta, onCambiar }: Props) 
 
       {abierto && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => { setAbierto(false); setAncla(null); }} />
+          <div className="fixed inset-0 !mt-0 z-30" onClick={() => { setAbierto(false); setAncla(null); }} />
           <div className="absolute top-full mt-1 left-0 z-40 w-[310px] bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
             <div className="bg-primary px-4 py-3">
               <p className="text-xs font-semibold text-ink/60">

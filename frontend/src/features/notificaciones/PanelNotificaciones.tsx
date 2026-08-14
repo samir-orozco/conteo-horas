@@ -47,7 +47,7 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
     <>
       {/* Captura de clics fuera para cerrar (sin oscurecer: es un menú).
           z-index muy alto: debe quedar por encima de TODO (toasts, bloqueo por mora, etc). */}
-      <div className="fixed inset-0 z-[200]" onClick={onClose} />
+      <div className="fixed inset-0 !mt-0 z-[200]" onClick={onClose} />
 
       <div
         style={estilo}

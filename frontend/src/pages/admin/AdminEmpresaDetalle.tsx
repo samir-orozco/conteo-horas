@@ -354,7 +354,7 @@ export default function AdminEmpresaDetalle() {
 
       {/* Visor de comprobante */}
       {comprobante && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6" onClick={() => setComprobante(null)}>
+        <div className="fixed inset-0 !mt-0 bg-black/60 z-50 flex items-center justify-center p-6" onClick={() => setComprobante(null)}>
           <img src={comprobante} alt="comprobante" className="max-w-full max-h-full rounded-xl bg-white p-2" />
         </div>
       )}
