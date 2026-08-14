@@ -76,6 +76,7 @@ export default function Layout() {
   const [menuAyuda, setMenuAyuda] = useState(false);
   const abrirAyuda = (que: 'guia' | 'novedades') => {
     setMenuAyuda(false);
+    setMenuOpen(false); // en móvil el cajón tapa el modal si se queda abierto
     setAyuda(a => ({ que, n: (a?.n ?? 0) + 1 }));
   };
 
@@ -166,6 +167,12 @@ export default function Layout() {
       {menuOpen && (
         <div className="md:hidden fixed inset-0 bg-white z-40 pt-16 flex flex-col">
           <NavContent onNav={() => setMenuOpen(false)} />
+          <button onClick={() => abrirAyuda('guia')} className="flex items-center gap-3 px-7 py-4 text-muted text-sm border-t border-gray-100">
+            <PlayCircle size={16} />Guía de bienvenida
+          </button>
+          <button onClick={() => abrirAyuda('novedades')} className="flex items-center gap-3 px-7 py-4 text-muted text-sm border-t border-gray-100">
+            <Sparkles size={16} />Novedades de HoraPro
+          </button>
           <button onClick={handleLogout} className="flex items-center gap-3 px-7 py-4 text-muted text-sm border-t border-gray-100">
             <LogOut size={16} />Cerrar sesión
           </button>
