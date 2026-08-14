@@ -1,333 +1,265 @@
 # Goal
 
-Dar **historial a los horarios** de HoraPro. Hoy `Horario`/`FranjaHorario` no tienen
-vigencia: editar un horario reescribe el pasado. Los reportes de meses anteriores se
-recalculan con la configuración actual y, desde que existe el descuento por tiempo no
-remunerado, eso **mueve dinero ya liquidado**.
+Que un día de trabajo se lea como **una jornada**, no como marcaciones sueltas.
 
-El dueño lo detectó él mismo: cambió la entrada de 08:00 a 07:00 **el 17 de julio de
-2026** y los reportes de fechas anteriores empezaron a mostrar tardanzas falsas.
+Marcar el descanso parte el día en dos tramos, y la tabla de Registros los
+mostraba como dos filas —el mismo día repetido, la segunda medio vacía— que se
+leían como una marcación duplicada. De ahí salió todo lo demás: el descanso deja
+de llamarse almuerzo (falso para un turno nocturno), el formulario edita la
+jornada entera, el kiosco ofrece el descanso de frente, y las novedades se
+aprueban donde se leen.
 
-**Solución elegida (opción B, aprobada):** *materializar el día*. Una fila por
-colaborador y día con lo que su horario exigía ESE día. Se genera sola; el admin sigue
-editando horarios igual que hoy.
+Dos reglas que gobiernan todo esto y no se tocan sin pensarlo:
 
-Resuelve las tres causas del mismo síntoma:
-1. Editar el contenido de un horario.
-2. Cambiar a un colaborador de horario (`Colaborador.horarioId` tampoco tiene historial).
-3. Turnos rotativos (queda habilitado: el admin cambia el día suelto).
-
-Decisiones ya tomadas por el dueño:
-- Backfill **desde el inicio** ("no hay tanta data").
-- Al cambiar un horario: se regeneran los días **futuros**, los pasados no se tocan.
-- El pasado ya dañado **no se recupera** y está aceptado ("igual ya se pagó esa nómina").
-  No existe el dato de qué decía el horario antes ni cuándo cambió.
+- **Un tramo se funde con el siguiente solo si cerró saliendo al descanso.**
+  Volver por la tarde a hacer extras sí abre otra jornada.
+- **La suma de las jornadas de un día es exactamente `minutosContadosDelDia`.**
+  Afirmada en `jornada.test.ts` sobre doce escenarios y verificada contra la base
+  real con `backend/prisma/verificar-jornadas.ts`.
 
 ---
 
 ## Current State
 
-Rama de trabajo: **`mejoras/reportes-y-sedes`**. `master` = producción (alineado y
-desplegado). Volver atrás = volver a `master`.
+**El lote de jornadas está desplegado y comprobado en producción** (14 de agosto
+de 2026), backend y frontend.
 
-**La materialización está viva y cerrada de punta a punta.** Los tres cálculos
-retroactivos leen `DiaEsperado` —saldo, tardanzas y la columna de tardanza de la
-lista de Registros—, y la tabla se llena sola: al arrancar, cada 24h, al editar un
-horario, al cambiar a alguien de horario, al crear un colaborador y al cargar o
-corregir un registro. Editar un horario ya no mueve el pasado.
+```
+health                    → {"status":"ok"}
+PUT /registros/jornada/x  → 401     (la ruta nueva existe en el proceso vivo)
+bundle servido            → index-BVbUNmj9.js
+```
 
-> **El usuario lo probó y seguía fallando**, y tenía razón: los cálculos ya leían la
-> tabla pero **nadie la llenaba**, así que todo caía al respaldo (el horario vigente).
-> Y su pantalla de prueba —Registros— tenía además su propio cálculo en línea, que era
-> una tercera fuga que no estaba en el plan.
+221 pruebas en verde · `tsc` limpio en backend y frontend · ESLint en 78 (sin
+regresión) · diferencial de jornadas sobre datos reales sin descuadres.
 
-**Hecho y commiteado (8 commits sobre master):**
-- `CLAUDE.md` con la estrategia de desarrollo (TDD + ramas + trampas del producto).
-- **Vitest montado**: ahora 92 pruebas en verde + 1 fallo esperado a propósito.
-- Avisos en la pantalla de horarios (editar y eliminar afectan reportes pasados).
-- Tabla `DiaEsperado` en el schema + `calcularDiasEsperados` + `materializarDias.ts`.
-- Aviso en Registros cuando el día ya tiene otra entrada.
-- **`calcularHorasEsperadas` lee `DiaEsperado`** + `combinarDiasEsperados` + enganche
-  en `reportes.ts` + extracción del cliente Prisma a `src/prisma.ts`.
-- **`calcularTardanzas` lee `DiaEsperado`**: la hora exigida y la tolerancia salen de
-  la fila del día. Las dos rutas de tardanzas enganchadas, y el desglose del frontend
-  muestra la tolerancia que se APLICÓ, no la del horario de hoy.
-- **La generación enganchada y el backfill**: `GET /registros` deja de calcular la
-  tardanza con el horario vigente, y la tabla se llena sola (ver abajo).
+### Repositorio, ya ordenado
 
-**No desplegado a producción.** La tabla NO existe en el servidor.
-
-### Quién llena la tabla, y cuándo
-
-| Momento | Qué hace | Dónde |
+| rama | commit | qué es |
 |---|---|---|
-| Al arrancar y cada 24h | `mantenerVentana`: hoy + 60 días, todos los activos | `index.ts` |
-| `PUT /horarios/:id` | `regenerarFuturoDeHorario`: de MAÑANA en adelante | `routes/horarios.ts` |
-| `PUT /colaboradores/:id` con otro `horarioId` | `regenerarFuturoDeColaborador` | `routes/colaboradores.ts` |
-| `POST /colaboradores` (alta o reactivación) | `mantenerVentanaDeColaborador` | `routes/colaboradores.ts` |
-| `POST /registros`, `PUT /registros/:id`, `POST /registros/entrada` | `asegurarDiaSinFallar`: garantiza la fila de ESE día | `routes/registros.ts` |
-| Una vez, al desplegar | `prisma/backfill-dias-esperados.ts` | script |
+| `master` | `179d163` | producción. Alineada con lo desplegado |
+| `develop` | `179d163` | integración. Estaba 66 commits atrás; puesta al día |
+| `frontend-build` | `49cf253` | artefacto. **Compilado y subido, sin desplegar** |
+| `backend-build` | `e4371b4` | artefacto. Desplegado |
+| `prisma-build` | `ae68fdd` | artefacto. Sin cambios: el esquema no se tocó |
 
-Tres decisiones que hay que conocer:
-- **Hoy no se regenera** al editar un horario, solo de mañana en adelante. Hoy ya
-  empezó y la gente ya marcó contra lo que decía esta mañana. Se comprobó en la tabla:
-  con el cambio a las 07:00, el 12 (hoy) se quedó en 08:00 y el 13 y 14 pasaron a
-  07:00. **Si el dueño prefiere que un arreglo de horario aplique el mismo día, es
-  cambiar `finDia` por `inicioDia` en `regenerarFuturoDeColaborador`** — pero entonces
-  un cambio a media mañana mueve las tardanzas de quien ya marcó.
-- **Nada pisa una fila `MANUAL`**, que es la puerta de los turnos rotativos.
-- **Materializar nunca tumba la operación**: en las rutas va en `try/catch` con log.
-  Si falla, `mantenerVentana` lo recoge en la pasada diaria.
+Locales y `origin` alineadas en las cinco. Se borraron
+`mejoras/reportes-y-sedes` (`1d903b3`) y `mejoras/jornada-una-fila` (`179d163`),
+las dos completamente fundidas en `master`: ningún commit se perdió.
 
-El backfill usa el horario ACTUAL de cada quien, que es el único dato que existe.
-O sea: congela el pasado **tal como se ve hoy**. Lo ya dañado por ediciones anteriores
-no se recupera —eso ya estaba asumido— pero de ahí en adelante deja de moverse.
+**Sin cambios de esquema en todo el lote**, así que no hay migración de Prisma ni
+cliente que regenerar.
 
-### Cómo se comporta ahora
+### Lo único que falta desplegar
 
-`calcularHorasEsperadas(desde, fin, dias, festivos, permisos, politica, jornadaDe)` y
-`calcularTardanzas(registros, dias, festivos, permisos)`. Ninguna recibe ya `horario`:
-reciben **días materializados**. Fuera de la fila —y aplicado al leer— siguen los
-festivos, el tope semanal legal y los permisos, tal como estaban.
+`frontend-build` tiene compilado el bundle **`index-DxSI3sYe.js`**, que producción
+todavía no sirve. Es el respaldo de `marcaciones`: sin él, la ventana entre copiar
+el bundle y reiniciar Node vuelve a reventar la pantalla al editar, como pasó en
+el despliegue anterior. **No es urgente** —el backend ya manda el campo— pero
+conviene cerrarlo. Comandos exactos en *Next step*.
 
-`combinarDiasEsperados(desde, fin, materializados, horario)` cubre el rango completo:
-donde HAY fila manda la fila; donde NO la hay cae al horario vigente, que es lo que el
-sistema hacía siempre. Por eso el backfill puede ir a su ritmo **sin que nadie vea
-números nuevos por sorpresa**, y por eso ningún día se convierte en silencio en 0.
+### Archivos sueltos en la raíz (no versionados, no míos)
 
-Cada fila de `Tardanza` ahora lleva su propia `toleranciaMin`. La del período (la que
-se muestra en la cabecera del desglose) es la del **último día del rango**, mismo
-criterio con el que ya se elige la jornada vigente al cierre para el valor hora. No se
-exige que ese día sea laborable: los días de descanso también guardan la tolerancia, y
-pedirlo dejaba en 0 un rango que cayera entero en fin de semana.
+No se tocaron. Decidir qué hacer con ellos:
+
+- `ARRANQUE-PROYECTO-WEB.md` (361 líneas), `PLAYBOOK-BANAHOSTING.md` (772) y
+  `PLAYBOOK-BANAHOSTING-PHP.md` (520) — documentación de Krumlab que no es de
+  HoraPro. Se versionan, se mueven a otro repo, o se añaden a `.gitignore`.
+- `WhatsApp Video 2026-07-17 at 15.22.42.mp4` (1,5 MB) — no debería acabar en git.
 
 ---
 
 ## Files in flight
 
-Backend:
-- `backend/src/utils/saldoTiempo.ts` — `calcularHorasEsperadas` recorre filas, no el
-  horario. Nuevo tipo `DiaEsperadoParaSaldo`. **Terminado.**
-- `backend/src/utils/diasEsperados.ts` — `calcularDiasEsperados` + `combinarDiasEsperados`.
-  **Terminado.**
-- `backend/src/routes/reportes.ts` — `GET /liquidacion` consulta `prisma.diaEsperado` del
-  rango y lo combina con el horario. **Terminado.**
-- `backend/src/prisma.ts` — **nuevo**. El cliente ya no vive en `index.ts`; `index.ts` lo
-  reexporta, así que los `import { prisma } from '../index'` existentes siguen valiendo.
-  Hacía falta: importar `index.ts` ARRANCA el servidor, así que ningún script de
-  `prisma/` podía usar `materializarDias.ts`, y `index → utils → index` era un ciclo.
-- `backend/src/utils/materializarDias.ts` — ahora importa de `../prisma`. **Sin
-  enganchar todavía**: nadie la llama automáticamente.
-- `backend/src/utils/tardanzas.ts` — `calcularTardanzas` recorre filas, no el horario.
-  Nuevo tipo `DiaEsperadoParaTardanza`; `Tardanza` gana `toleranciaMin`. **Terminado.**
-- `frontend/src/pages/ReporteLlegadasTarde.tsx` — la cabecera del desglose muestra
-  `toleranciaMin` de la respuesta (la aplicada) en vez de `horario.toleranciaMin`
-  (la de hoy). **Terminado.**
-- `backend/prisma/materializar-julio.ts` — **nuevo**. Siembra julio 2026 de Santiago.
-- `backend/prisma/probar-historial-horario.ts` — **nuevo**. Reproduce el bug del dueño
-  contra la BD local, sobre el saldo Y sobre las tardanzas, y restaura el horario en un
-  `finally`.
-- `backend/prisma/verificar-saldo.ts` y `probar-rango.ts` — actualizados a la firma nueva.
-  `verificar-saldo.ts` ahora imprime cuántos días salieron de la tabla y cuántos del
-  horario.
+Ninguno. El árbol está limpio y todo commiteado.
 
-Sin confirmar en el árbol (**del usuario, NO tocar**): `PLAYBOOK-INICIO.md` modificado,
-`PLAYBOOK-BANAHOSTING.md` y `PLAYBOOK-BANAHOSTING-PHP.md` sin seguimiento.
+Los que concentran el cambio, para orientarse:
+
+- `backend/src/utils/jornada.ts` — el corazón. `partirDiaEnJornadas`,
+  `agruparEnJornadas`, `marcacionQueCierra`, `tramoQueChoca`,
+  `instantesDeJornada`, `minutosVentana`, `GRACIA_MIN`.
+- `backend/src/routes/registros.ts` — `GET /` por jornada, `PUT /jornada/:id`
+  transaccional, validación de cruces, la novedad del día.
+- `backend/src/routes/worker.ts` — kiosco: descanso en el botón grande, salida
+  temprana que no se guarda sin motivo.
+- `backend/src/utils/materializarDias.ts` — `diaYaEmpezado` y la regeneración
+  desde hoy.
+- `frontend/src/pages/Registros.tsx` — tabla por jornada, editor de jornada,
+  `marcasDe` como respaldo.
+- `frontend/src/pages/registros/ModalJornada.tsx` — el detalle.
 
 ---
 
 ## Changed
 
-Pruebas: 75 → **92 en verde** + 1 `it.fails` a propósito.
-- `saldoTiempo.test.ts`: el ayudante materializa al vuelo, así que las 15 pruebas de
-  siempre ahora recorren el camino nuevo. Cuatro pruebas nuevas: el horario editado no
-  mueve el pasado, el día ajustado a mano manda, un día sin materializar no exige nada,
-  y las filas fuera de rango se ignoran.
-- `diasEsperados.test.ts`: 6 pruebas de `combinarDiasEsperados`.
-- `tardanzas.test.ts`: igual, más 7 pruebas nuevas — adelantar la entrada no inventa
-  tardanzas viejas, la tolerancia sale del día, cada fila informa la suya, el turno
-  rotativo manda, y un rango entero en fin de semana informa la tolerancia vigente.
-- `liquidacionJulio.test.ts`: los días llegan materializados. **Los números no se
-  movieron**: 167h20 / 176h / 8h40 / $82.540, 184h / 16h40 / $158.730, y 2 días tarde
-  con 59 min.
+**Backend**
 
-### Cómo se verificó (esto sí se corrió, no es "compiló")
+- `GET /registros` devuelve una entrada por JORNADA, con `marcaciones` dentro,
+  `minutosContados`, `minutosAlmuerzoAqui` y la `novedad` del día.
+- `PUT /registros/jornada/:id`: entrada, descanso y salida en una transacción,
+  con **una sola** validación sobre el estado final. Encadenar dos PUT por
+  marcación no sirve: mover el descanso hace que el primero pise al segundo.
+- No se puede guardar un tramo que pise a otro del mismo día, ni una salida
+  anterior a su entrada. El 400 trae el conflicto entero para poder ofrecer
+  «eliminar esa y guardar».
+- Una salida al descanso **no cierra la jornada** (`marcacionQueCierra`).
+- El descanso distingue `EN_CURSO` de `ABIERTO` con una hora de gracia, la misma
+  que usa el aviso automático (`GRACIA_MIN` vive en `jornada.ts`).
+- `minutosEnVentana` se expone aparte para cobrar el descuento a la jornada que
+  de verdad estuvo dentro de la ventana, no siempre a la primera.
+- Un cambio de horario aplica **desde hoy** a quien no haya marcado y desde
+  mañana a quien ya empezó (`diaYaEmpezado`, con la ventana de 18 h para el turno
+  nocturno abierto). Borrar sus marcaciones lo vuelve a evaluar.
+- El kiosco materializa el día al marcar; reactivar un colaborador y borrar un
+  horario ahora regeneran.
+- La salida temprana **no se guarda sin motivo**: 409 `REQUIERE_MOTIVO` sin
+  escribir nada, y la novedad viaja en la misma llamada que la marca.
 
-1. `npm test` → 92 verdes + 1 fallo esperado. `tsc --noEmit` del backend y `tsc -b` del
-   frontend, limpios. El único error de ESLint del frontend (`set-state-in-effect`) ya
-   estaba en `HEAD`: se comprobó con `git stash`.
-2. **Comprobación diferencial contra `git HEAD`**, una por cada función: se copió la
-   original desde git a un archivo temporal y se compararon las dos implementaciones
-   sobre la BD local. Saldo: 12 colaboradores × 5 rangos = **60 comparaciones, 0
-   diferencias**. Tardanzas: todos los que tienen horario activo × 5 rangos = **40
-   comparaciones, 0 diferencias**, con 14 casos de tardanzas reales y comparando el
-   detalle día a día. Los temporales ya se borraron.
-   - La primera pasada dio 2 diferencias, y valió la pena: en un rango sin ningún día
-     laborable la tolerancia informada caía a 0. De ahí salió la regla del último día
-     del rango sin exigir que sea programado.
-3. `verificar-saldo.ts` con 0 filas (camino de respaldo) y con las 31 filas de julio:
-   salida **idéntica** al baseline previo al cambio.
-4. **Por HTTP, con el API real y sesión real**: `GET /liquidacion` de Santiago para julio
-   2026 devuelve esperadas 11.040 min (184h), trabajadas 10.040 (167h20), saldo 1.000
-   (16h40), monto **$158.730,16** — el mismo número de la prueba unitaria, al centavo.
-   `/tardanzas-resumen` da 2 días y 59 min, y `/tardanzas` el detalle 06/07 (22 min) y
-   13/07 (37 min) con `toleranciaMin` 3 por fila. Los otros 3 colaboradores, sin
-   materializar, siguen dando lo suyo por respaldo: nadie quedó en 0.
-5. **El escenario del dueño, contra la BD local** (`probar-historial-horario.ts`),
-   con la entrada adelantada a 07:00:
-   - Horas esperadas: **184h00 leyendo el historial** contra **192h00 recorriendo el
-     horario vigente** (8h de deuda inventada, ≈$76.190).
-   - Tardanzas: **2 días y 59 min leyendo el historial** contra **19 días y 1.148 min**
-     recorriendo el horario. Ese salto de 2 a 19 días es exactamente lo que él vio.
-   - El horario se restauró y se comprobó en la BD.
-6. **En el navegador**: el desglose de llegadas tarde abre y muestra
-   "Horario QA 7-4 (demo extra) (10 min de tolerancia)" con las filas correctas, sin
-   errores en consola.
-7. **El backfill no movió nada.** Se tomó una foto de los reportes de los 12
-   colaboradores × 4 rangos (`prisma/foto-reportes.ts`), se corrió el backfill (503
-   días nuevos, 1.254 filas en total) y se volvió a tomar: **diff vacío**. Era lo
-   esperado —el respaldo ya calculaba lo mismo con el horario vigente— pero es
-   justamente la propiedad que había que demostrar antes de tocar producción.
-8. **El escenario que reportó el usuario, por las rutas reales del API**: se cargó a
-   mano un registro de un día pasado (05/08, entrada 08:30 → 27 min tarde), se cambió
-   el horario a 07:00 con `PUT /horarios` y se volvió a mirar todo:
+**Frontend**
 
-   | | Antes del cambio | Después |
-   |---|---|---|
-   | Tardanza en la lista de Registros | 27 min | **27 min** |
-   | Horas esperadas del período | 3.360 | **3.360** |
-   | Reporte de tardanzas | 1 día / 27 min | **1 día / 27 min** |
-
-   Y el cambio SÍ aplicó hacia adelante: en `dias_esperados`, el 10, 11 y 12 se
-   quedaron en 08:00 y el 13 y 14 pasaron a 07:00. El horario se restauró y el
-   registro de prueba se borró; la foto de reportes volvió a dar diff vacío.
-
-**Datos locales:** se sembraron 31 filas en `dias_esperados` (julio 2026 de Santiago
-Soto García, todas `AUTO`). El resto de colaboradores sigue con 0 filas, o sea con el
-camino de respaldo. Los registros del 12/08/2026 de QA Recargos siguen como se dejaron.
+- Una fila por jornada; ojo + lápiz + papelera en Acciones.
+- El formulario edita la jornada: entrada, descanso (salió/regresó) y salida.
+- «Almuerzo» → «Descanso» en toda la interfaz. El código y la base siguen
+  diciendo `almuerzo` **a propósito**: renombrar columnas es una migración sobre
+  una base cuyas migraciones ya están desfasadas de producción, y no le da nada a
+  quien usa el producto.
+- Kiosco: «Salgo a mi descanso» en el botón grande dentro de la ventana; la
+  salida temprana pide motivo **antes** de marcar, con «Volver atrás».
+- Las novedades se ven, se aprueban y se les cambia el motivo desde el detalle,
+  con «se paga / no se paga» resuelto contra la política de la empresa.
 
 ---
 
 ## Failed attempts
 
-**De esta sesión:**
-- El navegador **no se pudo manejar** para llegar a la liquidación en la UI: el
-  `<select>` acepta el valor en el DOM pero el estado de React no se entera y "Calcular"
-  no dispara. Se verificó llamando el endpoint directo con el token de la sesión, que
-  además prueba la ruta completa.
-- Los clics por coordenada tampoco abrían el modal de llegadas tarde. Lo que **sí**
-  funciona es `elemento.click()` desde la consola: React lo recibe como un evento real.
-  Es la diferencia con fijar `.value` a mano, que es lo que nunca funciona.
-- `resize_window` después de `navigate` no siempre pega: hay que volver a llamarlo
-  DESPUÉS de navegar, o el screenshot sale a escala mínima e ilegible.
-- Cuidado con `mysql -e` y comillas en zsh: partir la consulta en varias líneas falla.
-- **Un `DELETE` con `Content-Type: application/json` y sin cuerpo lo rechaza Fastify.**
-  Se creyó borrado el registro de prueba y seguía ahí. Al llamar el API a mano, no
-  mandar ese header en DELETE — y comprobar el `status`, no asumirlo.
-- `Registro.fecha` NO siempre es medianoche: el kiosco guarda el instante real
-  (`fecha: ahora`). Filtrar `dias_esperados` por ese valor crudo deja fuera la fila del
-  día, que está anclada a las 05:00 UTC. Hay que abrir el rango con `rangoDiaBogota`.
+Lo que salió mal, para no repetirlo:
 
-**Errores míos en las pruebas (ya corregidos, no repetir):**
-- Ayudante `bog()` construyendo la fecha con cadena ISO: para horas ≥ 19, `hora + 5`
-  pasa de 24 y genera fechas inválidas. Usar `Date.UTC`, que acarrea el día solo.
-- Usé jornada fija de 42h en la prueba de julio. **La Ley 2101 baja de 44h a 42h el 15
-  de julio de 2026**, así que las dos primeras semanas del mes tienen otro tope. Da 4h
-  de diferencia. El motor resuelve la jornada UNA vez por semana ISO, con el primer día.
-
-**Verificación en navegador:**
-- Fijar el estado de React con eventos sintéticos (`.value` + `dispatchEvent`) **no
-  funciona de forma fiable**. Se verificó abriendo el registro en **modo edición**, donde
-  el propio código llena los campos. El caso "crear desde cero" quedó **sin verificar con
-  la misma solidez**.
-- Los screenshots escalan a 800px de ancho: con viewports altos el contenido sale
-  ilegible. Usar ~1400×900 y, para páginas cortas, alturas menores. `resize_window`
-  después de llenar un formulario lo re-renderiza.
-
-**Entorno:**
-- `git worktree remove` **no existe** (git 2.15). Usar `rm -rf <ruta>` + `git worktree prune`.
-- Una vez se copió el `dist` a `dist/` en la raíz de `frontend-build` en vez de
-  `frontend/dist/`. Señal: decenas de "añadidos" y ningún "renombrado" en `git status`.
-
-**Trampas del producto (documentadas en `CLAUDE.md`):**
-- `.env.local` gana sobre `.env` incluso al compilar producción: apartarlo antes de
-  `npm run build` y verificar que el bundle no tenga `localhost`.
-- Las migraciones de Prisma están desfasadas del schema (se evolucionó con `db push`).
-  `prisma migrate deploy` NO reproduce producción: el DDL se escribe a mano.
+1. **`new Date("2026-08-14")` en `PUT /jornada`** movió la jornada entera al día
+   **13**: es medianoche UTC, que en Bogotá son las 7 p.m. del día anterior. Se
+   ancla a `T05:00:00.000Z` explícitamente. Está en CLAUDE.md §4 y aun así se
+   coló.
+2. **`minutosDeMas` usado como «se tomó de más»**. Son cosas distintas: quien
+   sale 15 min antes y vuelve 15 tarde volvió 15 tarde pero se tomó **30** de
+   más. El comentario de `ResumenAlmuerzo` advertía justo de eso. Se añadió
+   `minutosVentana`.
+3. **Validación de cruces añadida sin mostrar el error**: `guardar()` no tenía
+   try/catch, así que el 400 rompía la promesa y el modal simplemente no se
+   cerraba. Sin mensaje. La validación era correcta y la experiencia quedó peor
+   que antes.
+4. **`otrosDelDia` no excluía las marcaciones propias** al editar una jornada
+   (`editando` queda en null en ese camino), y el registro se avisaba a sí mismo
+   con la hora que tenía antes de la última corrección.
+5. **Se afirmó que `origen: 'MANUAL'` protegía los turnos rotativos.** Es cierto
+   pero vacío: **nada escribe MANUAL nunca** (0 filas de 1.281). La protección
+   existe y no tiene nada que proteger.
+6. **Al absorber una marcación**, la superviviente conservaba `salidaAlmuerzo`, y
+   la columna decía «Sin regreso» sobre un día recién completado.
+7. **El botón Editar del detalle** siguió abriendo el formulario viejo por
+   marcación después de haberlo quitado de la tabla.
+8. **Frontend desplegado antes que el backend** → la pantalla revienta al editar
+   con `Cannot read properties of undefined (reading '0')`. El orden es **backend
+   primero**: el backend nuevo es compatible con el frontend viejo, no al revés.
+   Y el `Restart` de cPanel no es opcional: sin él el proceso sigue con el código
+   viejo aunque el `dist` ya esté copiado.
+9. Errores de las propias pruebas, no del código: el helper de `ahoraBog` se
+   construyó con aritmética UTC cuando `toZonedTime` devuelve una fecha de
+   getters **locales**; y un `DELETE` de prueba llevaba
+   `Content-Type: application/json` sin cuerpo, que Fastify rechaza.
+10. **Dos workflows completos fallaron** por límite de sesión y hubo que
+    relanzarlos; el segundo intento sí devolvió resultados.
+11. Buena parte de los datos raros de la base local (tramos de 4 segundos,
+    jornadas movidas de día, turnos nocturnos sueltos) **los generaron los
+    scripts de prueba**. Cada uno restauraba lo suyo, pero conviene partir de un
+    día limpio antes de volver a probar el kiosco.
+12. **El handoff anterior se sobrescribió sin leerlo primero.** No se perdió nada
+    —era del 12 de agosto, sobre la materialización del `DiaEsperado`, ya
+    desplegada— y sigue recuperable con `git show 3c5521c:handoff.md`.
 
 ---
 
 ## Next step
 
-**Desplegar a producción, y en este orden.** La función está completa y verificada en
-local; lo que falta es sacarla.
+**Desplegar `frontend-build` (`49cf253`), que ya está compilado y subido.**
 
-1. **El DDL de `dias_esperados`, A MANO y ANTES que el código.** `/liquidacion`,
-   `/tardanzas`, `/tardanzas-resumen` y `/registros` ya consultan la tabla: si no
-   existe, esas cuatro rutas responden 500. `prisma migrate deploy` NO sirve (las
-   migraciones están desfasadas del schema, se evolucionó con `db push`).
-2. Compilar y subir backend y frontend por las ramas `*-build`. Ojo con `.env.local`.
-3. **Correr el backfill una vez**: `ts-node prisma/backfill-dias-esperados.ts`, o su
-   equivalente compilado. Es idempotente. En local fueron 503 días en 0,7s para 12
-   colaboradores; en producción hay que mirar el tiempo antes de darlo por hecho.
-4. Comprobar en producción que un reporte de un mes cerrado da lo mismo que antes de
-   desplegar. **Guardar ese número ANTES de subir.**
+[EN EL SERVIDOR]
 
-Pendiente de decisión del dueño (está arriba, en "Quién llena la tabla"): si editar un
-horario debe aplicar **hoy mismo** o solo de mañana en adelante. Hoy es de mañana.
+```bash
+cd ~/horapro-repo && git fetch origin && git checkout -f frontend-build && git pull && rm -rf ~/horapro.co/assets && cp -R frontend/dist/. ~/horapro.co/
+```
 
-Después:
-- Tapar `almuerzoDelRegistro` (ver los bugs de abajo): es la última fuga retroactiva.
-- El prototipo de turnos rotativos: la pieza técnica ya está lista (`origen = 'MANUAL'`
-  nunca se pisa), falta la pantalla.
+Y comprobar. Debe decir **`index-DxSI3sYe.js`**:
+
+```bash
+curl -s https://horapro.co/ | grep -o "index-[A-Za-z0-9_-]*\.js"
+```
+
+No hace falta reiniciar Node: solo cambia el frontend.
+
+Vuelta atrás, si hiciera falta:
+
+```bash
+cd ~/horapro-repo && git checkout -f frontend-build && git reset --hard 79c6717 && rm -rf ~/horapro.co/assets && cp -R frontend/dist/. ~/horapro.co/
+```
 
 ---
 
-## Pendientes con el dueño (sin respuesta todavía)
+## Pendiente de fondo
 
-De la lista de 5 mejoras que pidió (el punto 5 **ya estaba hecho**: Configuración → Novedades):
-1. **Fotos en el desglose de Extras.** Bloqueo conocido: `DetalleRegistro`
-   (`reportes.ts:44`) no trae el `id` del registro, así que el frontend no puede pedir
-   las fotos. Distinguir "no se tomó foto" (marcó con cédula) de "se borró por
-   retención a los 2 meses".
-2. **Sedes** (solo plan Empresarial). Falta decidir: si un trabajador puede marcar en
-   una sede distinta a la suya. Ya pidió que entrada y salida sean en el mismo lugar.
-   La geocerca hoy es una sola por empresa en `Configuracion` (`GEO_LAT/LNG/RADIO`):
-   hay que migrarla a "Sede principal" para no romper a quien ya usa GPS.
-3. **Turnos rotativos.** Pidió **ver un prototipo antes de decidir**. Su idea original
-   (adivinar el horario por la hora de entrada) no sirve: en un día de ausencia no hay
-   entrada de dónde deducirlo, y es justo el día que genera descuento. La pieza técnica
-   ya existe: una fila `DiaEsperado` con `origen = 'MANUAL'` nunca se pisa.
-4. **Tolerancia de salida.** Ya decidió: si trabajó unos minutos no autorizados por
-   debajo del umbral, se toma la hora de salida programada. **Sin respuesta:** si
-   también aplica a las entradas tempranas (hoy sería asimétrico a favor de la empresa),
-   y qué modo usan sus clientes (en SEMANAL el problema casi no existe; muerde en HORARIO).
+Lo encontró un rastreo adversarial y **no entró en el lote**. Cada uno merece su
+propia comprobación diferencial antes de tocarlo.
 
-**Bugs conocidos sin corregir:**
-- **El almuerzo del pasado todavía se reescribe.** `almuerzoDelRegistro`
-  (`reportes.ts:32`) usa el horario ACTUAL para decidir cuánto almuerzo descontar de las
-  horas TRABAJADAS. Es la misma fuga que se acaba de tapar del lado esperado, pero del
-  otro lado del cálculo: cambiar `almuerzoMin` o `tieneAlmuerzo` mueve meses cerrados.
-  La fila `DiaEsperado` ya trae `almuerzoMin` del día; el arreglo es leerlo de ahí.
-- `descontarAlmuerzo` (`horasColombiana.ts:151`) busca literalmente `'HOD'`. Un turno
-  100% nocturno o dominical **no pierde el almuerzo**: se paga una hora no trabajada.
-  Afecta vigilancia y salud. Ya hay prueba escrita en rojo (`it.fails`).
-- **La cabecera del desglose de llegadas tarde muestra el rango corrido un día.**
-  `ReporteLlegadasTarde.tsx` hace `format(new Date(desde), 'dd/MM/yyyy')`, y
-  `new Date("2026-08-01")` es medianoche UTC = 31 de julio 7 p.m. en Bogotá. Con el
-  rango 01/08–12/08 el modal dice "31/07/2026 — 11/08/2026". Es la trampa de zona
-  horaria de siempre, en el display; los números están bien. No se tocó porque es un
-  bug aparte y ya venía de antes.
-- `POST /festivos/generar/:anio` (`festivos.ts:39`) lo llama cualquier admin y escribe
-  festivos **globales** (`empresaId: null`) que ven todos los clientes. El año no se valida.
-- `connection_limit=5&pool_timeout=10` en el `DATABASE_URL` de producción: quedó
-  documentado en `DESPLIEGUE.md` pero **el usuario nunca confirmó haberlo aplicado**.
-  Sin eso, Prisma dimensiona el pool según las CPU físicas del servidor (64-88).
+**Los dos que tocan dinero — atacar primero:**
 
-**Quién usa todavía el horario vigente (para el mapa mental):**
-`dashboard.ts` y `cierreTurnos.ts` lo usan para **hoy** — ahí el horario actual es lo
-correcto y no hay nada que cambiar. De los retroactivos ya solo queda
-`almuerzoDelRegistro`.
+1. **`PUT /registros/jornada/:id` valida el cruce contra el día de ORIGEN, no el
+   de destino** (`backend/src/routes/registros.ts`, donde se consulta `delDia`
+   con `primera.fecha` antes de resolver `fechaBase`). Mover una jornada del 13 al
+   14 valida contra las marcas del 13; si ya había jornada el 14 quedan dos
+   solapadas y las horas se cuentan dos veces. **Arreglo:** resolver `fechaBase` y
+   `colaboradorId` ANTES de consultar `delDia`. `PUT /:id` sí lo hace bien y sirve
+   de modelo.
+2. **`construirExtraConfig` clasifica horas extra con el horario VIVO**, no con el
+   congelado (`backend/src/routes/reportes.ts`, dos llamadas). Es el mismo
+   problema que motivó todo el `DiaEsperado`, pero por otra puerta: editar un
+   horario mueve la clasificación de horas extra ya liquidadas.
 
-**Datos de la BD local:** 1.254 filas en `dias_esperados` tras el backfill, cubriendo
-de junio a octubre de 2026 para los 12 colaboradores. Todas `AUTO`.
+**El resto, del mecanismo del día congelado:**
+
+3. **`mantenerVentana` nunca repara una fila ya escrita**
+   (`backend/src/utils/materializarDias.ts`): llama a `materializarColaborador`
+   sin `pisarExistentes`, así que solo rellena huecos. Un día que quede congelado
+   con el horario viejo se queda así hasta que alguien vuelva a guardar el
+   horario, sin saber que hace falta. **Es el arreglo de fondo: cierra casi todos
+   los demás.** Además su `try` envuelve el bucle entero, así que si un
+   colaborador lanza, los siguientes no se materializan.
+4. **La ventana de 18 h caduca sola.** Guardar el horario a las 08:00 difiere a
+   mañana a quien tenga un turno nocturno abierto; a las 17:00 ese mismo cambio
+   habría aplicado hoy. La decisión no se vuelve a mirar nunca.
+5. **El auto-cierre nocturno desempieza el día** (`cierreTurnos.ts`): al escribir
+   la salida, la persona deja de tener turno abierto y su día queda sin estrenar,
+   pero con la fila vieja. Nadie lo reevalúa.
+6. **`PUT /registros/:id` no reevalúa** al mover una marcación de fecha o de
+   colaborador, igual que pasaba con el DELETE antes de arreglarlo. Conviene
+   extraer un helper único y usarlo desde los tres sitios.
+7. **`regenerarVarios` se corta al primer fallo** (`materializarDias.ts`): `for`
+   secuencial sin try por colaborador. Si el tercero de cuarenta lanza, los otros
+   37 se quedan con el horario viejo 60 días y el administrador no ve nada,
+   porque la ruta responde `regeneracion: null`.
+
+**Menores, baratos:**
+
+- `diaYaEmpezado` no exige `r.entrada`, así que registrar una incapacidad sin
+  hora hace que a esa persona el cambio de horario se le difiera «porque ya
+  empezó su día».
+- `regenerarDiasDeColaborador` se llama sin pasar `ahora`, así que cada iteración
+  recalcula el suyo: un guardado a las 23:52 con 80 personas puede cruzar la
+  medianoche y aplicar a unos hoy y a otros mañana.
+- El comentario de `registros.ts` sobre que «el kiosco guarda `Registro.fecha` con
+  la hora real» está desactualizado: `worker.ts` ancla a medianoche desde hace
+  tiempo.
+- **El kiosco permite marcar entrada y salida con segundos de diferencia**, lo
+  que llena los días de tramos de 4 segundos. Poner un mínimo evitaría el ruido
+  pero bloquearía correcciones rápidas legítimas: es decisión de producto.
+
+**De la lista de tareas, sin empezar:** novedades de parte del día
+(`horaInicio` / `horaFin` en `Permiso` ya existen en el esquema, pero nada los
+usa todavía).
