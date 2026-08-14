@@ -773,7 +773,18 @@ export default function Registros() {
           // Se cierra el detalle antes de abrir la edición: los dos modales
           // están en la misma capa, así que el de editar quedaba escondido
           // debajo. Cerrarlo además evita que quede mostrando datos viejos.
-          onEditar={reg => { setJornadaId(null); abrir(reg); }}
+          //
+          // Y abre el editor de la JORNADA, no el de la marcación suelta: desde
+          // el detalle salía el formulario viejo, con la salida del descanso en
+          // la casilla de Salida — exactamente lo que se quitó de la tabla.
+          // Solo cae al editor por marcación cuando la jornada tiene más de dos,
+          // que es donde el guardado por jornada tampoco puede representarla.
+          onEditar={reg => {
+            setJornadaId(null);
+            const fila = registros.find(f => f.marcaciones.some(m => m.id === reg.id));
+            if (fila && fila.marcaciones.length <= 2) abrirJornada(fila);
+            else abrir(reg);
+          }}
           // El detalle se cierra al eliminar: si no, queda encima mostrando una
           // marcación que ya no existe y el siguiente clic falla con un 404.
           onEliminar={id => { setJornadaId(null); setPorEliminar({ ids: [id], horas: '' }); }}
