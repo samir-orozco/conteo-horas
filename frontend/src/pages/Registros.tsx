@@ -178,7 +178,12 @@ export default function Registros() {
     e.preventDefault();
     const fecha = new Date(`${form.fecha}T00:00:00`);
     const entrada = form.entrada ? new Date(`${form.fecha}T${form.entrada}:00`) : null;
-    const salida = form.salida ? new Date(`${form.fecha}T${form.salida}:00`) : null;
+    let salida = form.salida ? new Date(`${form.fecha}T${form.salida}:00`) : null;
+    // Turno que cruza la medianoche: la salida es del día SIGUIENTE. El
+    // formulario arma las dos horas sobre la misma fecha, así que sin esto un
+    // 20:00-05:00 quedaba guardado con la salida nueve horas ANTES de su
+    // entrada, y ese tramo le restaba horas al día en vez de sumarlas.
+    if (entrada && salida && salida <= entrada) salida = new Date(salida.getTime() + 86400000);
     const data = { ...form, fecha, entrada, salida };
     if (editando) await api.put(`/registros/${editando.id}`, data);
     else await api.post('/registros', data);
@@ -515,8 +520,9 @@ export default function Registros() {
                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
                   <Info size={16} className="mt-0.5 shrink-0" />
                   <span>
-                    Ese día ya tiene {otrosDelDia.length === 1 ? 'un registro' : `${otrosDelDia.length} registros`} con entrada
-                    a las <b>{otrosDelDia.map(o => fmtHora(o.entrada)).join(', ')}</b>.
+                    Ese día ya tiene {otrosDelDia.length === 1 ? 'otra marcación' : `otras ${otrosDelDia.length} marcaciones`}:{' '}
+                    <b>{otrosDelDia.map(o => `${fmtHora(o.entrada)}–${fmtHora(o.salida)}`).join(', ')}</b>.
+                    Las horas de esta no pueden cruzarse con ellas: nadie está en dos turnos a la vez.
                     {form.entrada && fmtHora(otrosDelDia[0].entrada) < form.entrada ? (
                       <> La llegada tarde se calcula sobre la primera entrada del día,
                       así que <b>este registro no mostrará minutos tarde</b>. Si vas a corregir la
@@ -578,7 +584,10 @@ export default function Registros() {
           key={jornadaId}
           registroId={jornadaId}
           onCerrar={() => setJornadaId(null)}
-          onEditar={abrir}
+          // Se cierra el detalle antes de abrir la edición: los dos modales
+          // están en la misma capa, así que el de editar quedaba escondido
+          // debajo. Cerrarlo además evita que quede mostrando datos viejos.
+          onEditar={reg => { setJornadaId(null); abrir(reg); }}
           // El detalle se cierra al eliminar: si no, queda encima mostrando una
           // marcación que ya no existe y el siguiente clic falla con un 404.
           onEliminar={id => { setJornadaId(null); setPorEliminar({ ids: [id], horas: '' }); }}

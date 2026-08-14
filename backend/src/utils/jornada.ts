@@ -111,6 +111,28 @@ export function resumirAlmuerzoDelDia(
   };
 }
 
+// ¿Este tramo pisa a alguno de los otros del mismo día?
+//
+// Nadie está en dos turnos a la vez, así que dos tramos solapados son siempre un
+// error. Aparecía al editar: quien corregía la salida de la mañana para ponerle
+// la hora real de la tarde se tragaba entero el tramo del regreso del descanso, y
+// el día volvía a partirse en dos filas —una de ellas imposible— sin que nada
+// avisara.
+//
+// Tocarse en un extremo NO es pisarse: volver del descanso exactamente a la hora
+// en que se salió es lo normal, así que la comparación es estricta.
+export function tramoQueChoca<T extends { entrada: Date | null; salida: Date | null }>(
+  nuevo: { entrada: Date | null; salida: Date | null },
+  otros: T[],
+): T | null {
+  // Un tramo abierto todavía no dice dónde termina: no hay nada que juzgar.
+  if (!nuevo.entrada || !nuevo.salida) return null;
+  const ini = nuevo.entrada.getTime();
+  const fin = nuevo.salida.getTime();
+  return otros.find(o =>
+    o.entrada && o.salida && ini < o.salida.getTime() && fin > o.entrada.getTime()) ?? null;
+}
+
 // Un día partido en JORNADAS.
 //
 // Marcar el almuerzo parte la jornada en dos tramos. La tabla de Registros los

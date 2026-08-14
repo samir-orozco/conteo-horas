@@ -1,11 +1,12 @@
 import { FastifyInstance } from 'fastify';
+import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { prisma } from '../index';
 import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas } from '../utils/jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -25,6 +26,37 @@ function camposRegistro(body: any, esNuevo: boolean) {
 
 export default async function registroRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
+
+  // Por qué se valida ANTES de guardar y no se arregla al mostrar: un tramo
+  // imposible no tiene forma correcta de pintarse. Quien corregía la salida de
+  // la mañana para ponerle la hora real de la tarde se tragaba el tramo del
+  // regreso del descanso; el día quedaba con dos marcaciones que se pisan, y la
+  // tabla no tenía más remedio que mostrarlo como dos filas.
+  async function motivoParaRechazar(
+    colaboradorId: string,
+    fecha: Date,
+    entrada: Date | null,
+    salida: Date | null,
+    excluirId?: string,
+  ): Promise<string | null> {
+    if (!entrada || !salida) return null;
+    if (salida.getTime() <= entrada.getTime()) {
+      return 'La salida tiene que ser posterior a la entrada. Si el turno cruza la medianoche, la salida es del día siguiente.';
+    }
+    const { inicioDia, finDia } = rangoDiaBogota(fecha);
+    const otros = await prisma.registro.findMany({
+      where: {
+        colaboradorId,
+        fecha: { gte: inicioDia, lt: finDia },
+        ...(excluirId ? { id: { not: excluirId } } : {}),
+      },
+      select: { id: true, entrada: true, salida: true },
+    });
+    const choque = tramoQueChoca({ entrada, salida }, otros);
+    if (!choque) return null;
+    const hhmm = (d: Date | null) => (d ? format(toZonedTime(d, TZ), 'HH:mm') : '—');
+    return `Ese horario se cruza con otra marcación del mismo día, la de ${hhmm(choque.entrada)} a ${hhmm(choque.salida)}. Nadie puede estar en dos turnos a la vez: corrige o elimina esa otra marcación primero.`;
+  }
 
   // Verifica que el colaborador pertenezca a la empresa del token
   async function colaboradorDeEmpresa(colaboradorId: string, empresaId: string) {
@@ -367,7 +399,11 @@ export default async function registroRoutes(app: FastifyInstance) {
     if (!(await colaboradorDeEmpresa(body.colaboradorId, request.empresaId!))) {
       return reply.status(404).send({ error: 'Colaborador no encontrado' });
     }
-    const registro = await prisma.registro.create({ data: camposRegistro(body, true) as any });
+    const datos = camposRegistro(body, true);
+    const motivo = await motivoParaRechazar(datos.colaboradorId, datos.fecha, datos.entrada ?? null, datos.salida ?? null);
+    if (motivo) return reply.status(400).send({ error: motivo });
+
+    const registro = await prisma.registro.create({ data: datos as any });
     // Un día con marcación es un día que va a salir en un reporte. Si llega ahí
     // sin fila, lo resuelve el horario vigente y vuelve a ser reescribible. Esto
     // pasa sobre todo al cargar días PASADOS a mano, que es como se corrige.
@@ -389,9 +425,20 @@ export default async function registroRoutes(app: FastifyInstance) {
     if (body.colaboradorId !== undefined && !(await colaboradorDeEmpresa(body.colaboradorId, request.empresaId!))) {
       return reply.status(404).send({ error: 'Colaborador no encontrado' });
     }
+    // Lo que va a quedar guardado: el body puede traer solo una parte.
+    const cambios = camposRegistro(body, false);
+    const motivo = await motivoParaRechazar(
+      cambios.colaboradorId ?? existente.colaboradorId,
+      cambios.fecha ?? existente.fecha,
+      cambios.entrada !== undefined ? cambios.entrada : existente.entrada,
+      cambios.salida !== undefined ? cambios.salida : existente.salida,
+      id,
+    );
+    if (motivo) return reply.status(400).send({ error: motivo });
+
     const actualizado = await prisma.registro.update({
       where: { id },
-      data: { ...camposRegistro(body, false), editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
+      data: { ...cambios, editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
     });
     // Corregir un registro puede moverlo de día o de colaborador; el día nuevo
     // también necesita su fila. Nunca pisa la que ya exista, así que corregir

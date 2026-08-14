@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas } from './jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca } from './jornada';
 
 // El almuerzo no vive en un registro: vive en el HUECO entre dos. Un día con
 // almuerzo son dos tramos —08:00-12:00 y 13:00-17:00— y lo que hay en medio es
@@ -447,5 +447,38 @@ describe('partirDiaEnJornadas', () => {
       const suma = partirDiaEnJornadas(e.regs, e.dia).reduce((s, j) => s + j.minutosContados, 0);
       expect(suma, e.nombre).toBe(minutosContadosDelDia(e.regs, e.dia));
     }
+  });
+});
+
+// Nadie está en dos turnos a la vez. Un tramo que pisa a otro del mismo día es
+// un imposible, y el formulario de edición lo dejaba guardar: quien corregía la
+// salida de la mañana para ponerle la hora real de la tarde se tragaba el tramo
+// del regreso, y el día volvía a partirse en dos filas.
+describe('tramoQueChoca', () => {
+  const t = (entrada: Date | null, salida: Date | null, id = 'x') => ({ id, entrada, salida });
+
+  it('dos tramos separados no chocan', () => {
+    expect(tramoQueChoca(t(bog(13), bog(17)), [t(bog(8), bog(12), 'a')])).toBeNull();
+  });
+
+  it('tocarse en un extremo NO es chocar', () => {
+    // Volver del descanso exactamente a la hora en que se salió es lo normal.
+    expect(tramoQueChoca(t(bog(12), bog(17)), [t(bog(8), bog(12), 'a')])).toBeNull();
+  });
+
+  it('pisarse aunque sea un minuto sí es chocar', () => {
+    expect(tramoQueChoca(t(bog(11, 59), bog(17)), [t(bog(8), bog(12), 'a')])?.id).toBe('a');
+  });
+
+  it('el caso real: la salida corregida se traga el tramo del regreso', () => {
+    // Marcó 08:00-11:00 y volvió 11:00-16:00. Al corregir la primera a 08:00-16:00,
+    // esa marcación se come entera a la segunda.
+    const otros = [t(bog(11), bog(16), 'regreso')];
+    expect(tramoQueChoca(t(bog(8), bog(16)), otros)?.id).toBe('regreso');
+  });
+
+  it('un tramo todavía abierto no se puede juzgar', () => {
+    expect(tramoQueChoca(t(bog(8), null), [t(bog(8), bog(12), 'a')])).toBeNull();
+    expect(tramoQueChoca(t(bog(8), bog(12)), [t(bog(8), null, 'a')])).toBeNull();
   });
 });
