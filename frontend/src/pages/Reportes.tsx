@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import SelectorRangoFechas from '../components/SelectorRangoFechas';
+import SelectorColaborador from '../components/SelectorColaborador';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -181,26 +183,16 @@ export default function Reportes() {
       {/* Filtros */}
       <div className="bg-white rounded-xl shadow p-4 md:p-6 mb-6">
         <h3 className="font-semibold text-gray-800 mb-4">Liquidación de horas</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-          <div className="sm:col-span-2 lg:col-span-1">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Colaborador</label>
-            <select value={colaboradorId} onChange={e => setColaboradorId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-              <option value="">Seleccionar...</option>
-              {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
-            </select>
-          </div>
+        <div className="flex flex-wrap gap-3 items-end">
+          <SelectorColaborador
+            colaboradores={colaboradores}
+            valor={colaboradorId}
+            onCambiar={setColaboradorId}
+            textoTodos="Seleccionar colaborador"
+            permiteTodos={false}
+          />
+          <SelectorRangoFechas desde={desde} hasta={hasta} onCambiar={(d, h) => { setDesde(d); setHasta(h); }} />
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Desde</label>
-            <input type="date" value={desde} onChange={e => setDesde(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Hasta</label>
-            <input type="date" value={hasta} onChange={e => setHasta(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-          </div>
-          <div className="flex items-end">
             <button onClick={calcular} disabled={loading || !colaboradorId}
               className="w-full flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60">
               <Search size={16} />{loading ? 'Calculando...' : 'Calcular'}

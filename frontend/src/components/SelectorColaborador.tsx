@@ -9,11 +9,18 @@ type Colaborador = { id: string; nombre: string; apellido: string };
 
 type Props = {
   colaboradores: Colaborador[];
-  valor: string; // '' = todos
+  valor: string; // '' = ninguno / todos
   onCambiar: (id: string) => void;
+  // En Registros el vacío significa "todos"; en el reporte de liquidación es
+  // obligatorio elegir a alguien, así que ahí ni se ofrece.
+  textoTodos?: string;
+  permiteTodos?: boolean;
 };
 
-export default function SelectorColaborador({ colaboradores, valor, onCambiar }: Props) {
+export default function SelectorColaborador({
+  colaboradores, valor, onCambiar,
+  textoTodos = 'Todos los colaboradores', permiteTodos = true,
+}: Props) {
   const [abierto, setAbierto] = useState(false);
   const [busca, setBusca] = useState('');
 
@@ -31,7 +38,7 @@ export default function SelectorColaborador({ colaboradores, valor, onCambiar }:
         className={`flex items-center gap-2 border rounded-lg px-3 py-2 text-sm font-medium transition-colors max-w-[220px] ${
           valor ? 'border-primary bg-primary/10 text-ink' : 'border-gray-300 text-ink hover:bg-gray-50'}`}>
         <Users size={15} className="text-muted shrink-0" />
-        <span className="truncate">{elegido ? `${elegido.nombre} ${elegido.apellido}` : 'Todos los colaboradores'}</span>
+        <span className="truncate">{elegido ? `${elegido.nombre} ${elegido.apellido}` : textoTodos}</span>
       </button>
 
       {abierto && (
@@ -46,12 +53,14 @@ export default function SelectorColaborador({ colaboradores, valor, onCambiar }:
             </div>
 
             <div className="max-h-64 overflow-y-auto py-1">
-              <button onClick={() => elegir('')}
-                className={`w-full flex items-center gap-2 px-3.5 py-2 text-sm text-left ${
-                  !valor ? 'bg-green-50 text-green-700 font-semibold' : 'text-ink hover:bg-gray-50'}`}>
-                {!valor ? <Check size={15} className="shrink-0" /> : <span className="w-[15px] shrink-0" />}
-                Todos los colaboradores
-              </button>
+              {permiteTodos && (
+                <button onClick={() => elegir('')}
+                  className={`w-full flex items-center gap-2 px-3.5 py-2 text-sm text-left ${
+                    !valor ? 'bg-green-50 text-green-700 font-semibold' : 'text-ink hover:bg-gray-50'}`}>
+                  {!valor ? <Check size={15} className="shrink-0" /> : <span className="w-[15px] shrink-0" />}
+                  {textoTodos}
+                </button>
+              )}
 
               {lista.map(c => {
                 const activo = c.id === valor;
