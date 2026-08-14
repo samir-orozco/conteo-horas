@@ -93,6 +93,33 @@ export function minutosAlmuerzoADescontar(
   return Math.round(minutosEnVentana(tramos, dia)!);
 }
 
+// ¿La persona está DENTRO de su ventana en este instante?
+//
+// No decide si puede marcar el descanso —eso es `puedeSalirAAlmorzar`, que a
+// propósito no mira la hora— sino cómo se le ofrece. Estando dentro, el botón
+// grande del kiosco lo dice de frente en vez de esconderlo detrás de "Registrar
+// Salida", que era algo que había que adivinar.
+//
+// Prueba las dos posiciones posibles de la ventana, por lo mismo que el
+// descuento: la de un turno nocturno cae en la madrugada del día SIGUIENTE al
+// que ancla la fila.
+export function dentroDeLaVentana(
+  ahora: Date,
+  // Solo lo que de verdad necesita: así la sirve tanto un día completo como el
+  // `select` acotado con el que el kiosco lee su ventana.
+  dia: Pick<DiaParaAlmuerzo, 'fecha' | 'almuerzoInicio' | 'almuerzoFin'>,
+): boolean {
+  if (!dia.almuerzoInicio || !dia.almuerzoFin) return false;
+
+  const inicio = dia.fecha.getTime() + minutosDe(dia.almuerzoInicio) * MS_MIN;
+  let fin = dia.fecha.getTime() + minutosDe(dia.almuerzoFin) * MS_MIN;
+  if (fin <= inicio) fin += UN_DIA_MS;
+
+  const t = ahora.getTime();
+  const cae = (i: number, f: number) => t >= i && t < f;
+  return cae(inicio, fin) || cae(inicio + UN_DIA_MS, fin + UN_DIA_MS);
+}
+
 // ¿Este turno puede cerrarse como "salgo a almorzar"?
 //
 // La usan los dos extremos: el kiosco para mostrar la pregunta y el servidor

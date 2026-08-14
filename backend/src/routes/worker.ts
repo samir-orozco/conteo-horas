@@ -9,7 +9,7 @@ import { rangoDiaBogota } from '../utils/fechas';
 import { distanciaMetros } from '../utils/geo';
 import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes } from '../utils/kioscoConfig';
 import { resolverSedeDeMarcacion } from '../utils/sedes';
-import { puedeSalirAAlmorzar } from '../utils/almuerzo';
+import { puedeSalirAAlmorzar, dentroDeLaVentana } from '../utils/almuerzo';
 import { almuerzoSinRegreso } from '../utils/cierreAlmuerzo';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 
@@ -82,7 +82,9 @@ async function almuerzoDelTurno(colaboradorId: string, fechaAncla: Date) {
     // milisegundos y una fila así quedaría huérfana sin que nadie se entere.
     prisma.diaEsperado.findFirst({
       where: { colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
-      select: { almuerzoInicio: true, almuerzoFin: true },
+      // `fecha` hace falta para saber si la persona está DENTRO de la ventana
+      // ahora mismo: la de un turno nocturno cae en la madrugada siguiente.
+      select: { fecha: true, almuerzoInicio: true, almuerzoFin: true },
     }),
     prisma.registro.count({
       where: { colaboradorId, salidaAlmuerzo: true, salida: { gte: new Date(Date.now() - VENTANA_TURNO_MS) } },
@@ -341,7 +343,15 @@ export default async function workerRoutes(app: FastifyInstance) {
       // Solo se manda la ventana cuando de verdad se puede usar: el kiosco
       // pregunta exactamente cuando el servidor va a creerle.
       almuerzo: almuerzo.puede
-        ? { inicio: almuerzo.ventana!.almuerzoInicio!, fin: almuerzo.ventana!.almuerzoFin! }
+        ? {
+            inicio: almuerzo.ventana!.almuerzoInicio!,
+            fin: almuerzo.ventana!.almuerzoFin!,
+            // Estando dentro, el kiosco lo ofrece en el botón grande en vez de
+            // esconderlo detrás de "Registrar Salida". Lo decide el servidor, que
+            // es quien tiene la fecha del turno: la ventana de un nocturno cae en
+            // la madrugada del día siguiente al que ancla su fila.
+            ahora: dentroDeLaVentana(new Date(), almuerzo.ventana!),
+          }
         : null,
       enAlmuerzo,
       salidaAlmuerzo: enAlmuerzo ? ultimoCerrado!.salida : null,

@@ -11,7 +11,10 @@ export type Estado = {
   // Ventana de almuerzo de este turno, solo si HOY se puede usar. Viene null
   // cuando el día no la tiene congelada o cuando ya se marcó: el servidor manda
   // la ventana exactamente cuando va a creerle a la marca.
-  almuerzo: { inicio: string; fin: string } | null;
+  // `ahora` dice si está DENTRO de la ventana en este instante. Lo decide el
+  // servidor, que es quien sabe la fecha del turno: la ventana de un nocturno
+  // cae en la madrugada del día siguiente al que ancla su fila.
+  almuerzo: { inicio: string; fin: string; ahora: boolean } | null;
   // Salió a almorzar y todavía no vuelve.
   enAlmuerzo: boolean;
   salidaAlmuerzo: string | null;

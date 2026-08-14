@@ -33,9 +33,16 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
   const [confirmando, setConfirmando] = useState(false);
   const [eligiendoSalida, setEligiendoSalida] = useState(false);
 
+  // Está dentro de su ventana justo ahora: lo más probable con diferencia es que
+  // salga a descansar, así que el botón grande lo dice de frente. Antes había que
+  // adivinar que "Registrar Salida" abría esa pregunta, y quien no lo sabía
+  // terminaba cerrando su jornada sin querer.
+  const enSuDescanso = dentroAhora && !!almuerzo?.ahora;
+
   const alPresionar = () => {
-    // Saliendo con ventana de almuerzo disponible: hay dos salidas posibles y
-    // solo la persona sabe cuál es.
+    if (enSuDescanso) { marcar({ almuerzo: true }); return; }
+    // Fuera de la ventana pero con descanso disponible: hay dos salidas posibles
+    // y solo la persona sabe cuál es.
     if (dentroAhora && almuerzo) { setEligiendoSalida(true); return; }
     // Volviendo del almuerzo con la hora ya pasada: se le pregunta a qué hora
     // regresó. Marcarlo ahora le borraría toda la tarde.
@@ -100,18 +107,34 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
           onClick={alPresionar}
           disabled={marcando || !estado}
           className={`w-full font-bold py-5 rounded-2xl text-xl text-white transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-3 shadow-lg
-            ${dentroAhora
+            ${enSuDescanso
+              ? 'bg-primary hover:bg-primary-dark !text-ink shadow-yellow-900/30'
+              : dentroAhora
               ? 'bg-orange-500 hover:bg-orange-400 shadow-orange-900/30'
               : 'bg-green-600 hover:bg-green-500 shadow-green-900/30'
             }`}
         >
-          {dentroAhora ? <LogOut size={28} /> : <LogIn size={28} />}
+          {enSuDescanso ? <UtensilsCrossed size={28} /> : dentroAhora ? <LogOut size={28} /> : <LogIn size={28} />}
           {marcando
             ? (exigeUbicacion ? 'Ubicando...' : 'Registrando...')
+            : enSuDescanso ? 'Salgo a mi descanso'
             : dentroAhora ? 'Registrar Salida'
-            : enAlmuerzo ? 'Volví del almuerzo'
+            : enAlmuerzo ? 'Volví de mi descanso'
             : 'Registrar Entrada'}
         </button>
+
+        {/* Terminar la jornada durante el descanso es raro pero pasa —quien se va
+            enfermo, o a quien le cambiaron el turno—. Va discreto y sin perderse:
+            si esta salida se guardara como descanso, la vuelta de mañana abriría
+            un turno nuevo y el día contaría dos jornadas. */}
+        {enSuDescanso && !marcando && (
+          <button
+            onClick={() => marcar()}
+            className="mt-3 w-full text-sm font-semibold text-white/50 hover:text-white/90 py-2 transition-colors"
+          >
+            Termino mi jornada
+          </button>
+        )}
 
         {exigeUbicacion && ubicOk && (
           <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-green-400/80">

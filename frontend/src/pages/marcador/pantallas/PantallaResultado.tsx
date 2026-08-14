@@ -5,7 +5,7 @@ import type { Flash } from '../tipos';
 export default function PantallaResultado({ flash, cerrandoFlash }: { flash: NonNullable<Flash>; cerrandoFlash: boolean }) {
   if (flash.tipo === 'ok') {
     const esEntrada = flash.accion === 'ENTRADA';
-    // El almuerzo tiene su propio color y su propio texto: la persona tiene que
+    // El descanso tiene su propio color y su propio texto: la persona tiene que
     // salir de aquí sabiendo que el sistema entendió que va a volver.
     const esAlmuerzo = !!flash.almuerzo;
     const fondo = esAlmuerzo ? 'bg-amber-500' : esEntrada ? 'bg-green-600' : 'bg-red-600';

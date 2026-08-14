@@ -444,18 +444,18 @@ export default function TabHorario() {
                   de guardarse aparte: un interruptor propio podría acabar
                   diciendo una cosa mientras los datos dicen otra. */}
               <div className="border border-gray-200 rounded-xl p-3">
-                <p className="text-xs font-medium text-ink mb-2">¿Cómo se maneja el almuerzo?</p>
+                <p className="text-xs font-medium text-ink mb-2">¿Cómo se maneja el descanso?</p>
                 <div className="space-y-2">
                   {[
                     {
                       valor: false as const,
                       titulo: 'Solo descontar el tiempo',
-                      detalle: 'Los colaboradores marcan únicamente entrada y salida. El almuerzo se descuenta siempre, sin que nadie lo marque.',
+                      detalle: 'Los colaboradores marcan únicamente entrada y salida. El descanso se descuenta siempre, sin que nadie lo marque.',
                     },
                     {
                       valor: true as const,
-                      titulo: 'Que marquen su almuerzo',
-                      detalle: 'Al salir, el kiosco les pregunta si van a almorzar o si terminan la jornada. Quien se va temprano deja de pagar un almuerzo que nunca tomó.',
+                      titulo: 'Que marquen su descanso',
+                      detalle: 'Al salir, el kiosco les ofrece salir a su descanso o terminar la jornada. Quien se va temprano deja de pagar un descanso que nunca tomó.',
                     },
                   ].map(op => (
                     <label key={String(op.valor)}
@@ -473,7 +473,7 @@ export default function TabHorario() {
 
                 {!marcanAlmuerzo && (
                   <div className="mt-3">
-                    <label className="block text-xs font-medium text-muted mb-1">Minutos de almuerzo</label>
+                    <label className="block text-xs font-medium text-muted mb-1">Minutos de descanso</label>
                     <input type="number" min={0} max={240} step={1} value={formHorario.almuerzoMin}
                       onChange={e => setFormHorario(p => ({ ...p, almuerzoMin: Math.max(0, Number(e.target.value) || 0) }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
@@ -482,7 +482,7 @@ export default function TabHorario() {
                         <>Se descuentan <b>{formHorario.almuerzoMin} min</b> a todo el que trabaje un día con almuerzo,
                         aunque se haya ido temprano. Es como funciona hoy.</>
                       ) : (
-                        <>En <b>0</b> no se descuenta almuerzo en ningún día.</>
+                        <>En <b>0</b> no se descuenta descanso en ningún día.</>
                       )}
                     </p>
                   </div>
@@ -542,7 +542,7 @@ export default function TabHorario() {
                     <label className="flex items-center gap-2 text-xs text-ink cursor-pointer">
                       <input type="checkbox" checked={f.tieneAlmuerzo !== false}
                         onChange={e => setFranja(i, { tieneAlmuerzo: e.target.checked })} className="rounded" />
-                      Descontar almuerzo en estos días
+                      Descontar descanso en estos días
                       <span className="text-muted">— desmárcalo para días cortos (ej. sábado)</span>
                     </label>
                     {/* Ventana de almuerzo: convierte el almuerzo de "cuánto" en
@@ -555,7 +555,7 @@ export default function TabHorario() {
                             campos de hora son del mismo tipo y deben verse igual.
                             "Quitar" sube al encabezado para no robarle ancho. */}
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-xs font-medium text-muted">Horario de almuerzo</p>
+                          <p className="text-xs font-medium text-muted">Horario del descanso</p>
                           {(f.almuerzoInicio || f.almuerzoFin) && (
                             <button type="button" onClick={() => setFranja(i, { almuerzoInicio: '', almuerzoFin: '' })}
                               className="text-[11px] font-semibold text-red-500 hover:text-red-600 underline underline-offset-2">
@@ -579,7 +579,7 @@ export default function TabHorario() {
                         </div>
                         <p className="text-[11px] text-muted mt-1.5 leading-relaxed">
                           {f.almuerzoInicio && f.almuerzoFin ? (
-                            <>Almuerzo de <b>{minutosVentana(f)} min</b>. Solo se le descuenta a quien esté trabajando
+                            <>Descanso de <b>{minutosVentana(f)} min</b>. Solo se le descuenta a quien esté trabajando
                             entre esas horas: quien salga antes no lo paga, y quien lo marque no lo paga dos veces.</>
                           ) : (
                             <>Faltan las horas de este día. Mientras estén vacías se descuentan los
@@ -620,7 +620,7 @@ export default function TabHorario() {
                     ventana, así que citar un único número sería mentir en un
                     horario con franjas distintas. */}
                 {marcanAlmuerzo ? (
-                  <p className="text-[11px] text-muted mt-2">Ya se descontó el almuerzo de cada franja según sus horas.</p>
+                  <p className="text-[11px] text-muted mt-2">Ya se descontó el descanso de cada franja según sus horas.</p>
                 ) : formHorario.almuerzoMin > 0 && (
                   <p className="text-[11px] text-muted mt-2">Ya se descontó {formHorario.almuerzoMin} min de almuerzo en las franjas marcadas.</p>
                 )}

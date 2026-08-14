@@ -347,7 +347,7 @@ export default function Registros() {
               <th className="px-4 py-3 text-left">Fecha</th>
               <th className="px-4 py-3 text-center">Entrada</th>
               <th className="px-4 py-3 text-center">Salida</th>
-              {hayAlmuerzo && <th className="px-4 py-3 text-center">Almuerzo</th>}
+              {hayAlmuerzo && <th className="px-4 py-3 text-center">Descanso</th>}
               <th className="px-4 py-3 text-center">Llegada</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Duración</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Tipo</th>
@@ -508,7 +508,7 @@ export default function Registros() {
               </div>
 
               {/* La tardanza se evalúa solo sobre la primera entrada del día (para
-                  que volver del almuerzo no cuente como llegar tarde). Si ya hay
+                  que volver del descanso no cuente como llegar tarde). Si ya hay
                   una anterior, este registro no va a mostrar minutos tarde, y sin
                   avisarlo parece que el cálculo falló. */}
               {otrosDelDia.length > 0 && (

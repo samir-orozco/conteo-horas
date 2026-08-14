@@ -56,7 +56,7 @@ const fechaLarga = (s: string) =>
 // columna de asistencia solo genera dudas; la razón las cierra.
 const SIN_TARDANZA: Record<string, string> = {
   SIN_ENTRADA: 'Esta marcación no tiene hora de entrada.',
-  NO_ES_PRIMERA: 'No es la primera entrada del día. La llegada tarde solo se mide en la primera, para que volver del almuerzo no cuente como llegar tarde.',
+  NO_ES_PRIMERA: 'No es la primera entrada del día. La llegada tarde solo se mide en la primera, para que volver del descanso no cuente como llegar tarde.',
   FESTIVO: 'Ese día era festivo.',
   NO_PROGRAMADO: 'Ese día no estaba programado en su horario.',
   SIN_HORARIO: 'Este colaborador no tiene un horario activo.',
@@ -181,7 +181,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
             <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Dato rotulo="Entró"><span className="font-mono text-green-700">{primeraEntrada ?? '—'}</span></Dato>
               <Dato rotulo="Salió"><span className="font-mono text-red-600">{ultimaSalida ?? '—'}</span></Dato>
-              <Dato rotulo="Almuerzo">
+              <Dato rotulo="Descanso">
                 {a && a.minutosDescontados > 0
                   ? <>−{enHoras(a.minutosDescontados)}
                       {!a.ventana && <p className="text-[11px] text-muted">fijo del horario</p>}</>
@@ -199,12 +199,12 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               No es plata: el reparto en horas ordinarias, extras y recargos está en Reportes.
             </p>
 
-            {/* Salió a almorzar y nunca volvió: la tarde no se está contando. */}
+            {/* Salió a su descanso y nunca volvió: la tarde no se está contando. */}
             {a?.estado === 'ABIERTO' && (
               <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-900 flex items-start gap-2">
                 <Info size={16} className="mt-0.5 shrink-0" />
                 <span>
-                  Salió a almorzar a las <b>{hhmm(a.salida)}</b> y nunca volvió a marcar.
+                  Salió a su descanso a las <b>{hhmm(a.salida)}</b> y nunca volvió a marcar.
                   El resto de ese día <b>no se está contando ni pagando</b>. Si siguió trabajando,
                   agrega la marcación de la tarde con el botón <b>Editar</b> o creando una nueva.
                 </span>
@@ -278,15 +278,15 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
             {a?.ventana && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
-                  <UtensilsCrossed size={13} /> Almuerzo de este día
+                  <UtensilsCrossed size={13} /> Descanso de este día
                 </p>
                 <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-1.5 text-sm">
-                  <p>Horario de almuerzo de ese día: <b>{a.ventana.inicio} a {a.ventana.fin}</b></p>
+                  <p>Horario del descanso ese día: <b>{a.ventana.inicio} a {a.ventana.fin}</b></p>
                   {a.estado === 'MARCADO' && a.seExcedio && (
                     <p className="text-amber-700">Volvió <b>{enHoras(a.minutosDeMas)}</b> después de que terminara.</p>
                   )}
-                  {a.estado === 'ABIERTO' && <p><b>Salió a almorzar y no volvió a marcar.</b></p>}
-                  {a.estado === 'NO_MARCADO' && a.ventana && <p><b>No marcó</b> su salida a almuerzo.</p>}
+                  {a.estado === 'ABIERTO' && <p><b>Salió a su descanso y no volvió a marcar.</b></p>}
+                  {a.estado === 'NO_MARCADO' && a.ventana && <p><b>No marcó</b> su salida al descanso.</p>}
 
                   {a.estado === 'MARCADO' && (
                     <p className="pt-1">
@@ -295,7 +295,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   )}
                   {a.ventana && (
                     <p className="text-[11px] text-muted pt-1">
-                      Se descuentan los minutos del horario de almuerzo en los que la persona siguió marcada,
+                      Se descuentan los minutos del horario del descanso en los que la persona siguió marcada,
                       no lo que duró el almuerzo. Por eso quien marca su salida paga menos que quien no la marca.
                     </p>
                   )}
