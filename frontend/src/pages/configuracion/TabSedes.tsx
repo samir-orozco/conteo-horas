@@ -144,7 +144,7 @@ export default function TabSedes() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModal(false)}>
+        <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setModal(false)}>
           <form onSubmit={guardar} onClick={e => e.stopPropagation()}
             className="hp-pop bg-white rounded-2xl w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">

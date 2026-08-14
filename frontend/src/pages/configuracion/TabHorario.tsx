@@ -340,7 +340,7 @@ export default function TabHorario() {
 
       {/* Modal horario */}
       {modalHorario && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg text-ink">{editandoHorario ? 'Editar horario' : 'Nuevo horario'}</h3>
@@ -366,13 +366,49 @@ export default function TabHorario() {
                 <input value={formHorario.nombre} onChange={e => setFormHorario(p => ({ ...p, nombre: e.target.value }))} required
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-muted mb-1">Tolerancia (min)</label>
-                <input type="number" min={0} max={60} value={formHorario.toleranciaMin}
-                  onChange={e => setFormHorario(p => ({ ...p, toleranciaMin: Number(e.target.value) }))} required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-              </div>
 
+              {/* Las dos tolerancias juntas: son la misma idea en los dos
+                  extremos de la jornada. Separadas —una arriba del todo y otra
+                  después del bloque del almuerzo— parecían cosas distintas. */}
+              <div className="border border-gray-200 rounded-xl p-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-muted mb-1">Tolerancia de llegada (min)</label>
+                    <input type="number" min={0} max={60} value={formHorario.toleranciaMin}
+                      onChange={e => setFormHorario(p => ({ ...p, toleranciaMin: Number(e.target.value) }))} required
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted mb-1">Tolerancia de salida (min)</label>
+                    <input type="number" min={0} max={120} step={1} value={formHorario.toleranciaSalidaMin}
+                      onChange={e => setFormHorario(p => ({ ...p, toleranciaSalidaMin: Math.max(0, Number(e.target.value) || 0) }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted mt-2 leading-relaxed">
+                  <b>Llegada:</b> minutos de gracia antes de contar la entrada como tarde.
+                  {' '}<b>Salida:</b>{' '}
+                  {formHorario.toleranciaSalidaMin > 0 ? (
+                    <>si se queda hasta <b>{formHorario.toleranciaSalidaMin} min</b> pasada su hora, se toma la
+                    hora programada y no se paga como extra. Si se queda más, cuenta completo.</>
+                  ) : (
+                    <>en <b>0</b> no se aplica: cada minuto de más cuenta como extra.</>
+                  )}
+                </p>
+                <label className="flex items-start gap-2 mt-3 cursor-pointer">
+                  <input type="checkbox" checked={formHorario.ajustaEntrada}
+                    onChange={e => setFormHorario(p => ({ ...p, ajustaEntrada: e.target.checked }))}
+                    disabled={formHorario.toleranciaSalidaMin === 0}
+                    className="mt-0.5 accent-primary disabled:opacity-40" />
+                  <span className={`text-xs ${formHorario.toleranciaSalidaMin === 0 ? 'text-gray-400' : 'text-ink/80'}`}>
+                    Aplicar también a las entradas tempranas
+                    <span className="block text-[11px] text-muted">
+                      Sin esto, la tolerancia solo juega a favor de la empresa: se recorta lo que trabaja de más al salir,
+                      pero no lo que llega antes. Llegar tarde nunca se recorta.
+                    </span>
+                  </span>
+                </label>
+              </div>
               {/* Cómo se maneja el almuerzo: una elección explícita, no un modo
                   que se deduce de dos campos vacíos.
                   El estado se DERIVA de las franjas (¿alguna tiene horas?) en vez
@@ -432,40 +468,6 @@ export default function TabHorario() {
                 )}
               </div>
 
-              {/* Tolerancia de salida: los minutos sueltos que alguien se queda
-                  sin orden previa no se pagan como extra. 0 = desactivada. */}
-              <div className="border border-gray-200 rounded-xl p-3">
-                <div className="flex items-end gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-muted mb-1">Tolerancia de salida (min)</label>
-                    <input type="number" min={0} max={120} step={1} value={formHorario.toleranciaSalidaMin}
-                      onChange={e => setFormHorario(p => ({ ...p, toleranciaSalidaMin: Math.max(0, Number(e.target.value) || 0) }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                  </div>
-                </div>
-                <p className="text-[11px] text-muted mt-2 leading-relaxed">
-                  {formHorario.toleranciaSalidaMin > 0 ? (
-                    <>Si se queda hasta <b>{formHorario.toleranciaSalidaMin} min</b> pasada su hora de salida, se toma la
-                    hora programada y no se paga como extra. Si se queda más, cuenta completo.</>
-                  ) : (
-                    <>En <b>0</b> no se aplica: cada minuto de más cuenta como hoy. Súbela si no quieres pagar como extra
-                    los minutos que nadie autorizó.</>
-                  )}
-                </p>
-                <label className="flex items-start gap-2 mt-3 cursor-pointer">
-                  <input type="checkbox" checked={formHorario.ajustaEntrada}
-                    onChange={e => setFormHorario(p => ({ ...p, ajustaEntrada: e.target.checked }))}
-                    disabled={formHorario.toleranciaSalidaMin === 0}
-                    className="mt-0.5 accent-primary disabled:opacity-40" />
-                  <span className={`text-xs ${formHorario.toleranciaSalidaMin === 0 ? 'text-gray-400' : 'text-ink/80'}`}>
-                    Aplicar también a las entradas tempranas
-                    <span className="block text-[11px] text-muted">
-                      Sin esto, la tolerancia solo juega a favor de la empresa: se recorta lo que trabaja de más al salir,
-                      pero no lo que llega antes. Llegar tarde nunca se recorta.
-                    </span>
-                  </span>
-                </label>
-              </div>
 
               <div className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted">Franjas del horario</p>

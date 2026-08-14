@@ -53,7 +53,7 @@ export default function VerificarCorreo() {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 !mt-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="hp-pop bg-white rounded-3xl w-full max-w-sm shadow-2xl p-8 text-center">
         <div className="w-16 h-16 rounded-2xl bg-primary/30 flex items-center justify-center mx-auto mb-5">
           <MailCheck size={30} className="text-ink" />

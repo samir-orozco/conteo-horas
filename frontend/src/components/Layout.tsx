@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  Clock, Users, Calendar, Settings, BarChart2, FileBarChart2, Bell, LogOut, Menu, X,
+  Clock, Users, Calendar, Settings, BarChart2, FileBarChart2, Bell, LogOut, Menu, X, HelpCircle, PlayCircle, Sparkles,
   Building2, CreditCard, LayoutDashboard, AlertTriangle, Home, Handshake,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import BloqueoPago from './BloqueoPago';
 import VerificarCorreo from './VerificarCorreo';
 import GuiaBienvenida from './GuiaBienvenida';
+import Novedades from './Novedades';
 import CampanaNav from '../features/notificaciones/CampanaNav';
 import ReportesNav from './ReportesNav';
 import { useNotificaciones } from '../features/notificaciones/useNotificaciones';
@@ -68,6 +69,17 @@ export default function Layout() {
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
+  // Ayuda a demanda: cerrar un modal sin querer no puede significar perderlo
+  // para siempre. `ayuda` cuenta cuántas veces se pidió abrir, no si está
+  // abierto: así volver a pedirlo lo reabre aunque se haya cerrado antes.
+  const [ayuda, setAyuda] = useState<{ que: 'guia' | 'novedades'; n: number } | null>(null);
+  const [menuAyuda, setMenuAyuda] = useState(false);
+  const abrirAyuda = (que: 'guia' | 'novedades') => {
+    setMenuAyuda(false);
+    setMenuOpen(false); // en móvil el cajón tapa el modal si se queda abierto
+    setAyuda(a => ({ que, n: (a?.n ?? 0) + 1 }));
+  };
+
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
       isActive ? 'bg-primary text-ink' : 'text-muted hover:bg-gray-100 hover:text-ink'
@@ -102,7 +114,26 @@ export default function Layout() {
           <Logo />
         </div>
         <NavContent />
-        <div className="border-t border-gray-100 p-4">
+        <div className="border-t border-gray-100 p-4 relative">
+          {/* El menú se ancla al PIE completo, no al botón: anclado al botón
+              —que va pegado a la derecha— se salía 22 px fuera de la ventana.
+              Con left/right del contenedor no puede pasarse del menú lateral. */}
+          {menuAyuda && (
+            <>
+              {/* Capa para cerrar tocando fuera, sin escuchar en todo el documento */}
+              <div className="fixed inset-0 !mt-0 z-30" onClick={() => setMenuAyuda(false)} />
+              <div className="absolute bottom-full mb-1 left-4 right-4 z-40 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+                <button onClick={() => abrirAyuda('guia')}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-gray-50 text-left">
+                  <PlayCircle size={16} className="text-muted shrink-0" /> Guía de bienvenida
+                </button>
+                <button onClick={() => abrirAyuda('novedades')}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-gray-50 text-left border-t border-gray-100">
+                  <Sparkles size={16} className="text-muted shrink-0" /> Novedades de HoraPro
+                </button>
+              </div>
+            </>
+          )}
           <div className="flex items-center gap-3 px-2">
             <div className="bg-primary/30 rounded-full w-9 h-9 flex items-center justify-center text-sm font-bold text-ink">
               {usuario?.nombre?.[0] ?? '?'}
@@ -113,6 +144,10 @@ export default function Layout() {
                 {esSuperAdmin ? 'Super Admin' : usuario?.empresaNombre ?? usuario?.email}
               </p>
             </div>
+            <button onClick={() => setMenuAyuda(v => !v)} title="Ayuda y novedades"
+              className={`relative z-40 transition-colors ${menuAyuda ? 'text-ink' : 'text-muted hover:text-ink'}`}>
+              <HelpCircle size={17} />
+            </button>
             <button onClick={handleLogout} title="Cerrar sesión" className="text-muted hover:text-ink">
               <LogOut size={17} />
             </button>
@@ -130,8 +165,14 @@ export default function Layout() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden fixed inset-0 bg-white z-40 pt-16 flex flex-col">
+        <div className="md:hidden fixed inset-0 !mt-0 bg-white z-40 pt-16 flex flex-col">
           <NavContent onNav={() => setMenuOpen(false)} />
+          <button onClick={() => abrirAyuda('guia')} className="flex items-center gap-3 px-7 py-4 text-muted text-sm border-t border-gray-100">
+            <PlayCircle size={16} />Guía de bienvenida
+          </button>
+          <button onClick={() => abrirAyuda('novedades')} className="flex items-center gap-3 px-7 py-4 text-muted text-sm border-t border-gray-100">
+            <Sparkles size={16} />Novedades de HoraPro
+          </button>
           <button onClick={handleLogout} className="flex items-center gap-3 px-7 py-4 text-muted text-sm border-t border-gray-100">
             <LogOut size={16} />Cerrar sesión
           </button>
@@ -151,7 +192,22 @@ export default function Layout() {
       {/* Bloqueo total del panel cuando la suscripción está vencida */}
       {!esSuperAdmin && <BloqueoPago />}
       {!esSuperAdmin && <VerificarCorreo />}
-      {!esSuperAdmin && <GuiaBienvenida />}
+      {!esSuperAdmin && (
+        <GuiaBienvenida
+          key={`guia-${ayuda?.que === 'guia' ? ayuda.n : 0}`}
+          forzado={ayuda?.que === 'guia'}
+          onCerrar={() => setAyuda(null)}
+        />
+      )}
+      {/* Va después de la guía: si el usuario es nuevo, se calla y le deja el
+          video, porque para él todo es nuevo. */}
+      {!esSuperAdmin && (
+        <Novedades
+          key={`nov-${ayuda?.que === 'novedades' ? ayuda.n : 0}`}
+          forzado={ayuda?.que === 'novedades'}
+          onCerrar={() => setAyuda(null)}
+        />
+      )}
     </div>
   );
 }

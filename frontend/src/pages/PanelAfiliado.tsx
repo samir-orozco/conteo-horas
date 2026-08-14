@@ -229,7 +229,7 @@ export default function PanelAfiliado() {
 
       {/* Modal solicitar retiro */}
       {modalRetiro && p && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-sm shadow-xl">
             <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
               <h3 className="font-bold text-ink">Solicitar retiro</h3>
@@ -257,7 +257,7 @@ export default function PanelAfiliado() {
 
       {/* Modal editar perfil */}
       {modalPerfil && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-lg shadow-xl max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">
               <h3 className="font-bold text-lg text-ink">Mis datos</h3>
@@ -337,7 +337,7 @@ export default function PanelAfiliado() {
 
       {/* Ver comprobante */}
       {comprobante && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setComprobante(null)}>
+        <div className="fixed inset-0 !mt-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setComprobante(null)}>
           <div className="max-w-lg w-full" onClick={e => e.stopPropagation()}>
             <img src={comprobante} alt="Comprobante de pago" className="w-full rounded-xl shadow-2xl bg-white" />
             <button onClick={() => setComprobante(null)} className="mt-3 mx-auto block text-white text-sm font-medium">Cerrar</button>

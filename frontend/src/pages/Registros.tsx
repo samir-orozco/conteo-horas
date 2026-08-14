@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Camera, Info } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada from './registros/ModalJornada';
+import SelectorRangoFechas from '../components/SelectorRangoFechas';
+import SelectorColaborador from '../components/SelectorColaborador';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
@@ -43,72 +45,49 @@ const enHoras = (min: number) => {
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 };
 
-// Celda de almuerzo. Se pinta una sola vez por día (en la fila ancla); las demás
-// filas del mismo día apuntan a ella en vez de repetir el número, porque son
-// minutos de plata y repetidos invitan a sumarlos.
-function CeldaAlmuerzo({ r, ancla }: { r: Registro; ancla: Registro | undefined }) {
+// Celda de almuerzo. El almuerzo es del DÍA y viaja repetido en cada fila de ese
+// día, pero se pinta en una sola: la que lo produjo. En las demás va el mismo
+// guion que usa el resto de la tabla cuando no hay nada que mostrar.
+//
+// Antes decían "ver 08:00", apuntando a la fila que sí lo trae. Nadie entendió
+// qué significaba: resolvía el riesgo de que alguien sumara dos veces el mismo
+// almuerzo, pero a cambio de una etiqueta que había que descifrar. Y ese riesgo
+// casi desapareció al pasar la celda a un rango horario en vez de un número.
+function CeldaAlmuerzo({ r }: { r: Registro }) {
   const a = r.almuerzo;
   const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '';
 
-  if (!a || (a.estado === 'SIN_VENTANA' && a.minutosDescontados === 0)) {
+  if (!a || !r.almuerzoEnEstaFila || (a.estado === 'SIN_VENTANA' && a.minutosDescontados === 0)) {
     return <span className="text-gray-300">—</span>;
   }
-  if (!r.almuerzoEnEstaFila) {
-    // Sin tooltip: en la tablet de recepción los tooltips no existen.
-    return (
-      <span className="text-[11px] text-gray-400">
-        {ancla?.entrada ? `ver ${hhmm(ancla.entrada)}` : 'ver arriba'}
-      </span>
-    );
-  }
 
+  // Una sola etiqueta por fila. El detalle —cuánto se descuenta, por qué, si el
+  // regreso lo puso el sistema— vive en el modal, a un clic. En una tabla de
+  // cuarenta personas, dos renglones por celda es ruido que nadie lee.
   if (a.estado === 'ABIERTO') {
     return (
       <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 whitespace-nowrap">
-        Salió {hhmm(a.salida)} · sin regreso
+        Sin regreso
       </span>
     );
   }
 
   if (a.estado === 'MARCADO') {
     return (
-      <div className="leading-tight">
-        <span className="font-mono text-xs text-gray-700 whitespace-nowrap">
-          {hhmm(a.salida)} → {hhmm(a.regreso)}
-        </span>
-        <p className={`text-[10px] ${a.seExcedio ? 'text-amber-700 font-semibold' : 'text-muted'}`}>
-          {enHoras(a.minutos ?? 0)}
-          {/* Por cuánto se pasó, no solo que se pasó: dos minutos y media hora
-              no son lo mismo y el administrador decide distinto en cada caso.
-              El número viene del backend: "pasarse" es respecto al FIN de la
-              ventana, no a su duración, y esa cuenta no se hace aquí. */}
-          {a.seExcedio && ` · se pasó ${enHoras(a.minutosDeMas)}`}
-          {a.regresoEstimado && ' · regreso estimado'}
-        </p>
-      </div>
+      <span className={`font-mono text-xs whitespace-nowrap ${a.seExcedio ? 'text-amber-700 font-semibold' : 'text-gray-700'}`}>
+        {hhmm(a.salida)} → {hhmm(a.regreso)}
+      </span>
     );
   }
 
-  // Sin ventana pero con descuento: es el caso de la mayoría hoy. Ese descuento
-  // existe todos los días y hasta ahora no se veía en ninguna pantalla.
   if (a.estado === 'SIN_VENTANA') {
-    return (
-      <div className="leading-tight">
-        <span className="text-xs text-gray-700">{enHoras(a.minutosDescontados)} fija</span>
-        <p className="text-[10px] text-muted">sin horario definido</p>
-      </div>
-    );
+    // Sin ventana pero con descuento: el caso de la mayoría. Ese descuento
+    // existe todos los días y hasta ahora no se veía en ninguna pantalla.
+    return <span className="text-xs text-gray-600 whitespace-nowrap">−{enHoras(a.minutosDescontados)}</span>;
   }
 
   // NO_MARCADO
-  return (
-    <div className="leading-tight">
-      <span className="text-xs text-gray-500">No marcó</span>
-      <p className="text-[10px] text-muted">
-        {a.minutosDescontados > 0 ? `se descuenta ${enHoras(a.minutosDescontados)}` : 'sin descuento'}
-      </p>
-    </div>
-  );
+  return <span className="text-xs text-gray-500">No marcó</span>;
 }
 
 export default function Registros() {
@@ -132,6 +111,18 @@ export default function Registros() {
   // una anterior, la que se está agregando no va a mostrar minutos tarde. Sin
   // este aviso el usuario cree que el cálculo falló.
   const [otrosDelDia, setOtrosDelDia] = useState<Registro[]>([]);
+
+  // Filtro de llegada y paginación. La página vuelve a 1 desde cada setter en
+  // vez de con un efecto: así no hay un render intermedio mostrando la página 7
+  // de una lista que ahora tiene dos.
+  // Listas, no valores sueltos: dentro de un grupo las opciones SUMAN. "Tarde o
+  // a tiempo" no sirve de nada, pero "no marcó salida o sin salida" es
+  // exactamente la búsqueda de todo lo que hay que arreglar.
+  const [filtroLlegada, setFiltroLlegada] = useState<string[]>([]);
+  const [filtroSalida, setFiltroSalida] = useState<string[]>([]);
+  const [menuFiltro, setMenuFiltro] = useState(false);
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(50);
 
   useEffect(() => {
     if (!modal || !form.colaboradorId || !form.fecha) { setOtrosDelDia([]); return; }
@@ -186,22 +177,45 @@ export default function Registros() {
     cargar();
   };
 
+  // `minutosTarde` es null cuando la llegada no se puede medir (no es la primera
+  // entrada del día, festivo, sin horario). Esas filas no son "a tiempo": no se
+  // sabe, así que no entran en ninguno de los dos filtros.
+  // Dentro de un grupo, O. Entre grupos, Y. Es lo que uno espera de un menú de
+  // filtros: "(tarde o a tiempo) Y (sin salida)".
+  const cumpleLlegada = (r: Registro) => {
+    if (filtroLlegada.length === 0) return true;
+    return filtroLlegada.some(v =>
+      v === 'TARDE' ? (r.minutosTarde ?? 0) > 0 : r.minutosTarde === 0);
+  };
+  const cumpleSalida = (r: Registro) => {
+    if (filtroSalida.length === 0) return true;
+    return filtroSalida.some(v =>
+      v === 'ESTIMADA' ? !!r.salidaEstimada : !r.salida);
+  };
+  const filtrados = registros.filter(r => cumpleLlegada(r) && cumpleSalida(r));
+
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / porPagina));
+  // Se acota al total por si la lista encogió con el filtro y la página actual
+  // ya no existe.
+  const pagActual = Math.min(pagina, totalPaginas);
+  const primera = (pagActual - 1) * porPagina;
+  const visibles = filtrados.slice(primera, primera + porPagina);
+
+  // El menú NO se cierra al elegir: con varias opciones a la vez, cerrarse en
+  // cada clic haría imposible componer una búsqueda.
+  const alternar = (lista: string[], set: (v: string[]) => void, v: string) => {
+    set(lista.includes(v) ? lista.filter(x => x !== v) : [...lista, v]);
+    setPagina(1);
+  };
+  const limpiarFiltros = () => { setFiltroLlegada([]); setFiltroSalida([]); setPagina(1); setMenuFiltro(false); };
+  const cuantosFiltros = filtroLlegada.length + filtroSalida.length;
+  const hayFiltro = cuantosFiltros > 0;
+
   // La columna de Almuerzo aparece cuando ese día descuenta almuerzo, tenga o no
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
   // 60 min" sin decir de qué hora a qué hora: exigir la ventana escondería la
   // columna justo donde el descuento es invisible.
   const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.almuerzo.minutosDescontados > 0));
-
-  // Fila de cada día donde se pinta el almuerzo, para que las demás la señalen.
-  const anclaPorDia = useMemo(() => {
-    const m = new Map<string, Registro>();
-    for (const r of registros) {
-      if (r.almuerzoEnEstaFila) m.set(`${r.colaboradorId}|${format(toZonedTime(new Date(r.fecha), TZ), 'yyyy-MM-dd')}`, r);
-    }
-    return m;
-  }, [registros]);
-  const anclaDe = (r: Registro) =>
-    anclaPorDia.get(`${r.colaboradorId}|${format(toZonedTime(new Date(r.fecha), TZ), 'yyyy-MM-dd')}`);
 
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
   const duracion = (entrada: string | null, salida: string | null) => {
@@ -227,12 +241,74 @@ export default function Registros() {
       </div>
 
       <div className="bg-white rounded-xl shadow p-4 mb-4 flex flex-wrap gap-3">
-        <select value={filtroColaborador} onChange={e => setFiltroColaborador(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Todos los colaboradores</option>
-          {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
-        </select>
-        <input type="date" value={desde} onChange={e => setDesde(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-        <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+        <SelectorColaborador
+          colaboradores={colaboradores}
+          valor={filtroColaborador}
+          onCambiar={id => { setFiltroColaborador(id); setPagina(1); }}
+        />
+        <SelectorRangoFechas
+          desde={desde} hasta={hasta}
+          onCambiar={(d, h) => { setDesde(d); setHasta(h); setPagina(1); }}
+        />
+
+        {/* Filtro de llegada. El punto ámbar dice que hay un filtro puesto sin
+            tener que abrir el menú: una tabla filtrada que parece completa hace
+            sacar conclusiones sobre datos que no están. */}
+        <div className="relative">
+          <button onClick={() => setMenuFiltro(v => !v)}
+            className={`relative flex items-center gap-2 border rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              hayFiltro ? 'border-primary bg-primary/10 text-ink' : 'border-gray-300 text-ink hover:bg-gray-50'}`}>
+            <SlidersHorizontal size={15} />
+            Filtros
+            {hayFiltro && (
+              <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center">
+                {cuantosFiltros}
+              </span>
+            )}
+          </button>
+
+          {menuFiltro && (
+            <>
+              <div className="fixed inset-0 !mt-0 z-30" onClick={() => setMenuFiltro(false)} />
+              <div className="absolute top-full mt-1 left-0 z-40 w-56 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden py-1.5">
+                {([
+                  {
+                    grupo: 'Llegada', valor: filtroLlegada, set: setFiltroLlegada,
+                    opciones: [{ v: 'TARDE', texto: 'Tarde' }, { v: 'A_TIEMPO', texto: 'A tiempo' }],
+                  },
+                  {
+                    grupo: 'Salida', valor: filtroSalida, set: setFiltroSalida,
+                    opciones: [{ v: 'ESTIMADA', texto: 'No marcó salida' }, { v: 'SIN_SALIDA', texto: 'Sin salida' }],
+                  },
+                ]).map((g, gi) => (
+                  <div key={g.grupo} className={gi > 0 ? 'mt-1.5 pt-1.5 border-t border-gray-100' : ''}>
+                    <p className="px-3.5 pb-1.5 text-xs font-semibold text-muted">{g.grupo}</p>
+                    {g.opciones.map(op => {
+                      const activo = g.valor.includes(op.v);
+                      return (
+                        <button key={op.v} onClick={() => alternar(g.valor, g.set, op.v)}
+                          className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors ${
+                            activo ? 'bg-green-50 text-green-700 font-semibold' : 'text-ink hover:bg-gray-50'}`}>
+                          <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                            activo ? 'bg-green-600 border-green-600' : 'border-gray-300'}`}>
+                            {activo && <Check size={11} className="text-white" strokeWidth={3} />}
+                          </span>
+                          {op.texto}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+                {hayFiltro && (
+                  <button onClick={limpiarFiltros}
+                    className="w-full mt-1.5 pt-2 border-t border-gray-100 px-3.5 pb-1 text-sm font-semibold text-red-500 hover:text-red-600">
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-800 rounded-xl px-4 py-2.5 text-xs mb-4">
@@ -257,7 +333,7 @@ export default function Registros() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {registros.map(r => (
+            {visibles.map(r => (
               <tr key={r.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setJornadaId(r.id)}>
                 <td className="px-4 py-3 font-medium text-gray-800">{r.colaborador.nombre} {r.colaborador.apellido}</td>
                 <td className="px-4 py-3 text-gray-600 capitalize">{format(toZonedTime(new Date(r.fecha), TZ), "d MMM yyyy", { locale: es })}</td>
@@ -273,7 +349,7 @@ export default function Registros() {
                   )}
                 </td>
                 {hayAlmuerzo && (
-                  <td className="px-4 py-3 text-center"><CeldaAlmuerzo r={r} ancla={anclaDe(r)} /></td>
+                  <td className="px-4 py-3 text-center"><CeldaAlmuerzo r={r} /></td>
                 )}
                 <td className="px-4 py-3 text-center">
                   {r.minutosTarde === null ? (
@@ -307,11 +383,56 @@ export default function Registros() {
           </tbody>
         </table>
         </div>
-        {registros.length === 0 && <p className="text-center text-gray-400 py-8">No hay registros para el período seleccionado</p>}
+        {filtrados.length === 0 && (
+          <p className="text-center text-gray-400 py-8">
+            {registros.length === 0
+              ? 'No hay registros para el período seleccionado'
+              : 'Ningún registro coincide con los filtros'}
+          </p>
+        )}
+
+        {/* Paginador. Siempre dice el TOTAL, aunque quepa en una página: sin ese
+            número, quien filtra un mes no sabe si está viendo todo o un pedazo. */}
+        {filtrados.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-100 text-sm">
+            <p className="text-muted">
+              Mostrando <b className="text-ink">{primera + 1}–{Math.min(primera + porPagina, filtrados.length)}</b> de{' '}
+              <b className="text-ink">{filtrados.length}</b>
+              {hayFiltro && <span className="text-amber-700"> (filtrados de {registros.length})</span>}
+            </p>
+
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-muted">
+                Filas
+                <select value={porPagina}
+                  onChange={e => { setPorPagina(Number(e.target.value)); setPagina(1); }}
+                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+                  {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+
+              {totalPaginas > 1 && (
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagActual === 1}
+                    aria-label="Página anterior"
+                    className="p-1.5 rounded-lg border border-gray-300 text-ink hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="px-2 text-muted whitespace-nowrap">{pagActual} de {totalPaginas}</span>
+                  <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagActual === totalPaginas}
+                    aria-label="Página siguiente"
+                    className="p-1.5 rounded-lg border border-gray-300 text-ink hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg">{editando ? 'Editar registro' : 'Nuevo registro'}</h3>
@@ -384,7 +505,7 @@ export default function Registros() {
 
       {/* Fotos de verificación facial del registro */}
       {fotosDe && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setFotosDe(null)}>
+        <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setFotosDe(null)}>
           <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-bold text-lg text-ink flex items-center gap-2"><Camera size={18} /> Verificación facial</h3>
@@ -424,7 +545,6 @@ export default function Registros() {
           key={jornadaId}
           registroId={jornadaId}
           onCerrar={() => setJornadaId(null)}
-          onCambiarDeTramo={setJornadaId}
           onEditar={reg => abrir(reg as Registro)}
           // El detalle se cierra al eliminar: si no, queda encima mostrando una
           // marcación que ya no existe y el siguiente clic falla con un 404.

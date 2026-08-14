@@ -311,7 +311,7 @@ export default function AdminAfiliados() {
 
       {/* Modal crear / editar */}
       {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-lg shadow-xl max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">
               <h3 className="font-bold text-lg text-ink">{editandoId ? 'Editar afiliado' : 'Nuevo afiliado'}</h3>
@@ -416,7 +416,7 @@ export default function AdminAfiliados() {
 
       {/* Modal invitar (auto-registro) */}
       {modalInvitar && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">
               <h3 className="font-bold text-lg text-ink">Invitar afiliado</h3>
@@ -464,7 +464,7 @@ export default function AdminAfiliados() {
 
       {/* Modal detalle */}
       {detalle && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setDetalle(null)}>
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setDetalle(null)}>
           <div className="bg-white rounded-xl w-full max-w-lg shadow-xl max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">
               <div>
@@ -518,7 +518,7 @@ export default function AdminAfiliados() {
 
       {/* Modal procesar retiro */}
       {procesando && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100">
               <h3 className="font-bold text-lg text-ink">Procesar retiro</h3>
