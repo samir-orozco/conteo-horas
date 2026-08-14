@@ -1,28 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { X, PlayCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // Video demo/guía del sistema (se muestra una sola vez en el primer ingreso).
 const VIDEO_ID = 'Xr63JjeOUvI';
 
-export default function GuiaBienvenida() {
+// `forzado` la abre desde el botón de ayuda del menú, sin importar que el
+// usuario ya la haya visto: cerrar el modal sin querer no puede significar
+// perder la guía para siempre.
+export default function GuiaBienvenida({ forzado = false, onCerrar }: { forzado?: boolean; onCerrar?: () => void }) {
   const { usuario } = useAuth();
-  const [abierto, setAbierto] = useState(false);
+  const [cerradoAqui, setCerradoAqui] = useState(false);
 
-  useEffect(() => {
-    if (!usuario || usuario.rol === 'SUPER_ADMIN') return;
-    if (!localStorage.getItem(`horapro_guia_vista_${usuario.id}`)) setAbierto(true);
-  }, [usuario]);
+  const primeraVez = !!usuario
+    && usuario.rol !== 'SUPER_ADMIN'
+    && !localStorage.getItem(`horapro_guia_vista_${usuario.id}`);
+  const abierto = !cerradoAqui && (forzado || primeraVez);
 
   const cerrar = () => {
     if (usuario) localStorage.setItem(`horapro_guia_vista_${usuario.id}`, '1');
-    setAbierto(false);
+    setCerradoAqui(true);
+    onCerrar?.();
   };
 
   if (!abierto) return null;
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4" onClick={cerrar}>
+    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4" onClick={cerrar}>
       <div className="hp-pop bg-white rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-gray-100">
           <div>
