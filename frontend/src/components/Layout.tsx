@@ -113,7 +113,26 @@ export default function Layout() {
           <Logo />
         </div>
         <NavContent />
-        <div className="border-t border-gray-100 p-4">
+        <div className="border-t border-gray-100 p-4 relative">
+          {/* El menú se ancla al PIE completo, no al botón: anclado al botón
+              —que va pegado a la derecha— se salía 22 px fuera de la ventana.
+              Con left/right del contenedor no puede pasarse del menú lateral. */}
+          {menuAyuda && (
+            <>
+              {/* Capa para cerrar tocando fuera, sin escuchar en todo el documento */}
+              <div className="fixed inset-0 z-30" onClick={() => setMenuAyuda(false)} />
+              <div className="absolute bottom-full mb-1 left-4 right-4 z-40 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+                <button onClick={() => abrirAyuda('guia')}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-gray-50 text-left">
+                  <PlayCircle size={16} className="text-muted shrink-0" /> Guía de bienvenida
+                </button>
+                <button onClick={() => abrirAyuda('novedades')}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-gray-50 text-left border-t border-gray-100">
+                  <Sparkles size={16} className="text-muted shrink-0" /> Novedades de HoraPro
+                </button>
+              </div>
+            </>
+          )}
           <div className="flex items-center gap-3 px-2">
             <div className="bg-primary/30 rounded-full w-9 h-9 flex items-center justify-center text-sm font-bold text-ink">
               {usuario?.nombre?.[0] ?? '?'}
@@ -124,28 +143,10 @@ export default function Layout() {
                 {esSuperAdmin ? 'Super Admin' : usuario?.empresaNombre ?? usuario?.email}
               </p>
             </div>
-            <div className="relative">
-              <button onClick={() => setMenuAyuda(v => !v)} title="Ayuda y novedades"
-                className={`transition-colors ${menuAyuda ? 'text-ink' : 'text-muted hover:text-ink'}`}>
-                <HelpCircle size={17} />
-              </button>
-              {menuAyuda && (
-                <>
-                  {/* Capa para cerrar tocando fuera, sin escuchar en todo el documento */}
-                  <div className="fixed inset-0 z-30" onClick={() => setMenuAyuda(false)} />
-                  <div className="absolute bottom-7 right-0 z-40 w-56 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-                    <button onClick={() => abrirAyuda('guia')}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-gray-50 text-left">
-                      <PlayCircle size={16} className="text-muted shrink-0" /> Guía de bienvenida
-                    </button>
-                    <button onClick={() => abrirAyuda('novedades')}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-ink hover:bg-gray-50 text-left border-t border-gray-100">
-                      <Sparkles size={16} className="text-muted shrink-0" /> Novedades de HoraPro
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            <button onClick={() => setMenuAyuda(v => !v)} title="Ayuda y novedades"
+              className={`relative z-40 transition-colors ${menuAyuda ? 'text-ink' : 'text-muted hover:text-ink'}`}>
+              <HelpCircle size={17} />
+            </button>
             <button onClick={handleLogout} title="Cerrar sesión" className="text-muted hover:text-ink">
               <LogOut size={17} />
             </button>
