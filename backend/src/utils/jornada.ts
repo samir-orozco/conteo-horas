@@ -1,4 +1,4 @@
-import { minutosAlmuerzoADescontar, type DiaParaAlmuerzo } from './almuerzo';
+import { minutosAlmuerzoADescontar, minutosEnVentana, type DiaParaAlmuerzo } from './almuerzo';
 import { ajustarAJornada, type DiaParaAjuste } from './ajusteJornada';
 import { minutosDe } from './tardanzas';
 
@@ -124,6 +124,11 @@ export function resumirAlmuerzoDelDia(
 export type JornadaDelDia<T> = {
   marcaciones: T[];
   minutosContados: number;
+  // Del descuento de almuerzo del día, cuánto le tocó pagar a ESTA jornada. No
+  // es lo mismo que `almuerzo.minutosDescontados`, que es el del día entero:
+  // decir "−1 h" sobre una fila que solo alcanzó a pagar media es una
+  // contradicción a la vista de cualquiera.
+  minutosAlmuerzoAqui: number;
   // Solo en la jornada que contiene el almuerzo. En las demás va null: repetirlo
   // en cada fila del día invita a sumar dos veces el mismo descuento, y esos
   // minutos son plata.
@@ -176,14 +181,41 @@ export function partirDiaEnJornadas<T extends RegistroDeDia>(
   const todos = porBloque.flat();
   const descuento = todos.length > 0 ? minutosAlmuerzoADescontar(todos, dia) : 0;
 
-  // Se cobra primero de la jornada que contiene el almuerzo y, si esa no da para
-  // tanto, de las demás. Media jornada con una hora de almuerzo fijo dejaría el
-  // recorte a medias: lo que no cabe se lleva a la siguiente en vez de perderse.
+  // A QUIÉN se le cobra. Con ventana, a cada jornada los minutos que SUS tramos
+  // pasaron dentro de ella: quien se fue a las diez de la mañana no almorzó, y
+  // cargarle el almuerzo a esa fila para no tocar la del mediodía deja las dos
+  // mintiendo aunque el total del día cuadre. Sin ventana el descuento es un
+  // fijo del horario, no es proporcional a nada, y va entero a la del almuerzo.
+  const solapes = porBloque.map(ts => minutosEnVentana(ts, dia));
+  const enLaVentana = solapes.reduce<number>((s, p) => s + (p ?? 0), 0);
+  const cobro = new Array(bloques.length).fill(0);
+  if (enLaVentana <= 0) {
+    cobro[iDelAlmuerzo] = descuento;
+  } else {
+    // El último con solape se lleva el resto: así los cobros suman exactamente
+    // el descuento del día, que viene ya redondeado.
+    const ultimo = solapes.reduce<number>((u, p, k) => ((p ?? 0) > 0 ? k : u), 0);
+    let dado = 0;
+    for (let k = 0; k < bloques.length; k++) {
+      if ((solapes[k] ?? 0) <= 0) continue;
+      cobro[k] = k === ultimo ? descuento - dado : descuento * solapes[k]! / enLaVentana;
+      dado += cobro[k];
+    }
+  }
+
+  // Lo que una jornada no alcanza a pagar lo pagan las demás, empezando por la
+  // del almuerzo. Media jornada con una hora de almuerzo fijo dejaría el recorte
+  // a medias y el día contaría de más.
   const quita = new Array(bloques.length).fill(0);
-  let pendiente = descuento;
+  let pendiente = 0;
+  for (let k = 0; k < bloques.length; k++) {
+    quita[k] = Math.min(cobro[k], trabajados[k]);
+    pendiente += cobro[k] - quita[k];
+  }
   for (const i of [iDelAlmuerzo, ...bloques.map((_, k) => k).filter(k => k !== iDelAlmuerzo)]) {
-    quita[i] = Math.min(pendiente, trabajados[i]);
-    pendiente -= quita[i];
+    const cabe = Math.min(pendiente, trabajados[i] - quita[i]);
+    quita[i] += cabe;
+    pendiente -= cabe;
   }
 
   // Se redondea sobre el acumulado, no jornada por jornada: redondear cada una
@@ -191,11 +223,19 @@ export function partirDiaEnJornadas<T extends RegistroDeDia>(
   // total que muestra el modal no se pueden defender ante nadie.
   let acumulado = 0;
   let entregado = 0;
+  let almuerzoAcum = 0;
+  let almuerzoEntregado = 0;
   return bloques.map((marcaciones, i) => {
     acumulado += trabajados[i] - quita[i];
     const minutosContados = Math.round(acumulado) - entregado;
     entregado += minutosContados;
-    return { marcaciones, minutosContados, almuerzo: i === iDelAlmuerzo ? almuerzo : null };
+    almuerzoAcum += quita[i];
+    const minutosAlmuerzoAqui = Math.round(almuerzoAcum) - almuerzoEntregado;
+    almuerzoEntregado += minutosAlmuerzoAqui;
+    return {
+      marcaciones, minutosContados, minutosAlmuerzoAqui,
+      almuerzo: i === iDelAlmuerzo ? almuerzo : null,
+    };
   });
 }
 

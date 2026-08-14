@@ -27,6 +27,8 @@ type Registro = {
   minutosTarde: number | null;
   // Lo que contó esta jornada, con el almuerzo ya descontado.
   minutosContados: number;
+  // Lo que ESTA jornada pagó de almuerzo, que no siempre es el descuento del día.
+  minutosAlmuerzoAqui: number;
   tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
   // El sistema cerró el turno (la persona no marcó salida): la hora es estimada y hay que revisarla
   salidaEstimada?: boolean;
@@ -61,7 +63,7 @@ function CeldaAlmuerzo({ r }: { r: Registro }) {
   const a = r.almuerzo;
   const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '';
 
-  if (!a || (a.estado === 'SIN_VENTANA' && a.minutosDescontados === 0)) {
+  if (!a || (a.estado === 'SIN_VENTANA' && r.minutosAlmuerzoAqui === 0)) {
     return <span className="text-gray-300">—</span>;
   }
 
@@ -87,7 +89,10 @@ function CeldaAlmuerzo({ r }: { r: Registro }) {
   if (a.estado === 'SIN_VENTANA') {
     // Sin ventana pero con descuento: el caso de la mayoría. Ese descuento
     // existe todos los días y hasta ahora no se veía en ninguna pantalla.
-    return <span className="text-xs text-gray-600 whitespace-nowrap">−{enHoras(a.minutosDescontados)}</span>;
+    // Lo que pagó ESTA jornada, no lo que descontó el día: con dos jornadas y
+    // almuerzo fijo, decir "−1 h" sobre la fila que solo alcanzó a pagar media
+    // es una contradicción que se ve a simple vista.
+    return <span className="text-xs text-gray-600 whitespace-nowrap">−{enHoras(r.minutosAlmuerzoAqui)}</span>;
   }
 
   // NO_MARCADO
@@ -228,7 +233,7 @@ export default function Registros() {
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
   // 60 min" sin decir de qué hora a qué hora: exigir la ventana escondería la
   // columna justo donde el descuento es invisible.
-  const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.almuerzo.minutosDescontados > 0));
+  const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.minutosAlmuerzoAqui > 0));
 
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
 

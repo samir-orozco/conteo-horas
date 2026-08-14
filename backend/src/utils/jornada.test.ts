@@ -399,6 +399,33 @@ describe('partirDiaEnJornadas', () => {
     expect(j[0].minutosContados).toBe(240);
   });
 
+  it('el almuerzo lo paga la jornada que estuvo dentro de la ventana, no la primera', () => {
+    // Se fue a las 10:00 y volvió a las 11:30, sin marcar almuerzo. La ventana
+    // es 12:00-13:00: quien no llegó a ella no almorzó. Cobrárselo a la jornada
+    // de la mañana para no tocar la del mediodía deja las DOS filas mintiendo,
+    // aunque el total del día cuadre.
+    const j = partirDiaEnJornadas([reg(bog(8), bog(10)), reg(bog(11, 30), bog(17))], diaCompleto());
+    expect(j).toHaveLength(2);
+    expect(j[0].minutosContados).toBe(120);
+    expect(j[1].minutosContados).toBe(270);
+  });
+
+  it('dos jornadas que cruzan la ventana a medias la pagan a medias', () => {
+    // 08:00-12:30 pisa 30 minutos de la ventana; 12:40-18:00 pisa los otros 20.
+    const j = partirDiaEnJornadas([reg(bog(8), bog(12, 30)), reg(bog(12, 40), bog(18))], diaCompleto());
+    expect(j[0].minutosContados).toBe(240);
+    expect(j[1].minutosContados).toBe(300);
+  });
+
+  it('sin ventana, la tarjeta de almuerzo dice lo que pagó ESA jornada', () => {
+    // El fijo de 60 no cabe en media hora de jornada: 30 los paga la mañana y
+    // 30 la tarde. La celda no puede decir "−1 h" sobre una fila que muestra 0.
+    const sinVentana = diaCompleto({ almuerzoInicio: null, almuerzoFin: null });
+    const j = partirDiaEnJornadas([reg(bog(8), bog(8, 30)), reg(bog(10), bog(17))], sinVentana);
+    expect(j[0].minutosAlmuerzoAqui).toBe(30);
+    expect(j[1].minutosAlmuerzoAqui).toBe(30);
+  });
+
   it('LA INVARIANTE: las jornadas de un día suman exactamente lo que cuenta el día', () => {
     // Si esta prueba se cae, la tabla muestra filas que no suman lo que dice el
     // modal, y no hay forma de que el administrador sepa a cuál creerle.
@@ -411,6 +438,8 @@ describe('partirDiaEnJornadas', () => {
       { nombre: 'sin ventana, jornada corta', regs: [reg(bog(8), bog(8, 30)), reg(bog(10), bog(17))], dia: diaCompleto({ almuerzoInicio: null, almuerzoFin: null }) },
       { nombre: 'con tolerancia de salida', regs: [reg(bog(8), bog(12), { salidaAlmuerzo: true }), reg(bog(13), bog(17, 20))], dia: diaCompleto({ toleranciaSalidaMin: 30 }) },
       { nombre: 'tramo abierto', regs: [reg(bog(8), bog(12)), reg(bog(14), null)], dia: diaCompleto() },
+      { nombre: 'ventana pisada solo por la segunda jornada', regs: [reg(bog(8), bog(10)), reg(bog(11, 30), bog(17))], dia: diaCompleto() },
+      { nombre: 'ventana pisada a medias por dos jornadas', regs: [reg(bog(8), bog(12, 30)), reg(bog(12, 40), bog(18))], dia: diaCompleto() },
       { nombre: 'salida anterior a la entrada', regs: [reg(bog(8), bog(12)), reg(bog(18), bog(14))], dia: diaCompleto() },
       { nombre: 'segundos sueltos', regs: [reg(bog(8), new Date(bog(12).getTime() + 25_000)), reg(bog(14), new Date(bog(17).getTime() + 40_000))], dia: diaCompleto() },
     ];

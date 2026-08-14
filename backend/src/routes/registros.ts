@@ -157,6 +157,9 @@ export default async function registroRoutes(app: FastifyInstance) {
           // Antes la columna restaba salida menos entrada de un tramo suelto, así
           // que un día con almuerzo mostraba dos duraciones parciales.
           minutosContados: jornada.minutosContados,
+          // Lo que ESTA jornada pagó de almuerzo. El resumen `almuerzo` es del
+          // día entero: en un día con dos jornadas no son el mismo número.
+          minutosAlmuerzoAqui: jornada.minutosAlmuerzoAqui,
           entradaEstimada: primera.entradaEstimada,
           salidaEstimada: cierra.salidaEstimada,
           salidaAlmuerzo: cierra.salidaAlmuerzo,
