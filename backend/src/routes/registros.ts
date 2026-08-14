@@ -21,6 +21,10 @@ function camposRegistro(body: any, esNuevo: boolean) {
   if (body.salida !== undefined) out.salida = body.salida ? new Date(body.salida) : null;
   if (body.tipo !== undefined && TIPOS_REGISTRO.has(body.tipo)) out.tipo = body.tipo;
   if (body.observacion !== undefined) out.observacion = body.observacion || null;
+  // Qué fue esa salida. Se deja corregir porque al absorber una marcación —dejar
+  // que una sola cubra todo el día— la superviviente conservaba la marca de
+  // salida al descanso, y la tabla decía "Sin regreso" sobre un día completo.
+  if (typeof body.salidaAlmuerzo === 'boolean') out.salidaAlmuerzo = body.salidaAlmuerzo;
   return out;
 }
 
@@ -38,10 +42,10 @@ export default async function registroRoutes(app: FastifyInstance) {
     entrada: Date | null,
     salida: Date | null,
     excluirId?: string,
-  ): Promise<string | null> {
+  ): Promise<{ error: string; codigo?: string; conflicto?: { id: string; entrada: Date | null; salida: Date | null } } | null> {
     if (!entrada || !salida) return null;
     if (salida.getTime() <= entrada.getTime()) {
-      return 'La salida tiene que ser posterior a la entrada. Si el turno cruza la medianoche, la salida es del día siguiente.';
+      return { error: 'La salida tiene que ser posterior a la entrada. Si el turno cruza la medianoche, la salida es del día siguiente.' };
     }
     const { inicioDia, finDia } = rangoDiaBogota(fecha);
     const otros = await prisma.registro.findMany({
@@ -55,7 +59,15 @@ export default async function registroRoutes(app: FastifyInstance) {
     const choque = tramoQueChoca({ entrada, salida }, otros);
     if (!choque) return null;
     const hhmm = (d: Date | null) => (d ? format(toZonedTime(d, TZ), 'HH:mm') : '—');
-    return `Ese horario se cruza con otra marcación del mismo día, la de ${hhmm(choque.entrada)} a ${hhmm(choque.salida)}. Nadie puede estar en dos turnos a la vez: corrige o elimina esa otra marcación primero.`;
+    // Viaja el conflicto entero, no solo el texto: querer que UNA marcación
+    // cubra todo el día es lo normal al corregir un día que el kiosco dejó
+    // partido, y sin el id la única salida era cancelar, buscar la otra —que ya
+    // no tiene fila propia— y borrarla a mano.
+    return {
+      error: `Ese horario se cruza con otra marcación del mismo día, la de ${hhmm(choque.entrada)} a ${hhmm(choque.salida)}. Nadie puede estar en dos turnos a la vez.`,
+      codigo: 'CRUCE_DE_MARCACIONES',
+      conflicto: { id: choque.id, entrada: choque.entrada, salida: choque.salida },
+    };
   }
 
   // Verifica que el colaborador pertenezca a la empresa del token
@@ -401,7 +413,7 @@ export default async function registroRoutes(app: FastifyInstance) {
     }
     const datos = camposRegistro(body, true);
     const motivo = await motivoParaRechazar(datos.colaboradorId, datos.fecha, datos.entrada ?? null, datos.salida ?? null);
-    if (motivo) return reply.status(400).send({ error: motivo });
+    if (motivo) return reply.status(400).send(motivo);
 
     const registro = await prisma.registro.create({ data: datos as any });
     // Un día con marcación es un día que va a salir en un reporte. Si llega ahí
@@ -434,7 +446,7 @@ export default async function registroRoutes(app: FastifyInstance) {
       cambios.salida !== undefined ? cambios.salida : existente.salida,
       id,
     );
-    if (motivo) return reply.status(400).send({ error: motivo });
+    if (motivo) return reply.status(400).send(motivo);
 
     const actualizado = await prisma.registro.update({
       where: { id },

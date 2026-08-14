@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
@@ -49,6 +49,18 @@ type Almuerzo = {
   minutosDeMas: number;
 };
 type Fotos = { fotoEntrada: string | null; fotoSalida: string | null };
+// Lo que devuelve el servidor cuando rechaza un guardado. `conflicto` solo viene
+// con el código de cruce, y trae la marcación que estorba para poder ofrecerse a
+// quitarla sin salir del formulario.
+type RespuestaDeError = {
+  response?: {
+    data?: {
+      error?: string;
+      codigo?: string;
+      conflicto?: { id: string; entrada: string | null; salida: string | null };
+    };
+  };
+};
 
 // "1 h", "45 min", "1 h 25 min"
 const enHoras = (min: number) => {
@@ -122,6 +134,14 @@ export default function Registros() {
   // una anterior, la que se está agregando no va a mostrar minutos tarde. Sin
   // este aviso el usuario cree que el cálculo falló.
   const [otrosDelDia, setOtrosDelDia] = useState<Marcacion[]>([]);
+  // Por qué no se pudo guardar. Si el motivo es que este horario se cruza con
+  // otra marcación del día, viene con ella: querer que UNA marcación cubra todo
+  // el día es lo normal al corregir un día que el kiosco dejó partido, y sin
+  // esto había que cancelar, buscar la otra —que ya no tiene fila propia porque
+  // la tabla agrupa por jornada— y borrarla a mano antes de volver a empezar.
+  const [errorGuardar, setErrorGuardar] = useState<
+    { texto: string; conflicto?: { id: string; entrada: string | null; salida: string | null } } | null
+  >(null);
 
   // Filtro de llegada y paginación. La página vuelve a 1 desde cada setter en
   // vez de con un efecto: así no hay un render intermedio mostrando la página 7
@@ -163,6 +183,7 @@ export default function Registros() {
   useEffect(() => { cargar(); }, [desde, hasta, filtroColaborador]);
 
   const abrir = (reg?: RegistroEditable) => {
+    setErrorGuardar(null);
     setEditando(reg || null);
     setForm(reg ? {
       colaboradorId: reg.colaboradorId,
@@ -176,6 +197,11 @@ export default function Registros() {
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorGuardar(null);
+    await enviar();
+  };
+
+  const enviar = async (extra?: { salidaAlmuerzo: boolean }) => {
     const fecha = new Date(`${form.fecha}T00:00:00`);
     const entrada = form.entrada ? new Date(`${form.fecha}T${form.entrada}:00`) : null;
     let salida = form.salida ? new Date(`${form.fecha}T${form.salida}:00`) : null;
@@ -184,11 +210,32 @@ export default function Registros() {
     // 20:00-05:00 quedaba guardado con la salida nueve horas ANTES de su
     // entrada, y ese tramo le restaba horas al día en vez de sumarlas.
     if (entrada && salida && salida <= entrada) salida = new Date(salida.getTime() + 86400000);
-    const data = { ...form, fecha, entrada, salida };
-    if (editando) await api.put(`/registros/${editando.id}`, data);
-    else await api.post('/registros', data);
-    setModal(false);
-    cargar();
+    const data = { ...form, fecha, entrada, salida, ...extra };
+    try {
+      if (editando) await api.put(`/registros/${editando.id}`, data);
+      else await api.post('/registros', data);
+      setModal(false);
+      cargar();
+    } catch (err) {
+      const d = (err as RespuestaDeError).response?.data;
+      setErrorGuardar({
+        texto: d?.error ?? 'No pudimos guardar el registro.',
+        conflicto: d?.codigo === 'CRUCE_DE_MARCACIONES' ? d.conflicto : undefined,
+      });
+    }
+  };
+
+  // Absorber la marcación que estorba: se borra y se reintenta el guardado, para
+  // que el día quede con una sola. Es destructivo, así que va detrás de un botón
+  // que dice qué horas se van, no detrás de un "reintentar".
+  const absorberYGuardar = async () => {
+    const c = errorGuardar?.conflicto;
+    if (!c) return;
+    setErrorGuardar(null);
+    await api.delete(`/registros/${c.id}`);
+    // Deja de ser una salida al descanso: ya no hay regreso al que volver, y sin
+    // esto la columna diría "Sin regreso" sobre un día que quedó completo.
+    await enviar({ salidaAlmuerzo: false });
   };
 
   const confirmarEliminar = async () => {
@@ -533,6 +580,26 @@ export default function Registros() {
                   </span>
                 </div>
               )}
+              {errorGuardar && (
+                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-800">
+                  <p className="flex items-start gap-2">
+                    <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                    <span>{errorGuardar.texto}</span>
+                  </p>
+                  {errorGuardar.conflicto && (
+                    <>
+                      <p className="mt-2 pl-6 text-xs text-red-700">
+                        Si lo que quieres es que esta marcación cubra todo el día, hay que quitar la otra.
+                      </p>
+                      <button type="button" onClick={absorberYGuardar}
+                        className="mt-2 ml-6 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold">
+                        Eliminar la de {fmtHora(errorGuardar.conflicto.entrada)}–{fmtHora(errorGuardar.conflicto.salida)} y guardar
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-3 justify-end">
                 <button type="button" onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
                 <button type="submit" className="px-4 py-2 text-sm bg-blue-800 text-white rounded-lg hover:bg-blue-700">Guardar</button>
