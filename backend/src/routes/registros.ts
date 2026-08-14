@@ -561,12 +561,13 @@ export default async function registroRoutes(app: FastifyInstance) {
     }
 
     // Las marcaciones que HOY componen esta jornada, para saber a cuáles escribir.
+    // Van por el día de ORIGEN, que es donde la marcación vive ahora mismo.
     const { inicioDia, finDia } = rangoDiaBogota(primera.fecha);
-    const delDia = await prisma.registro.findMany({
+    const delDiaOrigen = await prisma.registro.findMany({
       where: { colaboradorId: primera.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
       orderBy: { entrada: 'asc' },
     });
-    const jornadas = agruparEnJornadas(delDia.filter(r => r.entrada));
+    const jornadas = agruparEnJornadas(delDiaOrigen.filter(r => r.entrada));
     const esta = jornadas.find(j => j.some(m => m.id === id)) ?? [primera];
     if (esta.length > 2) {
       return reply.status(400).send({
@@ -588,10 +589,25 @@ export default async function registroRoutes(app: FastifyInstance) {
       salida: b.salida || undefined,
     });
 
-    // Los tramos que van a quedar, y con qué chocarían. Se comparan contra las
-    // OTRAS jornadas del día: las de esta se están reescribiendo enteras.
-    const idsPropios = new Set(esta.map(m => m.id));
-    const ajenos = delDia.filter(r => !idsPropios.has(r.id));
+    // Los tramos que van a quedar, y con qué chocarían.
+    //
+    // Se comparan contra el día de DESTINO y contra el colaborador de DESTINO,
+    // que pueden no ser los de origen. Mirar el día de origen —como se hacía—
+    // dejaba pasar la mudanza: corregirle la fecha a una jornada del 13 al 14 se
+    // validaba contra las marcaciones del 13, así que si el 14 ya tenía jornada
+    // quedaban dos solapadas y esas horas se contaban DOS VECES.
+    //
+    // Las marcaciones de esta jornada se excluyen: se están reescribiendo enteras.
+    const idsPropios = [...new Set(esta.map(m => m.id))];
+    const destino = rangoDiaBogota(fechaBase);
+    const ajenos = await prisma.registro.findMany({
+      where: {
+        colaboradorId,
+        fecha: { gte: destino.inicioDia, lt: destino.finDia },
+        id: { notIn: idsPropios },
+      },
+      select: { id: true, entrada: true, salida: true },
+    });
     const nuevos = [
       { entrada: t.entrada, salida: t.descansoSalida ?? t.salida },
       ...(t.descansoRegreso ? [{ entrada: t.descansoRegreso, salida: t.salida }] : []),
