@@ -38,7 +38,7 @@ type Registro = {
   marcaciones: Marcacion[];
 };
 type Almuerzo = {
-  estado: 'SIN_VENTANA' | 'MARCADO' | 'ABIERTO' | 'NO_MARCADO';
+  estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
   ventana: { inicio: string; fin: string } | null;
   salida: string | null;
   regreso: string | null;
@@ -82,10 +82,20 @@ function CeldaAlmuerzo({ r }: { r: Registro }) {
   // Una sola etiqueta por fila. El detalle —cuánto se descuenta, por qué, si el
   // regreso lo puso el sistema— vive en el modal, a un clic. En una tabla de
   // cuarenta personas, dos renglones por celda es ruido que nadie lee.
+  // Descansando ahora mismo. En ámbar y no en rojo: no hay nada que corregir,
+  // solo está fuera. El rojo se guarda para cuando de verdad se le pasó la hora.
+  if (a.estado === 'EN_CURSO') {
+    return (
+      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 whitespace-nowrap">
+        En descanso · {hhmm(a.salida)}
+      </span>
+    );
+  }
+
   if (a.estado === 'ABIERTO') {
     return (
       <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 whitespace-nowrap">
-        Sin regreso
+        No volvió
       </span>
     );
   }

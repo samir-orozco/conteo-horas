@@ -43,8 +43,15 @@ function tramosUtiles<T extends RegistroDeDia>(registros: T[]): T[] {
 export type EstadoAlmuerzo =
   | 'SIN_VENTANA'  // el día no tiene ventana congelada: no hay hora que mostrar
   | 'MARCADO'      // salió y volvió
-  | 'ABIERTO'      // salió a almorzar y todavía no vuelve
+  | 'EN_CURSO'     // está descansando ahora mismo, dentro de lo razonable
+  | 'ABIERTO'      // se le pasó la hora con holgura y sigue sin volver
   | 'NO_MARCADO';  // hay ventana, pero nadie marcó la salida
+
+// Cuánto se espera después del fin del descanso antes de tratarlo como olvido.
+// Generoso a propósito: quien vuelve veinte minutos tarde y marca bien no
+// debería tener que responder nada. Vive aquí, junto a `finDeLaVentana`, porque
+// las dos preguntas son la misma y `cierreAlmuerzo` la reutiliza.
+export const GRACIA_MIN = 60;
 
 export type ResumenAlmuerzo = {
   estado: EstadoAlmuerzo;
@@ -65,6 +72,7 @@ export type ResumenAlmuerzo = {
 export function resumirAlmuerzoDelDia(
   registros: RegistroDeDia[],
   dia: DiaParaAlmuerzo,
+  ahora: Date = new Date(),
 ): ResumenAlmuerzo {
   // Los tramos completos son los que cuentan para el descuento: uno abierto
   // todavía no dice cuánto se trabajó.
@@ -95,7 +103,14 @@ export function resumirAlmuerzoDelDia(
 
   const salida = salidaAAlmorzar.salida!;
   const regresoReg = enOrden.find(r => r.entrada!.getTime() > salida.getTime());
-  if (!regresoReg) return { ...base, estado: 'ABIERTO', salida };
+  if (!regresoReg) {
+    // Salió y todavía no vuelve. Mientras su ventana siga abierta —más una hora
+    // de gracia— está EN SU DESCANSO, que es lo normal y lo que se espera.
+    // Llamar "sin regreso" a eso acusa a alguien de algo que no ha pasado, y lo
+    // pinta en rojo mientras está comiendo.
+    const seLePaso = ahora.getTime() > finDeLaVentana(salida, dia) + GRACIA_MIN * MS_MIN;
+    return { ...base, estado: seLePaso ? 'ABIERTO' : 'EN_CURSO', salida };
+  }
 
   const regreso = regresoReg.entrada!;
   const minutos = Math.round((regreso.getTime() - salida.getTime()) / MS_MIN);
@@ -131,6 +146,21 @@ export function tramoQueChoca<T extends { entrada: Date | null; salida: Date | n
   const fin = nuevo.salida.getTime();
   return otros.find(o =>
     o.entrada && o.salida && ini < o.salida.getTime() && fin > o.entrada.getTime()) ?? null;
+}
+
+// La marcación que CIERRA la jornada, o null si todavía está abierta.
+//
+// Una salida al descanso NO la cierra. La persona no se fue: sigue en su turno,
+// solo que ahora está descansando. Tomarla como fin de jornada ponía la hora del
+// descanso en la columna de Salida —diciendo que se había ido a casa— y dejaba
+// la duración del día en cero.
+export function marcacionQueCierra<T extends RegistroDeDia>(marcaciones: T[]): T | null {
+  const ultima = [...marcaciones].reverse().find(m => m.salida);
+  if (!ultima || ultima.salidaAlmuerzo) return null;
+  // Si después de esa salida alguien volvió a entrar y sigue dentro, tampoco.
+  const vueltaDespues = marcaciones.some(m => m.entrada && !m.salida
+    && m.entrada.getTime() >= ultima.salida!.getTime());
+  return vueltaDespues ? null : ultima;
 }
 
 // Un día partido en JORNADAS.

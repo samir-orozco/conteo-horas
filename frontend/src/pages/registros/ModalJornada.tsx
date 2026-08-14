@@ -30,7 +30,7 @@ export type Jornada = {
   } | null;
   tramos: { id: string; entrada: string | null; salida: string | null; salidaAlmuerzo: boolean; entradaEstimada: boolean; salidaEstimada: boolean }[];
   almuerzo: {
-    estado: 'SIN_VENTANA' | 'MARCADO' | 'ABIERTO' | 'NO_MARCADO';
+    estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
     ventana: { inicio: string; fin: string } | null;
     salida: string | null; regreso: string | null;
     minutos: number | null; minutosDescontados: number;
@@ -199,6 +199,18 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               No es plata: el reparto en horas ordinarias, extras y recargos está en Reportes.
             </p>
 
+            {/* Está descansando ahora mismo. No hay nada que corregir: se dice y
+                ya, para que nadie salga a buscar una marcación que falta. */}
+            {a?.estado === 'EN_CURSO' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+                <UtensilsCrossed size={16} className="mt-0.5 shrink-0" />
+                <span>
+                  Está en su descanso desde las <b>{hhmm(a.salida)}</b>. Su jornada sigue
+                  abierta: marcará el regreso al volver.
+                </span>
+              </div>
+            )}
+
             {/* Salió a su descanso y nunca volvió: la tarde no se está contando. */}
             {a?.estado === 'ABIERTO' && (
               <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-900 flex items-start gap-2">
@@ -285,6 +297,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   {a.estado === 'MARCADO' && a.seExcedio && (
                     <p className="text-amber-700">Volvió <b>{enHoras(a.minutosDeMas)}</b> después de que terminara.</p>
                   )}
+                  {a.estado === 'EN_CURSO' && <p><b>Está en su descanso ahora mismo.</b></p>}
                   {a.estado === 'ABIERTO' && <p><b>Salió a su descanso y no volvió a marcar.</b></p>}
                   {a.estado === 'NO_MARCADO' && a.ventana && <p><b>No marcó</b> su salida al descanso.</p>}
 

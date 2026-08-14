@@ -6,7 +6,7 @@ import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca } from '../utils/jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -166,9 +166,10 @@ export default async function registroRoutes(app: FastifyInstance) {
       for (const jornada of partirDiaEnJornadas(delDia, dia)) {
         const marcaciones = jornada.marcaciones;
         const primera = marcaciones[0];
-        // La salida de la jornada es la última que exista: un tramo abierto al
-        // final no borra la salida del anterior.
-        const cierra = [...marcaciones].reverse().find(m => m.salida) ?? primera;
+        // Quién cierra la jornada. Una salida al DESCANSO no la cierra: la
+        // persona no se fue, sigue en su turno. Ponerla en la columna de Salida
+        // decía que se había ido a casa a la hora de su descanso.
+        const cierra = marcacionQueCierra(marcaciones);
 
         // La tardanza se mide solo en la primera entrada del día: volver del
         // almuerzo, o regresar de noche a hacer extras, no es llegar tarde.
@@ -192,7 +193,7 @@ export default async function registroRoutes(app: FastifyInstance) {
           },
           fecha: primera.fecha,
           entrada: primera.entrada,
-          salida: cierra.salida,
+          salida: cierra?.salida ?? null,
           tipo: primera.tipo,
           observacion: primera.observacion,
           sedeId: primera.sedeId,
@@ -205,10 +206,10 @@ export default async function registroRoutes(app: FastifyInstance) {
           // día entero: en un día con dos jornadas no son el mismo número.
           minutosAlmuerzoAqui: jornada.minutosAlmuerzoAqui,
           entradaEstimada: primera.entradaEstimada,
-          salidaEstimada: cierra.salidaEstimada,
-          salidaAlmuerzo: cierra.salidaAlmuerzo,
+          salidaEstimada: cierra?.salidaEstimada ?? false,
+          salidaAlmuerzo: cierra?.salidaAlmuerzo ?? false,
           tieneFotoEntrada: !!primera.fotoEntrada,
-          tieneFotoSalida: !!cierra.fotoSalida,
+          tieneFotoSalida: !!cierra?.fotoSalida,
           almuerzo: jornada.almuerzo,
           marcaciones: marcaciones.map(m => ({
             id: m.id,

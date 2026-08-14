@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca } from './jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra } from './jornada';
 
 // El almuerzo no vive en un registro: vive en el HUECO entre dos. Un día con
 // almuerzo son dos tramos —08:00-12:00 y 13:00-17:00— y lo que hay en medio es
@@ -480,5 +480,56 @@ describe('tramoQueChoca', () => {
   it('un tramo todavía abierto no se puede juzgar', () => {
     expect(tramoQueChoca(t(bog(8), null), [t(bog(8), bog(12), 'a')])).toBeNull();
     expect(tramoQueChoca(t(bog(8), bog(12)), [t(bog(8), null, 'a')])).toBeNull();
+  });
+});
+
+// Una salida al descanso NO es el fin de la jornada. La persona sigue en su
+// turno, solo que ahora está descansando. Ponerla en la columna de Salida decía
+// que se había ido a casa, y de paso dejaba la duración del día en cero.
+describe('marcacionQueCierra', () => {
+  const m = (entrada: Date | null, salida: Date | null, salidaAlmuerzo = false) =>
+    ({ entrada, salida, salidaAlmuerzo, entradaEstimada: false });
+
+  it('la jornada normal la cierra su última salida', () => {
+    const j = [m(bog(8), bog(12), true), m(bog(13), bog(17))];
+    expect(marcacionQueCierra(j)?.salida).toEqual(bog(17));
+  });
+
+  it('salió al descanso y todavía no vuelve: la jornada NO está cerrada', () => {
+    expect(marcacionQueCierra([m(bog(8), bog(12), true)])).toBeNull();
+  });
+
+  it('volvió del descanso pero sigue dentro: tampoco está cerrada', () => {
+    const j = [m(bog(8), bog(12), true), m(bog(13), null)];
+    expect(marcacionQueCierra(j)).toBeNull();
+  });
+
+  it('sin ninguna salida no hay nada que cierre', () => {
+    expect(marcacionQueCierra([m(bog(8), null)])).toBeNull();
+  });
+});
+
+describe('resumirAlmuerzoDelDia — mientras está descansando', () => {
+  const dia = () => ({
+    fecha: bog(0), almuerzoMin: 60,
+    almuerzoInicio: '12:00' as string | null, almuerzoFin: '13:00' as string | null,
+  });
+  const salioAlDescanso = [reg(bog(8), bog(12, 5), { salidaAlmuerzo: true })];
+
+  it('dentro de su ventana está EN CURSO, no "sin regreso"', () => {
+    // Acusar a alguien de no volver mientras está comiendo es sencillamente falso.
+    expect(resumirAlmuerzoDelDia(salioAlDescanso, dia(), bog(12, 30)).estado).toBe('EN_CURSO');
+  });
+
+  it('pasada la ventana pero dentro de la hora de gracia, sigue EN CURSO', () => {
+    expect(resumirAlmuerzoDelDia(salioAlDescanso, dia(), bog(13, 30)).estado).toBe('EN_CURSO');
+  });
+
+  it('pasada la ventana y la gracia, entonces sí es "sin regreso"', () => {
+    expect(resumirAlmuerzoDelDia(salioAlDescanso, dia(), bog(14, 30)).estado).toBe('ABIERTO');
+  });
+
+  it('un día viejo sin regreso sigue siendo un problema, no un descanso en curso', () => {
+    expect(resumirAlmuerzoDelDia(salioAlDescanso, dia(), bog(10, 0, 20)).estado).toBe('ABIERTO');
   });
 });

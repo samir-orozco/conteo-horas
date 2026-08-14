@@ -1,4 +1,4 @@
-import { finDeLaVentana } from './jornada';
+import { finDeLaVentana, GRACIA_MIN } from './jornada';
 import type { DiaParaAlmuerzo } from './almuerzo';
 
 // El almuerzo que nadie cerró.
@@ -19,11 +19,10 @@ import type { DiaParaAlmuerzo } from './almuerzo';
 
 const MS_MIN = 60_000;
 
-// Cuánto se espera después del fin del almuerzo antes de tratarlo como olvido.
-// Generoso a propósito: quien vuelve 20 minutos tarde y marca bien no debería
-// tener que responder nada, y preguntarle solo lo empujaría a aceptar una hora
-// que no es la suya.
-export const GRACIA_MIN = 60;
+// La gracia vive junto a `finDeLaVentana`, en `jornada.ts`: la tabla y este
+// aviso tienen que estar de acuerdo en cuándo un descanso pasa de estar en curso
+// a ser un olvido. Se reexporta porque ya había quien la importaba de aquí.
+export { GRACIA_MIN } from './jornada';
 
 export type AlmuerzoPendiente = {
   vencido: boolean;         // ya pasó la ventana con holgura y sigue sin volver
