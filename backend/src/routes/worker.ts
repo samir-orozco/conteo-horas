@@ -9,8 +9,10 @@ import { rangoDiaBogota } from '../utils/fechas';
 import { distanciaMetros } from '../utils/geo';
 import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes } from '../utils/kioscoConfig';
 import { resolverSedeDeMarcacion } from '../utils/sedes';
-import { puedeSalirAAlmorzar } from '../utils/almuerzo';
+import { puedeSalirAAlmorzar, dentroDeLaVentana } from '../utils/almuerzo';
+import { salidaAntesDeHora } from '../utils/tardanzas';
 import { almuerzoSinRegreso } from '../utils/cierreAlmuerzo';
+import { asegurarDiaSinFallar } from '../utils/materializarDias';
 
 const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
@@ -81,7 +83,9 @@ async function almuerzoDelTurno(colaboradorId: string, fechaAncla: Date) {
     // milisegundos y una fila así quedaría huérfana sin que nadie se entere.
     prisma.diaEsperado.findFirst({
       where: { colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
-      select: { almuerzoInicio: true, almuerzoFin: true },
+      // `fecha` hace falta para saber si la persona está DENTRO de la ventana
+      // ahora mismo: la de un turno nocturno cae en la madrugada siguiente.
+      select: { fecha: true, almuerzoInicio: true, almuerzoFin: true },
     }),
     prisma.registro.count({
       where: { colaboradorId, salidaAlmuerzo: true, salida: { gte: new Date(Date.now() - VENTANA_TURNO_MS) } },
@@ -89,6 +93,37 @@ async function almuerzoDelTurno(colaboradorId: string, fechaAncla: Date) {
   ]);
   const yaAlmorzo = marcados > 0;
   return { ventana: dia, yaAlmorzo, puede: puedeSalirAAlmorzar(dia, yaAlmorzo) };
+}
+
+// Deja una novedad pendiente de aprobación y avisa al administrador. La usan el
+// endpoint propio y la salida temprana, que la guarda junto con la marca: en dos
+// llamadas separadas, si la segunda fallaba la salida quedaba escrita y el motivo
+// se perdía sin que nadie se enterara.
+async function crearNovedad(colaboradorId: string, tipo: string, descripcion: string) {
+  const { inicioDia } = rangoDiaBogota();
+  const permiso = await prisma.permiso.create({
+    data: {
+      colaboradorId,
+      tipo: tipo as any,
+      descripcion: descripcion.trim() || null,
+      fechaInicio: inicioDia,
+      fechaFin: inicioDia,
+      aprobado: false,
+    },
+  });
+  const quien = await prisma.colaborador.findUnique({
+    where: { id: colaboradorId },
+    select: { nombre: true, apellido: true, empresaId: true },
+  });
+  if (quien) {
+    notificar(quien.empresaId, {
+      tipo: 'NOVEDAD_PENDIENTE',
+      titulo: `Novedad por aprobar: ${quien.nombre} ${quien.apellido}`,
+      cuerpo: `Reportó una novedad (${tipo}) pendiente de tu aprobación.`,
+      entidad: 'colaborador', entidadId: colaboradorId,
+    });
+  }
+  return permiso;
 }
 
 // Alerta de llegada tarde por Telegram (si la empresa lo activó). No bloquea la marca.
@@ -340,7 +375,15 @@ export default async function workerRoutes(app: FastifyInstance) {
       // Solo se manda la ventana cuando de verdad se puede usar: el kiosco
       // pregunta exactamente cuando el servidor va a creerle.
       almuerzo: almuerzo.puede
-        ? { inicio: almuerzo.ventana!.almuerzoInicio!, fin: almuerzo.ventana!.almuerzoFin! }
+        ? {
+            inicio: almuerzo.ventana!.almuerzoInicio!,
+            fin: almuerzo.ventana!.almuerzoFin!,
+            // Estando dentro, el kiosco lo ofrece en el botón grande en vez de
+            // esconderlo detrás de "Registrar Salida". Lo decide el servidor, que
+            // es quien tiene la fecha del turno: la ventana de un nocturno cae en
+            // la madrugada del día siguiente al que ancla su fila.
+            ahora: dentroDeLaVentana(new Date(), almuerzo.ventana!),
+          }
         : null,
       enAlmuerzo,
       salidaAlmuerzo: enAlmuerzo ? ultimoCerrado!.salida : null,
@@ -457,6 +500,32 @@ export default async function workerRoutes(app: FastifyInstance) {
         // el día después, y nadie debería poder inventarlo desde el navegador.
         const esAlmuerzo = pidioAlmuerzo && (await almuerzoDelTurno(payload.id, abierto.fecha)).puede;
 
+        // ¿Se va antes de que termine su franja? Se resuelve ANTES de escribir
+        // nada. Irse a su descanso no es irse temprano: ahí no se pregunta.
+        let salidaTemprana = false;
+        const horario = col?.horario;
+        if (!esAlmuerzo && horario && horario.activo && !festHoy) {
+          const franja = horario.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
+          if (franja) salidaTemprana = salidaAntesDeHora(ahoraBog, franja, horario.toleranciaMin ?? 0);
+        }
+
+        // Sin motivo no se cierra la jornada.
+        //
+        // Antes se guardaba la salida y DESPUÉS se pedía el motivo, con un botón
+        // de "Omitir" al lado: irse temprano sin decir por qué salía gratis. Y
+        // como la salida ya estaba escrita, quien se equivocaba de botón no tenía
+        // forma de volver atrás. Ahora no se escribe nada hasta que haya motivo,
+        // y por eso cancelar es posible: no hay nada que deshacer.
+        const novedad = (request.body ?? {}) as { novedadTipo?: unknown; novedadDescripcion?: unknown };
+        const tipoNovedad = typeof novedad.novedadTipo === 'string' && TIPOS_NOVEDAD.has(novedad.novedadTipo)
+          ? novedad.novedadTipo : null;
+        if (salidaTemprana && !tipoNovedad) {
+          return reply.code(409).send({
+            codigo: 'REQUIERE_MOTIVO',
+            error: 'Te vas antes de que termine tu jornada. Cuéntanos por qué.',
+          });
+        }
+
         const updated = await prisma.registro.update({
           where: { id: abierto.id },
           data: {
@@ -465,23 +534,14 @@ export default async function workerRoutes(app: FastifyInstance) {
             ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
           },
         });
-        // ¿Salió antes de la hora de fin de su franja? (para pedir motivo).
-        // Normaliza franjas que cruzan medianoche (fin < inicio) sumando 24h.
-        // Irse a almorzar no es irse temprano: ahí no se pide ninguna novedad.
-        let salidaTemprana = false;
-        const horario = col?.horario;
-        if (!esAlmuerzo && horario && horario.activo && !festHoy) {
-          const franja = horario.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
-          if (franja) {
-            const iniMin = minutosDe(franja.horaEntrada);
-            let finMin = minutosDe(franja.horaSalida);
-            const cruzaMedianoche = finMin <= iniMin;
-            if (cruzaMedianoche) finMin += 1440;
-            let salidaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
-            if (cruzaMedianoche && salidaMin < iniMin) salidaMin += 1440; // salió pasada la medianoche
-            if (salidaMin < finMin - (horario.toleranciaMin ?? 0)) salidaTemprana = true;
-          }
+
+        // La novedad viaja con la marca, no en una llamada aparte: si esa segunda
+        // llamada fallaba, la salida quedaba registrada y el motivo se perdía.
+        if (tipoNovedad) {
+          await crearNovedad(payload.id, tipoNovedad, typeof novedad.novedadDescripcion === 'string' ? novedad.novedadDescripcion : '')
+            .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la salida temprana'));
         }
+
         return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo };
       } else {
         // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
@@ -547,6 +607,12 @@ export default async function workerRoutes(app: FastifyInstance) {
           },
         });
 
+        // Un día con marcación es un día que va a salir en un reporte. Si llega
+        // ahí sin fila se resuelve con el horario VIGENTE, y vuelve a ser
+        // reescribible: cambiar el horario mañana le movería este día. La
+        // creación manual de registros ya lo hacía; el kiosco no.
+        await asegurarDiaSinFallar(payload.id, nuevo.fecha, app.log);
+
         // Alerta de llegada tarde por Telegram (primera entrada del día, día laboral)
         const horarioE = col?.horario;
         if (entradasPrevias === 0 && col && !festHoy && horarioE?.activo) {
@@ -580,31 +646,7 @@ export default async function workerRoutes(app: FastifyInstance) {
     if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
     const { tipo, descripcion } = (request.body ?? {}) as { tipo?: string; descripcion?: string };
     if (!tipo || !TIPOS_NOVEDAD.has(tipo)) return reply.code(400).send({ error: 'Motivo inválido' });
-
-    const { inicioDia } = rangoDiaBogota();
-    const permiso = await prisma.permiso.create({
-      data: {
-        colaboradorId: payload.id,
-        tipo: tipo as any,
-        descripcion: (descripcion || '').trim() || null,
-        fechaInicio: inicioDia,
-        fechaFin: inicioDia,
-        aprobado: false,
-      },
-    });
-    // Avisa al admin que hay una novedad por aprobar (campana del menú)
-    const quien = await prisma.colaborador.findUnique({
-      where: { id: payload.id },
-      select: { nombre: true, apellido: true, empresaId: true },
-    });
-    if (quien) {
-      notificar(quien.empresaId, {
-        tipo: 'NOVEDAD_PENDIENTE',
-        titulo: `Novedad por aprobar: ${quien.nombre} ${quien.apellido}`,
-        cuerpo: `Reportó una novedad (${tipo}) pendiente de tu aprobación.`,
-        entidad: 'colaborador', entidadId: payload.id,
-      });
-    }
+    const permiso = await crearNovedad(payload.id, tipo, descripcion ?? '');
     return reply.code(201).send({ ok: true, id: permiso.id });
   });
 }

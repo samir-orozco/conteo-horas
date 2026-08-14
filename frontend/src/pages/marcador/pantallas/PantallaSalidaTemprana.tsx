@@ -6,13 +6,18 @@ type Props = {
   setNovedadTipo: (v: string) => void;
   novedadDesc: string;
   setNovedadDesc: (v: string) => void;
-  enviarNovedadTemprana: (omitir: boolean) => void;
+  enviarNovedadTemprana: () => void;
+  onVolver: () => void;
   enviandoNovedad: boolean;
 };
 
-// Salida antes del horario: se pide el motivo (queda como novedad pendiente). La
-// salida ya quedó registrada; esto solo adjunta el motivo.
-export default function PantallaSalidaTemprana({ novedadTipo, setNovedadTipo, novedadDesc, setNovedadDesc, enviarNovedadTemprana, enviandoNovedad }: Props) {
+// Salida antes del horario: se pide el motivo ANTES de marcar nada.
+//
+// Antes se guardaba la salida y luego se pedía el motivo, con un "Omitir" al
+// lado: irse temprano sin decir por qué salía gratis, que es justo lo que esta
+// pantalla existe para evitar. Y con la salida ya escrita, quien se equivocaba de
+// botón no tenía cómo volver atrás.
+export default function PantallaSalidaTemprana({ novedadTipo, setNovedadTipo, novedadDesc, setNovedadDesc, enviarNovedadTemprana, onVolver, enviandoNovedad }: Props) {
   return (
     <div className="min-h-screen bg-ink flex items-center justify-center p-4">
       <div className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
@@ -20,7 +25,7 @@ export default function PantallaSalidaTemprana({ novedadTipo, setNovedadTipo, no
           <LogOut size={26} className="text-ink" />
         </div>
         <h2 className="text-lg font-bold text-white">Salida antes del horario</h2>
-        <p className="text-sm text-white/50 mt-1 mb-5">Cuéntanos el motivo de tu salida temprana. Tu salida ya quedó registrada.</p>
+        <p className="text-sm text-white/50 mt-1 mb-5">Cuéntanos por qué te vas antes. Tu salida se registra al confirmar.</p>
 
         <div className="text-left space-y-4">
           <div>
@@ -38,13 +43,15 @@ export default function PantallaSalidaTemprana({ novedadTipo, setNovedadTipo, no
           </div>
         </div>
 
-        <button onClick={() => enviarNovedadTemprana(false)} disabled={enviandoNovedad}
+        <button onClick={enviarNovedadTemprana} disabled={enviandoNovedad}
           className="w-full mt-5 bg-primary hover:bg-primary-dark text-ink font-bold py-3 rounded-xl text-base disabled:opacity-60 transition-colors">
-          {enviandoNovedad ? 'Enviando...' : 'Enviar y confirmar salida'}
+          {enviandoNovedad ? 'Registrando...' : 'Registrar mi salida'}
         </button>
-        <button onClick={() => enviarNovedadTemprana(true)} disabled={enviandoNovedad}
+        {/* Volver atrás, no omitir: nada se ha guardado todavía, así que quien se
+            equivocó de botón sale de aquí sin haber cerrado su jornada. */}
+        <button onClick={onVolver} disabled={enviandoNovedad}
           className="w-full mt-2 text-white/50 hover:text-white/80 text-sm font-medium py-1">
-          Omitir
+          Volver atrás
         </button>
       </div>
     </div>

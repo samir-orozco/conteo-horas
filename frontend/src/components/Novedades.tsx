@@ -34,13 +34,13 @@ const Chip = ({ tono, children }: { tono: string; children: React.ReactNode }) =
 const NOVEDADES: Novedad[] = [
   {
     icono: UtensilsCrossed,
-    titulo: 'El almuerzo, como tú lo manejes',
-    texto: 'Puedes seguir descontando un tiempo fijo, o pedirle a tu gente que marque su almuerzo en el kiosco. Si lo marcan, quien se va temprano deja de pagar un almuerzo que nunca tomó.',
+    titulo: 'El descanso, como tú lo manejes',
+    texto: 'Puedes seguir descontando un tiempo fijo, o pedirle a tu gente que marque su descanso en el kiosco. Si lo marcan, quien se va temprano deja de pagar un descanso que nunca tomó. Le sirve igual al turno de día que al nocturno.',
     enlace: { texto: 'Configurarlo en Horario', a: '/app/configuracion?tab=horario' },
     vista: (
       <div className="flex flex-col gap-2 w-full max-w-[240px]">
         <div className="rounded-xl bg-primary px-3 py-2 text-ink text-xs font-bold text-center shadow-sm">
-          Salgo a almorzar
+          Salgo a mi descanso
         </div>
         <div className="rounded-xl bg-white/90 border border-gray-200 px-3 py-2 text-ink text-xs font-semibold text-center shadow-sm">
           Termino mi jornada
@@ -52,12 +52,12 @@ const NOVEDADES: Novedad[] = [
   {
     icono: MousePointerClick,
     titulo: 'Toca una marcación y ve todo el día',
-    texto: 'En Registros, al hacer clic en cualquier fila se abre el detalle: a qué hora entró y salió, el almuerzo, el tiempo contado del día frente a lo que pedía su horario, y las fotos de verificación.',
+    texto: 'En Registros, al hacer clic en cualquier fila se abre el detalle: a qué hora entró y salió, su descanso, el tiempo contado del día frente a lo que pedía su horario, y las fotos de verificación.',
     enlace: { texto: 'Ir a Registros', a: '/app/registros' },
     vista: (
       <div className="w-full max-w-[260px] rounded-xl bg-white/95 shadow-sm border border-gray-200 overflow-hidden text-[10px]">
         <div className="grid grid-cols-4 gap-1 px-2.5 py-1.5 bg-gray-50 text-[9px] font-semibold uppercase text-muted">
-          <span>Entrada</span><span>Salida</span><span>Almuerzo</span><span>Llegada</span>
+          <span>Entrada</span><span>Salida</span><span>Descanso</span><span>Llegada</span>
         </div>
         <div className="grid grid-cols-4 gap-1 px-2.5 py-2 items-center">
           <span className="font-mono text-green-700">08:00</span>

@@ -4,9 +4,10 @@ import { es } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
 import {
   X, Edit2, Trash2, Camera, ImageOff, MapPin, UtensilsCrossed,
-  Clock3, Info, CalendarClock,
+  Info, CalendarClock,
 } from 'lucide-react';
 import api from '../../lib/api';
+import { TIPO_PERMISO_LABEL as TIPO_NOVEDAD } from '../../constants/permisos';
 
 const TZ = 'America/Bogota';
 
@@ -30,17 +31,24 @@ export type Jornada = {
   } | null;
   tramos: { id: string; entrada: string | null; salida: string | null; salidaAlmuerzo: boolean; entradaEstimada: boolean; salidaEstimada: boolean }[];
   almuerzo: {
-    estado: 'SIN_VENTANA' | 'MARCADO' | 'ABIERTO' | 'NO_MARCADO';
+    estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
     ventana: { inicio: string; fin: string } | null;
     salida: string | null; regreso: string | null;
-    minutos: number | null; minutosDescontados: number;
+    minutos: number | null; minutosVentana: number | null; minutosDescontados: number;
     regresoEstimado: boolean; seExcedio: boolean; minutosDeMas: number;
   };
   minutosDelDia: number;
   minutosTarde: number | null;
   motivoSinTardanza: string | null;
   festivo: { nombre: string } | null;
-  novedad: { tipo: string; descripcion: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; horaInicio: string | null; horaFin: string | null } | null;
+  // `remunerada` no es un campo guardado: sale del tipo más la política de la
+  // empresa. Por eso viaja resuelto desde el servidor, y por eso cambiar el tipo
+  // puede cambiar si ese tiempo se paga.
+  novedad: {
+    id: string; tipo: string; descripcion: string | null; aprobado: boolean;
+    fechaInicio: string; fechaFin: string; horaInicio: string | null; horaFin: string | null;
+    remunerada: boolean | null;
+  } | null;
 };
 
 const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : null;
@@ -56,7 +64,7 @@ const fechaLarga = (s: string) =>
 // columna de asistencia solo genera dudas; la razón las cierra.
 const SIN_TARDANZA: Record<string, string> = {
   SIN_ENTRADA: 'Esta marcación no tiene hora de entrada.',
-  NO_ES_PRIMERA: 'No es la primera entrada del día. La llegada tarde solo se mide en la primera, para que volver del almuerzo no cuente como llegar tarde.',
+  NO_ES_PRIMERA: 'No es la primera entrada del día. La llegada tarde solo se mide en la primera, para que volver del descanso no cuente como llegar tarde.',
   FESTIVO: 'Ese día era festivo.',
   NO_PROGRAMADO: 'Ese día no estaba programado en su horario.',
   SIN_HORARIO: 'Este colaborador no tiene un horario activo.',
@@ -88,11 +96,16 @@ type Props = {
   // y buscarla allí dejaba el botón sin hacer nada.
   onEditar: (registro: RegistroEditable) => void;
   onEliminar: (registroId: string) => void;
+  // Saltar a otra marcación del día. Desde que la tabla muestra una fila por
+  // JORNADA, el regreso del almuerzo ya no tiene fila propia: si no se puede
+  // llegar a él desde aquí, no se puede llegar de ninguna forma.
+  onVerMarcacion: (registroId: string) => void;
 };
 
-export default function ModalJornada({ registroId, onCerrar, onEditar, onEliminar }: Props) {
+export default function ModalJornada({ registroId, onCerrar, onEditar, onEliminar, onVerMarcacion }: Props) {
   const [j, setJ] = useState<Jornada | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [guardandoNovedad, setGuardandoNovedad] = useState(false);
   const [fotos, setFotos] = useState<{ fotoEntrada: string | null; fotoSalida: string | null } | null>(null);
 
   // Al saltar a otro tramo el componente se remonta (lleva `key={registroId}`),
@@ -121,6 +134,23 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
       .catch(() => { /* la foto es evidencia opcional: no rompe el detalle */ });
     return () => { vigente = false; };
   }, [registroId, j?.registro.tieneFotoEntrada, j?.registro.tieneFotoSalida]);
+
+  // La novedad se resuelve aquí, que es donde el administrador la está mirando.
+  // Mandarlo a otra pantalla para aprobar lo que acaba de leer es la forma más
+  // segura de que no lo apruebe nunca, y una novedad sin decidir es tiempo que
+  // no se está pagando —o que se está pagando— sin que nadie lo haya resuelto.
+  const guardarNovedad = async (cambios: { tipo?: string; aprobado?: boolean }) => {
+    if (!j?.novedad) return;
+    setGuardandoNovedad(true);
+    try {
+      await api.put(`/permisos/${j.novedad.id}`, cambios);
+      const { data } = await api.get(`/registros/${registroId}/jornada`);
+      setJ(data);
+    } catch {
+      setError('No pudimos guardar el cambio en la novedad.');
+    }
+    setGuardandoNovedad(false);
+  };
 
   const r = j?.registro;
   const entrada = hhmm(r?.entrada ?? null);
@@ -161,7 +191,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
             <div className="flex flex-wrap gap-1.5">
               {r.entrada && !r.salida && <Chip tono="bg-green-100 text-green-800">Está adentro ahora</Chip>}
               {r.salidaEstimada && <Chip tono="bg-amber-50 text-amber-700">El sistema cerró este turno</Chip>}
-              {r.salidaAlmuerzo && <Chip tono="bg-yellow-50 text-yellow-700">Salió a almorzar</Chip>}
+              {r.salidaAlmuerzo && <Chip tono="bg-yellow-50 text-yellow-700">Salió a su descanso</Chip>}
               {r.entradaEstimada && <Chip tono="bg-amber-50 text-amber-700">Regreso puesto por el sistema</Chip>}
               {r.editadoPor && <Chip tono="bg-blue-50 text-blue-700">Corregido a mano</Chip>}
               {j.festivo && <Chip tono="bg-purple-100 text-purple-700">Festivo: {j.festivo.nombre}</Chip>}
@@ -171,17 +201,59 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                 </Chip>
               )}
               {j.dia && !j.dia.programado && <Chip tono="bg-gray-100 text-gray-600">Día de descanso</Chip>}
+              {r.sede && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1">
+                  <MapPin size={10} /> {r.sede.nombre}{!r.sede.activa && ' (desactivada)'}
+                </span>
+              )}
+              {r.salidaEstimada && (
+                <Chip tono="bg-amber-100 text-amber-800">Salida puesta por el sistema</Chip>
+              )}
+              {r.entrada && !r.salida && (
+                <Chip tono="bg-green-100 text-green-800">Sigue adentro</Chip>
+              )}
             </div>
 
             {/* Lo primero que se pregunta el administrador: ¿trabajó su jornada? */}
             <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Dato rotulo="Entró"><span className="font-mono text-green-700">{primeraEntrada ?? '—'}</span></Dato>
+              {/* La llegada va aquí, pegada a la hora que la produce, en vez de
+                  en un bloque aparte con su propia frase. */}
+              <Dato rotulo="Entró">
+                <span className="font-mono text-green-700">{primeraEntrada ?? '—'}</span>
+                {j.minutosTarde === null ? (
+                  <p className="text-[11px] text-muted"
+                    title={SIN_TARDANZA[j.motivoSinTardanza ?? ''] ?? 'No se puede medir la llegada.'}>
+                    sin medir
+                  </p>
+                ) : j.minutosTarde > 0 ? (
+                  <p className="text-[11px] text-orange-700 font-semibold"
+                    title={`Entraba a las ${j.dia?.horaEntrada}${(j.dia?.toleranciaMin ?? 0) > 0 ? ` con ${j.dia!.toleranciaMin} min de tolerancia` : ''}`}>
+                    {enHoras(j.minutosTarde)} tarde
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-green-700" title={`Entraba a las ${j.dia?.horaEntrada}`}>a tiempo</p>
+                )}
+              </Dato>
               <Dato rotulo="Salió"><span className="font-mono text-red-600">{ultimaSalida ?? '—'}</span></Dato>
-              <Dato rotulo="Almuerzo">
-                {a && a.minutosDescontados > 0
-                  ? <>−{enHoras(a.minutosDescontados)}
-                      {!a.ventana && <p className="text-[11px] text-muted">fijo del horario</p>}</>
-                  : <span className="text-gray-400">—</span>}
+              {/* Lo que PASÓ, no lo que costó. Esta celda mostraba los minutos
+                  descontados, así que a quien marcaba bien su descanso —y por eso
+                  no se le descuenta nada— le salía un guion, como si no hubiera
+                  descansado, encima del detalle de su hora y media. Al revés de
+                  lo que hay que premiar. El costo va debajo, en pequeño. */}
+              <Dato rotulo="Descanso">
+                {a?.salida ? (
+                  <>
+                    <span className="font-mono text-sm">{hhmm(a.salida)} → {hhmm(a.regreso) ?? '···'}</span>
+                    <p className="text-[11px] text-muted">
+                      {a.minutosDescontados > 0
+                        ? `se descontó ${enHoras(a.minutosDescontados)}`
+                        : 'no se le descontó nada'}
+                    </p>
+                  </>
+                ) : a && a.minutosDescontados > 0 ? (
+                  <>−{enHoras(a.minutosDescontados)}
+                    <p className="text-[11px] text-muted">{a.ventana ? 'no lo marcó' : 'fijo del horario'}</p></>
+                ) : <span className="text-gray-400">—</span>}
               </Dato>
               <Dato rotulo="Contado ese día">
                 <b className="text-base">{enHoras(j.minutosDelDia)}</b>
@@ -191,110 +263,164 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               </Dato>
             </div>
             <p className="text-[11px] text-muted -mt-3">
-              El tiempo contado suma todas las marcaciones del día y ya tiene descontado el almuerzo.
+              El tiempo contado suma todas las marcaciones del día y ya tiene descontado el descanso.
               No es plata: el reparto en horas ordinarias, extras y recargos está en Reportes.
             </p>
 
-            {/* Salió a almorzar y nunca volvió: la tarde no se está contando. */}
+            {/* Está descansando ahora mismo. No hay nada que corregir: se dice y
+                ya, para que nadie salga a buscar una marcación que falta. */}
+            {a?.estado === 'EN_CURSO' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+                <UtensilsCrossed size={16} className="mt-0.5 shrink-0" />
+                <span>
+                  Está en su descanso desde las <b>{hhmm(a.salida)}</b>. Su jornada sigue
+                  abierta: marcará el regreso al volver.
+                </span>
+              </div>
+            )}
+
+            {/* Salió a su descanso y nunca volvió: la tarde no se está contando. */}
             {a?.estado === 'ABIERTO' && (
               <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-900 flex items-start gap-2">
                 <Info size={16} className="mt-0.5 shrink-0" />
                 <span>
-                  Salió a almorzar a las <b>{hhmm(a.salida)}</b> y nunca volvió a marcar.
+                  Salió a su descanso a las <b>{hhmm(a.salida)}</b> y nunca volvió a marcar.
                   El resto de ese día <b>no se está contando ni pagando</b>. Si siguió trabajando,
                   agrega la marcación de la tarde con el botón <b>Editar</b> o creando una nueva.
                 </span>
               </div>
             )}
 
-            {/* Esta marcación */}
-            <div>
-              {/* Las horas van en el encabezado, no en un bloque aparte: son la
-                  identidad de esta marcación. Sin ellas, saltar de una a otra
-                  desde la lista de abajo parecía no hacer nada —lo único que
-                  cambiaba era el título, fuera de la vista— porque el resto del
-                  modal es del día y es idéntico para las dos. */}
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5 flex-wrap">
-                <Clock3 size={13} /> Esta marcación
-                {(entrada || salida) && (
-                  <span className="font-mono normal-case tracking-normal">
-                    · <span className="text-green-700">{entrada ?? '—'}</span>
-                    <span className="text-gray-300"> → </span>
-                    <span className="text-red-600">{salida ?? '—'}</span>
-                  </span>
-                )}
-              </p>
-              <div className="border border-gray-100 rounded-xl px-4 py-3 space-y-2.5">
-                {r.salidaEstimada && (
-                  <p className="text-[11px] text-amber-700">
-                    La hora de salida la puso el sistema porque nadie la marcó. Conviene revisarla.
-                  </p>
-                )}
-                {r.entrada && !r.salida && (
-                  <p className="text-[11px] text-green-700">
-                    Sigue adentro desde las {entrada}. Mientras no tenga salida, este turno no suma horas.
-                  </p>
-                )}
+            {/* La observación, que es lo único de la marcación que no cabe
+                arriba. El resto —llegada, sede, horas— se subió a la cabecera:
+                aquí repetía lo que la tira ya decía y lo que la lista de abajo
+                vuelve a decir marcación por marcación. */}
+            {r.observacion && (
+              <p className="text-sm text-ink bg-gray-50 rounded-xl px-4 py-3">{r.observacion}</p>
+            )}
 
-                <div className="text-sm flex items-start gap-2">
-                  <CalendarClock size={14} className="text-muted mt-0.5 shrink-0" />
-                  <div>
-                    {j.minutosTarde === null ? (
-                      <span className="text-muted">{SIN_TARDANZA[j.motivoSinTardanza ?? ''] ?? 'No se puede medir la llegada de esta marcación.'}</span>
-                    ) : j.minutosTarde > 0 ? (
-                      <span>
-                        Llegó <b>{enHoras(j.minutosTarde)} tarde</b>: entraba a las {j.dia?.horaEntrada}
-                        {(j.dia?.toleranciaMin ?? 0) > 0 && ` con ${j.dia!.toleranciaMin} min de tolerancia`}.
-                      </span>
-                    ) : (
-                      <span>
-                        Llegó a tiempo{j.dia?.horaEntrada && `: entraba a las ${j.dia.horaEntrada}`}.
-                      </span>
+            {/* La novedad del día: verla, decidirla y, si el tipo estaba mal,
+                corregirlo. El tipo es lo que decide si ese tiempo se paga, así
+                que cambiarlo aquí es cambiar plata: se dice en la misma línea. */}
+            {j.novedad && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
+                  <CalendarClock size={13} /> Novedad de este día
+                </p>
+                <div className={`rounded-xl px-4 py-3 space-y-2.5 text-sm border ${
+                  j.novedad.aprobado ? 'bg-green-50/60 border-green-200' : 'bg-amber-50/60 border-amber-200'}`}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Chip tono={j.novedad.aprobado ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}>
+                      {j.novedad.aprobado ? 'Aprobada' : 'Sin aprobar'}
+                    </Chip>
+                    {j.novedad.remunerada !== null && (
+                      <Chip tono={j.novedad.remunerada ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-700'}>
+                        {j.novedad.remunerada ? 'Se paga' : 'No se paga'}
+                      </Chip>
+                    )}
+                    {j.novedad.horaInicio && j.novedad.horaFin && (
+                      <span className="text-xs text-muted">{j.novedad.horaInicio} a {j.novedad.horaFin}</span>
                     )}
                   </div>
+
+                  {j.novedad.descripcion && (
+                    <p className="text-ink bg-white/70 rounded-lg px-3 py-2">{j.novedad.descripcion}</p>
+                  )}
+
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="min-w-[190px]">
+                      <label className="block text-[10px] font-semibold uppercase tracking-wide text-muted mb-1">Motivo</label>
+                      <select value={j.novedad.tipo} disabled={guardandoNovedad}
+                        onChange={e => guardarNovedad({ tipo: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white disabled:opacity-60">
+                        {Object.entries(TIPO_NOVEDAD).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                    <button disabled={guardandoNovedad}
+                      onClick={() => guardarNovedad({ aprobado: !j.novedad!.aprobado })}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-60 ${
+                        j.novedad.aprobado
+                          ? 'border border-gray-300 text-ink hover:bg-gray-50'
+                          : 'bg-green-600 hover:bg-green-700 text-white'}`}>
+                      {guardandoNovedad ? 'Guardando...' : j.novedad.aprobado ? 'Quitar la aprobación' : 'Aprobar'}
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-muted">
+                    {j.novedad.remunerada === null ? '' : j.novedad.remunerada
+                      ? 'Con este motivo, ese tiempo se paga como trabajado.'
+                      : 'Con este motivo, ese tiempo no se paga y queda como deuda.'}
+                    {' '}Solo cuenta para la liquidación cuando está aprobada.
+                  </p>
                 </div>
-
-                <div className="text-sm flex items-start gap-2">
-                  <MapPin size={14} className="text-muted mt-0.5 shrink-0" />
-                  <span>
-                    {r.sede
-                      ? <>Marcó en <b>{r.sede.nombre}</b>{!r.sede.activa && <span className="text-muted"> (sede desactivada)</span>}</>
-                      : <span className="text-muted">No quedó registrada la sede de esta marcación.</span>}
-                  </span>
-                </div>
-
-                {r.observacion && (
-                  <p className="text-sm text-ink bg-gray-50 rounded-lg px-3 py-2">{r.observacion}</p>
-                )}
-
               </div>
-            </div>
+            )}
 
-            {/* Almuerzo del día */}
+            {/* El descanso del día */}
             {a?.ventana && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
-                  <UtensilsCrossed size={13} /> Almuerzo de este día
+                  <UtensilsCrossed size={13} /> Descanso de este día
                 </p>
-                <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-1.5 text-sm">
-                  <p>Horario de almuerzo de ese día: <b>{a.ventana.inicio} a {a.ventana.fin}</b></p>
-                  {a.estado === 'MARCADO' && a.seExcedio && (
-                    <p className="text-amber-700">Volvió <b>{enHoras(a.minutosDeMas)}</b> después de que terminara.</p>
-                  )}
-                  {a.estado === 'ABIERTO' && <p><b>Salió a almorzar y no volvió a marcar.</b></p>}
-                  {a.estado === 'NO_MARCADO' && a.ventana && <p><b>No marcó</b> su salida a almuerzo.</p>}
+                {/* En tarjetas, como la tira de arriba: tres datos que se leen
+                    de un vistazo en vez de cuatro frases seguidas. Y sin el
+                    párrafo que explicaba la mecánica del descuento: quien abre
+                    este bloque quiere saber qué pasó ese día, no cómo funciona
+                    el motor. */}
+                <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <Dato rotulo="Su horario">
+                    <span className="font-mono text-sm">{a.ventana.inicio} → {a.ventana.fin}</span>
+                    {a.minutosVentana !== null && (
+                      <p className="text-[11px] text-muted">{enHoras(a.minutosVentana)}</p>
+                    )}
+                  </Dato>
 
-                  {a.estado === 'MARCADO' && (
-                    <p className="pt-1">
-                      Estuvo por fuera <b>{enHoras(a.minutos ?? 0)}</b> · se le descontó <b>{enHoras(a.minutosDescontados)}</b>
-                    </p>
-                  )}
-                  {a.ventana && (
-                    <p className="text-[11px] text-muted pt-1">
-                      Se descuentan los minutos del horario de almuerzo en los que la persona siguió marcada,
-                      no lo que duró el almuerzo. Por eso quien marca su salida paga menos que quien no la marca.
-                    </p>
-                  )}
+                  <Dato rotulo="Se lo tomó">
+                    {a.salida ? (
+                      <>
+                        <span className="font-mono text-sm">{hhmm(a.salida)} → {hhmm(a.regreso) ?? '···'}</span>
+                        <p className="text-[11px] text-muted">
+                          {a.minutos !== null ? enHoras(a.minutos) : 'sigue fuera'}
+                          {a.regresoEstimado && ' · regreso estimado'}
+                        </p>
+                      </>
+                    ) : (
+                      <span className="text-sm text-muted">no lo marcó</span>
+                    )}
+                  </Dato>
+
+                  {/* Lo de MÁS es lo que se tomó menos lo que le corresponde, no
+                      lo que se pasó al volver: quien sale quince minutos antes y
+                      vuelve quince tarde se tomó media hora de más, no quince. */}
+                  <Dato rotulo="Efecto en el día">
+                    {(() => {
+                      if (a.estado === 'EN_CURSO') return <span className="text-sm text-amber-700 font-semibold">está fuera ahora</span>;
+                      if (a.estado === 'ABIERTO') return <span className="text-sm text-red-600 font-semibold">no volvió a marcar</span>;
+                      if (a.estado === 'MARCADO' && a.minutos !== null && a.minutosVentana !== null) {
+                        const deMas = a.minutos - a.minutosVentana;
+                        if (deMas > 0) return (
+                          <>
+                            <span className="text-sm text-orange-700 font-semibold">−{enHoras(deMas)}</span>
+                            <p className="text-[11px] text-muted">se tomó de más</p>
+                          </>
+                        );
+                        return (
+                          <>
+                            <span className="text-sm text-green-700 font-semibold">dentro de su hora</span>
+                            {a.minutosDescontados > 0 && (
+                              <p className="text-[11px] text-muted">se descontó {enHoras(a.minutosDescontados)}</p>
+                            )}
+                          </>
+                        );
+                      }
+                      return (
+                        <>
+                          <span className="text-sm">−{enHoras(a.minutosDescontados)}</span>
+                          <p className="text-[11px] text-muted">de la ventana, siguió marcado</p>
+                        </>
+                      );
+                    })()}
+                  </Dato>
                 </div>
               </div>
             )}
@@ -309,19 +435,20 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   {j.tramos.map((t, i) => {
                     const esEste = t.id === r.id;
                     return (
-                      /* Información, no acción: antes eran botones que llevaban a
-                         la otra marcación, pero el resto del modal es del día y
-                         apenas cambiaban dos líneas. Prometían más de lo que
-                         daban. Para ver otra marcación se cierra y se toca su
-                         fila en la tabla, que es de donde se entró. */
-                      <div key={t.id}
-                        className={`w-full border rounded-xl px-3 py-2 text-sm ${
-                          esEste ? 'border-primary bg-primary/5' : 'border-gray-100'}`}>
+                      /* Vuelven a ser botones. Dejaron de serlo cuando cada
+                         marcación tenía su fila en la tabla y bastaba cerrar y
+                         tocar la otra; ahora la jornada entera es UNA fila, así
+                         que esta lista es el único camino al regreso del
+                         almuerzo —y a su foto, su hora y su botón de editar. */
+                      <button key={t.id} type="button" disabled={esEste}
+                        onClick={() => onVerMarcacion(t.id)}
+                        className={`w-full text-left border rounded-xl px-3 py-2 text-sm transition-colors ${
+                          esEste ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-primary hover:bg-gray-50'}`}>
                         <span className="flex items-baseline justify-between gap-2 flex-wrap">
                           <span>
                             <span className="text-muted">{i + 1}.</span>{' '}
                             <span className="font-mono">{hhmm(t.entrada) ?? '—'} → {hhmm(t.salida) ?? '—'}</span>
-                            {t.salidaAlmuerzo && <span className="text-[11px] text-yellow-700"> · salió a almorzar</span>}
+                            {t.salidaAlmuerzo && <span className="text-[11px] text-yellow-700"> · salió a su descanso</span>}
                             {t.salidaEstimada && <span className="text-[11px] text-amber-700"> · salida estimada</span>}
                             {t.entradaEstimada && <span className="text-[11px] text-amber-700"> · regreso estimado</span>}
                           </span>
@@ -331,7 +458,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                             </span>
                           )}
                         </span>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

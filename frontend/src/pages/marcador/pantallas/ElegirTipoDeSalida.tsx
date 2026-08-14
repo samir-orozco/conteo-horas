@@ -7,11 +7,11 @@ type Props = {
   onCancelar: () => void;
 };
 
-// Al salir, cuando el día tiene ventana de almuerzo y todavía no se marcó, hay
+// Al salir, cuando el día tiene ventana de descanso y todavía no se marcó, hay
 // dos salidas posibles y el sistema no puede adivinar cuál es. Se pregunta.
 //
 // Preguntar no es un trámite de más: es la única forma de que el día quede bien
-// partido. Si un almuerzo se guardara como fin de jornada, la vuelta abriría un
+// partido. Si un descanso se guardara como fin de jornada, la vuelta abriría un
 // turno nuevo y el día terminaría contando dos jornadas.
 export default function ElegirTipoDeSalida({ ventana, onAlmuerzo, onFinJornada, onCancelar }: Props) {
   return (
@@ -22,7 +22,7 @@ export default function ElegirTipoDeSalida({ ventana, onAlmuerzo, onFinJornada, 
       >
         <h2 className="text-xl font-bold text-white">¿Qué salida vas a marcar?</h2>
         <p className="text-sm text-white/60 mt-2 leading-relaxed">
-          Tu almuerzo va de <b className="text-white/90">{ventana.inicio}</b> a{' '}
+          Tu descanso va de <b className="text-white/90">{ventana.inicio}</b> a{' '}
           <b className="text-white/90">{ventana.fin}</b>.
         </p>
 
@@ -30,7 +30,7 @@ export default function ElegirTipoDeSalida({ ventana, onAlmuerzo, onFinJornada, 
           onClick={onAlmuerzo}
           className="w-full mt-6 flex items-center justify-center gap-3 bg-primary hover:bg-primary-dark text-ink font-bold py-4 rounded-2xl text-base transition-colors"
         >
-          <UtensilsCrossed size={20} /> Salgo a almorzar
+          <UtensilsCrossed size={20} /> Salgo a mi descanso
         </button>
         <p className="text-xs text-white/40 mt-2">Vuelves y marcas tu regreso</p>
 

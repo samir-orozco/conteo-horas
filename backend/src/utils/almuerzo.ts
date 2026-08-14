@@ -42,13 +42,18 @@ function solape(aIni: number, aFin: number, bIni: number, bFin: number): number 
   return Math.max(0, Math.min(aFin, bFin) - Math.max(aIni, bIni)) / MS_MIN;
 }
 
-export function minutosAlmuerzoADescontar(
+// Minutos EXACTOS —sin redondear— que estos tramos pasaron dentro de la ventana
+// de almuerzo. `null` cuando el día no tiene ventana: ahí el descuento es un
+// fijo del horario, no un solape, y no hay nada que repartir.
+//
+// Se expone aparte porque el descuento de un día hay que saber a QUIÉN cobrárselo
+// cuando el día tiene más de una jornada. Sin esto, la fila de quien se fue a las
+// 10 de la mañana cargaba el almuerzo del que se quedó hasta las cinco.
+export function minutosEnVentana(
   tramos: TramoTrabajado[],
   dia: DiaParaAlmuerzo,
-): number {
-  // Sin ventana: comportamiento histórico. No se toca el pasado.
-  if (!dia.almuerzoInicio || !dia.almuerzoFin) return dia.almuerzoMin;
-  if (tramos.length === 0) return 0;
+): number | null {
+  if (!dia.almuerzoInicio || !dia.almuerzoFin) return null;
 
   const inicio = dia.fecha.getTime() + minutosDe(dia.almuerzoInicio) * MS_MIN;
   let fin = dia.fecha.getTime() + minutosDe(dia.almuerzoFin) * MS_MIN;
@@ -71,7 +76,48 @@ export function minutosAlmuerzoADescontar(
   const cruza = (ini: number, f: number) =>
     tramos.reduce((s, t) => s + solape(t.entrada.getTime(), t.salida.getTime(), ini, f), 0);
 
-  return Math.round(cruza(inicio, fin) + cruza(inicio + UN_DIA_MS, fin + UN_DIA_MS));
+  return cruza(inicio, fin) + cruza(inicio + UN_DIA_MS, fin + UN_DIA_MS);
+}
+
+export function minutosAlmuerzoADescontar(
+  tramos: TramoTrabajado[],
+  dia: DiaParaAlmuerzo,
+): number {
+  // Sin ventana: comportamiento histórico. No se toca el pasado. Ojo al orden:
+  // esta guarda va ANTES de mirar los tramos, y hay reportes viejos que dependen
+  // de eso. Quien necesite un cero con la lista vacía lo comprueba por su cuenta.
+  if (!dia.almuerzoInicio || !dia.almuerzoFin) return dia.almuerzoMin;
+  if (tramos.length === 0) return 0;
+  // El redondeo se queda aquí, en el único sitio donde estaba: lo consume
+  // `reportes.ts` y moverlo movería nómina ya emitida.
+  return Math.round(minutosEnVentana(tramos, dia)!);
+}
+
+// ¿La persona está DENTRO de su ventana en este instante?
+//
+// No decide si puede marcar el descanso —eso es `puedeSalirAAlmorzar`, que a
+// propósito no mira la hora— sino cómo se le ofrece. Estando dentro, el botón
+// grande del kiosco lo dice de frente en vez de esconderlo detrás de "Registrar
+// Salida", que era algo que había que adivinar.
+//
+// Prueba las dos posiciones posibles de la ventana, por lo mismo que el
+// descuento: la de un turno nocturno cae en la madrugada del día SIGUIENTE al
+// que ancla la fila.
+export function dentroDeLaVentana(
+  ahora: Date,
+  // Solo lo que de verdad necesita: así la sirve tanto un día completo como el
+  // `select` acotado con el que el kiosco lee su ventana.
+  dia: Pick<DiaParaAlmuerzo, 'fecha' | 'almuerzoInicio' | 'almuerzoFin'>,
+): boolean {
+  if (!dia.almuerzoInicio || !dia.almuerzoFin) return false;
+
+  const inicio = dia.fecha.getTime() + minutosDe(dia.almuerzoInicio) * MS_MIN;
+  let fin = dia.fecha.getTime() + minutosDe(dia.almuerzoFin) * MS_MIN;
+  if (fin <= inicio) fin += UN_DIA_MS;
+
+  const t = ahora.getTime();
+  const cae = (i: number, f: number) => t >= i && t < f;
+  return cae(inicio, fin) || cae(inicio + UN_DIA_MS, fin + UN_DIA_MS);
 }
 
 // ¿Este turno puede cerrarse como "salgo a almorzar"?

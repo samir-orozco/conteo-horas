@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { minutosAlmuerzoADescontar, puedeSalirAAlmorzar } from './almuerzo';
+import { minutosAlmuerzoADescontar, puedeSalirAAlmorzar, dentroDeLaVentana } from './almuerzo';
 import { calcularDiasEsperados } from './diasEsperados';
 
 // El almuerzo deja de ser un número suelto y pasa a ser una VENTANA horaria.
@@ -192,5 +192,49 @@ describe('turno nocturno con dos tramos en la misma fila', () => {
     // corrida un día —donde estaba el almuerzo no marcado de la noche del
     // martes— no se probaba nunca. Esos 60 minutos se pagaban como nocturnos.
     expect(minutosAlmuerzoADescontar([regresoDelLunes, nocheDelMartes], diaMartes)).toBe(90);
+  });
+});
+
+// El kiosco necesita saber si la persona está DENTRO de su ventana ahora mismo,
+// para ofrecerle el descanso en el botón grande en vez de esconderlo detrás de
+// "Registrar Salida". Antes había que adivinar que ese botón preguntaba.
+describe('dentroDeLaVentana', () => {
+  const dia = (extra: Record<string, unknown> = {}) => ({
+    fecha: new Date(Date.UTC(2026, 7, 5, 5, 0, 0)), // medianoche de Bogotá
+    almuerzoMin: 60,
+    almuerzoInicio: '12:00' as string | null,
+    almuerzoFin: '13:00' as string | null,
+    ...extra,
+  });
+  const bog = (h: number, m = 0, d = 5) => new Date(Date.UTC(2026, 7, d, h + 5, m, 0));
+
+  it('dentro de la ventana dice que sí', () => {
+    expect(dentroDeLaVentana(bog(12, 30), dia())).toBe(true);
+  });
+
+  it('el instante de inicio ya cuenta', () => {
+    expect(dentroDeLaVentana(bog(12, 0), dia())).toBe(true);
+  });
+
+  it('el instante de fin ya NO cuenta: la ventana se cerró', () => {
+    expect(dentroDeLaVentana(bog(13, 0), dia())).toBe(false);
+  });
+
+  it('antes y después dicen que no', () => {
+    expect(dentroDeLaVentana(bog(11, 59), dia())).toBe(false);
+    expect(dentroDeLaVentana(bog(15), dia())).toBe(false);
+  });
+
+  it('turno nocturno: la ventana de madrugada es la del día SIGUIENTE al ancla', () => {
+    // La fila ancla al 5 de agosto, pero quien entra a las 20:00 come a la 01:30
+    // del día 6. Sin probar las dos posiciones, el botón nunca aparecería.
+    const nocturno = dia({ almuerzoInicio: '01:00', almuerzoFin: '02:00' });
+    expect(dentroDeLaVentana(bog(1, 30, 6), nocturno)).toBe(true);
+    expect(dentroDeLaVentana(bog(1, 30, 5), nocturno)).toBe(true);
+    expect(dentroDeLaVentana(bog(3, 0, 6), nocturno)).toBe(false);
+  });
+
+  it('sin ventana configurada, nunca', () => {
+    expect(dentroDeLaVentana(bog(12, 30), dia({ almuerzoInicio: null, almuerzoFin: null }))).toBe(false);
   });
 });
