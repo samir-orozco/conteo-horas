@@ -4,7 +4,7 @@ import { toZonedTime } from 'date-fns-tz';
 import { prisma } from '../index';
 import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
-import { asegurarDiaSinFallar } from '../utils/materializarDias';
+import { asegurarDiaSinFallar, regenerarDiasDeColaborador } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
 import {
   resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca,
@@ -581,6 +581,26 @@ export default async function registroRoutes(app: FastifyInstance) {
       where: { id, colaborador: { empresaId: request.empresaId } },
     });
     if (!existente) return reply.status(404).send({ error: 'Registro no encontrado' });
-    return prisma.registro.delete({ where: { id } });
+    const borrado = await prisma.registro.delete({ where: { id } });
+
+    // Un cambio de horario se aplica desde HOY solo a quien todavía no ha
+    // marcado; a quien ya empezó su día se le deja para mañana. Esa decisión se
+    // tomaba al guardar el horario y no se volvía a mirar: si después se borran
+    // las marcaciones, el día vuelve a estar sin estrenar pero seguía congelado
+    // con el horario viejo, y no había forma de desatascarlo hasta el día
+    // siguiente. Al borrar se vuelve a evaluar.
+    //
+    // Solo mira de hoy en adelante —`regenerarDiasDeColaborador` nunca toca el
+    // pasado—, así que borrar una marcación de julio no reescribe aquel día.
+    const { inicioDia, finDia } = rangoDiaBogota();
+    const esDeHoy = borrado.fecha >= inicioDia && borrado.fecha < finDia;
+    if (esDeHoy) {
+      try {
+        await regenerarDiasDeColaborador(borrado.colaboradorId);
+      } catch (err) {
+        app.log.error(err, 'No se pudieron regenerar los días tras borrar la marcación');
+      }
+    }
+    return borrado;
   });
 }
