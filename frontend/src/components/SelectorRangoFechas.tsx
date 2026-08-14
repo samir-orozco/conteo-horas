@@ -108,11 +108,11 @@ export default function SelectorRangoFechas({ desde, hasta, onCambiar }: Props) 
 
       {abierto && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => { setAbierto(false); setAncla(null); }} />
+          <div className="fixed inset-0 !mt-0 z-30" onClick={() => { setAbierto(false); setAncla(null); }} />
           <div className="absolute top-full mt-1 left-0 z-40 w-[310px] bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
             <div className="bg-primary px-4 py-3">
-              <p className="text-xs font-semibold text-ink/60 capitalize">
-                {MESES[vista.m]} {vista.a}
+              <p className="text-xs font-semibold text-ink/60">
+                {ancla ? 'Primer día elegido' : rotuloRango(desde, hasta)}
               </p>
               <p className="text-2xl font-bold text-ink leading-tight">
                 {ancla ? 'Elige el día final' : `${total} ${total === 1 ? 'día' : 'días'}`}
@@ -120,14 +120,17 @@ export default function SelectorRangoFechas({ desde, hasta, onCambiar }: Props) 
             </div>
 
             <div className="flex items-center justify-between px-3 py-2.5 text-sm">
-              {([{ campo: 'm' as const, texto: 'Mes' }, { campo: 'a' as const, texto: 'Año' }]).map(n => (
-                <div key={n.campo} className="flex items-center gap-1">
-                  <button onClick={() => mover(n.campo, -1)} aria-label={`${n.texto} anterior`}
+              {([
+                { campo: 'm' as const, que: 'Mes', valor: MESES[vista.m], ancho: 'w-20' },
+                { campo: 'a' as const, que: 'Año', valor: String(vista.a), ancho: 'w-12' },
+              ]).map(n => (
+                <div key={n.campo} className="flex items-center gap-0.5">
+                  <button onClick={() => mover(n.campo, -1)} aria-label={`${n.que} anterior`}
                     className="p-1 rounded-lg text-muted hover:bg-gray-100 hover:text-ink">
                     <ChevronLeft size={16} />
                   </button>
-                  <span className="w-10 text-center font-semibold text-ink">{n.texto}</span>
-                  <button onClick={() => mover(n.campo, 1)} aria-label={`${n.texto} siguiente`}
+                  <span className={`${n.ancho} text-center font-semibold text-ink capitalize`}>{n.valor}</span>
+                  <button onClick={() => mover(n.campo, 1)} aria-label={`${n.que} siguiente`}
                     className="p-1 rounded-lg text-muted hover:bg-gray-100 hover:text-ink">
                     <ChevronRight size={16} />
                   </button>

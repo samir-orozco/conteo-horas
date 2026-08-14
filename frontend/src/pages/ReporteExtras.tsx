@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import SelectorRangoFechas from '../components/SelectorRangoFechas';
+import SelectorColaborador from '../components/SelectorColaborador';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
@@ -162,36 +164,19 @@ export default function ReporteExtras() {
 
       {/* Filtros */}
       <div className="bg-white rounded-xl shadow p-4 md:p-6 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-          <div className="sm:col-span-2 lg:col-span-1">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Colaborador</label>
-            <select value={colaboradorId} onChange={e => setColaboradorId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-              <option value="">Todos</option>
-              {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
-            </select>
-          </div>
+        <div className="flex flex-wrap gap-3 items-end">
+          <SelectorColaborador colaboradores={colaboradores} valor={colaboradorId} onCambiar={setColaboradorId} />
           {sedes.length > 1 && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Sede</label>
               <select value={sedeId} onChange={e => setSedeId(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
                 <option value="">Todas las sedes</option>
                 {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </select>
             </div>
           )}
+          <SelectorRangoFechas desde={desde} hasta={hasta} onCambiar={(d, h) => { setDesde(d); setHasta(h); }} />
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Desde</label>
-            <input type="date" value={desde} onChange={e => setDesde(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Hasta</label>
-            <input type="date" value={hasta} onChange={e => setHasta(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-          </div>
-          <div className="flex items-end">
             <button onClick={buscar} disabled={loading}
               className="w-full flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60">
               <Search size={16} />{loading ? 'Calculando...' : 'Buscar'}
@@ -244,7 +229,7 @@ export default function ReporteExtras() {
 
       {/* Drill-down: desglose de un colaborador */}
       {drill && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={cerrarDrill}>
+        <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={cerrarDrill}>
           <div className="hp-pop bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 sticky top-0 bg-white z-10">
               <div className="flex items-center gap-3 min-w-0">

@@ -269,7 +269,7 @@ export default function Registros() {
 
           {menuFiltro && (
             <>
-              <div className="fixed inset-0 z-30" onClick={() => setMenuFiltro(false)} />
+              <div className="fixed inset-0 !mt-0 z-30" onClick={() => setMenuFiltro(false)} />
               <div className="absolute top-full mt-1 left-0 z-40 w-56 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden py-1.5">
                 {([
                   {
@@ -432,7 +432,7 @@ export default function Registros() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg">{editando ? 'Editar registro' : 'Nuevo registro'}</h3>
@@ -505,7 +505,7 @@ export default function Registros() {
 
       {/* Fotos de verificación facial del registro */}
       {fotosDe && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setFotosDe(null)}>
+        <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setFotosDe(null)}>
           <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-bold text-lg text-ink flex items-center gap-2"><Camera size={18} /> Verificación facial</h3>
