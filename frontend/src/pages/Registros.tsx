@@ -35,7 +35,11 @@ type Registro = {
   salidaAlmuerzo?: boolean;
   // Solo viene en la jornada que contiene el almuerzo; en las otras es null.
   almuerzo: Almuerzo | null;
-  marcaciones: Marcacion[];
+  // Opcional a propósito. Durante un despliegue hay una ventana en la que el
+  // navegador ya tiene este bundle y el servidor todavía responde el anterior,
+  // que no manda este campo. Que falte un dato no puede tumbar la pantalla, así
+  // que aquí se declara como puede llegar y `marcasDe` pone el respaldo.
+  marcaciones?: Marcacion[];
   // La novedad que toca ese día, si la hay. `remunerada` sale del tipo más la
   // política de la empresa, no de un campo guardado.
   novedad: { id: string; tipo: string; aprobado: boolean; remunerada: boolean } | null;
@@ -72,6 +76,16 @@ const enHoras = (min: number) => {
   if (h === 0) return `${m} min`;
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 };
+
+// Las marcaciones de una fila, con respaldo. Sin el campo, la fila se trata como
+// UNA marcación —que es justo lo que significaba antes de que existiera— en vez
+// de reventar al primer clic.
+const marcasDe = (r: Registro): Marcacion[] => r.marcaciones ?? [{
+  id: r.id, entrada: r.entrada, salida: r.salida,
+  salidaAlmuerzo: r.salidaAlmuerzo ?? false, entradaEstimada: false,
+  salidaEstimada: r.salidaEstimada ?? false,
+  tieneFotoEntrada: r.tieneFotoEntrada, tieneFotoSalida: r.tieneFotoSalida,
+}];
 
 // Celda de almuerzo. El almuerzo llega solo en la jornada que lo contiene, así
 // que aquí ya no hay que decidir en qué fila se pinta: si viene, es de esta.
@@ -193,11 +207,11 @@ export default function Registros() {
         // registro se avisara de sí mismo, y con la hora que tenía antes de la
         // última corrección, que es lo más desconcertante de todo.
         const propias = new Set<string>(
-          jornadaEditada ? jornadaEditada.marcaciones.map(m => m.id)
+          jornadaEditada ? marcasDe(jornadaEditada).map(m => m.id)
             : editando ? [editando.id] : [],
         );
         const otros = (r.data as Registro[])
-          .flatMap(j => j.marcaciones)
+          .flatMap(j => marcasDe(j))
           .filter(m => !propias.has(m.id) && m.entrada);
         setOtrosDelDia(otros.sort((a, b) => (a.entrada! < b.entrada! ? -1 : 1)));
       })
@@ -223,8 +237,9 @@ export default function Registros() {
     setErrorGuardar(null);
     setEditando(null);
     setJornadaEditada(j);
-    const abre = j.marcaciones[0];
-    const vuelve = j.marcaciones[1];
+    const marcas = marcasDe(j);
+    const abre = marcas[0];
+    const vuelve = marcas[1];
     setForm({
       colaboradorId: j.colaboradorId,
       fecha: format(toZonedTime(new Date(j.fecha), TZ), 'yyyy-MM-dd'),
@@ -387,8 +402,9 @@ export default function Registros() {
   const verFotos = async (r: Registro) => {
     setFotosDe(r);
     setFotos(null);
-    const abre = r.marcaciones[0] ?? { id: r.id };
-    const cierra = [...r.marcaciones].reverse().find(m => m.salida) ?? abre;
+    const marcas = marcasDe(r);
+    const abre = marcas[0] ?? { id: r.id };
+    const cierra = [...marcas].reverse().find(m => m.salida) ?? abre;
     const [a, b] = await Promise.all([
       api.get(`/registros/${abre.id}/fotos`),
       cierra.id === abre.id ? null : api.get(`/registros/${cierra.id}/fotos`),
@@ -562,8 +578,8 @@ export default function Registros() {
                     <button onClick={() => abrirJornada(r)} title="Editar la jornada"
                       className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={15} /></button>
                     <button onClick={() => setPorEliminar({
-                      ids: r.marcaciones.map(m => m.id),
-                      horas: r.marcaciones.map(m => `${fmtHora(m.entrada)}–${fmtHora(m.salida)}`).join(' y '),
+                      ids: marcasDe(r).map(m => m.id),
+                      horas: marcasDe(r).map(m => `${fmtHora(m.entrada)}–${fmtHora(m.salida)}`).join(' y '),
                     })} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
                   </div>
                 </td>
@@ -798,8 +814,8 @@ export default function Registros() {
           // que es donde el guardado por jornada tampoco puede representarla.
           onEditar={reg => {
             setJornadaId(null);
-            const fila = registros.find(f => f.marcaciones.some(m => m.id === reg.id));
-            if (fila && fila.marcaciones.length <= 2) abrirJornada(fila);
+            const fila = registros.find(f => marcasDe(f).some(m => m.id === reg.id));
+            if (fila && marcasDe(fila).length <= 2) abrirJornada(fila);
             else abrir(reg);
           }}
           // El detalle se cierra al eliminar: si no, queda encima mostrando una
