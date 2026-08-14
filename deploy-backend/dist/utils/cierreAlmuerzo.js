@@ -20,11 +20,11 @@ const jornada_1 = require("./jornada");
 // verdad la sabe. Primero la propia persona, en el kiosco, cuando vuelva a
 // marcar; y si nunca vuelve, el administrador, avisado por la campana.
 const MS_MIN = 60000;
-// Cuánto se espera después del fin del almuerzo antes de tratarlo como olvido.
-// Generoso a propósito: quien vuelve 20 minutos tarde y marca bien no debería
-// tener que responder nada, y preguntarle solo lo empujaría a aceptar una hora
-// que no es la suya.
-exports.GRACIA_MIN = 60;
+// La gracia vive junto a `finDeLaVentana`, en `jornada.ts`: la tabla y este
+// aviso tienen que estar de acuerdo en cuándo un descanso pasa de estar en curso
+// a ser un olvido. Se reexporta porque ya había quien la importaba de aquí.
+var jornada_2 = require("./jornada");
+Object.defineProperty(exports, "GRACIA_MIN", { enumerable: true, get: function () { return jornada_2.GRACIA_MIN; } });
 function almuerzoSinRegreso(salida, dia, ahora) {
     // Sin ventana congelada no se sabe cuándo debía volver. No se propone nada:
     // una hora inventada en una pantalla de nómina se acaba tomando por cierta.
@@ -32,7 +32,7 @@ function almuerzoSinRegreso(salida, dia, ahora) {
         return { vencido: false, finVentana: null };
     const fin = (0, jornada_1.finDeLaVentana)(salida, dia);
     return {
-        vencido: ahora.getTime() > fin + exports.GRACIA_MIN * MS_MIN,
+        vencido: ahora.getTime() > fin + jornada_1.GRACIA_MIN * MS_MIN,
         finVentana: new Date(fin),
     };
 }

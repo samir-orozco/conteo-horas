@@ -166,17 +166,27 @@ async function horarioRoutes(app) {
             },
             include: { franjas: true },
         });
-        // El cambio aplica de MAÑANA en adelante. Los días ya materializados no se
-        // tocan: son los que sostienen los reportes de nómina ya entregados.
-        // Si esto falla, el horario igual quedó guardado; se reintenta solo en la
-        // pasada diaria de `mantenerVentana`.
+        // El cambio aplica desde HOY para quien todavía no ha marcado, y desde
+        // mañana para quien ya empezó su día: nadie puede llegar tarde según una
+        // regla que no existía cuando marcó. Los días anteriores no se tocan nunca;
+        // son los que sostienen las liquidaciones ya entregadas.
+        //
+        // El resultado viaja en la respuesta para poder decírselo al administrador.
+        // Sin eso, el cambio que "no aplicó" a dos personas es invisible, que es
+        // exactamente la confusión que esto viene a quitar.
+        //
+        // Si falla, el horario igual quedó guardado. Ojo: la pasada diaria
+        // `mantenerVentana` NO repara esto —llama sin `pisarExistentes`, así que solo
+        // rellena huecos—, o sea que un fallo aquí deja los días viejos hasta que
+        // alguien vuelva a guardar el horario.
+        let regeneracion = null;
         try {
-            await (0, materializarDias_1.regenerarFuturoDeHorario)(id, app.log);
+            regeneracion = await (0, materializarDias_1.regenerarDiasDeHorario)(id, app.log);
         }
         catch (err) {
-            app.log.error(err, 'No se pudieron regenerar los días futuros del horario');
+            app.log.error(err, 'No se pudieron regenerar los días del horario');
         }
-        return actualizado;
+        return { ...actualizado, regeneracion };
     });
     // Desactiva el horario y lo desasigna de los colaboradores
     app.delete('/:id', auth, async (request, reply) => {
@@ -184,10 +194,25 @@ async function horarioRoutes(app) {
         const existente = await index_1.prisma.horario.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'Horario no encontrado' });
+        // Hay que quedarse con ellos ANTES de desasignarlos: después de la
+        // transacción ya no hay forma de saber a quiénes afectaba este horario.
+        const afectados = await index_1.prisma.colaborador.findMany({
+            where: { horarioId: id, activo: true },
+            select: { id: true, nombre: true, apellido: true },
+        });
         await index_1.prisma.$transaction([
             index_1.prisma.colaborador.updateMany({ where: { horarioId: id }, data: { horarioId: null } }),
             index_1.prisma.horario.update({ where: { id }, data: { activo: false } }),
         ]);
-        return { ok: true };
+        // Sin esto quedaban hasta 60 días por delante exigiendo un horario que ya no
+        // existe, y el kiosco seguía pidiendo su almuerzo.
+        let regeneracion = null;
+        try {
+            regeneracion = await (0, materializarDias_1.regenerarDiasDeVarios)(afectados, app.log);
+        }
+        catch (err) {
+            app.log.error(err, 'No se pudieron regenerar los días tras borrar el horario');
+        }
+        return { ok: true, regeneracion };
     });
 }

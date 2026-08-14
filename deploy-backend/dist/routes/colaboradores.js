@@ -117,7 +117,15 @@ async function colaboradorRoutes(app) {
                 where: { id: existente.id },
                 data: { ...data, activo: true, retiroProgramado: null },
             });
-            await materializar(reactivado.id);
+            // Aquí SÍ hay que pisar: quien vuelve trae filas viejas de cuando estuvo
+            // activo, y `mantenerVentanaDeColaborador` solo rellena huecos. Sin esto
+            // reingresaba con el horario que tenía el día que se fue.
+            try {
+                await (0, materializarDias_1.regenerarDiasDeColaborador)(reactivado.id);
+            }
+            catch (err) {
+                request.log.error(err, 'No se pudieron regenerar los días del colaborador reactivado');
+            }
             await sincronizarSedes(reactivado.id, sedeIds, request.empresaId);
             return reply.status(200).send({ ...reactivado, reactivado: true });
         }
@@ -141,17 +149,18 @@ async function colaboradorRoutes(app) {
         const actualizado = await index_1.prisma.colaborador.update({ where: { id }, data });
         await sincronizarSedes(id, sedeIds, request.empresaId);
         // Cambiar a alguien de horario es la otra forma de reescribir el pasado:
-        // `Colaborador.horarioId` tampoco tiene historial. Se regenera su futuro —
-        // de mañana en adelante — y lo ya materializado se queda como estaba.
+        // `Colaborador.horarioId` tampoco tiene historial. Aplica desde HOY si su día
+        // sigue intacto, y desde mañana si ya marcó. Lo anterior no se toca.
+        let aplicadoHoy = null;
         if (data.horarioId !== undefined && data.horarioId !== existente.horarioId) {
             try {
-                await (0, materializarDias_1.regenerarFuturoDeColaborador)(id);
+                aplicadoHoy = (await (0, materializarDias_1.regenerarDiasDeColaborador)(id)).aplicadoHoy;
             }
             catch (err) {
-                request.log.error(err, 'No se pudieron regenerar los días futuros del colaborador');
+                request.log.error(err, 'No se pudieron regenerar los días del colaborador');
             }
         }
-        return actualizado;
+        return { ...actualizado, aplicadoHoy };
     });
     // Estilo Notion: si el mes ya está pagado, el colaborador queda cubierto y
     // sigue activo hasta fin de mes; el retiro se aplica al iniciar el siguiente.

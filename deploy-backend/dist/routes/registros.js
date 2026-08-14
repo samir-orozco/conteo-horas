@@ -1,12 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = registroRoutes;
+const date_fns_1 = require("date-fns");
 const date_fns_tz_1 = require("date-fns-tz");
 const index_1 = require("../index");
 const tardanzas_1 = require("../utils/tardanzas");
 const diasEsperados_1 = require("../utils/diasEsperados");
 const materializarDias_1 = require("../utils/materializarDias");
 const fechas_1 = require("../utils/fechas");
+const saldoTiempo_1 = require("../utils/saldoTiempo");
 const jornada_1 = require("../utils/jornada");
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -26,10 +28,49 @@ function camposRegistro(body, esNuevo) {
         out.tipo = body.tipo;
     if (body.observacion !== undefined)
         out.observacion = body.observacion || null;
+    // Qué fue esa salida. Se deja corregir porque al absorber una marcación —dejar
+    // que una sola cubra todo el día— la superviviente conservaba la marca de
+    // salida al descanso, y la tabla decía "Sin regreso" sobre un día completo.
+    if (typeof body.salidaAlmuerzo === 'boolean')
+        out.salidaAlmuerzo = body.salidaAlmuerzo;
     return out;
 }
 async function registroRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
+    // Por qué se valida ANTES de guardar y no se arregla al mostrar: un tramo
+    // imposible no tiene forma correcta de pintarse. Quien corregía la salida de
+    // la mañana para ponerle la hora real de la tarde se tragaba el tramo del
+    // regreso del descanso; el día quedaba con dos marcaciones que se pisan, y la
+    // tabla no tenía más remedio que mostrarlo como dos filas.
+    async function motivoParaRechazar(colaboradorId, fecha, entrada, salida, excluirId) {
+        if (!entrada || !salida)
+            return null;
+        if (salida.getTime() <= entrada.getTime()) {
+            return { error: 'La salida tiene que ser posterior a la entrada. Si el turno cruza la medianoche, la salida es del día siguiente.' };
+        }
+        const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(fecha);
+        const otros = await index_1.prisma.registro.findMany({
+            where: {
+                colaboradorId,
+                fecha: { gte: inicioDia, lt: finDia },
+                ...(excluirId ? { id: { not: excluirId } } : {}),
+            },
+            select: { id: true, entrada: true, salida: true },
+        });
+        const choque = (0, jornada_1.tramoQueChoca)({ entrada, salida }, otros);
+        if (!choque)
+            return null;
+        const hhmm = (d) => (d ? (0, date_fns_1.format)((0, date_fns_tz_1.toZonedTime)(d, TZ), 'HH:mm') : '—');
+        // Viaja el conflicto entero, no solo el texto: querer que UNA marcación
+        // cubra todo el día es lo normal al corregir un día que el kiosco dejó
+        // partido, y sin el id la única salida era cancelar, buscar la otra —que ya
+        // no tiene fila propia— y borrarla a mano.
+        return {
+            error: `Ese horario se cruza con otra marcación del mismo día, la de ${hhmm(choque.entrada)} a ${hhmm(choque.salida)}. Nadie puede estar en dos turnos a la vez.`,
+            codigo: 'CRUCE_DE_MARCACIONES',
+            conflicto: { id: choque.id, entrada: choque.entrada, salida: choque.salida },
+        };
+    }
     // Verifica que el colaborador pertenezca a la empresa del token
     async function colaboradorDeEmpresa(colaboradorId, empresaId) {
         return index_1.prisma.colaborador.findFirst({ where: { id: colaboradorId, empresaId } });
@@ -101,10 +142,51 @@ async function registroRoutes(app) {
             const [dia] = (0, diasEsperados_1.combinarDiasEsperados)(inicioDia, finDia, congelado ? [congelado] : [], registro.colaborador.horario);
             return dia;
         };
-        // El almuerzo es del DÍA, no de la fila: vive en el hueco entre dos tramos.
-        // Se resuelve una vez por colaborador+día y viaja repetido en cada fila de
-        // ese día, para que la tabla y el detalle no puedan contar historias
-        // distintas del mismo almuerzo.
+        // Las novedades que tocan el rango, en UNA consulta. Sin esto la tabla no
+        // puede avisar de que ese día hay algo que aprobar, y una novedad pendiente
+        // que nadie mira es tiempo que no se está pagando —o que se está pagando de
+        // más— sin que nadie lo haya decidido.
+        const novedadesPorDia = new Map();
+        if (registros.length > 0) {
+            const fechas = registros.map(r => r.fecha.getTime());
+            const desdeDia = (0, fechas_1.rangoDiaBogota)(new Date(Math.min(...fechas))).inicioDia;
+            const hastaDia = (0, fechas_1.rangoDiaBogota)(new Date(Math.max(...fechas))).finDia;
+            const [permisos, politicaCruda] = await Promise.all([
+                index_1.prisma.permiso.findMany({
+                    where: {
+                        colaboradorId: { in: [...new Set(registros.map(r => r.colaboradorId))] },
+                        fechaInicio: { lt: hastaDia },
+                        fechaFin: { gte: desdeDia },
+                    },
+                    select: { id: true, colaboradorId: true, tipo: true, aprobado: true, fechaInicio: true, fechaFin: true },
+                    orderBy: { creadoEn: 'asc' },
+                }),
+                index_1.prisma.configuracion.findUnique({
+                    where: { empresaId_clave: { empresaId: request.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } },
+                    select: { valor: true },
+                }),
+            ]);
+            const politica = (0, saldoTiempo_1.parsearPoliticaPermisos)(politicaCruda?.valor);
+            // Un permiso puede cubrir varios días —unas vacaciones—, así que se
+            // reparte por cada día que toca. Se queda el primero de cada día: la
+            // tabla solo avisa de que hay algo; el detalle lo cuenta entero.
+            for (const p of permisos) {
+                for (let t = (0, fechas_1.rangoDiaBogota)(p.fechaInicio).inicioDia.getTime(); t <= (0, fechas_1.rangoDiaBogota)(p.fechaFin).inicioDia.getTime(); t += 24 * 60 * 60 * 1000) {
+                    const clave = `${p.colaboradorId}|${(0, date_fns_tz_1.toZonedTime)(new Date(t), TZ).toDateString()}`;
+                    if (!novedadesPorDia.has(clave)) {
+                        novedadesPorDia.set(clave, {
+                            id: p.id, tipo: p.tipo, aprobado: p.aprobado,
+                            remunerada: (0, saldoTiempo_1.esPermisoRemunerado)(p.tipo, politica),
+                        });
+                    }
+                }
+            }
+        }
+        // La tabla lista JORNADAS, no marcaciones. Marcar el almuerzo parte el día
+        // en dos tramos, y devolverlos sueltos hacía aparecer el mismo día dos veces
+        // —con la segunda fila medio vacía— como si la persona hubiera marcado dos
+        // veces. Volver del almuerzo es la misma jornada; volver por la tarde a
+        // hacer horas extra sí es otra, y esa sí baja como fila aparte.
         const registrosPorDia = new Map();
         for (const r of registros) {
             const clave = `${r.colaboradorId}|${(0, date_fns_tz_1.toZonedTime)(r.fecha, TZ).toDateString()}`;
@@ -112,49 +194,80 @@ async function registroRoutes(app) {
                 registrosPorDia.set(clave, []);
             registrosPorDia.get(clave).push(r);
         }
-        const almuerzoPorDia = new Map();
-        // En qué fila del día se pinta el almuerzo. `minutos` y `minutosDescontados`
-        // son plata: repetidos en las dos filas de un día partido, alguien los suma.
-        const filaDelAlmuerzo = new Map(); // clave del día -> registro.id
+        // Las fotos (base64) no viajan en la lista: solo un indicador; se piden con /:id/fotos.
+        // La llegada se evalúa contra el horario asignado (null si no aplica ese día).
+        const filas = [];
         for (const [clave, delDia] of registrosPorDia) {
             const dia = diaEsperadoDe(delDia[0]);
             if (!dia)
                 continue;
-            const resumen = (0, jornada_1.resumirAlmuerzoDelDia)(delDia, dia);
-            almuerzoPorDia.set(clave, resumen);
-            // Si hubo salida a almorzar, va en esa fila: es la marcación que la
-            // produjo. Si no, en la primera entrada del día, que es donde el
-            // administrador va a mirar primero.
-            const ancla = resumen.salida
-                ? delDia.find(r => r.salidaAlmuerzo)?.id
-                : primeraEntradaDia.get(clave);
-            if (ancla)
-                filaDelAlmuerzo.set(clave, ancla);
-        }
-        // Las fotos (base64) no viajan en la lista: solo un indicador; se piden con /:id/fotos.
-        // La llegada se evalúa contra el horario asignado (null si no aplica ese día).
-        return registros.map(r => {
-            const { fotoEntrada, fotoSalida, colaborador, ...resto } = r;
-            let minutosTarde = null;
-            const clave = `${r.colaboradorId}|${(0, date_fns_tz_1.toZonedTime)(r.fecha, TZ).toDateString()}`;
-            const esPrimeraDelDia = primeraEntradaDia.get(clave) === r.id;
-            if (r.entrada && esPrimeraDelDia && r.tipo !== 'FESTIVO') {
-                const dia = diaEsperadoDe(r);
-                if (dia?.programado && dia.horaEntrada) {
-                    const z = (0, date_fns_tz_1.toZonedTime)(r.entrada, TZ);
-                    const tarde = z.getHours() * 60 + z.getMinutes() - ((0, tardanzas_1.minutosDe)(dia.horaEntrada) + dia.toleranciaMin);
-                    minutosTarde = Math.max(0, tarde);
+            for (const jornada of (0, jornada_1.partirDiaEnJornadas)(delDia, dia)) {
+                const marcaciones = jornada.marcaciones;
+                const primera = marcaciones[0];
+                // Quién cierra la jornada. Una salida al DESCANSO no la cierra: la
+                // persona no se fue, sigue en su turno. Ponerla en la columna de Salida
+                // decía que se había ido a casa a la hora de su descanso.
+                const cierra = (0, jornada_1.marcacionQueCierra)(marcaciones);
+                // La tardanza se mide solo en la primera entrada del día: volver del
+                // almuerzo, o regresar de noche a hacer extras, no es llegar tarde.
+                let minutosTarde = null;
+                if (primera.entrada && primeraEntradaDia.get(clave) === primera.id
+                    && primera.tipo !== 'FESTIVO' && dia.programado && dia.horaEntrada) {
+                    const z = (0, date_fns_tz_1.toZonedTime)(primera.entrada, TZ);
+                    minutosTarde = Math.max(0, z.getHours() * 60 + z.getMinutes() - ((0, tardanzas_1.minutosDe)(dia.horaEntrada) + dia.toleranciaMin));
                 }
+                filas.push({
+                    // El id es el de la PRIMERA marcación: es la que abre la jornada y con
+                    // la que se entra al detalle. Las demás viajan en `marcaciones`, que es
+                    // lo que permite editar o borrar una sola sin adivinar cuál.
+                    id: primera.id,
+                    colaboradorId: primera.colaboradorId,
+                    colaborador: {
+                        id: delDia[0].colaborador.id,
+                        nombre: delDia[0].colaborador.nombre,
+                        apellido: delDia[0].colaborador.apellido,
+                    },
+                    fecha: primera.fecha,
+                    entrada: primera.entrada,
+                    salida: cierra?.salida ?? null,
+                    tipo: primera.tipo,
+                    observacion: primera.observacion,
+                    sedeId: primera.sedeId,
+                    minutosTarde,
+                    // Lo que ese bloque de trabajo contó, con el almuerzo ya descontado.
+                    // Antes la columna restaba salida menos entrada de un tramo suelto, así
+                    // que un día con almuerzo mostraba dos duraciones parciales.
+                    minutosContados: jornada.minutosContados,
+                    // Lo que ESTA jornada pagó de almuerzo. El resumen `almuerzo` es del
+                    // día entero: en un día con dos jornadas no son el mismo número.
+                    minutosAlmuerzoAqui: jornada.minutosAlmuerzoAqui,
+                    entradaEstimada: primera.entradaEstimada,
+                    salidaEstimada: cierra?.salidaEstimada ?? false,
+                    salidaAlmuerzo: cierra?.salidaAlmuerzo ?? false,
+                    tieneFotoEntrada: !!primera.fotoEntrada,
+                    tieneFotoSalida: !!cierra?.fotoSalida,
+                    almuerzo: jornada.almuerzo,
+                    novedad: novedadesPorDia.get(clave) ?? null,
+                    marcaciones: marcaciones.map(m => ({
+                        id: m.id,
+                        entrada: m.entrada,
+                        salida: m.salida,
+                        salidaAlmuerzo: m.salidaAlmuerzo,
+                        entradaEstimada: m.entradaEstimada,
+                        salidaEstimada: m.salidaEstimada,
+                        tieneFotoEntrada: !!m.fotoEntrada,
+                        tieneFotoSalida: !!m.fotoSalida,
+                    })),
+                });
             }
-            return {
-                ...resto,
-                colaborador: { id: colaborador.id, nombre: colaborador.nombre, apellido: colaborador.apellido },
-                minutosTarde,
-                tieneFotoEntrada: !!fotoEntrada,
-                tieneFotoSalida: !!fotoSalida,
-                almuerzo: almuerzoPorDia.get(clave) ?? null,
-                almuerzoEnEstaFila: filaDelAlmuerzo.get(clave) === r.id,
-            };
+        }
+        // Se reordena al final: agrupar por día deshace el orden que traía la
+        // consulta, y la tabla espera lo más reciente arriba.
+        return filas.sort((a, b) => {
+            const dif = b.fecha.getTime() - a.fecha.getTime();
+            if (dif !== 0)
+                return dif;
+            return (b.entrada?.getTime() ?? 0) - (a.entrada?.getTime() ?? 0);
         });
     });
     // Detalle de UNA marcación, con el día alrededor.
@@ -217,7 +330,9 @@ async function registroRoutes(app) {
                     fechaInicio: { lt: finDia },
                     fechaFin: { gte: inicioDia },
                 },
-                select: { tipo: true, descripcion: true, aprobado: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true },
+                // `id` para poder aprobarla o cambiarle el tipo desde el propio detalle,
+                // que es donde el administrador la está mirando.
+                select: { id: true, tipo: true, descripcion: true, aprobado: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true },
             }),
             index_1.prisma.registro.findUnique({
                 where: { id },
@@ -251,6 +366,18 @@ async function registroRoutes(app) {
             const z = (0, date_fns_tz_1.toZonedTime)(registro.entrada, TZ);
             minutosTarde = Math.max(0, z.getHours() * 60 + z.getMinutes() - ((0, tardanzas_1.minutosDe)(dia.horaEntrada) + dia.toleranciaMin));
         }
+        // ¿Esa novedad se paga? No es un campo: sale del tipo más la política de la
+        // empresa. Las de ley siempre, NO_REMUNERADO nunca, y cuatro tipos dependen
+        // de lo que cada empresa haya configurado. Se resuelve aquí para que el
+        // administrador lo vea al elegir el tipo, en vez de tener que ir a mirarlo.
+        let novedadRemunerada = null;
+        if (novedad) {
+            const politica = await index_1.prisma.configuracion.findUnique({
+                where: { empresaId_clave: { empresaId: registro.colaborador.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } },
+                select: { valor: true },
+            });
+            novedadRemunerada = (0, saldoTiempo_1.esPermisoRemunerado)(novedad.tipo, (0, saldoTiempo_1.parsearPoliticaPermisos)(politica?.valor));
+        }
         const { colaborador, ...datosRegistro } = registro;
         return {
             registro: {
@@ -267,7 +394,7 @@ async function registroRoutes(app) {
             minutosTarde,
             motivoSinTardanza,
             festivo,
-            novedad,
+            novedad: novedad ? { ...novedad, remunerada: novedadRemunerada } : null,
         };
     });
     // Fotos de verificación facial de un registro (se conservan 2 meses)
@@ -324,7 +451,11 @@ async function registroRoutes(app) {
         if (!(await colaboradorDeEmpresa(body.colaboradorId, request.empresaId))) {
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
         }
-        const registro = await index_1.prisma.registro.create({ data: camposRegistro(body, true) });
+        const datos = camposRegistro(body, true);
+        const motivo = await motivoParaRechazar(datos.colaboradorId, datos.fecha, datos.entrada ?? null, datos.salida ?? null);
+        if (motivo)
+            return reply.status(400).send(motivo);
+        const registro = await index_1.prisma.registro.create({ data: datos });
         // Un día con marcación es un día que va a salir en un reporte. Si llega ahí
         // sin fila, lo resuelve el horario vigente y vuelve a ser reescribible. Esto
         // pasa sobre todo al cargar días PASADOS a mano, que es como se corrige.
@@ -346,15 +477,128 @@ async function registroRoutes(app) {
         if (body.colaboradorId !== undefined && !(await colaboradorDeEmpresa(body.colaboradorId, request.empresaId))) {
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
         }
+        // Lo que va a quedar guardado: el body puede traer solo una parte.
+        const cambios = camposRegistro(body, false);
+        const motivo = await motivoParaRechazar(cambios.colaboradorId ?? existente.colaboradorId, cambios.fecha ?? existente.fecha, cambios.entrada !== undefined ? cambios.entrada : existente.entrada, cambios.salida !== undefined ? cambios.salida : existente.salida, id);
+        if (motivo)
+            return reply.status(400).send(motivo);
         const actualizado = await index_1.prisma.registro.update({
             where: { id },
-            data: { ...camposRegistro(body, false), editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
+            data: { ...cambios, editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
         });
         // Corregir un registro puede moverlo de día o de colaborador; el día nuevo
         // también necesita su fila. Nunca pisa la que ya exista, así que corregir
         // el pasado no cambia lo que ese día exigía.
         await (0, materializarDias_1.asegurarDiaSinFallar)(actualizado.colaboradorId, actualizado.fecha, app.log);
         return actualizado;
+    });
+    // Guardar una JORNADA entera: entrada, descanso y salida de una sola vez.
+    //
+    // Existe porque el formulario por marcación mentía. La fila de la tabla es una
+    // jornada, pero al editarla se abría la PRIMERA marcación, cuya salida es la
+    // del descanso: quien había marcado su entrada y su descanso veía "Salida
+    // 11:38" y con razón esperaba verla vacía, porque no se había ido a trabajar.
+    //
+    // Va en una transacción y con una sola validación sobre el estado FINAL. Hacer
+    // dos PUT seguidos no sirve: mover el descanso de 11:38 a 12:30 hace que el
+    // primer PUT pise al segundo tramo y lo rechace, aunque el resultado final
+    // fuera perfectamente válido.
+    app.put('/jornada/:id', auth, async (request, reply) => {
+        const { id } = request.params;
+        const payload = request.user;
+        const b = request.body;
+        const primera = await index_1.prisma.registro.findFirst({
+            where: { id, colaborador: { empresaId: request.empresaId } },
+        });
+        if (!primera)
+            return reply.status(404).send({ error: 'Registro no encontrado' });
+        const colaboradorId = b.colaboradorId ?? primera.colaboradorId;
+        if (b.colaboradorId !== undefined && !(await colaboradorDeEmpresa(colaboradorId, request.empresaId))) {
+            return reply.status(404).send({ error: 'Colaborador no encontrado' });
+        }
+        if (!b.entrada)
+            return reply.status(400).send({ error: 'La jornada necesita una hora de entrada.' });
+        if (b.descansoRegreso && !b.descansoSalida) {
+            return reply.status(400).send({ error: 'Para registrar el regreso del descanso hace falta la hora en que salió.' });
+        }
+        if (b.descansoSalida && !b.descansoRegreso && b.salida) {
+            return reply.status(400).send({
+                error: 'Salió al descanso y todavía no ha vuelto, así que la jornada no puede tener hora de salida. Pon primero la hora del regreso.',
+            });
+        }
+        // Las marcaciones que HOY componen esta jornada, para saber a cuáles escribir.
+        const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(primera.fecha);
+        const delDia = await index_1.prisma.registro.findMany({
+            where: { colaboradorId: primera.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
+            orderBy: { entrada: 'asc' },
+        });
+        const jornadas = (0, jornada_1.agruparEnJornadas)(delDia.filter(r => r.entrada));
+        const esta = jornadas.find(j => j.some(m => m.id === id)) ?? [primera];
+        if (esta.length > 2) {
+            return reply.status(400).send({
+                error: 'Esta jornada tiene más de dos marcaciones. Edítalas una por una desde el detalle.',
+                codigo: 'DEMASIADAS_MARCACIONES',
+            });
+        }
+        // "2026-08-14" se ancla a medianoche de BOGOTÁ, no de UTC. `new Date` sobre
+        // esa cadena da medianoche UTC, que en Bogotá es el día ANTERIOR a las siete
+        // de la tarde: guardar así movía la jornada entera un día atrás.
+        const fechaBase = typeof b.fecha === 'string' && /^\d{4}-\d{2}-\d{2}/.test(b.fecha)
+            ? new Date(`${b.fecha.slice(0, 10)}T05:00:00.000Z`)
+            : inicioDia;
+        const t = (0, jornada_1.instantesDeJornada)(fechaBase, {
+            entrada: b.entrada,
+            descansoSalida: b.descansoSalida || undefined,
+            descansoRegreso: b.descansoRegreso || undefined,
+            salida: b.salida || undefined,
+        });
+        // Los tramos que van a quedar, y con qué chocarían. Se comparan contra las
+        // OTRAS jornadas del día: las de esta se están reescribiendo enteras.
+        const idsPropios = new Set(esta.map(m => m.id));
+        const ajenos = delDia.filter(r => !idsPropios.has(r.id));
+        const nuevos = [
+            { entrada: t.entrada, salida: t.descansoSalida ?? t.salida },
+            ...(t.descansoRegreso ? [{ entrada: t.descansoRegreso, salida: t.salida }] : []),
+        ];
+        const hhmm = (d) => (d ? (0, date_fns_1.format)((0, date_fns_tz_1.toZonedTime)(d, TZ), 'HH:mm') : '—');
+        for (const n of nuevos) {
+            const choque = (0, jornada_1.tramoQueChoca)(n, ajenos);
+            if (choque) {
+                return reply.status(400).send({
+                    error: `Ese horario se cruza con otra marcación del mismo día, la de ${hhmm(choque.entrada)} a ${hhmm(choque.salida)}. Nadie puede estar en dos turnos a la vez.`,
+                    codigo: 'CRUCE_DE_MARCACIONES',
+                    conflicto: { id: choque.id, entrada: choque.entrada, salida: choque.salida },
+                });
+            }
+        }
+        const comunes = {
+            colaboradorId,
+            fecha: fechaBase,
+            ...(TIPOS_REGISTRO.has(b.tipo) ? { tipo: b.tipo } : {}),
+            observacion: b.observacion || null,
+            editadoPor: payload.email ?? payload.id,
+            editadoEn: new Date(),
+        };
+        await index_1.prisma.$transaction(async (tx) => {
+            await tx.registro.update({
+                where: { id: esta[0].id },
+                data: { ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida },
+            });
+            const segunda = esta[1];
+            if (nuevos[1]) {
+                const datos = { ...comunes, entrada: nuevos[1].entrada, salida: nuevos[1].salida, salidaAlmuerzo: false };
+                if (segunda)
+                    await tx.registro.update({ where: { id: segunda.id }, data: datos });
+                else
+                    await tx.registro.create({ data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) } });
+            }
+            else if (segunda) {
+                // Se quitó el descanso: la marcación del regreso ya no representa nada.
+                await tx.registro.delete({ where: { id: segunda.id } });
+            }
+        });
+        await (0, materializarDias_1.asegurarDiaSinFallar)(colaboradorId, fechaBase, app.log);
+        return { ok: true };
     });
     app.delete('/:id', auth, async (request, reply) => {
         const { id } = request.params;
@@ -363,6 +607,26 @@ async function registroRoutes(app) {
         });
         if (!existente)
             return reply.status(404).send({ error: 'Registro no encontrado' });
-        return index_1.prisma.registro.delete({ where: { id } });
+        const borrado = await index_1.prisma.registro.delete({ where: { id } });
+        // Un cambio de horario se aplica desde HOY solo a quien todavía no ha
+        // marcado; a quien ya empezó su día se le deja para mañana. Esa decisión se
+        // tomaba al guardar el horario y no se volvía a mirar: si después se borran
+        // las marcaciones, el día vuelve a estar sin estrenar pero seguía congelado
+        // con el horario viejo, y no había forma de desatascarlo hasta el día
+        // siguiente. Al borrar se vuelve a evaluar.
+        //
+        // Solo mira de hoy en adelante —`regenerarDiasDeColaborador` nunca toca el
+        // pasado—, así que borrar una marcación de julio no reescribe aquel día.
+        const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)();
+        const esDeHoy = borrado.fecha >= inicioDia && borrado.fecha < finDia;
+        if (esDeHoy) {
+            try {
+                await (0, materializarDias_1.regenerarDiasDeColaborador)(borrado.colaboradorId);
+            }
+            catch (err) {
+                app.log.error(err, 'No se pudieron regenerar los días tras borrar la marcación');
+            }
+        }
+        return borrado;
     });
 }
