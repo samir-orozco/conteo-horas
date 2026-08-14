@@ -576,3 +576,42 @@ describe('instantesDeJornada', () => {
     expect(r.salida).toEqual(bog(17));
   });
 });
+
+// Cuánto dura la ventana. Hace falta para decir "se tomó X de más": volver tarde
+// y tomarse de más NO son lo mismo. Quien sale 15 min antes y vuelve 15 min
+// tarde solo "volvió 15 tarde", pero se tomó media hora de más.
+describe('minutosVentana', () => {
+  const dia = (ini: string | null, fin: string | null) => ({
+    fecha: bog(0), almuerzoMin: 60, almuerzoInicio: ini, almuerzoFin: fin,
+  });
+  const ventana = (ini: string | null, fin: string | null) =>
+    resumirAlmuerzoDelDia([reg(bog(8), bog(17))], dia(ini, fin)).minutosVentana;
+
+  it('una hora de descanso son 60 minutos', () => {
+    expect(ventana('12:00', '13:00')).toBe(60);
+  });
+
+  it('media hora son 30', () => {
+    expect(ventana('12:00', '12:30')).toBe(30);
+  });
+
+  it('la ventana que cruza la medianoche también se mide bien', () => {
+    expect(ventana('23:30', '00:30')).toBe(60);
+  });
+
+  it('sin ventana no hay duración que dar', () => {
+    expect(ventana(null, null)).toBeNull();
+  });
+
+  it('el caso real: 11:45 a 13:15 con ventana de una hora son 30 de más, no 15', () => {
+    const r = resumirAlmuerzoDelDia(
+      [reg(bog(8), bog(11, 45), { salidaAlmuerzo: true }), reg(bog(13, 15), bog(17))],
+      dia('12:00', '13:00'),
+    );
+    expect(r.minutos).toBe(90);
+    expect(r.minutosVentana).toBe(60);
+    // Volvió 15 tarde, pero se tomó 30 de más: salió 15 antes de que empezara.
+    expect(r.minutosDeMas).toBe(15);
+    expect(r.minutos! - r.minutosVentana!).toBe(30);
+  });
+});

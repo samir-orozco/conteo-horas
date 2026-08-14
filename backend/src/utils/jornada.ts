@@ -59,6 +59,11 @@ export type ResumenAlmuerzo = {
   salida: Date | null;
   regreso: Date | null;
   minutos: number | null;      // lo que se tomó de verdad
+  // Cuánto dura su descanso según el horario. Con esto se puede decir cuánto se
+  // tomó DE MÁS, que no es lo mismo que volver tarde: quien sale quince minutos
+  // antes y vuelve quince tarde solo "volvió 15 tarde", pero se tomó media hora
+  // de más.
+  minutosVentana: number | null;
   minutosDescontados: number;  // lo que le cuesta al día
   regresoEstimado: boolean;    // el regreso lo puso el sistema, no una persona
   seExcedio: boolean;          // volvió después del fin de la ventana
@@ -88,6 +93,7 @@ export function resumirAlmuerzoDelDia(
     estado: conVentana ? 'NO_MARCADO' : 'SIN_VENTANA',
     ventana: conVentana ? { inicio: dia.almuerzoInicio!, fin: dia.almuerzoFin! } : null,
     salida: null, regreso: null, minutos: null,
+    minutosVentana: conVentana ? duracionDeLaVentana(dia) : null,
     minutosDescontados, regresoEstimado: false, seExcedio: false, minutosDeMas: 0,
   };
   if (!conVentana) return base;
@@ -340,6 +346,14 @@ export function partirDiaEnJornadas<T extends RegistroDeDia>(
       almuerzo: i === iDelAlmuerzo ? almuerzo : null,
     };
   });
+}
+
+// Cuánto dura la ventana del descanso, en minutos. La que cruza la medianoche
+// —un nocturno que come a las 23:30— se mide sumándole el día.
+function duracionDeLaVentana(dia: DiaParaAlmuerzo): number {
+  const ini = minutosDe(dia.almuerzoInicio!);
+  const fin = minutosDe(dia.almuerzoFin!);
+  return fin > ini ? fin - ini : fin + 1440 - ini;
 }
 
 // Instante en que se acaba la ventana de almuerzo de ESE turno.

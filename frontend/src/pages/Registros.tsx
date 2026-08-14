@@ -46,6 +46,7 @@ type Almuerzo = {
   salida: string | null;
   regreso: string | null;
   minutos: number | null;      // lo que se tomó de verdad
+  minutosVentana: number | null; // cuánto dura su descanso según el horario
   minutosDescontados: number;  // lo que le cuesta al día
   regresoEstimado: boolean;
   seExcedio: boolean;
