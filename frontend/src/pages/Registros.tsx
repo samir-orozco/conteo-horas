@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Eye } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
@@ -528,10 +528,11 @@ export default function Registros() {
                       <button onClick={() => verFotos(r)} title="Ver fotos de verificación facial"
                         className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"><Camera size={15} /></button>
                     )}
-                    {/* Con dos marcaciones, la entrada y la salida que muestra
-                        la fila son de registros DISTINTOS: guardarlas juntas las
-                        escribiría las dos sobre el primero y dejaría la tarde
-                        duplicada. Se manda al detalle, que sí las separa. */}
+                    {/* Tocar la fila entera también abre el detalle, pero eso
+                        no se ve: sin un botón, quien no lo descubre por casualidad
+                        no sabe que existe. */}
+                    <button onClick={() => setJornadaId(r.id)} title="Ver el detalle de la jornada"
+                      className="p-1.5 text-gray-500 hover:bg-gray-100 rounded"><Eye size={15} /></button>
                     <button onClick={() => abrirJornada(r)} title="Editar la jornada"
                       className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={15} /></button>
                     <button onClick={() => setPorEliminar({
