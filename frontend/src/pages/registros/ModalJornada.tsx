@@ -165,7 +165,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
             <div className="flex flex-wrap gap-1.5">
               {r.entrada && !r.salida && <Chip tono="bg-green-100 text-green-800">Está adentro ahora</Chip>}
               {r.salidaEstimada && <Chip tono="bg-amber-50 text-amber-700">El sistema cerró este turno</Chip>}
-              {r.salidaAlmuerzo && <Chip tono="bg-yellow-50 text-yellow-700">Salió a almorzar</Chip>}
+              {r.salidaAlmuerzo && <Chip tono="bg-yellow-50 text-yellow-700">Salió a su descanso</Chip>}
               {r.entradaEstimada && <Chip tono="bg-amber-50 text-amber-700">Regreso puesto por el sistema</Chip>}
               {r.editadoPor && <Chip tono="bg-blue-50 text-blue-700">Corregido a mano</Chip>}
               {j.festivo && <Chip tono="bg-purple-100 text-purple-700">Festivo: {j.festivo.nombre}</Chip>}
@@ -181,11 +181,25 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
             <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Dato rotulo="Entró"><span className="font-mono text-green-700">{primeraEntrada ?? '—'}</span></Dato>
               <Dato rotulo="Salió"><span className="font-mono text-red-600">{ultimaSalida ?? '—'}</span></Dato>
+              {/* Lo que PASÓ, no lo que costó. Esta celda mostraba los minutos
+                  descontados, así que a quien marcaba bien su descanso —y por eso
+                  no se le descuenta nada— le salía un guion, como si no hubiera
+                  descansado, encima del detalle de su hora y media. Al revés de
+                  lo que hay que premiar. El costo va debajo, en pequeño. */}
               <Dato rotulo="Descanso">
-                {a && a.minutosDescontados > 0
-                  ? <>−{enHoras(a.minutosDescontados)}
-                      {!a.ventana && <p className="text-[11px] text-muted">fijo del horario</p>}</>
-                  : <span className="text-gray-400">—</span>}
+                {a?.salida ? (
+                  <>
+                    <span className="font-mono text-sm">{hhmm(a.salida)} → {hhmm(a.regreso) ?? '···'}</span>
+                    <p className="text-[11px] text-muted">
+                      {a.minutosDescontados > 0
+                        ? `se descontó ${enHoras(a.minutosDescontados)}`
+                        : 'no se le descontó nada'}
+                    </p>
+                  </>
+                ) : a && a.minutosDescontados > 0 ? (
+                  <>−{enHoras(a.minutosDescontados)}
+                    <p className="text-[11px] text-muted">{a.ventana ? 'no lo marcó' : 'fijo del horario'}</p></>
+                ) : <span className="text-gray-400">—</span>}
               </Dato>
               <Dato rotulo="Contado ese día">
                 <b className="text-base">{enHoras(j.minutosDelDia)}</b>
@@ -195,7 +209,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               </Dato>
             </div>
             <p className="text-[11px] text-muted -mt-3">
-              El tiempo contado suma todas las marcaciones del día y ya tiene descontado el almuerzo.
+              El tiempo contado suma todas las marcaciones del día y ya tiene descontado el descanso.
               No es plata: el reparto en horas ordinarias, extras y recargos está en Reportes.
             </p>
 
@@ -286,7 +300,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               </div>
             </div>
 
-            {/* Almuerzo del día */}
+            {/* El descanso del día */}
             {a?.ventana && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
@@ -309,7 +323,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   {a.ventana && (
                     <p className="text-[11px] text-muted pt-1">
                       Se descuentan los minutos del horario del descanso en los que la persona siguió marcada,
-                      no lo que duró el almuerzo. Por eso quien marca su salida paga menos que quien no la marca.
+                      no lo que duró el descanso. Por eso quien marca su salida paga menos que quien no la marca.
                     </p>
                   )}
                 </div>
@@ -339,7 +353,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                           <span>
                             <span className="text-muted">{i + 1}.</span>{' '}
                             <span className="font-mono">{hhmm(t.entrada) ?? '—'} → {hhmm(t.salida) ?? '—'}</span>
-                            {t.salidaAlmuerzo && <span className="text-[11px] text-yellow-700"> · salió a almorzar</span>}
+                            {t.salidaAlmuerzo && <span className="text-[11px] text-yellow-700"> · salió a su descanso</span>}
                             {t.salidaEstimada && <span className="text-[11px] text-amber-700"> · salida estimada</span>}
                             {t.entradaEstimada && <span className="text-[11px] text-amber-700"> · regreso estimado</span>}
                           </span>

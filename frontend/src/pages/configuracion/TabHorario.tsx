@@ -490,9 +490,10 @@ export default function TabHorario() {
                 {marcanAlmuerzo && (
                   <p className="text-[11px] text-muted mt-3 leading-relaxed">
                     Las horas de cada día se ponen abajo, en cada franja: el sábado corto puede no tener
-                    almuerzo y un turno nocturno almuerza en la madrugada.
-                    <b> Empieza a aplicar mañana</b>, no hoy: el día en curso ya se guardó con la
-                    configuración anterior y cambiarlo movería lo que ya se liquidó.
+                    descanso y un turno nocturno come en la madrugada.
+                    <b> Aplica desde hoy</b> a quien todavía no haya marcado. A quien ya empezó su día
+                    se le aplica mañana: nadie puede llegar tarde según una regla que no existía
+                    cuando marcó.
                   </p>
                 )}
               </div>
@@ -545,10 +546,10 @@ export default function TabHorario() {
                       Descontar descanso en estos días
                       <span className="text-muted">— desmárcalo para días cortos (ej. sábado)</span>
                     </label>
-                    {/* Ventana de almuerzo: convierte el almuerzo de "cuánto" en
-                        "cuándo". Con ella, quien se va temprano deja de perder un
-                        almuerzo que nunca tomó, y quien lo marca deja de pagarlo
-                        dos veces. Vacía = como siempre. */}
+                    {/* Ventana del descanso: lo convierte de "cuánto" en "cuándo".
+                        Con ella, quien se va temprano deja de perder un descanso que
+                        nunca tomó, y quien lo marca deja de pagarlo dos veces.
+                        Vacía = como siempre. */}
                     {f.tieneAlmuerzo !== false && marcanAlmuerzo && (
                       <div className="border-t border-gray-100 pt-3 mt-1">
                         {/* Mismas proporciones que Entrada/Salida de arriba: los

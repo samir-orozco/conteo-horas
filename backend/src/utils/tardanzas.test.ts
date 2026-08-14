@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcularTardanzas, franjaDelDia, minutosDe, construirExtraConfig, DIAS_SEMANA } from './tardanzas';
+import { calcularTardanzas, franjaDelDia, minutosDe, construirExtraConfig, DIAS_SEMANA, salidaAntesDeHora } from './tardanzas';
 import { calcularDiasEsperados } from './diasEsperados';
 import { rangoReporte } from './fechas';
 
@@ -183,5 +183,46 @@ describe('construirExtraConfig', () => {
   it('sin horario activo cae a SEMANAL', () => {
     expect(construirExtraConfig('HORARIO', { ...HORARIO, activo: false })).toEqual({ modo: 'SEMANAL' });
     expect(construirExtraConfig('HORARIO', null)).toEqual({ modo: 'SEMANAL' });
+  });
+});
+
+// Salir antes de que termine la franja. Se pregunta ANTES de marcar, así que
+// tiene que decidirse sin haber escrito nada todavía.
+describe('salidaAntesDeHora', () => {
+  // `ahoraBog` es lo que devuelve `toZonedTime`: una fecha cuyos getters LOCALES
+  // dan la hora de pared de Bogotá. Se construye igual.
+  const bog = (h: number, m = 0) => new Date(2026, 7, 5, h, m, 0);
+  const dia = { horaEntrada: '08:00', horaSalida: '17:00' };
+  const noche = { horaEntrada: '21:00', horaSalida: '05:00' };
+
+  it('salir a las 16:00 de una franja que acaba a las 17:00 es temprano', () => {
+    expect(salidaAntesDeHora(bog(16), dia, 0)).toBe(true);
+  });
+
+  it('salir a su hora no es temprano', () => {
+    expect(salidaAntesDeHora(bog(17), dia, 0)).toBe(false);
+  });
+
+  it('quedarse de más tampoco', () => {
+    expect(salidaAntesDeHora(bog(18, 30), dia, 0)).toBe(false);
+  });
+
+  it('la tolerancia perdona los últimos minutos', () => {
+    expect(salidaAntesDeHora(bog(16, 55), dia, 10)).toBe(false);
+    expect(salidaAntesDeHora(bog(16, 45), dia, 10)).toBe(true);
+  });
+
+  it('turno nocturno: salir a las 04:00 de un 21:00-05:00 es temprano', () => {
+    // Sin normalizar la medianoche, las 04:00 parecían diecisiete horas antes de
+    // las 21:00 y todo el turno de noche salía "temprano".
+    expect(salidaAntesDeHora(bog(4), noche, 0)).toBe(true);
+  });
+
+  it('turno nocturno: salir a las 05:00 es su hora', () => {
+    expect(salidaAntesDeHora(bog(5), noche, 0)).toBe(false);
+  });
+
+  it('turno nocturno: irse a las 22:00, recién entrado, sí es temprano', () => {
+    expect(salidaAntesDeHora(bog(22), noche, 0)).toBe(true);
   });
 });
