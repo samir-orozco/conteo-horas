@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
@@ -129,7 +129,16 @@ export default function Registros() {
   const [hasta, setHasta] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<RegistroEditable | null>(null);
-  const [form, setForm] = useState({ colaboradorId: '', fecha: '', entrada: '', salida: '', tipo: 'NORMAL', observacion: '' });
+  // El formulario tiene la forma de la JORNADA, no la de una marcación suelta.
+  // Editando marcaciones, la que abre el día mostraba como "Salida" la hora del
+  // descanso, y quien no había terminado su turno veía una salida que no marcó.
+  const [form, setForm] = useState({
+    colaboradorId: '', fecha: '', entrada: '', salida: '',
+    descansoSalida: '', descansoRegreso: '', tipo: 'NORMAL', observacion: '',
+  });
+  // La jornada que se está editando, para saber a qué endpoint escribir y con
+  // cuántas marcaciones se está tratando.
+  const [jornadaEditada, setJornadaEditada] = useState<Registro | null>(null);
   const [fotosDe, setFotosDe] = useState<Registro | null>(null);
   const [fotos, setFotos] = useState<Fotos | null>(null);
   // Qué marcaciones se van a borrar. Una jornada partida por el almuerzo son
@@ -192,16 +201,47 @@ export default function Registros() {
   useEffect(() => { api.get('/colaboradores').then(r => setColaboradores(r.data)); }, []);
   useEffect(() => { cargar(); }, [desde, hasta, filtroColaborador]);
 
+  const hhmm = (s: string | null | undefined) =>
+    s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '';
+
+  // Editar la JORNADA de una fila: entrada, descanso y salida juntos, que es
+  // como se lee la tabla y como la piensa quien la corrige.
+  const abrirJornada = (j: Registro) => {
+    setErrorGuardar(null);
+    setEditando(null);
+    setJornadaEditada(j);
+    const abre = j.marcaciones[0];
+    const vuelve = j.marcaciones[1];
+    setForm({
+      colaboradorId: j.colaboradorId,
+      fecha: format(toZonedTime(new Date(j.fecha), TZ), 'yyyy-MM-dd'),
+      entrada: hhmm(abre?.entrada),
+      // La salida de la JORNADA, que no es la del descanso: si salió a descansar
+      // y no ha vuelto, esto va vacío, porque no ha terminado de trabajar.
+      salida: hhmm(j.salida),
+      descansoSalida: abre?.salidaAlmuerzo ? hhmm(abre.salida) : '',
+      descansoRegreso: abre?.salidaAlmuerzo ? hhmm(vuelve?.entrada) : '',
+      tipo: j.tipo, observacion: j.observacion || '',
+    });
+    setModal(true);
+  };
+
+  // Alta manual, o edición de UNA marcación suelta desde el detalle.
   const abrir = (reg?: RegistroEditable) => {
     setErrorGuardar(null);
+    setJornadaEditada(null);
     setEditando(reg || null);
     setForm(reg ? {
       colaboradorId: reg.colaboradorId,
       fecha: format(toZonedTime(new Date(reg.fecha), TZ), 'yyyy-MM-dd'),
-      entrada: reg.entrada ? format(toZonedTime(new Date(reg.entrada), TZ), "HH:mm") : '',
-      salida: reg.salida ? format(toZonedTime(new Date(reg.salida), TZ), "HH:mm") : '',
+      entrada: hhmm(reg.entrada),
+      salida: hhmm(reg.salida),
+      descansoSalida: '', descansoRegreso: '',
       tipo: reg.tipo, observacion: reg.observacion || '',
-    } : { colaboradorId: '', fecha: format(new Date(), 'yyyy-MM-dd'), entrada: '', salida: '', tipo: 'NORMAL', observacion: '' });
+    } : {
+      colaboradorId: '', fecha: format(new Date(), 'yyyy-MM-dd'), entrada: '', salida: '',
+      descansoSalida: '', descansoRegreso: '', tipo: 'NORMAL', observacion: '',
+    });
     setModal(true);
   };
 
@@ -212,6 +252,34 @@ export default function Registros() {
   };
 
   const enviar = async (extra?: { salidaAlmuerzo: boolean }) => {
+    // Editando una jornada, las horas viajan como horas: quien decide en qué día
+    // cae cada una es el servidor, que es donde vive la regla de que lo que no
+    // avanza es del día siguiente. Armarlas aquí sobre una sola fecha es lo que
+    // guardaba turnos nocturnos con la salida antes de la entrada.
+    if (jornadaEditada) {
+      try {
+        await api.put(`/registros/jornada/${jornadaEditada.id}`, {
+          colaboradorId: form.colaboradorId,
+          fecha: form.fecha,
+          entrada: form.entrada,
+          salida: form.salida,
+          descansoSalida: form.descansoSalida,
+          descansoRegreso: form.descansoRegreso,
+          tipo: form.tipo,
+          observacion: form.observacion,
+        });
+        setModal(false);
+        cargar();
+      } catch (err) {
+        const d = (err as RespuestaDeError).response?.data;
+        setErrorGuardar({
+          texto: d?.error ?? 'No pudimos guardar la jornada.',
+          conflicto: d?.codigo === 'CRUCE_DE_MARCACIONES' ? d.conflicto : undefined,
+        });
+      }
+      return;
+    }
+
     const fecha = new Date(`${form.fecha}T00:00:00`);
     const entrada = form.entrada ? new Date(`${form.fecha}T${form.entrada}:00`) : null;
     let salida = form.salida ? new Date(`${form.fecha}T${form.salida}:00`) : null;
@@ -464,8 +532,7 @@ export default function Registros() {
                         la fila son de registros DISTINTOS: guardarlas juntas las
                         escribiría las dos sobre el primero y dejaría la tarde
                         duplicada. Se manda al detalle, que sí las separa. */}
-                    <button onClick={() => r.marcaciones.length > 1 ? setJornadaId(r.id) : abrir(r)}
-                      title={r.marcaciones.length > 1 ? 'Esta jornada tiene varias marcaciones: elige cuál editar' : 'Editar'}
+                    <button onClick={() => abrirJornada(r)} title="Editar la jornada"
                       className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={15} /></button>
                     <button onClick={() => setPorEliminar({
                       ids: r.marcaciones.map(m => m.id),
@@ -530,7 +597,7 @@ export default function Registros() {
         <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">{editando ? 'Editar registro' : 'Nuevo registro'}</h3>
+              <h3 className="font-bold text-lg">{jornadaEditada ? 'Editar jornada' : editando ? 'Editar marcación' : 'Nuevo registro'}</h3>
               <button onClick={() => setModal(false)}><X size={20} className="text-gray-400" /></button>
             </div>
             <form onSubmit={guardar} className="space-y-4">
@@ -554,8 +621,40 @@ export default function Registros() {
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Salida</label>
                   <input type="time" value={form.salida} onChange={e => setForm(p => ({ ...p, salida: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                  {jornadaEditada && !form.salida && (
+                    <p className="text-[11px] text-muted mt-1">Vacía: no ha terminado su turno</p>
+                  )}
                 </div>
               </div>
+
+              {/* El descanso, DENTRO de la jornada y no como otra salida. Es una
+                  pausa dentro del turno: sirve para saber si se tomó a tiempo y
+                  en su medida, no para decir que la persona se fue. */}
+              {jornadaEditada && (
+                <div className="border border-gray-200 rounded-xl p-3">
+                  <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+                    <UtensilsCrossed size={13} /> Descanso
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Salió</label>
+                      <input type="time" value={form.descansoSalida}
+                        onChange={e => setForm(p => ({ ...p, descansoSalida: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Regresó</label>
+                      <input type="time" value={form.descansoRegreso}
+                        onChange={e => setForm(p => ({ ...p, descansoRegreso: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-2">
+                    Vacío si ese día no marcó descanso. Si borras las dos horas, la jornada
+                    queda como una sola marcación.
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
                 <select value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">

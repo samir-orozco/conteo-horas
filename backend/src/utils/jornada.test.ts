@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra } from './jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, instantesDeJornada } from './jornada';
 
 // El almuerzo no vive en un registro: vive en el HUECO entre dos. Un día con
 // almuerzo son dos tramos —08:00-12:00 y 13:00-17:00— y lo que hay en medio es
@@ -531,5 +531,48 @@ describe('resumirAlmuerzoDelDia — mientras está descansando', () => {
 
   it('un día viejo sin regreso sigue siendo un problema, no un descanso en curso', () => {
     expect(resumirAlmuerzoDelDia(salioAlDescanso, dia(), bog(10, 0, 20)).estado).toBe('ABIERTO');
+  });
+});
+
+// Armar los instantes de una jornada a partir de horas sueltas "HH:MM".
+//
+// Cada hora que no sea posterior a la anterior pertenece al día siguiente. Sin
+// esto, un turno 20:00→05:00 se guardaba con la salida NUEVE horas antes de su
+// entrada, porque el formulario colgaba las dos de la misma fecha.
+describe('instantesDeJornada', () => {
+  const medianoche = bog(0);
+
+  it('jornada de día, con descanso', () => {
+    const r = instantesDeJornada(medianoche, { entrada: '08:00', descansoSalida: '12:00', descansoRegreso: '13:00', salida: '17:00' });
+    expect(r.entrada).toEqual(bog(8));
+    expect(r.descansoSalida).toEqual(bog(12));
+    expect(r.descansoRegreso).toEqual(bog(13));
+    expect(r.salida).toEqual(bog(17));
+  });
+
+  it('turno nocturno: todo lo que cae después de medianoche pasa al día siguiente', () => {
+    const r = instantesDeJornada(medianoche, { entrada: '20:00', descansoSalida: '01:00', descansoRegreso: '02:00', salida: '05:00' });
+    expect(r.entrada).toEqual(bog(20));
+    expect(r.descansoSalida).toEqual(bog(1, 0, 6));
+    expect(r.descansoRegreso).toEqual(bog(2, 0, 6));
+    expect(r.salida).toEqual(bog(5, 0, 6));
+  });
+
+  it('sin salida todavía: la jornada sigue abierta', () => {
+    const r = instantesDeJornada(medianoche, { entrada: '08:00', descansoSalida: '12:00' });
+    expect(r.descansoSalida).toEqual(bog(12));
+    expect(r.descansoRegreso).toBeNull();
+    expect(r.salida).toBeNull();
+  });
+
+  it('sin descanso, la salida se mide contra la entrada', () => {
+    const r = instantesDeJornada(medianoche, { entrada: '22:00', salida: '06:00' });
+    expect(r.salida).toEqual(bog(6, 0, 6));
+  });
+
+  it('un descanso de duración cero es válido, no rueda al día siguiente', () => {
+    const r = instantesDeJornada(medianoche, { entrada: '08:00', descansoSalida: '12:00', descansoRegreso: '12:00', salida: '17:00' });
+    expect(r.descansoRegreso).toEqual(bog(12));
+    expect(r.salida).toEqual(bog(17));
   });
 });

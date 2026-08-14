@@ -148,6 +148,47 @@ export function tramoQueChoca<T extends { entrada: Date | null; salida: Date | n
     o.entrada && o.salida && ini < o.salida.getTime() && fin > o.entrada.getTime()) ?? null;
 }
 
+// Los instantes de una jornada, a partir de horas sueltas "HH:MM".
+//
+// Cada hora que no sea POSTERIOR a la anterior pertenece al día siguiente. Es lo
+// que hace que un turno 20:00→05:00 se guarde entero en vez de con la salida
+// nueve horas antes de su entrada: el formulario solo conoce una fecha, y colgar
+// de ella las cuatro horas a ciegas era el origen de los tramos invertidos.
+//
+// El descanso de duración cero no rueda: salir y volver en el mismo minuto es
+// raro pero no imposible, y mandarlo un día adelante sí sería un disparate.
+export type HorasDeJornada = {
+  entrada: string;
+  descansoSalida?: string;
+  descansoRegreso?: string;
+  salida?: string;
+};
+
+export function instantesDeJornada(
+  fecha: Date, // medianoche de Bogotá
+  horas: HorasDeJornada,
+): { entrada: Date; descansoSalida: Date | null; descansoRegreso: Date | null; salida: Date | null } {
+  const enElDia = (hhmm: string) => new Date(fecha.getTime() + minutosDe(hhmm) * MS_MIN);
+
+  const entrada = enElDia(horas.entrada);
+  let tope = entrada.getTime();
+
+  // `permiteIgual` para el descanso instantáneo; para el resto, seguir en la
+  // misma hora significaría no haber avanzado, y eso es el día siguiente.
+  const siguiente = (hhmm: string | undefined, permiteIgual = false): Date | null => {
+    if (!hhmm) return null;
+    let t = enElDia(hhmm).getTime();
+    while (permiteIgual ? t < tope : t <= tope) t += UN_DIA_MS;
+    tope = t;
+    return new Date(t);
+  };
+
+  const descansoSalida = siguiente(horas.descansoSalida);
+  const descansoRegreso = siguiente(horas.descansoRegreso, true);
+  const salida = siguiente(horas.salida);
+  return { entrada, descansoSalida, descansoRegreso, salida };
+}
+
 // La marcación que CIERRA la jornada, o null si todavía está abierta.
 //
 // Una salida al descanso NO la cierra. La persona no se fue: sigue en su turno,
@@ -187,6 +228,27 @@ export type JornadaDelDia<T> = {
   almuerzo: ResumenAlmuerzo | null;
 };
 
+// Agrupa las marcaciones de un día en jornadas. Un tramo se funde con el
+// siguiente SOLO si cerró saliendo al descanso.
+//
+// Se exige además que el siguiente empiece después de que el anterior cerró: dos
+// tramos solapados son datos rotos de una edición a mano, y encadenarlos daría
+// una jornada cuya salida es anterior a su propia entrada.
+//
+// Espera las marcaciones YA ordenadas por entrada.
+export function agruparEnJornadas<T extends RegistroDeDia>(enOrden: T[]): T[][] {
+  const bloques: T[][] = [];
+  for (const r of enOrden) {
+    const actual = bloques[bloques.length - 1];
+    const ultimo = actual?.[actual.length - 1];
+    const sigue = !!ultimo?.salidaAlmuerzo && !!ultimo.salida && !!r.entrada
+      && r.entrada.getTime() >= ultimo.salida.getTime();
+    if (sigue) actual.push(r);
+    else bloques.push([r]);
+  }
+  return bloques;
+}
+
 export function partirDiaEnJornadas<T extends RegistroDeDia>(
   registros: T[],
   dia: DiaParaAlmuerzo & DiaParaAjuste,
@@ -201,18 +263,7 @@ export function partirDiaEnJornadas<T extends RegistroDeDia>(
   });
   if (enOrden.length === 0) return [];
 
-  // Se exige además que el siguiente empiece después de que el anterior cerró.
-  // Dos tramos solapados son datos rotos de una edición a mano, y encadenarlos
-  // daría una jornada cuya salida es anterior a su propia entrada.
-  const bloques: T[][] = [];
-  for (const r of enOrden) {
-    const actual = bloques[bloques.length - 1];
-    const ultimo = actual?.[actual.length - 1];
-    const sigue = !!ultimo?.salidaAlmuerzo && !!ultimo.salida && !!r.entrada
-      && r.entrada.getTime() >= ultimo.salida.getTime();
-    if (sigue) actual.push(r);
-    else bloques.push([r]);
-  }
+  const bloques = agruparEnJornadas(enOrden);
 
   const almuerzo = resumirAlmuerzoDelDia(enOrden, dia);
   // De qué jornada es el almuerzo: la que contiene la salida a almorzar. Cuando

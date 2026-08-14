@@ -6,7 +6,10 @@ import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra } from '../utils/jornada';
+import {
+  resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca,
+  marcacionQueCierra, agruparEnJornadas, instantesDeJornada,
+} from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -458,6 +461,118 @@ export default async function registroRoutes(app: FastifyInstance) {
     // el pasado no cambia lo que ese día exigía.
     await asegurarDiaSinFallar(actualizado.colaboradorId, actualizado.fecha, app.log);
     return actualizado;
+  });
+
+  // Guardar una JORNADA entera: entrada, descanso y salida de una sola vez.
+  //
+  // Existe porque el formulario por marcación mentía. La fila de la tabla es una
+  // jornada, pero al editarla se abría la PRIMERA marcación, cuya salida es la
+  // del descanso: quien había marcado su entrada y su descanso veía "Salida
+  // 11:38" y con razón esperaba verla vacía, porque no se había ido a trabajar.
+  //
+  // Va en una transacción y con una sola validación sobre el estado FINAL. Hacer
+  // dos PUT seguidos no sirve: mover el descanso de 11:38 a 12:30 hace que el
+  // primer PUT pise al segundo tramo y lo rechace, aunque el resultado final
+  // fuera perfectamente válido.
+  app.put('/jornada/:id', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const payload = request.user as any;
+    const b = request.body as any;
+
+    const primera = await prisma.registro.findFirst({
+      where: { id, colaborador: { empresaId: request.empresaId } },
+    });
+    if (!primera) return reply.status(404).send({ error: 'Registro no encontrado' });
+
+    const colaboradorId = b.colaboradorId ?? primera.colaboradorId;
+    if (b.colaboradorId !== undefined && !(await colaboradorDeEmpresa(colaboradorId, request.empresaId!))) {
+      return reply.status(404).send({ error: 'Colaborador no encontrado' });
+    }
+    if (!b.entrada) return reply.status(400).send({ error: 'La jornada necesita una hora de entrada.' });
+    if (b.descansoRegreso && !b.descansoSalida) {
+      return reply.status(400).send({ error: 'Para registrar el regreso del descanso hace falta la hora en que salió.' });
+    }
+    if (b.descansoSalida && !b.descansoRegreso && b.salida) {
+      return reply.status(400).send({
+        error: 'Salió al descanso y todavía no ha vuelto, así que la jornada no puede tener hora de salida. Pon primero la hora del regreso.',
+      });
+    }
+
+    // Las marcaciones que HOY componen esta jornada, para saber a cuáles escribir.
+    const { inicioDia, finDia } = rangoDiaBogota(primera.fecha);
+    const delDia = await prisma.registro.findMany({
+      where: { colaboradorId: primera.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
+      orderBy: { entrada: 'asc' },
+    });
+    const jornadas = agruparEnJornadas(delDia.filter(r => r.entrada));
+    const esta = jornadas.find(j => j.some(m => m.id === id)) ?? [primera];
+    if (esta.length > 2) {
+      return reply.status(400).send({
+        error: 'Esta jornada tiene más de dos marcaciones. Edítalas una por una desde el detalle.',
+        codigo: 'DEMASIADAS_MARCACIONES',
+      });
+    }
+
+    // "2026-08-14" se ancla a medianoche de BOGOTÁ, no de UTC. `new Date` sobre
+    // esa cadena da medianoche UTC, que en Bogotá es el día ANTERIOR a las siete
+    // de la tarde: guardar así movía la jornada entera un día atrás.
+    const fechaBase = typeof b.fecha === 'string' && /^\d{4}-\d{2}-\d{2}/.test(b.fecha)
+      ? new Date(`${b.fecha.slice(0, 10)}T05:00:00.000Z`)
+      : inicioDia;
+    const t = instantesDeJornada(fechaBase, {
+      entrada: b.entrada,
+      descansoSalida: b.descansoSalida || undefined,
+      descansoRegreso: b.descansoRegreso || undefined,
+      salida: b.salida || undefined,
+    });
+
+    // Los tramos que van a quedar, y con qué chocarían. Se comparan contra las
+    // OTRAS jornadas del día: las de esta se están reescribiendo enteras.
+    const idsPropios = new Set(esta.map(m => m.id));
+    const ajenos = delDia.filter(r => !idsPropios.has(r.id));
+    const nuevos = [
+      { entrada: t.entrada, salida: t.descansoSalida ?? t.salida },
+      ...(t.descansoRegreso ? [{ entrada: t.descansoRegreso, salida: t.salida }] : []),
+    ];
+    const hhmm = (d: Date | null) => (d ? format(toZonedTime(d, TZ), 'HH:mm') : '—');
+    for (const n of nuevos) {
+      const choque = tramoQueChoca(n, ajenos);
+      if (choque) {
+        return reply.status(400).send({
+          error: `Ese horario se cruza con otra marcación del mismo día, la de ${hhmm(choque.entrada)} a ${hhmm(choque.salida)}. Nadie puede estar en dos turnos a la vez.`,
+          codigo: 'CRUCE_DE_MARCACIONES',
+          conflicto: { id: choque.id, entrada: choque.entrada, salida: choque.salida },
+        });
+      }
+    }
+
+    const comunes = {
+      colaboradorId,
+      fecha: fechaBase,
+      ...(TIPOS_REGISTRO.has(b.tipo) ? { tipo: b.tipo } : {}),
+      observacion: b.observacion || null,
+      editadoPor: payload.email ?? payload.id,
+      editadoEn: new Date(),
+    };
+
+    await prisma.$transaction(async (tx) => {
+      await tx.registro.update({
+        where: { id: esta[0].id },
+        data: { ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida },
+      });
+      const segunda = esta[1];
+      if (nuevos[1]) {
+        const datos = { ...comunes, entrada: nuevos[1].entrada, salida: nuevos[1].salida, salidaAlmuerzo: false };
+        if (segunda) await tx.registro.update({ where: { id: segunda.id }, data: datos });
+        else await tx.registro.create({ data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any } });
+      } else if (segunda) {
+        // Se quitó el descanso: la marcación del regreso ya no representa nada.
+        await tx.registro.delete({ where: { id: segunda.id } });
+      }
+    });
+
+    await asegurarDiaSinFallar(colaboradorId, fechaBase, app.log);
+    return { ok: true };
   });
 
   app.delete('/:id', auth, async (request, reply) => {
