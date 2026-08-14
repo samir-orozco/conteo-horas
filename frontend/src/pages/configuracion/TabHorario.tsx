@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Scale, CalendarClock, Clock3, Plus, Trash2, X, Pencil, AlertTriangle, Lock, Timer, Check } from 'lucide-react';
+import { Scale, CalendarClock, Clock3, Plus, Trash2, X, Pencil, AlertTriangle, Lock, Timer, Check, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -63,6 +63,10 @@ export default function TabHorario() {
   const [formHorario, setFormHorario] = useState<{ nombre: string; toleranciaMin: number; almuerzoMin: number; toleranciaSalidaMin: number; ajustaEntrada: boolean; franjas: Franja[] }>(HORARIO_VACIO);
   const [errorHorario, setErrorHorario] = useState('');
   const [eliminandoHorario, setEliminandoHorario] = useState<Horario | null>(null);
+  // Desde cuándo aplicó el último cambio. Sin decirlo, el administrador que le
+  // cambia el horario a alguien que ya marcó cree que no se guardó — que es
+  // justo lo que pasaba cuando el cambio aplicaba siempre desde mañana.
+  const [avisoHorario, setAvisoHorario] = useState<{ hoy: number; diferidos: { id: string; nombre: string }[] } | null>(null);
 
   // Modo de cálculo de horas extra (SEMANAL por defecto)
   const [modoExtra, setModoExtra] = useState<'SEMANAL' | 'HORARIO'>('SEMANAL');
@@ -101,12 +105,17 @@ export default function TabHorario() {
   const guardarHorario = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorHorario('');
+    setAvisoHorario(null);
     if (formHorario.franjas.some(f => f.dias.length === 0)) {
       return setErrorHorario('Cada franja debe tener al menos un día seleccionado.');
     }
     try {
-      if (editandoHorario) await api.put(`/horarios/${editandoHorario.id}`, formHorario);
-      else await api.post('/horarios', formHorario);
+      if (editandoHorario) {
+        const { data } = await api.put(`/horarios/${editandoHorario.id}`, formHorario);
+        setAvisoHorario(data.regeneracion ?? null);
+      } else {
+        await api.post('/horarios', formHorario);
+      }
       setModalHorario(false);
       cargarHorarios();
     } catch (err: any) {
@@ -205,6 +214,26 @@ export default function TabHorario() {
           Un horario puede tener varias franjas — por ejemplo lunes a viernes de 08:00 a 17:00
           y sábados de 08:00 a 12:00 — y se asigna completo a cada colaborador desde su perfil.
         </p>
+        {avisoHorario && (
+          <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-900 rounded-xl px-4 py-2.5 text-xs mb-4">
+            <Info size={14} className="mt-0.5 shrink-0" />
+            <span className="flex-1">
+              {avisoHorario.hoy > 0 && (
+                <>Aplicado <b>desde hoy</b> a {avisoHorario.hoy} {avisoHorario.hoy === 1 ? 'colaborador' : 'colaboradores'}. </>
+              )}
+              {avisoHorario.diferidos.length > 0 && (
+                <>
+                  A <b>{avisoHorario.diferidos.map(d => d.nombre).join(', ')}</b> le aplica{' '}
+                  <b>desde mañana</b>, porque ya {avisoHorario.diferidos.length === 1 ? 'marcó' : 'marcaron'} hoy:
+                  cambiarles el horario ahora movería una llegada que ya quedó registrada.
+                </>
+              )}
+              {avisoHorario.hoy === 0 && avisoHorario.diferidos.length === 0
+                && 'Ningún colaborador tiene este horario asignado todavía.'}
+            </span>
+            <button onClick={() => setAvisoHorario(null)} className="shrink-0 text-blue-400 hover:text-blue-700"><X size={14} /></button>
+          </div>
+        )}
         {horarios.length === 0 ? (
           <p className="text-sm text-muted">Aún no hay horarios. Crea el primero, por ejemplo "Oficina" L-V 08:00-17:00 y Sáb 08:00-12:00.</p>
         ) : (

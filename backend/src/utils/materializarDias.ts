@@ -63,7 +63,9 @@ export async function materializarColaborador(
         toleranciaMin: d.toleranciaMin, almuerzoMin: d.almuerzoMin,
         minutosEsperados: d.minutosEsperados, toleranciaSalidaMin: d.toleranciaSalidaMin,
         ajustaEntrada: d.ajustaEntrada, almuerzoInicio: d.almuerzoInicio, almuerzoFin: d.almuerzoFin,
-        horarioId: colaborador.horarioId, origen: 'AUTO',
+        // `origen` NO se toca al actualizar: es el único marcador que puede
+        // proteger un día ajustado a mano, y reescribirlo a AUTO lo borraría.
+        horarioId: colaborador.horarioId,
       },
       create: {
         colaboradorId, fecha: d.fecha,
@@ -88,29 +90,106 @@ export async function mantenerVentanaDeColaborador(colaboradorId: string): Promi
   return materializarColaborador(colaboradorId, inicioDia, hasta);
 }
 
-// Regenera los días FUTUROS de UN colaborador. Deja intacto hoy y todo lo
-// anterior: hoy ya empezó y la gente ya marcó contra lo que decía esta mañana.
-export async function regenerarFuturoDeColaborador(colaboradorId: string): Promise<number> {
-  const { finDia } = rangoDiaBogota(); // desde mañana
-  const hasta = new Date(finDia.getTime() + DIAS_ADELANTE * 24 * 60 * 60 * 1000);
-  return materializarColaborador(colaboradorId, finDia, hasta, { pisarExistentes: true });
+// Lo máximo que puede durar un turno abierto antes de que el auto-cierre lo dé
+// por olvidado. Nadie trabaja más: pasado eso, es una salida sin marcar.
+const VENTANA_TURNO_MS = 18 * 60 * 60 * 1000;
+
+export type MarcaParaActividad = { fecha: Date; entrada: Date | null; salida: Date | null };
+
+// ¿Esta persona ya tiene el día de hoy empezado?
+//
+// Es la pregunta que decide desde cuándo aplica un cambio de horario. El día de
+// hoy no es futuro ni pasado: está a medio consumir. La línea limpia no es una
+// fecha, es un hecho.
+//
+// Si todavía no marcó, su fila de hoy no ha alimentado ningún cálculo y pisarla
+// es idéntico a pisar la de mañana. Si ya marcó, pisarla movería su llegada, su
+// descuento de almuerzo y lo que el día le exige — y nadie puede llegar tarde
+// según una regla que no existía cuando marcó.
+export function diaYaEmpezado(
+  marcas: MarcaParaActividad[],
+  inicioDia: Date,
+  finDia: Date,
+  ahora: Date = new Date(),
+): boolean {
+  return marcas.some(r => {
+    if (r.fecha.getTime() >= inicioDia.getTime() && r.fecha.getTime() < finDia.getTime()) return true;
+    // Turno nocturno todavía abierto: se ancló al día en que entró, pero la
+    // persona sigue dentro. Cambiarle hoy la ventana de almuerzo le movería el
+    // descuento a mitad de jornada.
+    return !r.salida && !!r.entrada && ahora.getTime() - r.entrada.getTime() <= VENTANA_TURNO_MS;
+  });
 }
 
-// Regenera los días FUTUROS de todos los colaboradores de un horario. Se llama
-// cuando el admin edita el horario: aplica de mañana en adelante y deja intacto
-// lo ya liquidado.
-export async function regenerarFuturoDeHorario(horarioId: string, log?: Log): Promise<number> {
-  const colaboradores = await prisma.colaborador.findMany({
-    where: { horarioId, activo: true },
-    select: { id: true },
+export type ResultadoRegeneracion = {
+  escritos: number;
+  hoy: number;
+  // Quiénes se quedan con el horario viejo hasta mañana, por nombre. Sin esto el
+  // administrador no tiene forma de saber a quién le aplicó y a quién no, que es
+  // justo la confusión que este cambio viene a quitar.
+  diferidos: { id: string; nombre: string }[];
+};
+
+// Regenera los días de UN colaborador desde hoy si su día está intacto, y desde
+// mañana si ya lo empezó.
+export async function regenerarDiasDeColaborador(
+  colaboradorId: string,
+  ahora: Date = new Date(),
+): Promise<{ escritos: number; aplicadoHoy: boolean }> {
+  const { inicioDia, finDia } = rangoDiaBogota(ahora);
+  const marcas = await prisma.registro.findMany({
+    where: {
+      colaboradorId,
+      OR: [
+        { fecha: { gte: inicioDia, lt: finDia } },
+        { salida: null, entrada: { gte: new Date(ahora.getTime() - VENTANA_TURNO_MS) } },
+      ],
+    },
+    select: { fecha: true, entrada: true, salida: true },
   });
 
-  let total = 0;
+  const empezado = diaYaEmpezado(marcas, inicioDia, finDia, ahora);
+  const desde = empezado ? finDia : inicioDia;
+  const hasta = new Date(finDia.getTime() + DIAS_ADELANTE * 24 * 60 * 60 * 1000);
+  const escritos = await materializarColaborador(colaboradorId, desde, hasta, { pisarExistentes: true });
+  return { escritos, aplicadoHoy: !empezado };
+}
+
+async function regenerarVarios(
+  colaboradores: { id: string; nombre: string; apellido: string }[],
+  log?: Log,
+): Promise<ResultadoRegeneracion> {
+  let escritos = 0;
+  let hoy = 0;
+  const diferidos: { id: string; nombre: string }[] = [];
   for (const c of colaboradores) {
-    total += await regenerarFuturoDeColaborador(c.id);
+    const r = await regenerarDiasDeColaborador(c.id);
+    escritos += r.escritos;
+    if (r.aplicadoHoy) hoy++;
+    else diferidos.push({ id: c.id, nombre: `${c.nombre} ${c.apellido}` });
   }
-  log?.info(`Días esperados regenerados por cambio de horario: ${total} en ${colaboradores.length} colaborador(es)`);
-  return total;
+  log?.info(`Días esperados regenerados: ${escritos} · desde hoy ${hoy} · desde mañana ${diferidos.length}`);
+  return { escritos, hoy, diferidos };
+}
+
+// Regenera los días de todos los colaboradores de un horario. Se llama cuando el
+// admin lo edita.
+export async function regenerarDiasDeHorario(horarioId: string, log?: Log): Promise<ResultadoRegeneracion> {
+  const colaboradores = await prisma.colaborador.findMany({
+    where: { horarioId, activo: true },
+    select: { id: true, nombre: true, apellido: true },
+  });
+  return regenerarVarios(colaboradores, log);
+}
+
+// Igual, pero para una lista ya resuelta. La usa el borrado de un horario, que
+// tiene que quedarse con los colaboradores ANTES de desasignarlos: después ya no
+// hay forma de saber a quiénes afectaba.
+export async function regenerarDiasDeVarios(
+  colaboradores: { id: string; nombre: string; apellido: string }[],
+  log?: Log,
+): Promise<ResultadoRegeneracion> {
+  return regenerarVarios(colaboradores, log);
 }
 
 // Garantiza que UN día concreto tenga su fila. Se llama al crear o corregir un

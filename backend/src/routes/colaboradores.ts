@@ -6,7 +6,7 @@ import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { finDeMes } from '../utils/suscripcion';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
-import { regenerarFuturoDeColaborador, mantenerVentanaDeColaborador } from '../utils/materializarDias';
+import { regenerarDiasDeColaborador, mantenerVentanaDeColaborador } from '../utils/materializarDias';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -123,7 +123,14 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
         where: { id: existente.id },
         data: { ...data, activo: true, retiroProgramado: null },
       });
-      await materializar(reactivado.id);
+      // Aquí SÍ hay que pisar: quien vuelve trae filas viejas de cuando estuvo
+      // activo, y `mantenerVentanaDeColaborador` solo rellena huecos. Sin esto
+      // reingresaba con el horario que tenía el día que se fue.
+      try {
+        await regenerarDiasDeColaborador(reactivado.id);
+      } catch (err) {
+        request.log.error(err, 'No se pudieron regenerar los días del colaborador reactivado');
+      }
       await sincronizarSedes(reactivado.id, sedeIds, request.empresaId!);
       return reply.status(200).send({ ...reactivado, reactivado: true });
     }
@@ -149,17 +156,18 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     await sincronizarSedes(id, sedeIds, request.empresaId!);
 
     // Cambiar a alguien de horario es la otra forma de reescribir el pasado:
-    // `Colaborador.horarioId` tampoco tiene historial. Se regenera su futuro —
-    // de mañana en adelante — y lo ya materializado se queda como estaba.
+    // `Colaborador.horarioId` tampoco tiene historial. Aplica desde HOY si su día
+    // sigue intacto, y desde mañana si ya marcó. Lo anterior no se toca.
+    let aplicadoHoy = null;
     if (data.horarioId !== undefined && data.horarioId !== existente.horarioId) {
       try {
-        await regenerarFuturoDeColaborador(id);
+        aplicadoHoy = (await regenerarDiasDeColaborador(id)).aplicadoHoy;
       } catch (err) {
-        request.log.error(err, 'No se pudieron regenerar los días futuros del colaborador');
+        request.log.error(err, 'No se pudieron regenerar los días del colaborador');
       }
     }
 
-    return actualizado;
+    return { ...actualizado, aplicadoHoy };
   });
 
   // Estilo Notion: si el mes ya está pagado, el colaborador queda cubierto y

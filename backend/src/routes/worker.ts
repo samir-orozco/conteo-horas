@@ -11,6 +11,7 @@ import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sed
 import { resolverSedeDeMarcacion } from '../utils/sedes';
 import { puedeSalirAAlmorzar } from '../utils/almuerzo';
 import { almuerzoSinRegreso } from '../utils/cierreAlmuerzo';
+import { asegurarDiaSinFallar } from '../utils/materializarDias';
 
 const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
@@ -546,6 +547,12 @@ export default async function workerRoutes(app: FastifyInstance) {
             ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
           },
         });
+
+        // Un día con marcación es un día que va a salir en un reporte. Si llega
+        // ahí sin fila se resuelve con el horario VIGENTE, y vuelve a ser
+        // reescribible: cambiar el horario mañana le movería este día. La
+        // creación manual de registros ya lo hacía; el kiosco no.
+        await asegurarDiaSinFallar(payload.id, nuevo.fecha, app.log);
 
         // Alerta de llegada tarde por Telegram (primera entrada del día, día laboral)
         const horarioE = col?.horario;
