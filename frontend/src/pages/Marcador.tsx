@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { infoKiosco, marcar as apiMarcar, enviarNovedad as apiEnviarNovedad } from './marcador/api';
+import { infoKiosco, marcar as apiMarcar, type OpcionesMarca } from './marcador/api';
 import { useSesionKiosco } from './marcador/useSesionKiosco';
 import { useGeolocalizacion } from './marcador/useGeolocalizacion';
 import { useVinculoDispositivo } from './marcador/useVinculoDispositivo';
@@ -38,7 +38,10 @@ export default function Marcador() {
   const [marcando, setMarcando] = useState(false);
 
   // Salida temprana (se pide motivo antes de confirmar)
-  const [salidaTemprana, setSalidaTemprana] = useState<null | { accion: 'ENTRADA' | 'SALIDA'; hora: string }>(null);
+  // El servidor pidió motivo y NO marcó nada. Aquí se guardan las opciones con
+  // las que hay que reintentar cuando la persona lo dé, o descartarlas si prefiere
+  // volver atrás.
+  const [salidaTemprana, setSalidaTemprana] = useState<null | OpcionesMarca>(null);
   const [novedadTipo, setNovedadTipo] = useState('MEDICO');
   const [novedadDesc, setNovedadDesc] = useState('');
   const [enviandoNovedad, setEnviandoNovedad] = useState(false);
@@ -134,7 +137,7 @@ export default function Marcador() {
   // almuerzo de las 12:00 le borraría la tarde entera.
   const [preguntandoRegreso, setPreguntandoRegreso] = useState(false);
 
-  const marcar = async (opciones?: { almuerzo?: boolean; regresoA?: string }) => {
+  const marcar = async (opciones?: OpcionesMarca) => {
     if (!sesion.token || marcando) return;
     setMarcando(true);
     geo.setErrorUbic(null);
@@ -154,36 +157,36 @@ export default function Marcador() {
         ...(opciones?.almuerzo ? { almuerzo: true } : {}),
         ...(opciones?.regresoA ? { regresoA: opciones.regresoA } : {}),
       });
-      // Si salió antes de su horario, primero pedimos el motivo (queda como novedad).
-      // Salir a almorzar nunca pide motivo: el servidor ya no lo marca como temprana.
-      if (r.accion === 'SALIDA' && r.salidaTemprana) {
+      mostrarFlashOk(r.accion, r.hora, nombreColab, r.salidaAlmuerzo);
+    } catch (err: any) {
+      // Se va antes de que termine su jornada: el servidor NO marcó nada y pide
+      // el motivo. Salir al descanso nunca llega aquí.
+      if (err.response?.status === 409 && err.response?.data?.codigo === 'REQUIERE_MOTIVO') {
         setNovedadTipo('MEDICO');
         setNovedadDesc('');
-        setSalidaTemprana({ accion: r.accion, hora: r.hora });
-      } else {
-        mostrarFlashOk(r.accion, r.hora, nombreColab, r.salidaAlmuerzo);
+        setSalidaTemprana(opciones ?? {});
+        return;
       }
-    } catch (err: any) {
       mostrarFlashError(err.response?.data?.error ?? 'No pudimos registrar tu marcación. Intenta de nuevo.');
     } finally {
       setMarcando(false);
     }
   };
 
-  // La salida ya quedó registrada; esto solo adjunta el motivo como novedad pendiente.
-  const enviarNovedadTemprana = async (omitir: boolean) => {
+  // Con el motivo en la mano se reintenta la marca. La salida y la novedad se
+  // guardan en la MISMA llamada: separadas, un fallo de la segunda dejaba la
+  // jornada cerrada y el motivo perdido.
+  const enviarNovedadTemprana = async () => {
     if (!salidaTemprana) return;
-    const { accion, hora } = salidaTemprana;
-    if (!omitir) {
-      setEnviandoNovedad(true);
-      try {
-        await apiEnviarNovedad(sesion.token!, { tipo: novedadTipo, descripcion: novedadDesc });
-      } catch { /* la salida ya está guardada; si falla la novedad no bloqueamos */ }
-      setEnviandoNovedad(false);
-    }
+    const opciones = salidaTemprana;
+    setEnviandoNovedad(true);
     setSalidaTemprana(null);
-    mostrarFlashOk(accion, hora, nombreColab);
+    await marcar({ ...opciones, novedadTipo, novedadDescripcion: novedadDesc });
+    setEnviandoNovedad(false);
   };
+
+  // Volver atrás: no hay nada que deshacer, porque no se marcó nada.
+  const cancelarSalidaTemprana = () => setSalidaTemprana(null);
 
   // ===== Selección de pantalla (mismo orden que antes) =====
   if (flash) return <PantallaResultado flash={flash} cerrandoFlash={cerrandoFlash} />;
@@ -233,7 +236,8 @@ export default function Marcador() {
       <PantallaSalidaTemprana
         novedadTipo={novedadTipo} setNovedadTipo={setNovedadTipo}
         novedadDesc={novedadDesc} setNovedadDesc={setNovedadDesc}
-        enviarNovedadTemprana={enviarNovedadTemprana} enviandoNovedad={enviandoNovedad}
+        enviarNovedadTemprana={enviarNovedadTemprana} onVolver={cancelarSalidaTemprana}
+        enviandoNovedad={enviandoNovedad}
       />
     );
   }

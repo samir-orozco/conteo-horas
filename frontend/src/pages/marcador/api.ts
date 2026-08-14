@@ -10,6 +10,7 @@ const authHeader = (token: string) => ({ headers: { Authorization: `Bearer ${tok
 type InfoKiosco = { empresa: string; requiereDispositivo: boolean; permiteCedula: boolean; exigeUbicacion: boolean };
 type SesionResp = { token: string; colaborador: Colaborador; sedes?: Sede[] };
 type MarcaResp = { accion: 'ENTRADA' | 'SALIDA'; hora: string; salidaTemprana?: boolean; salidaAlmuerzo?: boolean; regresoEstimado?: boolean };
+export type OpcionesMarca = { almuerzo?: boolean; regresoA?: string; novedadTipo?: string; novedadDescripcion?: string };
 
 export const infoKiosco = (marcadorToken: string) =>
   apiKiosco.get(`/worker/kiosco/${marcadorToken}`).then(r => r.data as InfoKiosco);

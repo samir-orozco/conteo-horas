@@ -129,3 +129,28 @@ export function calcularTardanzas(
     toleranciaMin,
   };
 }
+
+// ¿Marcar la salida a esta hora sería ANTES de que termine su franja?
+//
+// Se pregunta antes de escribir nada: salir temprano sin decir por qué era
+// gratis —se guardaba la salida y después se ofrecía "Omitir"—, y con la salida
+// ya registrada no había forma de volver atrás si alguien se equivocaba de botón.
+//
+// Normaliza la franja que cruza medianoche sumándole 24 h, y hace lo mismo con la
+// hora de la marca cuando cae ya pasada la medianoche. Sin eso, quien sale a las
+// 04:00 de un turno 21:00-05:00 parecía irse diecisiete horas antes de tiempo.
+export function salidaAntesDeHora(
+  ahoraBog: Date,
+  franja: { horaEntrada: string; horaSalida: string },
+  toleranciaMin: number,
+): boolean {
+  const iniMin = minutosDe(franja.horaEntrada);
+  let finMin = minutosDe(franja.horaSalida);
+  const cruzaMedianoche = finMin <= iniMin;
+  if (cruzaMedianoche) finMin += 1440;
+
+  let salidaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
+  if (cruzaMedianoche && salidaMin < iniMin) salidaMin += 1440;
+
+  return salidaMin < finMin - (toleranciaMin ?? 0);
+}
