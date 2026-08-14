@@ -181,16 +181,25 @@ export default function Registros() {
       .then(r => {
         if (!vigente) return;
         // Se aplanan las jornadas: el aviso es sobre MARCACIONES del día, y la
-        // que se está editando puede ser el regreso del almuerzo, que ya no
+        // que se está editando puede ser el regreso del descanso, que ya no
         // tiene fila propia en la tabla.
+        //
+        // Se excluyen las PROPIAS. Editando una jornada entera, sus marcaciones
+        // son justo lo que el formulario controla: listarlas aquí hacía que el
+        // registro se avisara de sí mismo, y con la hora que tenía antes de la
+        // última corrección, que es lo más desconcertante de todo.
+        const propias = new Set<string>(
+          jornadaEditada ? jornadaEditada.marcaciones.map(m => m.id)
+            : editando ? [editando.id] : [],
+        );
         const otros = (r.data as Registro[])
           .flatMap(j => j.marcaciones)
-          .filter(m => m.id !== editando?.id && m.entrada);
+          .filter(m => !propias.has(m.id) && m.entrada);
         setOtrosDelDia(otros.sort((a, b) => (a.entrada! < b.entrada! ? -1 : 1)));
       })
       .catch(() => { if (vigente) setOtrosDelDia([]); });
     return () => { vigente = false; };
-  }, [modal, form.colaboradorId, form.fecha, editando?.id]);
+  }, [modal, form.colaboradorId, form.fecha, editando, jornadaEditada]);
 
   const cargar = () => {
     const params: any = { desde, hasta };
