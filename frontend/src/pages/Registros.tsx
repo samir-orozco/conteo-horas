@@ -6,6 +6,8 @@ import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, Chevron
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada from './registros/ModalJornada';
+import SelectorRangoFechas from '../components/SelectorRangoFechas';
+import SelectorColaborador from '../components/SelectorColaborador';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
@@ -113,8 +115,11 @@ export default function Registros() {
   // Filtro de llegada y paginación. La página vuelve a 1 desde cada setter en
   // vez de con un efecto: así no hay un render intermedio mostrando la página 7
   // de una lista que ahora tiene dos.
-  const [filtroLlegada, setFiltroLlegada] = useState<'' | 'TARDE' | 'A_TIEMPO'>('');
-  const [filtroSalida, setFiltroSalida] = useState<'' | 'ESTIMADA' | 'SIN_SALIDA'>('');
+  // Listas, no valores sueltos: dentro de un grupo las opciones SUMAN. "Tarde o
+  // a tiempo" no sirve de nada, pero "no marcó salida o sin salida" es
+  // exactamente la búsqueda de todo lo que hay que arreglar.
+  const [filtroLlegada, setFiltroLlegada] = useState<string[]>([]);
+  const [filtroSalida, setFiltroSalida] = useState<string[]>([]);
   const [menuFiltro, setMenuFiltro] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(50);
@@ -175,15 +180,19 @@ export default function Registros() {
   // `minutosTarde` es null cuando la llegada no se puede medir (no es la primera
   // entrada del día, festivo, sin horario). Esas filas no son "a tiempo": no se
   // sabe, así que no entran en ninguno de los dos filtros.
-  const filtrados = registros.filter(r => {
-    if (filtroLlegada === 'TARDE' && !((r.minutosTarde ?? 0) > 0)) return false;
-    if (filtroLlegada === 'A_TIEMPO' && r.minutosTarde !== 0) return false;
-    // Dos situaciones distintas que conviene no mezclar: en una el sistema
-    // puso una hora que hay que revisar, en la otra no hay hora ninguna.
-    if (filtroSalida === 'ESTIMADA' && !r.salidaEstimada) return false;
-    if (filtroSalida === 'SIN_SALIDA' && r.salida) return false;
-    return true;
-  });
+  // Dentro de un grupo, O. Entre grupos, Y. Es lo que uno espera de un menú de
+  // filtros: "(tarde o a tiempo) Y (sin salida)".
+  const cumpleLlegada = (r: Registro) => {
+    if (filtroLlegada.length === 0) return true;
+    return filtroLlegada.some(v =>
+      v === 'TARDE' ? (r.minutosTarde ?? 0) > 0 : r.minutosTarde === 0);
+  };
+  const cumpleSalida = (r: Registro) => {
+    if (filtroSalida.length === 0) return true;
+    return filtroSalida.some(v =>
+      v === 'ESTIMADA' ? !!r.salidaEstimada : !r.salida);
+  };
+  const filtrados = registros.filter(r => cumpleLlegada(r) && cumpleSalida(r));
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / porPagina));
   // Se acota al total por si la lista encogió con el filtro y la página actual
@@ -192,12 +201,15 @@ export default function Registros() {
   const primera = (pagActual - 1) * porPagina;
   const visibles = filtrados.slice(primera, primera + porPagina);
 
-  // El menú NO se cierra al elegir: con dos grupos, cerrarlo obligaría a
-  // reabrirlo para poner el segundo filtro.
-  const cambiarLlegada = (v: '' | 'TARDE' | 'A_TIEMPO') => { setFiltroLlegada(v); setPagina(1); };
-  const cambiarSalida = (v: '' | 'ESTIMADA' | 'SIN_SALIDA') => { setFiltroSalida(v); setPagina(1); };
-  const limpiarFiltros = () => { setFiltroLlegada(''); setFiltroSalida(''); setPagina(1); setMenuFiltro(false); };
-  const hayFiltro = !!filtroLlegada || !!filtroSalida;
+  // El menú NO se cierra al elegir: con varias opciones a la vez, cerrarse en
+  // cada clic haría imposible componer una búsqueda.
+  const alternar = (lista: string[], set: (v: string[]) => void, v: string) => {
+    set(lista.includes(v) ? lista.filter(x => x !== v) : [...lista, v]);
+    setPagina(1);
+  };
+  const limpiarFiltros = () => { setFiltroLlegada([]); setFiltroSalida([]); setPagina(1); setMenuFiltro(false); };
+  const cuantosFiltros = filtroLlegada.length + filtroSalida.length;
+  const hayFiltro = cuantosFiltros > 0;
 
   // La columna de Almuerzo aparece cuando ese día descuenta almuerzo, tenga o no
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
@@ -229,12 +241,15 @@ export default function Registros() {
       </div>
 
       <div className="bg-white rounded-xl shadow p-4 mb-4 flex flex-wrap gap-3">
-        <select value={filtroColaborador} onChange={e => { setFiltroColaborador(e.target.value); setPagina(1); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
-          <option value="">Todos los colaboradores</option>
-          {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
-        </select>
-        <input type="date" value={desde} onChange={e => { setDesde(e.target.value); setPagina(1); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-        <input type="date" value={hasta} onChange={e => { setHasta(e.target.value); setPagina(1); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+        <SelectorColaborador
+          colaboradores={colaboradores}
+          valor={filtroColaborador}
+          onCambiar={id => { setFiltroColaborador(id); setPagina(1); }}
+        />
+        <SelectorRangoFechas
+          desde={desde} hasta={hasta}
+          onCambiar={(d, h) => { setDesde(d); setHasta(h); setPagina(1); }}
+        />
 
         {/* Filtro de llegada. El punto ámbar dice que hay un filtro puesto sin
             tener que abrir el menú: una tabla filtrada que parece completa hace
@@ -245,7 +260,11 @@ export default function Registros() {
               hayFiltro ? 'border-primary bg-primary/10 text-ink' : 'border-gray-300 text-ink hover:bg-gray-50'}`}>
             <SlidersHorizontal size={15} />
             Filtros
-            {hayFiltro && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500" />}
+            {hayFiltro && (
+              <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center">
+                {cuantosFiltros}
+              </span>
+            )}
           </button>
 
           {menuFiltro && (
@@ -254,23 +273,26 @@ export default function Registros() {
               <div className="absolute top-full mt-1 left-0 z-40 w-56 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden py-1.5">
                 {([
                   {
-                    grupo: 'Llegada', valor: filtroLlegada, cambiar: cambiarLlegada as (v: string) => void,
+                    grupo: 'Llegada', valor: filtroLlegada, set: setFiltroLlegada,
                     opciones: [{ v: 'TARDE', texto: 'Tarde' }, { v: 'A_TIEMPO', texto: 'A tiempo' }],
                   },
                   {
-                    grupo: 'Salida', valor: filtroSalida, cambiar: cambiarSalida as (v: string) => void,
+                    grupo: 'Salida', valor: filtroSalida, set: setFiltroSalida,
                     opciones: [{ v: 'ESTIMADA', texto: 'No marcó salida' }, { v: 'SIN_SALIDA', texto: 'Sin salida' }],
                   },
                 ]).map((g, gi) => (
                   <div key={g.grupo} className={gi > 0 ? 'mt-1.5 pt-1.5 border-t border-gray-100' : ''}>
                     <p className="px-3.5 pb-1.5 text-xs font-semibold text-muted">{g.grupo}</p>
                     {g.opciones.map(op => {
-                      const activo = g.valor === op.v;
+                      const activo = g.valor.includes(op.v);
                       return (
-                        <button key={op.v} onClick={() => g.cambiar(activo ? '' : op.v)}
-                          className={`w-full flex items-center gap-2 px-3.5 py-2 text-sm text-left transition-colors ${
+                        <button key={op.v} onClick={() => alternar(g.valor, g.set, op.v)}
+                          className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors ${
                             activo ? 'bg-green-50 text-green-700 font-semibold' : 'text-ink hover:bg-gray-50'}`}>
-                          {activo ? <Check size={15} className="shrink-0" /> : <span className="w-[15px] shrink-0" />}
+                          <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                            activo ? 'bg-green-600 border-green-600' : 'border-gray-300'}`}>
+                            {activo && <Check size={11} className="text-white" strokeWidth={3} />}
+                          </span>
                           {op.texto}
                         </button>
                       );
