@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Camera, Info } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada from './registros/ModalJornada';
@@ -110,6 +110,14 @@ export default function Registros() {
   // este aviso el usuario cree que el cálculo falló.
   const [otrosDelDia, setOtrosDelDia] = useState<Registro[]>([]);
 
+  // Filtro de llegada y paginación. La página vuelve a 1 desde cada setter en
+  // vez de con un efecto: así no hay un render intermedio mostrando la página 7
+  // de una lista que ahora tiene dos.
+  const [filtroLlegada, setFiltroLlegada] = useState<'' | 'TARDE' | 'A_TIEMPO'>('');
+  const [menuFiltro, setMenuFiltro] = useState(false);
+  const [pagina, setPagina] = useState(1);
+  const [porPagina, setPorPagina] = useState(50);
+
   useEffect(() => {
     if (!modal || !form.colaboradorId || !form.fecha) { setOtrosDelDia([]); return; }
     let vigente = true;
@@ -163,6 +171,26 @@ export default function Registros() {
     cargar();
   };
 
+  // `minutosTarde` es null cuando la llegada no se puede medir (no es la primera
+  // entrada del día, festivo, sin horario). Esas filas no son "a tiempo": no se
+  // sabe, así que no entran en ninguno de los dos filtros.
+  const filtrados = registros.filter(r => {
+    if (filtroLlegada === 'TARDE') return (r.minutosTarde ?? 0) > 0;
+    if (filtroLlegada === 'A_TIEMPO') return r.minutosTarde === 0;
+    return true;
+  });
+
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / porPagina));
+  // Se acota al total por si la lista encogió con el filtro y la página actual
+  // ya no existe.
+  const pagActual = Math.min(pagina, totalPaginas);
+  const primera = (pagActual - 1) * porPagina;
+  const visibles = filtrados.slice(primera, primera + porPagina);
+
+  const cambiarLlegada = (v: '' | 'TARDE' | 'A_TIEMPO') => {
+    setFiltroLlegada(v); setPagina(1); setMenuFiltro(false);
+  };
+
   // La columna de Almuerzo aparece cuando ese día descuenta almuerzo, tenga o no
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
   // 60 min" sin decir de qué hora a qué hora: exigir la ventana escondería la
@@ -193,12 +221,54 @@ export default function Registros() {
       </div>
 
       <div className="bg-white rounded-xl shadow p-4 mb-4 flex flex-wrap gap-3">
-        <select value={filtroColaborador} onChange={e => setFiltroColaborador(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        <select value={filtroColaborador} onChange={e => { setFiltroColaborador(e.target.value); setPagina(1); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm">
           <option value="">Todos los colaboradores</option>
           {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
         </select>
-        <input type="date" value={desde} onChange={e => setDesde(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-        <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+        <input type="date" value={desde} onChange={e => { setDesde(e.target.value); setPagina(1); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+        <input type="date" value={hasta} onChange={e => { setHasta(e.target.value); setPagina(1); }} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+
+        {/* Filtro de llegada. El punto ámbar dice que hay un filtro puesto sin
+            tener que abrir el menú: una tabla filtrada que parece completa hace
+            sacar conclusiones sobre datos que no están. */}
+        <div className="relative">
+          <button onClick={() => setMenuFiltro(v => !v)}
+            className={`relative flex items-center gap-2 border rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              filtroLlegada ? 'border-primary bg-primary/10 text-ink' : 'border-gray-300 text-ink hover:bg-gray-50'}`}>
+            <SlidersHorizontal size={15} />
+            Filtros
+            {filtroLlegada && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500" />}
+          </button>
+
+          {menuFiltro && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setMenuFiltro(false)} />
+              <div className="absolute top-full mt-1 left-0 z-40 w-52 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden py-1.5">
+                <p className="px-3.5 pb-1.5 text-xs font-semibold text-muted">Llegada</p>
+                {([
+                  { v: 'TARDE' as const, texto: 'Tarde' },
+                  { v: 'A_TIEMPO' as const, texto: 'A tiempo' },
+                ]).map(op => {
+                  const activo = filtroLlegada === op.v;
+                  return (
+                    <button key={op.v} onClick={() => cambiarLlegada(activo ? '' : op.v)}
+                      className={`w-full flex items-center gap-2 px-3.5 py-2 text-sm text-left transition-colors ${
+                        activo ? 'bg-green-50 text-green-700 font-semibold' : 'text-ink hover:bg-gray-50'}`}>
+                      {activo ? <Check size={15} className="shrink-0" /> : <span className="w-[15px] shrink-0" />}
+                      {op.texto}
+                    </button>
+                  );
+                })}
+                {filtroLlegada && (
+                  <button onClick={() => cambiarLlegada('')}
+                    className="w-full mt-1.5 pt-2 border-t border-gray-100 px-3.5 pb-1 text-sm font-semibold text-red-500 hover:text-red-600">
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-800 rounded-xl px-4 py-2.5 text-xs mb-4">
@@ -223,7 +293,7 @@ export default function Registros() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {registros.map(r => (
+            {visibles.map(r => (
               <tr key={r.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setJornadaId(r.id)}>
                 <td className="px-4 py-3 font-medium text-gray-800">{r.colaborador.nombre} {r.colaborador.apellido}</td>
                 <td className="px-4 py-3 text-gray-600 capitalize">{format(toZonedTime(new Date(r.fecha), TZ), "d MMM yyyy", { locale: es })}</td>
@@ -273,7 +343,52 @@ export default function Registros() {
           </tbody>
         </table>
         </div>
-        {registros.length === 0 && <p className="text-center text-gray-400 py-8">No hay registros para el período seleccionado</p>}
+        {filtrados.length === 0 && (
+          <p className="text-center text-gray-400 py-8">
+            {registros.length === 0
+              ? 'No hay registros para el período seleccionado'
+              : 'Ningún registro coincide con el filtro de llegada'}
+          </p>
+        )}
+
+        {/* Paginador. Siempre dice el TOTAL, aunque quepa en una página: sin ese
+            número, quien filtra un mes no sabe si está viendo todo o un pedazo. */}
+        {filtrados.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-100 text-sm">
+            <p className="text-muted">
+              Mostrando <b className="text-ink">{primera + 1}–{Math.min(primera + porPagina, filtrados.length)}</b> de{' '}
+              <b className="text-ink">{filtrados.length}</b>
+              {filtroLlegada && <span className="text-amber-700"> (filtrados de {registros.length})</span>}
+            </p>
+
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-muted">
+                Filas
+                <select value={porPagina}
+                  onChange={e => { setPorPagina(Number(e.target.value)); setPagina(1); }}
+                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm">
+                  {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+
+              {totalPaginas > 1 && (
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagActual === 1}
+                    aria-label="Página anterior"
+                    className="p-1.5 rounded-lg border border-gray-300 text-ink hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="px-2 text-muted whitespace-nowrap">{pagActual} de {totalPaginas}</span>
+                  <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagActual === totalPaginas}
+                    aria-label="Página siguiente"
+                    className="p-1.5 rounded-lg border border-gray-300 text-ink hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {modal && (
