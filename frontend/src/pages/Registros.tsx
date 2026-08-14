@@ -114,6 +114,7 @@ export default function Registros() {
   // vez de con un efecto: así no hay un render intermedio mostrando la página 7
   // de una lista que ahora tiene dos.
   const [filtroLlegada, setFiltroLlegada] = useState<'' | 'TARDE' | 'A_TIEMPO'>('');
+  const [filtroSalida, setFiltroSalida] = useState<'' | 'ESTIMADA' | 'SIN_SALIDA'>('');
   const [menuFiltro, setMenuFiltro] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(50);
@@ -175,8 +176,12 @@ export default function Registros() {
   // entrada del día, festivo, sin horario). Esas filas no son "a tiempo": no se
   // sabe, así que no entran en ninguno de los dos filtros.
   const filtrados = registros.filter(r => {
-    if (filtroLlegada === 'TARDE') return (r.minutosTarde ?? 0) > 0;
-    if (filtroLlegada === 'A_TIEMPO') return r.minutosTarde === 0;
+    if (filtroLlegada === 'TARDE' && !((r.minutosTarde ?? 0) > 0)) return false;
+    if (filtroLlegada === 'A_TIEMPO' && r.minutosTarde !== 0) return false;
+    // Dos situaciones distintas que conviene no mezclar: en una el sistema
+    // puso una hora que hay que revisar, en la otra no hay hora ninguna.
+    if (filtroSalida === 'ESTIMADA' && !r.salidaEstimada) return false;
+    if (filtroSalida === 'SIN_SALIDA' && r.salida) return false;
     return true;
   });
 
@@ -187,9 +192,12 @@ export default function Registros() {
   const primera = (pagActual - 1) * porPagina;
   const visibles = filtrados.slice(primera, primera + porPagina);
 
-  const cambiarLlegada = (v: '' | 'TARDE' | 'A_TIEMPO') => {
-    setFiltroLlegada(v); setPagina(1); setMenuFiltro(false);
-  };
+  // El menú NO se cierra al elegir: con dos grupos, cerrarlo obligaría a
+  // reabrirlo para poner el segundo filtro.
+  const cambiarLlegada = (v: '' | 'TARDE' | 'A_TIEMPO') => { setFiltroLlegada(v); setPagina(1); };
+  const cambiarSalida = (v: '' | 'ESTIMADA' | 'SIN_SALIDA') => { setFiltroSalida(v); setPagina(1); };
+  const limpiarFiltros = () => { setFiltroLlegada(''); setFiltroSalida(''); setPagina(1); setMenuFiltro(false); };
+  const hayFiltro = !!filtroLlegada || !!filtroSalida;
 
   // La columna de Almuerzo aparece cuando ese día descuenta almuerzo, tenga o no
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
@@ -234,33 +242,43 @@ export default function Registros() {
         <div className="relative">
           <button onClick={() => setMenuFiltro(v => !v)}
             className={`relative flex items-center gap-2 border rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              filtroLlegada ? 'border-primary bg-primary/10 text-ink' : 'border-gray-300 text-ink hover:bg-gray-50'}`}>
+              hayFiltro ? 'border-primary bg-primary/10 text-ink' : 'border-gray-300 text-ink hover:bg-gray-50'}`}>
             <SlidersHorizontal size={15} />
             Filtros
-            {filtroLlegada && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500" />}
+            {hayFiltro && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500" />}
           </button>
 
           {menuFiltro && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setMenuFiltro(false)} />
-              <div className="absolute top-full mt-1 left-0 z-40 w-52 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden py-1.5">
-                <p className="px-3.5 pb-1.5 text-xs font-semibold text-muted">Llegada</p>
+              <div className="absolute top-full mt-1 left-0 z-40 w-56 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden py-1.5">
                 {([
-                  { v: 'TARDE' as const, texto: 'Tarde' },
-                  { v: 'A_TIEMPO' as const, texto: 'A tiempo' },
-                ]).map(op => {
-                  const activo = filtroLlegada === op.v;
-                  return (
-                    <button key={op.v} onClick={() => cambiarLlegada(activo ? '' : op.v)}
-                      className={`w-full flex items-center gap-2 px-3.5 py-2 text-sm text-left transition-colors ${
-                        activo ? 'bg-green-50 text-green-700 font-semibold' : 'text-ink hover:bg-gray-50'}`}>
-                      {activo ? <Check size={15} className="shrink-0" /> : <span className="w-[15px] shrink-0" />}
-                      {op.texto}
-                    </button>
-                  );
-                })}
-                {filtroLlegada && (
-                  <button onClick={() => cambiarLlegada('')}
+                  {
+                    grupo: 'Llegada', valor: filtroLlegada, cambiar: cambiarLlegada as (v: string) => void,
+                    opciones: [{ v: 'TARDE', texto: 'Tarde' }, { v: 'A_TIEMPO', texto: 'A tiempo' }],
+                  },
+                  {
+                    grupo: 'Salida', valor: filtroSalida, cambiar: cambiarSalida as (v: string) => void,
+                    opciones: [{ v: 'ESTIMADA', texto: 'No marcó salida' }, { v: 'SIN_SALIDA', texto: 'Sin salida' }],
+                  },
+                ]).map((g, gi) => (
+                  <div key={g.grupo} className={gi > 0 ? 'mt-1.5 pt-1.5 border-t border-gray-100' : ''}>
+                    <p className="px-3.5 pb-1.5 text-xs font-semibold text-muted">{g.grupo}</p>
+                    {g.opciones.map(op => {
+                      const activo = g.valor === op.v;
+                      return (
+                        <button key={op.v} onClick={() => g.cambiar(activo ? '' : op.v)}
+                          className={`w-full flex items-center gap-2 px-3.5 py-2 text-sm text-left transition-colors ${
+                            activo ? 'bg-green-50 text-green-700 font-semibold' : 'text-ink hover:bg-gray-50'}`}>
+                          {activo ? <Check size={15} className="shrink-0" /> : <span className="w-[15px] shrink-0" />}
+                          {op.texto}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+                {hayFiltro && (
+                  <button onClick={limpiarFiltros}
                     className="w-full mt-1.5 pt-2 border-t border-gray-100 px-3.5 pb-1 text-sm font-semibold text-red-500 hover:text-red-600">
                     Limpiar filtros
                   </button>
@@ -347,7 +365,7 @@ export default function Registros() {
           <p className="text-center text-gray-400 py-8">
             {registros.length === 0
               ? 'No hay registros para el período seleccionado'
-              : 'Ningún registro coincide con el filtro de llegada'}
+              : 'Ningún registro coincide con los filtros'}
           </p>
         )}
 
@@ -358,7 +376,7 @@ export default function Registros() {
             <p className="text-muted">
               Mostrando <b className="text-ink">{primera + 1}–{Math.min(primera + porPagina, filtrados.length)}</b> de{' '}
               <b className="text-ink">{filtrados.length}</b>
-              {filtroLlegada && <span className="text-amber-700"> (filtrados de {registros.length})</span>}
+              {hayFiltro && <span className="text-amber-700"> (filtrados de {registros.length})</span>}
             </p>
 
             <div className="flex items-center gap-3">
