@@ -36,6 +36,9 @@ type Registro = {
   // Solo viene en la jornada que contiene el almuerzo; en las otras es null.
   almuerzo: Almuerzo | null;
   marcaciones: Marcacion[];
+  // La novedad que toca ese día, si la hay. `remunerada` sale del tipo más la
+  // política de la empresa, no de un campo guardado.
+  novedad: { id: string; tipo: string; aprobado: boolean; remunerada: boolean } | null;
 };
 type Almuerzo = {
   estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
@@ -527,7 +530,20 @@ export default function Registros() {
                   {r.entrada && r.salida ? enHoras(r.minutosContados) : '-'}
                 </td>
                 <td className="px-4 py-3 text-center hidden md:table-cell">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.tipo === 'NORMAL' ? 'bg-blue-50 text-blue-700' : r.tipo === 'PERMISO' ? 'bg-yellow-50 text-yellow-700' : 'bg-purple-50 text-purple-700'}`}>{r.tipo}</span>
+                  <div className="flex flex-col items-center gap-1">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.tipo === 'NORMAL' ? 'bg-blue-50 text-blue-700' : r.tipo === 'PERMISO' ? 'bg-yellow-50 text-yellow-700' : 'bg-purple-50 text-purple-700'}`}>{r.tipo}</span>
+                    {/* La novedad va aquí y no DENTRO del Tipo: son dos cosas
+                        distintas —el tipo es del registro, la novedad es del
+                        día— y fundirlas haría imposible saber cuál se está
+                        leyendo. Sin aprobar va en ámbar: es lo que hay que mirar. */}
+                    {r.novedad && (
+                      <span title={`Novedad ${r.novedad.aprobado ? 'aprobada' : 'sin aprobar'}: ${r.novedad.tipo}`}
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap ${
+                          r.novedad.aprobado ? 'bg-green-50 text-green-700' : 'bg-amber-100 text-amber-800'}`}>
+                        {r.novedad.aprobado ? 'Novedad' : 'Novedad · aprobar'}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   {/* Los botones tienen su propia acción: sin esto, tocarlos

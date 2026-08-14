@@ -7,6 +7,9 @@ import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar, regenerarDiasDeColaborador } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
 import {
+  esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
+} from '../utils/saldoTiempo';
+import {
   resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca,
   marcacionQueCierra, agruparEnJornadas, instantesDeJornada,
 } from '../utils/jornada';
@@ -147,6 +150,49 @@ export default async function registroRoutes(app: FastifyInstance) {
       return dia;
     };
 
+    // Las novedades que tocan el rango, en UNA consulta. Sin esto la tabla no
+    // puede avisar de que ese día hay algo que aprobar, y una novedad pendiente
+    // que nadie mira es tiempo que no se está pagando —o que se está pagando de
+    // más— sin que nadie lo haya decidido.
+    const novedadesPorDia = new Map<string, { id: string; tipo: string; aprobado: boolean; remunerada: boolean }>();
+    if (registros.length > 0) {
+      const fechas = registros.map(r => r.fecha.getTime());
+      const desdeDia = rangoDiaBogota(new Date(Math.min(...fechas))).inicioDia;
+      const hastaDia = rangoDiaBogota(new Date(Math.max(...fechas))).finDia;
+      const [permisos, politicaCruda] = await Promise.all([
+        prisma.permiso.findMany({
+          where: {
+            colaboradorId: { in: [...new Set(registros.map(r => r.colaboradorId))] },
+            fechaInicio: { lt: hastaDia },
+            fechaFin: { gte: desdeDia },
+          },
+          select: { id: true, colaboradorId: true, tipo: true, aprobado: true, fechaInicio: true, fechaFin: true },
+          orderBy: { creadoEn: 'asc' },
+        }),
+        prisma.configuracion.findUnique({
+          where: { empresaId_clave: { empresaId: request.empresaId!, clave: CLAVE_PERMISOS_REMUNERADOS } },
+          select: { valor: true },
+        }),
+      ]);
+      const politica = parsearPoliticaPermisos(politicaCruda?.valor);
+      // Un permiso puede cubrir varios días —unas vacaciones—, así que se
+      // reparte por cada día que toca. Se queda el primero de cada día: la
+      // tabla solo avisa de que hay algo; el detalle lo cuenta entero.
+      for (const p of permisos) {
+        for (let t = rangoDiaBogota(p.fechaInicio).inicioDia.getTime();
+             t <= rangoDiaBogota(p.fechaFin).inicioDia.getTime();
+             t += 24 * 60 * 60 * 1000) {
+          const clave = `${p.colaboradorId}|${toZonedTime(new Date(t), TZ).toDateString()}`;
+          if (!novedadesPorDia.has(clave)) {
+            novedadesPorDia.set(clave, {
+              id: p.id, tipo: p.tipo, aprobado: p.aprobado,
+              remunerada: esPermisoRemunerado(p.tipo, politica),
+            });
+          }
+        }
+      }
+    }
+
     // La tabla lista JORNADAS, no marcaciones. Marcar el almuerzo parte el día
     // en dos tramos, y devolverlos sueltos hacía aparecer el mismo día dos veces
     // —con la segunda fila medio vacía— como si la persona hubiera marcado dos
@@ -214,6 +260,7 @@ export default async function registroRoutes(app: FastifyInstance) {
           tieneFotoEntrada: !!primera.fotoEntrada,
           tieneFotoSalida: !!cierra?.fotoSalida,
           almuerzo: jornada.almuerzo,
+          novedad: novedadesPorDia.get(clave) ?? null,
           marcaciones: marcaciones.map(m => ({
             id: m.id,
             entrada: m.entrada,
@@ -299,7 +346,9 @@ export default async function registroRoutes(app: FastifyInstance) {
           fechaInicio: { lt: finDia },
           fechaFin: { gte: inicioDia },
         },
-        select: { tipo: true, descripcion: true, aprobado: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true },
+        // `id` para poder aprobarla o cambiarle el tipo desde el propio detalle,
+        // que es donde el administrador la está mirando.
+        select: { id: true, tipo: true, descripcion: true, aprobado: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true },
       }),
       prisma.registro.findUnique({
         where: { id },
@@ -337,6 +386,19 @@ export default async function registroRoutes(app: FastifyInstance) {
       minutosTarde = Math.max(0, z.getHours() * 60 + z.getMinutes() - (minutosDe(dia.horaEntrada) + dia.toleranciaMin));
     }
 
+    // ¿Esa novedad se paga? No es un campo: sale del tipo más la política de la
+    // empresa. Las de ley siempre, NO_REMUNERADO nunca, y cuatro tipos dependen
+    // de lo que cada empresa haya configurado. Se resuelve aquí para que el
+    // administrador lo vea al elegir el tipo, en vez de tener que ir a mirarlo.
+    let novedadRemunerada: boolean | null = null;
+    if (novedad) {
+      const politica = await prisma.configuracion.findUnique({
+        where: { empresaId_clave: { empresaId: registro.colaborador.empresaId, clave: CLAVE_PERMISOS_REMUNERADOS } },
+        select: { valor: true },
+      });
+      novedadRemunerada = esPermisoRemunerado(novedad.tipo, parsearPoliticaPermisos(politica?.valor));
+    }
+
     const { colaborador, ...datosRegistro } = registro;
     return {
       registro: {
@@ -353,7 +415,7 @@ export default async function registroRoutes(app: FastifyInstance) {
       minutosTarde,
       motivoSinTardanza,
       festivo,
-      novedad,
+      novedad: novedad ? { ...novedad, remunerada: novedadRemunerada } : null,
     };
   });
 

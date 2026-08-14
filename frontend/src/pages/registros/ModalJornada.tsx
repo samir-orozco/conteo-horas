@@ -7,6 +7,7 @@ import {
   Clock3, Info, CalendarClock,
 } from 'lucide-react';
 import api from '../../lib/api';
+import { TIPO_PERMISO_LABEL as TIPO_NOVEDAD } from '../../constants/permisos';
 
 const TZ = 'America/Bogota';
 
@@ -40,7 +41,14 @@ export type Jornada = {
   minutosTarde: number | null;
   motivoSinTardanza: string | null;
   festivo: { nombre: string } | null;
-  novedad: { tipo: string; descripcion: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; horaInicio: string | null; horaFin: string | null } | null;
+  // `remunerada` no es un campo guardado: sale del tipo más la política de la
+  // empresa. Por eso viaja resuelto desde el servidor, y por eso cambiar el tipo
+  // puede cambiar si ese tiempo se paga.
+  novedad: {
+    id: string; tipo: string; descripcion: string | null; aprobado: boolean;
+    fechaInicio: string; fechaFin: string; horaInicio: string | null; horaFin: string | null;
+    remunerada: boolean | null;
+  } | null;
 };
 
 const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : null;
@@ -97,6 +105,7 @@ type Props = {
 export default function ModalJornada({ registroId, onCerrar, onEditar, onEliminar, onVerMarcacion }: Props) {
   const [j, setJ] = useState<Jornada | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [guardandoNovedad, setGuardandoNovedad] = useState(false);
   const [fotos, setFotos] = useState<{ fotoEntrada: string | null; fotoSalida: string | null } | null>(null);
 
   // Al saltar a otro tramo el componente se remonta (lleva `key={registroId}`),
@@ -125,6 +134,23 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
       .catch(() => { /* la foto es evidencia opcional: no rompe el detalle */ });
     return () => { vigente = false; };
   }, [registroId, j?.registro.tieneFotoEntrada, j?.registro.tieneFotoSalida]);
+
+  // La novedad se resuelve aquí, que es donde el administrador la está mirando.
+  // Mandarlo a otra pantalla para aprobar lo que acaba de leer es la forma más
+  // segura de que no lo apruebe nunca, y una novedad sin decidir es tiempo que
+  // no se está pagando —o que se está pagando— sin que nadie lo haya resuelto.
+  const guardarNovedad = async (cambios: { tipo?: string; aprobado?: boolean }) => {
+    if (!j?.novedad) return;
+    setGuardandoNovedad(true);
+    try {
+      await api.put(`/permisos/${j.novedad.id}`, cambios);
+      const { data } = await api.get(`/registros/${registroId}/jornada`);
+      setJ(data);
+    } catch {
+      setError('No pudimos guardar el cambio en la novedad.');
+    }
+    setGuardandoNovedad(false);
+  };
 
   const r = j?.registro;
   const entrada = hhmm(r?.entrada ?? null);
@@ -300,6 +326,63 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               </div>
             </div>
 
+            {/* La novedad del día: verla, decidirla y, si el tipo estaba mal,
+                corregirlo. El tipo es lo que decide si ese tiempo se paga, así
+                que cambiarlo aquí es cambiar plata: se dice en la misma línea. */}
+            {j.novedad && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
+                  <CalendarClock size={13} /> Novedad de este día
+                </p>
+                <div className={`rounded-xl px-4 py-3 space-y-2.5 text-sm border ${
+                  j.novedad.aprobado ? 'bg-green-50/60 border-green-200' : 'bg-amber-50/60 border-amber-200'}`}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Chip tono={j.novedad.aprobado ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}>
+                      {j.novedad.aprobado ? 'Aprobada' : 'Sin aprobar'}
+                    </Chip>
+                    {j.novedad.remunerada !== null && (
+                      <Chip tono={j.novedad.remunerada ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-700'}>
+                        {j.novedad.remunerada ? 'Se paga' : 'No se paga'}
+                      </Chip>
+                    )}
+                    {j.novedad.horaInicio && j.novedad.horaFin && (
+                      <span className="text-xs text-muted">{j.novedad.horaInicio} a {j.novedad.horaFin}</span>
+                    )}
+                  </div>
+
+                  {j.novedad.descripcion && (
+                    <p className="text-ink bg-white/70 rounded-lg px-3 py-2">{j.novedad.descripcion}</p>
+                  )}
+
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="min-w-[190px]">
+                      <label className="block text-[10px] font-semibold uppercase tracking-wide text-muted mb-1">Motivo</label>
+                      <select value={j.novedad.tipo} disabled={guardandoNovedad}
+                        onChange={e => guardarNovedad({ tipo: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white disabled:opacity-60">
+                        {Object.entries(TIPO_NOVEDAD).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                    <button disabled={guardandoNovedad}
+                      onClick={() => guardarNovedad({ aprobado: !j.novedad!.aprobado })}
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-60 ${
+                        j.novedad.aprobado
+                          ? 'border border-gray-300 text-ink hover:bg-gray-50'
+                          : 'bg-green-600 hover:bg-green-700 text-white'}`}>
+                      {guardandoNovedad ? 'Guardando...' : j.novedad.aprobado ? 'Quitar la aprobación' : 'Aprobar'}
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-muted">
+                    {j.novedad.remunerada === null ? '' : j.novedad.remunerada
+                      ? 'Con este motivo, ese tiempo se paga como trabajado.'
+                      : 'Con este motivo, ese tiempo no se paga y queda como deuda.'}
+                    {' '}Solo cuenta para la liquidación cuando está aprobada.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* El descanso del día */}
             {a?.ventana && (
               <div>
@@ -315,15 +398,32 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   {a.estado === 'ABIERTO' && <p><b>Salió a su descanso y no volvió a marcar.</b></p>}
                   {a.estado === 'NO_MARCADO' && a.ventana && <p><b>No marcó</b> su salida al descanso.</p>}
 
+                  {/* Se dice lo que PASÓ y adónde fue a parar, no el número
+                      interno del descuento. "Se le descontó 0 min" sobre alguien
+                      que volvió tarde de su descanso se lee como que no tuvo
+                      consecuencia, cuando la tuvo: está arriba, en el tiempo
+                      contado, que por eso no llega a lo que pedía el horario. */}
                   {a.estado === 'MARCADO' && (
                     <p className="pt-1">
-                      Estuvo por fuera <b>{enHoras(a.minutos ?? 0)}</b> · se le descontó <b>{enHoras(a.minutosDescontados)}</b>
+                      Se tomó <b>{enHoras(a.minutos ?? 0)}</b> de descanso.
+                      {a.seExcedio
+                        ? <> Los <b>{enHoras(a.minutosDeMas)}</b> de más ya están restados del tiempo contado del día.</>
+                        : <> Le corresponde{a.minutosDescontados > 0
+                            ? <> descontar <b>{enHoras(a.minutosDescontados)}</b>, y eso es lo que se restó.</>
+                            : <> su descanso completo, y así se contó.</>}</>}
+                    </p>
+                  )}
+                  {(a.estado === 'NO_MARCADO' || a.estado === 'ABIERTO') && a.minutosDescontados > 0 && (
+                    <p className="pt-1">
+                      Como no marcó su salida, se le descuentan los <b>{enHoras(a.minutosDescontados)}</b> de la
+                      ventana en los que siguió marcado.
                     </p>
                   )}
                   {a.ventana && (
                     <p className="text-[11px] text-muted pt-1">
                       Se descuentan los minutos del horario del descanso en los que la persona siguió marcada,
-                      no lo que duró el descanso. Por eso quien marca su salida paga menos que quien no la marca.
+                      no lo que duró el descanso. Marcarlo no cuesta más que no marcarlo: quien se toma su hora
+                      cuenta lo mismo, y quien se toma de más cuenta exactamente ese tiempo de más.
                     </p>
                   )}
                 </div>
