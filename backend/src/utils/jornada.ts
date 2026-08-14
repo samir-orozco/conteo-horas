@@ -29,6 +29,17 @@ export type RegistroDeDia = {
   entradaEstimada: boolean;
 };
 
+// Los tramos que de verdad se pueden contar: abiertos, cerrados, y en ese orden.
+//
+// Una salida ANTERIOR a su entrada no es un tramo raro, es un imposible, y
+// contarla resta horas que nadie dejó de trabajar. Aparece de verdad: el
+// formulario de edición arma la entrada y la salida sobre la misma fecha, así
+// que corregir a mano un turno nocturno deja guardada una salida del día
+// anterior. Se ignora en vez de restarla.
+function tramosUtiles<T extends RegistroDeDia>(registros: T[]): T[] {
+  return registros.filter(r => r.entrada && r.salida && r.salida.getTime() > r.entrada.getTime());
+}
+
 export type EstadoAlmuerzo =
   | 'SIN_VENTANA'  // el día no tiene ventana congelada: no hay hora que mostrar
   | 'MARCADO'      // salió y volvió
@@ -57,9 +68,7 @@ export function resumirAlmuerzoDelDia(
 ): ResumenAlmuerzo {
   // Los tramos completos son los que cuentan para el descuento: uno abierto
   // todavía no dice cuánto se trabajó.
-  const tramos = registros
-    .filter(r => r.entrada && r.salida)
-    .map(r => ({ entrada: r.entrada!, salida: r.salida! }));
+  const tramos = tramosUtiles(registros).map(r => ({ entrada: r.entrada!, salida: r.salida! }));
   // Un día sin ningún tramo cerrado no ha pagado nada, así que tampoco ha
   // descontado nada. Hay que decirlo aquí porque `minutosAlmuerzoADescontar`
   // devuelve los minutos fijos antes de mirar los tramos; el motor no se entera
@@ -102,6 +111,94 @@ export function resumirAlmuerzoDelDia(
   };
 }
 
+// Un día partido en JORNADAS.
+//
+// Marcar el almuerzo parte la jornada en dos tramos. La tabla de Registros los
+// mostraba como dos filas —el mismo día repetido, con la segunda medio vacía,
+// sin llegada y sin almuerzo— y se leía como una marcación duplicada. Pero
+// volver del almuerzo no es empezar otra jornada: es seguir la misma.
+//
+// La regla, entonces: un tramo se funde con el siguiente SOLO si ese tramo cerró
+// saliendo a almorzar. Quien sale y vuelve por la tarde a hacer horas extra sí
+// empieza una jornada nueva, y esa sí merece su propia fila.
+export type JornadaDelDia<T> = {
+  marcaciones: T[];
+  minutosContados: number;
+  // Solo en la jornada que contiene el almuerzo. En las demás va null: repetirlo
+  // en cada fila del día invita a sumar dos veces el mismo descuento, y esos
+  // minutos son plata.
+  almuerzo: ResumenAlmuerzo | null;
+};
+
+export function partirDiaEnJornadas<T extends RegistroDeDia>(
+  registros: T[],
+  dia: DiaParaAlmuerzo & DiaParaAjuste,
+): JornadaDelDia<T>[] {
+  // Los registros llegan en el orden que quiera la base y la agrupación depende
+  // de quién sigue a quién. Las marcaciones sin hora de entrada —creadas a mano,
+  // incompletas— van al final: no hay forma de encadenarlas.
+  const enOrden = [...registros].sort((a, b) => {
+    if (!a.entrada) return 1;
+    if (!b.entrada) return -1;
+    return a.entrada.getTime() - b.entrada.getTime();
+  });
+  if (enOrden.length === 0) return [];
+
+  // Se exige además que el siguiente empiece después de que el anterior cerró.
+  // Dos tramos solapados son datos rotos de una edición a mano, y encadenarlos
+  // daría una jornada cuya salida es anterior a su propia entrada.
+  const bloques: T[][] = [];
+  for (const r of enOrden) {
+    const actual = bloques[bloques.length - 1];
+    const ultimo = actual?.[actual.length - 1];
+    const sigue = !!ultimo?.salidaAlmuerzo && !!ultimo.salida && !!r.entrada
+      && r.entrada.getTime() >= ultimo.salida.getTime();
+    if (sigue) actual.push(r);
+    else bloques.push([r]);
+  }
+
+  const almuerzo = resumirAlmuerzoDelDia(enOrden, dia);
+  // De qué jornada es el almuerzo: la que contiene la salida a almorzar. Cuando
+  // nadie la marcó —el caso de "descontar 60 min" sin ventana horaria, que es el
+  // de la mayoría— es la primera del día, que es donde se mira primero.
+  const iDelAlmuerzo = Math.max(0, bloques.findIndex(b => b.some(r => r.salidaAlmuerzo && r.salida)));
+
+  const tramosDe = (b: T[]) => tramosUtiles(b).map(r => ajustarAJornada(r.entrada!, r.salida!, dia));
+  const porBloque = bloques.map(tramosDe);
+  const trabajados = porBloque.map(ts =>
+    ts.reduce((s, t) => s + (t.salida.getTime() - t.entrada.getTime()) / MS_MIN, 0));
+
+  // El descuento se calcula UNA vez para todo el día y después se reparte. Es la
+  // trampa de este cambio: sin ventana horaria `minutosAlmuerzoADescontar`
+  // devuelve los minutos fijos del día, no un número proporcional a los tramos,
+  // así que pedirlo una vez por jornada lo cobraría dos veces y le robaría una
+  // hora al día sin que nadie lo notara.
+  const todos = porBloque.flat();
+  const descuento = todos.length > 0 ? minutosAlmuerzoADescontar(todos, dia) : 0;
+
+  // Se cobra primero de la jornada que contiene el almuerzo y, si esa no da para
+  // tanto, de las demás. Media jornada con una hora de almuerzo fijo dejaría el
+  // recorte a medias: lo que no cabe se lleva a la siguiente en vez de perderse.
+  const quita = new Array(bloques.length).fill(0);
+  let pendiente = descuento;
+  for (const i of [iDelAlmuerzo, ...bloques.map((_, k) => k).filter(k => k !== iDelAlmuerzo)]) {
+    quita[i] = Math.min(pendiente, trabajados[i]);
+    pendiente -= quita[i];
+  }
+
+  // Se redondea sobre el acumulado, no jornada por jornada: redondear cada una
+  // por su cuenta descuadraría la suma en un minuto, y dos filas que no dan el
+  // total que muestra el modal no se pueden defender ante nadie.
+  let acumulado = 0;
+  let entregado = 0;
+  return bloques.map((marcaciones, i) => {
+    acumulado += trabajados[i] - quita[i];
+    const minutosContados = Math.round(acumulado) - entregado;
+    entregado += minutosContados;
+    return { marcaciones, minutosContados, almuerzo: i === iDelAlmuerzo ? almuerzo : null };
+  });
+}
+
 // Instante en que se acaba la ventana de almuerzo de ESE turno.
 //
 // La ventana es una hora ("13:00"), no una fecha, así que hay que anclarla. Se
@@ -136,9 +233,7 @@ export function minutosContadosDelDia(
   registros: RegistroDeDia[],
   dia: DiaParaAlmuerzo & DiaParaAjuste,
 ): number {
-  const tramos = registros
-    .filter(r => r.entrada && r.salida)
-    .map(r => ajustarAJornada(r.entrada!, r.salida!, dia));
+  const tramos = tramosUtiles(registros).map(r => ajustarAJornada(r.entrada!, r.salida!, dia));
   if (tramos.length === 0) return 0;
 
   const trabajados = tramos.reduce(

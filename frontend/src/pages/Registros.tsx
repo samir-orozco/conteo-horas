@@ -5,25 +5,35 @@ import { es } from 'date-fns/locale';
 import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
-import ModalJornada from './registros/ModalJornada';
+import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import SelectorColaborador from '../components/SelectorColaborador';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
+type Marcacion = {
+  id: string; entrada: string | null; salida: string | null;
+  salidaAlmuerzo: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
+  tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
+};
+// Una fila de la tabla es una JORNADA, no una marcación. Marcar el almuerzo
+// parte el día en dos tramos; los dos son la misma jornada y bajan juntos en
+// `marcaciones`. Volver por la tarde a hacer horas extra sí abre otra jornada,
+// y esa llega como otra fila.
 type Registro = {
   id: string; colaboradorId: string; colaborador: Colaborador; fecha: string;
-  entrada: string | null; salida: string | null; tipo: string; observacion?: string;
+  entrada: string | null; salida: string | null; tipo: string; observacion: string | null;
   // null = sin horario asignado o día que no aplica; 0 = a tiempo; >0 = minutos tarde
   minutosTarde: number | null;
+  // Lo que contó esta jornada, con el almuerzo ya descontado.
+  minutosContados: number;
   tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
   // El sistema cerró el turno (la persona no marcó salida): la hora es estimada y hay que revisarla
   salidaEstimada?: boolean;
   salidaAlmuerzo?: boolean;
-  // El almuerzo es del DÍA: viaja repetido en cada fila de ese día, pero se
-  // pinta en una sola (la ancla) para que nadie lo lea dos veces.
+  // Solo viene en la jornada que contiene el almuerzo; en las otras es null.
   almuerzo: Almuerzo | null;
-  almuerzoEnEstaFila: boolean;
+  marcaciones: Marcacion[];
 };
 type Almuerzo = {
   estado: 'SIN_VENTANA' | 'MARCADO' | 'ABIERTO' | 'NO_MARCADO';
@@ -45,19 +55,13 @@ const enHoras = (min: number) => {
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 };
 
-// Celda de almuerzo. El almuerzo es del DÍA y viaja repetido en cada fila de ese
-// día, pero se pinta en una sola: la que lo produjo. En las demás va el mismo
-// guion que usa el resto de la tabla cuando no hay nada que mostrar.
-//
-// Antes decían "ver 08:00", apuntando a la fila que sí lo trae. Nadie entendió
-// qué significaba: resolvía el riesgo de que alguien sumara dos veces el mismo
-// almuerzo, pero a cambio de una etiqueta que había que descifrar. Y ese riesgo
-// casi desapareció al pasar la celda a un rango horario en vez de un número.
+// Celda de almuerzo. El almuerzo llega solo en la jornada que lo contiene, así
+// que aquí ya no hay que decidir en qué fila se pinta: si viene, es de esta.
 function CeldaAlmuerzo({ r }: { r: Registro }) {
   const a = r.almuerzo;
   const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '';
 
-  if (!a || !r.almuerzoEnEstaFila || (a.estado === 'SIN_VENTANA' && a.minutosDescontados === 0)) {
+  if (!a || (a.estado === 'SIN_VENTANA' && a.minutosDescontados === 0)) {
     return <span className="text-gray-300">—</span>;
   }
 
@@ -97,11 +101,13 @@ export default function Registros() {
   const [desde, setDesde] = useState(format(new Date(), 'yyyy-MM-01'));
   const [hasta, setHasta] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [modal, setModal] = useState(false);
-  const [editando, setEditando] = useState<Registro | null>(null);
+  const [editando, setEditando] = useState<RegistroEditable | null>(null);
   const [form, setForm] = useState({ colaboradorId: '', fecha: '', entrada: '', salida: '', tipo: 'NORMAL', observacion: '' });
   const [fotosDe, setFotosDe] = useState<Registro | null>(null);
   const [fotos, setFotos] = useState<Fotos | null>(null);
-  const [eliminarId, setEliminarId] = useState<string | null>(null);
+  // Qué marcaciones se van a borrar. Una jornada partida por el almuerzo son
+  // dos, y borrar solo la primera dejaba la tarde suelta como una fila huérfana.
+  const [porEliminar, setPorEliminar] = useState<{ ids: string[]; horas: string } | null>(null);
   // Detalle de una marcación. La fila de la tabla no se explica sola: el
   // almuerzo vive en el hueco entre dos filas y la tardanza solo se mide en la
   // primera entrada del día.
@@ -110,7 +116,7 @@ export default function Registros() {
   // tardanza solo se evalúa sobre la PRIMERA entrada del día, así que si ya hay
   // una anterior, la que se está agregando no va a mostrar minutos tarde. Sin
   // este aviso el usuario cree que el cálculo falló.
-  const [otrosDelDia, setOtrosDelDia] = useState<Registro[]>([]);
+  const [otrosDelDia, setOtrosDelDia] = useState<Marcacion[]>([]);
 
   // Filtro de llegada y paginación. La página vuelve a 1 desde cada setter en
   // vez de con un efecto: así no hay un render intermedio mostrando la página 7
@@ -130,7 +136,12 @@ export default function Registros() {
     api.get('/registros', { params: { colaboradorId: form.colaboradorId, desde: form.fecha, hasta: form.fecha } })
       .then(r => {
         if (!vigente) return;
-        const otros = (r.data as Registro[]).filter(x => x.id !== editando?.id && x.entrada);
+        // Se aplanan las jornadas: el aviso es sobre MARCACIONES del día, y la
+        // que se está editando puede ser el regreso del almuerzo, que ya no
+        // tiene fila propia en la tabla.
+        const otros = (r.data as Registro[])
+          .flatMap(j => j.marcaciones)
+          .filter(m => m.id !== editando?.id && m.entrada);
         setOtrosDelDia(otros.sort((a, b) => (a.entrada! < b.entrada! ? -1 : 1)));
       })
       .catch(() => { if (vigente) setOtrosDelDia([]); });
@@ -146,7 +157,7 @@ export default function Registros() {
   useEffect(() => { api.get('/colaboradores').then(r => setColaboradores(r.data)); }, []);
   useEffect(() => { cargar(); }, [desde, hasta, filtroColaborador]);
 
-  const abrir = (reg?: Registro) => {
+  const abrir = (reg?: RegistroEditable) => {
     setEditando(reg || null);
     setForm(reg ? {
       colaboradorId: reg.colaboradorId,
@@ -171,9 +182,11 @@ export default function Registros() {
   };
 
   const confirmarEliminar = async () => {
-    if (!eliminarId) return;
-    await api.delete(`/registros/${eliminarId}`);
-    setEliminarId(null);
+    if (!porEliminar) return;
+    // En serie y no en paralelo: si una falla, las anteriores ya se borraron y
+    // la recarga muestra lo que de verdad quedó, en vez de un estado inventado.
+    for (const id of porEliminar.ids) await api.delete(`/registros/${id}`);
+    setPorEliminar(null);
     cargar();
   };
 
@@ -218,17 +231,21 @@ export default function Registros() {
   const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.almuerzo.minutosDescontados > 0));
 
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
-  const duracion = (entrada: string | null, salida: string | null) => {
-    if (!entrada || !salida) return '-';
-    const mins = (new Date(salida).getTime() - new Date(entrada).getTime()) / 60000;
-    return `${Math.floor(mins / 60)}h ${(mins % 60).toFixed(1)}m`;
-  };
 
+  // Las fotos de una jornada partida por el almuerzo viven en marcaciones
+  // distintas: la de entrada en la que abrió la mañana, la de salida en la que
+  // cerró la tarde. Pedir las dos de un solo registro traía la foto de la salida
+  // a almorzar rotulada como fin de jornada.
   const verFotos = async (r: Registro) => {
     setFotosDe(r);
     setFotos(null);
-    const resp = await api.get(`/registros/${r.id}/fotos`);
-    setFotos(resp.data);
+    const abre = r.marcaciones[0] ?? { id: r.id };
+    const cierra = [...r.marcaciones].reverse().find(m => m.salida) ?? abre;
+    const [a, b] = await Promise.all([
+      api.get(`/registros/${abre.id}/fotos`),
+      cierra.id === abre.id ? null : api.get(`/registros/${cierra.id}/fotos`),
+    ]);
+    setFotos({ fotoEntrada: a.data.fotoEntrada, fotoSalida: (b ?? a).data.fotoSalida });
   };
 
   return (
@@ -362,7 +379,9 @@ export default function Registros() {
                     <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-700">A tiempo</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-center text-gray-600 hidden md:table-cell">{duracion(r.entrada, r.salida)}</td>
+                <td className="px-4 py-3 text-center text-gray-600 hidden md:table-cell">
+                  {r.entrada && r.salida ? enHoras(r.minutosContados) : '-'}
+                </td>
                 <td className="px-4 py-3 text-center hidden md:table-cell">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.tipo === 'NORMAL' ? 'bg-blue-50 text-blue-700' : r.tipo === 'PERMISO' ? 'bg-yellow-50 text-yellow-700' : 'bg-purple-50 text-purple-700'}`}>{r.tipo}</span>
                 </td>
@@ -374,8 +393,17 @@ export default function Registros() {
                       <button onClick={() => verFotos(r)} title="Ver fotos de verificación facial"
                         className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"><Camera size={15} /></button>
                     )}
-                    <button onClick={() => abrir(r)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={15} /></button>
-                    <button onClick={() => setEliminarId(r.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
+                    {/* Con dos marcaciones, la entrada y la salida que muestra
+                        la fila son de registros DISTINTOS: guardarlas juntas las
+                        escribiría las dos sobre el primero y dejaría la tarde
+                        duplicada. Se manda al detalle, que sí las separa. */}
+                    <button onClick={() => r.marcaciones.length > 1 ? setJornadaId(r.id) : abrir(r)}
+                      title={r.marcaciones.length > 1 ? 'Esta jornada tiene varias marcaciones: elige cuál editar' : 'Editar'}
+                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={15} /></button>
+                    <button onClick={() => setPorEliminar({
+                      ids: r.marcaciones.map(m => m.id),
+                      horas: r.marcaciones.map(m => `${fmtHora(m.entrada)}–${fmtHora(m.salida)}`).join(' y '),
+                    })} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
                   </div>
                 </td>
               </tr>
@@ -545,21 +573,26 @@ export default function Registros() {
           key={jornadaId}
           registroId={jornadaId}
           onCerrar={() => setJornadaId(null)}
-          onEditar={reg => abrir(reg as Registro)}
+          onEditar={abrir}
           // El detalle se cierra al eliminar: si no, queda encima mostrando una
           // marcación que ya no existe y el siguiente clic falla con un 404.
-          onEliminar={id => { setJornadaId(null); setEliminarId(id); }}
+          onEliminar={id => { setJornadaId(null); setPorEliminar({ ids: [id], horas: '' }); }}
+          onVerMarcacion={setJornadaId}
         />
       )}
 
       <ConfirmDialog
-        abierto={eliminarId !== null}
-        titulo="¿Eliminar este registro?"
-        subtitulo="Esta acción no se puede deshacer."
+        abierto={porEliminar !== null}
+        titulo={(porEliminar?.ids.length ?? 0) > 1
+          ? `¿Eliminar las ${porEliminar!.ids.length} marcaciones de esta jornada?`
+          : '¿Eliminar este registro?'}
+        subtitulo={porEliminar?.horas
+          ? `Se borran ${porEliminar.horas}. Esta acción no se puede deshacer.`
+          : 'Esta acción no se puede deshacer.'}
         textoContinuar="Eliminar"
         peligro
         onContinuar={confirmarEliminar}
-        onCancelar={() => setEliminarId(null)}
+        onCancelar={() => setPorEliminar(null)}
       />
     </div>
   );

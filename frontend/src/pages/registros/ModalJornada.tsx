@@ -88,9 +88,13 @@ type Props = {
   // y buscarla allí dejaba el botón sin hacer nada.
   onEditar: (registro: RegistroEditable) => void;
   onEliminar: (registroId: string) => void;
+  // Saltar a otra marcación del día. Desde que la tabla muestra una fila por
+  // JORNADA, el regreso del almuerzo ya no tiene fila propia: si no se puede
+  // llegar a él desde aquí, no se puede llegar de ninguna forma.
+  onVerMarcacion: (registroId: string) => void;
 };
 
-export default function ModalJornada({ registroId, onCerrar, onEditar, onEliminar }: Props) {
+export default function ModalJornada({ registroId, onCerrar, onEditar, onEliminar, onVerMarcacion }: Props) {
   const [j, setJ] = useState<Jornada | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fotos, setFotos] = useState<{ fotoEntrada: string | null; fotoSalida: string | null } | null>(null);
@@ -309,14 +313,15 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   {j.tramos.map((t, i) => {
                     const esEste = t.id === r.id;
                     return (
-                      /* Información, no acción: antes eran botones que llevaban a
-                         la otra marcación, pero el resto del modal es del día y
-                         apenas cambiaban dos líneas. Prometían más de lo que
-                         daban. Para ver otra marcación se cierra y se toca su
-                         fila en la tabla, que es de donde se entró. */
-                      <div key={t.id}
-                        className={`w-full border rounded-xl px-3 py-2 text-sm ${
-                          esEste ? 'border-primary bg-primary/5' : 'border-gray-100'}`}>
+                      /* Vuelven a ser botones. Dejaron de serlo cuando cada
+                         marcación tenía su fila en la tabla y bastaba cerrar y
+                         tocar la otra; ahora la jornada entera es UNA fila, así
+                         que esta lista es el único camino al regreso del
+                         almuerzo —y a su foto, su hora y su botón de editar. */
+                      <button key={t.id} type="button" disabled={esEste}
+                        onClick={() => onVerMarcacion(t.id)}
+                        className={`w-full text-left border rounded-xl px-3 py-2 text-sm transition-colors ${
+                          esEste ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-primary hover:bg-gray-50'}`}>
                         <span className="flex items-baseline justify-between gap-2 flex-wrap">
                           <span>
                             <span className="text-muted">{i + 1}.</span>{' '}
@@ -331,7 +336,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                             </span>
                           )}
                         </span>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

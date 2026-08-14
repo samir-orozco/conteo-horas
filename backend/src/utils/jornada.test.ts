@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia } from './jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas } from './jornada';
 
 // El almuerzo no vive en un registro: vive en el HUECO entre dos. Un día con
 // almuerzo son dos tramos —08:00-12:00 y 13:00-17:00— y lo que hay en medio es
@@ -251,5 +251,172 @@ describe('minutosContadosDelDia', () => {
       diaCompleto({ almuerzoInicio: null, almuerzoFin: null }),
     );
     expect(r).toBe(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Un día no es una lista de marcaciones sueltas: es una lista de JORNADAS.
+//
+// Marcar el almuerzo parte la jornada en dos tramos, y la tabla de Registros los
+// mostraba como dos filas —el mismo día repetido, con la segunda medio vacía—
+// que se leían como una marcación duplicada. Volver del almuerzo NO es empezar
+// otra jornada; volver por la tarde a hacer horas extra SÍ lo es.
+//
+// De ahí la regla: un tramo se funde con el siguiente solo si ese tramo cerró
+// saliendo a almorzar.
+describe('partirDiaEnJornadas', () => {
+  const diaCompleto = (extra: Record<string, unknown> = {}) => ({
+    fecha: bog(0),
+    programado: true,
+    horaEntrada: '08:00' as string | null,
+    horaSalida: '17:00' as string | null,
+    toleranciaSalidaMin: 0,
+    ajustaEntrada: false,
+    almuerzoMin: 60,
+    almuerzoInicio: '12:00' as string | null,
+    almuerzoFin: '13:00' as string | null,
+    ...extra,
+  });
+
+  it('el almuerzo NO parte el día: los dos tramos son una sola jornada', () => {
+    const j = partirDiaEnJornadas(
+      [reg(bog(8), bog(12), { salidaAlmuerzo: true }), reg(bog(13), bog(17))],
+      diaCompleto(),
+    );
+    expect(j).toHaveLength(1);
+    expect(j[0].marcaciones).toHaveLength(2);
+    expect(j[0].minutosContados).toBe(480);
+  });
+
+  it('volver por la tarde a hacer horas extra SÍ abre otra jornada', () => {
+    // El caso que distingue las dos cosas: 08-12 almuerzo 13-17 es UNA jornada;
+    // regresar a las 19:00 es otra, y tiene que verse como otra fila.
+    const j = partirDiaEnJornadas(
+      [
+        reg(bog(8), bog(12), { salidaAlmuerzo: true }),
+        reg(bog(13), bog(17)),
+        reg(bog(19), bog(21)),
+      ],
+      diaCompleto(),
+    );
+    expect(j).toHaveLength(2);
+    expect(j[0].marcaciones).toHaveLength(2);
+    expect(j[1].marcaciones).toHaveLength(1);
+    expect(j[0].minutosContados).toBe(480);
+    expect(j[1].minutosContados).toBe(120);
+  });
+
+  it('salir y volver SIN marcar almuerzo son dos jornadas distintas', () => {
+    const j = partirDiaEnJornadas([reg(bog(8), bog(12)), reg(bog(14), bog(17))], diaCompleto());
+    expect(j).toHaveLength(2);
+  });
+
+  it('salió a almorzar y nunca volvió: una sola jornada, de un tramo', () => {
+    const j = partirDiaEnJornadas([reg(bog(8), bog(12), { salidaAlmuerzo: true })], diaCompleto());
+    expect(j).toHaveLength(1);
+    expect(j[0].marcaciones).toHaveLength(1);
+    expect(j[0].almuerzo?.estado).toBe('ABIERTO');
+  });
+
+  it('el almuerzo se cuelga de la jornada que lo contiene, y solo de esa', () => {
+    // Repetirlo en las dos filas invita a sumarlo dos veces. `minutos` y
+    // `minutosDescontados` son plata.
+    const j = partirDiaEnJornadas(
+      [
+        reg(bog(8), bog(12), { salidaAlmuerzo: true }),
+        reg(bog(13), bog(17)),
+        reg(bog(19), bog(21)),
+      ],
+      diaCompleto(),
+    );
+    expect(j[0].almuerzo?.estado).toBe('MARCADO');
+    expect(j[1].almuerzo).toBeNull();
+  });
+
+  it('las marcaciones desordenadas se ordenan antes de agrupar', () => {
+    const j = partirDiaEnJornadas(
+      [reg(bog(13), bog(17)), reg(bog(8), bog(12), { salidaAlmuerzo: true })],
+      diaCompleto(),
+    );
+    expect(j).toHaveLength(1);
+    expect(j[0].marcaciones[0].entrada).toEqual(bog(8));
+  });
+
+  it('un tramo todavía abierto no arrastra al siguiente', () => {
+    const j = partirDiaEnJornadas([reg(bog(8), null), reg(bog(13), bog(17))], diaCompleto());
+    expect(j).toHaveLength(2);
+  });
+
+  it('turno nocturno: el almuerzo de madrugada tampoco parte la jornada', () => {
+    const j = partirDiaEnJornadas(
+      [
+        reg(bog(20, 0, 5), bog(1, 0, 6), { salidaAlmuerzo: true }),
+        reg(bog(2, 0, 6), bog(5, 0, 6)),
+      ],
+      diaCompleto({ horaEntrada: '20:00', horaSalida: '05:00', almuerzoInicio: '01:00', almuerzoFin: '02:00' }),
+    );
+    expect(j).toHaveLength(1);
+    expect(j[0].minutosContados).toBe(480);
+  });
+
+  it('una marcación sin hora de entrada no rompe la agrupación', () => {
+    const j = partirDiaEnJornadas([reg(null, bog(17)), reg(bog(8), bog(12))], diaCompleto());
+    expect(j).toHaveLength(2);
+    expect(j.every(x => typeof x.minutosContados === 'number')).toBe(true);
+  });
+
+  it('sin ventana, el almuerzo fijo se descuenta UNA vez aunque haya dos jornadas', () => {
+    // La trampa de este cambio. `minutosAlmuerzoADescontar` sin ventana devuelve
+    // los minutos fijos del día, no un número proporcional a los tramos: pedirlo
+    // una vez por jornada descontaría el almuerzo dos veces y le robaría una
+    // hora al día. Aquí: 4h + 3h = 420, menos 60 de almuerzo = 360.
+    const sinVentana = diaCompleto({ almuerzoInicio: null, almuerzoFin: null });
+    const j = partirDiaEnJornadas([reg(bog(8), bog(12)), reg(bog(14), bog(17))], sinVentana);
+    expect(j).toHaveLength(2);
+    expect(j[0].minutosContados + j[1].minutosContados).toBe(360);
+  });
+
+  it('si la primera jornada no da para el almuerzo fijo, el resto lo paga la siguiente', () => {
+    // Media hora por la mañana y siete horas por la tarde, con almuerzo fijo de
+    // 60. Recortar solo la primera jornada dejaría 0 + 420 = 420: media hora de
+    // almuerzo regalada. El total honesto es 30 + 420 − 60 = 390.
+    const sinVentana = diaCompleto({ almuerzoInicio: null, almuerzoFin: null });
+    const j = partirDiaEnJornadas([reg(bog(8), bog(8, 30)), reg(bog(10), bog(17))], sinVentana);
+    expect(j[0].minutosContados + j[1].minutosContados).toBe(390);
+    expect(j[0].minutosContados).toBe(0);
+  });
+
+  it('una salida anterior a su entrada cuenta cero, no en negativo', () => {
+    // Pasa de verdad: el formulario de edición arma entrada y salida sobre la
+    // MISMA fecha, así que corregir un turno nocturno puede dejar guardada una
+    // salida anterior a su entrada. Restarla le quitaba al día horas que nadie
+    // dejó de trabajar.
+    const j = partirDiaEnJornadas([reg(bog(8), bog(12)), reg(bog(18), bog(14))], diaCompleto());
+    expect(j).toHaveLength(2);
+    expect(j[1].minutosContados).toBe(0);
+    // 4h de la mañana menos la hora de almuerzo que estuvo marcado: 12:00 cierra
+    // justo al empezar la ventana, así que no hay solape y quedan los 240.
+    expect(j[0].minutosContados).toBe(240);
+  });
+
+  it('LA INVARIANTE: las jornadas de un día suman exactamente lo que cuenta el día', () => {
+    // Si esta prueba se cae, la tabla muestra filas que no suman lo que dice el
+    // modal, y no hay forma de que el administrador sepa a cuál creerle.
+    const escenarios: { nombre: string; regs: ReturnType<typeof reg>[]; dia: ReturnType<typeof diaCompleto> }[] = [
+      { nombre: 'almuerzo marcado', regs: [reg(bog(8), bog(12), { salidaAlmuerzo: true }), reg(bog(13), bog(17))], dia: diaCompleto() },
+      { nombre: 'almuerzo + extra', regs: [reg(bog(8), bog(12), { salidaAlmuerzo: true }), reg(bog(13), bog(17)), reg(bog(19), bog(21))], dia: diaCompleto() },
+      { nombre: 'jornada corrida', regs: [reg(bog(8), bog(17))], dia: diaCompleto() },
+      { nombre: 'dos turnos sin almuerzo', regs: [reg(bog(8), bog(12)), reg(bog(14), bog(17))], dia: diaCompleto() },
+      { nombre: 'sin ventana, dos jornadas', regs: [reg(bog(8), bog(12)), reg(bog(14), bog(17))], dia: diaCompleto({ almuerzoInicio: null, almuerzoFin: null }) },
+      { nombre: 'sin ventana, jornada corta', regs: [reg(bog(8), bog(8, 30)), reg(bog(10), bog(17))], dia: diaCompleto({ almuerzoInicio: null, almuerzoFin: null }) },
+      { nombre: 'con tolerancia de salida', regs: [reg(bog(8), bog(12), { salidaAlmuerzo: true }), reg(bog(13), bog(17, 20))], dia: diaCompleto({ toleranciaSalidaMin: 30 }) },
+      { nombre: 'tramo abierto', regs: [reg(bog(8), bog(12)), reg(bog(14), null)], dia: diaCompleto() },
+      { nombre: 'salida anterior a la entrada', regs: [reg(bog(8), bog(12)), reg(bog(18), bog(14))], dia: diaCompleto() },
+      { nombre: 'segundos sueltos', regs: [reg(bog(8), new Date(bog(12).getTime() + 25_000)), reg(bog(14), new Date(bog(17).getTime() + 40_000))], dia: diaCompleto() },
+    ];
+    for (const e of escenarios) {
+      const suma = partirDiaEnJornadas(e.regs, e.dia).reduce((s, j) => s + j.minutosContados, 0);
+      expect(suma, e.nombre).toBe(minutosContadosDelDia(e.regs, e.dia));
+    }
   });
 });

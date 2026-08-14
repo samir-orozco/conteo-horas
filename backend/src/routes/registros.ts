@@ -5,7 +5,7 @@ import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, type ResumenAlmuerzo } from '../utils/jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -100,58 +100,89 @@ export default async function registroRoutes(app: FastifyInstance) {
       return dia;
     };
 
-    // El almuerzo es del DÍA, no de la fila: vive en el hueco entre dos tramos.
-    // Se resuelve una vez por colaborador+día y viaja repetido en cada fila de
-    // ese día, para que la tabla y el detalle no puedan contar historias
-    // distintas del mismo almuerzo.
+    // La tabla lista JORNADAS, no marcaciones. Marcar el almuerzo parte el día
+    // en dos tramos, y devolverlos sueltos hacía aparecer el mismo día dos veces
+    // —con la segunda fila medio vacía— como si la persona hubiera marcado dos
+    // veces. Volver del almuerzo es la misma jornada; volver por la tarde a
+    // hacer horas extra sí es otra, y esa sí baja como fila aparte.
     const registrosPorDia = new Map<string, typeof registros>();
     for (const r of registros) {
       const clave = `${r.colaboradorId}|${toZonedTime(r.fecha, TZ).toDateString()}`;
       if (!registrosPorDia.has(clave)) registrosPorDia.set(clave, []);
       registrosPorDia.get(clave)!.push(r);
     }
-    const almuerzoPorDia = new Map<string, ResumenAlmuerzo>();
-    // En qué fila del día se pinta el almuerzo. `minutos` y `minutosDescontados`
-    // son plata: repetidos en las dos filas de un día partido, alguien los suma.
-    const filaDelAlmuerzo = new Map<string, string>(); // clave del día -> registro.id
-    for (const [clave, delDia] of registrosPorDia) {
-      const dia = diaEsperadoDe(delDia[0]);
-      if (!dia) continue;
-      const resumen = resumirAlmuerzoDelDia(delDia, dia);
-      almuerzoPorDia.set(clave, resumen);
-      // Si hubo salida a almorzar, va en esa fila: es la marcación que la
-      // produjo. Si no, en la primera entrada del día, que es donde el
-      // administrador va a mirar primero.
-      const ancla = resumen.salida
-        ? delDia.find(r => r.salidaAlmuerzo)?.id
-        : primeraEntradaDia.get(clave);
-      if (ancla) filaDelAlmuerzo.set(clave, ancla);
-    }
 
     // Las fotos (base64) no viajan en la lista: solo un indicador; se piden con /:id/fotos.
     // La llegada se evalúa contra el horario asignado (null si no aplica ese día).
-    return registros.map(r => {
-      const { fotoEntrada, fotoSalida, colaborador, ...resto } = r;
-      let minutosTarde: number | null = null;
-      const clave = `${r.colaboradorId}|${toZonedTime(r.fecha, TZ).toDateString()}`;
-      const esPrimeraDelDia = primeraEntradaDia.get(clave) === r.id;
-      if (r.entrada && esPrimeraDelDia && r.tipo !== 'FESTIVO') {
-        const dia = diaEsperadoDe(r);
-        if (dia?.programado && dia.horaEntrada) {
-          const z = toZonedTime(r.entrada, TZ);
-          const tarde = z.getHours() * 60 + z.getMinutes() - (minutosDe(dia.horaEntrada) + dia.toleranciaMin);
-          minutosTarde = Math.max(0, tarde);
+    const filas = [];
+    for (const [clave, delDia] of registrosPorDia) {
+      const dia = diaEsperadoDe(delDia[0]);
+      if (!dia) continue;
+
+      for (const jornada of partirDiaEnJornadas(delDia, dia)) {
+        const marcaciones = jornada.marcaciones;
+        const primera = marcaciones[0];
+        // La salida de la jornada es la última que exista: un tramo abierto al
+        // final no borra la salida del anterior.
+        const cierra = [...marcaciones].reverse().find(m => m.salida) ?? primera;
+
+        // La tardanza se mide solo en la primera entrada del día: volver del
+        // almuerzo, o regresar de noche a hacer extras, no es llegar tarde.
+        let minutosTarde: number | null = null;
+        if (primera.entrada && primeraEntradaDia.get(clave) === primera.id
+          && primera.tipo !== 'FESTIVO' && dia.programado && dia.horaEntrada) {
+          const z = toZonedTime(primera.entrada, TZ);
+          minutosTarde = Math.max(0, z.getHours() * 60 + z.getMinutes() - (minutosDe(dia.horaEntrada) + dia.toleranciaMin));
         }
+
+        filas.push({
+          // El id es el de la PRIMERA marcación: es la que abre la jornada y con
+          // la que se entra al detalle. Las demás viajan en `marcaciones`, que es
+          // lo que permite editar o borrar una sola sin adivinar cuál.
+          id: primera.id,
+          colaboradorId: primera.colaboradorId,
+          colaborador: {
+            id: delDia[0].colaborador.id,
+            nombre: delDia[0].colaborador.nombre,
+            apellido: delDia[0].colaborador.apellido,
+          },
+          fecha: primera.fecha,
+          entrada: primera.entrada,
+          salida: cierra.salida,
+          tipo: primera.tipo,
+          observacion: primera.observacion,
+          sedeId: primera.sedeId,
+          minutosTarde,
+          // Lo que ese bloque de trabajo contó, con el almuerzo ya descontado.
+          // Antes la columna restaba salida menos entrada de un tramo suelto, así
+          // que un día con almuerzo mostraba dos duraciones parciales.
+          minutosContados: jornada.minutosContados,
+          entradaEstimada: primera.entradaEstimada,
+          salidaEstimada: cierra.salidaEstimada,
+          salidaAlmuerzo: cierra.salidaAlmuerzo,
+          tieneFotoEntrada: !!primera.fotoEntrada,
+          tieneFotoSalida: !!cierra.fotoSalida,
+          almuerzo: jornada.almuerzo,
+          marcaciones: marcaciones.map(m => ({
+            id: m.id,
+            entrada: m.entrada,
+            salida: m.salida,
+            salidaAlmuerzo: m.salidaAlmuerzo,
+            entradaEstimada: m.entradaEstimada,
+            salidaEstimada: m.salidaEstimada,
+            tieneFotoEntrada: !!m.fotoEntrada,
+            tieneFotoSalida: !!m.fotoSalida,
+          })),
+        });
       }
-      return {
-        ...resto,
-        colaborador: { id: colaborador.id, nombre: colaborador.nombre, apellido: colaborador.apellido },
-        minutosTarde,
-        tieneFotoEntrada: !!fotoEntrada,
-        tieneFotoSalida: !!fotoSalida,
-        almuerzo: almuerzoPorDia.get(clave) ?? null,
-        almuerzoEnEstaFila: filaDelAlmuerzo.get(clave) === r.id,
-      };
+    }
+
+    // Se reordena al final: agrupar por día deshace el orden que traía la
+    // consulta, y la tabla espera lo más reciente arriba.
+    return filas.sort((a, b) => {
+      const dif = b.fecha.getTime() - a.fecha.getTime();
+      if (dif !== 0) return dif;
+      return (b.entrada?.getTime() ?? 0) - (a.entrada?.getTime() ?? 0);
     });
   });
 
