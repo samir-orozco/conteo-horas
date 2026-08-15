@@ -6,6 +6,7 @@ exports.tramoQueChoca = tramoQueChoca;
 exports.instantesDeJornada = instantesDeJornada;
 exports.marcacionQueCierra = marcacionQueCierra;
 exports.agruparEnJornadas = agruparEnJornadas;
+exports.momentosDelDia = momentosDelDia;
 exports.partirDiaEnJornadas = partirDiaEnJornadas;
 exports.finDeLaVentana = finDeLaVentana;
 exports.minutosContadosDelDia = minutosContadosDelDia;
@@ -155,6 +156,19 @@ function marcacionQueCierra(marcaciones) {
 // tramos solapados son datos rotos de una edición a mano, y encadenarlos daría
 // una jornada cuya salida es anterior a su propia entrada.
 //
+// Las marcaciones ordenadas por hora de entrada. La base no garantiza ningún
+// orden y toda la agrupación depende de quién sigue a quién. Las que no tienen
+// entrada —cargadas a mano, incompletas— van al final: no hay forma de
+// encadenarlas.
+function enOrdenDeEntrada(registros) {
+    return [...registros].sort((a, b) => {
+        if (!a.entrada)
+            return 1;
+        if (!b.entrada)
+            return -1;
+        return a.entrada.getTime() - b.entrada.getTime();
+    });
+}
 // Espera las marcaciones YA ordenadas por entrada.
 function agruparEnJornadas(enOrden) {
     const bloques = [];
@@ -170,17 +184,24 @@ function agruparEnJornadas(enOrden) {
     }
     return bloques;
 }
+function momentosDelDia(registros) {
+    const momentos = new Map();
+    for (const jornada of agruparEnJornadas(enOrdenDeEntrada(registros))) {
+        jornada.forEach((m, i) => {
+            momentos.set(m.id, {
+                entrada: !m.entrada ? null : i === 0 ? 'ENTRADA' : 'REGRESO_ALMUERZO',
+                // Una salida al descanso no cierra la jornada ni siquiera cuando es la
+                // última marca del día: la persona no se fue a su casa, simplemente no
+                // volvió a marcar. Es la misma regla de `marcacionQueCierra`, y las dos
+                // no pueden decir cosas distintas del mismo registro.
+                salida: !m.salida ? null : m.salidaAlmuerzo ? 'SALIDA_ALMUERZO' : 'SALIDA',
+            });
+        });
+    }
+    return momentos;
+}
 function partirDiaEnJornadas(registros, dia) {
-    // Los registros llegan en el orden que quiera la base y la agrupación depende
-    // de quién sigue a quién. Las marcaciones sin hora de entrada —creadas a mano,
-    // incompletas— van al final: no hay forma de encadenarlas.
-    const enOrden = [...registros].sort((a, b) => {
-        if (!a.entrada)
-            return 1;
-        if (!b.entrada)
-            return -1;
-        return a.entrada.getTime() - b.entrada.getTime();
-    });
+    const enOrden = enOrdenDeEntrada(registros);
     if (enOrden.length === 0)
         return [];
     const bloques = agruparEnJornadas(enOrden);
