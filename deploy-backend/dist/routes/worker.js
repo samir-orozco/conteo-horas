@@ -97,7 +97,14 @@ async function almuerzoDelTurno(colaboradorId, fechaAncla) {
 // endpoint propio y la salida temprana, que la guarda junto con la marca: en dos
 // llamadas separadas, si la segunda fallaba la salida quedaba escrita y el motivo
 // se perdía sin que nadie se enterara.
-async function crearNovedad(colaboradorId, tipo, descripcion) {
+// `registroId` va cuando la novedad nace de una salida temprana: esa novedad es
+// parte de la marcación y muere con ella. Sin él —cuando la reporta el worker
+// desde su propia pantalla— la novedad vive por su cuenta.
+//
+// No sirve identificarlas por colaborador y día: un día puede tener varias
+// novedades legítimas (cita médica en la mañana, una urgencia en la tarde), así
+// que el vínculo tiene que ser explícito.
+async function crearNovedad(colaboradorId, tipo, descripcion, registroId) {
     const { inicioDia } = (0, fechas_1.rangoDiaBogota)();
     const permiso = await index_1.prisma.permiso.create({
         data: {
@@ -107,6 +114,7 @@ async function crearNovedad(colaboradorId, tipo, descripcion) {
             fechaInicio: inicioDia,
             fechaFin: inicioDia,
             aprobado: false,
+            ...(registroId ? { registroId } : {}),
         },
     });
     const quien = await index_1.prisma.colaborador.findUnique({
@@ -507,7 +515,7 @@ async function workerRoutes(app) {
                 // La novedad viaja con la marca, no en una llamada aparte: si esa segunda
                 // llamada fallaba, la salida quedaba registrada y el motivo se perdía.
                 if (tipoNovedad) {
-                    await crearNovedad(payload.id, tipoNovedad, typeof novedad.novedadDescripcion === 'string' ? novedad.novedadDescripcion : '')
+                    await crearNovedad(payload.id, tipoNovedad, typeof novedad.novedadDescripcion === 'string' ? novedad.novedadDescripcion : '', updated.id)
                         .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la salida temprana'));
                 }
                 return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo };

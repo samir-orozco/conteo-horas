@@ -147,6 +147,7 @@ async function registroRoutes(app) {
         // que nadie mira es tiempo que no se está pagando —o que se está pagando de
         // más— sin que nadie lo haya decidido.
         const novedadesPorDia = new Map();
+        const novedadesLigadas = new Set();
         if (registros.length > 0) {
             const fechas = registros.map(r => r.fecha.getTime());
             const desdeDia = (0, fechas_1.rangoDiaBogota)(new Date(Math.min(...fechas))).inicioDia;
@@ -158,7 +159,7 @@ async function registroRoutes(app) {
                         fechaInicio: { lt: hastaDia },
                         fechaFin: { gte: desdeDia },
                     },
-                    select: { id: true, colaboradorId: true, tipo: true, aprobado: true, fechaInicio: true, fechaFin: true },
+                    select: { id: true, colaboradorId: true, tipo: true, aprobado: true, fechaInicio: true, fechaFin: true, registroId: true },
                     orderBy: { creadoEn: 'asc' },
                 }),
                 index_1.prisma.configuracion.findUnique({
@@ -167,6 +168,13 @@ async function registroRoutes(app) {
                 }),
             ]);
             const politica = (0, saldoTiempo_1.parsearPoliticaPermisos)(politicaCruda?.valor);
+            // Qué marcaciones arrastran una novedad si se borran. La novedad de una
+            // salida temprana es parte de su marcación y se va con ella (ON DELETE
+            // CASCADE), así que el diálogo de borrado tiene que poder avisarlo: si esa
+            // novedad ya estaba aprobada, borrarla mueve la liquidación.
+            for (const p of permisos)
+                if (p.registroId)
+                    novedadesLigadas.add(p.registroId);
             // Un permiso puede cubrir varios días —unas vacaciones—, así que se
             // reparte por cada día que toca. Se queda el primero de cada día: la
             // tabla solo avisa de que hay algo; el detalle lo cuenta entero.
@@ -257,6 +265,7 @@ async function registroRoutes(app) {
                         salidaEstimada: m.salidaEstimada,
                         tieneFotoEntrada: !!m.fotoEntrada,
                         tieneFotoSalida: !!m.fotoSalida,
+                        tieneNovedadLigada: novedadesLigadas.has(m.id),
                     })),
                 });
             }
@@ -305,7 +314,7 @@ async function registroRoutes(app) {
         if (!registro)
             return reply.status(404).send({ error: 'Registro no encontrado' });
         const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(registro.fecha);
-        const [delDia, congelado, festivo, novedad, conFotoEntrada, conFotoSalida] = await Promise.all([
+        const [delDia, congelado, festivo, novedad, conFotoEntrada, conFotoSalida, ligadas] = await Promise.all([
             index_1.prisma.registro.findMany({
                 where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
                 orderBy: { entrada: 'asc' },
@@ -346,9 +355,17 @@ async function registroRoutes(app) {
                 where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia }, fotoSalida: { not: null } },
                 select: { id: true },
             }),
+            // Qué marcaciones del día arrastran una novedad si se borran. La de una
+            // salida temprana es parte de su marcación y se va con ella; el diálogo de
+            // borrado tiene que decirlo antes, no después.
+            index_1.prisma.permiso.findMany({
+                where: { colaboradorId: registro.colaboradorId, registroId: { not: null }, fechaInicio: { lt: finDia }, fechaFin: { gte: inicioDia } },
+                select: { registroId: true },
+            }),
         ]);
         const tieneEntrada = new Set(conFotoEntrada.map(r => r.id));
         const tieneSalida = new Set(conFotoSalida.map(r => r.id));
+        const conNovedadLigada = new Set(ligadas.map(p => p.registroId));
         const [dia] = (0, diasEsperados_1.combinarDiasEsperados)(inicioDia, finDia, congelado ? [congelado] : [], registro.colaborador.horario);
         // ¿La fila se escribió ESE día o se reconstruyó después? El backfill llenó
         // todo el pasado con el horario que estaba vigente al correrlo, así que
@@ -399,6 +416,7 @@ async function registroRoutes(app) {
                 ...datosRegistro,
                 tieneFotoEntrada: tieneEntrada.has(registro.id),
                 tieneFotoSalida: tieneSalida.has(registro.id),
+                tieneNovedadLigada: conNovedadLigada.has(registro.id),
             },
             colaborador: { nombre: colaborador.nombre, apellido: colaborador.apellido, cargo: colaborador.cargo },
             fecha: inicioDia,
@@ -409,6 +427,7 @@ async function registroRoutes(app) {
                 momentoSalida: momentos.get(t.id)?.salida ?? null,
                 tieneFotoEntrada: tieneEntrada.has(t.id),
                 tieneFotoSalida: tieneSalida.has(t.id),
+                tieneNovedadLigada: conNovedadLigada.has(t.id),
             })),
             almuerzo,
             minutosDelDia: (0, jornada_1.minutosContadosDelDia)(delDia, dia),
