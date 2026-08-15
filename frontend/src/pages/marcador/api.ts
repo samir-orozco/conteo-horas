@@ -27,7 +27,15 @@ export const loginRostro = (body: { descriptor: number[]; marcadorToken: string;
 export const getEstado = (token: string) =>
   apiKiosco.get('/worker/estado', authHeader(token)).then(r => r.data as Estado);
 
-export const marcar = (token: string, body: { foto?: string; lat?: number; lng?: number; almuerzo?: boolean; regresoA?: string }) =>
+// `novedadTipo`/`novedadDescripcion` viajan en ESTA llamada, no en `enviarNovedad`:
+// el servidor no cierra la jornada de una salida temprana sin motivo, y si la
+// novedad fuera una segunda llamada, un fallo suyo dejaría la salida escrita y el
+// motivo perdido. Faltaban en este tipo, así que el motivo que la persona escribía
+// se quedaba en el navegador y el servidor volvía a pedirlo para siempre.
+export const marcar = (token: string, body: {
+  foto?: string; lat?: number; lng?: number; almuerzo?: boolean; regresoA?: string;
+  novedadTipo?: string; novedadDescripcion?: string;
+}) =>
   apiKiosco.post('/worker/marcar', body, authHeader(token)).then(r => r.data as MarcaResp);
 
 export const enviarNovedad = (token: string, body: { tipo: string; descripcion: string }) =>

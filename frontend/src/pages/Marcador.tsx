@@ -156,12 +156,27 @@ export default function Marcador() {
         foto: fotoRostro ?? undefined, ...ubic,
         ...(opciones?.almuerzo ? { almuerzo: true } : {}),
         ...(opciones?.regresoA ? { regresoA: opciones.regresoA } : {}),
+        // El motivo de la salida temprana. Sin esto, `enviarNovedadTemprana`
+        // reintentaba la marca EXACTAMENTE igual que la primera vez: el servidor
+        // volvía a responder REQUIERE_MOTIVO, el catch de abajo reabría la
+        // pantalla del motivo, y la persona quedaba encerrada sin poder marcar
+        // su salida.
+        ...(opciones?.novedadTipo ? { novedadTipo: opciones.novedadTipo } : {}),
+        ...(opciones?.novedadDescripcion ? { novedadDescripcion: opciones.novedadDescripcion } : {}),
       });
       mostrarFlashOk(r.accion, r.hora, nombreColab, r.salidaAlmuerzo);
     } catch (err: any) {
       // Se va antes de que termine su jornada: el servidor NO marcó nada y pide
       // el motivo. Salir al descanso nunca llega aquí.
       if (err.response?.status === 409 && err.response?.data?.codigo === 'REQUIERE_MOTIVO') {
+        // Si YA veníamos con motivo y el servidor lo vuelve a pedir, el problema
+        // no es que falte: es que no le sirvió. Reabrir la pantalla en silencio
+        // deja a la persona dando vueltas sin entender por qué, delante del
+        // kiosco y con la fila esperando. Se dice que falló y se sale.
+        if (opciones?.novedadTipo) {
+          mostrarFlashError('No pudimos registrar el motivo de tu salida. Avisa a tu supervisor.');
+          return;
+        }
         setNovedadTipo('MEDICO');
         setNovedadDesc('');
         setSalidaTemprana(opciones ?? {});
