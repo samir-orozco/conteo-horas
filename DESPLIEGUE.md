@@ -24,9 +24,14 @@ Guía paso a paso. Sigue el orden.
 
 1. cPanel → **Setup Node.js App** → Create Application:
    - Node.js version: 18 o superior.
-   - Application root: `horapro-api` (sube ahí el contenido de la carpeta `backend/`, sin `node_modules`).
+   - Application root: **`horapro-co-api`** (sube ahí el contenido de la carpeta `backend/`, sin `node_modules`).
+     > ⚠️ Existe además un `~/horapro-api` de cuando la app vivía en
+     > `horapro.krumlab.com`. **Está muerto y no sirve nada.** Copiar el `dist`
+     > ahí no da error y deja producción con el código viejo. La ruta real
+     > siempre se lee del servidor:
+     > `grep PassengerAppRoot ~/horapro.co/api/.htaccess`
    - Application startup file: `dist/index.js`.
-2. En la terminal de la app (o SSH), dentro de `horapro-api`:
+2. En la terminal de la app (o SSH), dentro de `horapro-co-api`:
    ```bash
    npm install
    cp .env.example .env        # y completa TODOS los valores (ver sección 6)

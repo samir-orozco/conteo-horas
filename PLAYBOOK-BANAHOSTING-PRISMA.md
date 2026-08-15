@@ -85,7 +85,7 @@
 | Ruta | Qué es |
 |---|---|
 | `~/app-repo` | Clon git del repo. Solo se usa para **traer** artefactos vía `git checkout -f <rama-build>` + `pull`. **No** es donde corre la app. |
-| `~/app-api` | La app Node desplegada de verdad: `dist/`, `node_modules/.prisma/client/` (copiado desde `prisma-build`), `.env` si aplica. |
+| `~/app-api` | La app Node desplegada de verdad: `dist/`, `node_modules/.prisma/client/` (copiado desde `prisma-build`), `.env` si aplica. **Su nombre NO se adivina ni se lee de la documentación: se lee del servidor** (paso B.0). |
 | `~/midominio.com/` | Docroot del frontend, servido por LiteSpeed. |
 
 ---
@@ -197,6 +197,22 @@ contra MySQL (local y en producción) funcionan sin cambios de comportamiento.
 
 ### B. En el servidor (Terminal de cPanel) — un comando por bloque
 
+**0. Confirma cuál es la app que de verdad corre.** No es opcional y no se salta:
+Passenger guarda la ruta real en el `.htaccess` del docroot, y es la única fuente
+confiable. La documentación puede estar desactualizada —lo estuvo: después de
+migrar de `horapro.krumlab.com` a `horapro.co` quedó registrada `~/horapro-api`,
+que ya no sirve nada, mientras la app viva es `~/horapro-co-api`. Copiar al
+directorio muerto no da ningún error: el `cp` funciona, el `restart.txt`
+funciona, y producción sigue con el código viejo.
+```
+grep PassengerAppRoot ~/midominio.com/api/.htaccess
+```
+Lo que imprima esa línea es `~/app-api` en todo lo que sigue. Para verlo desde
+otro ángulo, esto lista los procesos Node vivos con su ruta:
+```
+ps -eo pid,etime,cmd | grep -i node | grep -v grep
+```
+
 **1. Backend:**
 ```
 cd ~/app-repo && git checkout -f backend-build
@@ -214,6 +230,14 @@ git checkout -f prisma-build && git pull origin prisma-build
 ```
 cp -R deploy-prisma-client/. ~/app-api/node_modules/.prisma/client/
 ```
+**Comprueba que el archivo llegó a la app viva**, no a un directorio muerto.
+Busca algo que solo exista en el código nuevo (una ruta, un nombre de función):
+```
+grep -c "<algo-del-cambio>" ~/app-api/dist/routes/<archivo>.js
+```
+Si da `0`, copiaste al lugar equivocado: vuelve al paso B.0. Este chequeo existe
+porque su ausencia costó un despliegue entero dado por bueno.
+
 **Reinicia la app Node** (LiteSpeed honra la misma convención que Passenger):
 ```
 touch ~/app-api/tmp/restart.txt
@@ -313,6 +337,11 @@ Verifica siempre que el bundle no contenga `localhost` antes de subirlo.
 - [ ] Diff de la rama de build revisado (renombrados, no cientos de "añadidos").
 - [ ] (Si cambió el esquema) migración aplicada en phpMyAdmin **y** `prisma-build` actualizado, **antes** de copiar el backend nuevo.
 - [ ] En el servidor: `git checkout -f` + `pull` + `cp -R` de cada artefacto, un comando por bloque.
+- [ ] **App root leído del `.htaccess` del docroot** (paso B.0), no de esta guía.
+- [ ] `grep` de algo del cambio dentro de `~/app-api/dist/` → distinto de `0`.
 - [ ] `touch tmp/restart.txt` si cambió el backend.
 - [ ] `curl /api/health` (que toque la BD) + prueba en el navegador con recarga dura.
+- [ ] **Si el cambio agregó una ruta**, probarla sin token: tiene que responder
+      `401`, no `404`. Un `404` ahí significa que el backend viejo sigue vivo, y
+      es lo único que distingue "desplegado" de "copiado a otra parte".
 - [ ] Worktrees temporales limpiados (`rm -rf` + `git worktree prune`).
