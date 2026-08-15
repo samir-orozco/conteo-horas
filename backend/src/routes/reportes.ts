@@ -238,7 +238,6 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
     const festivosDates = festivos.map(f => new Date(f.fecha));
     const horario = (colaborador as any).horario as HorarioConFranjas | null;
-    const extraConfig = construirExtraConfig(modoExtra, horario);
 
     // Valor hora con el divisor de la jornada vigente al final del período
     const jornadaCierre = jornadaVigente(new Date(hasta), jornadas);
@@ -250,6 +249,10 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // Se resuelven ANTES de liquidar porque de ahí sale también la hora de
     // salida programada que usa la tolerancia de jornada.
     const diasEsperados = combinarDiasEsperados(desdeF, finExclusivo, diasMaterializados, horario);
+    // El ExtraConfig sale de los días YA COMBINADOS, no del horario vigente: es
+    // lo que impide que cambiar un horario reescriba la clasificación de extras
+    // de un período ya liquidado.
+    const extraConfig = construirExtraConfig(modoExtra, horario, diasEsperados);
 
     const r = liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados);
 
@@ -337,9 +340,9 @@ export default async function reporteRoutes(app: FastifyInstance) {
 
     const resultado = colaboradores.map(col => {
       const horario = (col as any).horario as HorarioConFranjas | null;
-      const extraConfig = construirExtraConfig(modoExtra, horario);
       const registros = porColaborador.get(col.id) ?? [];
       const dias = combinarDiasEsperados(desdeF, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
+      const extraConfig = construirExtraConfig(modoExtra, horario, dias);
       const r = liquidarRegistros(registros as any, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias);
       return {
         colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
