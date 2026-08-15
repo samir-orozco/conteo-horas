@@ -61,7 +61,9 @@ export default function FotosJornada({ registroId }: { registroId: string }) {
       ) : !fotos ? (
         <p className="text-sm text-gray-400 py-6 text-center">Cargando fotos...</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        /* `items-start`: sin esto las celdas se estiran a la altura de la fila y
+           el hueco de "sin foto" se desbordaba sobre el rótulo de abajo. */
+        <div className="grid grid-cols-2 gap-3 items-start">
           {fotos.map((f, i) => (
             <div key={`${f.registroId}-${f.momento}-${i}`}>
               <p className={`text-[10px] font-semibold uppercase mb-1.5 ${MOMENTO_TONO[f.momento]}`}>
@@ -72,7 +74,12 @@ export default function FotosJornada({ registroId }: { registroId: string }) {
                 <img src={f.foto} alt={`Foto de ${MOMENTO_LABEL[f.momento].toLowerCase()}`}
                   className="w-full rounded-xl border border-gray-200 [transform:scaleX(-1)]" />
               ) : (
-                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center h-full flex flex-col items-center justify-center">
+                /* Misma proporción que la foto (el capturador del kiosco graba en
+                   4:3), para que el hueco ocupe exactamente lo mismo. Antes era
+                   `h-full`, que es el 100% de la celda ENTERA —rótulo incluido—,
+                   así que el recuadro sobresalía y tapaba el texto de la fila
+                   siguiente. */
+                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-3 aspect-[4/3] text-center flex flex-col items-center justify-center">
                   <ImageOff size={20} className="text-gray-400 mb-1.5" />
                   <p className="text-[11px] text-muted leading-relaxed">
                     {f.estimada

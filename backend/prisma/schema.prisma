@@ -338,6 +338,9 @@ model Registro {
   editadoPor     String?
   editadoEn      DateTime?
   creadoEn       DateTime     @default(now())
+  // Novedades que nacieron de ESTA marcación (salida temprana en el kiosco).
+  // Se borran con ella: son parte de la marcación, no registros independientes.
+  novedades      Permiso[]
 
   @@map("registros")
 }
@@ -346,6 +349,16 @@ model Permiso {
   id              String      @id @default(cuid())
   colaboradorId   String
   colaborador     Colaborador @relation(fields: [colaboradorId], references: [id])
+  // La marcación que creó esta novedad, cuando nació de una salida temprana en
+  // el kiosco. Null cuando la cargó un admin a mano: esa vive por su cuenta.
+  //
+  // Existe porque un día puede tener varias novedades legítimas —cita médica en
+  // la mañana, una urgencia en la tarde— así que no se pueden identificar por
+  // colaborador y fecha. Sin este vínculo, borrar la marcación dejaba la novedad
+  // huérfana y pendiente de aprobar, y quien la aprobaba después excusaba una
+  // jornada cuya marcación ya no existía.
+  registroId      String?
+  registro        Registro?   @relation(fields: [registroId], references: [id], onDelete: Cascade)
   fechaInicio     DateTime
   fechaFin        DateTime
   // Novedad de parte del día ("cita médica de 14:00 a 17:00"). Vacías = día

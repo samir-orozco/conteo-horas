@@ -22,6 +22,9 @@ export type Jornada = {
     creadoEn: string; editadoPor: string | null; editadoEn: string | null;
     sede: { nombre: string; activa: boolean } | null;
     tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
+    // La novedad que nació de esta marcación se borra con ella. El diálogo de
+    // confirmación lo dice antes, no después.
+    tieneNovedadLigada?: boolean;
   };
   colaborador: { nombre: string; apellido: string; cargo: string | null };
   fecha: string;
@@ -38,6 +41,7 @@ export type Jornada = {
     // depende de los tramos vecinos, no del registro solo.
     momentoEntrada: Momento | null; momentoSalida: Momento | null;
     tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
+    tieneNovedadLigada?: boolean;
   }[];
   almuerzo: {
     estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
@@ -104,7 +108,9 @@ type Props = {
   // lista que tiene la tabla cargada (otro tramo del día, otro rango de fechas),
   // y buscarla allí dejaba el botón sin hacer nada.
   onEditar: (registro: RegistroEditable) => void;
-  onEliminar: (registroId: string) => void;
+  // Va también cuántas novedades se llevará por delante: el aviso se arma en la
+  // pantalla que muestra el diálogo, pero solo aquí se sabe el número.
+  onEliminar: (registroId: string, novedadesLigadas: number) => void;
   // Saltar a otra marcación del día. Desde que la tabla muestra una fila por
   // JORNADA, el regreso del almuerzo ya no tiene fila propia: si no se puede
   // llegar a él desde aquí, no se puede llegar de ninguna forma.
@@ -511,7 +517,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                 ) : <p>Sin correcciones desde que se creó.</p>}
               </div>
               <div className="flex flex-wrap gap-2 justify-end">
-                <button onClick={() => onEliminar(r.id)}
+                <button onClick={() => onEliminar(r.id, r.tieneNovedadLigada ? 1 : 0)}
                   className="flex items-center gap-1.5 text-sm text-red-600 border border-red-200 rounded-lg px-4 py-2 hover:bg-red-50">
                   <Trash2 size={14} /> Eliminar
                 </button>

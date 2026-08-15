@@ -16,6 +16,10 @@ type Marcacion = {
   id: string; entrada: string | null; salida: string | null;
   salidaAlmuerzo: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
   tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
+  // La novedad que nació de esta marcación (salida temprana en el kiosco) se
+  // borra con ella. El diálogo tiene que decirlo ANTES: si esa novedad ya
+  // estaba aprobada, borrarla mueve la liquidación.
+  tieneNovedadLigada?: boolean;
 };
 // Una fila de la tabla es una JORNADA, no una marcación. Marcar el almuerzo
 // parte el día en dos tramos; los dos son la misma jornada y bajan juntos en
@@ -85,6 +89,7 @@ const marcasDe = (r: Registro): Marcacion[] => r.marcaciones ?? [{
   salidaAlmuerzo: r.salidaAlmuerzo ?? false, entradaEstimada: false,
   salidaEstimada: r.salidaEstimada ?? false,
   tieneFotoEntrada: r.tieneFotoEntrada, tieneFotoSalida: r.tieneFotoSalida,
+  tieneNovedadLigada: false,
 }];
 
 // Celda de almuerzo. El almuerzo llega solo en la jornada que lo contiene, así
@@ -160,7 +165,7 @@ export default function Registros() {
   const [fotosDe, setFotosDe] = useState<Registro | null>(null);
   // Qué marcaciones se van a borrar. Una jornada partida por el almuerzo son
   // dos, y borrar solo la primera dejaba la tarde suelta como una fila huérfana.
-  const [porEliminar, setPorEliminar] = useState<{ ids: string[]; horas: string } | null>(null);
+  const [porEliminar, setPorEliminar] = useState<{ ids: string[]; horas: string; novedades: number } | null>(null);
   // Detalle de una marcación. La fila de la tabla no se explica sola: el
   // almuerzo vive en el hueco entre dos filas y la tardanza solo se mide en la
   // primera entrada del día.
@@ -567,6 +572,7 @@ export default function Registros() {
                     <button onClick={() => setPorEliminar({
                       ids: marcasDe(r).map(m => m.id),
                       horas: marcasDe(r).map(m => `${fmtHora(m.entrada)}–${fmtHora(m.salida)}`).join(' y '),
+                      novedades: marcasDe(r).filter(m => m.tieneNovedadLigada).length,
                     })} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
                   </div>
                 </td>
@@ -786,7 +792,7 @@ export default function Registros() {
           }}
           // El detalle se cierra al eliminar: si no, queda encima mostrando una
           // marcación que ya no existe y el siguiente clic falla con un 404.
-          onEliminar={id => { setJornadaId(null); setPorEliminar({ ids: [id], horas: '' }); }}
+          onEliminar={(id, novedades) => { setJornadaId(null); setPorEliminar({ ids: [id], horas: '', novedades }); }}
           onVerMarcacion={setJornadaId}
         />
       )}
@@ -796,9 +802,15 @@ export default function Registros() {
         titulo={(porEliminar?.ids.length ?? 0) > 1
           ? `¿Eliminar las ${porEliminar!.ids.length} marcaciones de esta jornada?`
           : '¿Eliminar este registro?'}
-        subtitulo={porEliminar?.horas
-          ? `Se borran ${porEliminar.horas}. Esta acción no se puede deshacer.`
-          : 'Esta acción no se puede deshacer.'}
+        subtitulo={[
+          porEliminar?.horas ? `Se borran ${porEliminar.horas}.` : null,
+          // El aviso va primero en la frase y con su propio peso: es la parte que
+          // el administrador no espera, y la única que puede mover la nómina.
+          (porEliminar?.novedades ?? 0) > 0
+            ? `También se elimina ${porEliminar!.novedades === 1 ? 'la novedad que se reportó' : `las ${porEliminar!.novedades} novedades que se reportaron`} al marcar esta salida.`
+            : null,
+          'Esta acción no se puede deshacer.',
+        ].filter(Boolean).join(' ')}
         textoContinuar="Eliminar"
         peligro
         onContinuar={confirmarEliminar}

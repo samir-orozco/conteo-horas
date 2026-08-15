@@ -155,6 +155,7 @@ export default async function registroRoutes(app: FastifyInstance) {
     // que nadie mira es tiempo que no se está pagando —o que se está pagando de
     // más— sin que nadie lo haya decidido.
     const novedadesPorDia = new Map<string, { id: string; tipo: string; aprobado: boolean; remunerada: boolean }>();
+    const novedadesLigadas = new Set<string>();
     if (registros.length > 0) {
       const fechas = registros.map(r => r.fecha.getTime());
       const desdeDia = rangoDiaBogota(new Date(Math.min(...fechas))).inicioDia;
@@ -166,7 +167,7 @@ export default async function registroRoutes(app: FastifyInstance) {
             fechaInicio: { lt: hastaDia },
             fechaFin: { gte: desdeDia },
           },
-          select: { id: true, colaboradorId: true, tipo: true, aprobado: true, fechaInicio: true, fechaFin: true },
+          select: { id: true, colaboradorId: true, tipo: true, aprobado: true, fechaInicio: true, fechaFin: true, registroId: true },
           orderBy: { creadoEn: 'asc' },
         }),
         prisma.configuracion.findUnique({
@@ -175,6 +176,11 @@ export default async function registroRoutes(app: FastifyInstance) {
         }),
       ]);
       const politica = parsearPoliticaPermisos(politicaCruda?.valor);
+      // Qué marcaciones arrastran una novedad si se borran. La novedad de una
+      // salida temprana es parte de su marcación y se va con ella (ON DELETE
+      // CASCADE), así que el diálogo de borrado tiene que poder avisarlo: si esa
+      // novedad ya estaba aprobada, borrarla mueve la liquidación.
+      for (const p of permisos) if (p.registroId) novedadesLigadas.add(p.registroId);
       // Un permiso puede cubrir varios días —unas vacaciones—, así que se
       // reparte por cada día que toca. Se queda el primero de cada día: la
       // tabla solo avisa de que hay algo; el detalle lo cuenta entero.
@@ -270,6 +276,7 @@ export default async function registroRoutes(app: FastifyInstance) {
             salidaEstimada: m.salidaEstimada,
             tieneFotoEntrada: !!m.fotoEntrada,
             tieneFotoSalida: !!m.fotoSalida,
+            tieneNovedadLigada: novedadesLigadas.has(m.id),
           })),
         });
       }
@@ -321,7 +328,7 @@ export default async function registroRoutes(app: FastifyInstance) {
 
     const { inicioDia, finDia } = rangoDiaBogota(registro.fecha);
 
-    const [delDia, congelado, festivo, novedad, conFotoEntrada, conFotoSalida] = await Promise.all([
+    const [delDia, congelado, festivo, novedad, conFotoEntrada, conFotoSalida, ligadas] = await Promise.all([
       prisma.registro.findMany({
         where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
         orderBy: { entrada: 'asc' },
@@ -362,9 +369,17 @@ export default async function registroRoutes(app: FastifyInstance) {
         where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia }, fotoSalida: { not: null } },
         select: { id: true },
       }),
+      // Qué marcaciones del día arrastran una novedad si se borran. La de una
+      // salida temprana es parte de su marcación y se va con ella; el diálogo de
+      // borrado tiene que decirlo antes, no después.
+      prisma.permiso.findMany({
+        where: { colaboradorId: registro.colaboradorId, registroId: { not: null }, fechaInicio: { lt: finDia }, fechaFin: { gte: inicioDia } },
+        select: { registroId: true },
+      }),
     ]);
     const tieneEntrada = new Set(conFotoEntrada.map(r => r.id));
     const tieneSalida = new Set(conFotoSalida.map(r => r.id));
+    const conNovedadLigada = new Set(ligadas.map(p => p.registroId!));
 
     const [dia] = combinarDiasEsperados(
       inicioDia, finDia,
@@ -421,6 +436,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         ...datosRegistro,
         tieneFotoEntrada: tieneEntrada.has(registro.id),
         tieneFotoSalida: tieneSalida.has(registro.id),
+        tieneNovedadLigada: conNovedadLigada.has(registro.id),
       },
       colaborador: { nombre: colaborador.nombre, apellido: colaborador.apellido, cargo: colaborador.cargo },
       fecha: inicioDia,
@@ -431,6 +447,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         momentoSalida: momentos.get(t.id)?.salida ?? null,
         tieneFotoEntrada: tieneEntrada.has(t.id),
         tieneFotoSalida: tieneSalida.has(t.id),
+        tieneNovedadLigada: conNovedadLigada.has(t.id),
       })),
       almuerzo,
       minutosDelDia: minutosContadosDelDia(delDia, dia),
