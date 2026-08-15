@@ -315,6 +315,7 @@ exports.Prisma.RegistroScalarFieldEnum = {
 exports.Prisma.PermisoScalarFieldEnum = {
   id: 'id',
   colaboradorId: 'colaboradorId',
+  registroId: 'registroId',
   fechaInicio: 'fechaInicio',
   fechaFin: 'fechaFin',
   horaInicio: 'horaInicio',

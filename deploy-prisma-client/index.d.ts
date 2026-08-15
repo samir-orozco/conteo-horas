@@ -2975,6 +2975,37 @@ export namespace Prisma {
 
 
   /**
+   * Count Type RegistroCountOutputType
+   */
+
+  export type RegistroCountOutputType = {
+    novedades: number
+  }
+
+  export type RegistroCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    novedades?: boolean | RegistroCountOutputTypeCountNovedadesArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * RegistroCountOutputType without action
+   */
+  export type RegistroCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCountOutputType
+     */
+    select?: RegistroCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * RegistroCountOutputType without action
+   */
+  export type RegistroCountOutputTypeCountNovedadesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PermisoWhereInput
+  }
+
+
+  /**
    * Count Type AfiliadoCountOutputType
    */
 
@@ -16185,6 +16216,8 @@ export namespace Prisma {
     creadoEn?: boolean
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
     sede?: boolean | Registro$sedeArgs<ExtArgs>
+    novedades?: boolean | Registro$novedadesArgs<ExtArgs>
+    _count?: boolean | RegistroCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["registro"]>
 
 
@@ -16210,6 +16243,8 @@ export namespace Prisma {
   export type RegistroInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
     sede?: boolean | Registro$sedeArgs<ExtArgs>
+    novedades?: boolean | Registro$novedadesArgs<ExtArgs>
+    _count?: boolean | RegistroCountOutputTypeDefaultArgs<ExtArgs>
   }
 
   export type $RegistroPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -16217,6 +16252,7 @@ export namespace Prisma {
     objects: {
       colaborador: Prisma.$ColaboradorPayload<ExtArgs>
       sede: Prisma.$SedePayload<ExtArgs> | null
+      novedades: Prisma.$PermisoPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -16577,6 +16613,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     sede<T extends Registro$sedeArgs<ExtArgs> = {}>(args?: Subset<T, Registro$sedeArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    novedades<T extends Registro$novedadesArgs<ExtArgs> = {}>(args?: Subset<T, Registro$novedadesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PermisoPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -16936,6 +16973,26 @@ export namespace Prisma {
   }
 
   /**
+   * Registro.novedades
+   */
+  export type Registro$novedadesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Permiso
+     */
+    select?: PermisoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PermisoInclude<ExtArgs> | null
+    where?: PermisoWhereInput
+    orderBy?: PermisoOrderByWithRelationInput | PermisoOrderByWithRelationInput[]
+    cursor?: PermisoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PermisoScalarFieldEnum | PermisoScalarFieldEnum[]
+  }
+
+  /**
    * Registro without action
    */
   export type RegistroDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -16963,6 +17020,7 @@ export namespace Prisma {
   export type PermisoMinAggregateOutputType = {
     id: string | null
     colaboradorId: string | null
+    registroId: string | null
     fechaInicio: Date | null
     fechaFin: Date | null
     horaInicio: string | null
@@ -16979,6 +17037,7 @@ export namespace Prisma {
   export type PermisoMaxAggregateOutputType = {
     id: string | null
     colaboradorId: string | null
+    registroId: string | null
     fechaInicio: Date | null
     fechaFin: Date | null
     horaInicio: string | null
@@ -16995,6 +17054,7 @@ export namespace Prisma {
   export type PermisoCountAggregateOutputType = {
     id: number
     colaboradorId: number
+    registroId: number
     fechaInicio: number
     fechaFin: number
     horaInicio: number
@@ -17013,6 +17073,7 @@ export namespace Prisma {
   export type PermisoMinAggregateInputType = {
     id?: true
     colaboradorId?: true
+    registroId?: true
     fechaInicio?: true
     fechaFin?: true
     horaInicio?: true
@@ -17029,6 +17090,7 @@ export namespace Prisma {
   export type PermisoMaxAggregateInputType = {
     id?: true
     colaboradorId?: true
+    registroId?: true
     fechaInicio?: true
     fechaFin?: true
     horaInicio?: true
@@ -17045,6 +17107,7 @@ export namespace Prisma {
   export type PermisoCountAggregateInputType = {
     id?: true
     colaboradorId?: true
+    registroId?: true
     fechaInicio?: true
     fechaFin?: true
     horaInicio?: true
@@ -17134,6 +17197,7 @@ export namespace Prisma {
   export type PermisoGroupByOutputType = {
     id: string
     colaboradorId: string
+    registroId: string | null
     fechaInicio: Date
     fechaFin: Date
     horaInicio: string | null
@@ -17167,6 +17231,7 @@ export namespace Prisma {
   export type PermisoSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     colaboradorId?: boolean
+    registroId?: boolean
     fechaInicio?: boolean
     fechaFin?: boolean
     horaInicio?: boolean
@@ -17179,12 +17244,14 @@ export namespace Prisma {
     evidenciaNombre?: boolean
     creadoEn?: boolean
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    registro?: boolean | Permiso$registroArgs<ExtArgs>
   }, ExtArgs["result"]["permiso"]>
 
 
   export type PermisoSelectScalar = {
     id?: boolean
     colaboradorId?: boolean
+    registroId?: boolean
     fechaInicio?: boolean
     fechaFin?: boolean
     horaInicio?: boolean
@@ -17200,16 +17267,19 @@ export namespace Prisma {
 
   export type PermisoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    registro?: boolean | Permiso$registroArgs<ExtArgs>
   }
 
   export type $PermisoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Permiso"
     objects: {
       colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+      registro: Prisma.$RegistroPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       colaboradorId: string
+      registroId: string | null
       fechaInicio: Date
       fechaFin: Date
       horaInicio: string | null
@@ -17562,6 +17632,7 @@ export namespace Prisma {
   export interface Prisma__PermisoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    registro<T extends Permiso$registroArgs<ExtArgs> = {}>(args?: Subset<T, Permiso$registroArgs<ExtArgs>>): Prisma__RegistroClient<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -17593,6 +17664,7 @@ export namespace Prisma {
   interface PermisoFieldRefs {
     readonly id: FieldRef<"Permiso", 'String'>
     readonly colaboradorId: FieldRef<"Permiso", 'String'>
+    readonly registroId: FieldRef<"Permiso", 'String'>
     readonly fechaInicio: FieldRef<"Permiso", 'DateTime'>
     readonly fechaFin: FieldRef<"Permiso", 'DateTime'>
     readonly horaInicio: FieldRef<"Permiso", 'String'>
@@ -17900,6 +17972,21 @@ export namespace Prisma {
      * Filter which Permisos to delete
      */
     where?: PermisoWhereInput
+  }
+
+  /**
+   * Permiso.registro
+   */
+  export type Permiso$registroArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Registro
+     */
+    select?: RegistroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroInclude<ExtArgs> | null
+    where?: RegistroWhereInput
   }
 
   /**
@@ -24925,6 +25012,7 @@ export namespace Prisma {
   export const PermisoScalarFieldEnum: {
     id: 'id',
     colaboradorId: 'colaboradorId',
+    registroId: 'registroId',
     fechaInicio: 'fechaInicio',
     fechaFin: 'fechaFin',
     horaInicio: 'horaInicio',
@@ -26360,6 +26448,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
     sede?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
+    novedades?: PermisoListRelationFilter
   }
 
   export type RegistroOrderByWithRelationInput = {
@@ -26381,6 +26470,7 @@ export namespace Prisma {
     creadoEn?: SortOrder
     colaborador?: ColaboradorOrderByWithRelationInput
     sede?: SedeOrderByWithRelationInput
+    novedades?: PermisoOrderByRelationAggregateInput
   }
 
   export type RegistroWhereUniqueInput = Prisma.AtLeast<{
@@ -26405,6 +26495,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
     sede?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
+    novedades?: PermisoListRelationFilter
   }, "id">
 
   export type RegistroOrderByWithAggregationInput = {
@@ -26457,6 +26548,7 @@ export namespace Prisma {
     NOT?: PermisoWhereInput | PermisoWhereInput[]
     id?: StringFilter<"Permiso"> | string
     colaboradorId?: StringFilter<"Permiso"> | string
+    registroId?: StringNullableFilter<"Permiso"> | string | null
     fechaInicio?: DateTimeFilter<"Permiso"> | Date | string
     fechaFin?: DateTimeFilter<"Permiso"> | Date | string
     horaInicio?: StringNullableFilter<"Permiso"> | string | null
@@ -26469,11 +26561,13 @@ export namespace Prisma {
     evidenciaNombre?: StringNullableFilter<"Permiso"> | string | null
     creadoEn?: DateTimeFilter<"Permiso"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    registro?: XOR<RegistroNullableRelationFilter, RegistroWhereInput> | null
   }
 
   export type PermisoOrderByWithRelationInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
+    registroId?: SortOrderInput | SortOrder
     fechaInicio?: SortOrder
     fechaFin?: SortOrder
     horaInicio?: SortOrderInput | SortOrder
@@ -26486,6 +26580,7 @@ export namespace Prisma {
     evidenciaNombre?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     colaborador?: ColaboradorOrderByWithRelationInput
+    registro?: RegistroOrderByWithRelationInput
   }
 
   export type PermisoWhereUniqueInput = Prisma.AtLeast<{
@@ -26494,6 +26589,7 @@ export namespace Prisma {
     OR?: PermisoWhereInput[]
     NOT?: PermisoWhereInput | PermisoWhereInput[]
     colaboradorId?: StringFilter<"Permiso"> | string
+    registroId?: StringNullableFilter<"Permiso"> | string | null
     fechaInicio?: DateTimeFilter<"Permiso"> | Date | string
     fechaFin?: DateTimeFilter<"Permiso"> | Date | string
     horaInicio?: StringNullableFilter<"Permiso"> | string | null
@@ -26506,11 +26602,13 @@ export namespace Prisma {
     evidenciaNombre?: StringNullableFilter<"Permiso"> | string | null
     creadoEn?: DateTimeFilter<"Permiso"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    registro?: XOR<RegistroNullableRelationFilter, RegistroWhereInput> | null
   }, "id">
 
   export type PermisoOrderByWithAggregationInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
+    registroId?: SortOrderInput | SortOrder
     fechaInicio?: SortOrder
     fechaFin?: SortOrder
     horaInicio?: SortOrderInput | SortOrder
@@ -26533,6 +26631,7 @@ export namespace Prisma {
     NOT?: PermisoScalarWhereWithAggregatesInput | PermisoScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Permiso"> | string
     colaboradorId?: StringWithAggregatesFilter<"Permiso"> | string
+    registroId?: StringNullableWithAggregatesFilter<"Permiso"> | string | null
     fechaInicio?: DateTimeWithAggregatesFilter<"Permiso"> | Date | string
     fechaFin?: DateTimeWithAggregatesFilter<"Permiso"> | Date | string
     horaInicio?: StringNullableWithAggregatesFilter<"Permiso"> | string | null
@@ -28394,6 +28493,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
     sede?: SedeCreateNestedOneWithoutRegistrosInput
+    novedades?: PermisoCreateNestedManyWithoutRegistroInput
   }
 
   export type RegistroUncheckedCreateInput = {
@@ -28413,6 +28513,7 @@ export namespace Prisma {
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
+    novedades?: PermisoUncheckedCreateNestedManyWithoutRegistroInput
   }
 
   export type RegistroUpdateInput = {
@@ -28432,6 +28533,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
     sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    novedades?: PermisoUpdateManyWithoutRegistroNestedInput
   }
 
   export type RegistroUncheckedUpdateInput = {
@@ -28451,6 +28553,7 @@ export namespace Prisma {
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    novedades?: PermisoUncheckedUpdateManyWithoutRegistroNestedInput
   }
 
   export type RegistroCreateManyInput = {
@@ -28522,11 +28625,13 @@ export namespace Prisma {
     evidenciaNombre?: string | null
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutPermisosInput
+    registro?: RegistroCreateNestedOneWithoutNovedadesInput
   }
 
   export type PermisoUncheckedCreateInput = {
     id?: string
     colaboradorId: string
+    registroId?: string | null
     fechaInicio: Date | string
     fechaFin: Date | string
     horaInicio?: string | null
@@ -28554,11 +28659,13 @@ export namespace Prisma {
     evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutPermisosNestedInput
+    registro?: RegistroUpdateOneWithoutNovedadesNestedInput
   }
 
   export type PermisoUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     colaboradorId?: StringFieldUpdateOperationsInput | string
+    registroId?: NullableStringFieldUpdateOperationsInput | string | null
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
     horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
@@ -28575,6 +28682,7 @@ export namespace Prisma {
   export type PermisoCreateManyInput = {
     id?: string
     colaboradorId: string
+    registroId?: string | null
     fechaInicio: Date | string
     fechaFin: Date | string
     horaInicio?: string | null
@@ -28606,6 +28714,7 @@ export namespace Prisma {
   export type PermisoUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     colaboradorId?: StringFieldUpdateOperationsInput | string
+    registroId?: NullableStringFieldUpdateOperationsInput | string | null
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
     horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30528,9 +30637,15 @@ export namespace Prisma {
     not?: NestedEnumTipoPermisoFilter<$PrismaModel> | $Enums.TipoPermiso
   }
 
+  export type RegistroNullableRelationFilter = {
+    is?: RegistroWhereInput | null
+    isNot?: RegistroWhereInput | null
+  }
+
   export type PermisoCountOrderByAggregateInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
+    registroId?: SortOrder
     fechaInicio?: SortOrder
     fechaFin?: SortOrder
     horaInicio?: SortOrder
@@ -30547,6 +30662,7 @@ export namespace Prisma {
   export type PermisoMaxOrderByAggregateInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
+    registroId?: SortOrder
     fechaInicio?: SortOrder
     fechaFin?: SortOrder
     horaInicio?: SortOrder
@@ -30563,6 +30679,7 @@ export namespace Prisma {
   export type PermisoMinOrderByAggregateInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
+    registroId?: SortOrder
     fechaInicio?: SortOrder
     fechaFin?: SortOrder
     horaInicio?: SortOrder
@@ -32075,6 +32192,20 @@ export namespace Prisma {
     connect?: SedeWhereUniqueInput
   }
 
+  export type PermisoCreateNestedManyWithoutRegistroInput = {
+    create?: XOR<PermisoCreateWithoutRegistroInput, PermisoUncheckedCreateWithoutRegistroInput> | PermisoCreateWithoutRegistroInput[] | PermisoUncheckedCreateWithoutRegistroInput[]
+    connectOrCreate?: PermisoCreateOrConnectWithoutRegistroInput | PermisoCreateOrConnectWithoutRegistroInput[]
+    createMany?: PermisoCreateManyRegistroInputEnvelope
+    connect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+  }
+
+  export type PermisoUncheckedCreateNestedManyWithoutRegistroInput = {
+    create?: XOR<PermisoCreateWithoutRegistroInput, PermisoUncheckedCreateWithoutRegistroInput> | PermisoCreateWithoutRegistroInput[] | PermisoUncheckedCreateWithoutRegistroInput[]
+    connectOrCreate?: PermisoCreateOrConnectWithoutRegistroInput | PermisoCreateOrConnectWithoutRegistroInput[]
+    createMany?: PermisoCreateManyRegistroInputEnvelope
+    connect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+  }
+
   export type EnumTipoRegistroFieldUpdateOperationsInput = {
     set?: $Enums.TipoRegistro
   }
@@ -32097,10 +32228,44 @@ export namespace Prisma {
     update?: XOR<XOR<SedeUpdateToOneWithWhereWithoutRegistrosInput, SedeUpdateWithoutRegistrosInput>, SedeUncheckedUpdateWithoutRegistrosInput>
   }
 
+  export type PermisoUpdateManyWithoutRegistroNestedInput = {
+    create?: XOR<PermisoCreateWithoutRegistroInput, PermisoUncheckedCreateWithoutRegistroInput> | PermisoCreateWithoutRegistroInput[] | PermisoUncheckedCreateWithoutRegistroInput[]
+    connectOrCreate?: PermisoCreateOrConnectWithoutRegistroInput | PermisoCreateOrConnectWithoutRegistroInput[]
+    upsert?: PermisoUpsertWithWhereUniqueWithoutRegistroInput | PermisoUpsertWithWhereUniqueWithoutRegistroInput[]
+    createMany?: PermisoCreateManyRegistroInputEnvelope
+    set?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+    disconnect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+    delete?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+    connect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+    update?: PermisoUpdateWithWhereUniqueWithoutRegistroInput | PermisoUpdateWithWhereUniqueWithoutRegistroInput[]
+    updateMany?: PermisoUpdateManyWithWhereWithoutRegistroInput | PermisoUpdateManyWithWhereWithoutRegistroInput[]
+    deleteMany?: PermisoScalarWhereInput | PermisoScalarWhereInput[]
+  }
+
+  export type PermisoUncheckedUpdateManyWithoutRegistroNestedInput = {
+    create?: XOR<PermisoCreateWithoutRegistroInput, PermisoUncheckedCreateWithoutRegistroInput> | PermisoCreateWithoutRegistroInput[] | PermisoUncheckedCreateWithoutRegistroInput[]
+    connectOrCreate?: PermisoCreateOrConnectWithoutRegistroInput | PermisoCreateOrConnectWithoutRegistroInput[]
+    upsert?: PermisoUpsertWithWhereUniqueWithoutRegistroInput | PermisoUpsertWithWhereUniqueWithoutRegistroInput[]
+    createMany?: PermisoCreateManyRegistroInputEnvelope
+    set?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+    disconnect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+    delete?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+    connect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+    update?: PermisoUpdateWithWhereUniqueWithoutRegistroInput | PermisoUpdateWithWhereUniqueWithoutRegistroInput[]
+    updateMany?: PermisoUpdateManyWithWhereWithoutRegistroInput | PermisoUpdateManyWithWhereWithoutRegistroInput[]
+    deleteMany?: PermisoScalarWhereInput | PermisoScalarWhereInput[]
+  }
+
   export type ColaboradorCreateNestedOneWithoutPermisosInput = {
     create?: XOR<ColaboradorCreateWithoutPermisosInput, ColaboradorUncheckedCreateWithoutPermisosInput>
     connectOrCreate?: ColaboradorCreateOrConnectWithoutPermisosInput
     connect?: ColaboradorWhereUniqueInput
+  }
+
+  export type RegistroCreateNestedOneWithoutNovedadesInput = {
+    create?: XOR<RegistroCreateWithoutNovedadesInput, RegistroUncheckedCreateWithoutNovedadesInput>
+    connectOrCreate?: RegistroCreateOrConnectWithoutNovedadesInput
+    connect?: RegistroWhereUniqueInput
   }
 
   export type EnumTipoPermisoFieldUpdateOperationsInput = {
@@ -32113,6 +32278,16 @@ export namespace Prisma {
     upsert?: ColaboradorUpsertWithoutPermisosInput
     connect?: ColaboradorWhereUniqueInput
     update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutPermisosInput, ColaboradorUpdateWithoutPermisosInput>, ColaboradorUncheckedUpdateWithoutPermisosInput>
+  }
+
+  export type RegistroUpdateOneWithoutNovedadesNestedInput = {
+    create?: XOR<RegistroCreateWithoutNovedadesInput, RegistroUncheckedCreateWithoutNovedadesInput>
+    connectOrCreate?: RegistroCreateOrConnectWithoutNovedadesInput
+    upsert?: RegistroUpsertWithoutNovedadesInput
+    disconnect?: RegistroWhereInput | boolean
+    delete?: RegistroWhereInput | boolean
+    connect?: RegistroWhereUniqueInput
+    update?: XOR<XOR<RegistroUpdateToOneWithWhereWithoutNovedadesInput, RegistroUpdateWithoutNovedadesInput>, RegistroUncheckedUpdateWithoutNovedadesInput>
   }
 
   export type EmpresaCreateNestedOneWithoutFestivosInput = {
@@ -34561,6 +34736,7 @@ export namespace Prisma {
     editadoEn?: Date | string | null
     creadoEn?: Date | string
     sede?: SedeCreateNestedOneWithoutRegistrosInput
+    novedades?: PermisoCreateNestedManyWithoutRegistroInput
   }
 
   export type RegistroUncheckedCreateWithoutColaboradorInput = {
@@ -34579,6 +34755,7 @@ export namespace Prisma {
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
+    novedades?: PermisoUncheckedCreateNestedManyWithoutRegistroInput
   }
 
   export type RegistroCreateOrConnectWithoutColaboradorInput = {
@@ -34604,10 +34781,12 @@ export namespace Prisma {
     evidenciaTipo?: string | null
     evidenciaNombre?: string | null
     creadoEn?: Date | string
+    registro?: RegistroCreateNestedOneWithoutNovedadesInput
   }
 
   export type PermisoUncheckedCreateWithoutColaboradorInput = {
     id?: string
+    registroId?: string | null
     fechaInicio: Date | string
     fechaFin: Date | string
     horaInicio?: string | null
@@ -34857,6 +35036,7 @@ export namespace Prisma {
     NOT?: PermisoScalarWhereInput | PermisoScalarWhereInput[]
     id?: StringFilter<"Permiso"> | string
     colaboradorId?: StringFilter<"Permiso"> | string
+    registroId?: StringNullableFilter<"Permiso"> | string | null
     fechaInicio?: DateTimeFilter<"Permiso"> | Date | string
     fechaFin?: DateTimeFilter<"Permiso"> | Date | string
     horaInicio?: StringNullableFilter<"Permiso"> | string | null
@@ -35025,6 +35205,7 @@ export namespace Prisma {
     editadoEn?: Date | string | null
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
+    novedades?: PermisoCreateNestedManyWithoutRegistroInput
   }
 
   export type RegistroUncheckedCreateWithoutSedeInput = {
@@ -35043,6 +35224,7 @@ export namespace Prisma {
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
+    novedades?: PermisoUncheckedCreateNestedManyWithoutRegistroInput
   }
 
   export type RegistroCreateOrConnectWithoutSedeInput = {
@@ -35520,6 +35702,48 @@ export namespace Prisma {
     create: XOR<SedeCreateWithoutRegistrosInput, SedeUncheckedCreateWithoutRegistrosInput>
   }
 
+  export type PermisoCreateWithoutRegistroInput = {
+    id?: string
+    fechaInicio: Date | string
+    fechaFin: Date | string
+    horaInicio?: string | null
+    horaFin?: string | null
+    tipo: $Enums.TipoPermiso
+    descripcion?: string | null
+    aprobado?: boolean
+    evidencia?: string | null
+    evidenciaTipo?: string | null
+    evidenciaNombre?: string | null
+    creadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutPermisosInput
+  }
+
+  export type PermisoUncheckedCreateWithoutRegistroInput = {
+    id?: string
+    colaboradorId: string
+    fechaInicio: Date | string
+    fechaFin: Date | string
+    horaInicio?: string | null
+    horaFin?: string | null
+    tipo: $Enums.TipoPermiso
+    descripcion?: string | null
+    aprobado?: boolean
+    evidencia?: string | null
+    evidenciaTipo?: string | null
+    evidenciaNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type PermisoCreateOrConnectWithoutRegistroInput = {
+    where: PermisoWhereUniqueInput
+    create: XOR<PermisoCreateWithoutRegistroInput, PermisoUncheckedCreateWithoutRegistroInput>
+  }
+
+  export type PermisoCreateManyRegistroInputEnvelope = {
+    data: PermisoCreateManyRegistroInput | PermisoCreateManyRegistroInput[]
+    skipDuplicates?: boolean
+  }
+
   export type ColaboradorUpsertWithoutRegistrosInput = {
     update: XOR<ColaboradorUpdateWithoutRegistrosInput, ColaboradorUncheckedUpdateWithoutRegistrosInput>
     create: XOR<ColaboradorCreateWithoutRegistrosInput, ColaboradorUncheckedCreateWithoutRegistrosInput>
@@ -35616,6 +35840,22 @@ export namespace Prisma {
     colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
   }
 
+  export type PermisoUpsertWithWhereUniqueWithoutRegistroInput = {
+    where: PermisoWhereUniqueInput
+    update: XOR<PermisoUpdateWithoutRegistroInput, PermisoUncheckedUpdateWithoutRegistroInput>
+    create: XOR<PermisoCreateWithoutRegistroInput, PermisoUncheckedCreateWithoutRegistroInput>
+  }
+
+  export type PermisoUpdateWithWhereUniqueWithoutRegistroInput = {
+    where: PermisoWhereUniqueInput
+    data: XOR<PermisoUpdateWithoutRegistroInput, PermisoUncheckedUpdateWithoutRegistroInput>
+  }
+
+  export type PermisoUpdateManyWithWhereWithoutRegistroInput = {
+    where: PermisoScalarWhereInput
+    data: XOR<PermisoUpdateManyMutationInput, PermisoUncheckedUpdateManyWithoutRegistroInput>
+  }
+
   export type ColaboradorCreateWithoutPermisosInput = {
     id?: string
     nombre: string
@@ -35665,6 +35905,49 @@ export namespace Prisma {
   export type ColaboradorCreateOrConnectWithoutPermisosInput = {
     where: ColaboradorWhereUniqueInput
     create: XOR<ColaboradorCreateWithoutPermisosInput, ColaboradorUncheckedCreateWithoutPermisosInput>
+  }
+
+  export type RegistroCreateWithoutNovedadesInput = {
+    id?: string
+    fecha: Date | string
+    entrada?: Date | string | null
+    salida?: Date | string | null
+    tipo?: $Enums.TipoRegistro
+    observacion?: string | null
+    salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
+    fotoEntrada?: string | null
+    fotoSalida?: string | null
+    editadoPor?: string | null
+    editadoEn?: Date | string | null
+    creadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
+    sede?: SedeCreateNestedOneWithoutRegistrosInput
+  }
+
+  export type RegistroUncheckedCreateWithoutNovedadesInput = {
+    id?: string
+    colaboradorId: string
+    sedeId?: string | null
+    fecha: Date | string
+    entrada?: Date | string | null
+    salida?: Date | string | null
+    tipo?: $Enums.TipoRegistro
+    observacion?: string | null
+    salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
+    fotoEntrada?: string | null
+    fotoSalida?: string | null
+    editadoPor?: string | null
+    editadoEn?: Date | string | null
+    creadoEn?: Date | string
+  }
+
+  export type RegistroCreateOrConnectWithoutNovedadesInput = {
+    where: RegistroWhereUniqueInput
+    create: XOR<RegistroCreateWithoutNovedadesInput, RegistroUncheckedCreateWithoutNovedadesInput>
   }
 
   export type ColaboradorUpsertWithoutPermisosInput = {
@@ -35722,6 +36005,55 @@ export namespace Prisma {
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type RegistroUpsertWithoutNovedadesInput = {
+    update: XOR<RegistroUpdateWithoutNovedadesInput, RegistroUncheckedUpdateWithoutNovedadesInput>
+    create: XOR<RegistroCreateWithoutNovedadesInput, RegistroUncheckedCreateWithoutNovedadesInput>
+    where?: RegistroWhereInput
+  }
+
+  export type RegistroUpdateToOneWithWhereWithoutNovedadesInput = {
+    where?: RegistroWhereInput
+    data: XOR<RegistroUpdateWithoutNovedadesInput, RegistroUncheckedUpdateWithoutNovedadesInput>
+  }
+
+  export type RegistroUpdateWithoutNovedadesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
+    sede?: SedeUpdateOneWithoutRegistrosNestedInput
+  }
+
+  export type RegistroUncheckedUpdateWithoutNovedadesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type EmpresaCreateWithoutFestivosInput = {
@@ -37578,6 +37910,7 @@ export namespace Prisma {
 
   export type PermisoCreateManyColaboradorInput = {
     id?: string
+    registroId?: string | null
     fechaInicio: Date | string
     fechaFin: Date | string
     horaInicio?: string | null
@@ -37631,6 +37964,7 @@ export namespace Prisma {
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    novedades?: PermisoUpdateManyWithoutRegistroNestedInput
   }
 
   export type RegistroUncheckedUpdateWithoutColaboradorInput = {
@@ -37649,6 +37983,7 @@ export namespace Prisma {
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    novedades?: PermisoUncheckedUpdateManyWithoutRegistroNestedInput
   }
 
   export type RegistroUncheckedUpdateManyWithoutColaboradorInput = {
@@ -37682,10 +38017,12 @@ export namespace Prisma {
     evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
     evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    registro?: RegistroUpdateOneWithoutNovedadesNestedInput
   }
 
   export type PermisoUncheckedUpdateWithoutColaboradorInput = {
     id?: StringFieldUpdateOperationsInput | string
+    registroId?: NullableStringFieldUpdateOperationsInput | string | null
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
     horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
@@ -37701,6 +38038,7 @@ export namespace Prisma {
 
   export type PermisoUncheckedUpdateManyWithoutColaboradorInput = {
     id?: StringFieldUpdateOperationsInput | string
+    registroId?: NullableStringFieldUpdateOperationsInput | string | null
     fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
     fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
     horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
@@ -37840,6 +38178,7 @@ export namespace Prisma {
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
+    novedades?: PermisoUpdateManyWithoutRegistroNestedInput
   }
 
   export type RegistroUncheckedUpdateWithoutSedeInput = {
@@ -37858,6 +38197,7 @@ export namespace Prisma {
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    novedades?: PermisoUncheckedUpdateManyWithoutRegistroNestedInput
   }
 
   export type RegistroUncheckedUpdateManyWithoutSedeInput = {
@@ -37875,6 +38215,70 @@ export namespace Prisma {
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PermisoCreateManyRegistroInput = {
+    id?: string
+    colaboradorId: string
+    fechaInicio: Date | string
+    fechaFin: Date | string
+    horaInicio?: string | null
+    horaFin?: string | null
+    tipo: $Enums.TipoPermiso
+    descripcion?: string | null
+    aprobado?: boolean
+    evidencia?: string | null
+    evidenciaTipo?: string | null
+    evidenciaNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type PermisoUpdateWithoutRegistroInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    horaFin?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
+    descripcion?: NullableStringFieldUpdateOperationsInput | string | null
+    aprobado?: BoolFieldUpdateOperationsInput | boolean
+    evidencia?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutPermisosNestedInput
+  }
+
+  export type PermisoUncheckedUpdateWithoutRegistroInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    horaFin?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
+    descripcion?: NullableStringFieldUpdateOperationsInput | string | null
+    aprobado?: BoolFieldUpdateOperationsInput | boolean
+    evidencia?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PermisoUncheckedUpdateManyWithoutRegistroInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: DateTimeFieldUpdateOperationsInput | Date | string
+    horaInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    horaFin?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoPermisoFieldUpdateOperationsInput | $Enums.TipoPermiso
+    descripcion?: NullableStringFieldUpdateOperationsInput | string | null
+    aprobado?: BoolFieldUpdateOperationsInput | boolean
+    evidencia?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -38135,6 +38539,10 @@ export namespace Prisma {
      * @deprecated Use SedeCountOutputTypeDefaultArgs instead
      */
     export type SedeCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SedeCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RegistroCountOutputTypeDefaultArgs instead
+     */
+    export type RegistroCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RegistroCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use AfiliadoCountOutputTypeDefaultArgs instead
      */
