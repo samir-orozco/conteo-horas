@@ -1,6 +1,7 @@
 # Goal
 
-Que un día de trabajo se lea como **una jornada**, no como marcaciones sueltas.
+Que un día de trabajo se lea como **una jornada**, no como marcaciones sueltas, y
+que **editar un horario nunca reescriba plata ya liquidada**.
 
 Marcar el descanso parte el día en dos tramos, y la tabla de Registros los
 mostraba como dos filas —el mismo día repetido, la segunda medio vacía— que se
@@ -9,84 +10,100 @@ de llamarse almuerzo (falso para un turno nocturno), el formulario edita la
 jornada entera, el kiosco ofrece el descanso de frente, y las novedades se
 aprueban donde se leen.
 
-Dos reglas que gobiernan todo esto y no se tocan sin pensarlo:
+Y de ahí, tirando del hilo, salieron las dos fugas que movían dinero. Las dos
+están cerradas.
+
+Tres reglas que gobiernan esto y no se tocan sin pensarlo:
 
 - **Un tramo se funde con el siguiente solo si cerró saliendo al descanso.**
   Volver por la tarde a hacer extras sí abre otra jornada.
 - **La suma de las jornadas de un día es exactamente `minutosContadosDelDia`.**
   Afirmada en `jornada.test.ts` sobre doce escenarios y verificada contra la base
   real con `backend/prisma/verificar-jornadas.ts`.
+- **Todo lo que decide plata sale del día CONGELADO, nunca del horario vigente.**
+  Es la razón de existir de `DiaEsperado`, y la última rendija —la clasificación
+  de horas extra— se cerró el 14 de agosto.
 
 ---
 
 ## Current State
 
-**El lote de jornadas está desplegado y comprobado en producción** (14 de agosto
-de 2026), backend y frontend.
+Todo el trabajo está en `master` (`c8d570e`), con `develop` alineada. Árbol
+limpio. **225 pruebas en verde** · `tsc` limpio en backend y frontend · ESLint en
+78 (sin regresión) · diferencial de jornadas sobre datos reales sin descuadres.
+
+### Producción
 
 ```
-health                    → {"status":"ok"}
-PUT /registros/jornada/x  → 401     (la ruta nueva existe en el proceso vivo)
-bundle servido            → index-BVbUNmj9.js
+bundle                    → index-DxSI3sYe.js     ✓ al día
+api                       → {"status":"ok"}
+PUT /registros/jornada/x  → 401                   ✓ el lote de jornadas está arriba
 ```
 
-221 pruebas en verde · `tsc` limpio en backend y frontend · ESLint en 78 (sin
-regresión) · diferencial de jornadas sobre datos reales sin descuadres.
+### Lo único pendiente de desplegar
 
-### Repositorio, ya ordenado
+`backend-build` (`04787ce`) tiene **dos arreglos compilados y subidos que
+producción todavía no corre**. Los dos tocan dinero:
+
+1. `f4816d3` — mover una jornada de día validaba los cruces contra el día de
+   ORIGEN. Mudar una jornada del 20 al 21 podía dejar dos solapadas el 21 y
+   contar esas horas **dos veces**.
+2. `04787ce` — las horas extra se clasificaban con el horario **de hoy**. En modo
+   `HORARIO`, cambiar un horario reescribía los extras de períodos ya liquidados.
+
+**El frontend NO cambia**: es un despliegue de solo backend. Comandos exactos en
+*Next step*.
+
+### Repositorio
 
 | rama | commit | qué es |
 |---|---|---|
-| `master` | `179d163` | producción. Alineada con lo desplegado |
-| `develop` | `179d163` | integración. Estaba 66 commits atrás; puesta al día |
-| `frontend-build` | `49cf253` | artefacto. **Compilado y subido, sin desplegar** |
-| `backend-build` | `e4371b4` | artefacto. Desplegado |
-| `prisma-build` | `ae68fdd` | artefacto. Sin cambios: el esquema no se tocó |
+| `master` | `c8d570e` | producción + los dos arreglos sin desplegar |
+| `develop` | `c8d570e` | integración, alineada |
+| `frontend-build` | `49cf253` | **desplegado** |
+| `backend-build` | `04787ce` | compilado y subido, **sin desplegar** |
+| `prisma-build` | `ae68fdd` | sin cambios: el esquema no se tocó en todo el lote |
 
-Locales y `origin` alineadas en las cinco. Se borraron
-`mejoras/reportes-y-sedes` (`1d903b3`) y `mejoras/jornada-una-fila` (`179d163`),
-las dos completamente fundidas en `master`: ningún commit se perdió.
-
-**Sin cambios de esquema en todo el lote**, así que no hay migración de Prisma ni
-cliente que regenerar.
-
-### Lo único que falta desplegar
-
-`frontend-build` tiene compilado el bundle **`index-DxSI3sYe.js`**, que producción
-todavía no sirve. Es el respaldo de `marcaciones`: sin él, la ventana entre copiar
-el bundle y reiniciar Node vuelve a reventar la pantalla al editar, como pasó en
-el despliegue anterior. **No es urgente** —el backend ya manda el campo— pero
-conviene cerrarlo. Comandos exactos en *Next step*.
+Las cinco alineadas con `origin`. Se borraron `mejoras/reportes-y-sedes` y
+`mejoras/jornada-una-fila`, fundidas en `master` antes de borrarlas.
 
 ### Archivos sueltos en la raíz (no versionados, no míos)
 
-No se tocaron. Decidir qué hacer con ellos:
-
-- `ARRANQUE-PROYECTO-WEB.md` (361 líneas), `PLAYBOOK-BANAHOSTING.md` (772) y
-  `PLAYBOOK-BANAHOSTING-PHP.md` (520) — documentación de Krumlab que no es de
-  HoraPro. Se versionan, se mueven a otro repo, o se añaden a `.gitignore`.
-- `WhatsApp Video 2026-07-17 at 15.22.42.mp4` (1,5 MB) — no debería acabar en git.
+Sin tocar; decidir qué hacer: `ARRANQUE-PROYECTO-WEB.md`,
+`PLAYBOOK-BANAHOSTING.md`, `PLAYBOOK-BANAHOSTING-PHP.md` —documentación de
+Krumlab, no de HoraPro— y `WhatsApp Video 2026-07-17 at 15.22.42.mp4` (1,5 MB),
+que no debería acabar en git.
 
 ---
 
 ## Files in flight
 
-Ninguno. El árbol está limpio y todo commiteado.
+Ninguno. Todo commiteado.
 
-Los que concentran el cambio, para orientarse:
+Los que concentran el cambio:
 
-- `backend/src/utils/jornada.ts` — el corazón. `partirDiaEnJornadas`,
-  `agruparEnJornadas`, `marcacionQueCierra`, `tramoQueChoca`,
-  `instantesDeJornada`, `minutosVentana`, `GRACIA_MIN`.
-- `backend/src/routes/registros.ts` — `GET /` por jornada, `PUT /jornada/:id`
-  transaccional, validación de cruces, la novedad del día.
-- `backend/src/routes/worker.ts` — kiosco: descanso en el botón grande, salida
-  temprana que no se guarda sin motivo.
-- `backend/src/utils/materializarDias.ts` — `diaYaEmpezado` y la regeneración
-  desde hoy.
-- `frontend/src/pages/Registros.tsx` — tabla por jornada, editor de jornada,
-  `marcasDe` como respaldo.
-- `frontend/src/pages/registros/ModalJornada.tsx` — el detalle.
+- `backend/src/utils/jornada.ts` — `partirDiaEnJornadas`, `agruparEnJornadas`,
+  `marcacionQueCierra`, `tramoQueChoca`, `instantesDeJornada`, `minutosVentana`,
+  `GRACIA_MIN`.
+- `backend/src/utils/tardanzas.ts` — `construirExtraConfig`, ahora por FECHA.
+- `backend/src/utils/horasColombiana.ts` — `esExtraPorModo` y el tipo
+  `ExtraConfig`.
+- `backend/src/routes/registros.ts` — `GET /` por jornada, `PUT /jornada/:id`,
+  validación de cruces, la novedad del día.
+- `backend/src/routes/worker.ts` — kiosco.
+- `backend/src/utils/materializarDias.ts` — `diaYaEmpezado` y la regeneración.
+- `frontend/src/pages/Registros.tsx` y `pages/registros/ModalJornada.tsx`.
+
+### Scripts de comprobación, ya escritos y reutilizables
+
+- `backend/prisma/verificar-jornadas.ts` — la invariante de las jornadas contra
+  la base real.
+- `backend/prisma/medir-extras.cjs` — **solo lectura, se puede correr en
+  producción.** Dice si a un colaborador le afecta la fuga de extras: compara el
+  día congelado contra el horario vigente, día por día.
+- `backend/prisma/sembrar-luciana.ts` — reproduce en local a una colaboradora con
+  datos reales de producción, con sus días congelados con el horario ORIGINAL.
+  Es el escenario que destapó la fuga de extras y sirve para repetir la prueba.
 
 ---
 
@@ -97,23 +114,20 @@ Los que concentran el cambio, para orientarse:
 - `GET /registros` devuelve una entrada por JORNADA, con `marcaciones` dentro,
   `minutosContados`, `minutosAlmuerzoAqui` y la `novedad` del día.
 - `PUT /registros/jornada/:id`: entrada, descanso y salida en una transacción,
-  con **una sola** validación sobre el estado final. Encadenar dos PUT por
-  marcación no sirve: mover el descanso hace que el primero pise al segundo.
+  con una sola validación sobre el estado final, **contra el día de destino**.
 - No se puede guardar un tramo que pise a otro del mismo día, ni una salida
-  anterior a su entrada. El 400 trae el conflicto entero para poder ofrecer
-  «eliminar esa y guardar».
+  anterior a su entrada. El 400 trae el conflicto para poder ofrecer «eliminar
+  esa y guardar».
 - Una salida al descanso **no cierra la jornada** (`marcacionQueCierra`).
 - El descanso distingue `EN_CURSO` de `ABIERTO` con una hora de gracia, la misma
-  que usa el aviso automático (`GRACIA_MIN` vive en `jornada.ts`).
-- `minutosEnVentana` se expone aparte para cobrar el descuento a la jornada que
-  de verdad estuvo dentro de la ventana, no siempre a la primera.
+  que usa el aviso automático.
 - Un cambio de horario aplica **desde hoy** a quien no haya marcado y desde
-  mañana a quien ya empezó (`diaYaEmpezado`, con la ventana de 18 h para el turno
-  nocturno abierto). Borrar sus marcaciones lo vuelve a evaluar.
-- El kiosco materializa el día al marcar; reactivar un colaborador y borrar un
-  horario ahora regeneran.
+  mañana a quien ya empezó. Borrar sus marcaciones lo vuelve a evaluar.
 - La salida temprana **no se guarda sin motivo**: 409 `REQUIERE_MOTIVO` sin
   escribir nada, y la novedad viaja en la misma llamada que la marca.
+- **Las horas extra se clasifican con el día congelado**, por fecha y no por día
+  de la semana, con la tolerancia de ese día. Respaldo por día de semana para
+  fechas sin fila congelada.
 
 **Frontend**
 
@@ -121,10 +135,9 @@ Los que concentran el cambio, para orientarse:
 - El formulario edita la jornada: entrada, descanso (salió/regresó) y salida.
 - «Almuerzo» → «Descanso» en toda la interfaz. El código y la base siguen
   diciendo `almuerzo` **a propósito**: renombrar columnas es una migración sobre
-  una base cuyas migraciones ya están desfasadas de producción, y no le da nada a
-  quien usa el producto.
+  una base cuyas migraciones ya están desfasadas de producción.
 - Kiosco: «Salgo a mi descanso» en el botón grande dentro de la ventana; la
-  salida temprana pide motivo **antes** de marcar, con «Volver atrás».
+  salida temprana pide motivo antes de marcar, con «Volver atrás».
 - Las novedades se ven, se aprueban y se les cambia el motivo desde el detalle,
   con «se paga / no se paga» resuelto contra la política de la empresa.
 
@@ -134,113 +147,110 @@ Los que concentran el cambio, para orientarse:
 
 Lo que salió mal, para no repetirlo:
 
-1. **`new Date("2026-08-14")` en `PUT /jornada`** movió la jornada entera al día
-   **13**: es medianoche UTC, que en Bogotá son las 7 p.m. del día anterior. Se
-   ancla a `T05:00:00.000Z` explícitamente. Está en CLAUDE.md §4 y aun así se
-   coló.
-2. **`minutosDeMas` usado como «se tomó de más»**. Son cosas distintas: quien
-   sale 15 min antes y vuelve 15 tarde volvió 15 tarde pero se tomó **30** de
-   más. El comentario de `ResumenAlmuerzo` advertía justo de eso. Se añadió
-   `minutosVentana`.
+1. **`new Date("2026-08-14")` en `PUT /jornada`** movió la jornada al día **13**:
+   es medianoche UTC, que en Bogotá son las 7 p.m. del día anterior. Está en
+   CLAUDE.md §4 y aun así se coló. Se ancla a `T05:00:00.000Z`.
+2. **`minutosDeMas` usado como «se tomó de más»**. Quien sale 15 min antes y
+   vuelve 15 tarde volvió 15 tarde pero se tomó **30** de más. El comentario de
+   `ResumenAlmuerzo` advertía justo de eso. Se añadió `minutosVentana`.
 3. **Validación de cruces añadida sin mostrar el error**: `guardar()` no tenía
-   try/catch, así que el 400 rompía la promesa y el modal simplemente no se
-   cerraba. Sin mensaje. La validación era correcta y la experiencia quedó peor
-   que antes.
-4. **`otrosDelDia` no excluía las marcaciones propias** al editar una jornada
-   (`editando` queda en null en ese camino), y el registro se avisaba a sí mismo
-   con la hora que tenía antes de la última corrección.
-5. **Se afirmó que `origen: 'MANUAL'` protegía los turnos rotativos.** Es cierto
-   pero vacío: **nada escribe MANUAL nunca** (0 filas de 1.281). La protección
-   existe y no tiene nada que proteger.
-6. **Al absorber una marcación**, la superviviente conservaba `salidaAlmuerzo`, y
-   la columna decía «Sin regreso» sobre un día recién completado.
-7. **El botón Editar del detalle** siguió abriendo el formulario viejo por
-   marcación después de haberlo quitado de la tabla.
-8. **Frontend desplegado antes que el backend** → la pantalla revienta al editar
-   con `Cannot read properties of undefined (reading '0')`. El orden es **backend
-   primero**: el backend nuevo es compatible con el frontend viejo, no al revés.
-   Y el `Restart` de cPanel no es opcional: sin él el proceso sigue con el código
-   viejo aunque el `dist` ya esté copiado.
-9. Errores de las propias pruebas, no del código: el helper de `ahoraBog` se
-   construyó con aritmética UTC cuando `toZonedTime` devuelve una fecha de
-   getters **locales**; y un `DELETE` de prueba llevaba
-   `Content-Type: application/json` sin cuerpo, que Fastify rechaza.
-10. **Dos workflows completos fallaron** por límite de sesión y hubo que
-    relanzarlos; el segundo intento sí devolvió resultados.
-11. Buena parte de los datos raros de la base local (tramos de 4 segundos,
-    jornadas movidas de día, turnos nocturnos sueltos) **los generaron los
-    scripts de prueba**. Cada uno restauraba lo suyo, pero conviene partir de un
-    día limpio antes de volver a probar el kiosco.
-12. **El handoff anterior se sobrescribió sin leerlo primero.** No se perdió nada
-    —era del 12 de agosto, sobre la materialización del `DiaEsperado`, ya
-    desplegada— y sigue recuperable con `git show 3c5521c:handoff.md`.
+   try/catch, el 400 rompía la promesa y el modal no se cerraba. Sin mensaje.
+4. **`otrosDelDia` no excluía las marcaciones propias**, y el registro se avisaba
+   a sí mismo con la hora que tenía antes de la última corrección.
+5. **Se afirmó que `origen: 'MANUAL'` protegía los turnos rotativos.** Cierto
+   pero vacío: nada escribe MANUAL nunca (0 filas de 1.281).
+6. **Frontend desplegado antes que el backend** → la pantalla revienta al editar.
+   El orden es **backend primero**: el backend nuevo es compatible con el
+   frontend viejo, no al revés. Y el **Restart de cPanel no es opcional**: sin él
+   el proceso sigue con el código viejo aunque el `dist` esté copiado.
+7. **Se estimó la fuga de extras como «un arreglo de una línea».** No lo era: el
+   mapa estaba indexado por día de la semana y hubo que pasarlo a fecha, tocando
+   el tipo, el constructor, el consumidor y tres llamadores.
+8. **La primera versión de ese arreglo dejó al panel de inicio sin días**, y sin
+   respaldo habría convertido la jornada entera en horas extra. De ahí el
+   `franjaPorDia` de respaldo.
+9. **Usar `??` para leer la franja del día** habría hecho que un día congelado
+   como «no programado» cayera al respaldo, ignorando justo lo que ese día decía.
+   Hay que preguntar si la fecha ESTÁ, no si trae algo.
+10. Errores de las propias pruebas: el helper de `ahoraBog` construido con
+    aritmética UTC cuando `toZonedTime` devuelve getters **locales**; y un
+    `DELETE` de prueba con `Content-Type: application/json` sin cuerpo, que
+    Fastify rechaza.
+11. **Dos workflows completos fallaron** por límite de sesión; el segundo intento
+    sí devolvió resultados.
+12. Buena parte de los datos raros de la base local **los generaron los scripts
+    de prueba**. En particular, el horario «Semana» se cambió varias veces, así
+    que la divergencia entre días congelados y horario vigente allí es
+    artificial. Conviene partir de un día limpio antes de volver a probar.
+13. **El handoff anterior se sobrescribió sin leerlo primero.** No se perdió nada
+    —era del 12 de agosto, sobre la materialización del `DiaEsperado`— y sigue
+    recuperable con `git show 3c5521c:handoff.md`.
 
 ---
 
 ## Next step
 
-**Desplegar `frontend-build` (`49cf253`), que ya está compilado y subido.**
+**Desplegar `backend-build` (`04787ce`).** Solo backend; el frontend ya está al
+día y no cambia.
 
 [EN EL SERVIDOR]
 
 ```bash
-cd ~/horapro-repo && git fetch origin && git checkout -f frontend-build && git pull && rm -rf ~/horapro.co/assets && cp -R frontend/dist/. ~/horapro.co/
+cd ~/horapro-repo && git fetch origin && git checkout -f backend-build && git pull && rm -rf ~/horapro-co-api/dist && cp -R deploy-backend/dist ~/horapro-co-api/
 ```
 
-Y comprobar. Debe decir **`index-DxSI3sYe.js`**:
+Después, **cPanel → Setup Node.js App → Restart**. No hay comando; es el botón, y
+sin él el proceso sigue con el código viejo.
+
+Comprobar que arrancó:
 
 ```bash
-curl -s https://horapro.co/ | grep -o "index-[A-Za-z0-9_-]*\.js"
+curl -s https://horapro.co/api/health
 ```
 
-No hace falta reiniciar Node: solo cambia el frontend.
-
-Vuelta atrás, si hiciera falta:
+**No debería mover ningún número.** Medido en producción: Luciana Vargas Tejada
+no tiene ningún día en que el congelado y el vigente difieran. Para confirmarlo
+sobre los demás, antes o después de desplegar:
 
 ```bash
-cd ~/horapro-repo && git checkout -f frontend-build && git reset --hard 79c6717 && rm -rf ~/horapro.co/assets && cp -R frontend/dist/. ~/horapro.co/
+source ~/nodevenv/horapro-co-api/22/bin/activate && cd ~/horapro-co-api && set -a && . ./.env && set +a && node medir-extras.cjs "NOMBRE" 2026-07-01 2026-08-14
 ```
+
+Cualquiera con «NINGÚN día difiere» está garantizado que no se mueve.
+
+Vuelta atrás:
+
+```bash
+cd ~/horapro-repo && git checkout -f backend-build && git reset --hard e4371b4 && rm -rf ~/horapro-co-api/dist && cp -R deploy-backend/dist ~/horapro-co-api/
+```
+
+Y Restart otra vez.
 
 ---
 
 ## Pendiente de fondo
 
-Lo encontró un rastreo adversarial y **no entró en el lote**. Cada uno merece su
-propia comprobación diferencial antes de tocarlo.
+Ya **no queda nada que toque dinero**. Lo que sigue causa confusión o ruido, no
+números malos. Cada uno con su comprobación antes de tocarlo.
 
-**Los dos que tocan dinero — atacar primero:**
+**El mecanismo del día congelado — el primero cierra casi todos los demás:**
 
-1. **`PUT /registros/jornada/:id` valida el cruce contra el día de ORIGEN, no el
-   de destino** (`backend/src/routes/registros.ts`, donde se consulta `delDia`
-   con `primera.fecha` antes de resolver `fechaBase`). Mover una jornada del 13 al
-   14 valida contra las marcas del 13; si ya había jornada el 14 quedan dos
-   solapadas y las horas se cuentan dos veces. **Arreglo:** resolver `fechaBase` y
-   `colaboradorId` ANTES de consultar `delDia`. `PUT /:id` sí lo hace bien y sirve
-   de modelo.
-2. **`construirExtraConfig` clasifica horas extra con el horario VIVO**, no con el
-   congelado (`backend/src/routes/reportes.ts`, dos llamadas). Es el mismo
-   problema que motivó todo el `DiaEsperado`, pero por otra puerta: editar un
-   horario mueve la clasificación de horas extra ya liquidadas.
-
-**El resto, del mecanismo del día congelado:**
-
-3. **`mantenerVentana` nunca repara una fila ya escrita**
+1. **`mantenerVentana` nunca repara una fila ya escrita**
    (`backend/src/utils/materializarDias.ts`): llama a `materializarColaborador`
    sin `pisarExistentes`, así que solo rellena huecos. Un día que quede congelado
    con el horario viejo se queda así hasta que alguien vuelva a guardar el
-   horario, sin saber que hace falta. **Es el arreglo de fondo: cierra casi todos
-   los demás.** Además su `try` envuelve el bucle entero, así que si un
-   colaborador lanza, los siguientes no se materializan.
-4. **La ventana de 18 h caduca sola.** Guardar el horario a las 08:00 difiere a
+   horario, sin saber que hace falta. Además su `try` envuelve el bucle entero:
+   si un colaborador lanza, los siguientes no se materializan.
+2. **La ventana de 18 h caduca sola.** Guardar el horario a las 08:00 difiere a
    mañana a quien tenga un turno nocturno abierto; a las 17:00 ese mismo cambio
    habría aplicado hoy. La decisión no se vuelve a mirar nunca.
-5. **El auto-cierre nocturno desempieza el día** (`cierreTurnos.ts`): al escribir
-   la salida, la persona deja de tener turno abierto y su día queda sin estrenar,
+3. **El auto-cierre nocturno desempieza el día** (`cierreTurnos.ts`): al escribir
+   la salida, la persona deja de tener turno abierto y su día queda sin estrenar
    pero con la fila vieja. Nadie lo reevalúa.
-6. **`PUT /registros/:id` no reevalúa** al mover una marcación de fecha o de
-   colaborador, igual que pasaba con el DELETE antes de arreglarlo. Conviene
-   extraer un helper único y usarlo desde los tres sitios.
-7. **`regenerarVarios` se corta al primer fallo** (`materializarDias.ts`): `for`
+4. **`PUT /registros/:id` no reevalúa** al mover una marcación de fecha o de
+   colaborador, como pasaba con el DELETE antes de arreglarlo. Conviene extraer
+   un helper único y usarlo desde los tres sitios.
+5. **`regenerarVarios` se corta al primer fallo** (`materializarDias.ts`): `for`
    secuencial sin try por colaborador. Si el tercero de cuarenta lanza, los otros
    37 se quedan con el horario viejo 60 días y el administrador no ve nada,
    porque la ruta responde `regeneracion: null`.
@@ -250,16 +260,19 @@ propia comprobación diferencial antes de tocarlo.
 - `diaYaEmpezado` no exige `r.entrada`, así que registrar una incapacidad sin
   hora hace que a esa persona el cambio de horario se le difiera «porque ya
   empezó su día».
-- `regenerarDiasDeColaborador` se llama sin pasar `ahora`, así que cada iteración
-  recalcula el suyo: un guardado a las 23:52 con 80 personas puede cruzar la
-  medianoche y aplicar a unos hoy y a otros mañana.
-- El comentario de `registros.ts` sobre que «el kiosco guarda `Registro.fecha` con
-  la hora real» está desactualizado: `worker.ts` ancla a medianoche desde hace
-  tiempo.
+- `regenerarDiasDeColaborador` se llama sin pasar `ahora`: un guardado a las
+  23:52 con 80 personas puede cruzar la medianoche y aplicar a unos hoy y a otros
+  mañana.
+- El comentario de `registros.ts` sobre que «el kiosco guarda `Registro.fecha`
+  con la hora real» está desactualizado: `worker.ts` ancla a medianoche.
 - **El kiosco permite marcar entrada y salida con segundos de diferencia**, lo
   que llena los días de tramos de 4 segundos. Poner un mínimo evitaría el ruido
   pero bloquearía correcciones rápidas legítimas: es decisión de producto.
+- **9 de los 45 días del período de Luciana no tienen fila congelada** en
+  producción. Caen al horario vigente por diseño y hoy no causan incoherencia,
+  pero son los más expuestos: si le cambian el horario, esos días se mueven
+  enteros. Vale la pena averiguar por qué faltan.
 
-**De la lista de tareas, sin empezar:** novedades de parte del día
-(`horaInicio` / `horaFin` en `Permiso` ya existen en el esquema, pero nada los
-usa todavía).
+**De la lista de tareas, sin empezar:** novedades de parte del día. `horaInicio`
+y `horaFin` ya existen en el modelo `Permiso` y el detalle las muestra, pero nada
+las usa para liquidar.
