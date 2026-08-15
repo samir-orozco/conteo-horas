@@ -50,16 +50,42 @@ function clasificarMinuto(
 //    encima. Requiere el horario del colaborador; sin horario, el llamador cae a SEMANAL.
 export type ExtraConfig = {
   modo: 'SEMANAL' | 'HORARIO';
-  // día de semana (0=DOM..6=SAB) → ventana de la franja en minutos del día; null/ausente = no programado
-  franjaPorDia?: Record<number, { ini: number; fin: number } | null>;
-  toleranciaMin?: number; // gracia para no marcar como extra unos minutos sueltos
+  // FECHA "yyyy-MM-dd" de Bogotá → ventana de la franja en minutos del día;
+  // null/ausente = no programado, y entonces todo lo trabajado es extra.
+  //
+  // Va por fecha y no por día de la semana a propósito. Indexado por día de
+  // semana, la ventana salía del horario VIGENTE, así que cambiar un horario
+  // reescribía la clasificación de extras de meses ya liquidados: la misma
+  // marcación de julio pasaba de extra a ordinaria y el reporte devolvía otra
+  // cifra. Por fecha, cada día se clasifica con lo que ESE día exigía.
+  //
+  // La tolerancia viene dentro de cada día por lo mismo: es la que estaba
+  // vigente entonces, no la de hoy.
+  franjaPorFecha?: Record<string, FranjaDeExtra>;
+  // Respaldo por día de semana, desde el horario vigente, para las fechas que no
+  // tengan fila congelada. Es lo mismo que hace `combinarDiasEsperados` con los
+  // huecos, y evita que un llamador sin días —el dashboard— convierta la jornada
+  // entera en horas extra por no encontrar la fecha.
+  franjaPorDia?: Record<number, FranjaDeExtra>;
 };
 
+export type FranjaDeExtra = { ini: number; fin: number; toleranciaMin: number } | null;
+
 function esExtraPorModo(extra: ExtraConfig, zc: Date, hora: number, superoTope: boolean): boolean {
-  if (extra.modo !== 'HORARIO' || !extra.franjaPorDia) return superoTope;
-  const fr = extra.franjaPorDia[getDay(zc)] ?? null;
+  if (extra.modo !== 'HORARIO' || (!extra.franjaPorFecha && !extra.franjaPorDia)) return superoTope;
+
+  // `zc` ya viene zonificado a Bogotá, así que se lee con los getters locales y
+  // NO se vuelve a convertir: aplicar `toZonedTime` dos veces sobre la misma
+  // fecha la corre otras cinco horas.
+  const clave = `${zc.getFullYear()}-${String(zc.getMonth() + 1).padStart(2, '0')}-${String(zc.getDate()).padStart(2, '0')}`;
+  // `??` no sirve aquí: un día congelado como NO programado vale `null`, y con
+  // `??` se caería al respaldo justo cuando el día dice, a propósito, que no
+  // había franja. Se pregunta si la fecha ESTÁ, no si trae algo.
+  const fr = extra.franjaPorFecha && Object.prototype.hasOwnProperty.call(extra.franjaPorFecha, clave)
+    ? extra.franjaPorFecha[clave]
+    : extra.franjaPorDia?.[getDay(zc)] ?? null;
   const min = hora * 60 + zc.getMinutes();
-  const tol = extra.toleranciaMin ?? 0;
+  const tol = fr?.toleranciaMin ?? 0;
   let fuera: boolean;
   if (!fr) fuera = true;                                       // día no programado → todo extra
   else if (fr.fin > fr.ini) fuera = min < fr.ini - tol || min >= fr.fin + tol;

@@ -76,14 +76,58 @@ describe('calcularHorasTrabajadas — clasificación', () => {
   it('en modo HORARIO, lo trabajado fuera de la franja es extra aunque no pase el tope', () => {
     const extra = {
       modo: 'HORARIO' as const,
-      franjaPorDia: { 1: { ini: 8 * 60, fin: 16 * 60 } }, // lunes 08:00–16:00
-      toleranciaMin: 0,
+      // Por FECHA: la franja que ESE día exigía, 08:00–16:00.
+      franjaPorFecha: { '2026-07-06': { ini: 8 * 60, fin: 16 * 60, toleranciaMin: 0 } },
     };
     const { resultado } = calcularHorasTrabajadas(
       bog('2026-07-06', 8), bog('2026-07-06', 18), [], TIPOS, 42, 0, extra,
     );
     expect(minutosDe(resultado, 'HOD')).toBe(480); // dentro de la franja
     expect(minutosDe(resultado, 'HED')).toBe(120); // 16:00–18:00 fuera
+  });
+
+  it('el mismo lunes con OTRA franja congelada clasifica distinto', () => {
+    // La prueba de que ya no se clasifica por día de la semana: mismo día, misma
+    // marcación, y la franja de ESE día decide. Antes ambos lunes compartían
+    // ventana y cambiar el horario reescribía los dos.
+    const extra = {
+      modo: 'HORARIO' as const,
+      franjaPorFecha: { '2026-07-06': { ini: 6 * 60, fin: 18 * 60, toleranciaMin: 0 } },
+    };
+    const { resultado } = calcularHorasTrabajadas(
+      bog('2026-07-06', 8), bog('2026-07-06', 18), [], TIPOS, 42, 0, extra,
+    );
+    expect(minutosDe(resultado, 'HOD')).toBe(600); // todo dentro
+    expect(minutosDe(resultado, 'HED')).toBe(0);
+  });
+
+  it('una fecha sin fila congelada cae al respaldo por día de semana', () => {
+    // Es lo que mantiene al panel de inicio comportándose como siempre, y lo que
+    // evita que una fecha ausente convierta la jornada entera en horas extra.
+    const extra = {
+      modo: 'HORARIO' as const,
+      franjaPorFecha: {}, // ninguna fecha congelada
+      franjaPorDia: { 1: { ini: 8 * 60, fin: 16 * 60, toleranciaMin: 0 } }, // lunes
+    };
+    const { resultado } = calcularHorasTrabajadas(
+      bog('2026-07-06', 8), bog('2026-07-06', 18), [], TIPOS, 42, 0, extra,
+    );
+    expect(minutosDe(resultado, 'HOD')).toBe(480);
+    expect(minutosDe(resultado, 'HED')).toBe(120);
+  });
+
+  it('un día congelado como NO programado NO cae al respaldo: todo es extra', () => {
+    // `??` habría hecho justo lo contrario. El día dice a propósito que no había
+    // franja, así que preguntar por el respaldo sería ignorarlo.
+    const extra = {
+      modo: 'HORARIO' as const,
+      franjaPorFecha: { '2026-07-06': null },
+      franjaPorDia: { 1: { ini: 8 * 60, fin: 16 * 60, toleranciaMin: 0 } },
+    };
+    const { resultado } = calcularHorasTrabajadas(
+      bog('2026-07-06', 8), bog('2026-07-06', 18), [], TIPOS, 42, 0, extra,
+    );
+    expect(minutosDe(resultado, 'HED')).toBe(600); // día no programado → todo extra
   });
 
   it('un turno que cruza medianoche se reparte entre los dos días', () => {

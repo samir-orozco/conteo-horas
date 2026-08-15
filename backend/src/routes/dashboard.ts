@@ -221,7 +221,10 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     // Modo de horas extra (mismo criterio que el reporte de liquidación)
     const cfgModo = await prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } });
     const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
-    const extraConfigPorCol = new Map(colaboradores.map(c => [c.id, construirExtraConfig(modoExtra, (c as any).horario)]));
+    // Sin días congelados: el panel mira la semana en curso y se queda con el
+    // respaldo por día de semana, que es como se ha comportado siempre. La
+    // corrección por fecha vive donde se liquida, que es donde mueve plata.
+    const extraConfigPorCol = new Map(colaboradores.map(c => [c.id, construirExtraConfig(modoExtra, (c as any).horario, [])]));
 
     for (const [clave, regs] of porColSemana) {
       const jornadaSemanal = jornadaVigente(regs[0].fecha, jornadas);
