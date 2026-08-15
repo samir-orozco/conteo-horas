@@ -25,18 +25,28 @@ function claveDia(d) {
     const z = (0, date_fns_tz_1.toZonedTime)(d, TZ);
     return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
 }
-function construirExtraConfig(modo, horario) {
+function construirExtraConfig(modo, horario, dias) {
     if (modo !== 'HORARIO' || !horario || !horario.activo)
         return { modo: 'SEMANAL' };
+    const franjaPorFecha = {};
+    for (const d of dias) {
+        franjaPorFecha[claveDia(d.fecha)] = d.programado && d.horaEntrada && d.horaSalida
+            ? { ini: minutosDe(d.horaEntrada), fin: minutosDe(d.horaSalida), toleranciaMin: d.toleranciaMin ?? 0 }
+            : null;
+    }
+    // Respaldo para las fechas sin fila congelada, con el horario vigente. Es lo
+    // que ya hace `combinarDiasEsperados` con los huecos, y lo que permite que un
+    // llamador sin días —el dashboard— siga comportándose como siempre.
     const franjaPorDia = {};
+    const tol = horario.toleranciaMin ?? 0;
     for (const fr of horario.franjas) {
         for (const d of (fr.dias ?? [])) {
             const idx = exports.DIAS_SEMANA.indexOf(d);
             if (idx >= 0)
-                franjaPorDia[idx] = { ini: minutosDe(fr.horaEntrada), fin: minutosDe(fr.horaSalida) };
+                franjaPorDia[idx] = { ini: minutosDe(fr.horaEntrada), fin: minutosDe(fr.horaSalida), toleranciaMin: tol };
         }
     }
-    return { modo: 'HORARIO', franjaPorDia, toleranciaMin: horario.toleranciaMin ?? 0 };
+    return { modo: 'HORARIO', franjaPorFecha, franjaPorDia };
 }
 // Llegadas tarde: primera entrada de cada día contra lo que el horario exigía
 // ESE día (`DiaEsperado`) más su tolerancia. No cuenta festivos, días fuera del

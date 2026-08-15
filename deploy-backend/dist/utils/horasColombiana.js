@@ -29,11 +29,20 @@ function clasificarMinuto(hora, esDomOFestivo, esExtra, horaInicioDiurna, horaFi
     return diurno ? 'HED' : 'HEN';
 }
 function esExtraPorModo(extra, zc, hora, superoTope) {
-    if (extra.modo !== 'HORARIO' || !extra.franjaPorDia)
+    if (extra.modo !== 'HORARIO' || (!extra.franjaPorFecha && !extra.franjaPorDia))
         return superoTope;
-    const fr = extra.franjaPorDia[(0, date_fns_1.getDay)(zc)] ?? null;
+    // `zc` ya viene zonificado a Bogotá, así que se lee con los getters locales y
+    // NO se vuelve a convertir: aplicar `toZonedTime` dos veces sobre la misma
+    // fecha la corre otras cinco horas.
+    const clave = `${zc.getFullYear()}-${String(zc.getMonth() + 1).padStart(2, '0')}-${String(zc.getDate()).padStart(2, '0')}`;
+    // `??` no sirve aquí: un día congelado como NO programado vale `null`, y con
+    // `??` se caería al respaldo justo cuando el día dice, a propósito, que no
+    // había franja. Se pregunta si la fecha ESTÁ, no si trae algo.
+    const fr = extra.franjaPorFecha && Object.prototype.hasOwnProperty.call(extra.franjaPorFecha, clave)
+        ? extra.franjaPorFecha[clave]
+        : extra.franjaPorDia?.[(0, date_fns_1.getDay)(zc)] ?? null;
     const min = hora * 60 + zc.getMinutes();
-    const tol = extra.toleranciaMin ?? 0;
+    const tol = fr?.toleranciaMin ?? 0;
     let fuera;
     if (!fr)
         fuera = true; // día no programado → todo extra
