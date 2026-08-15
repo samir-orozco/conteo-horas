@@ -258,7 +258,25 @@ cp -R frontend/dist/. ~/midominio.com/
 ```
 curl -s https://midominio.com/api/health; echo
 ```
-El chequeo debe tocar la base de datos, no solo confirmar que Node está vivo. Después, recarga dura en el navegador (Cmd/Ctrl+Shift+R).
+`/api/health` devuelve un objeto fijo: **no toca la base de datos ni ejecuta nada
+del código nuevo.** Un 200 ahí solo dice que el proceso Node está vivo. Sirve
+para descartar que el despliegue reventara al arrancar, y para nada más.
+
+Para saber si Prisma quedó bien —el riesgo real cuando se copia un cliente
+regenerado— hace falta una ruta pública que SÍ consulte la base. En este proyecto:
+```
+curl -s -o /dev/null -w "%{http_code}\n" https://midominio.com/api/worker/kiosco/xxx
+```
+**404** = Prisma arrancó, consultó la base y no encontró ese token: todo bien.
+**500** = el cliente de Prisma no cuadra con el esquema o no se copió donde debía.
+
+Y si el cambio agregó una ruta nueva, pídela sin token: tiene que responder
+**401**, no **404**. Es lo único que distingue "desplegado" de "copiado a otra
+parte".
+
+Al final, recarga dura en el navegador (Cmd/Ctrl+Shift+R) sobre algo que solo
+haga el código nuevo. Cuando el cambio no agrega rutas, ningún `curl` sustituye
+esto.
 
 > **`git checkout -f`, no `git checkout` a secas.** El clon del servidor acumula con
 > el tiempo cambios sueltos en el índice (de compilaciones manuales viejas, de
@@ -340,7 +358,12 @@ Verifica siempre que el bundle no contenga `localhost` antes de subirlo.
 - [ ] **App root leído del `.htaccess` del docroot** (paso B.0), no de esta guía.
 - [ ] `grep` de algo del cambio dentro de `~/app-api/dist/` → distinto de `0`.
 - [ ] `touch tmp/restart.txt` si cambió el backend.
-- [ ] `curl /api/health` (que toque la BD) + prueba en el navegador con recarga dura.
+- [ ] `curl /api/health` → 200. **Ojo: no prueba nada del código nuevo** (devuelve
+      un objeto fijo, sin tocar la BD). Solo descarta que el proceso reventara.
+- [ ] Una ruta pública que consulte la BD (`/api/worker/kiosco/xxx` → **404**, no
+      500). Es lo que confirma que el cliente de Prisma quedó bien copiado.
+- [ ] Prueba en el navegador con recarga dura, sobre algo que solo haga el código
+      nuevo. Ningún `curl` sustituye esto cuando el cambio no agrega rutas.
 - [ ] **Si el cambio agregó una ruta**, probarla sin token: tiene que responder
       `401`, no `404`. Un `404` ahí significa que el backend viejo sigue vivo, y
       es lo único que distingue "desplegado" de "copiado a otra parte".
