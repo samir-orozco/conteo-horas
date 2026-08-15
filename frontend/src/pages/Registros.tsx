@@ -8,6 +8,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import SelectorColaborador from '../components/SelectorColaborador';
+import FotosJornada from '../components/FotosJornada';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
@@ -56,7 +57,6 @@ type Almuerzo = {
   seExcedio: boolean;
   minutosDeMas: number;
 };
-type Fotos = { fotoEntrada: string | null; fotoSalida: string | null };
 // Lo que devuelve el servidor cuando rechaza un guardado. `conflicto` solo viene
 // con el código de cruce, y trae la marcación que estorba para poder ofrecerse a
 // quitarla sin salir del formulario.
@@ -158,7 +158,6 @@ export default function Registros() {
   // cuántas marcaciones se está tratando.
   const [jornadaEditada, setJornadaEditada] = useState<Registro | null>(null);
   const [fotosDe, setFotosDe] = useState<Registro | null>(null);
-  const [fotos, setFotos] = useState<Fotos | null>(null);
   // Qué marcaciones se van a borrar. Una jornada partida por el almuerzo son
   // dos, y borrar solo la primera dejaba la tarde suelta como una fila huérfana.
   const [porEliminar, setPorEliminar] = useState<{ ids: string[]; horas: string } | null>(null);
@@ -396,21 +395,9 @@ export default function Registros() {
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
 
   // Las fotos de una jornada partida por el almuerzo viven en marcaciones
-  // distintas: la de entrada en la que abrió la mañana, la de salida en la que
-  // cerró la tarde. Pedir las dos de un solo registro traía la foto de la salida
-  // a almorzar rotulada como fin de jornada.
-  const verFotos = async (r: Registro) => {
-    setFotosDe(r);
-    setFotos(null);
-    const marcas = marcasDe(r);
-    const abre = marcas[0] ?? { id: r.id };
-    const cierra = [...marcas].reverse().find(m => m.salida) ?? abre;
-    const [a, b] = await Promise.all([
-      api.get(`/registros/${abre.id}/fotos`),
-      cierra.id === abre.id ? null : api.get(`/registros/${cierra.id}/fotos`),
-    ]);
-    setFotos({ fotoEntrada: a.data.fotoEntrada, fotoSalida: (b ?? a).data.fotoSalida });
-  };
+  // distintas, y cuál es cuál depende de los tramos vecinos. Eso lo resuelve el
+  // backend y lo pide `FotosJornada`: aquí solo se dice de qué día se trata.
+  const verFotos = (r: Registro) => setFotosDe(r);
 
   return (
     <div className="p-6">
@@ -772,28 +759,7 @@ export default function Registros() {
             <p className="text-sm text-muted mb-4">
               {fotosDe.colaborador.nombre} {fotosDe.colaborador.apellido} · {format(toZonedTime(new Date(fotosDe.fecha), TZ), "d 'de' MMMM", { locale: es })}
             </p>
-            {!fotos ? (
-              <p className="text-sm text-muted py-8 text-center">Cargando fotos...</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {[{ foto: fotos.fotoEntrada, label: 'Entrada', hora: fmtHora(fotosDe.entrada) },
-                  { foto: fotos.fotoSalida, label: 'Salida', hora: fmtHora(fotosDe.salida) }].map(({ foto, label, hora }) => (
-                  <div key={label}>
-                    <p className="text-xs font-semibold text-muted uppercase mb-1.5">{label} · {hora}</p>
-                    {foto ? (
-                      <img src={foto} alt={`Foto de ${label.toLowerCase()}`} className="w-full rounded-xl border border-gray-200 [transform:scaleX(-1)]" />
-                    ) : (
-                      <div className="w-full aspect-[4/3] rounded-xl bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 text-center px-3">
-                        Sin foto (marcó con cédula o fue registro manual)
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-[11px] text-muted mt-4 flex items-center gap-1.5">
-              <Info size={12} /> Las fotos se eliminan automáticamente a los 2 meses.
-            </p>
+            <FotosJornada registroId={fotosDe.id} />
           </div>
         </div>
       )}

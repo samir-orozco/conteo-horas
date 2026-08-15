@@ -241,6 +241,18 @@ export type JornadaDelDia<T> = {
 // tramos solapados son datos rotos de una edición a mano, y encadenarlos daría
 // una jornada cuya salida es anterior a su propia entrada.
 //
+// Las marcaciones ordenadas por hora de entrada. La base no garantiza ningún
+// orden y toda la agrupación depende de quién sigue a quién. Las que no tienen
+// entrada —cargadas a mano, incompletas— van al final: no hay forma de
+// encadenarlas.
+function enOrdenDeEntrada<T extends RegistroDeDia>(registros: T[]): T[] {
+  return [...registros].sort((a, b) => {
+    if (!a.entrada) return 1;
+    if (!b.entrada) return -1;
+    return a.entrada.getTime() - b.entrada.getTime();
+  });
+}
+
 // Espera las marcaciones YA ordenadas por entrada.
 export function agruparEnJornadas<T extends RegistroDeDia>(enOrden: T[]): T[][] {
   const bloques: T[][] = [];
@@ -255,18 +267,51 @@ export function agruparEnJornadas<T extends RegistroDeDia>(enOrden: T[]): T[][] 
   return bloques;
 }
 
+// Qué es cada marca DENTRO del día.
+//
+// `salidaAlmuerzo` es un booleano suelto en el registro, y hasta ahora cada
+// pantalla lo re-interpretaba por su cuenta: la tabla de Registros lo resolvía
+// bien, el detalle de la jornada rotulaba la foto de la salida a almorzar como
+// "Salida" —afirmando que la persona se fue a su casa a las 14:04 cuando volvió
+// a las 14:50— y el dashboard ni siquiera traía el campo. Tres lecturas del
+// mismo dato, dos equivocadas. Esta función es la única.
+//
+// Se apoya en `agruparEnJornadas` y no en "la primera entrada del día es la
+// entrada y las demás son regresos": quien sale y vuelve por la tarde a hacer
+// extras abre una jornada NUEVA, y su entrada de las 19:00 no es un regreso del
+// descanso. Con la regla ingenua, el administrador leería un almuerzo de siete
+// horas.
+export type Momento = 'ENTRADA' | 'SALIDA_ALMUERZO' | 'REGRESO_ALMUERZO' | 'SALIDA';
+
+export type MomentosDeMarcacion = {
+  entrada: Momento | null; // null: la marcación no tiene hora de entrada
+  salida: Momento | null; // null: sigue abierta
+};
+
+export function momentosDelDia<T extends RegistroDeDia & { id: string }>(
+  registros: T[],
+): Map<string, MomentosDeMarcacion> {
+  const momentos = new Map<string, MomentosDeMarcacion>();
+  for (const jornada of agruparEnJornadas(enOrdenDeEntrada(registros))) {
+    jornada.forEach((m, i) => {
+      momentos.set(m.id, {
+        entrada: !m.entrada ? null : i === 0 ? 'ENTRADA' : 'REGRESO_ALMUERZO',
+        // Una salida al descanso no cierra la jornada ni siquiera cuando es la
+        // última marca del día: la persona no se fue a su casa, simplemente no
+        // volvió a marcar. Es la misma regla de `marcacionQueCierra`, y las dos
+        // no pueden decir cosas distintas del mismo registro.
+        salida: !m.salida ? null : m.salidaAlmuerzo ? 'SALIDA_ALMUERZO' : 'SALIDA',
+      });
+    });
+  }
+  return momentos;
+}
+
 export function partirDiaEnJornadas<T extends RegistroDeDia>(
   registros: T[],
   dia: DiaParaAlmuerzo & DiaParaAjuste,
 ): JornadaDelDia<T>[] {
-  // Los registros llegan en el orden que quiera la base y la agrupación depende
-  // de quién sigue a quién. Las marcaciones sin hora de entrada —creadas a mano,
-  // incompletas— van al final: no hay forma de encadenarlas.
-  const enOrden = [...registros].sort((a, b) => {
-    if (!a.entrada) return 1;
-    if (!b.entrada) return -1;
-    return a.entrada.getTime() - b.entrada.getTime();
-  });
+  const enOrden = enOrdenDeEntrada(registros);
   if (enOrden.length === 0) return [];
 
   const bloques = agruparEnJornadas(enOrden);

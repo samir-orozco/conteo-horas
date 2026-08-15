@@ -11,7 +11,7 @@ import {
 } from '../utils/saldoTiempo';
 import {
   resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca,
-  marcacionQueCierra, agruparEnJornadas, instantesDeJornada,
+  marcacionQueCierra, agruparEnJornadas, instantesDeJornada, momentosDelDia,
 } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
@@ -321,7 +321,7 @@ export default async function registroRoutes(app: FastifyInstance) {
 
     const { inicioDia, finDia } = rangoDiaBogota(registro.fecha);
 
-    const [delDia, congelado, festivo, novedad, fotos] = await Promise.all([
+    const [delDia, congelado, festivo, novedad, conFotoEntrada, conFotoSalida] = await Promise.all([
       prisma.registro.findMany({
         where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
         orderBy: { entrada: 'asc' },
@@ -350,11 +350,21 @@ export default async function registroRoutes(app: FastifyInstance) {
         // que es donde el administrador la está mirando.
         select: { id: true, tipo: true, descripcion: true, aprobado: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true },
       }),
-      prisma.registro.findUnique({
-        where: { id },
-        select: { fotoEntrada: true, fotoSalida: true },
+      // Qué marcaciones del día tienen foto. Van dos consultas de IDs y no un
+      // `select` de las columnas: son LongText de hasta 300 KB y aquí solo hace
+      // falta saber si existen. Antes se traía el par entero del registro
+      // abierto —600 KB por la red— para calcular dos booleanos.
+      prisma.registro.findMany({
+        where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia }, fotoEntrada: { not: null } },
+        select: { id: true },
+      }),
+      prisma.registro.findMany({
+        where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia }, fotoSalida: { not: null } },
+        select: { id: true },
       }),
     ]);
+    const tieneEntrada = new Set(conFotoEntrada.map(r => r.id));
+    const tieneSalida = new Set(conFotoSalida.map(r => r.id));
 
     const [dia] = combinarDiasEsperados(
       inicioDia, finDia,
@@ -369,6 +379,12 @@ export default async function registroRoutes(app: FastifyInstance) {
     const fueCongelado = !!congelado && congelado.creadoEn.getTime() <= finDia.getTime();
 
     const almuerzo = resumirAlmuerzoDelDia(delDia, dia);
+
+    // Qué es cada marca dentro del día: entrada, salida al descanso, regreso o
+    // salida de verdad. Lo decide el dominio una vez, aquí, y no cada pantalla
+    // por su cuenta —que es como la foto de la salida a almorzar terminó
+    // rotulada "Salida".
+    const momentos = momentosDelDia(delDia);
 
     // La tardanza se mide solo en la primera entrada del día: volver del
     // almuerzo no es llegar tarde. Cuando no aplica se dice POR QUÉ, que un
@@ -403,13 +419,19 @@ export default async function registroRoutes(app: FastifyInstance) {
     return {
       registro: {
         ...datosRegistro,
-        tieneFotoEntrada: !!fotos?.fotoEntrada,
-        tieneFotoSalida: !!fotos?.fotoSalida,
+        tieneFotoEntrada: tieneEntrada.has(registro.id),
+        tieneFotoSalida: tieneSalida.has(registro.id),
       },
       colaborador: { nombre: colaborador.nombre, apellido: colaborador.apellido, cargo: colaborador.cargo },
       fecha: inicioDia,
       dia: dia ? { ...dia, congelado: fueCongelado } : null,
-      tramos: delDia,
+      tramos: delDia.map(t => ({
+        ...t,
+        momentoEntrada: momentos.get(t.id)?.entrada ?? null,
+        momentoSalida: momentos.get(t.id)?.salida ?? null,
+        tieneFotoEntrada: tieneEntrada.has(t.id),
+        tieneFotoSalida: tieneSalida.has(t.id),
+      })),
       almuerzo,
       minutosDelDia: minutosContadosDelDia(delDia, dia),
       minutosTarde,
@@ -417,6 +439,57 @@ export default async function registroRoutes(app: FastifyInstance) {
       festivo,
       novedad: novedad ? { ...novedad, remunerada: novedadRemunerada } : null,
     };
+  });
+
+  // Fotos de verificación facial de TODO el día, cada una rotulada con lo que de
+  // verdad es.
+  //
+  // Existe porque `/:id/fotos` devuelve el par de UNA marcación, y una jornada
+  // con almuerzo son dos: pedir las dos de la primera traía la foto de la salida
+  // a almorzar como si fuera el fin de la jornada, y escondía las dos de la
+  // tarde. Cada pantalla resolvía eso por su cuenta —o no lo resolvía—, así que
+  // el rótulo se decide aquí, con `momentosDelDia`, y todas muestran lo mismo.
+  app.get('/:id/jornada/fotos', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const registro = await prisma.registro.findFirst({
+      where: { id, colaborador: { empresaId: request.empresaId } },
+      select: { colaboradorId: true, fecha: true },
+    });
+    if (!registro) return reply.status(404).send({ error: 'Registro no encontrado' });
+
+    const { inicioDia, finDia } = rangoDiaBogota(registro.fecha);
+    const delDia = await prisma.registro.findMany({
+      where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
+      orderBy: { entrada: 'asc' },
+      select: {
+        id: true, entrada: true, salida: true, salidaAlmuerzo: true,
+        entradaEstimada: true, salidaEstimada: true, fotoEntrada: true, fotoSalida: true,
+      },
+    });
+
+    const momentos = momentosDelDia(delDia);
+    const fotos: {
+      registroId: string; momento: string; hora: Date | null; foto: string | null; estimada: boolean;
+    }[] = [];
+    for (const m of delDia) {
+      const papel = momentos.get(m.id);
+      // Viajan TODOS los momentos del día, con o sin foto. Que a una marca le
+      // falte la foto es información, no un hueco: significa que se marcó con
+      // cédula o que alguien la cargó a mano, y quien está auditando el día
+      // necesita verlo. Las marcas sin hora no tienen momento y no aparecen.
+      if (papel?.entrada) {
+        fotos.push({ registroId: m.id, momento: papel.entrada, hora: m.entrada, foto: m.fotoEntrada, estimada: m.entradaEstimada });
+      }
+      if (papel?.salida) {
+        fotos.push({ registroId: m.id, momento: papel.salida, hora: m.salida, foto: m.fotoSalida, estimada: m.salidaEstimada });
+      }
+    }
+    // En orden cronológico: es como ocurrió el día y como se va a leer.
+    fotos.sort((a, b) => (a.hora?.getTime() ?? 0) - (b.hora?.getTime() ?? 0));
+    // La fecha viaja para que la pantalla pueda distinguir "marcó con cédula" de
+    // "la foto existió y ya se borró": el dato es el mismo `null` en los dos
+    // casos y solo la edad del día los separa.
+    return { fecha: inicioDia, fotos };
   });
 
   // Fotos de verificación facial de un registro (se conservan 2 meses)

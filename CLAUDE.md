@@ -2,12 +2,22 @@
 
 Este archivo se lee al inicio de cada sesión. Define cómo se escribe código aquí.
 
-> **Estado actual (2026-08-11): el proyecto NO tiene infraestructura de pruebas.**
-> Cero corredor de tests, cero archivos de prueba, cero cobertura, y el backend
-> ni siquiera tiene linter. El ciclo de la sección 2 **no se puede ejecutar
-> todavía**. Hasta que exista la suite (sección 6), rige la sección 5, que es lo
-> que de verdad se ha estado haciendo. No finjas que corriste pruebas que no
-> existen.
+> **Estado actual (2026-08-15): hay suite, pero solo cubre la lógica pura.**
+>
+> Vitest corre en el backend con 12 archivos de prueba y 234 casos sobre
+> `src/utils/` (`npm test`). El ciclo de la sección 2 **rige de verdad** para todo
+> lo que viva ahí: son funciones puras, sin base de datos, y son las que calculan
+> el dinero.
+>
+> Lo que sigue SIN cubrir, y por lo tanto sigue gobernado por la sección 5:
+> las rutas de Fastify, el esquema de Prisma y todo el frontend (que tiene ESLint
+> pero ningún corredor de pruebas). El backend tampoco tiene linter, y no hay
+> medición de cobertura ni pruebas de mutación.
+>
+> La regla práctica: **si lo que vas a tocar es una función pura, se escribe la
+> prueba primero y se la ve fallar.** Si es una ruta o una pantalla, se verifica
+> como dice la sección 5 y se dice explícitamente qué se verificó y cómo. No
+> finjas que corriste pruebas que no existen.
 
 ---
 
@@ -16,10 +26,11 @@ Este archivo se lee al inicio de cada sesión. Define cómo se escribe código a
 La corrección del código se demuestra sometiéndolo a validación automatizada, no
 a que un humano lo lea línea por línea.
 
-Corolario incómodo, y la razón de la advertencia de arriba: **mientras no exista
-esa validación, el mandato no se cumple.** Decir "está probado" cuando lo único
-que se hizo fue mirarlo en el navegador es mentir sobre la garantía. Se dice qué
-se verificó y cómo.
+Corolario incómodo, y la razón de la advertencia de arriba: **donde no existe
+esa validación, el mandato no se cumple.** Hoy se cumple en `src/utils/` y no se
+cumple en las rutas ni en el frontend. Decir "está probado" cuando lo único que
+se hizo fue mirarlo en el navegador es mentir sobre la garantía. Se dice qué se
+verificó y cómo.
 
 Este producto calcula dinero de nómina. Un error no se manifiesta como una
 pantalla rota: se manifiesta como un número plausible pero equivocado, que nadie
@@ -27,7 +38,7 @@ nota hasta que un trabajador reclama. Esa es la razón de todo lo que sigue.
 
 ---
 
-## 2. Ciclo TDD de 4 pasos (obligatorio en cuanto exista la suite)
+## 2. Ciclo TDD de 4 pasos (en vigor para la lógica pura de `src/utils/`)
 
 ### 1. RED — pruebas primero, y verificar que fallan
 Escribir o actualizar las pruebas unitarias, de integración y de aceptación
@@ -40,10 +51,11 @@ Escribir estrictamente el mínimo código necesario para que las pruebas pasen.
 Nada de funciones especulativas ni de lógica que nadie pidió.
 
 ### 3. THE GAUNTLET — puertas de calidad automatizadas
-- 100% de las pruebas unitarias y de integración en verde.
-- Cero advertencias y cero errores en el verificador de tipos y en el linter.
-- Cobertura alta sobre la lógica nueva (>80%).
-- Pruebas de mutación donde aplique, para descartar pruebas que no prueban nada.
+- `npm test` en el backend, entero en verde (no solo el archivo que tocaste).
+- `npx tsc --noEmit` en el backend y `npx tsc -b` en el frontend, sin errores.
+- ESLint del frontend sin errores nuevos. Ojo: hay errores preexistentes —
+  compruébalo contra `HEAD` antes de dar por tuyo uno que ya estaba.
+- Pendientes de montar (sección 6): cobertura >80% y pruebas de mutación.
 
 ### 4. REFACTOR — código limpio
 Refactorizar manteniendo todo en verde. Principios SOLID, funciones pequeñas,
@@ -94,10 +106,10 @@ Son las que ya nos han mordido. No son teoría.
 
 ---
 
-## 5. Cómo se verifica HOY, mientras no hay suite
+## 5. Cómo se verifica lo que la suite todavía no cubre
 
-No es un sustituto de las pruebas. Es lo que hay, y hay que ser explícito sobre
-sus límites.
+Rutas, esquema y frontend. No es un sustituto de las pruebas. Es lo que hay, y
+hay que ser explícito sobre sus límites.
 
 1. **`npx tsc --noEmit` en backend y frontend.** Obligatorio, siempre.
    Ojo: el build del frontend (`tsc -b`) es **más estricto** que `--noEmit` y
@@ -114,19 +126,17 @@ sus límites.
 
 ---
 
-## 6. Cómo salir del estado actual (pendiente, no hecho)
+## 6. Cómo terminar de salir del estado actual
 
-Orden propuesto. Cada paso da valor por sí solo:
+Orden propuesto. Cada paso da valor por sí solo. **El paso 1 ya está hecho.**
 
-1. **Vitest en el backend** + las primeras pruebas sobre `horasColombiana.ts`,
-   `saldoTiempo.ts` y `tardanzas.ts`. Son funciones puras, sin base de datos:
-   las más fáciles de probar y las que calculan el dinero. Los valores esperados
-   ya existen y están verificados a mano en `verificar-saldo.ts` y
-   `probar-rango.ts` — esos son los primeros casos de prueba, ya escritos.
+1. ~~**Vitest en el backend**, con pruebas sobre las funciones puras de
+   `src/utils/`~~ — hecho: 12 archivos, 234 casos, `npm test`.
 2. **Linter en el backend** (el frontend ya tiene ESLint).
 3. **Cobertura**, y recién ahí exigir el >80% de la sección 2.
 4. **Pruebas de integración** de las rutas de reportes, con base de datos de
    prueba.
 5. **Mutación** (Stryker), al final y solo sobre el motor de horas.
 
-Hasta el paso 1, la sección 2 es una intención, no una regla en vigor.
+Mientras falten los pasos 2 a 5, la sección 2 rige solo donde hay pruebas, y la
+sección 5 cubre el resto.
