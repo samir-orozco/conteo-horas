@@ -165,6 +165,28 @@ export default function ColaboradorDetalle() {
     cargar();
   };
 
+  // Borrar una novedad. El endpoint existía desde siempre; lo que faltaba era
+  // poder llamarlo: una novedad se podía crear y aprobar, pero no quitar. Y las
+  // que quedaron huérfanas de una marcación borrada no había forma de limpiarlas.
+  const [porBorrarNovedad, setPorBorrarNovedad] = useState<Permiso | null>(null);
+  const [borrandoNovedad, setBorrandoNovedad] = useState(false);
+
+  const eliminarNovedad = async () => {
+    if (!porBorrarNovedad) return;
+    setBorrandoNovedad(true);
+    try {
+      await api.delete(`/permisos/${porBorrarNovedad.id}`);
+      setPorBorrarNovedad(null);
+      setVerNovedad(null);
+      setToast('Novedad eliminada');
+      cargar();
+    } catch {
+      setToast('No pudimos eliminar la novedad');
+    } finally {
+      setBorrandoNovedad(false);
+    }
+  };
+
   const aprobarNovedad = async () => {
     if (!verNovedad) return;
     setAprobando(true);
@@ -362,6 +384,21 @@ export default function ColaboradorDetalle() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        abierto={porBorrarNovedad !== null}
+        peligro
+        titulo="¿Eliminar esta novedad?"
+        // Si estaba aprobada, sus días dejaban de exigirse: quitarla los vuelve a
+        // exigir y cambia la liquidación. Eso se dice antes, no se descubre en la
+        // nómina del mes.
+        subtitulo={porBorrarNovedad?.aprobado
+          ? 'Estaba APROBADA, así que sus días no se exigían. Al eliminarla vuelven a contar como ausencia y la liquidación cambia. No se puede deshacer.'
+          : 'Esta acción no se puede deshacer.'}
+        textoContinuar={borrandoNovedad ? 'Eliminando...' : 'Sí, eliminar'}
+        onContinuar={eliminarNovedad}
+        onCancelar={() => setPorBorrarNovedad(null)}
+      />
 
       <ConfirmDialog
         abierto={confirmarEliminarRostro}
@@ -594,6 +631,10 @@ export default function ColaboradorDetalle() {
               <button onClick={() => editarNovedad(verNovedad)}
                 className="flex items-center gap-1.5 px-4 py-2 text-sm text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 font-medium">
                 <Edit2 size={15} /> Editar
+              </button>
+              <button onClick={() => setPorBorrarNovedad(verNovedad)}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 font-medium">
+                <Trash2 size={15} /> Eliminar
               </button>
               {!verNovedad.aprobado && (
                 <button onClick={aprobarNovedad} disabled={aprobando}

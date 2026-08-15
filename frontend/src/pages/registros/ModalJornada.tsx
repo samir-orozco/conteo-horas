@@ -7,6 +7,7 @@ import {
   Info, CalendarClock,
 } from 'lucide-react';
 import api from '../../lib/api';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import FotosJornada from '../../components/FotosJornada';
 import { TIPO_PERMISO_LABEL as TIPO_NOVEDAD } from '../../constants/permisos';
 import { type Momento } from '../../constants/momentos';
@@ -121,6 +122,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
   const [j, setJ] = useState<Jornada | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [guardandoNovedad, setGuardandoNovedad] = useState(false);
+  const [confirmarBorrarNovedad, setConfirmarBorrarNovedad] = useState(false);
 
   // Al saltar a otro tramo el componente se remonta (lleva `key={registroId}`),
   // así que el estado arranca limpio solo y no hay que resetearlo aquí dentro.
@@ -154,6 +156,24 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
     setGuardandoNovedad(false);
   };
 
+  // Borrar la novedad sin salir del día. Hasta ahora una novedad se podía crear
+  // y aprobar pero no quitar, así que las que quedaron huérfanas de una marcación
+  // borrada —las creadas antes de que existiera el vínculo— no había forma de
+  // limpiarlas desde ninguna pantalla.
+  const eliminarNovedad = async () => {
+    if (!j?.novedad) return;
+    setGuardandoNovedad(true);
+    try {
+      await api.delete(`/permisos/${j.novedad.id}`);
+      setConfirmarBorrarNovedad(false);
+      const { data } = await api.get(`/registros/${registroId}/jornada`);
+      setJ(data);
+    } catch {
+      setError('No pudimos eliminar la novedad.');
+    }
+    setGuardandoNovedad(false);
+  };
+
   const r = j?.registro;
   const entrada = hhmm(r?.entrada ?? null);
   const a = j?.almuerzo;
@@ -163,6 +183,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
   const ultimaSalida = j ? hhmm([...j.tramos].reverse().find(t => t.salida)?.salida ?? null) : null;
 
   return (
+    <>
     <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onCerrar}>
       <div
         onClick={e => e.stopPropagation()}
@@ -344,6 +365,11 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                           ? 'border border-gray-300 text-ink hover:bg-gray-50'
                           : 'bg-green-600 hover:bg-green-700 text-white'}`}>
                       {guardandoNovedad ? 'Guardando...' : j.novedad.aprobado ? 'Quitar la aprobación' : 'Aprobar'}
+                    </button>
+                    <button disabled={guardandoNovedad}
+                      onClick={() => setConfirmarBorrarNovedad(true)}
+                      className="px-4 py-2 rounded-lg text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 disabled:opacity-60">
+                      Eliminar novedad
                     </button>
                   </div>
 
@@ -534,5 +560,23 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
         )}
       </div>
     </div>
+
+    {/* Fuera del contenedor del modal, no dentro: ese div tiene fondo difuminado
+        y animación, que crean un bloque contenedor y hacen que un `fixed` hijo se
+        posicione contra ÉL en vez de contra la ventana. Metido ahí dentro, el
+        diálogo salía encogido y encima del contenido, en lugar de cubrir la
+        pantalla. Como hermano, su z-[60] sí queda por encima de todo. */}
+    <ConfirmDialog
+      abierto={confirmarBorrarNovedad}
+      peligro
+      titulo="¿Eliminar esta novedad?"
+      subtitulo={j?.novedad?.aprobado
+        ? 'Estaba APROBADA, así que sus días no se exigían. Al eliminarla vuelven a contar como ausencia y la liquidación cambia. No se puede deshacer.'
+        : 'La marcación de ese día no se toca. Esta acción no se puede deshacer.'}
+      textoContinuar={guardandoNovedad ? 'Eliminando...' : 'Sí, eliminar'}
+      onContinuar={eliminarNovedad}
+      onCancelar={() => setConfirmarBorrarNovedad(false)}
+    />
+    </>
   );
 }
