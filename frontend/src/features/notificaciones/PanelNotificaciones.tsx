@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CheckCheck, AlarmClock, Clock, CalendarOff, Bell } from 'lucide-react';
+import { CheckCheck, AlarmClock, Clock, CalendarOff, Bell, X } from 'lucide-react';
 import type { Notificacion } from './types';
 import type { NotifState } from './useNotificaciones';
 
@@ -32,10 +32,16 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
 
   // Posición: en escritorio, a la derecha del botón y a su misma altura; en móvil,
   // una hoja anclada arriba con márgenes. `dvh` para no desbordar en móvil.
+  //
+  // En móvil NO ocupa toda la altura: se queda en el 65% de la pantalla. Antes
+  // llegaba casi de borde a borde y no dejaba nada afuera que tocar para cerrarlo
+  // —el único gesto de cierre era justamente tocar afuera—, así que quedaba
+  // atrapando al usuario. Ahora se ve la página debajo, se entiende que es un
+  // panel encima, y además hay una X.
   const esMovil = typeof window !== 'undefined' && window.innerWidth < 768;
   const top = ancla ? ancla.top : 80;
   const estilo: CSSProperties = esMovil
-    ? { top: 12, left: 12, right: 12, maxHeight: 'calc(100dvh - 24px)' }
+    ? { top: 64, left: 12, right: 12, maxHeight: '65dvh' }
     : { top, left: (ancla ? ancla.right : 256) + 10, width: 380, maxHeight: `calc(100dvh - ${top}px - 16px)` };
 
   // Portal a document.body: el botón que lo abre vive dentro del <aside> del
@@ -56,6 +62,7 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
         {/* Encabezado con pestañas Todas / No leídas */}
         <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5 border-b border-gray-100">
           <h2 className="font-bold text-[15px] text-ink">Notificaciones</h2>
+          <div className="flex items-center gap-1.5">
           <div className="flex items-center gap-0.5 bg-gray-100 rounded-full p-0.5">
             {(['todas', 'noleidas'] as const).map(t => (
               <button
@@ -68,6 +75,14 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
                 {t === 'todas' ? 'Todas' : 'No leídas'}
               </button>
             ))}
+          </div>
+          {/* Cierre explícito. Tocar afuera sigue funcionando, pero en un celular
+              "afuera" es una franja de doce píxeles: no es un gesto que se pueda
+              pedir. */}
+          <button onClick={onClose} aria-label="Cerrar notificaciones"
+            className="p-1.5 -mr-1 rounded-full text-gray-400 hover:text-ink hover:bg-gray-100 transition-colors">
+            <X size={18} />
+          </button>
           </div>
         </div>
 
