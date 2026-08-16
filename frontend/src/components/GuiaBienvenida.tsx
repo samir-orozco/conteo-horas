@@ -3,7 +3,7 @@ import { X, PlayCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // Video demo/guía del sistema (se muestra una sola vez en el primer ingreso).
-const VIDEO_ID = 'Xr63JjeOUvI';
+const VIDEO_ID = 's50yROu_8iI';
 
 // `forzado` la abre desde el botón de ayuda del menú, sin importar que el
 // usuario ya la haya visto: cerrar el modal sin querer no puede significar
