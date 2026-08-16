@@ -53,7 +53,18 @@ cp .env.example .env          # VITE_API_URL=https://horapro.co/api
 npm install
 npm run build
 ```
-Sube el contenido de `frontend/dist/` a **`~/horapro.co/`** (el docroot real del subdominio, incluida la carpeta `models/` con los pesos del reconocimiento facial). En deploys posteriores: `rm -rf ~/horapro.co/assets && cp -R ~/horapro-repo/frontend/dist/. ~/horapro.co/` (no borres `.htaccess`, `models/` ni `api/`).
+Sube el contenido de `frontend/dist/` a **`~/horapro.co/`** (el docroot real del subdominio, incluida la carpeta `models/` con los pesos del reconocimiento facial). En deploys posteriores: `cp -R ~/horapro-repo/frontend/dist/. ~/horapro.co/` (no borres `.htaccess`, `models/` ni `api/`).
+
+> **No borres `assets/` antes de copiar.** La instrucción anterior empezaba con
+> `rm -rf ~/horapro.co/assets`, y eso elimina bundles que las pestañas ya
+> abiertas siguen pidiendo. La app carga tres módulos bajo demanda —`xlsx` al
+> exportar, `faceapi`, `clipboard`—, cada uno en su archivo con hash propio: quien
+> tuviera HoraPro abierto desde antes del despliegue y exportara un reporte
+> recibía un 404 y un error en pantalla.
+>
+> Los bundles nuevos llevan hash distinto, así que conviven con los viejos sin
+> pisarse. Ocupa unos megas por despliegue; se limpia a mano cada varios meses
+> mirando qué hash referencia el `index.html` actual.
 
 Crea `~/horapro.co/.htaccess` para que React Router maneje las rutas:
 ```apache

@@ -356,6 +356,9 @@ Verifica siempre que el bundle no contenga `localhost` antes de subirlo.
 - [ ] (Si cambió el esquema) migración aplicada en phpMyAdmin **y** `prisma-build` actualizado, **antes** de copiar el backend nuevo.
 - [ ] En el servidor: `git checkout -f` + `pull` + `cp -R` de cada artefacto, un comando por bloque.
 - [ ] **App root leído del `.htaccess` del docroot** (paso B.0), no de esta guía.
+- [ ] Los assets viejos del frontend **NO** se borraron. Los bundles llevan hash,
+      así que conviven; borrarlos rompe las pestañas abiertas que todavía piden un
+      módulo cargado bajo demanda (`xlsx`, etc.) y el usuario ve un error.
 - [ ] `grep` de algo del cambio dentro de `~/app-api/dist/` → distinto de `0`.
 - [ ] `touch tmp/restart.txt` si cambió el backend.
 - [ ] `curl /api/health` → 200. **Ojo: no prueba nada del código nuevo** (devuelve
