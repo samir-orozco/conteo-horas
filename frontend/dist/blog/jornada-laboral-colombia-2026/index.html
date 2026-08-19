@@ -90,9 +90,14 @@ a{color:#303030}
 .art-cab .rej{display:grid;grid-template-columns:1.08fr .92fr;gap:52px;align-items:center}
 .art-cab h1{font-size:clamp(30px,4.3vw,47px);line-height:1.13;letter-spacing:-.02em;margin:0 0 26px;font-weight:800}
 .firma{display:flex;align-items:center;gap:13px;font-size:15px;color:#6b6b6b}
-.firma .avatar{width:44px;height:44px;border-radius:50%;background:#303030;color:#FFD85E;
-  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0}
-.firma .avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+/* El avatar se define una sola vez para los dos sitios donde aparece (la firma
+   del encabezado y la caja de autor del final). Antes el círculo y el recorte
+   colgaban de .firma, así que en la caja de autor la foto salía cuadrada y con
+   el tamaño de la otra. */
+.avatar{border-radius:50%;overflow:hidden;background:#303030;color:#FFD85E;
+  display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.firma .avatar{width:44px;height:44px;font-size:15px}
 .firma b{color:#303030;font-weight:650}
 .art-cab .lienzo{border-radius:18px;overflow:hidden;aspect-ratio:16/11}
 @media(max-width:900px){.art-cab .rej{grid-template-columns:1fr;gap:30px}}
@@ -141,7 +146,7 @@ a{color:#303030}
 
 /* Autor y cierre */
 .bio{display:flex;gap:16px;background:#f6f6f4;border-radius:16px;padding:22px;margin:44px 0 0;align-items:flex-start}
-.bio .avatar{width:54px;height:54px;flex-shrink:0}
+.bio .avatar{width:54px;height:54px;font-size:17px}
 .bio p{margin:5px 0 0;font-size:15px;color:#6b6b6b;line-height:1.6}
 .bio b{font-size:16px}
 .bio span{color:#898989;font-size:14px}
@@ -179,7 +184,7 @@ a{color:#303030}
     <div class="rej">
       <div>
         <h1>Jornada laboral en Colombia 2026: 42 horas, recargos y el registro que sí estás obligado a llevar</h1>
-        <div class="firma"><span class="avatar" aria-hidden="true">SO</span><span><b>Samir Orozco</b>, CEO de HoraPro<br />Actualizado el 19 de agosto de 2026 · 11 min de lectura</span></div>
+        <div class="firma"><span class="avatar"><img src="/blog/img/samir-orozco.jpg" alt="Samir Orozco" width="44" height="44" /></span><span><b>Samir Orozco</b>, CEO de HoraPro<br />Actualizado el 19 de agosto de 2026 · 11 min de lectura</span></div>
       </div>
       <div class="lienzo"><img src="/blog/img/jornada-laboral-colombia-2026.jpg" alt="Hombre con el rostro cubierto de notas adhesivas con recordatorios, desbordado por el desorden de tareas pendientes" width="900" height="620" loading="lazy" /></div>
     </div>
@@ -288,7 +293,7 @@ a{color:#303030}
 <p class="cierre">Este artículo es informativo y no reemplaza la asesoría de tu contador o tu abogado laboral, sobre todo si tu operación tiene turnos rotativos, jornadas especiales o convenciones colectivas. Las fechas y porcentajes citados corresponden a la Ley 2101 de 2021 y a la Ley 2466 de 2025, y están vigentes al 19 de agosto de 2026.</p>
 
         <section class="faq"><h2>Preguntas frecuentes</h2><div class="par"><h3>¿Cuántas horas se trabajan legalmente en Colombia en 2026?</h3><p>La jornada máxima legal es de 42 horas semanales desde el 15 de julio de 2026, según la Ley 2101 de 2021. El límite es semanal y se puede distribuir en cinco o seis días con un día de descanso obligatorio. La reducción no puede implicar una disminución del salario.</p></div><div class="par"><h3>¿A qué hora empieza la jornada nocturna en Colombia?</h3><p>Desde el 25 de diciembre de 2025 la jornada nocturna va de las 7:00 p.m. a las 6:00 a.m., por el artículo 10 de la Ley 2466 de 2025. Antes empezaba a las 9:00 p.m. El recargo nocturno es del 35% sobre la hora ordinaria.</p></div><div class="par"><h3>¿Cuánto se paga el domingo o festivo en Colombia?</h3><p>Desde el 1 de julio de 2026 el recargo por trabajo dominical o festivo es del 90%. Venía del 80% y subirá al 100% el 1 de julio de 2027, según la escala de la Ley 2466 de 2025.</p></div><div class="par"><h3>¿Qué dice el artículo 172 del Código Sustantivo del Trabajo?</h3><p>Establece que el empleador está obligado a dar descanso dominical remunerado a sus trabajadores, salvo las excepciones previstas en la ley. De ahí se deriva que el trabajo en domingo se pague con recargo y, según el caso, se compense con un día de descanso.</p></div><div class="par"><h3>¿Es obligatorio llevar un registro de horas extra en Colombia?</h3><p>Sí. La Ley 2466 de 2025 eliminó la autorización previa del Ministerio del Trabajo para el trabajo suplementario, pero mantuvo la obligación de llevar un registro por trabajador con nombre, actividad, número de horas y si son diurnas o nocturnas. En un reclamo por horas extra, ese registro es el soporte con el que la empresa se defiende.</p></div></section>
-        <div class="bio"><span class="avatar" aria-hidden="true">SO</span><div><b>Samir Orozco</b><br /><span>CEO de HoraPro</span><p>Monté HoraPro porque lo necesitaba en mi propia empresa. Llevaba los permisos en Excel, vivía pendiente de si la gente llegaba a tiempo, y cada quincena terminaba sacando las cuentas a mano. En algún momento entendí que eso no se arreglaba con más disciplina, sino con una herramienta que me lo quitara de encima. Lo que salió de ahí es lo que hoy usan otras empresas colombianas con el mismo problema.</p></div></div>
+        <div class="bio"><span class="avatar"><img src="/blog/img/samir-orozco.jpg" alt="Samir Orozco" width="44" height="44" /></span><div><b>Samir Orozco</b><br /><span>CEO de HoraPro</span><p>Monté HoraPro porque lo necesitaba en mi propia empresa. Llevaba los permisos en Excel, vivía pendiente de si la gente llegaba a tiempo, y cada quincena terminaba sacando las cuentas a mano. En algún momento entendí que eso no se arreglaba con más disciplina, sino con una herramienta que me lo quitara de encima. Lo que salió de ahí es lo que hoy usan otras empresas colombianas con el mismo problema.</p></div></div>
         <div class="remate">
           <h2>Deja de sacar las cuentas a mano</h2>
           <p>HoraPro registra la jornada y liquida recargos, extras, dominicales y festivos con la normativa colombiana al día. Siete días de prueba, sin tarjeta.</p>

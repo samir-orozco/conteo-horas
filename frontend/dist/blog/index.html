@@ -90,9 +90,14 @@ a{color:#303030}
 .art-cab .rej{display:grid;grid-template-columns:1.08fr .92fr;gap:52px;align-items:center}
 .art-cab h1{font-size:clamp(30px,4.3vw,47px);line-height:1.13;letter-spacing:-.02em;margin:0 0 26px;font-weight:800}
 .firma{display:flex;align-items:center;gap:13px;font-size:15px;color:#6b6b6b}
-.firma .avatar{width:44px;height:44px;border-radius:50%;background:#303030;color:#FFD85E;
-  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0}
-.firma .avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+/* El avatar se define una sola vez para los dos sitios donde aparece (la firma
+   del encabezado y la caja de autor del final). Antes el círculo y el recorte
+   colgaban de .firma, así que en la caja de autor la foto salía cuadrada y con
+   el tamaño de la otra. */
+.avatar{border-radius:50%;overflow:hidden;background:#303030;color:#FFD85E;
+  display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.firma .avatar{width:44px;height:44px;font-size:15px}
 .firma b{color:#303030;font-weight:650}
 .art-cab .lienzo{border-radius:18px;overflow:hidden;aspect-ratio:16/11}
 @media(max-width:900px){.art-cab .rej{grid-template-columns:1fr;gap:30px}}
@@ -141,7 +146,7 @@ a{color:#303030}
 
 /* Autor y cierre */
 .bio{display:flex;gap:16px;background:#f6f6f4;border-radius:16px;padding:22px;margin:44px 0 0;align-items:flex-start}
-.bio .avatar{width:54px;height:54px;flex-shrink:0}
+.bio .avatar{width:54px;height:54px;font-size:17px}
 .bio p{margin:5px 0 0;font-size:15px;color:#6b6b6b;line-height:1.6}
 .bio b{font-size:16px}
 .bio span{color:#898989;font-size:14px}

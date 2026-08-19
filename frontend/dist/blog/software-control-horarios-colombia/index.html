@@ -90,9 +90,14 @@ a{color:#303030}
 .art-cab .rej{display:grid;grid-template-columns:1.08fr .92fr;gap:52px;align-items:center}
 .art-cab h1{font-size:clamp(30px,4.3vw,47px);line-height:1.13;letter-spacing:-.02em;margin:0 0 26px;font-weight:800}
 .firma{display:flex;align-items:center;gap:13px;font-size:15px;color:#6b6b6b}
-.firma .avatar{width:44px;height:44px;border-radius:50%;background:#303030;color:#FFD85E;
-  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0}
-.firma .avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+/* El avatar se define una sola vez para los dos sitios donde aparece (la firma
+   del encabezado y la caja de autor del final). Antes el círculo y el recorte
+   colgaban de .firma, así que en la caja de autor la foto salía cuadrada y con
+   el tamaño de la otra. */
+.avatar{border-radius:50%;overflow:hidden;background:#303030;color:#FFD85E;
+  display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.firma .avatar{width:44px;height:44px;font-size:15px}
 .firma b{color:#303030;font-weight:650}
 .art-cab .lienzo{border-radius:18px;overflow:hidden;aspect-ratio:16/11}
 @media(max-width:900px){.art-cab .rej{grid-template-columns:1fr;gap:30px}}
@@ -141,7 +146,7 @@ a{color:#303030}
 
 /* Autor y cierre */
 .bio{display:flex;gap:16px;background:#f6f6f4;border-radius:16px;padding:22px;margin:44px 0 0;align-items:flex-start}
-.bio .avatar{width:54px;height:54px;flex-shrink:0}
+.bio .avatar{width:54px;height:54px;font-size:17px}
 .bio p{margin:5px 0 0;font-size:15px;color:#6b6b6b;line-height:1.6}
 .bio b{font-size:16px}
 .bio span{color:#898989;font-size:14px}
@@ -179,7 +184,7 @@ a{color:#303030}
     <div class="rej">
       <div>
         <h1>Cómo elegir un software de control de horarios para tu empresa en Colombia</h1>
-        <div class="firma"><span class="avatar" aria-hidden="true">SO</span><span><b>Samir Orozco</b>, CEO de HoraPro<br />Actualizado el 19 de agosto de 2026 · 9 min de lectura</span></div>
+        <div class="firma"><span class="avatar"><img src="/blog/img/samir-orozco.jpg" alt="Samir Orozco" width="44" height="44" /></span><span><b>Samir Orozco</b>, CEO de HoraPro<br />Actualizado el 19 de agosto de 2026 · 9 min de lectura</span></div>
       </div>
       <div class="lienzo"><img src="/blog/img/software-control-horarios-colombia.jpg" alt="Dos personas conversan en una reunión de trabajo frente a un computador portátil con un sistema abierto en pantalla" width="900" height="620" loading="lazy" /></div>
     </div>
@@ -292,7 +297,7 @@ a{color:#303030}
 <p>La recomendación honesta es la misma para nosotros que para cualquiera: pide una prueba con <em>tus</em> turnos reales, no con los de la demostración. Un mes de datos propios te dice más que cualquier lista de funciones.</p>
 
         <section class="faq"><h2>Preguntas frecuentes</h2><div class="par"><h3>¿Cuál es el mejor software de control de horarios en Colombia?</h3><p>No hay uno mejor para todos. Depende de si tu gente marca en un punto fijo o en la calle, de cuántas sedes tienes y, sobre todo, de si necesitas que el sistema liquide recargos colombianos o solo cuente horas. El filtro más útil es pedir que te liquiden en pantalla un turno nocturno de sábado a domingo con las reglas vigentes: ahí se separan rápido las opciones.</p></div><div class="par"><h3>¿Sirve llevar el control de horarios en Excel?</h3><p>Para tres o cuatro personas con horario fijo, sí. Deja de servir cuando aparecen turnos nocturnos, dominicales o extras, porque cada hora tiene un recargo distinto y la fórmula cambió tres veces entre 2024 y 2026. Además, un Excel que puede editar cualquiera no sirve como prueba si un trabajador reclama.</p></div><div class="par"><h3>¿Necesito comprar un reloj biométrico?</h3><p>No necesariamente. Un reloj de huella tiene sentido en un punto fijo con mucha gente entrando a la misma hora. Si tu equipo está repartido o tienes varias sedes, sale más práctico marcar desde una tablet o un celular con reconocimiento facial y geocerca, sin equipo dedicado.</p></div><div class="par"><h3>¿Es obligatorio llevar un registro de la jornada en Colombia?</h3><p>La Ley 2466 de 2025 eliminó el permiso previo del Ministerio del Trabajo para las horas extra, pero mantuvo la obligación del empleador de llevar un registro del trabajo suplementario con el nombre del trabajador, la actividad, el número de horas y si son diurnas o nocturnas. Sin ese registro, en un reclamo por horas extra la empresa queda sin con qué responder.</p></div></section>
-        <div class="bio"><span class="avatar" aria-hidden="true">SO</span><div><b>Samir Orozco</b><br /><span>CEO de HoraPro</span><p>Monté HoraPro porque lo necesitaba en mi propia empresa. Llevaba los permisos en Excel, vivía pendiente de si la gente llegaba a tiempo, y cada quincena terminaba sacando las cuentas a mano. En algún momento entendí que eso no se arreglaba con más disciplina, sino con una herramienta que me lo quitara de encima. Lo que salió de ahí es lo que hoy usan otras empresas colombianas con el mismo problema.</p></div></div>
+        <div class="bio"><span class="avatar"><img src="/blog/img/samir-orozco.jpg" alt="Samir Orozco" width="44" height="44" /></span><div><b>Samir Orozco</b><br /><span>CEO de HoraPro</span><p>Monté HoraPro porque lo necesitaba en mi propia empresa. Llevaba los permisos en Excel, vivía pendiente de si la gente llegaba a tiempo, y cada quincena terminaba sacando las cuentas a mano. En algún momento entendí que eso no se arreglaba con más disciplina, sino con una herramienta que me lo quitara de encima. Lo que salió de ahí es lo que hoy usan otras empresas colombianas con el mismo problema.</p></div></div>
         <div class="remate">
           <h2>Deja de sacar las cuentas a mano</h2>
           <p>HoraPro registra la jornada y liquida recargos, extras, dominicales y festivos con la normativa colombiana al día. Siete días de prueba, sin tarjeta.</p>
