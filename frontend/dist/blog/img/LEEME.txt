@@ -1,28 +1,48 @@
 Imágenes del blog
 =================
 
-Mientras un artículo no tenga imagen, la portada se pinta con un degradado de
-marca. Se ve intencionado, no roto, así que se puede publicar sin fotos.
+Los artículos YA APUNTAN a los archivos de abajo. En cuanto los dejes en esta
+carpeta con esos nombres exactos y vuelvas a compilar, aparecen solos. Mientras
+no estén, la portada se pinta con un degradado de marca: se ve intencionado, no
+roto, así que el blog se puede publicar igual.
 
-Para poner las tuyas, deja los archivos en esta carpeta y apunta a ellos desde
-el artículo, en `frontend/blog/articulos/<slug>.mjs`, en el campo `imagen`:
+Qué guardar aquí
+----------------
 
-    imagen: '/blog/img/jornada-laboral-colombia-2026.jpg',
+1. software-control-horarios-colombia.jpg
+   La foto de la reunión: dos personas conversando frente al portátil.
+   Va en el artículo "Cómo elegir un software de control de horarios".
 
-Qué hace falta
---------------
+2. jornada-laboral-colombia-2026.jpg
+   La foto del hombre cubierto de notas adhesivas.
+   Va en el artículo "Jornada laboral en Colombia 2026".
 
-1. Portada de cada artículo: 1200 x 630 px, JPG, por debajo de 250 kB.
-   /blog/img/jornada-laboral-colombia-2026.jpg
-   /blog/img/software-control-horarios-colombia.jpg
+3. samir-orozco.jpg  (opcional)
+   Foto tuya, cuadrada. Sin ella sale un círculo con tus iniciales.
+   Para activarla, pon la ruta en el campo `foto` de blog/articulos/index.mjs.
 
-   Es la misma que se ve al compartir el enlace por WhatsApp o LinkedIn, así
-   que conviene que el motivo se entienda pequeño y sin texto encima.
+Medidas
+-------
 
-2. Foto tuya: 400 x 400 px, cuadrada, JPG.
-   /blog/img/samir-orozco.jpg
-   Se activa poniendo la ruta en `foto` dentro de `blog/articulos/index.mjs`.
-   Sin ella sale un círculo con tus iniciales.
+Portadas: 1200 x 630 px, JPG, por debajo de 250 kB. Es la misma imagen que se
+ve al compartir el enlace por WhatsApp o LinkedIn, así que conviene que el
+motivo se entienda en pequeño y sin texto encima.
 
-Y acuérdate de escribir el `imagenAlt` describiendo lo que se ve: cuenta para
-accesibilidad y para posicionamiento.
+Foto de perfil: 400 x 400 px, cuadrada.
+
+Si las tuyas vienen más grandes, sirve igual, pero pesan de más y eso Google lo
+mide. Recortarlas a 1200 x 630 antes de subirlas vale la pena.
+
+Licencias
+---------
+
+Guarda dónde salió cada foto. Si vienen de un banco de imágenes, revisa que la
+licencia permita uso comercial: es contenido de la página de una empresa, no un
+uso personal.
+
+Textos alternativos
+-------------------
+
+Ya están escritos en cada artículo, en el campo `imagenAlt`, describiendo lo que
+se ve. Si cambias una foto por otra distinta, cambia también esa descripción:
+cuenta para accesibilidad y para posicionamiento.
