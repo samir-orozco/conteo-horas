@@ -50,8 +50,12 @@ a{color:#303030}
 .destacado{display:block;text-decoration:none;color:inherit;border-radius:20px;overflow:hidden;
   position:relative;margin-bottom:56px;background:#303030}
 .destacado .lienzo{aspect-ratio:16/8}
-.destacado .capa{position:absolute;inset:auto 0 0 0;padding:32px;
-  background:linear-gradient(to top,rgba(0,0,0,.82) 0%,rgba(0,0,0,.45) 55%,rgba(0,0,0,0) 100%)}
+/* z-index por encima de la foto: la imagen del lienzo lleva z-index 1, y sin
+   esto se pintaba sobre el titular y lo hacía desaparecer en escritorio. En
+   móvil no se notaba porque ahí la capa es estática y va debajo, no encima.
+   Ojo: nada de acentos graves en estos comentarios, que cierran la plantilla. */
+.destacado .capa{position:absolute;inset:auto 0 0 0;padding:32px;z-index:2;
+  background:linear-gradient(to top,rgba(0,0,0,.86) 0%,rgba(0,0,0,.5) 58%,rgba(0,0,0,0) 100%)}
 .destacado h2{color:#fff;font-size:clamp(21px,2.7vw,31px);line-height:1.25;margin:0 0 14px;
   font-weight:800;letter-spacing:-.015em;max-width:820px}
 .destacado .meta{display:flex;align-items:center;gap:18px;flex-wrap:wrap;color:rgba(255,255,255,.82);font-size:14px}
