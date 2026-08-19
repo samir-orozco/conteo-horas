@@ -9,8 +9,8 @@ export default {
   actualizado: '2026-08-19',
   lectura: 9,
   destacado: true,
-  imagen: null,
-  imagenAlt: 'Administradora revisando el control de horarios de su equipo en una tablet',
+  imagen: '/blog/img/software-control-horarios-colombia.jpg',
+  imagenAlt: 'Dos personas conversan en una reunión de trabajo frente a un computador portátil con un sistema abierto en pantalla',
   secciones: [
     { id: 'marcar-no-es-liquidar', titulo: 'Marcar no es liquidar' },
     { id: 'formas-de-marcar', titulo: 'Las cuatro formas de marcar' },

@@ -9,6 +9,7 @@
 // suelto: así la URL queda limpia y el .htaccess la sirve sin tocar nada, porque
 // solo reescribe a la SPA cuando la ruta no existe como archivo NI como carpeta.
 import { mkdir, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ARTICULOS, SITIO } from '../blog/articulos/index.mjs';
@@ -27,10 +28,21 @@ const escribir = async (ruta, contenido) => {
 
 const hoy = new Date().toISOString().slice(0, 10);
 
+// Una imagen declarada cuyo archivo todavía no existe se descarta aquí, y el
+// artículo sale con el degradado de marca. Es la diferencia entre publicar una
+// portada sobria y publicar el icono de imagen rota: el texto puede estar listo
+// antes que la fotografía, y eso no debería impedir sacarlo. En cuanto el
+// archivo aparezca en public/blog/img/, la siguiente compilación lo usa solo.
+const conImagenReal = ARTICULOS.map(a => {
+  if (!a.imagen || existsSync(join(raiz, 'public', a.imagen))) return a;
+  console.log(`  (falta ${a.imagen}, va el degradado)`);
+  return { ...a, imagen: null };
+});
+
 console.log('\nBlog estático:');
-await escribir('blog/index.html', paginaIndice(ARTICULOS));
-for (const a of ARTICULOS) {
-  await escribir(`blog/${a.slug}/index.html`, paginaArticulo(a, ARTICULOS));
+await escribir('blog/index.html', paginaIndice(conImagenReal));
+for (const a of conImagenReal) {
+  await escribir(`blog/${a.slug}/index.html`, paginaArticulo(a, conImagenReal));
 }
 
 // El sitemap se reescribe entero para que las entradas del blog no se queden

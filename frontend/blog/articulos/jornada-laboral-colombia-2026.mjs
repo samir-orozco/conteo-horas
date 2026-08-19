@@ -9,8 +9,8 @@ export default {
   actualizado: '2026-08-19',
   lectura: 11,
   destacado: false,
-  imagen: null,
-  imagenAlt: 'Trabajadores de turno nocturno en una planta de producción en Colombia',
+  imagen: '/blog/img/jornada-laboral-colombia-2026.jpg',
+  imagenAlt: 'Hombre con el rostro cubierto de notas adhesivas con recordatorios, desbordado por el desorden de tareas pendientes',
   secciones: [
     { id: 'que-cambio', titulo: 'Qué cambió en julio de 2026' },
     { id: 'semanal', titulo: 'El límite es semanal, no diario' },
