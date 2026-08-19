@@ -36,7 +36,7 @@ export default {
 <p>No hay una mejor en abstracto. Depende de dónde trabaja tu gente.</p>
 
 <h3>Huella dactilar</h3>
-<p>Es lo más común y lo más barato de instalar. Funciona bien en un punto fijo: una fábrica, una bodega, un local. Tiene dos problemas prácticos. El primero es físico: en oficios con las manos maltratadas —construcción, cocina, aseo— el lector falla seguido, y cada falla es una discusión. El segundo es jurídico: la huella es un dato biométrico y en Colombia eso es <strong>dato sensible</strong> bajo la Ley 1581 de 2012. Necesitas autorización previa y expresa del trabajador, y tienes que poder demostrarla. No es que esté prohibido; es que hay que hacerlo bien.</p>
+<p>Es lo más común y lo más barato de instalar. Funciona bien en un punto fijo: una fábrica, una bodega, un local. Tiene dos problemas prácticos. El primero es físico: en oficios con las manos maltratadas, como construcción, cocina o aseo, el lector falla seguido, y cada falla es una discusión. El segundo es jurídico: la huella es un dato biométrico y en Colombia eso es <strong>dato sensible</strong> bajo la Ley 1581 de 2012. Necesitas autorización previa y expresa del trabajador, y tienes que poder demostrarla. No es que esté prohibido; es que hay que hacerlo bien.</p>
 
 <h3>Reconocimiento facial</h3>
 <p>Resuelve el problema de las manos y el de que un compañero marque por otro. Funciona en cualquier tablet o celular con cámara, sin comprar equipo. Aplica exactamente la misma exigencia de autorización que la huella: el rostro también es dato biométrico.</p>
@@ -62,12 +62,12 @@ export default {
   </tbody>
 </table>
 
-<p>Tres fechas distintas en dos años. Un sistema que tenga los porcentajes escritos a mano en el código —y hay muchos— te liquidó mal en algún tramo de ese recorrido sin que nadie se diera cuenta.</p>
+<p>Tres fechas distintas en dos años. Un sistema que tenga los porcentajes escritos a mano en el código te liquidó mal en algún tramo de ese recorrido sin que nadie se diera cuenta. Y hay muchos así.</p>
 
 <p>La pregunta concreta para el proveedor es esta: <em>si yo consulto hoy un turno de marzo de 2025, ¿me lo liquida con las reglas de marzo de 2025 o con las de hoy?</em> La respuesta correcta es la primera. Si te lo recalcula con las reglas actuales, cada vez que cambie la ley se te mueve el histórico y pierdes la trazabilidad de lo que ya pagaste.</p>
 
 <div class="nota">
-  <p><strong>Un detalle que casi todos tienen mal:</strong> con la jornada de 42 horas, el divisor para sacar el valor de la hora es 210 al mes, no 240. Sobre un salario de $2.000.000, la hora ordinaria pasó de $8.333 a $9.524. Si tu sistema —o tu contador— sigue dividiendo entre 240, estás pagando cada hora extra $1.190 por debajo.</p>
+  <p><strong>Un detalle que casi todos tienen mal:</strong> con la jornada de 42 horas, el divisor para sacar el valor de la hora es 210 al mes, no 240. Sobre un salario de $2.000.000, la hora ordinaria pasó de $8.333 a $9.524. Si tu sistema, o tu contador, sigue dividiendo entre 240, estás pagando cada hora extra $1.190 por debajo.</p>
 </div>
 
 <h2 id="preguntas">Ocho preguntas antes de firmar</h2>
@@ -91,7 +91,7 @@ export default {
 
 <p><strong>Equipo más licencia.</strong> Un reloj biométrico decente arranca sobre el millón de pesos, más instalación, más una licencia anual del software. Es una inversión de entrada alta que se amortiza si tienes un solo punto y mucha gente. El problema aparece cuando abres la segunda sede: necesitas otro equipo.</p>
 
-<p><strong>Suscripción por empresa o por trabajador.</strong> Cuota mensual, sin equipo. Sale mejor con equipos pequeños o repartidos. Mira si el precio es por trabajador —que crece contigo, para bien y para mal— o por rangos.</p>
+<p><strong>Suscripción por empresa o por trabajador.</strong> Cuota mensual, sin equipo. Sale mejor con equipos pequeños o repartidos. Mira si el precio es por trabajador, que crece contigo para bien y para mal, o si va por rangos.</p>
 
 <p>Lo que casi nunca está en la cotización: la puesta en marcha, la capacitación, el soporte cuando algo falla un sábado y el costo de sacar tus datos si te quieres ir. Pregunta los cuatro.</p>
 
@@ -109,7 +109,7 @@ export default {
 
 <p>Con las cartas sobre la mesa: HoraPro es nuestro. Lo hicimos en Colombia y para Colombia, con la escalera de la Ley 2101 y los recargos de la Ley 2466 metidos con vigencias por fecha, que es justo lo que recomiendo arriba que exijas. Marca con rostro o cédula desde cualquier tablet o celular, sin comprar equipo, y liquida recargos, extras, dominicales y festivos sin que nadie saque una cuenta a mano.</p>
 
-<p>Dónde no encaja: si necesitas integración con tu software contable hoy mismo, todavía no la tenemos —la de Siigo está en camino—. Si tu operación exige control de acceso físico, con torniquetes y puertas, esto no es eso: HoraPro registra tiempo, no abre puertas. Y si ya tienes un reloj biométrico funcionando bien y tu única molestia es la liquidación, dínoslo antes de cambiar nada; puede que te salga más barato resolver solo esa parte.</p>
+<p>Dónde no encaja: si necesitas integración con tu software contable hoy mismo, todavía no la tenemos; la de Siigo está en camino. Si tu operación exige control de acceso físico, con torniquetes y puertas, esto no es eso: HoraPro registra tiempo, no abre puertas. Y si ya tienes un reloj biométrico funcionando bien y tu única molestia es la liquidación, dínoslo antes de cambiar nada; puede que te salga más barato resolver solo esa parte.</p>
 
 <p>La recomendación honesta es la misma para nosotros que para cualquiera: pide una prueba con <em>tus</em> turnos reales, no con los de la demostración. Un mes de datos propios te dice más que cualquier lista de funciones.</p>
 `,

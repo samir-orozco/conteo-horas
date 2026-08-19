@@ -56,7 +56,7 @@ export default {
 
 <p>Es uno de los artículos más buscados y su contenido es más corto de lo que la gente espera. Establece que el empleador está obligado a dar <strong>descanso dominical remunerado</strong> a sus trabajadores, salvo las excepciones que la propia ley contempla.</p>
 
-<p>De ahí se desprende lo que sí interesa en la práctica: el domingo no es un día cualquiera. Si tu operación necesita trabajar domingos —restaurantes, vigilancia, comercio, salud—, ese trabajo se paga con recargo y, según el caso, se compensa con un día de descanso en la semana. Ese recargo es el que acaba de subir.</p>
+<p>De ahí se desprende lo que sí interesa en la práctica: el domingo no es un día cualquiera. Si tu operación necesita trabajar domingos (restaurantes, vigilancia, comercio, salud), ese trabajo se paga con recargo y, según el caso, se compensa con un día de descanso en la semana. Ese recargo es el que acaba de subir.</p>
 
 <h2 id="recargos">Los recargos vigentes hoy</h2>
 
@@ -67,8 +67,8 @@ export default {
 <table>
   <thead><tr><th>Tipo de hora</th><th>Recargo</th><th>Valor por hora</th></tr></thead>
   <tbody>
-    <tr><td>Ordinaria diurna (6:00 a.m. – 7:00 p.m.)</td><td>—</td><td>$9.524</td></tr>
-    <tr><td>Ordinaria nocturna (7:00 p.m. – 6:00 a.m.)</td><td>+35%</td><td>$12.857</td></tr>
+    <tr><td>Ordinaria diurna (6:00 a.m. a 7:00 p.m.)</td><td>Sin recargo</td><td>$9.524</td></tr>
+    <tr><td>Ordinaria nocturna (7:00 p.m. a 6:00 a.m.)</td><td>+35%</td><td>$12.857</td></tr>
     <tr><td>Extra diurna</td><td>+25%</td><td>$11.905</td></tr>
     <tr><td>Extra nocturna</td><td>+75%</td><td>$16.667</td></tr>
     <tr><td>Dominical o festivo, diurna</td><td>+90%</td><td>$18.095</td></tr>
@@ -99,7 +99,7 @@ export default {
 <p>El descanso no es tiempo trabajado y se descuenta, de acuerdo. El problema es descontar una hora completa a quien almorzó en veinte minutos y volvió. Ese tiempo sí se trabajó. Si el descuento es automático y ciego, le estás quitando horas a quien menos descansa.</p>
 
 <h3>3. Contar la jornada por día en vez de por semana</h3>
-<p>Genera extras que no existen —y molestias con el contador— o, al revés, esconde extras reales cuando la semana se pasó de 42 aunque ningún día llegara a ocho horas. El cálculo correcto suma la semana.</p>
+<p>Genera extras que no existen, y de paso discusiones con el contador. O al revés: esconde extras reales cuando la semana se pasó de 42 aunque ningún día llegara a ocho horas. El cálculo correcto suma la semana.</p>
 
 <hr />
 

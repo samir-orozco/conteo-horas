@@ -13,8 +13,8 @@ export function fechaLarga(iso) {
 }
 
 // CSS propio y embebido: estas páginas no cargan el bundle de la aplicación.
-// Son HTML plano, sin JavaScript, para que las lea cualquier rastreador —incluidos
-// los de IA, que en general no ejecutan JS— y para que abran de inmediato.
+// Son HTML plano, sin JavaScript, para que las lea cualquier rastreador, incluidos
+// los de IA, que en general no ejecutan JS, y para que abran de inmediato.
 const CSS = `
 *,*::before,*::after{box-sizing:border-box}
 body{margin:0;font-family:system-ui,'Segoe UI',Roboto,sans-serif;color:#303030;background:#fff;
@@ -278,7 +278,7 @@ export function paginaIndice(articulos) {
 export function paginaArticulo(a, todos) {
   const url = `${SITIO.url}/blog/${a.slug}/`;
   const otro = todos.find(x => x.slug !== a.slug);
-  const compartirTexto = encodeURIComponent(`${a.titulo} — ${url}`);
+  const compartirTexto = encodeURIComponent(`${a.titulo}\n${url}`);
 
   const indice = a.secciones.length
     ? `<div class="indice"><h4>En este artículo</h4><ol>${a.secciones

@@ -12,14 +12,14 @@ el artículo, en `frontend/blog/articulos/<slug>.mjs`, en el campo `imagen`:
 Qué hace falta
 --------------
 
-1. Portada de cada artículo — 1200 x 630 px, JPG, por debajo de 250 kB.
+1. Portada de cada artículo: 1200 x 630 px, JPG, por debajo de 250 kB.
    /blog/img/jornada-laboral-colombia-2026.jpg
    /blog/img/software-control-horarios-colombia.jpg
 
    Es la misma que se ve al compartir el enlace por WhatsApp o LinkedIn, así
    que conviene que el motivo se entienda pequeño y sin texto encima.
 
-2. Foto tuya — 400 x 400 px, cuadrada, JPG.
+2. Foto tuya: 400 x 400 px, cuadrada, JPG.
    /blog/img/samir-orozco.jpg
    Se activa poniendo la ruta en `foto` dentro de `blog/articulos/index.mjs`.
    Sin ella sale un círculo con tus iniciales.
