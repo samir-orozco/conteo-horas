@@ -6,3 +6,7 @@ dist/
 android/
 ios/
 .env.produccion
+
+# Originales de las fotos del blog: pesan megas y solo sirven para volver a
+# recortar. Lo que se publica son las versiones de public/blog/img/.
+frontend/blog/originales/
