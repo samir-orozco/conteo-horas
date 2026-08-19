@@ -8,7 +8,7 @@ export const AUTOR = {
   nombre: 'Samir Orozco',
   cargo: 'CEO de HoraPro',
   bio: 'Monté HoraPro porque lo necesitaba en mi propia empresa. Llevaba los permisos en Excel, vivía pendiente de si la gente llegaba a tiempo, y cada quincena terminaba sacando las cuentas a mano. En algún momento entendí que eso no se arreglaba con más disciplina, sino con una herramienta que me lo quitara de encima. Lo que salió de ahí es lo que hoy usan otras empresas colombianas con el mismo problema.',
-  foto: null, // '/blog/img/samir-orozco.jpg' cuando esté
+  foto: '/blog/img/samir-orozco.jpg',
 };
 
 export const SITIO = {
