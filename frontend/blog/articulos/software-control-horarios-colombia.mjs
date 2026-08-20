@@ -8,7 +8,6 @@ export default {
   fecha: '2026-08-19',
   actualizado: '2026-08-19',
   lectura: 9,
-  destacado: true,
   imagen: '/blog/img/software-control-horarios-colombia.jpg',
   imagenAlt: 'Dos personas conversan en una reunión de trabajo frente a un computador portátil con un sistema abierto en pantalla',
   secciones: [

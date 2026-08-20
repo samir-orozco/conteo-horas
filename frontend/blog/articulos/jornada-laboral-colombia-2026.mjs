@@ -8,7 +8,6 @@ export default {
   fecha: '2026-08-19',
   actualizado: '2026-08-19',
   lectura: 11,
-  destacado: false,
   imagen: '/blog/img/jornada-laboral-colombia-2026.jpg',
   imagenAlt: 'Hombre con el rostro cubierto de notas adhesivas con recordatorios, desbordado por el desorden de tareas pendientes',
   secciones: [

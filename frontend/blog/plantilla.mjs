@@ -63,6 +63,8 @@ a{color:#303030}
 @media(max-width:640px){.destacado .capa{padding:20px;position:static;background:#303030}
   .destacado .lienzo{aspect-ratio:16/10}}
 
+.titulo-seccion{font-size:21px;font-weight:800;letter-spacing:-.014em;margin:0 0 22px;
+  padding-top:8px;border-top:1px solid #ececec}
 .rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:34px 30px;margin-bottom:72px}
 .tarjeta{text-decoration:none;color:inherit;display:flex;flex-direction:column}
 .tarjeta .lienzo{aspect-ratio:16/10;border-radius:14px;overflow:hidden;margin-bottom:18px}
@@ -230,7 +232,12 @@ ${pie()}
 }
 
 export function paginaIndice(articulos) {
-  const [primero, ...resto] = articulos;
+  // El primero se muestra dos veces a propósito: arriba como destacado y abajo
+  // en la rejilla. La rejilla es la lista COMPLETA, no "los demás". Cuando el
+  // destacado se excluía, con pocos artículos la rejilla quedaba casi vacía y la
+  // portada se leía como una foto de cabecera en vez de como un artículo al que
+  // se puede entrar.
+  const [primero] = articulos;
 
   const tarjeta = a => `<a class="tarjeta" href="/blog/${a.slug}/">
     ${lienzo(a.imagen, a.imagenAlt, 640, 400)}
@@ -253,7 +260,8 @@ export function paginaIndice(articulos) {
     </div>
   </a>
 
-  ${resto.length ? `<div class="rejilla">${resto.map(tarjeta).join('')}</div>` : ''}
+  <h2 class="titulo-seccion">Todos los artículos</h2>
+  <div class="rejilla">${articulos.map(tarjeta).join('')}</div>
 </main>`;
 
   const jsonLd = {
