@@ -5,8 +5,8 @@ export default {
   descripcion:
     'La cuenta paso a paso con los porcentajes vigentes en 2026: valor de la hora con la jornada de 42 horas, diferencia entre recargo y hora extra, tabla completa y tres casos resueltos en pesos.',
   categoria: 'Normativa',
-  fecha: '2026-08-19',
-  actualizado: '2026-08-19',
+  fecha: '2026-08-20',
+  actualizado: '2026-08-20',
   lectura: 10,
   imagen: '/blog/img/calcular-horas-extra-recargos-colombia.jpg',
   imagenAlt: 'Hombre con la mano en la frente frente a un computador portátil, haciendo cuentas',
@@ -114,7 +114,7 @@ export default {
 
 <hr />
 
-<p class="cierre">Este artículo es informativo y no reemplaza la asesoría de tu contador o tu abogado laboral, en especial si tienes turnos rotativos, jornadas especiales o convención colectiva. Los porcentajes citados corresponden al Código Sustantivo del Trabajo con las modificaciones de la Ley 2466 de 2025, y la jornada a la Ley 2101 de 2021. Vigentes al 19 de agosto de 2026.</p>
+<p class="cierre">Este artículo es informativo y no reemplaza la asesoría de tu contador o tu abogado laboral, en especial si tienes turnos rotativos, jornadas especiales o convención colectiva. Los porcentajes citados corresponden al Código Sustantivo del Trabajo con las modificaciones de la Ley 2466 de 2025, y la jornada a la Ley 2101 de 2021. Vigentes al 20 de agosto de 2026.</p>
 `,
   faq: [
     {

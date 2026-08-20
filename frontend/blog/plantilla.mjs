@@ -31,8 +31,12 @@ a{color:#303030}
 .cab nav{display:flex;align-items:center;gap:22px}
 .cab nav a{color:#898989;text-decoration:none;font-size:15px;font-weight:500}
 .cab nav a:hover{color:#303030}
-.cta{background:#FFD85E;color:#303030;font-weight:700;padding:9px 18px;border-radius:11px;
-  text-decoration:none;font-size:15px;white-space:nowrap}
+/* Se repite el selector con la barra delante porque la regla de los enlaces del
+   menu es mas especifica que la clase del boton, y le ganaba el gris al color
+   del texto. (Sin acentos graves aqui dentro: cierran la plantilla.) */
+.cab nav a.cta,.cta{background:#FFD85E;color:#303030;font-weight:700;padding:9px 18px;
+  border-radius:11px;text-decoration:none;font-size:15px;white-space:nowrap}
+.cab nav a.cta:hover{color:#303030;background:#F0C63F}
 .cta:hover{background:#F0C63F}
 @media(max-width:640px){.cab nav a.oculta-movil{display:none}}
 

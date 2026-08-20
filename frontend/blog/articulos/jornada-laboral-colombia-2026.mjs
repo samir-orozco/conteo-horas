@@ -5,8 +5,8 @@ export default {
   descripcion:
     'Desde el 15 de julio de 2026 la jornada máxima es de 42 horas y el recargo dominical subió al 90%. Qué cambió, cuánto cuesta cada hora ahora y qué registro exige la Ley 2466 de 2025.',
   categoria: 'Normativa',
-  fecha: '2026-08-19',
-  actualizado: '2026-08-19',
+  fecha: '2026-08-20',
+  actualizado: '2026-08-20',
   lectura: 11,
   imagen: '/blog/img/jornada-laboral-colombia-2026.jpg',
   imagenAlt: 'Hombre con el rostro cubierto de notas adhesivas con recordatorios, desbordado por el desorden de tareas pendientes',
@@ -105,7 +105,7 @@ export default {
 
 <hr />
 
-<p class="cierre">Este artículo es informativo y no reemplaza la asesoría de tu contador o tu abogado laboral, sobre todo si tu operación tiene turnos rotativos, jornadas especiales o convenciones colectivas. Las fechas y porcentajes citados corresponden a la Ley 2101 de 2021 y a la Ley 2466 de 2025, y están vigentes al 19 de agosto de 2026.</p>
+<p class="cierre">Este artículo es informativo y no reemplaza la asesoría de tu contador o tu abogado laboral, sobre todo si tu operación tiene turnos rotativos, jornadas especiales o convenciones colectivas. Las fechas y porcentajes citados corresponden a la Ley 2101 de 2021 y a la Ley 2466 de 2025, y están vigentes al 20 de agosto de 2026.</p>
 `,
   faq: [
     {

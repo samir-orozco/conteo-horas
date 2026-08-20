@@ -5,8 +5,8 @@ export default {
   descripcion:
     'Guía para dueños de negocio: qué mirar antes de contratar un software de control de horarios en Colombia, qué preguntar al proveedor y por qué marcar la entrada no es lo mismo que liquidar la nómina.',
   categoria: 'Guías',
-  fecha: '2026-08-19',
-  actualizado: '2026-08-19',
+  fecha: '2026-08-20',
+  actualizado: '2026-08-20',
   lectura: 9,
   imagen: '/blog/img/software-control-horarios-colombia.jpg',
   imagenAlt: 'Dos personas conversan en una reunión de trabajo frente a un computador portátil con un sistema abierto en pantalla',
