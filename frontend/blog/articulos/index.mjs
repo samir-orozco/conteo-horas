@@ -1,8 +1,9 @@
 import software from './software-control-horarios-colombia.mjs';
 import jornada from './jornada-laboral-colombia-2026.mjs';
+import calcular from './calcular-horas-extra-recargos-colombia.mjs';
 
 // El orden de este arreglo es el orden del índice del blog.
-export const ARTICULOS = [jornada, software];
+export const ARTICULOS = [calcular, jornada, software];
 
 export const AUTOR = {
   nombre: 'Samir Orozco',

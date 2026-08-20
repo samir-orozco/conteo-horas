@@ -61,7 +61,7 @@ export default {
   </tbody>
 </table>
 
-<p>Tres fechas distintas en dos años. Un sistema que tenga los porcentajes escritos a mano en el código te liquidó mal en algún tramo de ese recorrido sin que nadie se diera cuenta. Y hay muchos así.</p>
+<p>Esa escalera está explicada entera en <a href="/blog/jornada-laboral-colombia-2026/">el artículo sobre la jornada laboral de 2026</a>. Tres fechas distintas en dos años. Un sistema que tenga los porcentajes escritos a mano en el código te liquidó mal en algún tramo de ese recorrido sin que nadie se diera cuenta. Y hay muchos así.</p>
 
 <p>La pregunta concreta para el proveedor es esta: <em>si yo consulto hoy un turno de marzo de 2025, ¿me lo liquida con las reglas de marzo de 2025 o con las de hoy?</em> La respuesta correcta es la primera. Si te lo recalcula con las reglas actuales, cada vez que cambie la ley se te mueve el histórico y pierdes la trazabilidad de lo que ya pagaste.</p>
 

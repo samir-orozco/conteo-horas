@@ -294,7 +294,11 @@ export function paginaIndice(articulos) {
 
 export function paginaArticulo(a, todos) {
   const url = `${SITIO.url}/blog/${a.slug}/`;
-  const otro = todos.find(x => x.slug !== a.slug);
+  // El SIGUIENTE de la lista, en circular, no "el primero que no sea este". Con
+  // tres artículos lo segundo hacía que dos apuntaran al mismo y el tercero no
+  // recibiera ningún enlace interno.
+  const i = todos.findIndex(x => x.slug === a.slug);
+  const otro = todos.length > 1 ? todos[(i + 1) % todos.length] : null;
   const compartirTexto = encodeURIComponent(`${a.titulo}\n${url}`);
 
   const indice = a.secciones.length
