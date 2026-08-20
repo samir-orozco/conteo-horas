@@ -8,8 +8,8 @@ export default {
   fecha: '2026-08-19',
   actualizado: '2026-08-19',
   lectura: 10,
-  imagen: null,
-  imagenAlt: 'Calculadora y planilla de horas sobre un escritorio',
+  imagen: '/blog/img/calcular-horas-extra-recargos-colombia.jpg',
+  imagenAlt: 'Hombre con la mano en la frente frente a un computador portátil, haciendo cuentas',
   secciones: [
     { id: 'valor-hora', titulo: 'Cuánto vale una hora' },
     { id: 'recargo-vs-extra', titulo: 'Recargo y extra no son lo mismo' },
