@@ -216,6 +216,7 @@ model Colaborador {
   actualizadoEn    DateTime   @updatedAt
   registros        Registro[]
   permisos         Permiso[]
+  contratos        Contrato[]
   diasEsperados    DiaEsperado[]
   sedes            ColaboradorSede[]
 
@@ -584,4 +585,71 @@ enum EstadoRetiro {
   APROBADO
   PAGADO
   RECHAZADO
+}
+
+enum TipoContrato {
+  INDEFINIDO
+  FIJO
+  OBRA_LABOR
+  APRENDIZAJE
+}
+
+enum EstadoContrato {
+  VIGENTE
+  TERMINADO
+}
+
+// Contrato laboral. Un colaborador puede tener varios a lo largo del tiempo; el
+// que rige es el que está en estado VIGENTE, y la ruta se encarga de que no haya
+// dos a la vez.
+//
+// Registrarlo es OPCIONAL: quien no lo cargue no pierde ninguna función. Por eso
+// no hay migración de datos: inventar el tipo de contrato de alguien que ya está
+// en el sistema sería peor que dejarlo en blanco.
+model Contrato {
+  id                  String         @id @default(cuid())
+  colaboradorId       String
+  colaborador         Colaborador    @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  tipo                TipoContrato
+  fechaInicio         DateTime
+  // Null en indefinido y en obra o labor: esos no terminan en una fecha.
+  fechaFin            DateTime?
+  // Solo aprendizaje. Marca el paso de etapa lectiva a práctica, que es cuando la
+  // remuneración sube del 75% al 100% del salario mínimo (Ley 2466 de 2025).
+  fechaInicioPractica DateTime?
+  estado              EstadoContrato @default(VIGENTE)
+  // Al agotar el tope de cuatro años, el término fijo pasa a indefinido por
+  // ministerio de la ley. El sistema NO lo cambia solo: avisa, y Recursos Humanos
+  // lo confirma. Se guarda la fecha en vez de reescribir `tipo` para no perder el
+  // rastro de que este contrato nació a término fijo.
+  convertidoAIndefinidoEn DateTime?
+  // Contrato firmado, en base64. Mismo patrón que la evidencia de las novedades.
+  documento           String?        @db.LongText
+  documentoTipo       String?
+  documentoNombre     String?
+  observacion         String?        @db.Text
+  creadoEn            DateTime       @default(now())
+  actualizadoEn       DateTime       @updatedAt
+  prorrogas           ProrrogaContrato[]
+
+  @@index([colaboradorId, estado])
+  @@map("contratos")
+}
+
+// Cada prórroga es un otrosí con sus propias fechas y su propio documento. Van
+// en tabla aparte y no como campos del contrato porque son varias, y porque la
+// ley cuenta cuántas van para decidir si la siguiente ya debe ser de un año.
+model ProrrogaContrato {
+  id              String   @id @default(cuid())
+  contratoId      String
+  contrato        Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  desde           DateTime
+  hasta           DateTime
+  documento       String?  @db.LongText
+  documentoTipo   String?
+  documentoNombre String?
+  creadoEn        DateTime @default(now())
+
+  @@index([contratoId])
+  @@map("prorrogas_contrato")
 }
