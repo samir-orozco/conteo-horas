@@ -14,6 +14,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import SelectorSedes from '../components/SelectorSedes';
 import Toast from '../components/Toast';
 import CampoEvidencia, { type CambioEvidencia } from '../components/CampoEvidencia';
+import PanelContratos from '../features/contratos/PanelContratos';
 import { TIPO_PERMISO_LABEL } from '../constants/permisos';
 import { useMiPlan } from '../lib/plan';
 
@@ -413,6 +414,10 @@ export default function ColaboradorDetalle() {
       <Toast mensaje={toast} onClose={() => setToast(null)} />
 
       <div className="grid lg:grid-cols-2 gap-4">
+        {/* Contratos. Va antes de Novedades porque el contrato es el marco de la
+            relación laboral y las novedades ocurren dentro de él. */}
+        <PanelContratos colaboradorId={col.id} />
+
         {/* Novedades: vacaciones, incapacidades, licencias, permisos */}
         <div className="bg-white rounded-card border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
