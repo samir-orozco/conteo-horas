@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NOTIF_POR_ALERTA = void 0;
 exports.default = contratoRoutes;
 exports.avisarContratos = avisarContratos;
+exports.avisarContratosDeTodas = avisarContratosDeTodas;
 // Desde '../prisma' y no desde '../index': importar index arranca el servidor,
 // y \`avisarContratos\` tiene que poder usarse desde un script sin levantar nada.
 const prisma_1 = require("../prisma");
@@ -158,6 +159,10 @@ async function contratoRoutes(app) {
             });
         }
         const creado = await prisma_1.prisma.contrato.create({ data: datos, select: SIN_DOCUMENTO });
+        // Se avisa en el acto y no se espera al barrido diario: un contrato que se
+        // registra hoy puede estar ya pasado del plazo de preaviso. No se espera el
+        // resultado ni se deja que falle: un aviso no puede tumbar el alta.
+        avisarContratos(request.empresaId).catch(err => app.log.error(err, 'No se pudieron generar los avisos del contrato nuevo'));
         return reply.status(201).send(conEstado(creado, new Date()));
     });
     app.put('/:id', auth, async (request, reply) => {
@@ -231,6 +236,7 @@ async function contratoRoutes(app) {
         // fuerte, pero no bloquea. Hay excepciones y casos que el sistema no conoce,
         // y quien maneja la nómina sabe lo que firma.
         await prisma_1.prisma.prorrogaContrato.create({ data: datos });
+        avisarContratos(request.empresaId).catch(err => app.log.error(err, 'No se pudieron generar los avisos tras la prórroga'));
         const act = await prisma_1.prisma.contrato.findUnique({ where: { id }, select: SIN_DOCUMENTO });
         return reply.status(201).send(conEstado(act, new Date()));
     });
@@ -298,5 +304,39 @@ async function avisarContratos(empresaId) {
                 entidad: 'colaborador', entidadId: c.colaborador.id,
             });
         }
+    }
+}
+// Recorre todas las empresas activas y genera los avisos que correspondan.
+//
+// Existe porque `avisarContratos` colgaba únicamente del tablero: si nadie
+// entraba, nadie avisaba. Una empresa que no abriera HoraPro durante cuarenta
+// días se quedaba sin el aviso de preaviso y el contrato se prorrogaba solo por
+// un término igual, que es exactamente lo que este módulo existe para evitar.
+// La promesa de la pantalla ("avisamos 30 días antes") no la sostenía nada.
+//
+// Un fallo en una empresa no puede dejar sin avisar a las demás, así que cada
+// una va en su propio try. Es idempotente: `avisarContratos` no repite una
+// notificación que ya exista, así que correr de más no molesta a nadie.
+async function avisarContratosDeTodas(log) {
+    try {
+        const empresas = await prisma_1.prisma.empresa.findMany({
+            where: { activa: true }, select: { id: true },
+        });
+        let ok = 0;
+        for (const e of empresas) {
+            try {
+                await avisarContratos(e.id);
+                ok++;
+            }
+            catch (err) {
+                log?.error(err, `Avisos de contratos: falló la empresa ${e.id}`);
+            }
+        }
+        log?.info(`Avisos de contratos revisados en ${ok}/${empresas.length} empresas`);
+        return ok;
+    }
+    catch (err) {
+        log?.error(err, 'No se pudieron recorrer las empresas para los avisos de contratos');
+        return 0;
     }
 }

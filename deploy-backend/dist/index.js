@@ -32,6 +32,7 @@ const telegram_1 = __importDefault(require("./routes/telegram"));
 const notificaciones_1 = __importDefault(require("./routes/notificaciones"));
 const telegram_2 = require("./utils/telegram");
 const cierreTurnos_1 = require("./utils/cierreTurnos");
+const contratos_2 = require("./routes/contratos");
 const cierreAlmuerzo_1 = require("./utils/cierreAlmuerzo");
 const materializarDias_1 = require("./utils/materializarDias");
 const suscripcion_2 = require("./utils/suscripcion");
@@ -181,6 +182,13 @@ const start = async () => {
         // que darle la tarde por buena sería fabricar horas pagadas. Se avisa.
         (0, cierreAlmuerzo_1.avisarAlmuerzosSinRegreso)(app.log);
         setInterval(() => (0, cierreAlmuerzo_1.avisarAlmuerzosSinRegreso)(app.log), 24 * 60 * 60 * 1000);
+        // Vencimientos de contratos. Antes esto solo corría cuando alguien abría el
+        // tablero, así que la empresa que no entraba no se enteraba. Al arrancar y
+        // cada 24h, como los demás: en un hosting que duerme la app, el arranque es
+        // lo que de verdad garantiza el barrido, porque cualquier petición la
+        // despierta (incluida una marcación del kiosco).
+        (0, contratos_2.avisarContratosDeTodas)(app.log);
+        setInterval(() => (0, contratos_2.avisarContratosDeTodas)(app.log), 24 * 60 * 60 * 1000);
         // Materializa el día esperado de cada colaborador para hoy y las próximas
         // semanas. Sin esto la tabla se queda vacía y todo se resuelve con el
         // horario VIGENTE, que es justo lo que reescribía el pasado.
