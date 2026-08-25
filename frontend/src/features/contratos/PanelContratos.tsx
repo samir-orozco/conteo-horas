@@ -7,7 +7,7 @@ import VisorDocumento, { type DocumentoVisto } from '../../components/VisorDocum
 import CampoEvidencia, { type CambioEvidencia } from '../../components/CampoEvidencia';
 import { TIPO_LABEL, type Contrato, type TipoContrato } from './tipos';
 import TarjetaContrato from './TarjetaContrato';
-import { duracionesDe, finDeDuracion, caeEnRegla4taProrroga, diasEntre, DIAS_UN_ANIO } from './duraciones';
+import { duracionesDe, finDeDuracion, diaSiguiente, caeEnRegla4taProrroga, diasEntre, DIAS_UN_ANIO } from './duraciones';
 
 const corta = (s: string | null) => s ? format(new Date(s), 'dd/MM/yyyy') : '—';
 const soloFecha = (s: string | null) => s ? s.slice(0, 10) : '';
@@ -152,6 +152,25 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
     setProrroga(pr => ({ desde, hasta: m === 0 ? pr.hasta : finDeDuracion(desde, m) }));
   };
 
+  // Duración mínima que la ley admite para la próxima prórroga de este contrato.
+  const minimoProrroga = (c: Contrato) => (c.calculo.proximaProrrogaMinimaUnAno ? 12 : 0);
+
+  // El modal se abre con la cuenta ya hecha: la prórroga arranca el día siguiente
+  // al fin del período vigente y la fecha de terminación sale de la duración
+  // preseleccionada. Antes se preseleccionaba "1 año" pero se dejaba "Hasta" en
+  // blanco, así que el selector decía una cosa y el campo calculado no decía
+  // nada, hasta que uno tocaba algo. Un formulario no puede afirmar algo que no
+  // ha calculado, menos cuando de ahí sale una fecha de vencimiento.
+  const abrirProrroga = (c: Contrato) => {
+    const meses = Math.max(12, minimoProrroga(c));
+    const desde = diaSiguiente(soloFecha(c.calculo.finVigente));
+    setError('');
+    setMesesProrroga(meses);
+    setProrroga({ desde, hasta: finDeDuracion(desde, meses) });
+    setAdjuntoProrroga({ tipo: 'sin-cambio' });
+    setProrrogando(c);
+  };
+
   return (
     <div className="bg-white rounded-card border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-3">
@@ -177,7 +196,7 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
             key={c.id}
             c={c}
             onBorrar={() => setPorBorrar(c)}
-            onProrrogar={() => { setProrroga({ desde: soloFecha(c.calculo.finVigente), hasta: '' }); setMesesProrroga(12); setProrrogando(c); }}
+            onProrrogar={() => abrirProrroga(c)}
             onConvertir={() => confirmarIndefinido(c)}
             onVerDocumento={verDocumento}
           />
@@ -319,7 +338,11 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
                 <label className="block text-xs font-medium text-muted mb-1">Duración</label>
                 <select value={mesesProrroga} onChange={e => fijarDuracionProrroga(Number(e.target.value))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                  {duracionesDe(prorrogando.tipo).map(d => (
+                  {/* Con la regla de la cuarta prórroga encima, las duraciones
+                      cortas no se listan. Personalizado sigue ahí: si alguien
+                      firmó algo más corto a sabiendas, tiene que poder
+                      registrarlo, y el aviso rojo de abajo se lo dirá. */}
+                  {duracionesDe(prorrogando.tipo, minimoProrroga(prorrogando)).map(d => (
                     <option key={d.meses} value={d.meses}>{d.etiqueta}</option>
                   ))}
                   <option value={0}>Personalizado</option>

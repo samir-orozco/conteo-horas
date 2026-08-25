@@ -22,10 +22,13 @@ export const DURACIONES: Duracion[] = [
   { meses: 48, etiqueta: '4 años' },
 ];
 
-// El tope legal recorta la lista: un aprendiz no puede pasar de tres años.
-export function duracionesDe(tipo: TipoContrato): Duracion[] {
+// El tope legal recorta la lista por arriba: un aprendiz no puede pasar de tres
+// años. Y `minimoMeses` la recorta por abajo, que es lo que hace falta cuando ya
+// van cuatro prórrogas de un contrato corto: ahí ofrecer "3 meses" es ofrecer
+// algo que la ley no permite. Si la duración no está, no se elige por descuido.
+export function duracionesDe(tipo: TipoContrato, minimoMeses = 0): Duracion[] {
   const tope = tipo === 'APRENDIZAJE' ? 36 : 48;
-  return DURACIONES.filter(d => d.meses <= tope);
+  return DURACIONES.filter(d => d.meses <= tope && d.meses >= minimoMeses);
 }
 
 export const caeEnRegla4taProrroga = (meses: number) => meses < 12;
@@ -47,6 +50,17 @@ export function finDeDuracion(inicioISO: string, meses: number): string {
   const seDesbordo = sumado.getDate() !== inicio.getDate();
   const fin = seDesbordo ? lastDayOfMonth(sumado) : new Date(sumado.getTime() - 86400000);
   return format(fin, 'yyyy-MM-dd');
+}
+
+// El día siguiente a una fecha "YYYY-MM-DD". Se usa para encadenar prórrogas:
+// una que empiece el mismo día en que termina el período anterior solapa ese
+// día y lo cuenta dos veces, tanto en la duración que se muestra como en lo que
+// se lleva consumido del tope de cuatro años.
+export function diaSiguiente(iso: string): string {
+  if (!iso) return '';
+  const [a, m, d] = iso.slice(0, 10).split('-').map(Number);
+  if (!a || !m || !d) return '';
+  return format(new Date(a, m - 1, d + 1), 'yyyy-MM-dd');
 }
 
 // Días entre dos fechas "YYYY-MM-DD", ambas incluidas. Sirve para medir lo que
