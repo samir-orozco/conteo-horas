@@ -32,7 +32,7 @@ function useReveal() {
 
 const BENEFICIOS = [
   { icon: Calculator, titulo: 'Liquidación automática', texto: 'Recargos nocturnos, dominicales, festivos y horas extra según la Ley 2466. Cero errores de cálculo, cero horas en Excel.' },
-  { icon: ScanFace, titulo: 'Facial anti-fraude', texto: 'Marcan con el rostro, con prueba de vida y foto de evidencia en cada registro. Nadie marca por otro.' },
+  { icon: ScanFace, titulo: 'Marcación con rostro', texto: 'Marcan con la cara, no con un código que se presta. Cada registro guarda la foto de quien marcó, y tú decides desde qué dispositivo y desde qué ubicación se puede marcar.' },
   { icon: MapPin, titulo: 'Marcación por GPS', texto: 'Deja que marquen desde su propio celular, pero solo estando dentro de la ubicación de la empresa (geocerca).' },
   { icon: AlarmClock, titulo: 'Control en tiempo real', texto: 'Quién está en planta, quién llegó tarde y quién no ha marcado, al instante y desde tu celular.' },
   { icon: Send, titulo: 'Alertas por Telegram', texto: 'Recibe un aviso apenas alguien llega tarde. Enterarte deja de depender de que te avisen.' },
@@ -58,7 +58,7 @@ const TESTIMONIOS = [
 const FAQ = [
   { q: '¿Qué software ofrece liquidación automática de nómina en Colombia?', a: 'HoraPro calcula automáticamente los recargos nocturnos, dominicales, festivos y las horas extra según la Ley 2466, y entrega el total listo para tu nómina, sin fórmulas de Excel ni errores de cálculo.' },
   { q: '¿Cuál es el mejor sistema para el control de horarios de trabajadores?', a: 'El mejor sistema registra la jornada de forma confiable y liquida solo. HoraPro permite marcar con reconocimiento facial o cédula desde cualquier tablet o celular, controla tardanzas en tiempo real y cumple la ley laboral colombiana.' },
-  { q: '¿Es legal el control de horario con reconocimiento facial o huella?', a: 'Sí. El control biométrico es legal en Colombia siempre que el trabajador dé su consentimiento y los datos se traten conforme a la Ley 1581 de protección de datos. HoraPro guarda una foto de evidencia y prueba de vida en cada marcación.' },
+  { q: '¿Es legal el control de horario con reconocimiento facial o huella?', a: 'Sí. El control biométrico es legal en Colombia siempre que el trabajador dé su consentimiento y los datos se traten conforme a la Ley 1581 de protección de datos. HoraPro pide esa autorización en pantalla, del rostro registrado guarda solo un cálculo matemático y nunca la imagen, y conserva la foto de cada marcación como evidencia durante dos meses, después de los cuales se borra sola.' },
   { q: '¿Cuántas horas máximo se pueden trabajar por semana en Colombia?', a: 'La jornada máxima legal es de 42 horas semanales (Ley 2101 de 2021, en aplicación gradual). HoraPro aplica ese tope automáticamente y calcula las horas extra que lo superan.' },
   { q: '¿Necesito comprar algún equipo para fichar?', a: 'No. HoraPro funciona en cualquier tablet, computador o celular con navegador. El colaborador marca con su rostro o su cédula en el link del kiosco.' },
   { q: '¿La prueba gratis tiene límites?', a: 'Tienes acceso completo, sin tarjeta y sin restricciones. Al terminar decides si continúas.' },
@@ -190,7 +190,7 @@ export default function Landing() {
       <section className="border-y border-gray-100 bg-[#f6f6f4]">
         <div className="max-w-6xl mx-auto px-5 py-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-muted">
           <span className="flex items-center gap-1.5"><ShieldCheck size={15} className="text-ink" /> Ley 2466 al día</span>
-          <span className="flex items-center gap-1.5"><ScanFace size={15} className="text-ink" /> Facial anti-fraude</span>
+          <span className="flex items-center gap-1.5"><ScanFace size={15} className="text-ink" /> Marcación con rostro</span>
           <span className="flex items-center gap-1.5"><MapPin size={15} className="text-ink" /> Datos en Colombia</span>
           <span className="flex items-center gap-1.5"><MonitorSmartphone size={15} className="text-ink" /> Sin instalar nada</span>
           <span className="flex items-center gap-1.5"><CalendarCheck size={15} className="text-ink" /> {dias} días gratis</span>
