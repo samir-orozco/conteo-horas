@@ -48,3 +48,17 @@ export function finDeDuracion(inicioISO: string, meses: number): string {
   const fin = seDesbordo ? lastDayOfMonth(sumado) : new Date(sumado.getTime() - 86400000);
   return format(fin, 'yyyy-MM-dd');
 }
+
+// Días entre dos fechas "YYYY-MM-DD", ambas incluidas. Sirve para medir lo que
+// el usuario acaba de elegir y poder avisarle sobre ESA prórroga, no en general.
+export function diasEntre(desdeISO: string, hastaISO: string): number | null {
+  if (!desdeISO || !hastaISO) return null;
+  const d = new Date(desdeISO.slice(0, 10) + 'T00:00:00');
+  const h = new Date(hastaISO.slice(0, 10) + 'T00:00:00');
+  if (isNaN(d.getTime()) || isNaN(h.getTime())) return null;
+  return Math.round((h.getTime() - d.getTime()) / 86400000) + 1;
+}
+
+// Un año, para efectos de la regla de la cuarta prórroga. Se usan 365 días y no
+// "12 meses" porque lo que hay que comparar es una duración ya concreta.
+export const DIAS_UN_ANIO = 365;

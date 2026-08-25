@@ -6,7 +6,7 @@ import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import CampoEvidencia, { type CambioEvidencia } from '../../components/CampoEvidencia';
 import { TIPO_LABEL, ALERTA, type Contrato, type TipoContrato } from './tipos';
-import { duracionesDe, finDeDuracion, caeEnRegla4taProrroga } from './duraciones';
+import { duracionesDe, finDeDuracion, caeEnRegla4taProrroga, diasEntre, DIAS_UN_ANIO } from './duraciones';
 
 const fecha = (s: string | null) => s ? format(new Date(s), "d 'de' MMMM yyyy", { locale: es }) : '—';
 const corta = (s: string | null) => s ? format(new Date(s), 'dd/MM/yyyy') : '—';
@@ -116,6 +116,25 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
     setForm(f => ({ ...f, fechaInicio: inicio, fechaFin: m === 0 ? f.fechaFin : finDeDuracion(inicio, m) }));
   };
   const fijarInicio = (inicio: string) => fijarDuracion(meses, inicio);
+  // Qué le pasa a la prórroga que se está escribiendo AHORA. El aviso genérico
+  // ("la siguiente debe ser de un año") no sirve de mucho si no mira lo que
+  // acabas de elegir: aquí se mide y se dice el número.
+  const revisarProrroga = () => {
+    if (!prorrogando) return null;
+    const dias = diasEntre(prorroga.desde, prorroga.hasta);
+    if (dias === null) return null;
+    if (dias <= 0) return { tono: 'rojo' as const, texto: 'La fecha de terminación tiene que ser posterior a la de inicio.' };
+    const problemas: string[] = [];
+    if (prorrogando.calculo.proximaProrrogaMinimaUnAno && dias < DIAS_UN_ANIO) {
+      problemas.push(`Esta prórroga mide ${dias} días y debería ser de un año como mínimo, porque el contrato ya lleva cuatro prórrogas y se pactó por menos de un año.`);
+    }
+    const tope = prorrogando.calculo.topeMaximo;
+    if (tope && new Date(prorroga.hasta) > new Date(tope.slice(0, 10))) {
+      problemas.push(`Termina después del ${new Date(tope).toLocaleDateString('es-CO')}, que es el tope legal de este contrato. A partir de esa fecha pasa a indefinido por ley.`);
+    }
+    return problemas.length ? { tono: 'rojo' as const, texto: problemas.join(' ') } : null;
+  };
+
   const fijarDuracionProrroga = (m: number, desde = prorroga.desde) => {
     setMesesProrroga(m);
     setProrroga(pr => ({ desde, hasta: m === 0 ? pr.hasta : finDeDuracion(desde, m) }));
@@ -262,28 +281,34 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
             </div>
 
             {necesitaFin && (
-              <div>
-                <label className="block text-xs font-medium text-muted mb-1">
-                  Terminación {meses > 0 && <span className="text-gray-400">(calculada)</span>}
-                </label>
-                <input type="date" required value={form.fechaFin}
-                  readOnly={meses > 0}
-                  onChange={e => setForm({ ...form, fechaFin: e.target.value })}
-                  className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm ${meses > 0 ? 'bg-gray-50 text-muted' : ''}`} />
+              <>
+                {/* Mismo ancho que Inicio y Duración: los tres campos van en la
+                    misma rejilla, aunque Terminación caiga en la fila de abajo. */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-muted mb-1">
+                      Terminación {meses > 0 && <span className="text-gray-400">(calculada)</span>}
+                    </label>
+                    <input type="date" required value={form.fechaFin}
+                      readOnly={meses > 0}
+                      onChange={e => setForm({ ...form, fechaFin: e.target.value })}
+                      className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm ${meses > 0 ? 'bg-gray-50 text-muted' : ''}`} />
+                  </div>
+                </div>
                 {/* El umbral del año es lo único que la ley sí distingue, así que
                     se dice al elegir y no cuando ya haya cuatro prórrogas encima. */}
                 {meses > 0 && caeEnRegla4taProrroga(meses) && (
-                  <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-1.5">
+                  <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
                     Al ser de menos de un año, después de la cuarta prórroga la siguiente
                     tendrá que ser de un año como mínimo.
                   </p>
                 )}
                 {meses === 0 && (
-                  <p className="text-[11px] text-muted mt-1">
+                  <p className="text-[11px] text-muted">
                     Escribe la fecha a mano. Recuerda el tope legal: {form.tipo === 'APRENDIZAJE' ? 'tres' : 'cuatro'} años.
                   </p>
                 )}
-              </div>
+              </>
             )}
 
             {form.tipo === 'APRENDIZAJE' && (
@@ -340,7 +365,7 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
             {prorrogando.calculo.proximaProrrogaMinimaUnAno && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <p className="font-bold flex items-center gap-1.5"><AlertTriangle size={13} />Esta prórroga debe ser de un año como mínimo</p>
-                <p className="mt-0.5">Ya lleva cuatro prórrogas y el contrato se pactó por menos de un año. Puedes guardarla igual, pero quedará por fuera de lo que permite la ley.</p>
+                <p className="mt-0.5">Ya lleva cuatro prórrogas y el contrato se pactó por menos de un año.</p>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
@@ -375,6 +400,19 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
                 Tope legal de este contrato: {corta(prorrogando.calculo.topeMaximo)}. Más allá de esa fecha pasa a indefinido.
               </p>
             )}
+            {/* Lo que le pasa a ESTA prórroga, con sus días contados. Avisa, no
+                bloquea: el botón de guardar sigue activo a propósito. */}
+            {(() => {
+              const r = revisarProrroga();
+              if (!r) return null;
+              return (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                  <p className="font-bold flex items-center gap-1.5"><AlertTriangle size={13} />Revisa esta prórroga</p>
+                  <p className="mt-0.5 leading-relaxed">{r.texto}</p>
+                  <p className="mt-1 text-red-700/80">Puedes guardarla igual si sabes lo que estás firmando.</p>
+                </div>
+              );
+            })()}
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-3 justify-end">
               <button type="button" onClick={() => setProrrogando(null)}
