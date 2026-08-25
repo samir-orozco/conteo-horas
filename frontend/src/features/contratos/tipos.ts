@@ -31,6 +31,7 @@ export type Contrato = {
     preavisoVencido: boolean;
     proximaProrrogaMinimaUnAno: boolean;
     topeMaximo: string | null;
+    arranqueTope: string | null;
     seVuelveIndefinidoEl: string | null;
     yaSuperaElTope: boolean;
     etapa: 'LECTIVA' | 'PRACTICA' | null;

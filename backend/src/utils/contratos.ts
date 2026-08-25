@@ -50,6 +50,10 @@ export type EstadoContrato = {
   preavisoVencido: boolean;
   proximaProrrogaMinimaUnAno: boolean;
   topeMaximo: Date | null;
+  // Desde cuándo corre el tope. Normalmente es el inicio del contrato, pero en
+  // los anteriores a la reforma es el 25 de junio de 2025. Va explícito para que
+  // la pantalla pueda dibujar cuánto se lleva consumido sin repetir esa regla.
+  arranqueTope: Date | null;
   seVuelveIndefinidoEl: Date | null;
   yaSuperaElTope: boolean;
   etapa: 'LECTIVA' | 'PRACTICA' | null;
@@ -100,11 +104,13 @@ export function estadoDelContrato(
   // El tope: cuatro años para el fijo, tres para el aprendizaje. Si el contrato
   // ya existía cuando entró la reforma, se cuenta desde la reforma.
   let topeMaximo: Date | null = null;
+  let arranqueTope: Date | null = null;
   if (tipo === 'FIJO') {
-    const arranque = fechaInicio < VIGENCIA_REFORMA ? VIGENCIA_REFORMA : fechaInicio;
-    topeMaximo = sumarAnios(arranque, ANIOS_TOPE_FIJO);
+    arranqueTope = fechaInicio < VIGENCIA_REFORMA ? VIGENCIA_REFORMA : fechaInicio;
+    topeMaximo = sumarAnios(arranqueTope, ANIOS_TOPE_FIJO);
   } else if (tipo === 'APRENDIZAJE') {
-    topeMaximo = sumarAnios(fechaInicio, ANIOS_TOPE_APRENDIZAJE);
+    arranqueTope = fechaInicio;
+    topeMaximo = sumarAnios(arranqueTope, ANIOS_TOPE_APRENDIZAJE);
   }
 
   // Solo el fijo muta a indefinido. El aprendizaje es un contrato de otra
@@ -114,7 +120,11 @@ export function estadoDelContrato(
 
   // La regla de la cuarta prórroga solo alcanza a los contratos pactados por
   // menos de un año, que es como está redactada en la norma.
-  const duracionOriginal = contrato.fechaFin ? dias(fechaInicio, contrato.fechaFin) : 0;
+  // Ambos extremos cuentan: del 1 de julio al 30 de junio son 365 días, no 364,
+  // porque el último día también se trabaja. Sin el +1, un contrato anual normal
+  // quedaba clasificado como "de menos de un año" y sus prórrogas salían
+  // marcadas como irregulares sin serlo.
+  const duracionOriginal = contrato.fechaFin ? dias(fechaInicio, contrato.fechaFin) + 1 : 0;
   const proximaProrrogaMinimaUnAno =
     tipo === 'FIJO' && duracionOriginal > 0 && duracionOriginal < 365
     && enOrden.length >= PRORROGAS_ANTES_DE_UN_ANIO;
@@ -144,7 +154,7 @@ export function estadoDelContrato(
   return {
     finVigente, numeroProrrogas: enOrden.length, diasParaVencer,
     fechaLimitePreaviso, diasParaPreaviso, preavisoVencido,
-    proximaProrrogaMinimaUnAno, topeMaximo, seVuelveIndefinidoEl, yaSuperaElTope,
+    proximaProrrogaMinimaUnAno, topeMaximo, arranqueTope, seVuelveIndefinidoEl, yaSuperaElTope,
     etapa, alertas,
   };
 }

@@ -1,22 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { FileSignature, Plus, Trash2, Paperclip, AlertTriangle, Info, Check } from 'lucide-react';
+import { FileSignature, Plus, AlertTriangle } from 'lucide-react';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import CampoEvidencia, { type CambioEvidencia } from '../../components/CampoEvidencia';
-import { TIPO_LABEL, ALERTA, type Contrato, type TipoContrato } from './tipos';
+import { TIPO_LABEL, type Contrato, type TipoContrato } from './tipos';
+import TarjetaContrato from './TarjetaContrato';
 import { duracionesDe, finDeDuracion, caeEnRegla4taProrroga, diasEntre, DIAS_UN_ANIO } from './duraciones';
 
-const fecha = (s: string | null) => s ? format(new Date(s), "d 'de' MMMM yyyy", { locale: es }) : '—';
 const corta = (s: string | null) => s ? format(new Date(s), 'dd/MM/yyyy') : '—';
 const soloFecha = (s: string | null) => s ? s.slice(0, 10) : '';
-
-const TONOS = {
-  rojo:  'bg-red-50 border-red-200 text-red-800',
-  ambar: 'bg-amber-50 border-amber-200 text-amber-800',
-  azul:  'bg-blue-50 border-blue-200 text-blue-800',
-};
 
 // Lo que el servidor devuelve cuando rechaza algo. Evita el `any` en los catch
 // y de paso obliga a acordarse de que el error puede no traer mensaje.
@@ -160,88 +153,15 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
         {lista?.length === 0 && (
           <p className="text-sm text-muted">Sin contratos registrados. Es opcional: nada deja de funcionar si no lo cargas.</p>
         )}
-        {lista?.map(c => {
-          const k = c.calculo;
-          const indefinidoDeFacto = c.tipo === 'INDEFINIDO' || !!c.convertidoAIndefinidoEn;
-          return (
-            <div key={c.id} className={`rounded-xl border p-3.5 ${c.estado === 'VIGENTE' ? 'border-gray-200' : 'border-gray-100 bg-gray-50/60'}`}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink flex items-center gap-2 flex-wrap">
-                    {TIPO_LABEL[c.tipo]}
-                    {c.estado === 'VIGENTE'
-                      ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-800">VIGENTE</span>
-                      : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">TERMINADO</span>}
-                    {c.convertidoAIndefinidoEn && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">PASÓ A INDEFINIDO</span>
-                    )}
-                    {k.etapa && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/30 text-ink">
-                        ETAPA {k.etapa}
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-xs text-muted mt-0.5">
-                    Desde el {fecha(c.fechaInicio)}
-                    {!indefinidoDeFacto && k.finVigente && ` · hasta el ${fecha(k.finVigente)}`}
-                    {k.numeroProrrogas > 0 && ` · ${k.numeroProrrogas} ${k.numeroProrrogas === 1 ? 'prórroga' : 'prórrogas'}`}
-                  </p>
-                </div>
-                <button onClick={() => setPorBorrar(c)} title="Eliminar contrato"
-                  className="p-1.5 text-red-500 hover:bg-red-50 rounded shrink-0"><Trash2 size={15} /></button>
-              </div>
-
-              {/* Las alertas van primero y con color: es lo que hay que actuar. */}
-              {k.alertas.map(a => {
-                const t = ALERTA[a.tipo];
-                return (
-                  <div key={a.tipo} className={`mt-2.5 rounded-lg border px-3 py-2 text-xs ${TONOS[t.tono]}`}>
-                    <p className="font-bold flex items-center gap-1.5">
-                      {t.tono === 'azul' ? <Info size={13} /> : <AlertTriangle size={13} />}{t.titulo}
-                    </p>
-                    <p className="mt-0.5 leading-relaxed">{t.detalle(a.dias)}</p>
-                    {(a.tipo === 'SUPERA_TOPE' || a.tipo === 'SE_VUELVE_INDEFINIDO') && !c.convertidoAIndefinidoEn && (
-                      <button onClick={() => confirmarIndefinido(c)}
-                        className="mt-2 flex items-center gap-1.5 text-xs font-bold bg-white border border-current px-2.5 py-1 rounded-lg">
-                        <Check size={13} /> Confirmar paso a indefinido
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-
-              {!indefinidoDeFacto && k.fechaLimitePreaviso && c.estado === 'VIGENTE' && (
-                <p className="text-[11px] text-muted mt-2">
-                  Plazo para avisar por escrito: hasta el <b>{corta(k.fechaLimitePreaviso)}</b>
-                  {k.seVuelveIndefinidoEl && ` · pasa a indefinido el ${corta(k.seVuelveIndefinidoEl)}`}
-                </p>
-              )}
-
-              {c.prorrogas.length > 0 && (
-                <div className="mt-2.5 border-t border-gray-100 pt-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1">Prórrogas</p>
-                  {c.prorrogas.map((p, i) => (
-                    <p key={p.id} className="text-xs text-ink">
-                      {i + 1}. {corta(p.desde)} → {corta(p.hasta)}
-                      {p.documentoNombre && <Paperclip size={11} className="inline ml-1.5 text-primary-dark" />}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-center gap-3 mt-2.5">
-                {(c.tipo === 'FIJO' || c.tipo === 'APRENDIZAJE') && c.estado === 'VIGENTE' && !c.convertidoAIndefinidoEn && (
-                  <button onClick={() => { setProrroga({ desde: soloFecha(k.finVigente), hasta: '' }); setProrrogando(c); }}
-                    className="text-xs font-semibold text-primary-dark hover:underline">Agregar prórroga</button>
-                )}
-                {c.documentoNombre && (
-                  <span className="text-xs text-muted flex items-center gap-1"><Paperclip size={12} />{c.documentoNombre}</span>
-                )}
-              </div>
-              {c.observacion && <p className="text-xs text-muted mt-2 whitespace-pre-wrap">{c.observacion}</p>}
-            </div>
-          );
-        })}
+        {lista?.map(c => (
+          <TarjetaContrato
+            key={c.id}
+            c={c}
+            onBorrar={() => setPorBorrar(c)}
+            onProrrogar={() => { setProrroga({ desde: soloFecha(c.calculo.finVigente), hasta: '' }); setMesesProrroga(12); setProrrogando(c); }}
+            onConvertir={() => confirmarIndefinido(c)}
+          />
+        ))}
       </div>
 
       {/* Alta de contrato */}

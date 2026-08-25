@@ -73,6 +73,21 @@ describe('estadoDelContrato — la regla de la cuarta prórroga', () => {
     expect(e.alertas.map(a => a.tipo)).toContain('PRORROGA_MINIMO_UN_ANO');
   });
 
+  it('un contrato de EXACTAMENTE un año no cae en la regla', () => {
+    // Del 1 de julio al 30 de junio es un año, aunque la resta de fechas dé 364:
+    // el último día también se trabaja. Contarlo mal marcaba como irregulares las
+    // prórrogas de contratos anuales, que son perfectamente válidas.
+    const anual = { tipo: 'FIJO' as const, fechaInicio: f(2025, 7, 1), fechaFin: f(2026, 6, 30) };
+    const cuatro = [0, 1, 2, 3].map(i => ({ desde: f(2026 + i, 7, 1), hasta: f(2027 + i, 6, 30) }));
+    expect(estadoDelContrato(anual, cuatro, f(2029, 8, 1)).proximaProrrogaMinimaUnAno).toBe(false);
+  });
+
+  it('uno de once meses sí cae en la regla', () => {
+    const corto = { tipo: 'FIJO' as const, fechaInicio: f(2025, 1, 1), fechaFin: f(2025, 11, 30) };
+    const cuatro = [0, 1, 2, 3].map(i => ({ desde: f(2025 + i, 12, 1), hasta: f(2026 + i, 10, 31) }));
+    expect(estadoDelContrato(corto, cuatro, f(2029, 1, 1)).proximaProrrogaMinimaUnAno).toBe(true);
+  });
+
   it('la regla solo aplica a contratos pactados por menos de un año', () => {
     // Un contrato de dos años prorrogado cuatro veces no cae en esta regla:
     // la norma habla de los pactados por término inferior a un año.
@@ -101,6 +116,14 @@ describe('estadoDelContrato — el tope de cuatro años', () => {
     const e = estadoDelContrato(viejo, [], f(2026, 2, 1));
     expect(e.topeMaximo).toEqual(f(2029, 6, 25));
     expect(VIGENCIA_REFORMA).toEqual(f(2025, 6, 25));
+  });
+
+  it('dice desde cuándo corre el tope, que no siempre es el inicio', () => {
+    // La pantalla lo necesita para dibujar cuánto se lleva consumido, y no debe
+    // volver a decidir por su cuenta si cuenta desde la firma o desde la reforma.
+    expect(estadoDelContrato(fijo(), [], f(2026, 2, 1)).arranqueTope).toEqual(f(2026, 1, 1));
+    expect(estadoDelContrato(fijo({ fechaInicio: f(2019, 3, 1) }), [], f(2026, 2, 1)).arranqueTope)
+      .toEqual(VIGENCIA_REFORMA);
   });
 
   it('avisa cuando el contrato está por convertirse en indefinido', () => {
