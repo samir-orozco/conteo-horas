@@ -123,6 +123,16 @@ export type Comision = $Result.DefaultSelection<Prisma.$ComisionPayload>
  * 
  */
 export type SolicitudRetiro = $Result.DefaultSelection<Prisma.$SolicitudRetiroPayload>
+/**
+ * Model Contrato
+ * 
+ */
+export type Contrato = $Result.DefaultSelection<Prisma.$ContratoPayload>
+/**
+ * Model ProrrogaContrato
+ * 
+ */
+export type ProrrogaContrato = $Result.DefaultSelection<Prisma.$ProrrogaContratoPayload>
 
 /**
  * Enums
@@ -228,6 +238,24 @@ export const EstadoRetiro: {
 
 export type EstadoRetiro = (typeof EstadoRetiro)[keyof typeof EstadoRetiro]
 
+
+export const TipoContrato: {
+  INDEFINIDO: 'INDEFINIDO',
+  FIJO: 'FIJO',
+  OBRA_LABOR: 'OBRA_LABOR',
+  APRENDIZAJE: 'APRENDIZAJE'
+};
+
+export type TipoContrato = (typeof TipoContrato)[keyof typeof TipoContrato]
+
+
+export const EstadoContrato: {
+  VIGENTE: 'VIGENTE',
+  TERMINADO: 'TERMINADO'
+};
+
+export type EstadoContrato = (typeof EstadoContrato)[keyof typeof EstadoContrato]
+
 }
 
 export type EstadoSuscripcion = $Enums.EstadoSuscripcion
@@ -269,6 +297,14 @@ export const EstadoComision: typeof $Enums.EstadoComision
 export type EstadoRetiro = $Enums.EstadoRetiro
 
 export const EstadoRetiro: typeof $Enums.EstadoRetiro
+
+export type TipoContrato = $Enums.TipoContrato
+
+export const TipoContrato: typeof $Enums.TipoContrato
+
+export type EstadoContrato = $Enums.EstadoContrato
+
+export const EstadoContrato: typeof $Enums.EstadoContrato
 
 /**
  * ##  Prisma Client ʲˢ
@@ -612,6 +648,26 @@ export class PrismaClient<
     * ```
     */
   get solicitudRetiro(): Prisma.SolicitudRetiroDelegate<ExtArgs>;
+
+  /**
+   * `prisma.contrato`: Exposes CRUD operations for the **Contrato** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Contratoes
+    * const contratoes = await prisma.contrato.findMany()
+    * ```
+    */
+  get contrato(): Prisma.ContratoDelegate<ExtArgs>;
+
+  /**
+   * `prisma.prorrogaContrato`: Exposes CRUD operations for the **ProrrogaContrato** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ProrrogaContratoes
+    * const prorrogaContratoes = await prisma.prorrogaContrato.findMany()
+    * ```
+    */
+  get prorrogaContrato(): Prisma.ProrrogaContratoDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1074,7 +1130,9 @@ export namespace Prisma {
     Usuario: 'Usuario',
     Afiliado: 'Afiliado',
     Comision: 'Comision',
-    SolicitudRetiro: 'SolicitudRetiro'
+    SolicitudRetiro: 'SolicitudRetiro',
+    Contrato: 'Contrato',
+    ProrrogaContrato: 'ProrrogaContrato'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1090,7 +1148,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro"
+      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "contrato" | "prorrogaContrato"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2546,6 +2604,138 @@ export namespace Prisma {
           }
         }
       }
+      Contrato: {
+        payload: Prisma.$ContratoPayload<ExtArgs>
+        fields: Prisma.ContratoFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ContratoFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContratoPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ContratoFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContratoPayload>
+          }
+          findFirst: {
+            args: Prisma.ContratoFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContratoPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ContratoFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContratoPayload>
+          }
+          findMany: {
+            args: Prisma.ContratoFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContratoPayload>[]
+          }
+          create: {
+            args: Prisma.ContratoCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContratoPayload>
+          }
+          createMany: {
+            args: Prisma.ContratoCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ContratoDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContratoPayload>
+          }
+          update: {
+            args: Prisma.ContratoUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContratoPayload>
+          }
+          deleteMany: {
+            args: Prisma.ContratoDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ContratoUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ContratoUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ContratoPayload>
+          }
+          aggregate: {
+            args: Prisma.ContratoAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateContrato>
+          }
+          groupBy: {
+            args: Prisma.ContratoGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ContratoGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ContratoCountArgs<ExtArgs>
+            result: $Utils.Optional<ContratoCountAggregateOutputType> | number
+          }
+        }
+      }
+      ProrrogaContrato: {
+        payload: Prisma.$ProrrogaContratoPayload<ExtArgs>
+        fields: Prisma.ProrrogaContratoFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ProrrogaContratoFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProrrogaContratoPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ProrrogaContratoFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProrrogaContratoPayload>
+          }
+          findFirst: {
+            args: Prisma.ProrrogaContratoFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProrrogaContratoPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ProrrogaContratoFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProrrogaContratoPayload>
+          }
+          findMany: {
+            args: Prisma.ProrrogaContratoFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProrrogaContratoPayload>[]
+          }
+          create: {
+            args: Prisma.ProrrogaContratoCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProrrogaContratoPayload>
+          }
+          createMany: {
+            args: Prisma.ProrrogaContratoCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ProrrogaContratoDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProrrogaContratoPayload>
+          }
+          update: {
+            args: Prisma.ProrrogaContratoUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProrrogaContratoPayload>
+          }
+          deleteMany: {
+            args: Prisma.ProrrogaContratoDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ProrrogaContratoUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ProrrogaContratoUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProrrogaContratoPayload>
+          }
+          aggregate: {
+            args: Prisma.ProrrogaContratoAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateProrrogaContrato>
+          }
+          groupBy: {
+            args: Prisma.ProrrogaContratoGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ProrrogaContratoGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ProrrogaContratoCountArgs<ExtArgs>
+            result: $Utils.Optional<ProrrogaContratoCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -2883,6 +3073,7 @@ export namespace Prisma {
   export type ColaboradorCountOutputType = {
     registros: number
     permisos: number
+    contratos: number
     diasEsperados: number
     sedes: number
   }
@@ -2890,6 +3081,7 @@ export namespace Prisma {
   export type ColaboradorCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     registros?: boolean | ColaboradorCountOutputTypeCountRegistrosArgs
     permisos?: boolean | ColaboradorCountOutputTypeCountPermisosArgs
+    contratos?: boolean | ColaboradorCountOutputTypeCountContratosArgs
     diasEsperados?: boolean | ColaboradorCountOutputTypeCountDiasEsperadosArgs
     sedes?: boolean | ColaboradorCountOutputTypeCountSedesArgs
   }
@@ -2917,6 +3109,13 @@ export namespace Prisma {
    */
   export type ColaboradorCountOutputTypeCountPermisosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PermisoWhereInput
+  }
+
+  /**
+   * ColaboradorCountOutputType without action
+   */
+  export type ColaboradorCountOutputTypeCountContratosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ContratoWhereInput
   }
 
   /**
@@ -3060,6 +3259,37 @@ export namespace Prisma {
    */
   export type AfiliadoCountOutputTypeCountRetirosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SolicitudRetiroWhereInput
+  }
+
+
+  /**
+   * Count Type ContratoCountOutputType
+   */
+
+  export type ContratoCountOutputType = {
+    prorrogas: number
+  }
+
+  export type ContratoCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    prorrogas?: boolean | ContratoCountOutputTypeCountProrrogasArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * ContratoCountOutputType without action
+   */
+  export type ContratoCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ContratoCountOutputType
+     */
+    select?: ContratoCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * ContratoCountOutputType without action
+   */
+  export type ContratoCountOutputTypeCountProrrogasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ProrrogaContratoWhereInput
   }
 
 
@@ -12154,6 +12384,7 @@ export namespace Prisma {
     horario?: boolean | Colaborador$horarioArgs<ExtArgs>
     registros?: boolean | Colaborador$registrosArgs<ExtArgs>
     permisos?: boolean | Colaborador$permisosArgs<ExtArgs>
+    contratos?: boolean | Colaborador$contratosArgs<ExtArgs>
     diasEsperados?: boolean | Colaborador$diasEsperadosArgs<ExtArgs>
     sedes?: boolean | Colaborador$sedesArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
@@ -12185,6 +12416,7 @@ export namespace Prisma {
     horario?: boolean | Colaborador$horarioArgs<ExtArgs>
     registros?: boolean | Colaborador$registrosArgs<ExtArgs>
     permisos?: boolean | Colaborador$permisosArgs<ExtArgs>
+    contratos?: boolean | Colaborador$contratosArgs<ExtArgs>
     diasEsperados?: boolean | Colaborador$diasEsperadosArgs<ExtArgs>
     sedes?: boolean | Colaborador$sedesArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
@@ -12197,6 +12429,7 @@ export namespace Prisma {
       horario: Prisma.$HorarioPayload<ExtArgs> | null
       registros: Prisma.$RegistroPayload<ExtArgs>[]
       permisos: Prisma.$PermisoPayload<ExtArgs>[]
+      contratos: Prisma.$ContratoPayload<ExtArgs>[]
       diasEsperados: Prisma.$DiaEsperadoPayload<ExtArgs>[]
       sedes: Prisma.$ColaboradorSedePayload<ExtArgs>[]
     }
@@ -12562,6 +12795,7 @@ export namespace Prisma {
     horario<T extends Colaborador$horarioArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$horarioArgs<ExtArgs>>): Prisma__HorarioClient<$Result.GetResult<Prisma.$HorarioPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     registros<T extends Colaborador$registrosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$registrosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findMany"> | Null>
     permisos<T extends Colaborador$permisosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$permisosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PermisoPayload<ExtArgs>, T, "findMany"> | Null>
+    contratos<T extends Colaborador$contratosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$contratosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "findMany"> | Null>
     diasEsperados<T extends Colaborador$diasEsperadosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$diasEsperadosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findMany"> | Null>
     sedes<T extends Colaborador$sedesArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$sedesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findMany"> | Null>
     /**
@@ -12961,6 +13195,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: PermisoScalarFieldEnum | PermisoScalarFieldEnum[]
+  }
+
+  /**
+   * Colaborador.contratos
+   */
+  export type Colaborador$contratosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+    where?: ContratoWhereInput
+    orderBy?: ContratoOrderByWithRelationInput | ContratoOrderByWithRelationInput[]
+    cursor?: ContratoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ContratoScalarFieldEnum | ContratoScalarFieldEnum[]
   }
 
   /**
@@ -24764,6 +25018,1922 @@ export namespace Prisma {
 
 
   /**
+   * Model Contrato
+   */
+
+  export type AggregateContrato = {
+    _count: ContratoCountAggregateOutputType | null
+    _min: ContratoMinAggregateOutputType | null
+    _max: ContratoMaxAggregateOutputType | null
+  }
+
+  export type ContratoMinAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    tipo: $Enums.TipoContrato | null
+    fechaInicio: Date | null
+    fechaFin: Date | null
+    fechaInicioPractica: Date | null
+    estado: $Enums.EstadoContrato | null
+    convertidoAIndefinidoEn: Date | null
+    documento: string | null
+    documentoTipo: string | null
+    documentoNombre: string | null
+    observacion: string | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type ContratoMaxAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    tipo: $Enums.TipoContrato | null
+    fechaInicio: Date | null
+    fechaFin: Date | null
+    fechaInicioPractica: Date | null
+    estado: $Enums.EstadoContrato | null
+    convertidoAIndefinidoEn: Date | null
+    documento: string | null
+    documentoTipo: string | null
+    documentoNombre: string | null
+    observacion: string | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type ContratoCountAggregateOutputType = {
+    id: number
+    colaboradorId: number
+    tipo: number
+    fechaInicio: number
+    fechaFin: number
+    fechaInicioPractica: number
+    estado: number
+    convertidoAIndefinidoEn: number
+    documento: number
+    documentoTipo: number
+    documentoNombre: number
+    observacion: number
+    creadoEn: number
+    actualizadoEn: number
+    _all: number
+  }
+
+
+  export type ContratoMinAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    tipo?: true
+    fechaInicio?: true
+    fechaFin?: true
+    fechaInicioPractica?: true
+    estado?: true
+    convertidoAIndefinidoEn?: true
+    documento?: true
+    documentoTipo?: true
+    documentoNombre?: true
+    observacion?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type ContratoMaxAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    tipo?: true
+    fechaInicio?: true
+    fechaFin?: true
+    fechaInicioPractica?: true
+    estado?: true
+    convertidoAIndefinidoEn?: true
+    documento?: true
+    documentoTipo?: true
+    documentoNombre?: true
+    observacion?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type ContratoCountAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    tipo?: true
+    fechaInicio?: true
+    fechaFin?: true
+    fechaInicioPractica?: true
+    estado?: true
+    convertidoAIndefinidoEn?: true
+    documento?: true
+    documentoTipo?: true
+    documentoNombre?: true
+    observacion?: true
+    creadoEn?: true
+    actualizadoEn?: true
+    _all?: true
+  }
+
+  export type ContratoAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Contrato to aggregate.
+     */
+    where?: ContratoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Contratoes to fetch.
+     */
+    orderBy?: ContratoOrderByWithRelationInput | ContratoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ContratoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Contratoes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Contratoes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Contratoes
+    **/
+    _count?: true | ContratoCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ContratoMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ContratoMaxAggregateInputType
+  }
+
+  export type GetContratoAggregateType<T extends ContratoAggregateArgs> = {
+        [P in keyof T & keyof AggregateContrato]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateContrato[P]>
+      : GetScalarType<T[P], AggregateContrato[P]>
+  }
+
+
+
+
+  export type ContratoGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ContratoWhereInput
+    orderBy?: ContratoOrderByWithAggregationInput | ContratoOrderByWithAggregationInput[]
+    by: ContratoScalarFieldEnum[] | ContratoScalarFieldEnum
+    having?: ContratoScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ContratoCountAggregateInputType | true
+    _min?: ContratoMinAggregateInputType
+    _max?: ContratoMaxAggregateInputType
+  }
+
+  export type ContratoGroupByOutputType = {
+    id: string
+    colaboradorId: string
+    tipo: $Enums.TipoContrato
+    fechaInicio: Date
+    fechaFin: Date | null
+    fechaInicioPractica: Date | null
+    estado: $Enums.EstadoContrato
+    convertidoAIndefinidoEn: Date | null
+    documento: string | null
+    documentoTipo: string | null
+    documentoNombre: string | null
+    observacion: string | null
+    creadoEn: Date
+    actualizadoEn: Date
+    _count: ContratoCountAggregateOutputType | null
+    _min: ContratoMinAggregateOutputType | null
+    _max: ContratoMaxAggregateOutputType | null
+  }
+
+  type GetContratoGroupByPayload<T extends ContratoGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ContratoGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ContratoGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ContratoGroupByOutputType[P]>
+            : GetScalarType<T[P], ContratoGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ContratoSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    colaboradorId?: boolean
+    tipo?: boolean
+    fechaInicio?: boolean
+    fechaFin?: boolean
+    fechaInicioPractica?: boolean
+    estado?: boolean
+    convertidoAIndefinidoEn?: boolean
+    documento?: boolean
+    documentoTipo?: boolean
+    documentoNombre?: boolean
+    observacion?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    prorrogas?: boolean | Contrato$prorrogasArgs<ExtArgs>
+    _count?: boolean | ContratoCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["contrato"]>
+
+
+  export type ContratoSelectScalar = {
+    id?: boolean
+    colaboradorId?: boolean
+    tipo?: boolean
+    fechaInicio?: boolean
+    fechaFin?: boolean
+    fechaInicioPractica?: boolean
+    estado?: boolean
+    convertidoAIndefinidoEn?: boolean
+    documento?: boolean
+    documentoTipo?: boolean
+    documentoNombre?: boolean
+    observacion?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+  }
+
+  export type ContratoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    prorrogas?: boolean | Contrato$prorrogasArgs<ExtArgs>
+    _count?: boolean | ContratoCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $ContratoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Contrato"
+    objects: {
+      colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+      prorrogas: Prisma.$ProrrogaContratoPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      colaboradorId: string
+      tipo: $Enums.TipoContrato
+      fechaInicio: Date
+      fechaFin: Date | null
+      fechaInicioPractica: Date | null
+      estado: $Enums.EstadoContrato
+      convertidoAIndefinidoEn: Date | null
+      documento: string | null
+      documentoTipo: string | null
+      documentoNombre: string | null
+      observacion: string | null
+      creadoEn: Date
+      actualizadoEn: Date
+    }, ExtArgs["result"]["contrato"]>
+    composites: {}
+  }
+
+  type ContratoGetPayload<S extends boolean | null | undefined | ContratoDefaultArgs> = $Result.GetResult<Prisma.$ContratoPayload, S>
+
+  type ContratoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ContratoFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ContratoCountAggregateInputType | true
+    }
+
+  export interface ContratoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Contrato'], meta: { name: 'Contrato' } }
+    /**
+     * Find zero or one Contrato that matches the filter.
+     * @param {ContratoFindUniqueArgs} args - Arguments to find a Contrato
+     * @example
+     * // Get one Contrato
+     * const contrato = await prisma.contrato.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ContratoFindUniqueArgs>(args: SelectSubset<T, ContratoFindUniqueArgs<ExtArgs>>): Prisma__ContratoClient<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Contrato that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ContratoFindUniqueOrThrowArgs} args - Arguments to find a Contrato
+     * @example
+     * // Get one Contrato
+     * const contrato = await prisma.contrato.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ContratoFindUniqueOrThrowArgs>(args: SelectSubset<T, ContratoFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ContratoClient<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Contrato that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContratoFindFirstArgs} args - Arguments to find a Contrato
+     * @example
+     * // Get one Contrato
+     * const contrato = await prisma.contrato.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ContratoFindFirstArgs>(args?: SelectSubset<T, ContratoFindFirstArgs<ExtArgs>>): Prisma__ContratoClient<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Contrato that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContratoFindFirstOrThrowArgs} args - Arguments to find a Contrato
+     * @example
+     * // Get one Contrato
+     * const contrato = await prisma.contrato.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ContratoFindFirstOrThrowArgs>(args?: SelectSubset<T, ContratoFindFirstOrThrowArgs<ExtArgs>>): Prisma__ContratoClient<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Contratoes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContratoFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Contratoes
+     * const contratoes = await prisma.contrato.findMany()
+     * 
+     * // Get first 10 Contratoes
+     * const contratoes = await prisma.contrato.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const contratoWithIdOnly = await prisma.contrato.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ContratoFindManyArgs>(args?: SelectSubset<T, ContratoFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Contrato.
+     * @param {ContratoCreateArgs} args - Arguments to create a Contrato.
+     * @example
+     * // Create one Contrato
+     * const Contrato = await prisma.contrato.create({
+     *   data: {
+     *     // ... data to create a Contrato
+     *   }
+     * })
+     * 
+     */
+    create<T extends ContratoCreateArgs>(args: SelectSubset<T, ContratoCreateArgs<ExtArgs>>): Prisma__ContratoClient<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Contratoes.
+     * @param {ContratoCreateManyArgs} args - Arguments to create many Contratoes.
+     * @example
+     * // Create many Contratoes
+     * const contrato = await prisma.contrato.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ContratoCreateManyArgs>(args?: SelectSubset<T, ContratoCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Contrato.
+     * @param {ContratoDeleteArgs} args - Arguments to delete one Contrato.
+     * @example
+     * // Delete one Contrato
+     * const Contrato = await prisma.contrato.delete({
+     *   where: {
+     *     // ... filter to delete one Contrato
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ContratoDeleteArgs>(args: SelectSubset<T, ContratoDeleteArgs<ExtArgs>>): Prisma__ContratoClient<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Contrato.
+     * @param {ContratoUpdateArgs} args - Arguments to update one Contrato.
+     * @example
+     * // Update one Contrato
+     * const contrato = await prisma.contrato.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ContratoUpdateArgs>(args: SelectSubset<T, ContratoUpdateArgs<ExtArgs>>): Prisma__ContratoClient<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Contratoes.
+     * @param {ContratoDeleteManyArgs} args - Arguments to filter Contratoes to delete.
+     * @example
+     * // Delete a few Contratoes
+     * const { count } = await prisma.contrato.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ContratoDeleteManyArgs>(args?: SelectSubset<T, ContratoDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Contratoes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContratoUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Contratoes
+     * const contrato = await prisma.contrato.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ContratoUpdateManyArgs>(args: SelectSubset<T, ContratoUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Contrato.
+     * @param {ContratoUpsertArgs} args - Arguments to update or create a Contrato.
+     * @example
+     * // Update or create a Contrato
+     * const contrato = await prisma.contrato.upsert({
+     *   create: {
+     *     // ... data to create a Contrato
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Contrato we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ContratoUpsertArgs>(args: SelectSubset<T, ContratoUpsertArgs<ExtArgs>>): Prisma__ContratoClient<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of Contratoes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContratoCountArgs} args - Arguments to filter Contratoes to count.
+     * @example
+     * // Count the number of Contratoes
+     * const count = await prisma.contrato.count({
+     *   where: {
+     *     // ... the filter for the Contratoes we want to count
+     *   }
+     * })
+    **/
+    count<T extends ContratoCountArgs>(
+      args?: Subset<T, ContratoCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ContratoCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Contrato.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContratoAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ContratoAggregateArgs>(args: Subset<T, ContratoAggregateArgs>): Prisma.PrismaPromise<GetContratoAggregateType<T>>
+
+    /**
+     * Group by Contrato.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ContratoGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ContratoGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ContratoGroupByArgs['orderBy'] }
+        : { orderBy?: ContratoGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ContratoGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetContratoGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Contrato model
+   */
+  readonly fields: ContratoFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Contrato.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ContratoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    prorrogas<T extends Contrato$prorrogasArgs<ExtArgs> = {}>(args?: Subset<T, Contrato$prorrogasArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProrrogaContratoPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Contrato model
+   */ 
+  interface ContratoFieldRefs {
+    readonly id: FieldRef<"Contrato", 'String'>
+    readonly colaboradorId: FieldRef<"Contrato", 'String'>
+    readonly tipo: FieldRef<"Contrato", 'TipoContrato'>
+    readonly fechaInicio: FieldRef<"Contrato", 'DateTime'>
+    readonly fechaFin: FieldRef<"Contrato", 'DateTime'>
+    readonly fechaInicioPractica: FieldRef<"Contrato", 'DateTime'>
+    readonly estado: FieldRef<"Contrato", 'EstadoContrato'>
+    readonly convertidoAIndefinidoEn: FieldRef<"Contrato", 'DateTime'>
+    readonly documento: FieldRef<"Contrato", 'String'>
+    readonly documentoTipo: FieldRef<"Contrato", 'String'>
+    readonly documentoNombre: FieldRef<"Contrato", 'String'>
+    readonly observacion: FieldRef<"Contrato", 'String'>
+    readonly creadoEn: FieldRef<"Contrato", 'DateTime'>
+    readonly actualizadoEn: FieldRef<"Contrato", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Contrato findUnique
+   */
+  export type ContratoFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+    /**
+     * Filter, which Contrato to fetch.
+     */
+    where: ContratoWhereUniqueInput
+  }
+
+  /**
+   * Contrato findUniqueOrThrow
+   */
+  export type ContratoFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+    /**
+     * Filter, which Contrato to fetch.
+     */
+    where: ContratoWhereUniqueInput
+  }
+
+  /**
+   * Contrato findFirst
+   */
+  export type ContratoFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+    /**
+     * Filter, which Contrato to fetch.
+     */
+    where?: ContratoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Contratoes to fetch.
+     */
+    orderBy?: ContratoOrderByWithRelationInput | ContratoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Contratoes.
+     */
+    cursor?: ContratoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Contratoes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Contratoes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Contratoes.
+     */
+    distinct?: ContratoScalarFieldEnum | ContratoScalarFieldEnum[]
+  }
+
+  /**
+   * Contrato findFirstOrThrow
+   */
+  export type ContratoFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+    /**
+     * Filter, which Contrato to fetch.
+     */
+    where?: ContratoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Contratoes to fetch.
+     */
+    orderBy?: ContratoOrderByWithRelationInput | ContratoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Contratoes.
+     */
+    cursor?: ContratoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Contratoes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Contratoes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Contratoes.
+     */
+    distinct?: ContratoScalarFieldEnum | ContratoScalarFieldEnum[]
+  }
+
+  /**
+   * Contrato findMany
+   */
+  export type ContratoFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+    /**
+     * Filter, which Contratoes to fetch.
+     */
+    where?: ContratoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Contratoes to fetch.
+     */
+    orderBy?: ContratoOrderByWithRelationInput | ContratoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Contratoes.
+     */
+    cursor?: ContratoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Contratoes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Contratoes.
+     */
+    skip?: number
+    distinct?: ContratoScalarFieldEnum | ContratoScalarFieldEnum[]
+  }
+
+  /**
+   * Contrato create
+   */
+  export type ContratoCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Contrato.
+     */
+    data: XOR<ContratoCreateInput, ContratoUncheckedCreateInput>
+  }
+
+  /**
+   * Contrato createMany
+   */
+  export type ContratoCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Contratoes.
+     */
+    data: ContratoCreateManyInput | ContratoCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Contrato update
+   */
+  export type ContratoUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Contrato.
+     */
+    data: XOR<ContratoUpdateInput, ContratoUncheckedUpdateInput>
+    /**
+     * Choose, which Contrato to update.
+     */
+    where: ContratoWhereUniqueInput
+  }
+
+  /**
+   * Contrato updateMany
+   */
+  export type ContratoUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Contratoes.
+     */
+    data: XOR<ContratoUpdateManyMutationInput, ContratoUncheckedUpdateManyInput>
+    /**
+     * Filter which Contratoes to update
+     */
+    where?: ContratoWhereInput
+  }
+
+  /**
+   * Contrato upsert
+   */
+  export type ContratoUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Contrato to update in case it exists.
+     */
+    where: ContratoWhereUniqueInput
+    /**
+     * In case the Contrato found by the `where` argument doesn't exist, create a new Contrato with this data.
+     */
+    create: XOR<ContratoCreateInput, ContratoUncheckedCreateInput>
+    /**
+     * In case the Contrato was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ContratoUpdateInput, ContratoUncheckedUpdateInput>
+  }
+
+  /**
+   * Contrato delete
+   */
+  export type ContratoDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+    /**
+     * Filter which Contrato to delete.
+     */
+    where: ContratoWhereUniqueInput
+  }
+
+  /**
+   * Contrato deleteMany
+   */
+  export type ContratoDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Contratoes to delete
+     */
+    where?: ContratoWhereInput
+  }
+
+  /**
+   * Contrato.prorrogas
+   */
+  export type Contrato$prorrogasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+    where?: ProrrogaContratoWhereInput
+    orderBy?: ProrrogaContratoOrderByWithRelationInput | ProrrogaContratoOrderByWithRelationInput[]
+    cursor?: ProrrogaContratoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ProrrogaContratoScalarFieldEnum | ProrrogaContratoScalarFieldEnum[]
+  }
+
+  /**
+   * Contrato without action
+   */
+  export type ContratoDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Contrato
+     */
+    select?: ContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ContratoInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ProrrogaContrato
+   */
+
+  export type AggregateProrrogaContrato = {
+    _count: ProrrogaContratoCountAggregateOutputType | null
+    _min: ProrrogaContratoMinAggregateOutputType | null
+    _max: ProrrogaContratoMaxAggregateOutputType | null
+  }
+
+  export type ProrrogaContratoMinAggregateOutputType = {
+    id: string | null
+    contratoId: string | null
+    desde: Date | null
+    hasta: Date | null
+    documento: string | null
+    documentoTipo: string | null
+    documentoNombre: string | null
+    creadoEn: Date | null
+  }
+
+  export type ProrrogaContratoMaxAggregateOutputType = {
+    id: string | null
+    contratoId: string | null
+    desde: Date | null
+    hasta: Date | null
+    documento: string | null
+    documentoTipo: string | null
+    documentoNombre: string | null
+    creadoEn: Date | null
+  }
+
+  export type ProrrogaContratoCountAggregateOutputType = {
+    id: number
+    contratoId: number
+    desde: number
+    hasta: number
+    documento: number
+    documentoTipo: number
+    documentoNombre: number
+    creadoEn: number
+    _all: number
+  }
+
+
+  export type ProrrogaContratoMinAggregateInputType = {
+    id?: true
+    contratoId?: true
+    desde?: true
+    hasta?: true
+    documento?: true
+    documentoTipo?: true
+    documentoNombre?: true
+    creadoEn?: true
+  }
+
+  export type ProrrogaContratoMaxAggregateInputType = {
+    id?: true
+    contratoId?: true
+    desde?: true
+    hasta?: true
+    documento?: true
+    documentoTipo?: true
+    documentoNombre?: true
+    creadoEn?: true
+  }
+
+  export type ProrrogaContratoCountAggregateInputType = {
+    id?: true
+    contratoId?: true
+    desde?: true
+    hasta?: true
+    documento?: true
+    documentoTipo?: true
+    documentoNombre?: true
+    creadoEn?: true
+    _all?: true
+  }
+
+  export type ProrrogaContratoAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ProrrogaContrato to aggregate.
+     */
+    where?: ProrrogaContratoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProrrogaContratoes to fetch.
+     */
+    orderBy?: ProrrogaContratoOrderByWithRelationInput | ProrrogaContratoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ProrrogaContratoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProrrogaContratoes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProrrogaContratoes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ProrrogaContratoes
+    **/
+    _count?: true | ProrrogaContratoCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ProrrogaContratoMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ProrrogaContratoMaxAggregateInputType
+  }
+
+  export type GetProrrogaContratoAggregateType<T extends ProrrogaContratoAggregateArgs> = {
+        [P in keyof T & keyof AggregateProrrogaContrato]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateProrrogaContrato[P]>
+      : GetScalarType<T[P], AggregateProrrogaContrato[P]>
+  }
+
+
+
+
+  export type ProrrogaContratoGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ProrrogaContratoWhereInput
+    orderBy?: ProrrogaContratoOrderByWithAggregationInput | ProrrogaContratoOrderByWithAggregationInput[]
+    by: ProrrogaContratoScalarFieldEnum[] | ProrrogaContratoScalarFieldEnum
+    having?: ProrrogaContratoScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ProrrogaContratoCountAggregateInputType | true
+    _min?: ProrrogaContratoMinAggregateInputType
+    _max?: ProrrogaContratoMaxAggregateInputType
+  }
+
+  export type ProrrogaContratoGroupByOutputType = {
+    id: string
+    contratoId: string
+    desde: Date
+    hasta: Date
+    documento: string | null
+    documentoTipo: string | null
+    documentoNombre: string | null
+    creadoEn: Date
+    _count: ProrrogaContratoCountAggregateOutputType | null
+    _min: ProrrogaContratoMinAggregateOutputType | null
+    _max: ProrrogaContratoMaxAggregateOutputType | null
+  }
+
+  type GetProrrogaContratoGroupByPayload<T extends ProrrogaContratoGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ProrrogaContratoGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ProrrogaContratoGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ProrrogaContratoGroupByOutputType[P]>
+            : GetScalarType<T[P], ProrrogaContratoGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ProrrogaContratoSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    contratoId?: boolean
+    desde?: boolean
+    hasta?: boolean
+    documento?: boolean
+    documentoTipo?: boolean
+    documentoNombre?: boolean
+    creadoEn?: boolean
+    contrato?: boolean | ContratoDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["prorrogaContrato"]>
+
+
+  export type ProrrogaContratoSelectScalar = {
+    id?: boolean
+    contratoId?: boolean
+    desde?: boolean
+    hasta?: boolean
+    documento?: boolean
+    documentoTipo?: boolean
+    documentoNombre?: boolean
+    creadoEn?: boolean
+  }
+
+  export type ProrrogaContratoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    contrato?: boolean | ContratoDefaultArgs<ExtArgs>
+  }
+
+  export type $ProrrogaContratoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ProrrogaContrato"
+    objects: {
+      contrato: Prisma.$ContratoPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      contratoId: string
+      desde: Date
+      hasta: Date
+      documento: string | null
+      documentoTipo: string | null
+      documentoNombre: string | null
+      creadoEn: Date
+    }, ExtArgs["result"]["prorrogaContrato"]>
+    composites: {}
+  }
+
+  type ProrrogaContratoGetPayload<S extends boolean | null | undefined | ProrrogaContratoDefaultArgs> = $Result.GetResult<Prisma.$ProrrogaContratoPayload, S>
+
+  type ProrrogaContratoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ProrrogaContratoFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ProrrogaContratoCountAggregateInputType | true
+    }
+
+  export interface ProrrogaContratoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ProrrogaContrato'], meta: { name: 'ProrrogaContrato' } }
+    /**
+     * Find zero or one ProrrogaContrato that matches the filter.
+     * @param {ProrrogaContratoFindUniqueArgs} args - Arguments to find a ProrrogaContrato
+     * @example
+     * // Get one ProrrogaContrato
+     * const prorrogaContrato = await prisma.prorrogaContrato.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ProrrogaContratoFindUniqueArgs>(args: SelectSubset<T, ProrrogaContratoFindUniqueArgs<ExtArgs>>): Prisma__ProrrogaContratoClient<$Result.GetResult<Prisma.$ProrrogaContratoPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ProrrogaContrato that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ProrrogaContratoFindUniqueOrThrowArgs} args - Arguments to find a ProrrogaContrato
+     * @example
+     * // Get one ProrrogaContrato
+     * const prorrogaContrato = await prisma.prorrogaContrato.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ProrrogaContratoFindUniqueOrThrowArgs>(args: SelectSubset<T, ProrrogaContratoFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ProrrogaContratoClient<$Result.GetResult<Prisma.$ProrrogaContratoPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ProrrogaContrato that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProrrogaContratoFindFirstArgs} args - Arguments to find a ProrrogaContrato
+     * @example
+     * // Get one ProrrogaContrato
+     * const prorrogaContrato = await prisma.prorrogaContrato.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ProrrogaContratoFindFirstArgs>(args?: SelectSubset<T, ProrrogaContratoFindFirstArgs<ExtArgs>>): Prisma__ProrrogaContratoClient<$Result.GetResult<Prisma.$ProrrogaContratoPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ProrrogaContrato that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProrrogaContratoFindFirstOrThrowArgs} args - Arguments to find a ProrrogaContrato
+     * @example
+     * // Get one ProrrogaContrato
+     * const prorrogaContrato = await prisma.prorrogaContrato.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ProrrogaContratoFindFirstOrThrowArgs>(args?: SelectSubset<T, ProrrogaContratoFindFirstOrThrowArgs<ExtArgs>>): Prisma__ProrrogaContratoClient<$Result.GetResult<Prisma.$ProrrogaContratoPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ProrrogaContratoes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProrrogaContratoFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ProrrogaContratoes
+     * const prorrogaContratoes = await prisma.prorrogaContrato.findMany()
+     * 
+     * // Get first 10 ProrrogaContratoes
+     * const prorrogaContratoes = await prisma.prorrogaContrato.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const prorrogaContratoWithIdOnly = await prisma.prorrogaContrato.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ProrrogaContratoFindManyArgs>(args?: SelectSubset<T, ProrrogaContratoFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProrrogaContratoPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ProrrogaContrato.
+     * @param {ProrrogaContratoCreateArgs} args - Arguments to create a ProrrogaContrato.
+     * @example
+     * // Create one ProrrogaContrato
+     * const ProrrogaContrato = await prisma.prorrogaContrato.create({
+     *   data: {
+     *     // ... data to create a ProrrogaContrato
+     *   }
+     * })
+     * 
+     */
+    create<T extends ProrrogaContratoCreateArgs>(args: SelectSubset<T, ProrrogaContratoCreateArgs<ExtArgs>>): Prisma__ProrrogaContratoClient<$Result.GetResult<Prisma.$ProrrogaContratoPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ProrrogaContratoes.
+     * @param {ProrrogaContratoCreateManyArgs} args - Arguments to create many ProrrogaContratoes.
+     * @example
+     * // Create many ProrrogaContratoes
+     * const prorrogaContrato = await prisma.prorrogaContrato.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ProrrogaContratoCreateManyArgs>(args?: SelectSubset<T, ProrrogaContratoCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ProrrogaContrato.
+     * @param {ProrrogaContratoDeleteArgs} args - Arguments to delete one ProrrogaContrato.
+     * @example
+     * // Delete one ProrrogaContrato
+     * const ProrrogaContrato = await prisma.prorrogaContrato.delete({
+     *   where: {
+     *     // ... filter to delete one ProrrogaContrato
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ProrrogaContratoDeleteArgs>(args: SelectSubset<T, ProrrogaContratoDeleteArgs<ExtArgs>>): Prisma__ProrrogaContratoClient<$Result.GetResult<Prisma.$ProrrogaContratoPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ProrrogaContrato.
+     * @param {ProrrogaContratoUpdateArgs} args - Arguments to update one ProrrogaContrato.
+     * @example
+     * // Update one ProrrogaContrato
+     * const prorrogaContrato = await prisma.prorrogaContrato.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ProrrogaContratoUpdateArgs>(args: SelectSubset<T, ProrrogaContratoUpdateArgs<ExtArgs>>): Prisma__ProrrogaContratoClient<$Result.GetResult<Prisma.$ProrrogaContratoPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ProrrogaContratoes.
+     * @param {ProrrogaContratoDeleteManyArgs} args - Arguments to filter ProrrogaContratoes to delete.
+     * @example
+     * // Delete a few ProrrogaContratoes
+     * const { count } = await prisma.prorrogaContrato.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ProrrogaContratoDeleteManyArgs>(args?: SelectSubset<T, ProrrogaContratoDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ProrrogaContratoes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProrrogaContratoUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ProrrogaContratoes
+     * const prorrogaContrato = await prisma.prorrogaContrato.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ProrrogaContratoUpdateManyArgs>(args: SelectSubset<T, ProrrogaContratoUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ProrrogaContrato.
+     * @param {ProrrogaContratoUpsertArgs} args - Arguments to update or create a ProrrogaContrato.
+     * @example
+     * // Update or create a ProrrogaContrato
+     * const prorrogaContrato = await prisma.prorrogaContrato.upsert({
+     *   create: {
+     *     // ... data to create a ProrrogaContrato
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ProrrogaContrato we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ProrrogaContratoUpsertArgs>(args: SelectSubset<T, ProrrogaContratoUpsertArgs<ExtArgs>>): Prisma__ProrrogaContratoClient<$Result.GetResult<Prisma.$ProrrogaContratoPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ProrrogaContratoes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProrrogaContratoCountArgs} args - Arguments to filter ProrrogaContratoes to count.
+     * @example
+     * // Count the number of ProrrogaContratoes
+     * const count = await prisma.prorrogaContrato.count({
+     *   where: {
+     *     // ... the filter for the ProrrogaContratoes we want to count
+     *   }
+     * })
+    **/
+    count<T extends ProrrogaContratoCountArgs>(
+      args?: Subset<T, ProrrogaContratoCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ProrrogaContratoCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ProrrogaContrato.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProrrogaContratoAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ProrrogaContratoAggregateArgs>(args: Subset<T, ProrrogaContratoAggregateArgs>): Prisma.PrismaPromise<GetProrrogaContratoAggregateType<T>>
+
+    /**
+     * Group by ProrrogaContrato.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProrrogaContratoGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ProrrogaContratoGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ProrrogaContratoGroupByArgs['orderBy'] }
+        : { orderBy?: ProrrogaContratoGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ProrrogaContratoGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetProrrogaContratoGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ProrrogaContrato model
+   */
+  readonly fields: ProrrogaContratoFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ProrrogaContrato.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ProrrogaContratoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    contrato<T extends ContratoDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ContratoDefaultArgs<ExtArgs>>): Prisma__ContratoClient<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ProrrogaContrato model
+   */ 
+  interface ProrrogaContratoFieldRefs {
+    readonly id: FieldRef<"ProrrogaContrato", 'String'>
+    readonly contratoId: FieldRef<"ProrrogaContrato", 'String'>
+    readonly desde: FieldRef<"ProrrogaContrato", 'DateTime'>
+    readonly hasta: FieldRef<"ProrrogaContrato", 'DateTime'>
+    readonly documento: FieldRef<"ProrrogaContrato", 'String'>
+    readonly documentoTipo: FieldRef<"ProrrogaContrato", 'String'>
+    readonly documentoNombre: FieldRef<"ProrrogaContrato", 'String'>
+    readonly creadoEn: FieldRef<"ProrrogaContrato", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ProrrogaContrato findUnique
+   */
+  export type ProrrogaContratoFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+    /**
+     * Filter, which ProrrogaContrato to fetch.
+     */
+    where: ProrrogaContratoWhereUniqueInput
+  }
+
+  /**
+   * ProrrogaContrato findUniqueOrThrow
+   */
+  export type ProrrogaContratoFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+    /**
+     * Filter, which ProrrogaContrato to fetch.
+     */
+    where: ProrrogaContratoWhereUniqueInput
+  }
+
+  /**
+   * ProrrogaContrato findFirst
+   */
+  export type ProrrogaContratoFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+    /**
+     * Filter, which ProrrogaContrato to fetch.
+     */
+    where?: ProrrogaContratoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProrrogaContratoes to fetch.
+     */
+    orderBy?: ProrrogaContratoOrderByWithRelationInput | ProrrogaContratoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ProrrogaContratoes.
+     */
+    cursor?: ProrrogaContratoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProrrogaContratoes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProrrogaContratoes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProrrogaContratoes.
+     */
+    distinct?: ProrrogaContratoScalarFieldEnum | ProrrogaContratoScalarFieldEnum[]
+  }
+
+  /**
+   * ProrrogaContrato findFirstOrThrow
+   */
+  export type ProrrogaContratoFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+    /**
+     * Filter, which ProrrogaContrato to fetch.
+     */
+    where?: ProrrogaContratoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProrrogaContratoes to fetch.
+     */
+    orderBy?: ProrrogaContratoOrderByWithRelationInput | ProrrogaContratoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ProrrogaContratoes.
+     */
+    cursor?: ProrrogaContratoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProrrogaContratoes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProrrogaContratoes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProrrogaContratoes.
+     */
+    distinct?: ProrrogaContratoScalarFieldEnum | ProrrogaContratoScalarFieldEnum[]
+  }
+
+  /**
+   * ProrrogaContrato findMany
+   */
+  export type ProrrogaContratoFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+    /**
+     * Filter, which ProrrogaContratoes to fetch.
+     */
+    where?: ProrrogaContratoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProrrogaContratoes to fetch.
+     */
+    orderBy?: ProrrogaContratoOrderByWithRelationInput | ProrrogaContratoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ProrrogaContratoes.
+     */
+    cursor?: ProrrogaContratoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProrrogaContratoes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProrrogaContratoes.
+     */
+    skip?: number
+    distinct?: ProrrogaContratoScalarFieldEnum | ProrrogaContratoScalarFieldEnum[]
+  }
+
+  /**
+   * ProrrogaContrato create
+   */
+  export type ProrrogaContratoCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ProrrogaContrato.
+     */
+    data: XOR<ProrrogaContratoCreateInput, ProrrogaContratoUncheckedCreateInput>
+  }
+
+  /**
+   * ProrrogaContrato createMany
+   */
+  export type ProrrogaContratoCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ProrrogaContratoes.
+     */
+    data: ProrrogaContratoCreateManyInput | ProrrogaContratoCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ProrrogaContrato update
+   */
+  export type ProrrogaContratoUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ProrrogaContrato.
+     */
+    data: XOR<ProrrogaContratoUpdateInput, ProrrogaContratoUncheckedUpdateInput>
+    /**
+     * Choose, which ProrrogaContrato to update.
+     */
+    where: ProrrogaContratoWhereUniqueInput
+  }
+
+  /**
+   * ProrrogaContrato updateMany
+   */
+  export type ProrrogaContratoUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ProrrogaContratoes.
+     */
+    data: XOR<ProrrogaContratoUpdateManyMutationInput, ProrrogaContratoUncheckedUpdateManyInput>
+    /**
+     * Filter which ProrrogaContratoes to update
+     */
+    where?: ProrrogaContratoWhereInput
+  }
+
+  /**
+   * ProrrogaContrato upsert
+   */
+  export type ProrrogaContratoUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ProrrogaContrato to update in case it exists.
+     */
+    where: ProrrogaContratoWhereUniqueInput
+    /**
+     * In case the ProrrogaContrato found by the `where` argument doesn't exist, create a new ProrrogaContrato with this data.
+     */
+    create: XOR<ProrrogaContratoCreateInput, ProrrogaContratoUncheckedCreateInput>
+    /**
+     * In case the ProrrogaContrato was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ProrrogaContratoUpdateInput, ProrrogaContratoUncheckedUpdateInput>
+  }
+
+  /**
+   * ProrrogaContrato delete
+   */
+  export type ProrrogaContratoDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+    /**
+     * Filter which ProrrogaContrato to delete.
+     */
+    where: ProrrogaContratoWhereUniqueInput
+  }
+
+  /**
+   * ProrrogaContrato deleteMany
+   */
+  export type ProrrogaContratoDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ProrrogaContratoes to delete
+     */
+    where?: ProrrogaContratoWhereInput
+  }
+
+  /**
+   * ProrrogaContrato without action
+   */
+  export type ProrrogaContratoDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProrrogaContrato
+     */
+    select?: ProrrogaContratoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProrrogaContratoInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -25137,6 +27307,40 @@ export namespace Prisma {
   export type SolicitudRetiroScalarFieldEnum = (typeof SolicitudRetiroScalarFieldEnum)[keyof typeof SolicitudRetiroScalarFieldEnum]
 
 
+  export const ContratoScalarFieldEnum: {
+    id: 'id',
+    colaboradorId: 'colaboradorId',
+    tipo: 'tipo',
+    fechaInicio: 'fechaInicio',
+    fechaFin: 'fechaFin',
+    fechaInicioPractica: 'fechaInicioPractica',
+    estado: 'estado',
+    convertidoAIndefinidoEn: 'convertidoAIndefinidoEn',
+    documento: 'documento',
+    documentoTipo: 'documentoTipo',
+    documentoNombre: 'documentoNombre',
+    observacion: 'observacion',
+    creadoEn: 'creadoEn',
+    actualizadoEn: 'actualizadoEn'
+  };
+
+  export type ContratoScalarFieldEnum = (typeof ContratoScalarFieldEnum)[keyof typeof ContratoScalarFieldEnum]
+
+
+  export const ProrrogaContratoScalarFieldEnum: {
+    id: 'id',
+    contratoId: 'contratoId',
+    desde: 'desde',
+    hasta: 'hasta',
+    documento: 'documento',
+    documentoTipo: 'documentoTipo',
+    documentoNombre: 'documentoNombre',
+    creadoEn: 'creadoEn'
+  };
+
+  export type ProrrogaContratoScalarFieldEnum = (typeof ProrrogaContratoScalarFieldEnum)[keyof typeof ProrrogaContratoScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -25291,6 +27495,20 @@ export namespace Prisma {
    * Reference to a field of type 'EstadoRetiro'
    */
   export type EnumEstadoRetiroFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoRetiro'>
+    
+
+
+  /**
+   * Reference to a field of type 'TipoContrato'
+   */
+  export type EnumTipoContratoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TipoContrato'>
+    
+
+
+  /**
+   * Reference to a field of type 'EstadoContrato'
+   */
+  export type EnumEstadoContratoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoContrato'>
     
   /**
    * Deep Input Types
@@ -26063,6 +28281,7 @@ export namespace Prisma {
     horario?: XOR<HorarioNullableRelationFilter, HorarioWhereInput> | null
     registros?: RegistroListRelationFilter
     permisos?: PermisoListRelationFilter
+    contratos?: ContratoListRelationFilter
     diasEsperados?: DiaEsperadoListRelationFilter
     sedes?: ColaboradorSedeListRelationFilter
   }
@@ -26089,6 +28308,7 @@ export namespace Prisma {
     horario?: HorarioOrderByWithRelationInput
     registros?: RegistroOrderByRelationAggregateInput
     permisos?: PermisoOrderByRelationAggregateInput
+    contratos?: ContratoOrderByRelationAggregateInput
     diasEsperados?: DiaEsperadoOrderByRelationAggregateInput
     sedes?: ColaboradorSedeOrderByRelationAggregateInput
   }
@@ -26119,6 +28339,7 @@ export namespace Prisma {
     horario?: XOR<HorarioNullableRelationFilter, HorarioWhereInput> | null
     registros?: RegistroListRelationFilter
     permisos?: PermisoListRelationFilter
+    contratos?: ContratoListRelationFilter
     diasEsperados?: DiaEsperadoListRelationFilter
     sedes?: ColaboradorSedeListRelationFilter
   }, "id" | "empresaId_cedula">
@@ -27211,6 +29432,179 @@ export namespace Prisma {
     procesadoPor?: StringNullableWithAggregatesFilter<"SolicitudRetiro"> | string | null
   }
 
+  export type ContratoWhereInput = {
+    AND?: ContratoWhereInput | ContratoWhereInput[]
+    OR?: ContratoWhereInput[]
+    NOT?: ContratoWhereInput | ContratoWhereInput[]
+    id?: StringFilter<"Contrato"> | string
+    colaboradorId?: StringFilter<"Contrato"> | string
+    tipo?: EnumTipoContratoFilter<"Contrato"> | $Enums.TipoContrato
+    fechaInicio?: DateTimeFilter<"Contrato"> | Date | string
+    fechaFin?: DateTimeNullableFilter<"Contrato"> | Date | string | null
+    fechaInicioPractica?: DateTimeNullableFilter<"Contrato"> | Date | string | null
+    estado?: EnumEstadoContratoFilter<"Contrato"> | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: DateTimeNullableFilter<"Contrato"> | Date | string | null
+    documento?: StringNullableFilter<"Contrato"> | string | null
+    documentoTipo?: StringNullableFilter<"Contrato"> | string | null
+    documentoNombre?: StringNullableFilter<"Contrato"> | string | null
+    observacion?: StringNullableFilter<"Contrato"> | string | null
+    creadoEn?: DateTimeFilter<"Contrato"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Contrato"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    prorrogas?: ProrrogaContratoListRelationFilter
+  }
+
+  export type ContratoOrderByWithRelationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tipo?: SortOrder
+    fechaInicio?: SortOrder
+    fechaFin?: SortOrderInput | SortOrder
+    fechaInicioPractica?: SortOrderInput | SortOrder
+    estado?: SortOrder
+    convertidoAIndefinidoEn?: SortOrderInput | SortOrder
+    documento?: SortOrderInput | SortOrder
+    documentoTipo?: SortOrderInput | SortOrder
+    documentoNombre?: SortOrderInput | SortOrder
+    observacion?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    colaborador?: ColaboradorOrderByWithRelationInput
+    prorrogas?: ProrrogaContratoOrderByRelationAggregateInput
+  }
+
+  export type ContratoWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ContratoWhereInput | ContratoWhereInput[]
+    OR?: ContratoWhereInput[]
+    NOT?: ContratoWhereInput | ContratoWhereInput[]
+    colaboradorId?: StringFilter<"Contrato"> | string
+    tipo?: EnumTipoContratoFilter<"Contrato"> | $Enums.TipoContrato
+    fechaInicio?: DateTimeFilter<"Contrato"> | Date | string
+    fechaFin?: DateTimeNullableFilter<"Contrato"> | Date | string | null
+    fechaInicioPractica?: DateTimeNullableFilter<"Contrato"> | Date | string | null
+    estado?: EnumEstadoContratoFilter<"Contrato"> | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: DateTimeNullableFilter<"Contrato"> | Date | string | null
+    documento?: StringNullableFilter<"Contrato"> | string | null
+    documentoTipo?: StringNullableFilter<"Contrato"> | string | null
+    documentoNombre?: StringNullableFilter<"Contrato"> | string | null
+    observacion?: StringNullableFilter<"Contrato"> | string | null
+    creadoEn?: DateTimeFilter<"Contrato"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Contrato"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    prorrogas?: ProrrogaContratoListRelationFilter
+  }, "id">
+
+  export type ContratoOrderByWithAggregationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tipo?: SortOrder
+    fechaInicio?: SortOrder
+    fechaFin?: SortOrderInput | SortOrder
+    fechaInicioPractica?: SortOrderInput | SortOrder
+    estado?: SortOrder
+    convertidoAIndefinidoEn?: SortOrderInput | SortOrder
+    documento?: SortOrderInput | SortOrder
+    documentoTipo?: SortOrderInput | SortOrder
+    documentoNombre?: SortOrderInput | SortOrder
+    observacion?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    _count?: ContratoCountOrderByAggregateInput
+    _max?: ContratoMaxOrderByAggregateInput
+    _min?: ContratoMinOrderByAggregateInput
+  }
+
+  export type ContratoScalarWhereWithAggregatesInput = {
+    AND?: ContratoScalarWhereWithAggregatesInput | ContratoScalarWhereWithAggregatesInput[]
+    OR?: ContratoScalarWhereWithAggregatesInput[]
+    NOT?: ContratoScalarWhereWithAggregatesInput | ContratoScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Contrato"> | string
+    colaboradorId?: StringWithAggregatesFilter<"Contrato"> | string
+    tipo?: EnumTipoContratoWithAggregatesFilter<"Contrato"> | $Enums.TipoContrato
+    fechaInicio?: DateTimeWithAggregatesFilter<"Contrato"> | Date | string
+    fechaFin?: DateTimeNullableWithAggregatesFilter<"Contrato"> | Date | string | null
+    fechaInicioPractica?: DateTimeNullableWithAggregatesFilter<"Contrato"> | Date | string | null
+    estado?: EnumEstadoContratoWithAggregatesFilter<"Contrato"> | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: DateTimeNullableWithAggregatesFilter<"Contrato"> | Date | string | null
+    documento?: StringNullableWithAggregatesFilter<"Contrato"> | string | null
+    documentoTipo?: StringNullableWithAggregatesFilter<"Contrato"> | string | null
+    documentoNombre?: StringNullableWithAggregatesFilter<"Contrato"> | string | null
+    observacion?: StringNullableWithAggregatesFilter<"Contrato"> | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"Contrato"> | Date | string
+    actualizadoEn?: DateTimeWithAggregatesFilter<"Contrato"> | Date | string
+  }
+
+  export type ProrrogaContratoWhereInput = {
+    AND?: ProrrogaContratoWhereInput | ProrrogaContratoWhereInput[]
+    OR?: ProrrogaContratoWhereInput[]
+    NOT?: ProrrogaContratoWhereInput | ProrrogaContratoWhereInput[]
+    id?: StringFilter<"ProrrogaContrato"> | string
+    contratoId?: StringFilter<"ProrrogaContrato"> | string
+    desde?: DateTimeFilter<"ProrrogaContrato"> | Date | string
+    hasta?: DateTimeFilter<"ProrrogaContrato"> | Date | string
+    documento?: StringNullableFilter<"ProrrogaContrato"> | string | null
+    documentoTipo?: StringNullableFilter<"ProrrogaContrato"> | string | null
+    documentoNombre?: StringNullableFilter<"ProrrogaContrato"> | string | null
+    creadoEn?: DateTimeFilter<"ProrrogaContrato"> | Date | string
+    contrato?: XOR<ContratoRelationFilter, ContratoWhereInput>
+  }
+
+  export type ProrrogaContratoOrderByWithRelationInput = {
+    id?: SortOrder
+    contratoId?: SortOrder
+    desde?: SortOrder
+    hasta?: SortOrder
+    documento?: SortOrderInput | SortOrder
+    documentoTipo?: SortOrderInput | SortOrder
+    documentoNombre?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    contrato?: ContratoOrderByWithRelationInput
+  }
+
+  export type ProrrogaContratoWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ProrrogaContratoWhereInput | ProrrogaContratoWhereInput[]
+    OR?: ProrrogaContratoWhereInput[]
+    NOT?: ProrrogaContratoWhereInput | ProrrogaContratoWhereInput[]
+    contratoId?: StringFilter<"ProrrogaContrato"> | string
+    desde?: DateTimeFilter<"ProrrogaContrato"> | Date | string
+    hasta?: DateTimeFilter<"ProrrogaContrato"> | Date | string
+    documento?: StringNullableFilter<"ProrrogaContrato"> | string | null
+    documentoTipo?: StringNullableFilter<"ProrrogaContrato"> | string | null
+    documentoNombre?: StringNullableFilter<"ProrrogaContrato"> | string | null
+    creadoEn?: DateTimeFilter<"ProrrogaContrato"> | Date | string
+    contrato?: XOR<ContratoRelationFilter, ContratoWhereInput>
+  }, "id">
+
+  export type ProrrogaContratoOrderByWithAggregationInput = {
+    id?: SortOrder
+    contratoId?: SortOrder
+    desde?: SortOrder
+    hasta?: SortOrder
+    documento?: SortOrderInput | SortOrder
+    documentoTipo?: SortOrderInput | SortOrder
+    documentoNombre?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    _count?: ProrrogaContratoCountOrderByAggregateInput
+    _max?: ProrrogaContratoMaxOrderByAggregateInput
+    _min?: ProrrogaContratoMinOrderByAggregateInput
+  }
+
+  export type ProrrogaContratoScalarWhereWithAggregatesInput = {
+    AND?: ProrrogaContratoScalarWhereWithAggregatesInput | ProrrogaContratoScalarWhereWithAggregatesInput[]
+    OR?: ProrrogaContratoScalarWhereWithAggregatesInput[]
+    NOT?: ProrrogaContratoScalarWhereWithAggregatesInput | ProrrogaContratoScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ProrrogaContrato"> | string
+    contratoId?: StringWithAggregatesFilter<"ProrrogaContrato"> | string
+    desde?: DateTimeWithAggregatesFilter<"ProrrogaContrato"> | Date | string
+    hasta?: DateTimeWithAggregatesFilter<"ProrrogaContrato"> | Date | string
+    documento?: StringNullableWithAggregatesFilter<"ProrrogaContrato"> | string | null
+    documentoTipo?: StringNullableWithAggregatesFilter<"ProrrogaContrato"> | string | null
+    documentoNombre?: StringNullableWithAggregatesFilter<"ProrrogaContrato"> | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"ProrrogaContrato"> | Date | string
+  }
+
   export type EmpresaCreateInput = {
     id?: string
     nombre: string
@@ -28065,6 +30459,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -28089,6 +30484,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -28113,6 +30509,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -28137,6 +30534,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -29344,6 +31742,204 @@ export namespace Prisma {
     procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type ContratoCreateInput = {
+    id?: string
+    tipo: $Enums.TipoContrato
+    fechaInicio: Date | string
+    fechaFin?: Date | string | null
+    fechaInicioPractica?: Date | string | null
+    estado?: $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: Date | string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutContratosInput
+    prorrogas?: ProrrogaContratoCreateNestedManyWithoutContratoInput
+  }
+
+  export type ContratoUncheckedCreateInput = {
+    id?: string
+    colaboradorId: string
+    tipo: $Enums.TipoContrato
+    fechaInicio: Date | string
+    fechaFin?: Date | string | null
+    fechaInicioPractica?: Date | string | null
+    estado?: $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: Date | string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    prorrogas?: ProrrogaContratoUncheckedCreateNestedManyWithoutContratoInput
+  }
+
+  export type ContratoUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoContratoFieldUpdateOperationsInput | $Enums.TipoContrato
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    fechaInicioPractica?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estado?: EnumEstadoContratoFieldUpdateOperationsInput | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutContratosNestedInput
+    prorrogas?: ProrrogaContratoUpdateManyWithoutContratoNestedInput
+  }
+
+  export type ContratoUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoContratoFieldUpdateOperationsInput | $Enums.TipoContrato
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    fechaInicioPractica?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estado?: EnumEstadoContratoFieldUpdateOperationsInput | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    prorrogas?: ProrrogaContratoUncheckedUpdateManyWithoutContratoNestedInput
+  }
+
+  export type ContratoCreateManyInput = {
+    id?: string
+    colaboradorId: string
+    tipo: $Enums.TipoContrato
+    fechaInicio: Date | string
+    fechaFin?: Date | string | null
+    fechaInicioPractica?: Date | string | null
+    estado?: $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: Date | string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ContratoUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoContratoFieldUpdateOperationsInput | $Enums.TipoContrato
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    fechaInicioPractica?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estado?: EnumEstadoContratoFieldUpdateOperationsInput | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ContratoUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoContratoFieldUpdateOperationsInput | $Enums.TipoContrato
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    fechaInicioPractica?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estado?: EnumEstadoContratoFieldUpdateOperationsInput | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProrrogaContratoCreateInput = {
+    id?: string
+    desde: Date | string
+    hasta: Date | string
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    creadoEn?: Date | string
+    contrato: ContratoCreateNestedOneWithoutProrrogasInput
+  }
+
+  export type ProrrogaContratoUncheckedCreateInput = {
+    id?: string
+    contratoId: string
+    desde: Date | string
+    hasta: Date | string
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type ProrrogaContratoUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    contrato?: ContratoUpdateOneRequiredWithoutProrrogasNestedInput
+  }
+
+  export type ProrrogaContratoUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    contratoId?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProrrogaContratoCreateManyInput = {
+    id?: string
+    contratoId: string
+    desde: Date | string
+    hasta: Date | string
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type ProrrogaContratoUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProrrogaContratoUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    contratoId?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -30262,6 +32858,12 @@ export namespace Prisma {
     none?: PermisoWhereInput
   }
 
+  export type ContratoListRelationFilter = {
+    every?: ContratoWhereInput
+    some?: ContratoWhereInput
+    none?: ContratoWhereInput
+  }
+
   export type DiaEsperadoListRelationFilter = {
     every?: DiaEsperadoWhereInput
     some?: DiaEsperadoWhereInput
@@ -30279,6 +32881,10 @@ export namespace Prisma {
   }
 
   export type PermisoOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ContratoOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -31124,6 +33730,139 @@ export namespace Prisma {
     _max?: NestedEnumEstadoRetiroFilter<$PrismaModel>
   }
 
+  export type EnumTipoContratoFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoContrato | EnumTipoContratoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoContrato[]
+    notIn?: $Enums.TipoContrato[]
+    not?: NestedEnumTipoContratoFilter<$PrismaModel> | $Enums.TipoContrato
+  }
+
+  export type EnumEstadoContratoFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoContrato | EnumEstadoContratoFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoContrato[]
+    notIn?: $Enums.EstadoContrato[]
+    not?: NestedEnumEstadoContratoFilter<$PrismaModel> | $Enums.EstadoContrato
+  }
+
+  export type ProrrogaContratoListRelationFilter = {
+    every?: ProrrogaContratoWhereInput
+    some?: ProrrogaContratoWhereInput
+    none?: ProrrogaContratoWhereInput
+  }
+
+  export type ProrrogaContratoOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ContratoCountOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tipo?: SortOrder
+    fechaInicio?: SortOrder
+    fechaFin?: SortOrder
+    fechaInicioPractica?: SortOrder
+    estado?: SortOrder
+    convertidoAIndefinidoEn?: SortOrder
+    documento?: SortOrder
+    documentoTipo?: SortOrder
+    documentoNombre?: SortOrder
+    observacion?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type ContratoMaxOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tipo?: SortOrder
+    fechaInicio?: SortOrder
+    fechaFin?: SortOrder
+    fechaInicioPractica?: SortOrder
+    estado?: SortOrder
+    convertidoAIndefinidoEn?: SortOrder
+    documento?: SortOrder
+    documentoTipo?: SortOrder
+    documentoNombre?: SortOrder
+    observacion?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type ContratoMinOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tipo?: SortOrder
+    fechaInicio?: SortOrder
+    fechaFin?: SortOrder
+    fechaInicioPractica?: SortOrder
+    estado?: SortOrder
+    convertidoAIndefinidoEn?: SortOrder
+    documento?: SortOrder
+    documentoTipo?: SortOrder
+    documentoNombre?: SortOrder
+    observacion?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type EnumTipoContratoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoContrato | EnumTipoContratoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoContrato[]
+    notIn?: $Enums.TipoContrato[]
+    not?: NestedEnumTipoContratoWithAggregatesFilter<$PrismaModel> | $Enums.TipoContrato
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumTipoContratoFilter<$PrismaModel>
+    _max?: NestedEnumTipoContratoFilter<$PrismaModel>
+  }
+
+  export type EnumEstadoContratoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoContrato | EnumEstadoContratoFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoContrato[]
+    notIn?: $Enums.EstadoContrato[]
+    not?: NestedEnumEstadoContratoWithAggregatesFilter<$PrismaModel> | $Enums.EstadoContrato
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoContratoFilter<$PrismaModel>
+    _max?: NestedEnumEstadoContratoFilter<$PrismaModel>
+  }
+
+  export type ContratoRelationFilter = {
+    is?: ContratoWhereInput
+    isNot?: ContratoWhereInput
+  }
+
+  export type ProrrogaContratoCountOrderByAggregateInput = {
+    id?: SortOrder
+    contratoId?: SortOrder
+    desde?: SortOrder
+    hasta?: SortOrder
+    documento?: SortOrder
+    documentoTipo?: SortOrder
+    documentoNombre?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type ProrrogaContratoMaxOrderByAggregateInput = {
+    id?: SortOrder
+    contratoId?: SortOrder
+    desde?: SortOrder
+    hasta?: SortOrder
+    documento?: SortOrder
+    documentoTipo?: SortOrder
+    documentoNombre?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type ProrrogaContratoMinOrderByAggregateInput = {
+    id?: SortOrder
+    contratoId?: SortOrder
+    desde?: SortOrder
+    hasta?: SortOrder
+    documento?: SortOrder
+    documentoTipo?: SortOrder
+    documentoNombre?: SortOrder
+    creadoEn?: SortOrder
+  }
+
   export type UsuarioCreateNestedManyWithoutEmpresaInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -31860,6 +34599,13 @@ export namespace Prisma {
     connect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
   }
 
+  export type ContratoCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<ContratoCreateWithoutColaboradorInput, ContratoUncheckedCreateWithoutColaboradorInput> | ContratoCreateWithoutColaboradorInput[] | ContratoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ContratoCreateOrConnectWithoutColaboradorInput | ContratoCreateOrConnectWithoutColaboradorInput[]
+    createMany?: ContratoCreateManyColaboradorInputEnvelope
+    connect?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
+  }
+
   export type DiaEsperadoCreateNestedManyWithoutColaboradorInput = {
     create?: XOR<DiaEsperadoCreateWithoutColaboradorInput, DiaEsperadoUncheckedCreateWithoutColaboradorInput> | DiaEsperadoCreateWithoutColaboradorInput[] | DiaEsperadoUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: DiaEsperadoCreateOrConnectWithoutColaboradorInput | DiaEsperadoCreateOrConnectWithoutColaboradorInput[]
@@ -31886,6 +34632,13 @@ export namespace Prisma {
     connectOrCreate?: PermisoCreateOrConnectWithoutColaboradorInput | PermisoCreateOrConnectWithoutColaboradorInput[]
     createMany?: PermisoCreateManyColaboradorInputEnvelope
     connect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+  }
+
+  export type ContratoUncheckedCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<ContratoCreateWithoutColaboradorInput, ContratoUncheckedCreateWithoutColaboradorInput> | ContratoCreateWithoutColaboradorInput[] | ContratoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ContratoCreateOrConnectWithoutColaboradorInput | ContratoCreateOrConnectWithoutColaboradorInput[]
+    createMany?: ContratoCreateManyColaboradorInputEnvelope
+    connect?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
   }
 
   export type DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput = {
@@ -31948,6 +34701,20 @@ export namespace Prisma {
     deleteMany?: PermisoScalarWhereInput | PermisoScalarWhereInput[]
   }
 
+  export type ContratoUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<ContratoCreateWithoutColaboradorInput, ContratoUncheckedCreateWithoutColaboradorInput> | ContratoCreateWithoutColaboradorInput[] | ContratoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ContratoCreateOrConnectWithoutColaboradorInput | ContratoCreateOrConnectWithoutColaboradorInput[]
+    upsert?: ContratoUpsertWithWhereUniqueWithoutColaboradorInput | ContratoUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: ContratoCreateManyColaboradorInputEnvelope
+    set?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
+    disconnect?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
+    delete?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
+    connect?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
+    update?: ContratoUpdateWithWhereUniqueWithoutColaboradorInput | ContratoUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: ContratoUpdateManyWithWhereWithoutColaboradorInput | ContratoUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: ContratoScalarWhereInput | ContratoScalarWhereInput[]
+  }
+
   export type DiaEsperadoUpdateManyWithoutColaboradorNestedInput = {
     create?: XOR<DiaEsperadoCreateWithoutColaboradorInput, DiaEsperadoUncheckedCreateWithoutColaboradorInput> | DiaEsperadoCreateWithoutColaboradorInput[] | DiaEsperadoUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: DiaEsperadoCreateOrConnectWithoutColaboradorInput | DiaEsperadoCreateOrConnectWithoutColaboradorInput[]
@@ -32002,6 +34769,20 @@ export namespace Prisma {
     update?: PermisoUpdateWithWhereUniqueWithoutColaboradorInput | PermisoUpdateWithWhereUniqueWithoutColaboradorInput[]
     updateMany?: PermisoUpdateManyWithWhereWithoutColaboradorInput | PermisoUpdateManyWithWhereWithoutColaboradorInput[]
     deleteMany?: PermisoScalarWhereInput | PermisoScalarWhereInput[]
+  }
+
+  export type ContratoUncheckedUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<ContratoCreateWithoutColaboradorInput, ContratoUncheckedCreateWithoutColaboradorInput> | ContratoCreateWithoutColaboradorInput[] | ContratoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ContratoCreateOrConnectWithoutColaboradorInput | ContratoCreateOrConnectWithoutColaboradorInput[]
+    upsert?: ContratoUpsertWithWhereUniqueWithoutColaboradorInput | ContratoUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: ContratoCreateManyColaboradorInputEnvelope
+    set?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
+    disconnect?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
+    delete?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
+    connect?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
+    update?: ContratoUpdateWithWhereUniqueWithoutColaboradorInput | ContratoUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: ContratoUpdateManyWithWhereWithoutColaboradorInput | ContratoUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: ContratoScalarWhereInput | ContratoScalarWhereInput[]
   }
 
   export type DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput = {
@@ -32610,6 +35391,84 @@ export namespace Prisma {
     update?: XOR<XOR<AfiliadoUpdateToOneWithWhereWithoutRetirosInput, AfiliadoUpdateWithoutRetirosInput>, AfiliadoUncheckedUpdateWithoutRetirosInput>
   }
 
+  export type ColaboradorCreateNestedOneWithoutContratosInput = {
+    create?: XOR<ColaboradorCreateWithoutContratosInput, ColaboradorUncheckedCreateWithoutContratosInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutContratosInput
+    connect?: ColaboradorWhereUniqueInput
+  }
+
+  export type ProrrogaContratoCreateNestedManyWithoutContratoInput = {
+    create?: XOR<ProrrogaContratoCreateWithoutContratoInput, ProrrogaContratoUncheckedCreateWithoutContratoInput> | ProrrogaContratoCreateWithoutContratoInput[] | ProrrogaContratoUncheckedCreateWithoutContratoInput[]
+    connectOrCreate?: ProrrogaContratoCreateOrConnectWithoutContratoInput | ProrrogaContratoCreateOrConnectWithoutContratoInput[]
+    createMany?: ProrrogaContratoCreateManyContratoInputEnvelope
+    connect?: ProrrogaContratoWhereUniqueInput | ProrrogaContratoWhereUniqueInput[]
+  }
+
+  export type ProrrogaContratoUncheckedCreateNestedManyWithoutContratoInput = {
+    create?: XOR<ProrrogaContratoCreateWithoutContratoInput, ProrrogaContratoUncheckedCreateWithoutContratoInput> | ProrrogaContratoCreateWithoutContratoInput[] | ProrrogaContratoUncheckedCreateWithoutContratoInput[]
+    connectOrCreate?: ProrrogaContratoCreateOrConnectWithoutContratoInput | ProrrogaContratoCreateOrConnectWithoutContratoInput[]
+    createMany?: ProrrogaContratoCreateManyContratoInputEnvelope
+    connect?: ProrrogaContratoWhereUniqueInput | ProrrogaContratoWhereUniqueInput[]
+  }
+
+  export type EnumTipoContratoFieldUpdateOperationsInput = {
+    set?: $Enums.TipoContrato
+  }
+
+  export type EnumEstadoContratoFieldUpdateOperationsInput = {
+    set?: $Enums.EstadoContrato
+  }
+
+  export type ColaboradorUpdateOneRequiredWithoutContratosNestedInput = {
+    create?: XOR<ColaboradorCreateWithoutContratosInput, ColaboradorUncheckedCreateWithoutContratosInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutContratosInput
+    upsert?: ColaboradorUpsertWithoutContratosInput
+    connect?: ColaboradorWhereUniqueInput
+    update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutContratosInput, ColaboradorUpdateWithoutContratosInput>, ColaboradorUncheckedUpdateWithoutContratosInput>
+  }
+
+  export type ProrrogaContratoUpdateManyWithoutContratoNestedInput = {
+    create?: XOR<ProrrogaContratoCreateWithoutContratoInput, ProrrogaContratoUncheckedCreateWithoutContratoInput> | ProrrogaContratoCreateWithoutContratoInput[] | ProrrogaContratoUncheckedCreateWithoutContratoInput[]
+    connectOrCreate?: ProrrogaContratoCreateOrConnectWithoutContratoInput | ProrrogaContratoCreateOrConnectWithoutContratoInput[]
+    upsert?: ProrrogaContratoUpsertWithWhereUniqueWithoutContratoInput | ProrrogaContratoUpsertWithWhereUniqueWithoutContratoInput[]
+    createMany?: ProrrogaContratoCreateManyContratoInputEnvelope
+    set?: ProrrogaContratoWhereUniqueInput | ProrrogaContratoWhereUniqueInput[]
+    disconnect?: ProrrogaContratoWhereUniqueInput | ProrrogaContratoWhereUniqueInput[]
+    delete?: ProrrogaContratoWhereUniqueInput | ProrrogaContratoWhereUniqueInput[]
+    connect?: ProrrogaContratoWhereUniqueInput | ProrrogaContratoWhereUniqueInput[]
+    update?: ProrrogaContratoUpdateWithWhereUniqueWithoutContratoInput | ProrrogaContratoUpdateWithWhereUniqueWithoutContratoInput[]
+    updateMany?: ProrrogaContratoUpdateManyWithWhereWithoutContratoInput | ProrrogaContratoUpdateManyWithWhereWithoutContratoInput[]
+    deleteMany?: ProrrogaContratoScalarWhereInput | ProrrogaContratoScalarWhereInput[]
+  }
+
+  export type ProrrogaContratoUncheckedUpdateManyWithoutContratoNestedInput = {
+    create?: XOR<ProrrogaContratoCreateWithoutContratoInput, ProrrogaContratoUncheckedCreateWithoutContratoInput> | ProrrogaContratoCreateWithoutContratoInput[] | ProrrogaContratoUncheckedCreateWithoutContratoInput[]
+    connectOrCreate?: ProrrogaContratoCreateOrConnectWithoutContratoInput | ProrrogaContratoCreateOrConnectWithoutContratoInput[]
+    upsert?: ProrrogaContratoUpsertWithWhereUniqueWithoutContratoInput | ProrrogaContratoUpsertWithWhereUniqueWithoutContratoInput[]
+    createMany?: ProrrogaContratoCreateManyContratoInputEnvelope
+    set?: ProrrogaContratoWhereUniqueInput | ProrrogaContratoWhereUniqueInput[]
+    disconnect?: ProrrogaContratoWhereUniqueInput | ProrrogaContratoWhereUniqueInput[]
+    delete?: ProrrogaContratoWhereUniqueInput | ProrrogaContratoWhereUniqueInput[]
+    connect?: ProrrogaContratoWhereUniqueInput | ProrrogaContratoWhereUniqueInput[]
+    update?: ProrrogaContratoUpdateWithWhereUniqueWithoutContratoInput | ProrrogaContratoUpdateWithWhereUniqueWithoutContratoInput[]
+    updateMany?: ProrrogaContratoUpdateManyWithWhereWithoutContratoInput | ProrrogaContratoUpdateManyWithWhereWithoutContratoInput[]
+    deleteMany?: ProrrogaContratoScalarWhereInput | ProrrogaContratoScalarWhereInput[]
+  }
+
+  export type ContratoCreateNestedOneWithoutProrrogasInput = {
+    create?: XOR<ContratoCreateWithoutProrrogasInput, ContratoUncheckedCreateWithoutProrrogasInput>
+    connectOrCreate?: ContratoCreateOrConnectWithoutProrrogasInput
+    connect?: ContratoWhereUniqueInput
+  }
+
+  export type ContratoUpdateOneRequiredWithoutProrrogasNestedInput = {
+    create?: XOR<ContratoCreateWithoutProrrogasInput, ContratoUncheckedCreateWithoutProrrogasInput>
+    connectOrCreate?: ContratoCreateOrConnectWithoutProrrogasInput
+    upsert?: ContratoUpsertWithoutProrrogasInput
+    connect?: ContratoWhereUniqueInput
+    update?: XOR<XOR<ContratoUpdateToOneWithWhereWithoutProrrogasInput, ContratoUpdateWithoutProrrogasInput>, ContratoUncheckedUpdateWithoutProrrogasInput>
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -33057,6 +35916,40 @@ export namespace Prisma {
     _max?: NestedEnumEstadoRetiroFilter<$PrismaModel>
   }
 
+  export type NestedEnumTipoContratoFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoContrato | EnumTipoContratoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoContrato[]
+    notIn?: $Enums.TipoContrato[]
+    not?: NestedEnumTipoContratoFilter<$PrismaModel> | $Enums.TipoContrato
+  }
+
+  export type NestedEnumEstadoContratoFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoContrato | EnumEstadoContratoFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoContrato[]
+    notIn?: $Enums.EstadoContrato[]
+    not?: NestedEnumEstadoContratoFilter<$PrismaModel> | $Enums.EstadoContrato
+  }
+
+  export type NestedEnumTipoContratoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoContrato | EnumTipoContratoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoContrato[]
+    notIn?: $Enums.TipoContrato[]
+    not?: NestedEnumTipoContratoWithAggregatesFilter<$PrismaModel> | $Enums.TipoContrato
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumTipoContratoFilter<$PrismaModel>
+    _max?: NestedEnumTipoContratoFilter<$PrismaModel>
+  }
+
+  export type NestedEnumEstadoContratoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoContrato | EnumEstadoContratoFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoContrato[]
+    notIn?: $Enums.EstadoContrato[]
+    not?: NestedEnumEstadoContratoWithAggregatesFilter<$PrismaModel> | $Enums.EstadoContrato
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoContratoFilter<$PrismaModel>
+    _max?: NestedEnumEstadoContratoFilter<$PrismaModel>
+  }
+
   export type UsuarioCreateWithoutEmpresaInput = {
     id?: string
     email: string
@@ -33118,6 +36011,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -33141,6 +36035,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -34306,6 +37201,7 @@ export namespace Prisma {
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -34329,6 +37225,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -34810,6 +37707,50 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ContratoCreateWithoutColaboradorInput = {
+    id?: string
+    tipo: $Enums.TipoContrato
+    fechaInicio: Date | string
+    fechaFin?: Date | string | null
+    fechaInicioPractica?: Date | string | null
+    estado?: $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: Date | string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    prorrogas?: ProrrogaContratoCreateNestedManyWithoutContratoInput
+  }
+
+  export type ContratoUncheckedCreateWithoutColaboradorInput = {
+    id?: string
+    tipo: $Enums.TipoContrato
+    fechaInicio: Date | string
+    fechaFin?: Date | string | null
+    fechaInicioPractica?: Date | string | null
+    estado?: $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: Date | string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    prorrogas?: ProrrogaContratoUncheckedCreateNestedManyWithoutContratoInput
+  }
+
+  export type ContratoCreateOrConnectWithoutColaboradorInput = {
+    where: ContratoWhereUniqueInput
+    create: XOR<ContratoCreateWithoutColaboradorInput, ContratoUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type ContratoCreateManyColaboradorInputEnvelope = {
+    data: ContratoCreateManyColaboradorInput | ContratoCreateManyColaboradorInput[]
+    skipDuplicates?: boolean
+  }
+
   export type DiaEsperadoCreateWithoutColaboradorInput = {
     id?: string
     fecha: Date | string
@@ -35048,6 +37989,42 @@ export namespace Prisma {
     evidenciaTipo?: StringNullableFilter<"Permiso"> | string | null
     evidenciaNombre?: StringNullableFilter<"Permiso"> | string | null
     creadoEn?: DateTimeFilter<"Permiso"> | Date | string
+  }
+
+  export type ContratoUpsertWithWhereUniqueWithoutColaboradorInput = {
+    where: ContratoWhereUniqueInput
+    update: XOR<ContratoUpdateWithoutColaboradorInput, ContratoUncheckedUpdateWithoutColaboradorInput>
+    create: XOR<ContratoCreateWithoutColaboradorInput, ContratoUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type ContratoUpdateWithWhereUniqueWithoutColaboradorInput = {
+    where: ContratoWhereUniqueInput
+    data: XOR<ContratoUpdateWithoutColaboradorInput, ContratoUncheckedUpdateWithoutColaboradorInput>
+  }
+
+  export type ContratoUpdateManyWithWhereWithoutColaboradorInput = {
+    where: ContratoScalarWhereInput
+    data: XOR<ContratoUpdateManyMutationInput, ContratoUncheckedUpdateManyWithoutColaboradorInput>
+  }
+
+  export type ContratoScalarWhereInput = {
+    AND?: ContratoScalarWhereInput | ContratoScalarWhereInput[]
+    OR?: ContratoScalarWhereInput[]
+    NOT?: ContratoScalarWhereInput | ContratoScalarWhereInput[]
+    id?: StringFilter<"Contrato"> | string
+    colaboradorId?: StringFilter<"Contrato"> | string
+    tipo?: EnumTipoContratoFilter<"Contrato"> | $Enums.TipoContrato
+    fechaInicio?: DateTimeFilter<"Contrato"> | Date | string
+    fechaFin?: DateTimeNullableFilter<"Contrato"> | Date | string | null
+    fechaInicioPractica?: DateTimeNullableFilter<"Contrato"> | Date | string | null
+    estado?: EnumEstadoContratoFilter<"Contrato"> | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: DateTimeNullableFilter<"Contrato"> | Date | string | null
+    documento?: StringNullableFilter<"Contrato"> | string | null
+    documentoTipo?: StringNullableFilter<"Contrato"> | string | null
+    documentoNombre?: StringNullableFilter<"Contrato"> | string | null
+    observacion?: StringNullableFilter<"Contrato"> | string | null
+    creadoEn?: DateTimeFilter<"Contrato"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Contrato"> | Date | string
   }
 
   export type DiaEsperadoUpsertWithWhereUniqueWithoutColaboradorInput = {
@@ -35350,6 +38327,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
   }
 
@@ -35373,6 +38351,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
@@ -35445,6 +38424,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
   }
 
@@ -35468,6 +38448,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
@@ -35530,6 +38511,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
 
@@ -35553,6 +38535,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
@@ -35592,6 +38575,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
 
@@ -35615,6 +38599,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
@@ -35637,6 +38622,7 @@ export namespace Prisma {
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -35660,6 +38646,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -35774,6 +38761,7 @@ export namespace Prisma {
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -35797,6 +38785,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -35875,6 +38864,7 @@ export namespace Prisma {
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -35898,6 +38888,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -35980,6 +38971,7 @@ export namespace Prisma {
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -36003,6 +38995,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -37280,6 +40273,262 @@ export namespace Prisma {
     comisiones?: ComisionUncheckedUpdateManyWithoutAfiliadoNestedInput
   }
 
+  export type ColaboradorCreateWithoutContratosInput = {
+    id?: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    activo?: boolean
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    horario?: HorarioCreateNestedOneWithoutColaboradoresInput
+    registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorUncheckedCreateWithoutContratosInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    horarioId?: string | null
+    activo?: boolean
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorCreateOrConnectWithoutContratosInput = {
+    where: ColaboradorWhereUniqueInput
+    create: XOR<ColaboradorCreateWithoutContratosInput, ColaboradorUncheckedCreateWithoutContratosInput>
+  }
+
+  export type ProrrogaContratoCreateWithoutContratoInput = {
+    id?: string
+    desde: Date | string
+    hasta: Date | string
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type ProrrogaContratoUncheckedCreateWithoutContratoInput = {
+    id?: string
+    desde: Date | string
+    hasta: Date | string
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type ProrrogaContratoCreateOrConnectWithoutContratoInput = {
+    where: ProrrogaContratoWhereUniqueInput
+    create: XOR<ProrrogaContratoCreateWithoutContratoInput, ProrrogaContratoUncheckedCreateWithoutContratoInput>
+  }
+
+  export type ProrrogaContratoCreateManyContratoInputEnvelope = {
+    data: ProrrogaContratoCreateManyContratoInput | ProrrogaContratoCreateManyContratoInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ColaboradorUpsertWithoutContratosInput = {
+    update: XOR<ColaboradorUpdateWithoutContratosInput, ColaboradorUncheckedUpdateWithoutContratosInput>
+    create: XOR<ColaboradorCreateWithoutContratosInput, ColaboradorUncheckedCreateWithoutContratosInput>
+    where?: ColaboradorWhereInput
+  }
+
+  export type ColaboradorUpdateToOneWithWhereWithoutContratosInput = {
+    where?: ColaboradorWhereInput
+    data: XOR<ColaboradorUpdateWithoutContratosInput, ColaboradorUncheckedUpdateWithoutContratosInput>
+  }
+
+  export type ColaboradorUpdateWithoutContratosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
+    registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorUncheckedUpdateWithoutContratosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ProrrogaContratoUpsertWithWhereUniqueWithoutContratoInput = {
+    where: ProrrogaContratoWhereUniqueInput
+    update: XOR<ProrrogaContratoUpdateWithoutContratoInput, ProrrogaContratoUncheckedUpdateWithoutContratoInput>
+    create: XOR<ProrrogaContratoCreateWithoutContratoInput, ProrrogaContratoUncheckedCreateWithoutContratoInput>
+  }
+
+  export type ProrrogaContratoUpdateWithWhereUniqueWithoutContratoInput = {
+    where: ProrrogaContratoWhereUniqueInput
+    data: XOR<ProrrogaContratoUpdateWithoutContratoInput, ProrrogaContratoUncheckedUpdateWithoutContratoInput>
+  }
+
+  export type ProrrogaContratoUpdateManyWithWhereWithoutContratoInput = {
+    where: ProrrogaContratoScalarWhereInput
+    data: XOR<ProrrogaContratoUpdateManyMutationInput, ProrrogaContratoUncheckedUpdateManyWithoutContratoInput>
+  }
+
+  export type ProrrogaContratoScalarWhereInput = {
+    AND?: ProrrogaContratoScalarWhereInput | ProrrogaContratoScalarWhereInput[]
+    OR?: ProrrogaContratoScalarWhereInput[]
+    NOT?: ProrrogaContratoScalarWhereInput | ProrrogaContratoScalarWhereInput[]
+    id?: StringFilter<"ProrrogaContrato"> | string
+    contratoId?: StringFilter<"ProrrogaContrato"> | string
+    desde?: DateTimeFilter<"ProrrogaContrato"> | Date | string
+    hasta?: DateTimeFilter<"ProrrogaContrato"> | Date | string
+    documento?: StringNullableFilter<"ProrrogaContrato"> | string | null
+    documentoTipo?: StringNullableFilter<"ProrrogaContrato"> | string | null
+    documentoNombre?: StringNullableFilter<"ProrrogaContrato"> | string | null
+    creadoEn?: DateTimeFilter<"ProrrogaContrato"> | Date | string
+  }
+
+  export type ContratoCreateWithoutProrrogasInput = {
+    id?: string
+    tipo: $Enums.TipoContrato
+    fechaInicio: Date | string
+    fechaFin?: Date | string | null
+    fechaInicioPractica?: Date | string | null
+    estado?: $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: Date | string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutContratosInput
+  }
+
+  export type ContratoUncheckedCreateWithoutProrrogasInput = {
+    id?: string
+    colaboradorId: string
+    tipo: $Enums.TipoContrato
+    fechaInicio: Date | string
+    fechaFin?: Date | string | null
+    fechaInicioPractica?: Date | string | null
+    estado?: $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: Date | string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ContratoCreateOrConnectWithoutProrrogasInput = {
+    where: ContratoWhereUniqueInput
+    create: XOR<ContratoCreateWithoutProrrogasInput, ContratoUncheckedCreateWithoutProrrogasInput>
+  }
+
+  export type ContratoUpsertWithoutProrrogasInput = {
+    update: XOR<ContratoUpdateWithoutProrrogasInput, ContratoUncheckedUpdateWithoutProrrogasInput>
+    create: XOR<ContratoCreateWithoutProrrogasInput, ContratoUncheckedCreateWithoutProrrogasInput>
+    where?: ContratoWhereInput
+  }
+
+  export type ContratoUpdateToOneWithWhereWithoutProrrogasInput = {
+    where?: ContratoWhereInput
+    data: XOR<ContratoUpdateWithoutProrrogasInput, ContratoUncheckedUpdateWithoutProrrogasInput>
+  }
+
+  export type ContratoUpdateWithoutProrrogasInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoContratoFieldUpdateOperationsInput | $Enums.TipoContrato
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    fechaInicioPractica?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estado?: EnumEstadoContratoFieldUpdateOperationsInput | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutContratosNestedInput
+  }
+
+  export type ContratoUncheckedUpdateWithoutProrrogasInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoContratoFieldUpdateOperationsInput | $Enums.TipoContrato
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    fechaInicioPractica?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estado?: EnumEstadoContratoFieldUpdateOperationsInput | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type UsuarioCreateManyEmpresaInput = {
     id?: string
     afiliadoId?: string | null
@@ -37449,6 +40698,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -37472,6 +40722,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -37844,6 +41095,7 @@ export namespace Prisma {
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -37867,6 +41119,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -37922,6 +41175,22 @@ export namespace Prisma {
     evidenciaTipo?: string | null
     evidenciaNombre?: string | null
     creadoEn?: Date | string
+  }
+
+  export type ContratoCreateManyColaboradorInput = {
+    id?: string
+    tipo: $Enums.TipoContrato
+    fechaInicio: Date | string
+    fechaFin?: Date | string | null
+    fechaInicioPractica?: Date | string | null
+    estado?: $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: Date | string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
   }
 
   export type DiaEsperadoCreateManyColaboradorInput = {
@@ -38050,6 +41319,56 @@ export namespace Prisma {
     evidenciaTipo?: NullableStringFieldUpdateOperationsInput | string | null
     evidenciaNombre?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ContratoUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoContratoFieldUpdateOperationsInput | $Enums.TipoContrato
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    fechaInicioPractica?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estado?: EnumEstadoContratoFieldUpdateOperationsInput | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    prorrogas?: ProrrogaContratoUpdateManyWithoutContratoNestedInput
+  }
+
+  export type ContratoUncheckedUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoContratoFieldUpdateOperationsInput | $Enums.TipoContrato
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    fechaInicioPractica?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estado?: EnumEstadoContratoFieldUpdateOperationsInput | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    prorrogas?: ProrrogaContratoUncheckedUpdateManyWithoutContratoNestedInput
+  }
+
+  export type ContratoUncheckedUpdateManyWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoContratoFieldUpdateOperationsInput | $Enums.TipoContrato
+    fechaInicio?: DateTimeFieldUpdateOperationsInput | Date | string
+    fechaFin?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    fechaInicioPractica?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estado?: EnumEstadoContratoFieldUpdateOperationsInput | $Enums.EstadoContrato
+    convertidoAIndefinidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DiaEsperadoUpdateWithoutColaboradorInput = {
@@ -38514,6 +41833,46 @@ export namespace Prisma {
     procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type ProrrogaContratoCreateManyContratoInput = {
+    id?: string
+    desde: Date | string
+    hasta: Date | string
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type ProrrogaContratoUpdateWithoutContratoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProrrogaContratoUncheckedUpdateWithoutContratoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProrrogaContratoUncheckedUpdateManyWithoutContratoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
 
 
   /**
@@ -38547,6 +41906,10 @@ export namespace Prisma {
      * @deprecated Use AfiliadoCountOutputTypeDefaultArgs instead
      */
     export type AfiliadoCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = AfiliadoCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ContratoCountOutputTypeDefaultArgs instead
+     */
+    export type ContratoCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ContratoCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use EmpresaDefaultArgs instead
      */
@@ -38635,6 +41998,14 @@ export namespace Prisma {
      * @deprecated Use SolicitudRetiroDefaultArgs instead
      */
     export type SolicitudRetiroArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SolicitudRetiroDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ContratoDefaultArgs instead
+     */
+    export type ContratoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ContratoDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ProrrogaContratoDefaultArgs instead
+     */
+    export type ProrrogaContratoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ProrrogaContratoDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

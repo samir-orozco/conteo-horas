@@ -416,6 +416,34 @@ exports.Prisma.SolicitudRetiroScalarFieldEnum = {
   procesadoPor: 'procesadoPor'
 };
 
+exports.Prisma.ContratoScalarFieldEnum = {
+  id: 'id',
+  colaboradorId: 'colaboradorId',
+  tipo: 'tipo',
+  fechaInicio: 'fechaInicio',
+  fechaFin: 'fechaFin',
+  fechaInicioPractica: 'fechaInicioPractica',
+  estado: 'estado',
+  convertidoAIndefinidoEn: 'convertidoAIndefinidoEn',
+  documento: 'documento',
+  documentoTipo: 'documentoTipo',
+  documentoNombre: 'documentoNombre',
+  observacion: 'observacion',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
+exports.Prisma.ProrrogaContratoScalarFieldEnum = {
+  id: 'id',
+  contratoId: 'contratoId',
+  desde: 'desde',
+  hasta: 'hasta',
+  documento: 'documento',
+  documentoTipo: 'documentoTipo',
+  documentoNombre: 'documentoNombre',
+  creadoEn: 'creadoEn'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -511,6 +539,18 @@ exports.EstadoRetiro = exports.$Enums.EstadoRetiro = {
   RECHAZADO: 'RECHAZADO'
 };
 
+exports.TipoContrato = exports.$Enums.TipoContrato = {
+  INDEFINIDO: 'INDEFINIDO',
+  FIJO: 'FIJO',
+  OBRA_LABOR: 'OBRA_LABOR',
+  APRENDIZAJE: 'APRENDIZAJE'
+};
+
+exports.EstadoContrato = exports.$Enums.EstadoContrato = {
+  VIGENTE: 'VIGENTE',
+  TERMINADO: 'TERMINADO'
+};
+
 exports.Prisma.ModelName = {
   Empresa: 'Empresa',
   Suscripcion: 'Suscripcion',
@@ -533,7 +573,9 @@ exports.Prisma.ModelName = {
   Usuario: 'Usuario',
   Afiliado: 'Afiliado',
   Comision: 'Comision',
-  SolicitudRetiro: 'SolicitudRetiro'
+  SolicitudRetiro: 'SolicitudRetiro',
+  Contrato: 'Contrato',
+  ProrrogaContrato: 'ProrrogaContrato'
 };
 
 /**
