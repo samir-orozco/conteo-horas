@@ -151,7 +151,9 @@ export default function calculadoraJornada42(hoyISO) {
 .calc .campos input[type=number]{width:100%;font-size:22px;font-weight:800;padding:10px 14px;
   border:1px solid #dcdcdc;border-radius:12px;color:#303030;font-variant-numeric:tabular-nums;
   background:#fff}
-.calc .campos input:focus{outline:2px solid #FFD85E;outline-offset:1px;border-color:#FFD85E}
+/* Solo los campos sueltos: el del salario va envuelto en .pesos y su anillo lo
+   pone la pildora, para no dibujar un recuadro dentro de otro. */
+.calc .campos input[type=number]:focus{outline:2px solid #FFD85E;outline-offset:1px;border-color:#FFD85E}
 .calc .campos .pesos{max-width:none}
 .calc .campos .pesos input{font-size:22px}
 .calc .campos .pista{font-size:12.5px;margin:7px 0 0;line-height:1.4}
@@ -242,6 +244,11 @@ export default function calculadoraJornada42(hoyISO) {
     descripcion: `Calcula en pesos lo que la reducción de jornada de la Ley 2101 le suma a tu nómina: horas extra por persona, costo mensual y anual, y la diferencia contra la jornada anterior de ${antes} horas.`,
     categoria: 'Calculadora',
     subtitulo: `con la jornada de ${jornada} horas vigente desde el 15 de julio de 2026`,
+    destacado: {
+      valor: cop(dif),
+      rotulo: `le sumó al mes la reducción a una empresa de ${EJEMPLO.personas} personas`,
+      pie: `De ${antes} a ${jornada} horas · ${EJEMPLO.horasSemana} horas por semana`,
+    },
     secciones: [
       { id: 'calc', titulo: 'La calculadora' },
       { id: 'que-cambio', titulo: 'Qué cambió exactamente' },

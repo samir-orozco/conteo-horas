@@ -88,7 +88,14 @@ a{color:#303030}
 .lienzo img{width:100%;height:100%;object-fit:cover;position:relative;z-index:1}
 
 /* Artículo */
-.art-cab{background:#f6f6f4;border-bottom:1px solid #ececec;padding-bottom:52px}
+/* El aire de arriba va como padding y no como margen de las migas. Con margen
+   se colapsaba hacia fuera del bloque gris (es el primer hijo y el bloque no
+   tenia padding superior), asi que el espacio aparecia ENCIMA de la banda y las
+   migas quedaban pegadas al borde de arriba. Vale para articulos y para
+   calculadoras, que comparten esta cabecera. */
+.art-cab{background:#f6f6f4;border-bottom:1px solid #ececec;padding:38px 0 52px}
+.art-cab .migas{margin-top:0}
+@media(max-width:640px){.art-cab{padding-top:26px}}
 .art-cab .rej{display:grid;grid-template-columns:1.08fr .92fr;gap:52px;align-items:center}
 .art-cab h1{font-size:clamp(30px,4.3vw,47px);line-height:1.13;letter-spacing:-.02em;margin:0 0 26px;font-weight:800}
 .firma{display:flex;align-items:center;gap:13px;font-size:15px;color:#6b6b6b}
@@ -190,6 +197,7 @@ const CSS_CALC = `
 .pesos span{color:#898989;font-size:20px;font-weight:700;line-height:1}
 .pesos input{border:0;outline:0;font-size:24px;font-weight:800;width:100%;min-width:0;color:#303030;
   font-variant-numeric:tabular-nums;background:transparent}
+.pesos:focus-within{outline:2px solid #FFD85E;outline-offset:1px;border-color:#FFD85E}
 .calc-cab .pista{margin:12px 0 0;font-size:15px;color:#4a4a4a}
 .tenue{color:#898989}
 .calc-total{background:#303030;color:#fff;padding:20px 24px}
@@ -205,6 +213,51 @@ const CSS_CALC = `
 .cierre-cta p:last-child{margin:0}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:560px){.calc-total strong{font-size:26px}}
+`;
+
+// Estilos del indice de calculadoras. Van aparte y no en el CSS base porque
+// solo los usa esta pagina.
+const CSS_INDICE_CALC = `
+.cab-calc{max-width:760px}
+.cab-calc h1{font-size:clamp(32px,4.6vw,50px);line-height:1.1;letter-spacing:-.02em;
+  margin:0 0 18px;font-weight:800}
+.cab-calc p{font-size:18.5px;line-height:1.62;color:#4a4a4a;margin:0 0 22px}
+.sellos{display:flex;flex-wrap:wrap;gap:9px}
+.sellos span{background:#fff;border:1px solid #e6e6e6;border-radius:999px;padding:6px 15px;
+  font-size:13.5px;font-weight:600;color:#4a4a4a}
+.zona-calc{padding:52px 0 88px}
+.rej-calc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px}
+.tarj-calc{display:flex;flex-direction:column;border:1px solid #e6e6e6;border-radius:20px;
+  overflow:hidden;background:#fff;text-decoration:none;color:#303030;
+  transition:border-color .16s ease,transform .16s ease,box-shadow .16s ease}
+.tarj-calc:hover{border-color:#d6d6d6;transform:translateY(-3px);
+  box-shadow:0 14px 34px rgba(0,0,0,.07)}
+.cifra{background:#303030;color:#fff;padding:34px 30px 30px;display:flex;flex-direction:column;gap:9px}
+.cifra strong{font-size:clamp(38px,5vw,52px);line-height:1;font-weight:800;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:#FFD85E}
+.cifra span{font-size:15.5px;line-height:1.5;color:#e6e6e6;max-width:34ch}
+.cifra em{font-style:normal;font-size:13px;color:#9a9a9a;margin-top:5px}
+.cuerpo-tarj{padding:26px 30px 30px;display:flex;flex-direction:column;flex:1}
+.cuerpo-tarj .eti{background:#FFF6D9;color:#7a5c00;font-weight:700;font-size:12px;
+  padding:4px 12px;border-radius:999px;align-self:flex-start;text-transform:uppercase;
+  letter-spacing:.04em}
+.cuerpo-tarj h2{font-size:24px;line-height:1.24;letter-spacing:-.015em;margin:15px 0 11px;font-weight:800}
+.cuerpo-tarj p{font-size:15.5px;line-height:1.6;color:#4a4a4a;margin:0 0 22px}
+.cuerpo-tarj .ir{margin-top:auto;display:inline-flex;align-items:center;gap:8px;
+  font-weight:700;font-size:15px}
+.tarj-calc:hover .ir svg{transform:translateX(3px)}
+.cuerpo-tarj .ir svg{transition:transform .16s ease}
+.franja-blog{margin-top:52px;background:#f6f6f4;border:1px solid #ececec;border-radius:20px;
+  padding:30px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.franja-blog h3{margin:0 0 7px;font-size:21px;font-weight:800;letter-spacing:-.01em}
+.franja-blog p{margin:0;color:#4a4a4a;font-size:15.5px;max-width:56ch;line-height:1.6}
+@media(max-width:820px){
+  .rej-calc{grid-template-columns:1fr}
+  .zona-calc{padding:34px 0 60px}
+  .cifra{padding:28px 24px 24px}
+  .cuerpo-tarj{padding:22px 24px 26px}
+  .franja-blog{padding:24px}
+}
 `;
 
 function cabecera() {
@@ -352,19 +405,46 @@ export function paginaIndice(articulos) {
 export function paginaCalculadorasIndice(calculadoras) {
   const url = `${SITIO.url}/calculadoras/`;
 
-  const tarjeta = c => `<a class="tarjeta" href="${c.ruta}">
-    <span class="eti">${esc(c.categoria)}</span>
-    <h3>${esc(c.titulo)}</h3>
-    <p>${esc(c.descripcion)}</p>
-    <span class="meta">Gratis, sin registro · actualizada el ${fechaLarga(c.actualizado)}</span>
+  // Cada tarjeta se abre con la cifra que esa calculadora produce, en grande y
+  // sobre fondo oscuro. Es el sitio donde normalmente iria una fotografia, y
+  // aqui funciona mejor: no tenemos banco de imagenes, y un numero real dice en
+  // un segundo para que sirve la pagina. Ademas se recalcula solo.
+  const tarjeta = c => `<a class="tarj-calc" href="${c.ruta}">
+    <div class="cifra">
+      <strong>${esc(c.destacado.valor)}</strong>
+      <span>${esc(c.destacado.rotulo)}</span>
+      <em>${esc(c.destacado.pie)}</em>
+    </div>
+    <div class="cuerpo-tarj">
+      <span class="eti">${esc(c.categoria)}</span>
+      <h2>${esc(c.titulo)}</h2>
+      <p>${esc(c.descripcion)}</p>
+      <span class="ir">Abrir calculadora <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </div>
   </a>`;
 
-  const cuerpo = `<main class="env portada">
-  <nav class="migas" aria-label="Ruta"><a href="/">Inicio</a><span class="sep">›</span><span>Calculadoras</span></nav>
-  <h1>Calculadoras laborales</h1>
-  <p class="bajada">Las cuentas de la nómina colombiana, con los porcentajes y la jornada vigentes hoy. Son las mismas reglas que aplica HoraPro cuando liquida, y se actualizan solas cuando cambia la ley.</p>
-  <div class="rejilla">${calculadoras.map(tarjeta).join('')}</div>
-</main>`;
+  const cuerpo = `<div class="art-cab"><div class="env">
+    <nav class="migas" aria-label="Ruta"><a href="/">Inicio</a><span class="sep">›</span><span>Calculadoras</span></nav>
+    <div class="cab-calc">
+      <h1>Calculadoras laborales</h1>
+      <p>Las cuentas de la nómina colombiana con los porcentajes y la jornada vigentes hoy. Son las mismas reglas que aplica HoraPro cuando liquida, así que si cambia la ley, cambian solas.</p>
+      <div class="sellos">
+        <span>Gratis</span><span>Sin registro</span><span>Ley 2466 y Ley 2101 al día</span>
+      </div>
+    </div>
+  </div></div>
+
+  <main class="env zona-calc">
+    <div class="rej-calc">${calculadoras.map(tarjeta).join('')}</div>
+
+    <section class="franja-blog">
+      <div>
+        <h3>¿Necesitas la explicación completa?</h3>
+        <p>En el blog está el detalle de cada regla, con casos resueltos en pesos y las fechas en que cambió cada porcentaje.</p>
+      </div>
+      <a class="cta" href="/blog/">Ir al blog</a>
+    </section>
+  </main>`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -396,6 +476,7 @@ export function paginaCalculadorasIndice(calculadoras) {
     ruta: '/calculadoras/',
     jsonLd,
     cuerpo,
+    estilos: CSS_INDICE_CALC,
   });
 }
 

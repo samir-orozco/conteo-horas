@@ -181,6 +181,11 @@ export default function calculadoraHorasExtra(hoyISO) {
     descripcion: `Calcula horas extra, recargo nocturno y dominical con los factores vigentes en Colombia: jornada de ${r.jornada} horas, nocturna desde las ${nocturna.split(' a ')[0]} y dominical al ${domPct}%. Gratis y sin registro.`,
     categoria: 'Calculadora',
     subtitulo: `con la jornada de ${r.jornada} horas y el dominical al ${domPct}%`,
+    destacado: {
+      valor: cop(hora),
+      rotulo: `vale hoy una hora ordinaria con salario de ${cop(SALARIO_EJEMPLO)}`,
+      pie: `Dominical al ${domPct}% · nocturna desde las ${nocturna.split(' a ')[0]}`,
+    },
     secciones: [
       { id: 'calc', titulo: 'La calculadora' },
       { id: 'tabla', titulo: 'Cuánto vale cada hora' },
