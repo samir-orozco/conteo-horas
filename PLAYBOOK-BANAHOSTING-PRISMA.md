@@ -166,11 +166,25 @@ contra MySQL (local y en producción) funcionan sin cambios de comportamiento.
      ```
      mv .env.local.bak .env.local
      ```
-     Verifica que el bundle horneó la URL de prod y no `localhost`:
+     Verifica que el bundle horneó la URL de prod y no la local:
      ```
-     grep -rl "localhost" frontend/dist/assets/*.js
+     grep -c "localhost:3001" frontend/dist/assets/*.js | grep -v ":0"
      ```
      (debe no devolver nada)
+
+     > Antes aquí decía `grep -rl "localhost"` a secas, y eso **siempre** encuentra
+     > algo: react-router y otra dependencia llevan un `http://localhost` de
+     > respaldo interno, y el propio código tiene un
+     > `["localhost","127.0.0.1"].includes(location.hostname)` para detectar si
+     > corre en desarrollo. Ninguno es la URL de la API. Una comprobación que
+     > salta siempre se acaba ignorando, que es peor que no tenerla: hay que
+     > buscar el puerto del backend local, que es lo que de verdad no puede
+     > quedar horneado.
+
+     Y de paso, que sí esté la de producción:
+     ```
+     grep -c "https://horapro.co/api" frontend/dist/assets/*.js | grep -v ":0"
+     ```
 4. **Arma las ramas de build en un worktree temporal** (nunca con `git checkout` en tu carpeta de trabajo — los artefactos gitignored quedan sin seguimiento y git se niega a cambiar de rama de vuelta a `develop`):
    ```
    git worktree add /ruta/temporal/wt-frontend-build frontend-build
