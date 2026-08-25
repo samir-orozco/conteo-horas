@@ -93,7 +93,14 @@ a{color:#303030}
 .lienzo img{width:100%;height:100%;object-fit:cover;position:relative;z-index:1}
 
 /* Artículo */
-.art-cab{background:#f6f6f4;border-bottom:1px solid #ececec;padding-bottom:52px}
+/* El aire de arriba va como padding y no como margen de las migas. Con margen
+   se colapsaba hacia fuera del bloque gris (es el primer hijo y el bloque no
+   tenia padding superior), asi que el espacio aparecia ENCIMA de la banda y las
+   migas quedaban pegadas al borde de arriba. Vale para articulos y para
+   calculadoras, que comparten esta cabecera. */
+.art-cab{background:#f6f6f4;border-bottom:1px solid #ececec;padding:38px 0 52px}
+.art-cab .migas{margin-top:0}
+@media(max-width:640px){.art-cab{padding-top:26px}}
 .art-cab .rej{display:grid;grid-template-columns:1.08fr .92fr;gap:52px;align-items:center}
 .art-cab h1{font-size:clamp(30px,4.3vw,47px);line-height:1.13;letter-spacing:-.02em;margin:0 0 26px;font-weight:800}
 .firma{display:flex;align-items:center;gap:13px;font-size:15px;color:#6b6b6b}
@@ -188,6 +195,7 @@ a{color:#303030}
 .pesos span{color:#898989;font-size:20px;font-weight:700;line-height:1}
 .pesos input{border:0;outline:0;font-size:24px;font-weight:800;width:100%;min-width:0;color:#303030;
   font-variant-numeric:tabular-nums;background:transparent}
+.pesos:focus-within{outline:2px solid #FFD85E;outline-offset:1px;border-color:#FFD85E}
 .calc-cab .pista{margin:12px 0 0;font-size:15px;color:#4a4a4a}
 .tenue{color:#898989}
 .calc-total{background:#303030;color:#fff;padding:20px 24px}
