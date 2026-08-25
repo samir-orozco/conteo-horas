@@ -5,7 +5,7 @@ import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import {
   ArrowLeft, Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
-  ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Download, Lock,
+  ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Lock,
 } from 'lucide-react';
 import api from '../lib/api';
 import { formatearMiles, parsearMiles, resumenFranjas, type Franja } from './Colaboradores';
@@ -15,6 +15,7 @@ import SelectorSedes from '../components/SelectorSedes';
 import Toast from '../components/Toast';
 import CampoEvidencia, { type CambioEvidencia } from '../components/CampoEvidencia';
 import PanelContratos from '../features/contratos/PanelContratos';
+import VisorDocumento from '../components/VisorDocumento';
 import { TIPO_PERMISO_LABEL } from '../constants/permisos';
 import { useMiPlan } from '../lib/plan';
 
@@ -653,25 +654,7 @@ export default function ColaboradorDetalle() {
       )}
 
       {/* Visor de evidencia (imagen inline o PDF) */}
-      {evidenciaVer && (
-        <div className="fixed inset-0 !mt-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setEvidenciaVer(null)}>
-          <div className="hp-pop bg-white rounded-2xl p-4 w-full max-w-2xl shadow-xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3 px-1">
-              <p className="text-sm font-semibold text-ink truncate">{evidenciaVer.nombre || 'Evidencia'}</p>
-              <div className="flex items-center gap-1">
-                <a href={evidenciaVer.data} download={evidenciaVer.nombre || 'evidencia'} title="Descargar"
-                  className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"><Download size={18} /></a>
-                <button onClick={() => setEvidenciaVer(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
-              </div>
-            </div>
-            {evidenciaVer.tipo === 'application/pdf' ? (
-              <iframe src={evidenciaVer.data} title="Evidencia PDF" className="w-full flex-1 min-h-[60vh] rounded-lg border border-gray-200" />
-            ) : (
-              <img src={evidenciaVer.data} alt="Evidencia" className="w-full object-contain rounded-lg max-h-[75vh]" />
-            )}
-          </div>
-        </div>
-      )}
+      {evidenciaVer && <VisorDocumento doc={evidenciaVer} onCerrar={() => setEvidenciaVer(null)} />}
     </div>
   );
 }

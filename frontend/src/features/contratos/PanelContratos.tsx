@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { FileSignature, Plus, AlertTriangle } from 'lucide-react';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import VisorDocumento, { type DocumentoVisto } from '../../components/VisorDocumento';
 import CampoEvidencia, { type CambioEvidencia } from '../../components/CampoEvidencia';
 import { TIPO_LABEL, type Contrato, type TipoContrato } from './tipos';
 import TarjetaContrato from './TarjetaContrato';
@@ -45,6 +46,9 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
   const [prorrogando, setProrrogando] = useState<Contrato | null>(null);
   const [prorroga, setProrroga] = useState({ desde: '', hasta: '' });
   const [mesesProrroga, setMesesProrroga] = useState(3);
+  const [adjuntoProrroga, setAdjuntoProrroga] = useState<CambioEvidencia>({ tipo: 'sin-cambio' });
+  const [documento, setDocumento] = useState<DocumentoVisto | null>(null);
+  const [abriendoDoc, setAbriendoDoc] = useState(false);
 
   const cargar = useCallback(() => {
     api.get(`/contratos/colaborador/${colaboradorId}`)
@@ -81,8 +85,13 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
     if (!prorrogando) return;
     setGuardando(true); setError('');
     try {
-      await api.post(`/contratos/${prorrogando.id}/prorrogas`, prorroga);
-      setProrrogando(null); setProrroga({ desde: '', hasta: '' });
+      const cuerpo: { desde: string; hasta: string; documento?: string; documentoNombre?: string } = { ...prorroga };
+      if (adjuntoProrroga.tipo === 'nuevo') {
+        cuerpo.documento = adjuntoProrroga.evidencia.data;
+        cuerpo.documentoNombre = adjuntoProrroga.evidencia.nombre;
+      }
+      await api.post(`/contratos/${prorrogando.id}/prorrogas`, cuerpo);
+      setProrrogando(null); setProrroga({ desde: '', hasta: '' }); setAdjuntoProrroga({ tipo: 'sin-cambio' });
       cargar();
     } catch (err) {
       setError(mensaje(err, 'No pudimos guardar la prórroga.'));
@@ -93,6 +102,16 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
     if (!porBorrar) return;
     await api.delete(`/contratos/${porBorrar.id}`).catch(() => setError('No pudimos eliminar el contrato.'));
     setPorBorrar(null); cargar();
+  };
+
+  const verDocumento = async (url: string, nombre: string | null) => {
+    setAbriendoDoc(true);
+    try {
+      const r = await api.get(url);
+      setDocumento({ data: r.data.documento, tipo: r.data.documentoTipo, nombre: r.data.documentoNombre ?? nombre });
+    } catch {
+      setError('No pudimos abrir el documento.');
+    } finally { setAbriendoDoc(false); }
   };
 
   const confirmarIndefinido = async (c: Contrato) => {
@@ -160,6 +179,7 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
             onBorrar={() => setPorBorrar(c)}
             onProrrogar={() => { setProrroga({ desde: soloFecha(c.calculo.finVigente), hasta: '' }); setMesesProrroga(12); setProrrogando(c); }}
             onConvertir={() => confirmarIndefinido(c)}
+            onVerDocumento={verDocumento}
           />
         ))}
       </div>
@@ -333,6 +353,11 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
                 </div>
               );
             })()}
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1">Otrosí firmado (opcional)</label>
+              <CampoEvidencia onCambio={setAdjuntoProrroga} />
+            </div>
+
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-3 justify-end">
               <button type="button" onClick={() => setProrrogando(null)}
@@ -355,6 +380,9 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
         onContinuar={eliminar}
         onCancelar={() => setPorBorrar(null)}
       />
+
+      {abriendoDoc && <p className="text-xs text-muted mt-2">Abriendo documento...</p>}
+      {documento && <VisorDocumento doc={documento} onCerrar={() => setDocumento(null)} />}
     </div>
   );
 }

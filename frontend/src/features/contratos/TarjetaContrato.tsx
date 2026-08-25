@@ -1,6 +1,6 @@
 import { format, differenceInCalendarDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Trash2, Paperclip, AlertTriangle, Info, Check, Plus } from 'lucide-react';
+import { Trash2, Paperclip, AlertTriangle, Info, Check, Plus, FileText, Image as ImageIcon } from 'lucide-react';
 import { TIPO_LABEL, ALERTA, type Contrato } from './tipos';
 
 const dLarga = (s: string | null) => s ? format(new Date(s), "d MMM yyyy", { locale: es }) : '—';
@@ -33,11 +33,13 @@ function Dato({ rotulo, valor, pie, tono }: { rotulo: string; valor: string; pie
   );
 }
 
-export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir }: {
+export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir, onVerDocumento }: {
   c: Contrato;
   onBorrar: () => void;
   onProrrogar: () => void;
   onConvertir: () => void;
+  // El archivo no viaja con el listado por su peso: se pide al abrirlo.
+  onVerDocumento: (url: string, nombre: string | null) => void;
 }) {
   const k = c.calculo;
   const indefinidoDeFacto = c.tipo === 'INDEFINIDO' || !!c.convertidoAIndefinidoEn;
@@ -81,8 +83,12 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir 
           {k.etapa && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/30 text-ink">ETAPA {k.etapa}</span>
           )}
-          {c.documentoNombre && (
-            <span className="text-[11px] text-muted flex items-center gap-1"><Paperclip size={11} />{c.documentoNombre}</span>
+          {c.documentoTipo && (
+            <button onClick={() => onVerDocumento(`/contratos/${c.id}/documento`, c.documentoNombre)}
+              className="text-[11px] font-medium text-primary-dark hover:underline flex items-center gap-1">
+              {c.documentoTipo === 'application/pdf' ? <FileText size={12} className="text-red-500" /> : <ImageIcon size={12} />}
+              {c.documentoNombre || 'Ver contrato'}
+            </button>
           )}
         </div>
         <button onClick={onBorrar} title="Eliminar contrato"
@@ -168,7 +174,11 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir 
                     esLaCuarta ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-muted'}`}>{i + 1}</span>
                   <span className="text-ink font-mono">{dCorta(p.desde)} → {dCorta(p.hasta)}</span>
                   <span className="text-muted">{duracionLegible(d)}</span>
-                  {p.documentoNombre && <Paperclip size={11} className="text-primary-dark" />}
+                  {p.documentoTipo && (
+                    <button onClick={() => onVerDocumento(`/contratos/prorrogas/${p.id}/documento`, p.documentoNombre)}
+                      title={p.documentoNombre || 'Ver otrosí'}
+                      className="text-primary-dark hover:text-ink"><Paperclip size={12} /></button>
+                  )}
                   {esLaCuarta && <span className="text-[10px] font-semibold text-amber-700">límite de las cortas</span>}
                 </div>
               );

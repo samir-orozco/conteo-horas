@@ -14,7 +14,7 @@ export function rangoDiaBogota(ahora: Date = new Date()): { ahoraBog: Date; inic
 // Medianoche de Bogotá de una fecha "YYYY-MM-DD", como instante UTC.
 // Colombia es UTC-5 fijo (no tiene horario de verano), así que son las 05:00.
 // Es la misma convención con la que el kiosco guarda `Registro.fecha`.
-function medianocheBogota(fecha: string): Date {
+export function medianocheBogota(fecha: string): Date {
   const [a, m, d] = fecha.slice(0, 10).split('-').map(Number);
   return new Date(Date.UTC(a, m - 1, d, 5, 0, 0));
 }

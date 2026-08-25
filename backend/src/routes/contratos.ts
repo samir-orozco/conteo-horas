@@ -1,7 +1,18 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../index';
+// Desde '../prisma' y no desde '../index': importar index arranca el servidor,
+// y \`avisarContratos\` tiene que poder usarse desde un script sin levantar nada.
+import { prisma } from '../prisma';
 import { notificar, type TipoNotif } from '../utils/notificaciones';
 import { estadoDelContrato, type ContratoParaCalculo, type ProrrogaParaCalculo } from '../utils/contratos';
+import { medianocheBogota } from '../utils/fechas';
+
+// Las fechas llegan del formulario como "YYYY-MM-DD" y se anclan a medianoche de
+// BOGOTÁ, no de UTC. `new Date("2026-04-01")` son las 00:00 UTC, que en Colombia
+// es el 31 de marzo a las 7 p.m.: el contrato se guardaba y se mostraba un día
+// antes de lo que la persona escribió. Es la misma convención con la que el
+// kiosco guarda las marcaciones.
+const fechaBogota = (v: unknown): Date | null =>
+  typeof v === 'string' && v.length >= 10 ? medianocheBogota(v) : null;
 
 // Documento del contrato: PDF o imagen en base64, con tope de tamaño. Mismo
 // patrón y mismo límite que la evidencia de las novedades.
@@ -21,10 +32,10 @@ function limpiar(data: any, esNuevo: boolean) {
   const out: any = {};
   if (esNuevo) out.colaboradorId = data.colaboradorId;
   if (data.tipo !== undefined && TIPOS.has(data.tipo)) out.tipo = data.tipo;
-  if (data.fechaInicio !== undefined) out.fechaInicio = new Date(data.fechaInicio);
-  if (data.fechaFin !== undefined) out.fechaFin = data.fechaFin ? new Date(data.fechaFin) : null;
+  if (data.fechaInicio !== undefined) out.fechaInicio = fechaBogota(data.fechaInicio);
+  if (data.fechaFin !== undefined) out.fechaFin = fechaBogota(data.fechaFin);
   if (data.fechaInicioPractica !== undefined) {
-    out.fechaInicioPractica = data.fechaInicioPractica ? new Date(data.fechaInicioPractica) : null;
+    out.fechaInicioPractica = fechaBogota(data.fechaInicioPractica);
   }
   if (data.estado === 'VIGENTE' || data.estado === 'TERMINADO') out.estado = data.estado;
   if (data.observacion !== undefined) out.observacion = data.observacion || null;
@@ -208,7 +219,7 @@ export default async function contratoRoutes(app: FastifyInstance) {
     }
     if (!body.desde || !body.hasta) return reply.status(400).send({ error: 'La prórroga necesita fecha de inicio y de fin.' });
 
-    const datos: any = { contratoId: id, desde: new Date(body.desde), hasta: new Date(body.hasta) };
+    const datos: any = { contratoId: id, desde: fechaBogota(body.desde), hasta: fechaBogota(body.hasta) };
     if (documentoValido(body.documento)) {
       datos.documento = body.documento;
       datos.documentoTipo = body.documento.slice(5, body.documento.indexOf(';'));
