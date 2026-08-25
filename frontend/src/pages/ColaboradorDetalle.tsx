@@ -414,7 +414,12 @@ export default function ColaboradorDetalle() {
 
       <Toast mensaje={toast} onClose={() => setToast(null)} />
 
-      <div className="grid lg:grid-cols-2 gap-4">
+      {/* `[&>*]:min-w-0`: por defecto un hijo de rejilla no baja de su ancho
+          mínimo de contenido, así que una línea larga de aquí dentro estiraba la
+          columna entera y en el celular los dos paneles salían cortados por la
+          derecha. Va en la rejilla y no en cada panel para que valga también
+          para lo que se agregue después. */}
+      <div className="grid lg:grid-cols-2 gap-4 [&>*]:min-w-0">
         {/* Contratos. Va antes de Novedades porque el contrato es el marco de la
             relación laboral y las novedades ocurren dentro de él. */}
         <PanelContratos colaboradorId={col.id} />

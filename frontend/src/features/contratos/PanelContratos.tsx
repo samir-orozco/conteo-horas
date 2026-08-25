@@ -172,7 +172,11 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
   };
 
   return (
-    <div className="bg-white rounded-card border border-gray-200 p-5">
+    // `min-w-0`: un hijo de rejilla no baja de su ancho mínimo de contenido a
+    // menos que se le diga. Sin esto, la fila de prórrogas más larga estiraba el
+    // panel entero por fuera de su columna y en el celular la tarjeta salía
+    // cortada por la derecha.
+    <div className="bg-white rounded-card border border-gray-200 p-5 min-w-0">
       <div className="flex items-center justify-between mb-3">
         <p className="font-semibold text-ink flex items-center gap-2"><FileSignature size={16} /> Contratos</p>
         <button onClick={() => { setError(''); setForm(VACIO); setAdjunto({ tipo: 'sin-cambio' }); setModal(true); }}

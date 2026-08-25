@@ -8,6 +8,7 @@ import { TIPO_LABEL, ALERTA, type Contrato } from './tipos';
 
 const dLarga = (s: string | null) => s ? format(new Date(s), "d MMM yyyy", { locale: es }) : '—';
 const dCorta = (s: string | null) => s ? format(new Date(s), 'dd/MM/yy') : '—';
+const nDias = (n: number) => `${n} día${n === 1 ? '' : 's'}`;
 
 // "1 año 3 meses", "8 meses", "24 días". Se redondea a la unidad que se entiende
 // de un vistazo: nadie razona un contrato en días cuando dura años.
@@ -19,6 +20,10 @@ function duracionLegible(dias: number): string {
   const resto = meses % 12;
   return resto === 0 ? `${anios} año${anios === 1 ? '' : 's'}` : `${anios} a ${resto} m`;
 }
+
+// Los mismos 30 días de preaviso que usa el motor: a partir de ahí el número de
+// días que quedan se pinta en ámbar.
+const DIAS_ALERTA = 30;
 
 const TONOS = {
   rojo:  { caja: 'bg-red-50 border-red-200 text-red-800',       barra: 'bg-red-500' },
@@ -97,11 +102,25 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir,
   // El preaviso salió de la rejilla de datos. No es un hecho del contrato como
   // el inicio o el vencimiento: es algo que hay que HACER antes de una fecha, y
   // como columna se leía igual de fuerte que las otras tres, ocupando el sitio
-  // que necesitaba "la próxima, mínimo 1 año". Ahora es una línea de aviso, y
-  // solo mientras el contrato siga corriendo: en uno ya vencido esa fecha es
-  // historia y solo estorba.
-  const vencido = dias !== null && dias < 0;
-  const mostrarPreaviso = !indefinidoDeFacto && !terminado && !vencido && !!k.fechaLimitePreaviso;
+  // que necesitaba "la próxima, mínimo 1 año".
+  //
+  // Como línea de aviso dice las dos cosas que hacen falta para actuar: hasta
+  // cuándo hay plazo y cuánto queda. La fecha sola obliga a hacer la resta de
+  // cabeza, que es justo la cuenta que este módulo existe para que nadie tenga
+  // que hacer. Y si el plazo ya pasó lo dice en pasado, porque saber que se dejó
+  // vencer es tan importante como saber que falta: significa que el contrato se
+  // renovó solo.
+  const dp = k.diasParaPreaviso;
+  const preaviso = !indefinidoDeFacto && !terminado && k.fechaLimitePreaviso && dp !== null
+    ? {
+        vencido: dp < 0,
+        texto: dp > 0
+          ? <>Para no renovarlo hay que avisar por escrito antes del <b className="text-ink">{dCorta(k.fechaLimitePreaviso)}</b>. Quedan <b className={dp <= DIAS_ALERTA ? 'text-amber-700' : 'text-ink'}>{nDias(dp)}</b>.</>
+          : dp === 0
+            ? <>Hoy es el <b className="text-amber-700">último día</b> para avisar por escrito si no se va a renovar.</>
+            : <>El plazo para avisar por escrito venció el <b className="text-red-600">{dCorta(k.fechaLimitePreaviso)}</b>, hace {nDias(Math.abs(dp))}.</>,
+      }
+    : null;
 
   return (
     <div className={`rounded-xl border p-4 ${terminado ? 'border-gray-100 bg-gray-50/60' : 'border-gray-200'}`}>
@@ -151,13 +170,10 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir,
       {/* El aviso queda en gris a propósito. Si además es urgente, abajo aparece
           la alerta en ámbar o rojo con el porqué; dos bloques de color seguidos
           diciendo lo mismo no crean urgencia, crean ruido. */}
-      {mostrarPreaviso && (
+      {preaviso && (
         <div className="mt-2 flex items-start gap-2 text-[11px] text-muted">
-          <CalendarClock size={13} className="shrink-0 mt-px" />
-          <span>
-            Para no renovarlo hay que avisar por escrito antes del{' '}
-            <b className={k.preavisoVencido ? 'text-red-600' : 'text-ink'}>{dCorta(k.fechaLimitePreaviso)}</b>.
-          </span>
+          <CalendarClock size={13} className={`shrink-0 mt-px ${preaviso.vencido ? 'text-red-500' : ''}`} />
+          <span>{preaviso.texto}</span>
         </div>
       )}
 
@@ -206,20 +222,47 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir,
           fechas sueltas: así se ve de un golpe que fueron cuatro trimestres. */}
       {c.prorrogas.length > 0 && (
         <div className="mt-3 border-t border-gray-100 pt-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1.5">Prórrogas</p>
-          <div className="space-y-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1">Prórrogas</p>
+          {/* Una línea entre prórrogas y todas del mismo alto. Antes las filas
+              con otrosí eran más altas que las demás, porque la ficha del
+              archivo mide más que una línea de texto, y la lista quedaba
+              desparejada según cuáles tuvieran documento. El alto lo reserva la
+              fila, tenga documento o no. */}
+          <div className="divide-y divide-gray-100">
             {c.prorrogas.map((p, i) => {
               const d = differenceInCalendarDays(new Date(p.hasta), new Date(p.desde)) + 1;
               const esLaCuarta = i === 3;
               return (
-                <div key={p.id} className="flex items-center gap-2 flex-wrap text-xs">
+                <div key={p.id} className="flex items-center gap-2.5 h-14">
                   <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                     esLaCuarta ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-muted'}`}>{i + 1}</span>
-                  <span className="text-ink font-mono">{dCorta(p.desde)} → {dCorta(p.hasta)}</span>
-                  <span className="text-muted">{duracionLegible(d)}</span>
-                  {esLaCuarta && <span className="text-[10px] font-semibold text-amber-700">límite de las cortas</span>}
+                  {/* La duración arriba y en negrilla, las fechas debajo en gris
+                      pequeño. Al leer una lista de prórrogas lo que se busca es
+                      el patrón de renovaciones (tres, tres, tres, un año), no la
+                      fecha exacta de cada una, que además ya está arriba en
+                      "Vence". Y de paso las dos líneas dejan de pelear por el
+                      ancho con la ficha del archivo. */}
+                  {/* El ancho mínimo es el de la línea de fechas (126px medidos)
+                      redondeado a 8rem. Con `min-w-0` el bloque se encogía por
+                      debajo de eso y las fechas se salían por encima de la ficha
+                      del archivo. Poniendo el suelo aquí, quien cede es la
+                      ficha, que para eso sabe quedarse en su icono. */}
+                  <div className="min-w-[8rem] flex-1">
+                    <p className="text-xs font-semibold text-ink leading-tight truncate">
+                      {duracionLegible(d)}
+                      {esLaCuarta && <span className="ml-2 text-[10px] font-semibold text-amber-700">límite de las cortas</span>}
+                    </p>
+                    {/* `whitespace-nowrap`: sin esto las fechas se partían en
+                        dos renglones para hacerle sitio a la ficha del archivo,
+                        y la fila con documento se veía distinta de las demás.
+                        Partidas no ocupan menos, ocupan más alto. Fijando que
+                        van en una línea, quien cede el ancho es la ficha. */}
+                    <p className="text-[11px] font-mono text-muted leading-tight mt-0.5 whitespace-nowrap">
+                      {dCorta(p.desde)} → {dCorta(p.hasta)}
+                    </p>
+                  </div>
                   {p.documentoTipo && (
-                    <span className="ml-auto min-w-0">
+                    <span className="min-w-[2.25rem]">
                       <FichaDocumento tipo={p.documentoTipo} nombre={p.documentoNombre} respaldo="Otrosí"
                         onAbrir={() => onVerDocumento(`/contratos/prorrogas/${p.id}/documento`, p.documentoNombre)} />
                     </span>
