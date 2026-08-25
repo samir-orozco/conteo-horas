@@ -149,6 +149,15 @@ a{color:#303030}
   font-size:16px;margin:0 0 30px}
 .cuerpo table{width:100%;border-collapse:collapse;margin:0 0 26px;font-size:15.5px;display:block;overflow-x:auto}
 .cuerpo th{text-align:left;background:#f6f6f4;font-weight:700;padding:11px 14px;border-bottom:2px solid #e6e6e6;white-space:nowrap}
+/* En pantallas angostas la tabla de factores se salia por la derecha y habia
+   que arrastrarla para ver la columna de pesos, que es justo la que cambia con
+   el salario. Se aprieta el relleno y se deja que el nombre del tipo de hora
+   use el ancho que sobre, en vez de que sobre a la derecha. */
+@media(max-width:560px){
+  .cuerpo table{font-size:14px}
+  .cuerpo th,.cuerpo td{padding:9px 8px}
+  .cuerpo th:first-child,.cuerpo td:first-child{white-space:normal}
+}
 .cuerpo td{padding:11px 14px;border-bottom:1px solid #efefef}
 .cuerpo tbody tr:last-child td{border-bottom:0}
 .nota{background:#FFF9E6;border-left:4px solid #FFD85E;border-radius:0 12px 12px 0;padding:18px 22px;margin:0 0 26px}

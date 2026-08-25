@@ -30,7 +30,7 @@ export default function calculadoraHorasExtra(hoyISO) {
     <tr>
       <td>${t.nombre.replace('Dominical/Festivo', 'dominical o festivo')}</td>
       <td class="num">${fac(t.recargo)}</td>
-      <td class="num">${cop(hora * t.recargo)}</td>
+      <td class="num val" data-factor="${t.recargo}">${cop(hora * t.recargo)}</td>
     </tr>`).join('');
 
   const controles = r.tipos.map(t => `
@@ -60,10 +60,10 @@ export default function calculadoraHorasExtra(hoyISO) {
 
 <h2 id="tabla">Cuánto vale cada hora hoy</h2>
 
-<p>Esta tabla está calculada con un salario de ${cop(SALARIO_EJEMPLO)}, que da una hora ordinaria de <strong>${cop(hora)}</strong>. Los factores son los que rigen en Colombia a la fecha de esta página.</p>
+<p>La tabla se mueve con el salario que pongas arriba. Ahora está en <strong id="tabla-salario">${cop(SALARIO_EJEMPLO)}</strong>, que da una hora ordinaria de <strong id="tabla-hora">${cop(hora)}</strong>. Los factores son los que rigen en Colombia a la fecha de esta página.</p>
 
 <table>
-  <thead><tr><th>Tipo de hora</th><th>Factor</th><th>Con hora de ${cop(hora)}</th></tr></thead>
+  <thead><tr><th>Tipo de hora</th><th class="num">Factor</th><th class="num" id="th-hora">Con hora de ${cop(hora)}</th></tr></thead>
   <tbody>${filas}</tbody>
 </table>
 
@@ -135,6 +135,13 @@ export default function calculadoraHorasExtra(hoyISO) {
   var desglose = document.getElementById('desglose');
   var valorHora = document.getElementById('valor-hora');
   var horas = Array.prototype.slice.call(document.querySelectorAll('.fila-h input'));
+  /* La tabla de referencia de mas abajo se mueve con el mismo salario: tener dos
+     cifras distintas en la misma pagina, una en el formulario y otra en la
+     tabla, seria justo la confusion que esta pagina existe para evitar. */
+  var celdas = Array.prototype.slice.call(document.querySelectorAll('td.val'));
+  var thHora = document.getElementById('th-hora');
+  var tablaSalario = document.getElementById('tabla-salario');
+  var tablaHora = document.getElementById('tabla-hora');
   var DIVISOR = ${r.horasMes};
   if (!salario || !total) return;
 
@@ -153,6 +160,13 @@ export default function calculadoraHorasExtra(hoyISO) {
       cuantas += h;
       suma += h * hora * parseFloat(input.getAttribute('data-factor'));
     });
+    celdas.forEach(function (td) {
+      td.textContent = pesos(hora * parseFloat(td.getAttribute('data-factor')));
+    });
+    if (thHora) thHora.textContent = 'Con hora de ' + pesos(hora);
+    if (tablaSalario) tablaSalario.textContent = pesos(base);
+    if (tablaHora) tablaHora.textContent = pesos(hora);
+
     total.textContent = pesos(suma);
     desglose.textContent = cuantas > 0
       ? cuantas.toLocaleString('es-CO') + (cuantas === 1 ? ' hora' : ' horas') + ' sobre una hora ordinaria de ' + pesos(hora)
