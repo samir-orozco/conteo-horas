@@ -5,7 +5,6 @@ import { prisma } from '../index';
 import { calcularHorasTrabajadas, descontarAlmuerzo } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes } from '../utils/vigencias';
 import { franjaDelDia, HorarioConFranjas, construirExtraConfig } from '../utils/tardanzas';
-import { avisarContratos } from './contratos';
 
 const TZ = 'America/Bogota';
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -332,13 +331,6 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       })
       .filter(c => c.mes === mesHoy)
       .sort((a, b) => a.dia - b.dia);
-
-    // Avisos de contratos por vencer. Va aquí porque el tablero es lo que se abre
-    // todos los días y este proyecto no tiene cron; para un aviso con 30 días de
-    // margen alcanza de sobra. No se espera el resultado ni se deja que falle: un
-    // aviso no puede tumbar el tablero.
-    avisarContratos(request.empresaId!).catch(err =>
-      app.log.error(err, 'No se pudieron generar los avisos de contratos'));
 
     return {
       fecha: ahora,

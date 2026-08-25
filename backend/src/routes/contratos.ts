@@ -156,6 +156,11 @@ export default async function contratoRoutes(app: FastifyInstance) {
       });
     }
     const creado = await prisma.contrato.create({ data: datos, select: SIN_DOCUMENTO });
+    // Se avisa en el acto y no se espera al barrido diario: un contrato que se
+    // registra hoy puede estar ya pasado del plazo de preaviso. No se espera el
+    // resultado ni se deja que falle: un aviso no puede tumbar el alta.
+    avisarContratos(request.empresaId!).catch(err =>
+      app.log.error(err, 'No se pudieron generar los avisos del contrato nuevo'));
     return reply.status(201).send(conEstado(creado as any, new Date()));
   });
 
@@ -229,6 +234,8 @@ export default async function contratoRoutes(app: FastifyInstance) {
     // fuerte, pero no bloquea. Hay excepciones y casos que el sistema no conoce,
     // y quien maneja la nómina sabe lo que firma.
     await prisma.prorrogaContrato.create({ data: datos });
+    avisarContratos(request.empresaId!).catch(err =>
+      app.log.error(err, 'No se pudieron generar los avisos tras la prórroga'));
     const act = await prisma.contrato.findUnique({ where: { id }, select: SIN_DOCUMENTO });
     return reply.status(201).send(conEstado(act as any, new Date()));
   });
@@ -301,5 +308,40 @@ export async function avisarContratos(empresaId: string): Promise<void> {
         entidad: 'colaborador', entidadId: c.colaborador.id,
       });
     }
+  }
+}
+
+type Log = { info: (msg: string) => void; error: (obj: unknown, msg?: string) => void };
+
+// Recorre todas las empresas activas y genera los avisos que correspondan.
+//
+// Existe porque `avisarContratos` colgaba únicamente del tablero: si nadie
+// entraba, nadie avisaba. Una empresa que no abriera HoraPro durante cuarenta
+// días se quedaba sin el aviso de preaviso y el contrato se prorrogaba solo por
+// un término igual, que es exactamente lo que este módulo existe para evitar.
+// La promesa de la pantalla ("avisamos 30 días antes") no la sostenía nada.
+//
+// Un fallo en una empresa no puede dejar sin avisar a las demás, así que cada
+// una va en su propio try. Es idempotente: `avisarContratos` no repite una
+// notificación que ya exista, así que correr de más no molesta a nadie.
+export async function avisarContratosDeTodas(log?: Log): Promise<number> {
+  try {
+    const empresas = await prisma.empresa.findMany({
+      where: { activa: true }, select: { id: true },
+    });
+    let ok = 0;
+    for (const e of empresas) {
+      try {
+        await avisarContratos(e.id);
+        ok++;
+      } catch (err) {
+        log?.error(err, `Avisos de contratos: falló la empresa ${e.id}`);
+      }
+    }
+    log?.info(`Avisos de contratos revisados en ${ok}/${empresas.length} empresas`);
+    return ok;
+  } catch (err) {
+    log?.error(err, 'No se pudieron recorrer las empresas para los avisos de contratos');
+    return 0;
   }
 }
