@@ -110,6 +110,12 @@ a{color:#303030}
 
 .cuerpo-rej{display:grid;grid-template-columns:272px 1fr;gap:64px;padding:52px 0 88px;align-items:start}
 @media(max-width:900px){.cuerpo-rej{grid-template-columns:1fr;gap:34px;padding-top:34px}}
+/* Un hijo de rejilla no baja de su ancho minimo de contenido salvo que se le
+   diga. Sin esto, una tabla ancha del articulo estiraba la columna entera y en
+   el celular la pagina se desplazaba de lado: medido, 531px de contenido en una
+   pantalla de 375. Con min-width en cero la tabla usa su propio overflow-x, que
+   para eso lo tiene, y el resto de la pagina se queda quieto. */
+.cuerpo-rej>*{min-width:0}
 
 .lateral{position:sticky;top:96px}
 @media(max-width:900px){.lateral{position:static}}
@@ -136,6 +142,8 @@ a{color:#303030}
 .cuerpo strong{font-weight:680}
 .cuerpo hr{border:0;border-top:1px solid #e6e6e6;margin:44px 0}
 .cuerpo .cierre{font-size:15px;color:#898989;line-height:1.65}
+.cuerpo .atajo{background:#FFF6D9;border:1px solid #F5E3A8;border-radius:14px;padding:16px 18px;
+  font-size:16px;margin:0 0 30px}
 .cuerpo table{width:100%;border-collapse:collapse;margin:0 0 26px;font-size:15.5px;display:block;overflow-x:auto}
 .cuerpo th{text-align:left;background:#f6f6f4;font-weight:700;padding:11px 14px;border-bottom:2px solid #e6e6e6;white-space:nowrap}
 .cuerpo td{padding:11px 14px;border-bottom:1px solid #efefef}
@@ -322,5 +330,6 @@ a{color:#303030}
     <span>© 2026 HoraPro · Un producto de Krumlab</span>
     <span><a href="/">Inicio</a> · <a href="/#precios">Precios</a> · <a href="/blog/">Blog</a></span>
   </div></footer>
+
 </body>
 </html>
