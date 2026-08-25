@@ -13,7 +13,8 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ARTICULOS, SITIO } from '../blog/articulos/index.mjs';
-import { paginaIndice, paginaArticulo } from '../blog/plantilla.mjs';
+import { paginaIndice, paginaArticulo, paginaCalculadora } from '../blog/plantilla.mjs';
+import calculadoraHorasExtra from '../blog/calculadoras/horas-extra.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(raiz, 'dist');
@@ -45,6 +46,14 @@ for (const a of conImagenReal) {
   await escribir(`blog/${a.slug}/index.html`, paginaArticulo(a, conImagenReal));
 }
 
+// Calculadoras. Se generan con la fecha de hoy, así que cada publicación las
+// deja con las reglas vigentes ese día sin que nadie tenga que acordarse: al
+// cruzar el 1 de julio de 2027 el dominical pasa solo del 90 al 100%.
+const CALCULADORAS = [calculadoraHorasExtra(hoy)];
+for (const c of CALCULADORAS) {
+  await escribir(`${c.ruta.replace(/^\/|\/$/g, '')}/index.html`, paginaCalculadora(c));
+}
+
 // El sitemap se reescribe entero para que las entradas del blog no se queden
 // atrás cada vez que se publica una. Las rutas fijas viven aquí.
 const fijas = [
@@ -54,6 +63,9 @@ const fijas = [
 ];
 const urls = [
   ...fijas,
+  // Las calculadoras van con prioridad alta y frecuencia mensual: cambian solas
+  // cuando cambia la ley, y son páginas de intención de búsqueda muy alta.
+  ...CALCULADORAS.map(c => ({ loc: c.ruta, prioridad: '0.9', frec: 'monthly', lastmod: c.actualizado })),
   ...ARTICULOS.map(a => ({ loc: `/blog/${a.slug}/`, prioridad: '0.8', frec: 'monthly', lastmod: a.actualizado })),
 ];
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -67,4 +79,4 @@ ${urls.map(u => `  <url>
 </urlset>
 `;
 await escribir('sitemap.xml', sitemap);
-console.log(`\n${ARTICULOS.length} artículos publicados.\n`);
+console.log(`\n${ARTICULOS.length} artículos y ${CALCULADORAS.length} calculadora publicados.\n`);

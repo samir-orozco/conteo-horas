@@ -21,6 +21,8 @@ export default {
   cuerpo: `
 <p class="entradilla">Buena parte de lo que hay publicado sobre este tema quedó viejo en 2026. Siguen dividiendo el salario entre 240, siguen pagando el domingo al 80% y siguen empezando la nocturna a las nueve. Las tres cosas cambiaron. Esta es la cuenta con los números que están vigentes hoy.</p>
 
+<p class="atajo"><strong>¿Solo quieres el resultado?</strong> Usa la <a href="/calculadoras/horas-extra-recargos/">calculadora de horas extra y recargos</a>: pones el salario y las horas, y te da el total con los factores vigentes. Si quieres entender de dónde sale cada número, sigue leyendo.</p>
+
 <h2 id="valor-hora">Cuánto vale una hora</h2>
 
 <p>Todo sale de aquí, y aquí es donde más gente arranca torcido.</p>

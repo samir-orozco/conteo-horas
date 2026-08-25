@@ -105,6 +105,12 @@ a{color:#303030}
 
 .cuerpo-rej{display:grid;grid-template-columns:272px 1fr;gap:64px;padding:52px 0 88px;align-items:start}
 @media(max-width:900px){.cuerpo-rej{grid-template-columns:1fr;gap:34px;padding-top:34px}}
+/* Un hijo de rejilla no baja de su ancho minimo de contenido salvo que se le
+   diga. Sin esto, una tabla ancha del articulo estiraba la columna entera y en
+   el celular la pagina se desplazaba de lado: medido, 531px de contenido en una
+   pantalla de 375. Con min-width en cero la tabla usa su propio overflow-x, que
+   para eso lo tiene, y el resto de la pagina se queda quieto. */
+.cuerpo-rej>*{min-width:0}
 
 .lateral{position:sticky;top:96px}
 @media(max-width:900px){.lateral{position:static}}
@@ -131,6 +137,8 @@ a{color:#303030}
 .cuerpo strong{font-weight:680}
 .cuerpo hr{border:0;border-top:1px solid #e6e6e6;margin:44px 0}
 .cuerpo .cierre{font-size:15px;color:#898989;line-height:1.65}
+.cuerpo .atajo{background:#FFF6D9;border:1px solid #F5E3A8;border-radius:14px;padding:16px 18px;
+  font-size:16px;margin:0 0 30px}
 .cuerpo table{width:100%;border-collapse:collapse;margin:0 0 26px;font-size:15.5px;display:block;overflow-x:auto}
 .cuerpo th{text-align:left;background:#f6f6f4;font-weight:700;padding:11px 14px;border-bottom:2px solid #e6e6e6;white-space:nowrap}
 .cuerpo td{padding:11px 14px;border-bottom:1px solid #efefef}
@@ -199,7 +207,10 @@ function avatar() {
   return `<span class="avatar" aria-hidden="true">${esc(iniciales)}</span>`;
 }
 
-function documento({ titulo, descripcion, ruta, jsonLd, cuerpo, imagen }) {
+// `estilos` y `script` son opcionales: los usan las calculadoras, que necesitan
+// CSS y una pizca de JavaScript propios. Los artículos no los pasan, así que no
+// cargan ni un byte de más.
+function documento({ titulo, descripcion, ruta, jsonLd, cuerpo, imagen, estilos, script }) {
   const url = `${SITIO.url}${ruta}`;
   const og = imagen ? `${SITIO.url}${imagen}` : `${SITIO.url}/og-image.png`;
   return `<!doctype html>
@@ -224,13 +235,14 @@ function documento({ titulo, descripcion, ruta, jsonLd, cuerpo, imagen }) {
 <meta name="twitter:title" content="${esc(titulo)}" />
 <meta name="twitter:description" content="${esc(descripcion)}" />
 <meta name="twitter:image" content="${og}" />
-<style>${CSS}</style>
+<style>${CSS}${estilos || ''}</style>
 <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
 </head>
 <body>
 ${cabecera()}
 ${cuerpo}
 ${pie()}
+${script ? `<script>${script}</script>` : ''}
 </body>
 </html>`;
 }
@@ -293,6 +305,83 @@ export function paginaIndice(articulos) {
     imagen: null,
     jsonLd,
     cuerpo,
+  });
+}
+
+// Página de calculadora. Comparte cabecera, pie y estética con el blog, pero no
+// es un artículo: no lleva firma de autor ni tiempo de lectura, porque no se
+// lee, se usa. Y el JSON-LD la declara como WebApplication, que es lo que un
+// buscador o un asistente necesita entender para ofrecerla como herramienta.
+export function paginaCalculadora(c) {
+  const url = `${SITIO.url}${c.ruta}`;
+
+  const cuerpo = `<div class="art-cab"><div class="env">
+    <nav class="migas" aria-label="Ruta">
+      <a href="/">Inicio</a><span class="sep">›</span><a href="/blog/">Blog</a>
+      <span class="sep">›</span><span class="pastilla">${esc(c.categoria)}</span>
+    </nav>
+    <div style="max-width:820px">
+      <h1>${esc(c.titulo)}</h1>
+      <p style="font-size:17px;color:#4a4a4a;margin:0">Gratis, sin registro. Actualizada el ${fechaLarga(c.actualizado)} con la jornada de ${c.reglas.jornada} horas y el dominical al ${Math.round(c.reglas.recargoDom * 100)}%.</p>
+    </div>
+  </div></div>
+
+  <main class="env">
+    <div class="cuerpo-rej">
+      <aside class="lateral">
+        <h4>Compartir</h4>
+        <div class="compartir">
+          <a href="https://wa.me/?text=${encodeURIComponent(`${c.titulo}\n${url}`)}" target="_blank" rel="noopener" aria-label="Compartir por WhatsApp">WA</a>
+          <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}" target="_blank" rel="noopener" aria-label="Compartir en LinkedIn">in</a>
+        </div>
+        <div class="indice"><h4>En esta página</h4><ol>
+          <li><a href="#calc">La calculadora</a></li>
+          <li><a href="#tabla">Cuánto vale cada hora</a></li>
+          <li><a href="#como">De dónde sale cada número</a></li>
+          <li><a href="#cambios">Qué cambió en 2026</a></li>
+          <li><a href="#ojo">Dónde se equivoca la gente</a></li>
+        </ol></div>
+      </aside>
+      <article class="cuerpo">${c.cuerpo}</article>
+    </div>
+  </main>`;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebApplication',
+        '@id': url,
+        name: c.titulo,
+        description: c.descripcion,
+        url,
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Cualquiera con navegador web',
+        inLanguage: 'es-CO',
+        dateModified: c.actualizado,
+        isAccessibleForFree: true,
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'COP' },
+        publisher: { '@type': 'Organization', name: 'HoraPro', url: SITIO.url, logo: { '@type': 'ImageObject', url: `${SITIO.url}/logo.svg` } },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Inicio', item: `${SITIO.url}/` },
+          { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITIO.url}/blog/` },
+          { '@type': 'ListItem', position: 3, name: c.titulo, item: url },
+        ],
+      },
+    ],
+  };
+
+  return documento({
+    titulo: c.tituloSeo,
+    descripcion: c.descripcion,
+    ruta: c.ruta,
+    jsonLd,
+    cuerpo,
+    estilos: c.estilos,
+    script: c.script,
   });
 }
 
