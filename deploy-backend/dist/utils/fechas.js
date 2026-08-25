@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.rangoDiaBogota = rangoDiaBogota;
+exports.medianocheBogota = medianocheBogota;
 exports.rangoReporte = rangoReporte;
 const date_fns_tz_1 = require("date-fns-tz");
 const TZ = 'America/Bogota';
