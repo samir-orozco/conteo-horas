@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Calculator, ScanFace, CalendarCheck, AlarmClock,
   ArrowRight, Check, ChevronDown, ShieldCheck, MapPin, MonitorSmartphone, Sparkles,
-  Send, Quote, Star, PlayCircle,
+  Send, Quote, Star, PlayCircle, Users,
 } from 'lucide-react';
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
@@ -136,7 +136,7 @@ export default function Landing() {
             </span> sin hacer cuentas.
           </h1>
           <p className="text-lg text-muted mt-5 max-w-md">
-            HoraPro hace la <b className="text-ink">liquidación de nómina automática</b> —recargos, horas extra, dominicales y festivos— según la Ley 2466. Cero errores, cero horas en Excel.
+            HoraPro hace la <b className="text-ink">liquidación de nómina automática</b> de recargos, horas extra, dominicales y festivos, según la Ley 2466. Cero errores, cero horas en Excel.
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-8">
             {usuario ? (
@@ -150,7 +150,7 @@ export default function Landing() {
             )}
             <a href="#como" className="font-semibold text-ink px-5 py-3.5 rounded-xl hover:bg-gray-100">Ver cómo funciona</a>
           </div>
-          {!usuario && <p className="text-xs text-muted mt-3">Sin tarjeta · cancela cuando quieras · soporte por WhatsApp</p>}
+          {!usuario && <p className="text-xs text-muted mt-3">Sin tarjeta · cancela cuando quieras · <b className="text-ink">precio por empresa, no por empleado</b> · soporte por WhatsApp</p>}
 
           {/* Prueba visual también en móvil (en desktop se muestra la tarjeta flotante) */}
           <div className="md:hidden mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-5">
@@ -193,6 +193,7 @@ export default function Landing() {
           <span className="flex items-center gap-1.5"><ScanFace size={15} className="text-ink" /> Marcación con rostro</span>
           <span className="flex items-center gap-1.5"><MapPin size={15} className="text-ink" /> Datos en Colombia</span>
           <span className="flex items-center gap-1.5"><MonitorSmartphone size={15} className="text-ink" /> Sin instalar nada</span>
+          <span className="flex items-center gap-1.5"><Users size={15} className="text-ink" /> No cobramos por empleado</span>
           <span className="flex items-center gap-1.5"><CalendarCheck size={15} className="text-ink" /> {dias} días gratis</span>
         </div>
       </section>
@@ -282,7 +283,10 @@ export default function Landing() {
       <section id="precios" className="max-w-6xl mx-auto px-5 py-16 md:py-24">
         <div className="text-center mb-8 hp-reveal">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Un plan para cada tamaño</h2>
-          <p className="text-muted mt-3">Precio fijo, sin sorpresas. Empieza con {dias} días gratis, sin tarjeta.</p>
+          <p className="text-muted mt-3">
+            Pagas por tu empresa, no por cada empleado: si contratas a alguien más, tu cuenta no sube.
+            Empieza con {dias} días gratis, sin tarjeta.
+          </p>
           {/* Toggle mensual / anual */}
           <div className="inline-flex items-center gap-1 bg-gray-100 rounded-full p-1 mt-6 text-sm font-semibold">
             <button onClick={() => setAnual(false)} className={`px-4 py-1.5 rounded-full transition-colors ${!anual ? 'bg-white shadow text-ink' : 'text-muted'}`}>Mensual</button>
