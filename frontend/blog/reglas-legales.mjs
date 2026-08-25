@@ -88,3 +88,26 @@ export function reglasEn(iso) {
     tipos: tiposDelPeriodo(periodo),
   };
 }
+
+// Semanas de un mes, en la convención de nómina colombiana. No son 4,33: la
+// convención de Mintrabajo toma el mes de 30 días y la semana de 6 días
+// laborales, así que 30/6 da 5. Es la misma cuenta de la que sale el divisor de
+// horas mensuales (jornada × 30/6 = jornada × 5), y usarla aquí mantiene ambos
+// cálculos coherentes entre sí.
+export const SEMANAS_MES = 5;
+
+// Horas extra semanales de alguien que trabaja `horasSemana` bajo una jornada
+// legal dada. Nunca es negativo: quien trabaja menos de la jornada no genera un
+// crédito, simplemente no genera extras.
+export const extrasSemanales = (horasSemana, jornada) => Math.max(0, horasSemana - jornada);
+
+// Lo que cuestan al mes esas extras, para una persona.
+export function costoExtrasMes({ salario, jornada, horasSemana, factor }) {
+  return extrasSemanales(horasSemana, jornada) * SEMANAS_MES * valorHora(salario, jornada) * factor;
+}
+
+// Tope legal de horas extra: 2 al día y 12 a la semana (art. 167 CST). No lo
+// cambió la reforma, y es lo que convierte "pago extras" en una salida con
+// techo: pasado ese punto no es un asunto de plata, es una infracción.
+export const TOPE_EXTRAS_SEMANA = 12;
+export const TOPE_EXTRAS_DIA = 2;

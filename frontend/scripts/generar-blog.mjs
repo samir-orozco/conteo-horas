@@ -13,8 +13,9 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ARTICULOS, SITIO } from '../blog/articulos/index.mjs';
-import { paginaIndice, paginaArticulo, paginaCalculadora } from '../blog/plantilla.mjs';
+import { paginaIndice, paginaArticulo, paginaCalculadora, paginaCalculadorasIndice } from '../blog/plantilla.mjs';
 import calculadoraHorasExtra from '../blog/calculadoras/horas-extra.mjs';
+import calculadoraJornada42 from '../blog/calculadoras/jornada-42-horas.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(raiz, 'dist');
@@ -49,7 +50,8 @@ for (const a of conImagenReal) {
 // Calculadoras. Se generan con la fecha de hoy, así que cada publicación las
 // deja con las reglas vigentes ese día sin que nadie tenga que acordarse: al
 // cruzar el 1 de julio de 2027 el dominical pasa solo del 90 al 100%.
-const CALCULADORAS = [calculadoraHorasExtra(hoy)];
+const CALCULADORAS = [calculadoraHorasExtra(hoy), calculadoraJornada42(hoy)];
+await escribir('calculadoras/index.html', paginaCalculadorasIndice(CALCULADORAS));
 for (const c of CALCULADORAS) {
   await escribir(`${c.ruta.replace(/^\/|\/$/g, '')}/index.html`, paginaCalculadora(c));
 }
@@ -59,6 +61,7 @@ for (const c of CALCULADORAS) {
 const fijas = [
   { loc: '/', prioridad: '1.0', frec: 'weekly', lastmod: hoy },
   { loc: '/blog/', prioridad: '0.9', frec: 'weekly', lastmod: hoy },
+  { loc: '/calculadoras/', prioridad: '0.9', frec: 'weekly', lastmod: hoy },
   { loc: '/registro', prioridad: '0.6', frec: 'monthly' },
 ];
 const urls = [
@@ -79,4 +82,4 @@ ${urls.map(u => `  <url>
 </urlset>
 `;
 await escribir('sitemap.xml', sitemap);
-console.log(`\n${ARTICULOS.length} artículos y ${CALCULADORAS.length} calculadora publicados.\n`);
+console.log(`\n${ARTICULOS.length} artículos y ${CALCULADORAS.length} calculadoras publicadas.\n`);

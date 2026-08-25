@@ -28,6 +28,7 @@ a{color:#303030}
 .cab{border-bottom:1px solid #ececec;background:#fff;position:sticky;top:0;z-index:20}
 .cab .env{display:flex;align-items:center;justify-content:space-between;height:68px;gap:16px}
 .cab img{height:26px;width:auto}
+.cab .env>a:first-child{flex:none}
 .cab nav{display:flex;align-items:center;gap:22px}
 .cab nav a{color:#898989;text-decoration:none;font-size:15px;font-weight:500}
 .cab nav a:hover{color:#303030}
@@ -180,6 +181,7 @@ function cabecera() {
     <nav>
       <a href="/" class="oculta-movil">Inicio</a>
       <a href="/#precios" class="oculta-movil">Precios</a>
+      <a href="/calculadoras/" class="oculta-movil">Calculadoras</a>
       <a href="/blog/">Blog</a>
       <a href="/registro" class="cta">Prueba gratis</a>
     </nav>
@@ -190,7 +192,7 @@ function pie() {
   const anio = new Date().getUTCFullYear();
   return `<footer class="pie"><div class="env">
     <span>© ${anio} HoraPro · Un producto de Krumlab</span>
-    <span><a href="/">Inicio</a> · <a href="/#precios">Precios</a> · <a href="/blog/">Blog</a></span>
+    <span><a href="/">Inicio</a> · <a href="/#precios">Precios</a> · <a href="/calculadoras/">Calculadoras</a> · <a href="/blog/">Blog</a></span>
   </div></footer>`;
 }
 
@@ -312,6 +314,59 @@ export function paginaIndice(articulos) {
 // es un artículo: no lleva firma de autor ni tiempo de lectura, porque no se
 // lee, se usa. Y el JSON-LD la declara como WebApplication, que es lo que un
 // buscador o un asistente necesita entender para ofrecerla como herramienta.
+// Índice de calculadoras. Existe por dos razones: le da a los buscadores una
+// página que agrupa la sección (y un sitio al que apuntar desde el menú), y le
+// da a quien llegó a una calculadora la puerta para encontrar las otras.
+export function paginaCalculadorasIndice(calculadoras) {
+  const url = `${SITIO.url}/calculadoras/`;
+
+  const tarjeta = c => `<a class="tarjeta" href="${c.ruta}">
+    <span class="eti">${esc(c.categoria)}</span>
+    <h3>${esc(c.titulo)}</h3>
+    <p>${esc(c.descripcion)}</p>
+    <span class="meta">Gratis, sin registro · actualizada el ${fechaLarga(c.actualizado)}</span>
+  </a>`;
+
+  const cuerpo = `<main class="env portada">
+  <nav class="migas" aria-label="Ruta"><a href="/">Inicio</a><span class="sep">›</span><span>Calculadoras</span></nav>
+  <h1>Calculadoras laborales</h1>
+  <p class="bajada">Las cuentas de la nómina colombiana, con los porcentajes y la jornada vigentes hoy. Son las mismas reglas que aplica HoraPro cuando liquida, y se actualizan solas cuando cambia la ley.</p>
+  <div class="rejilla">${calculadoras.map(tarjeta).join('')}</div>
+</main>`;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': url,
+        name: 'Calculadoras laborales de HoraPro',
+        description: 'Calculadoras gratuitas de horas extra, recargos y jornada laboral en Colombia, con la normativa vigente.',
+        inLanguage: 'es-CO',
+        hasPart: calculadoras.map(c => ({
+          '@type': 'WebApplication', name: c.titulo, url: `${SITIO.url}${c.ruta}`,
+          applicationCategory: 'BusinessApplication', isAccessibleForFree: true,
+        })),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Inicio', item: `${SITIO.url}/` },
+          { '@type': 'ListItem', position: 2, name: 'Calculadoras', item: url },
+        ],
+      },
+    ],
+  };
+
+  return documento({
+    titulo: 'Calculadoras laborales de Colombia 2026 | HoraPro',
+    descripcion: 'Calculadoras gratuitas de horas extra, recargos nocturnos y dominicales, y costo de la jornada de 42 horas, con la normativa colombiana vigente.',
+    ruta: '/calculadoras/',
+    jsonLd,
+    cuerpo,
+  });
+}
+
 export function paginaCalculadora(c) {
   const url = `${SITIO.url}${c.ruta}`;
 
@@ -322,7 +377,7 @@ export function paginaCalculadora(c) {
     </nav>
     <div style="max-width:820px">
       <h1>${esc(c.titulo)}</h1>
-      <p style="font-size:17px;color:#4a4a4a;margin:0">Gratis, sin registro. Actualizada el ${fechaLarga(c.actualizado)} con la jornada de ${c.reglas.jornada} horas y el dominical al ${Math.round(c.reglas.recargoDom * 100)}%.</p>
+      <p style="font-size:17px;color:#4a4a4a;margin:0">Gratis, sin registro. Actualizada el ${fechaLarga(c.actualizado)} ${c.subtitulo}.</p>
     </div>
   </div></div>
 
@@ -335,11 +390,7 @@ export function paginaCalculadora(c) {
           <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}" target="_blank" rel="noopener" aria-label="Compartir en LinkedIn">in</a>
         </div>
         <div class="indice"><h4>En esta página</h4><ol>
-          <li><a href="#calc">La calculadora</a></li>
-          <li><a href="#tabla">Cuánto vale cada hora</a></li>
-          <li><a href="#como">De dónde sale cada número</a></li>
-          <li><a href="#cambios">Qué cambió en 2026</a></li>
-          <li><a href="#ojo">Dónde se equivoca la gente</a></li>
+          ${c.secciones.map(x => `<li><a href="#${x.id}">${esc(x.titulo)}</a></li>`).join('')}
         </ol></div>
       </aside>
       <article class="cuerpo">${c.cuerpo}</article>

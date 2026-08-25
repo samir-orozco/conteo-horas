@@ -108,8 +108,10 @@ export default function Landing() {
           <img src={logoCompleto} alt="HoraPro" className="h-8" />
           <nav className="flex items-center gap-2 sm:gap-3">
             <a href="#precios" className="hidden sm:block text-sm font-medium text-muted hover:text-ink px-3 py-2">Precios</a>
-            {/* <a> y no <Link>: el blog son páginas estáticas fuera de la SPA, así
-                que necesita una navegación real del navegador. */}
+            {/* <a> y no <Link>: el blog y las calculadoras son páginas estáticas
+                fuera de la SPA, así que necesitan una navegación real del
+                navegador. */}
+            <a href="/calculadoras/" className="hidden md:block text-sm font-medium text-muted hover:text-ink px-3 py-2">Calculadoras</a>
             <a href="/blog/" className="hidden sm:block text-sm font-medium text-muted hover:text-ink px-3 py-2">Blog</a>
             {usuario ? (
               <Link to={panelUrl} className="text-sm font-bold bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl">Ir a mi panel</Link>

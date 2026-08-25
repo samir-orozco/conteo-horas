@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   JORNADAS, PERIODOS, tiposDelPeriodo, jornadaVigente, periodoVigente,
   horasMes, valorHora, reglasEn,
+  SEMANAS_MES, extrasSemanales, costoExtrasMes, TOPE_EXTRAS_SEMANA,
   // @ts-expect-error: el generador del blog es Node puro y este módulo es .mjs
 } from '../../../frontend/blog/reglas-legales.mjs';
 
@@ -137,5 +138,49 @@ describe('la foto de una fecha', () => {
     expect(r.jornada).toBe(44);
     expect(r.horasMes).toBe(220);
     expect(r.recargoDom).toBe(0.9);
+  });
+});
+
+describe('costo de las horas extra, que es lo que alimenta la calculadora de jornada', () => {
+  it('el mes tiene 5 semanas en la convención de nómina, no 4,33', () => {
+    // Sale de mes de 30 días entre semana de 6 días laborales. Es la misma
+    // cuenta del divisor de horas mensuales, y por eso son coherentes:
+    // jornada × SEMANAS_MES tiene que dar el divisor.
+    expect(SEMANAS_MES).toBe(5);
+    expect(42 * SEMANAS_MES).toBe(horasMes(42));
+    expect(44 * SEMANAS_MES).toBe(horasMes(44));
+  });
+
+  it('quien trabaja 48 horas con jornada de 42 genera 6 extras a la semana', () => {
+    expect(extrasSemanales(48, 42)).toBe(6);
+  });
+
+  it('quien trabaja menos de la jornada no genera extras negativas', () => {
+    expect(extrasSemanales(38, 42)).toBe(0);
+  });
+
+  it('seis extras diurnas al mes sobre dos millones con jornada de 42', () => {
+    // 6 extras × 5 semanas = 30 horas al mes.
+    // Hora = 2.000.000 / 210 = 9.523,81 · con factor 1,25 = 11.904,76
+    // 30 × 11.904,76 = 357.142,86
+    const c = costoExtrasMes({ salario: 2_000_000, jornada: 42, horasSemana: 48, factor: 1.25 });
+    expect(Math.round(c)).toBe(357_143);
+  });
+
+  it('la misma persona bajo la jornada anterior de 44 costaba menos', () => {
+    // 4 extras × 5 = 20 horas · hora = 2.000.000/220 = 9.090,91 · ×1,25 = 11.363,64
+    // 20 × 11.363,64 = 227.272,73
+    const c = costoExtrasMes({ salario: 2_000_000, jornada: 44, horasSemana: 48, factor: 1.25 });
+    expect(Math.round(c)).toBe(227_273);
+  });
+
+  it('bajar de 44 a 42 horas encarece a esa persona unos 130 mil al mes', () => {
+    const antes = costoExtrasMes({ salario: 2_000_000, jornada: 44, horasSemana: 48, factor: 1.25 });
+    const ahora = costoExtrasMes({ salario: 2_000_000, jornada: 42, horasSemana: 48, factor: 1.25 });
+    expect(Math.round(ahora - antes)).toBe(129_870);
+  });
+
+  it('el tope legal de extras sigue siendo 12 a la semana', () => {
+    expect(TOPE_EXTRAS_SEMANA).toBe(12);
   });
 });
