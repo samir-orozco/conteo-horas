@@ -185,11 +185,25 @@ a{color:#303030}
   letter-spacing:.04em;color:#898989;margin-bottom:8px}
 .pesos{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #dcdcdc;
   border-radius:12px;padding:10px 14px;max-width:280px}
-.pesos span{color:#898989;font-size:20px;font-weight:700}
-.pesos input{border:0;outline:0;font-size:24px;font-weight:800;width:100%;color:#303030;
+.pesos span{color:#898989;font-size:20px;font-weight:700;line-height:1}
+.pesos input{border:0;outline:0;font-size:24px;font-weight:800;width:100%;min-width:0;color:#303030;
   font-variant-numeric:tabular-nums;background:transparent}
 .calc-cab .pista{margin:12px 0 0;font-size:15px;color:#4a4a4a}
 .tenue{color:#898989}
+.calc-total{background:#303030;color:#fff;padding:20px 24px}
+.calc-total>div{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.calc-total .rot{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#c9c9c9}
+.calc-total strong{font-size:31px;font-weight:800;font-variant-numeric:tabular-nums}
+.calc-total p{margin:6px 0 0;font-size:14px;color:#c9c9c9}
+.calc-pie{margin:0;padding:14px 24px;font-size:13.5px;color:#898989;background:#f6f6f4;
+  border-top:1px solid #e6e6e6;line-height:1.55}
+.calc-pie a{color:#303030}
+.cierre-cta{background:#FFF6D9;border:1px solid #F5E3A8;border-radius:16px;padding:24px;margin:44px 0 28px}
+.cierre-cta p{margin:0 0 16px;font-size:16.5px}
+.cierre-cta p:last-child{margin:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(max-width:560px){.calc-total strong{font-size:26px}}
+
 .calc-horas{padding:8px 24px}
 .fila-h{display:flex;align-items:center;justify-content:space-between;gap:16px;
   padding:11px 0;border-bottom:1px solid #f0f0f0}
@@ -201,21 +215,9 @@ a{color:#303030}
   padding:8px 11px;border:1px solid #dcdcdc;border-radius:10px;color:#303030;
   font-variant-numeric:tabular-nums}
 .fila-h input:focus{outline:2px solid #FFD85E;outline-offset:1px;border-color:#FFD85E}
-.calc-total{background:#303030;color:#fff;padding:20px 24px}
-.calc-total>div{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.calc-total .rot{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#c9c9c9}
-.calc-total strong{font-size:31px;font-weight:800;font-variant-numeric:tabular-nums}
-.calc-total p{margin:6px 0 0;font-size:14px;color:#c9c9c9}
-.calc-pie{margin:0;padding:14px 24px;font-size:13.5px;color:#898989;background:#f6f6f4;
-  border-top:1px solid #e6e6e6}
-.cierre-cta{background:#FFF6D9;border:1px solid #F5E3A8;border-radius:16px;padding:24px;margin:44px 0 28px}
-.cierre-cta p{margin:0 0 16px;font-size:16.5px}
-.cierre-cta p:last-child{margin:0}
-td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:560px){
   .fila-h{align-items:flex-start}
   .fila-h input{width:76px}
-  .calc-total strong{font-size:26px}
 }
 </style>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://horapro.co/calculadoras/horas-extra-recargos/","name":"Calculadora de horas extra y recargos en Colombia","description":"Calcula horas extra, recargo nocturno y dominical con los factores vigentes en Colombia: jornada de 42 horas, nocturna desde las 7:00 p.m. y dominical al 90%. Gratis y sin registro.","url":"https://horapro.co/calculadoras/horas-extra-recargos/","applicationCategory":"BusinessApplication","operatingSystem":"Cualquiera con navegador web","inLanguage":"es-CO","dateModified":"2026-08-25","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"COP"},"publisher":{"@type":"Organization","name":"HoraPro","url":"https://horapro.co","logo":{"@type":"ImageObject","url":"https://horapro.co/logo.svg"}}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://horapro.co/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://horapro.co/blog/"},{"@type":"ListItem","position":3,"name":"Calculadora de horas extra y recargos en Colombia","item":"https://horapro.co/calculadoras/horas-extra-recargos/"}]}]}</script>
