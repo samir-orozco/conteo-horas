@@ -89,8 +89,11 @@ export default function calculadoraJornada42(hoyISO) {
   </div>
 
   <div class="calc-total">
-    <div><span class="rot">Extras al mes, toda tu gente</span><strong id="total">${cop(hoy.costoTodos)}</strong></div>
-    <p class="tenue" id="desglose">${cop(hoy.costoUno)} por persona · ${cop(hoy.costoTodos * 12)} al año</p>
+    <div class="izq">
+      <span class="rot">Extras al mes, toda tu gente</span>
+      <p id="desglose">${cop(hoy.costoUno)} por persona · ${cop(hoy.costoTodos * 12)} al año</p>
+    </div>
+    <strong id="total">${cop(hoy.costoTodos)}</strong>
   </div>
   <div class="calc-delta" id="delta-caja">
     <span>Lo que sumó la reducción de ${antes} a ${jornada} horas</span>

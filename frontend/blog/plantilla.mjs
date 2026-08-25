@@ -209,14 +209,22 @@ const CSS_CALC = `
 .pesos:focus-within{outline:2px solid #FFD85E;outline-offset:1px;border-color:#FFD85E}
 .calc-cab .pista{margin:12px 0 0;font-size:15px;color:#4a4a4a}
 .tenue{color:#898989}
-.calc-total{background:#303030;color:#fff;padding:20px 24px}
-.calc-total>div{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.calc-total .rot{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#c9c9c9}
-.calc-total strong{font-size:31px;font-weight:800;font-variant-numeric:tabular-nums}
-.calc-total p{margin:6px 0 0;font-size:14px;color:#c9c9c9}
-.calc-pie{margin:0;padding:14px 24px;font-size:13.5px;color:#898989;background:#f6f6f4;
+.calc-total{background:#303030;color:#fff;padding:18px 24px;display:flex;align-items:center;
+  justify-content:space-between;gap:20px;flex-wrap:wrap}
+.calc-total .izq{min-width:0}
+.calc-total .rot{display:block;font-size:12.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;color:#9a9a9a}
+.calc-total strong{font-size:clamp(28px,4vw,34px);line-height:1.05;font-weight:800;
+  font-variant-numeric:tabular-nums;letter-spacing:-.015em;white-space:nowrap}
+.calc-total p{margin:5px 0 0;font-size:14px;color:#c9c9c9;line-height:1.45}
+/* La regla .cuerpo p del blog gana por especificidad a una clase sola, y le
+   devolvia los 20px de margen inferior a esta nota. Como es el ultimo hijo de
+   la tarjeta, ese margen dejaba una franja blanca dentro del borde redondeado. */
+.cuerpo .calc-pie{margin:0}
+.calc-pie{padding:13px 24px;font-size:13.5px;color:#898989;background:#f6f6f4;
   border-top:1px solid #e6e6e6;line-height:1.55}
 .calc-pie a{color:#303030}
+@media(max-width:560px){.calc-total{align-items:flex-start;flex-direction:column;gap:10px}}
 .cierre-cta{background:#FFF6D9;border:1px solid #F5E3A8;border-radius:16px;padding:24px;margin:44px 0 28px}
 .cierre-cta p{margin:0 0 16px;font-size:16.5px}
 .cierre-cta p:last-child{margin:0}

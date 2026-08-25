@@ -52,8 +52,11 @@ export default function calculadoraHorasExtra(hoyISO) {
   </div>
   <div class="calc-horas">${controles}</div>
   <div class="calc-total">
-    <div><span class="rot">Total del período</span><strong id="total">${cop(0)}</strong></div>
-    <p class="tenue" id="desglose">Escribe las horas de arriba para ver el total.</p>
+    <div class="izq">
+      <span class="rot">Total del período</span>
+      <p id="desglose">Escribe las horas de arriba para ver el total.</p>
+    </div>
+    <strong id="total">${cop(0)}</strong>
   </div>
   <p class="calc-pie">Cuenta el valor de las horas trabajadas. No incluye prestaciones, auxilio de transporte ni deducciones de seguridad social.</p>
 </div>
