@@ -1,6 +1,9 @@
 import { format, differenceInCalendarDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Trash2, Paperclip, AlertTriangle, Info, Check, Plus, FileText, Image as ImageIcon } from 'lucide-react';
+import {
+  Trash2, AlertTriangle, Info, Check, Plus,
+  FileText, Image as ImageIcon, CalendarClock,
+} from 'lucide-react';
 import { TIPO_LABEL, ALERTA, type Contrato } from './tipos';
 
 const dLarga = (s: string | null) => s ? format(new Date(s), "d MMM yyyy", { locale: es }) : '—';
@@ -23,12 +26,34 @@ const TONOS = {
   azul:  { caja: 'bg-blue-50 border-blue-200 text-blue-800',    barra: 'bg-blue-500' },
 };
 
+// Un archivo adjunto se dibuja como un archivo: recuadro, icono con el color de
+// su formato y el nombre. Antes el contrato era un enlace suelto entre las
+// etiquetas del encabezado y el otrosí era un clip gris de 12px, que no se leía
+// como "aquí hay un PDF" sino como decoración.
+function FichaDocumento({ tipo, nombre, respaldo, onAbrir }: {
+  tipo: string; nombre: string | null; respaldo: string; onAbrir: () => void;
+}) {
+  const esPdf = tipo === 'application/pdf';
+  return (
+    <button type="button" onClick={onAbrir} title={nombre ?? respaldo}
+      className="inline-flex items-center gap-1.5 max-w-full pl-1 pr-2.5 py-1 rounded-lg border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 transition-colors">
+      <span className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${
+        esPdf ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+        {esPdf ? <FileText size={12} /> : <ImageIcon size={12} />}
+      </span>
+      <span className="text-[11px] font-medium text-ink truncate">{nombre || respaldo}</span>
+    </button>
+  );
+}
+
 function Dato({ rotulo, valor, pie, tono }: { rotulo: string; valor: string; pie?: string; tono?: string }) {
   return (
     <div className="min-w-0">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{rotulo}</p>
       <p className={`text-sm font-semibold truncate ${tono ?? 'text-ink'}`}>{valor}</p>
-      {pie && <p className="text-[11px] text-muted truncate">{pie}</p>}
+      {/* El pie ya no se recorta: "la próxima, mínimo 1 año" quedaba cortado y
+          era justo el dato que había que leer. Cabe en dos líneas. */}
+      {pie && <p className="text-[11px] text-muted leading-tight mt-0.5">{pie}</p>}
     </div>
   );
 }
@@ -69,6 +94,15 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir,
   const urgencia = k.preavisoVencido ? 'text-red-600'
     : dias !== null && dias <= 60 ? 'text-amber-600' : 'text-ink';
 
+  // El preaviso salió de la rejilla de datos. No es un hecho del contrato como
+  // el inicio o el vencimiento: es algo que hay que HACER antes de una fecha, y
+  // como columna se leía igual de fuerte que las otras tres, ocupando el sitio
+  // que necesitaba "la próxima, mínimo 1 año". Ahora es una línea de aviso, y
+  // solo mientras el contrato siga corriendo: en uno ya vencido esa fecha es
+  // historia y solo estorba.
+  const vencido = dias !== null && dias < 0;
+  const mostrarPreaviso = !indefinidoDeFacto && !terminado && !vencido && !!k.fechaLimitePreaviso;
+
   return (
     <div className={`rounded-xl border p-4 ${terminado ? 'border-gray-100 bg-gray-50/60' : 'border-gray-200'}`}>
       <div className="flex items-start justify-between gap-2 mb-3">
@@ -83,13 +117,6 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir,
           {k.etapa && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/30 text-ink">ETAPA {k.etapa}</span>
           )}
-          {c.documentoTipo && (
-            <button onClick={() => onVerDocumento(`/contratos/${c.id}/documento`, c.documentoNombre)}
-              className="text-[11px] font-medium text-primary-dark hover:underline flex items-center gap-1">
-              {c.documentoTipo === 'application/pdf' ? <FileText size={12} className="text-red-500" /> : <ImageIcon size={12} />}
-              {c.documentoNombre || 'Ver contrato'}
-            </button>
-          )}
         </div>
         <button onClick={onBorrar} title="Eliminar contrato"
           className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded shrink-0 transition-colors">
@@ -97,9 +124,17 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir,
         </button>
       </div>
 
-      {/* Los cuatro datos, con el mismo formato que el detalle de una jornada.
-          Antes iban seguidos en una línea gris separados por puntos. */}
-      <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Los hechos del contrato: cuándo empezó, cuándo termina y cuántas veces
+          se ha renovado. Tres, no cuatro: son los que se comparan entre
+          contratos, y en tres columnas los pies de cada uno caben enteros.
+
+          Las columnas se cuentan contra el ancho de ESTA caja, no contra el de
+          la ventana. Con `sm:grid-cols-3` la tarjeta pasaba a tres columnas a
+          partir de 640px de ventana, pero la ficha la parte en dos a partir de
+          1024, así que en un portátil el panel medía ~355px y "30 jun 2028" se
+          recortaba justo en la pantalla más común. Con auto-fit se reacomoda
+          sola en dos columnas, o en una, antes que recortar un dato. */}
+      <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-[repeat(auto-fit,minmax(7rem,1fr))] gap-x-4 gap-y-3">
         <Dato rotulo="Inicio" valor={dLarga(c.fechaInicio)} />
         {indefinidoDeFacto ? (
           <Dato rotulo="Vence" valor="No vence" pie={c.convertidoAIndefinidoEn ? `Indefinido desde el ${dCorta(c.convertidoAIndefinidoEn)}` : undefined} />
@@ -111,12 +146,20 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir,
         <Dato rotulo="Prórrogas" valor={String(k.numeroProrrogas)}
           pie={k.proximaProrrogaMinimaUnAno ? 'la próxima, mínimo 1 año' : undefined}
           tono={k.proximaProrrogaMinimaUnAno ? 'text-amber-600' : undefined} />
-        {!indefinidoDeFacto && k.fechaLimitePreaviso && (
-          <Dato rotulo="Avisar antes del" valor={dCorta(k.fechaLimitePreaviso)}
-            pie={k.preavisoVencido ? 'plazo vencido' : undefined}
-            tono={k.preavisoVencido ? 'text-red-600' : undefined} />
-        )}
       </div>
+
+      {/* El aviso queda en gris a propósito. Si además es urgente, abajo aparece
+          la alerta en ámbar o rojo con el porqué; dos bloques de color seguidos
+          diciendo lo mismo no crean urgencia, crean ruido. */}
+      {mostrarPreaviso && (
+        <div className="mt-2 flex items-start gap-2 text-[11px] text-muted">
+          <CalendarClock size={13} className="shrink-0 mt-px" />
+          <span>
+            Para no renovarlo hay que avisar por escrito antes del{' '}
+            <b className={k.preavisoVencido ? 'text-red-600' : 'text-ink'}>{dCorta(k.fechaLimitePreaviso)}</b>.
+          </span>
+        </div>
+      )}
 
       {/* Cuánto se lleva del tope legal. Es lo que hace tangible la regla. */}
       {consumido && (
@@ -164,22 +207,23 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir,
       {c.prorrogas.length > 0 && (
         <div className="mt-3 border-t border-gray-100 pt-2.5">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1.5">Prórrogas</p>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             {c.prorrogas.map((p, i) => {
               const d = differenceInCalendarDays(new Date(p.hasta), new Date(p.desde)) + 1;
               const esLaCuarta = i === 3;
               return (
-                <div key={p.id} className="flex items-center gap-2 text-xs">
+                <div key={p.id} className="flex items-center gap-2 flex-wrap text-xs">
                   <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
                     esLaCuarta ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-muted'}`}>{i + 1}</span>
                   <span className="text-ink font-mono">{dCorta(p.desde)} → {dCorta(p.hasta)}</span>
                   <span className="text-muted">{duracionLegible(d)}</span>
-                  {p.documentoTipo && (
-                    <button onClick={() => onVerDocumento(`/contratos/prorrogas/${p.id}/documento`, p.documentoNombre)}
-                      title={p.documentoNombre || 'Ver otrosí'}
-                      className="text-primary-dark hover:text-ink"><Paperclip size={12} /></button>
-                  )}
                   {esLaCuarta && <span className="text-[10px] font-semibold text-amber-700">límite de las cortas</span>}
+                  {p.documentoTipo && (
+                    <span className="ml-auto min-w-0">
+                      <FichaDocumento tipo={p.documentoTipo} nombre={p.documentoNombre} respaldo="Otrosí"
+                        onAbrir={() => onVerDocumento(`/contratos/prorrogas/${p.id}/documento`, p.documentoNombre)} />
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -187,11 +231,22 @@ export default function TarjetaContrato({ c, onBorrar, onProrrogar, onConvertir,
         </div>
       )}
 
-      {prorrogable && (
-        <button onClick={onProrrogar}
-          className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg">
-          <Plus size={13} /> Agregar prórroga
-        </button>
+      {/* Pie: el documento firmado y la acción, juntos y con el mismo peso. El
+          contrato colgaba del encabezado, apretado entre las etiquetas de estado
+          y peleando con ellas por la atención. */}
+      {(c.documentoTipo || prorrogable) && (
+        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2 flex-wrap">
+          {c.documentoTipo && (
+            <FichaDocumento tipo={c.documentoTipo} nombre={c.documentoNombre} respaldo="Contrato firmado"
+              onAbrir={() => onVerDocumento(`/contratos/${c.id}/documento`, c.documentoNombre)} />
+          )}
+          {prorrogable && (
+            <button onClick={onProrrogar}
+              className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg">
+              <Plus size={13} /> Agregar prórroga
+            </button>
+          )}
+        </div>
       )}
 
       {c.observacion && <p className="text-xs text-muted mt-2.5 whitespace-pre-wrap">{c.observacion}</p>}
