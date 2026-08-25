@@ -6,6 +6,7 @@ import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import CampoEvidencia, { type CambioEvidencia } from '../../components/CampoEvidencia';
 import { TIPO_LABEL, ALERTA, type Contrato, type TipoContrato } from './tipos';
+import { duracionesDe, finDeDuracion, caeEnRegla4taProrroga } from './duraciones';
 
 const fecha = (s: string | null) => s ? format(new Date(s), "d 'de' MMMM yyyy", { locale: es }) : '—';
 const corta = (s: string | null) => s ? format(new Date(s), 'dd/MM/yyyy') : '—';
@@ -42,11 +43,15 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
   const [error, setError] = useState('');
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(VACIO);
+  // Meses de duración elegidos. 0 = personalizado, que es cuando se escribe la
+  // fecha de terminación a mano.
+  const [meses, setMeses] = useState(3);
   const [adjunto, setAdjunto] = useState<CambioEvidencia>({ tipo: 'sin-cambio' });
   const [guardando, setGuardando] = useState(false);
   const [porBorrar, setPorBorrar] = useState<Contrato | null>(null);
   const [prorrogando, setProrrogando] = useState<Contrato | null>(null);
   const [prorroga, setProrroga] = useState({ desde: '', hasta: '' });
+  const [mesesProrroga, setMesesProrroga] = useState(3);
 
   const cargar = useCallback(() => {
     api.get(`/contratos/colaborador/${colaboradorId}`)
@@ -104,6 +109,17 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
   };
 
   const necesitaFin = form.tipo === 'FIJO' || form.tipo === 'APRENDIZAJE';
+
+  // La fecha de terminación se calcula sola salvo que se elija Personalizado.
+  const fijarDuracion = (m: number, inicio = form.fechaInicio) => {
+    setMeses(m);
+    setForm(f => ({ ...f, fechaInicio: inicio, fechaFin: m === 0 ? f.fechaFin : finDeDuracion(inicio, m) }));
+  };
+  const fijarInicio = (inicio: string) => fijarDuracion(meses, inicio);
+  const fijarDuracionProrroga = (m: number, desde = prorroga.desde) => {
+    setMesesProrroga(m);
+    setProrroga(pr => ({ desde, hasta: m === 0 ? pr.hasta : finDeDuracion(desde, m) }));
+  };
 
   return (
     <div className="bg-white rounded-card border border-gray-200 p-5">
@@ -228,18 +244,47 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
               <div>
                 <label className="block text-xs font-medium text-muted mb-1">Inicio</label>
                 <input type="date" required value={form.fechaInicio}
-                  onChange={e => setForm({ ...form, fechaInicio: e.target.value })}
+                  onChange={e => fijarInicio(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               {necesitaFin && (
                 <div>
-                  <label className="block text-xs font-medium text-muted mb-1">Terminación</label>
-                  <input type="date" required value={form.fechaFin}
-                    onChange={e => setForm({ ...form, fechaFin: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                  <label className="block text-xs font-medium text-muted mb-1">Duración</label>
+                  <select value={meses} onChange={e => fijarDuracion(Number(e.target.value))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    {duracionesDe(form.tipo).map(d => (
+                      <option key={d.meses} value={d.meses}>{d.etiqueta}</option>
+                    ))}
+                    <option value={0}>Personalizado</option>
+                  </select>
                 </div>
               )}
             </div>
+
+            {necesitaFin && (
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1">
+                  Terminación {meses > 0 && <span className="text-gray-400">(calculada)</span>}
+                </label>
+                <input type="date" required value={form.fechaFin}
+                  readOnly={meses > 0}
+                  onChange={e => setForm({ ...form, fechaFin: e.target.value })}
+                  className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm ${meses > 0 ? 'bg-gray-50 text-muted' : ''}`} />
+                {/* El umbral del año es lo único que la ley sí distingue, así que
+                    se dice al elegir y no cuando ya haya cuatro prórrogas encima. */}
+                {meses > 0 && caeEnRegla4taProrroga(meses) && (
+                  <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-1.5">
+                    Al ser de menos de un año, después de la cuarta prórroga la siguiente
+                    tendrá que ser de un año como mínimo.
+                  </p>
+                )}
+                {meses === 0 && (
+                  <p className="text-[11px] text-muted mt-1">
+                    Escribe la fecha a mano. Recuerda el tope legal: {form.tipo === 'APRENDIZAJE' ? 'tres' : 'cuatro'} años.
+                  </p>
+                )}
+              </div>
+            )}
 
             {form.tipo === 'APRENDIZAJE' && (
               <div>
@@ -302,15 +347,28 @@ export default function PanelContratos({ colaboradorId }: { colaboradorId: strin
               <div>
                 <label className="block text-xs font-medium text-muted mb-1">Desde</label>
                 <input type="date" required value={prorroga.desde}
-                  onChange={e => setProrroga({ ...prorroga, desde: e.target.value })}
+                  onChange={e => fijarDuracionProrroga(mesesProrroga, e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted mb-1">Hasta</label>
-                <input type="date" required value={prorroga.hasta}
-                  onChange={e => setProrroga({ ...prorroga, hasta: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                <label className="block text-xs font-medium text-muted mb-1">Duración</label>
+                <select value={mesesProrroga} onChange={e => fijarDuracionProrroga(Number(e.target.value))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                  {duracionesDe(prorrogando.tipo).map(d => (
+                    <option key={d.meses} value={d.meses}>{d.etiqueta}</option>
+                  ))}
+                  <option value={0}>Personalizado</option>
+                </select>
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted mb-1">
+                Hasta {mesesProrroga > 0 && <span className="text-gray-400">(calculada)</span>}
+              </label>
+              <input type="date" required value={prorroga.hasta}
+                readOnly={mesesProrroga > 0}
+                onChange={e => setProrroga({ ...prorroga, hasta: e.target.value })}
+                className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm ${mesesProrroga > 0 ? 'bg-gray-50 text-muted' : ''}`} />
             </div>
             {prorrogando.calculo.topeMaximo && (
               <p className="text-[11px] text-muted">
