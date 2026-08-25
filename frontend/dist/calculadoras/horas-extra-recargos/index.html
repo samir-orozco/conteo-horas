@@ -154,6 +154,15 @@ a{color:#303030}
   font-size:16px;margin:0 0 30px}
 .cuerpo table{width:100%;border-collapse:collapse;margin:0 0 26px;font-size:15.5px;display:block;overflow-x:auto}
 .cuerpo th{text-align:left;background:#f6f6f4;font-weight:700;padding:11px 14px;border-bottom:2px solid #e6e6e6;white-space:nowrap}
+/* En pantallas angostas la tabla de factores se salia por la derecha y habia
+   que arrastrarla para ver la columna de pesos, que es justo la que cambia con
+   el salario. Se aprieta el relleno y se deja que el nombre del tipo de hora
+   use el ancho que sobre, en vez de que sobre a la derecha. */
+@media(max-width:560px){
+  .cuerpo table{font-size:14px}
+  .cuerpo th,.cuerpo td{padding:9px 8px}
+  .cuerpo th:first-child,.cuerpo td:first-child{white-space:normal}
+}
 .cuerpo td{padding:11px 14px;border-bottom:1px solid #efefef}
 .cuerpo tbody tr:last-child td{border-bottom:0}
 .nota{background:#FFF9E6;border-left:4px solid #FFD85E;border-radius:0 12px 12px 0;padding:18px 22px;margin:0 0 26px}
@@ -324,50 +333,50 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 
 <h2 id="tabla">Cuánto vale cada hora hoy</h2>
 
-<p>Esta tabla está calculada con un salario de $2.000.000, que da una hora ordinaria de <strong>$9.524</strong>. Los factores son los que rigen en Colombia a la fecha de esta página.</p>
+<p>La tabla se mueve con el salario que pongas arriba. Ahora está en <strong id="tabla-salario">$2.000.000</strong>, que da una hora ordinaria de <strong id="tabla-hora">$9.524</strong>. Los factores son los que rigen en Colombia a la fecha de esta página.</p>
 
 <table>
-  <thead><tr><th>Tipo de hora</th><th>Factor</th><th>Con hora de $9.524</th></tr></thead>
+  <thead><tr><th>Tipo de hora</th><th class="num">Factor</th><th class="num" id="th-hora">Con hora de $9.524</th></tr></thead>
   <tbody>
     <tr>
       <td>Hora Ordinaria Diurna</td>
       <td class="num">1,00</td>
-      <td class="num">$9.524</td>
+      <td class="num val" data-factor="1">$9.524</td>
     </tr>
     <tr>
       <td>Hora Ordinaria Nocturna</td>
       <td class="num">1,35</td>
-      <td class="num">$12.857</td>
+      <td class="num val" data-factor="1.35">$12.857</td>
     </tr>
     <tr>
       <td>Hora Extra Diurna</td>
       <td class="num">1,25</td>
-      <td class="num">$11.905</td>
+      <td class="num val" data-factor="1.25">$11.905</td>
     </tr>
     <tr>
       <td>Hora Extra Nocturna</td>
       <td class="num">1,75</td>
-      <td class="num">$16.667</td>
+      <td class="num val" data-factor="1.75">$16.667</td>
     </tr>
     <tr>
       <td>Hora Diurna dominical o festivo</td>
       <td class="num">1,90</td>
-      <td class="num">$18.095</td>
+      <td class="num val" data-factor="1.9">$18.095</td>
     </tr>
     <tr>
       <td>Hora Nocturna dominical o festivo</td>
       <td class="num">2,25</td>
-      <td class="num">$21.429</td>
+      <td class="num val" data-factor="2.25">$21.429</td>
     </tr>
     <tr>
       <td>Hora Extra Diurna dominical o festivo</td>
       <td class="num">2,15</td>
-      <td class="num">$20.476</td>
+      <td class="num val" data-factor="2.15">$20.476</td>
     </tr>
     <tr>
       <td>Hora Extra Nocturna dominical o festivo</td>
       <td class="num">2,65</td>
-      <td class="num">$25.238</td>
+      <td class="num val" data-factor="2.65">$25.238</td>
     </tr></tbody>
 </table>
 
@@ -420,6 +429,13 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
   var desglose = document.getElementById('desglose');
   var valorHora = document.getElementById('valor-hora');
   var horas = Array.prototype.slice.call(document.querySelectorAll('.fila-h input'));
+  /* La tabla de referencia de mas abajo se mueve con el mismo salario: tener dos
+     cifras distintas en la misma pagina, una en el formulario y otra en la
+     tabla, seria justo la confusion que esta pagina existe para evitar. */
+  var celdas = Array.prototype.slice.call(document.querySelectorAll('td.val'));
+  var thHora = document.getElementById('th-hora');
+  var tablaSalario = document.getElementById('tabla-salario');
+  var tablaHora = document.getElementById('tabla-hora');
   var DIVISOR = 210;
   if (!salario || !total) return;
 
@@ -438,6 +454,13 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
       cuantas += h;
       suma += h * hora * parseFloat(input.getAttribute('data-factor'));
     });
+    celdas.forEach(function (td) {
+      td.textContent = pesos(hora * parseFloat(td.getAttribute('data-factor')));
+    });
+    if (thHora) thHora.textContent = 'Con hora de ' + pesos(hora);
+    if (tablaSalario) tablaSalario.textContent = pesos(base);
+    if (tablaHora) tablaHora.textContent = pesos(hora);
+
     total.textContent = pesos(suma);
     desglose.textContent = cuantas > 0
       ? cuantas.toLocaleString('es-CO') + (cuantas === 1 ? ' hora' : ' horas') + ' sobre una hora ordinaria de ' + pesos(hora)
