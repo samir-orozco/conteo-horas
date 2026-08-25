@@ -106,18 +106,10 @@ export default function calculadoraHorasExtra(hoyISO) {
 
   /* Sin acentos graves ni signo de dolar seguido de llave dentro de este bloque:
      va dentro de una plantilla de JavaScript y la cerraria antes de tiempo. */
+  /* Solo lo propio de esta pagina: el armazon comun (.calc, .calc-cab, .pesos,
+     .calc-total, .calc-pie) lo pone la plantilla, que es donde lo comparten las
+     dos calculadoras. Sin acentos graves aqui dentro. */
   const estilos = `
-.calc{border:1px solid #e6e6e6;border-radius:18px;overflow:hidden;margin:0 0 40px;background:#fff}
-.calc-cab{background:#f6f6f4;padding:22px 24px;border-bottom:1px solid #e6e6e6}
-.calc-cab label{display:block;font-size:13px;font-weight:700;text-transform:uppercase;
-  letter-spacing:.04em;color:#898989;margin-bottom:8px}
-.pesos{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #dcdcdc;
-  border-radius:12px;padding:10px 14px;max-width:280px}
-.pesos span{color:#898989;font-size:20px;font-weight:700}
-.pesos input{border:0;outline:0;font-size:24px;font-weight:800;width:100%;color:#303030;
-  font-variant-numeric:tabular-nums;background:transparent}
-.calc-cab .pista{margin:12px 0 0;font-size:15px;color:#4a4a4a}
-.tenue{color:#898989}
 .calc-horas{padding:8px 24px}
 .fila-h{display:flex;align-items:center;justify-content:space-between;gap:16px;
   padding:11px 0;border-bottom:1px solid #f0f0f0}
@@ -129,21 +121,9 @@ export default function calculadoraHorasExtra(hoyISO) {
   padding:8px 11px;border:1px solid #dcdcdc;border-radius:10px;color:#303030;
   font-variant-numeric:tabular-nums}
 .fila-h input:focus{outline:2px solid #FFD85E;outline-offset:1px;border-color:#FFD85E}
-.calc-total{background:#303030;color:#fff;padding:20px 24px}
-.calc-total>div{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.calc-total .rot{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#c9c9c9}
-.calc-total strong{font-size:31px;font-weight:800;font-variant-numeric:tabular-nums}
-.calc-total p{margin:6px 0 0;font-size:14px;color:#c9c9c9}
-.calc-pie{margin:0;padding:14px 24px;font-size:13.5px;color:#898989;background:#f6f6f4;
-  border-top:1px solid #e6e6e6}
-.cierre-cta{background:#FFF6D9;border:1px solid #F5E3A8;border-radius:16px;padding:24px;margin:44px 0 28px}
-.cierre-cta p{margin:0 0 16px;font-size:16.5px}
-.cierre-cta p:last-child{margin:0}
-td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:560px){
   .fila-h{align-items:flex-start}
   .fila-h input{width:76px}
-  .calc-total strong{font-size:26px}
 }
 `;
 

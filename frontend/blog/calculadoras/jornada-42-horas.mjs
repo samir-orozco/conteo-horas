@@ -143,7 +143,8 @@ export default function calculadoraJornada42(hoyISO) {
 <p class="cierre">Si lo que buscas es el detalle de cada recargo, está en la <a href="/calculadoras/horas-extra-recargos/">calculadora de horas extra y recargos</a> y en <a href="/blog/jornada-laboral-colombia-2026/">la jornada laboral en 2026</a>.</p>
 `;
 
-  /* Sin acentos graves ni signo de dolar seguido de llave aqui dentro. */
+  /* Solo lo propio de esta pagina; el armazon comun lo pone la plantilla.
+     Sin acentos graves ni signo de dolar seguido de llave aqui dentro. */
   const estilos = `
 .calc .campos{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}
 .calc .campos>div{min-width:0}
@@ -164,6 +165,9 @@ export default function calculadoraJornada42(hoyISO) {
 .calc-delta{background:#FFF6D9;border-top:1px solid #F5E3A8;padding:16px 24px;display:flex;
   align-items:baseline;gap:10px;flex-wrap:wrap;font-size:15px}
 .calc-delta strong{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;color:#7a5c00}
+/* El aviso de tope aparece y desaparece; sin esto el atributo hidden pierde
+   contra el display:block que trae la clase. */
+.aviso[hidden],.calc-delta[hidden]{display:none}
 @media(max-width:640px){
   .calc .campos{grid-template-columns:1fr}
   .par-dato{flex-direction:column;gap:2px}
