@@ -8,6 +8,7 @@ const vigencias_1 = require("../utils/vigencias");
 const capacidades_1 = require("../utils/capacidades");
 const rostro_1 = require("../utils/rostro");
 const fechas_1 = require("../utils/fechas");
+const documentos_1 = require("../utils/documentos");
 const materializarDias_1 = require("../utils/materializarDias");
 async function colaboradorRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
@@ -64,8 +65,15 @@ async function colaboradorRoutes(app) {
             return reply.status(404).send({ error: 'No encontrado' });
         // Se aplana a una lista de ids: es lo que el selector múltiple necesita, y
         // evita que el frontend tenga que conocer la tabla de unión.
-        const { sedes, ...resto } = col;
-        return { ...resto, sedeIds: (sedes ?? []).map((s) => s.sedeId) };
+        // `documentoRetiro` es un LongText y esta ficha se carga cada vez que se
+        // abre un perfil. Se saca aquí y se pide aparte, igual que los documentos
+        // de contratos, para no mover un PDF entero en cada visita.
+        const { sedes, documentoRetiro, ...resto } = col;
+        return {
+            ...resto,
+            tieneDocumentoRetiro: !!documentoRetiro,
+            sedeIds: (sedes ?? []).map((s) => s.sedeId),
+        };
     });
     // Valida que el horario asignado sea de la misma empresa
     async function horarioValido(horarioId, empresaId) {
@@ -197,7 +205,7 @@ async function colaboradorRoutes(app) {
     // el mismo día para que el reemplazo pueda entrar.
     app.post('/:id/retirar', auth, async (request, reply) => {
         const { id } = request.params;
-        const { fecha, motivo } = (request.body ?? {});
+        const { fecha, motivo, documento, documentoNombre } = (request.body ?? {});
         const existente = await prisma_1.prisma.colaborador.findFirst({
             where: { id, empresaId: request.empresaId }, select: { id: true, activo: true },
         });
@@ -212,14 +220,21 @@ async function colaboradorRoutes(app) {
         if (motivo && !MOTIVOS.includes(motivo)) {
             return reply.status(400).send({ error: 'Motivo de retiro no válido.' });
         }
+        const datos = {
+            activo: false,
+            fechaRetiro,
+            motivoRetiro: (motivo ?? 'OTRO'),
+            retiroProgramado: null,
+        };
+        if ((0, documentos_1.documentoValido)(documento)) {
+            datos.documentoRetiro = documento;
+            datos.documentoRetiroTipo = (0, documentos_1.tipoDeDocumento)(documento);
+            datos.documentoRetiroNombre = (0, documentos_1.nombreDeDocumento)(documentoNombre);
+        }
         const colaborador = await prisma_1.prisma.colaborador.update({
-            where: { id },
-            data: {
-                activo: false,
-                fechaRetiro,
-                motivoRetiro: (motivo ?? 'OTRO'),
-                retiroProgramado: null,
-            },
+            where: { id }, data: datos,
+            select: { id: true, nombre: true, apellido: true, activo: true, fechaRetiro: true,
+                motivoRetiro: true, documentoRetiroTipo: true, documentoRetiroNombre: true },
         });
         await cerrarContratoVigente(id);
         return colaborador;
@@ -239,6 +254,21 @@ async function colaboradorRoutes(app) {
         // `retiroInmediato` se mantiene por compatibilidad con el frontend actual.
         return { ...colaborador, retiroInmediato: true };
     });
+    // El soporte del retiro, servido aparte por su peso.
+    app.get('/:id/documento-retiro', auth, async (request, reply) => {
+        const { id } = request.params;
+        const col = await prisma_1.prisma.colaborador.findFirst({
+            where: { id, empresaId: request.empresaId },
+            select: { documentoRetiro: true, documentoRetiroTipo: true, documentoRetiroNombre: true },
+        });
+        if (!col?.documentoRetiro)
+            return reply.status(404).send({ error: 'Sin documento' });
+        return {
+            documento: col.documentoRetiro,
+            documentoTipo: col.documentoRetiroTipo,
+            documentoNombre: col.documentoRetiroNombre,
+        };
+    });
     // Los que ya no están. Van en su propia ruta y no en el listado principal
     // para que ninguna pantalla los cuente por accidente en un total de la
     // operación de hoy.
@@ -249,6 +279,7 @@ async function colaboradorRoutes(app) {
             select: {
                 id: true, nombre: true, apellido: true, cedula: true, cargo: true,
                 salarioMensual: true, fechaRetiro: true, motivoRetiro: true, creadoEn: true,
+                documentoRetiroTipo: true, documentoRetiroNombre: true,
             },
             orderBy: [{ fechaRetiro: 'desc' }, { nombre: 'asc' }],
         });
@@ -281,7 +312,12 @@ async function colaboradorRoutes(app) {
         }
         const colaborador = await prisma_1.prisma.colaborador.update({
             where: { id },
-            data: { activo: true, fechaRetiro: null, motivoRetiro: null, retiroProgramado: null },
+            data: {
+                activo: true, fechaRetiro: null, motivoRetiro: null, retiroProgramado: null,
+                // El soporte era de ESE retiro. Si vuelve y se va otra vez, el documento
+                // que valga será el nuevo, y dejar el viejo confundiría la trazabilidad.
+                documentoRetiro: null, documentoRetiroTipo: null, documentoRetiroNombre: null,
+            },
         });
         // Sus días esperados quedaron congelados con el horario del día que se fue.
         try {

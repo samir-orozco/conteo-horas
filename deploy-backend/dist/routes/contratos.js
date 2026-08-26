@@ -10,20 +10,13 @@ const prisma_1 = require("../prisma");
 const notificaciones_1 = require("../utils/notificaciones");
 const contratos_1 = require("../utils/contratos");
 const fechas_1 = require("../utils/fechas");
+const documentos_1 = require("../utils/documentos");
 // Las fechas llegan del formulario como "YYYY-MM-DD" y se anclan a medianoche de
 // BOGOTÁ, no de UTC. `new Date("2026-04-01")` son las 00:00 UTC, que en Colombia
 // es el 31 de marzo a las 7 p.m.: el contrato se guardaba y se mostraba un día
 // antes de lo que la persona escribió. Es la misma convención con la que el
 // kiosco guarda las marcaciones.
 const fechaBogota = (v) => typeof v === 'string' && v.length >= 10 ? (0, fechas_1.medianocheBogota)(v) : null;
-// Documento del contrato: PDF o imagen en base64, con tope de tamaño. Mismo
-// patrón y mismo límite que la evidencia de las novedades.
-const MAX_DOC = 4200000;
-function documentoValido(v) {
-    return typeof v === 'string'
-        && /^data:(image\/(jpeg|png|webp)|application\/pdf);base64,/.test(v)
-        && v.length < MAX_DOC;
-}
 const TIPOS = new Set(['INDEFINIDO', 'FIJO', 'OBRA_LABOR', 'APRENDIZAJE']);
 // Lista blanca de lo que la empresa puede escribir. Evita que llegue basura a
 // Prisma o que alguien intente escribir `convertidoAIndefinidoEn` desde el
@@ -50,7 +43,7 @@ function limpiar(data, esNuevo) {
         out.documentoTipo = null;
         out.documentoNombre = null;
     }
-    else if (documentoValido(data.documento)) {
+    else if ((0, documentos_1.documentoValido)(data.documento)) {
         out.documento = data.documento;
         out.documentoTipo = data.documento.slice(5, data.documento.indexOf(';'));
         out.documentoNombre = typeof data.documentoNombre === 'string' ? data.documentoNombre.slice(0, 120) : null;
@@ -227,7 +220,7 @@ async function contratoRoutes(app) {
         if (!body.desde || !body.hasta)
             return reply.status(400).send({ error: 'La prórroga necesita fecha de inicio y de fin.' });
         const datos = { contratoId: id, desde: fechaBogota(body.desde), hasta: fechaBogota(body.hasta) };
-        if (documentoValido(body.documento)) {
+        if ((0, documentos_1.documentoValido)(body.documento)) {
             datos.documento = body.documento;
             datos.documentoTipo = body.documento.slice(5, body.documento.indexOf(';'));
             datos.documentoNombre = typeof body.documentoNombre === 'string' ? body.documentoNombre.slice(0, 120) : null;
