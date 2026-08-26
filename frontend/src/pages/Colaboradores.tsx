@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, X, Eye, ArrowUpRight, MessageCircle } from 'lucide-react';
+import { Plus, Edit2, X, Eye, ArrowUpRight, MessageCircle, LogOut, Undo2 } from 'lucide-react';
 import api from '../lib/api';
-import ConfirmDialog from '../components/ConfirmDialog';
 import { useMiPlan } from '../lib/plan';
 import SelectorSedes from '../components/SelectorSedes';
+import ModalRetiro from '../features/colaboradores/ModalRetiro';
+import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 
 type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[] };
 export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string };
 type Horario = { id: string; nombre: string; franjas: Franja[] };
 type FormData = Omit<Colaborador, 'id' | 'activo'>;
+type Retirado = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
+  salarioMensual: number; fechaRetiro: string | null; motivoRetiro: string | null };
 
 const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [] };
 
@@ -43,15 +46,25 @@ export default function Colaboradores() {
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Colaborador | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY);
-  const [eliminando, setEliminando] = useState<Colaborador | null>(null);
+  const [retirando, setRetirando] = useState<Colaborador | null>(null);
+  // Pestaña activa. Los retirados van aparte para que ningún total de la
+  // operación de hoy los cuente por accidente.
+  const [pestana, setPestana] = useState<'activos' | 'retirados'>('activos');
+  const [retirados, setRetirados] = useState<Retirado[]>([]);
+  const [errorRetirados, setErrorRetirados] = useState('');
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [sedes, setSedes] = useState<{ id: string; nombre: string }[]>([]);
   const [errorForm, setErrorForm] = useState('');
   const [guardando, setGuardando] = useState(false);
 
   const cargar = () => api.get('/colaboradores').then(r => setLista(r.data));
+  const cargarRetirados = () => api.get('/colaboradores/inactivos')
+    .then(r => setRetirados(r.data))
+    .catch(() => setRetirados([]));
+
   useEffect(() => {
     cargar();
+    cargarRetirados();
     api.get('/horarios').then(r => setHorarios(r.data));
     api.get('/sedes').then(r => setSedes(r.data)).catch(() => setSedes([]));
   }, []);
@@ -86,11 +99,15 @@ export default function Colaboradores() {
     }
   };
 
-  const confirmarEliminar = async () => {
-    if (!eliminando) return;
-    await api.delete(`/colaboradores/${eliminando.id}`);
-    setEliminando(null);
-    cargar();
+  const reingresar = async (r: Retirado) => {
+    setErrorRetirados('');
+    try {
+      await api.post(`/colaboradores/${r.id}/reingresar`);
+      await Promise.all([cargar(), cargarRetirados()]);
+    } catch (err) {
+      const e = err as { response?: { data?: { error?: string } } };
+      setErrorRetirados(e.response?.data?.error ?? 'No pudimos reingresar a esa persona.');
+    }
   };
 
   const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -98,6 +115,10 @@ export default function Colaboradores() {
   const limite = plan && !plan.ilimitado ? plan.limite : null; // null = ilimitado
   const usados = lista.length;
   const topado = limite != null && usados >= limite;
+  // La pestaña se DERIVA, no se lee del estado a secas: al reingresar al último
+  // retirado la pestaña desaparece, y si el estado seguía en 'retirados' la
+  // pantalla quedaba en blanco sin forma de volver.
+  const pestanaActiva = retirados.length === 0 ? 'activos' : pestana;
   const esEmpresarial = plan?.plan === 'EMPRESARIAL';
   const pct = limite ? Math.min(100, Math.round((usados / limite) * 100)) : 0;
 
@@ -143,6 +164,69 @@ export default function Colaboradores() {
         </div>
       )}
 
+      {/* La pestaña de retirados solo aparece cuando hay alguien: si no, es una
+          pestaña vacía que solo estorba. */}
+      {retirados.length > 0 && (
+        <div className="flex items-center gap-1 mb-4 bg-gray-100 rounded-xl p-1 w-fit text-sm font-semibold">
+          <button onClick={() => setPestana('activos')}
+            className={`px-4 py-1.5 rounded-lg transition-colors ${pestanaActiva === 'activos' ? 'bg-white shadow text-ink' : 'text-muted hover:text-ink'}`}>
+            Activos <span className="font-normal">({lista.length})</span>
+          </button>
+          <button onClick={() => setPestana('retirados')}
+            className={`px-4 py-1.5 rounded-lg transition-colors ${pestanaActiva === 'retirados' ? 'bg-white shadow text-ink' : 'text-muted hover:text-ink'}`}>
+            Retirados <span className="font-normal">({retirados.length})</span>
+          </button>
+        </div>
+      )}
+
+      {pestanaActiva === 'retirados' ? (
+        <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
+          <p className="text-xs text-muted px-4 py-3 border-b border-gray-100">
+            Ya no cuentan para el cupo de tu plan y no aparecen en reportes ni en el kiosco,
+            pero conservan todo su historial. Reingresar recupera la ficha completa.
+          </p>
+          {errorRetirados && <p className="text-sm text-red-600 px-4 py-2">{errorRetirados}</p>}
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-muted uppercase text-xs">
+              <tr>
+                <th className="px-4 py-3 text-left">Nombre</th>
+                <th className="px-4 py-3 text-left hidden md:table-cell">Salió el</th>
+                <th className="px-4 py-3 text-left hidden md:table-cell">Motivo</th>
+                <th className="px-4 py-3 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {retirados.map(r => (
+                <tr key={r.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-ink">
+                    {r.nombre} {r.apellido}
+                    <span className="block text-xs text-muted font-normal md:hidden">
+                      {r.fechaRetiro ? new Date(r.fechaRetiro).toLocaleDateString('es-CO') : 'sin fecha'}
+                      {r.motivoRetiro ? ` · ${ETIQUETA_MOTIVO[r.motivoRetiro] ?? r.motivoRetiro}` : ''}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-muted hidden md:table-cell">
+                    {r.fechaRetiro ? new Date(r.fechaRetiro).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-muted hidden md:table-cell">
+                    {r.motivoRetiro ? (ETIQUETA_MOTIVO[r.motivoRetiro] ?? r.motivoRetiro) : '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-center gap-2">
+                      <button onClick={() => navigate(`/app/colaboradores/${r.id}`)} title="Ver historial"
+                        className="p-1.5 text-muted hover:bg-primary/30 hover:text-ink rounded-lg"><Eye size={15} /></button>
+                      <button onClick={() => reingresar(r)}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg">
+                        <Undo2 size={13} /> Reingresar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
       <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-muted uppercase text-xs">
@@ -172,7 +256,7 @@ export default function Colaboradores() {
                   <div className="flex items-center justify-center gap-2">
                     <button onClick={() => navigate(`/app/colaboradores/${col.id}`)} title="Ver detalle" className="p-1.5 text-muted hover:bg-primary/30 hover:text-ink rounded-lg"><Eye size={15} /></button>
                     <button onClick={() => abrir(col)} title="Editar" className="p-1.5 text-muted hover:bg-primary/30 hover:text-ink rounded-lg"><Edit2 size={15} /></button>
-                    <button onClick={() => setEliminando(col)} title="Desactivar" className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={15} /></button>
+                    <button onClick={() => setRetirando(col)} title="Registrar retiro" className="p-1.5 text-muted hover:bg-gray-100 hover:text-ink rounded-lg"><LogOut size={15} /></button>
                   </div>
                 </td>
               </tr>
@@ -183,17 +267,15 @@ export default function Colaboradores() {
           </tbody>
         </table>
       </div>
+      )}
 
-      {/* Confirmación de desactivación (modal propio) */}
-      <ConfirmDialog
-        abierto={!!eliminando}
-        peligro
-        titulo="¿Retirar colaborador?"
-        subtitulo={eliminando ? `Si el mes ya está pagado, ${eliminando.nombre} sigue activo hasta fin de mes (ya está cubierto) y se retira el día 1. Si no, se desactiva de inmediato. Su historial siempre se conserva.` : ''}
-        textoContinuar="Sí, retirar"
-        onContinuar={confirmarEliminar}
-        onCancelar={() => setEliminando(null)}
-      />
+      {retirando && (
+        <ModalRetiro
+          colaborador={retirando}
+          onCerrar={() => setRetirando(null)}
+          onListo={() => { setRetirando(null); cargar(); cargarRetirados(); }}
+        />
+      )}
 
       {/* Modal formulario */}
       {modal && (

@@ -19,6 +19,16 @@ export function medianocheBogota(fecha: string): Date {
   return new Date(Date.UTC(a, m - 1, d, 5, 0, 0));
 }
 
+// Hoy en Bogotá como "YYYY-MM-DD". Existe porque `new Date().toISOString()` da
+// la fecha UTC, y entre las 7 p.m. y la medianoche de Bogotá esa fecha ya es la
+// de mañana: un retiro registrado a las 8 p.m. quedaría fechado al día
+// siguiente.
+export function hoyEnBogota(ahora: Date = new Date()): string {
+  const b = toZonedTime(ahora, TZ);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${b.getFullYear()}-${dos(b.getMonth() + 1)}-${dos(b.getDate())}`;
+}
+
 // Rango de un reporte a partir de dos fechas "YYYY-MM-DD".
 //
 // Ojo con la zona horaria: `new Date("2026-07-01")` es medianoche UTC, que en

@@ -1,22 +1,45 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma } from '@prisma/client';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { calcularValorHora } from '../utils/horasColombiana';
 import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
-import { finDeMes } from '../utils/suscripcion';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
+import { medianocheBogota, hoyEnBogota } from '../utils/fechas';
 import { regenerarDiasDeColaborador, mantenerVentanaDeColaborador } from '../utils/materializarDias';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
 
-  // Aplica los retiros programados que ya vencieron (barrido perezoso)
-  async function aplicarRetiros(empresaId: string) {
-    await prisma.colaborador.updateMany({
-      where: { empresaId, activo: true, retiroProgramado: { lte: new Date() } },
-      data: { activo: false, retiroProgramado: null },
+  // Cierra el contrato vigente de quien se retira. Sin esto el módulo de
+  // contratos seguiría avisando del vencimiento de alguien que ya no está.
+  async function cerrarContratoVigente(colaboradorId: string) {
+    await prisma.contrato.updateMany({
+      where: { colaboradorId, estado: 'VIGENTE' },
+      data: { estado: 'TERMINADO' },
     });
+  }
+
+  // Barrido de los retiros que quedaron PROGRAMADOS antes de este cambio.
+  //
+  // Aplazar el retiro a fin de mes venía de cuando el precio dependía del número
+  // de colaboradores: se cobraba el mes y se dejaba el cupo ocupado. Hoy el
+  // precio es plano por plan y no mira cuántos hay, así que aplazar no protegía
+  // ingreso: solo impedía contratar al reemplazo el mismo día. Ya no se
+  // programan retiros nuevos, pero pueden quedar filas viejas en producción y
+  // hay que aplicarlas, ahora sí dejando la fecha registrada.
+  async function aplicarRetiros(empresaId: string) {
+    const pendientes = await prisma.colaborador.findMany({
+      where: { empresaId, activo: true, retiroProgramado: { lte: new Date() } },
+      select: { id: true, retiroProgramado: true },
+    });
+    for (const c of pendientes) {
+      await prisma.colaborador.update({
+        where: { id: c.id },
+        data: { activo: false, fechaRetiro: c.retiroProgramado, retiroProgramado: null },
+      });
+      await cerrarContratoVigente(c.id);
+    }
   }
 
   app.get('/', auth, async (request) => {
@@ -173,26 +196,113 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   // Estilo Notion: si el mes ya está pagado, el colaborador queda cubierto y
   // sigue activo hasta fin de mes; el retiro se aplica al iniciar el siguiente.
   // Si no hay mes pagado, se desactiva de inmediato.
+  const MOTIVOS = ['RENUNCIA', 'FIN_CONTRATO', 'SIN_JUSTA_CAUSA', 'JUSTA_CAUSA', 'FIN_OBRA', 'OTRO'];
+
+  // Registrar el retiro de un colaborador.
+  //
+  // No borra nada: marcaciones, novedades, contratos y reportes quedan igual, y
+  // tienen que quedar, porque la ley obliga a conservar esa información y porque
+  // borrarla reescribiría meses ya liquidados. Lo que hace es sacarlo de la
+  // operación, dejar constancia de cuándo y por qué, y liberar el cupo del plan
+  // el mismo día para que el reemplazo pueda entrar.
+  app.post('/:id/retirar', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { fecha, motivo } = (request.body ?? {}) as { fecha?: string; motivo?: string };
+
+    const existente = await prisma.colaborador.findFirst({
+      where: { id, empresaId: request.empresaId }, select: { id: true, activo: true },
+    });
+    if (!existente) return reply.status(404).send({ error: 'No encontrado' });
+    if (!existente.activo) return reply.status(409).send({ error: 'Ese colaborador ya está retirado.' });
+
+    const fechaRetiro = typeof fecha === 'string' && fecha.length >= 10
+      ? medianocheBogota(fecha) : medianocheBogota(hoyEnBogota());
+    if (!fechaRetiro) return reply.status(400).send({ error: 'La fecha de retiro no es válida.' });
+    if (motivo && !MOTIVOS.includes(motivo)) {
+      return reply.status(400).send({ error: 'Motivo de retiro no válido.' });
+    }
+
+    const colaborador = await prisma.colaborador.update({
+      where: { id },
+      data: {
+        activo: false,
+        fechaRetiro,
+        motivoRetiro: (motivo ?? 'OTRO') as any,
+        retiroProgramado: null,
+      },
+    });
+    await cerrarContratoVigente(id);
+    return colaborador;
+  });
+
+  // Se conserva el DELETE porque es lo que llama la interfaz vieja y lo que
+  // puede haber en una pestaña abierta. Hace lo mismo que retirar, sin motivo.
   app.delete('/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
     const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
 
-    const susc = await prisma.suscripcion.findUnique({ where: { empresaId: request.empresaId! } });
-    const mesPagado = Boolean(susc?.pagadoHasta && susc.pagadoHasta > new Date());
-
-    if (mesPagado) {
-      const colaborador = await prisma.colaborador.update({
-        where: { id },
-        data: { retiroProgramado: finDeMes() },
-      });
-      return { ...colaborador, retiroInmediato: false };
-    }
     const colaborador = await prisma.colaborador.update({
       where: { id },
-      data: { activo: false, retiroProgramado: null },
+      data: { activo: false, fechaRetiro: medianocheBogota(hoyEnBogota()), retiroProgramado: null },
     });
+    await cerrarContratoVigente(id);
+    // `retiroInmediato` se mantiene por compatibilidad con el frontend actual.
     return { ...colaborador, retiroInmediato: true };
+  });
+
+  // Los que ya no están. Van en su propia ruta y no en el listado principal
+  // para que ninguna pantalla los cuente por accidente en un total de la
+  // operación de hoy.
+  app.get('/inactivos', auth, async (request) => {
+    await aplicarRetiros(request.empresaId!);
+    return prisma.colaborador.findMany({
+      where: { empresaId: request.empresaId, activo: false },
+      select: {
+        id: true, nombre: true, apellido: true, cedula: true, cargo: true,
+        salarioMensual: true, fechaRetiro: true, motivoRetiro: true, creadoEn: true,
+      },
+      orderBy: [{ fechaRetiro: 'desc' }, { nombre: 'asc' }],
+    });
+  });
+
+  // Reingreso: recupera la ficha completa, con su historial y su rostro.
+  //
+  // Existe porque sin esto la única salida era volver a crear a la persona, y
+  // eso parte su historia en dos fichas: el kardex viejo queda huérfano, el
+  // rostro hay que enrolarlo otra vez y la antigüedad para la liquidación se
+  // pierde.
+  app.post('/:id/reingresar', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const existente = await prisma.colaborador.findFirst({
+      where: { id, empresaId: request.empresaId }, select: { id: true, activo: true },
+    });
+    if (!existente) return reply.status(404).send({ error: 'No encontrado' });
+    if (existente.activo) return reply.status(409).send({ error: 'Ese colaborador ya está activo.' });
+
+    // Reingresar suma un activo, así que pasa por el mismo tope del plan.
+    const cap = await capacidadesEmpresa(request.empresaId!);
+    if (cap.limite !== Infinity) {
+      const activos = await prisma.colaborador.count({ where: { empresaId: request.empresaId!, activo: true } });
+      if (activos >= cap.limite) {
+        return reply.status(403).send({
+          error: `Tu plan ${cap.nombrePlan} permite hasta ${cap.limite} colaboradores.`,
+          codigo: 'LIMITE_PLAN', limite: cap.limite, plan: cap.plan,
+        });
+      }
+    }
+
+    const colaborador = await prisma.colaborador.update({
+      where: { id },
+      data: { activo: true, fechaRetiro: null, motivoRetiro: null, retiroProgramado: null },
+    });
+    // Sus días esperados quedaron congelados con el horario del día que se fue.
+    try {
+      await regenerarDiasDeColaborador(id);
+    } catch (err) {
+      request.log.error(err, 'No se pudieron regenerar los días del colaborador que reingresa');
+    }
+    return colaborador;
   });
 
   // Enrolamiento facial guiado: guarda VARIAS muestras (frente, perfiles,
