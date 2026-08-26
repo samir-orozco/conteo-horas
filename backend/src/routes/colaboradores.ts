@@ -7,10 +7,32 @@ import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
 import { medianocheBogota, hoyEnBogota } from '../utils/fechas';
 import { documentoValido, tipoDeDocumento, nombreDeDocumento } from '../utils/documentos';
+import { retiroEsCoherente, fechaMinimaDeRetiro } from '../utils/vinculacion';
 import { regenerarDiasDeColaborador, mantenerVentanaDeColaborador } from '../utils/materializarDias';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
+
+  // Deja constancia de un movimiento de vinculación. Todo lo que mueve el
+  // estado de "trabaja aquí" pasa por acá, para que la línea de tiempo no
+  // dependa de que alguien se acuerde de escribirla.
+  async function registrarEvento(opts: {
+    colaboradorId: string; tipo: 'INGRESO' | 'RETIRO' | 'REINGRESO'; fecha: Date;
+    motivo?: string | null; nota?: string | null; usuarioId?: string | null;
+    documento?: string; documentoNombre?: string;
+  }) {
+    const datos: any = {
+      colaboradorId: opts.colaboradorId, tipo: opts.tipo, fecha: opts.fecha,
+      motivo: (opts.motivo ?? null) as any, nota: opts.nota ?? null,
+      usuarioId: opts.usuarioId ?? null,
+    };
+    if (documentoValido(opts.documento)) {
+      datos.documento = opts.documento;
+      datos.documentoTipo = tipoDeDocumento(opts.documento);
+      datos.documentoNombre = nombreDeDocumento(opts.documentoNombre);
+    }
+    await prisma.vinculacionEvento.create({ data: datos });
+  }
 
   // Cierra el contrato vigente de quien se retira. Sin esto el módulo de
   // contratos seguiría avisando del vencimiento de alguien que ya no está.
@@ -39,6 +61,8 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
         where: { id: c.id },
         data: { activo: false, fechaRetiro: c.retiroProgramado, retiroProgramado: null },
       });
+      await registrarEvento({ colaboradorId: c.id, tipo: 'RETIRO', fecha: c.retiroProgramado!,
+        nota: 'Retiro que había quedado programado a fin de mes' });
       await cerrarContratoVigente(c.id);
     }
   }
@@ -67,15 +91,8 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (!col) return reply.status(404).send({ error: 'No encontrado' });
     // Se aplana a una lista de ids: es lo que el selector múltiple necesita, y
     // evita que el frontend tenga que conocer la tabla de unión.
-    // `documentoRetiro` es un LongText y esta ficha se carga cada vez que se
-    // abre un perfil. Se saca aquí y se pide aparte, igual que los documentos
-    // de contratos, para no mover un PDF entero en cada visita.
-    const { sedes, documentoRetiro, ...resto } = col as any;
-    return {
-      ...resto,
-      tieneDocumentoRetiro: !!documentoRetiro,
-      sedeIds: (sedes ?? []).map((s: any) => s.sedeId),
-    };
+    const { sedes, ...resto } = col as any;
+    return { ...resto, sedeIds: (sedes ?? []).map((s: any) => s.sedeId) };
   });
 
   // Valida que el horario asignado sea de la misma empresa
@@ -162,6 +179,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       } catch (err) {
         request.log.error(err, 'No se pudieron regenerar los días del colaborador reactivado');
       }
+      await registrarEvento({ colaboradorId: reactivado.id, tipo: 'REINGRESO',
+        fecha: medianocheBogota(hoyEnBogota()), usuarioId: request.usuarioId ?? null,
+        nota: 'Reingresó al volver a registrar su cédula' });
       await sincronizarSedes(reactivado.id, sedeIds, request.empresaId!);
       return reply.status(200).send({ ...reactivado, reactivado: true });
     }
@@ -169,6 +189,8 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     const colaborador = await prisma.colaborador.create({
       data: { ...data, empresaId: request.empresaId! },
     });
+    await registrarEvento({ colaboradorId: colaborador.id, tipo: 'INGRESO',
+      fecha: medianocheBogota(hoyEnBogota()), usuarioId: request.usuarioId ?? null });
     await materializar(colaborador.id);
     await sincronizarSedes(colaborador.id, sedeIds, request.empresaId!);
     return reply.status(201).send(colaborador);
@@ -232,22 +254,35 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: 'Motivo de retiro no válido.' });
     }
 
-    const datos: any = {
-      activo: false,
-      fechaRetiro,
-      motivoRetiro: (motivo ?? 'OTRO') as any,
-      retiroProgramado: null,
-    };
-    if (documentoValido(documento)) {
-      datos.documentoRetiro = documento;
-      datos.documentoRetiroTipo = tipoDeDocumento(documento);
-      datos.documentoRetiroNombre = nombreDeDocumento(documentoNombre);
+    // Un retiro fechado antes del último reingreso deja una historia imposible:
+    // la persona habría salido antes de volver. Se rechaza con la fecha desde
+    // la que sí es válido, para que quien lo registra sepa qué corregir.
+    const historia = await prisma.vinculacionEvento.findMany({
+      where: { colaboradorId: id }, select: { tipo: true, fecha: true },
+    });
+    if (!retiroEsCoherente(fechaRetiro, historia)) {
+      const desde = fechaMinimaDeRetiro(historia)!;
+      return reply.status(400).send({
+        error: `El retiro no puede ser anterior a su último ingreso, del ${desde.toISOString().slice(0, 10)}.`,
+        codigo: 'RETIRO_ANTERIOR_AL_INGRESO',
+        fechaMinima: desde.toISOString().slice(0, 10),
+      });
     }
 
     const colaborador = await prisma.colaborador.update({
-      where: { id }, data: datos,
-      select: { id: true, nombre: true, apellido: true, activo: true, fechaRetiro: true,
-        motivoRetiro: true, documentoRetiroTipo: true, documentoRetiroNombre: true },
+      where: { id },
+      data: {
+        activo: false,
+        fechaRetiro,
+        motivoRetiro: (motivo ?? 'OTRO') as any,
+        retiroProgramado: null,
+      },
+      select: { id: true, nombre: true, apellido: true, activo: true, fechaRetiro: true, motivoRetiro: true },
+    });
+    await registrarEvento({
+      colaboradorId: id, tipo: 'RETIRO', fecha: fechaRetiro,
+      motivo: motivo ?? 'OTRO', usuarioId: request.usuarioId ?? null,
+      documento, documentoNombre,
     });
     await cerrarContratoVigente(id);
     return colaborador;
@@ -260,28 +295,48 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
 
+    const fechaRetiro = medianocheBogota(hoyEnBogota());
     const colaborador = await prisma.colaborador.update({
       where: { id },
-      data: { activo: false, fechaRetiro: medianocheBogota(hoyEnBogota()), retiroProgramado: null },
+      data: { activo: false, fechaRetiro, retiroProgramado: null },
     });
+    await registrarEvento({ colaboradorId: id, tipo: 'RETIRO', fecha: fechaRetiro,
+      usuarioId: request.usuarioId ?? null });
     await cerrarContratoVigente(id);
     // `retiroInmediato` se mantiene por compatibilidad con el frontend actual.
     return { ...colaborador, retiroInmediato: true };
   });
 
-  // El soporte del retiro, servido aparte por su peso.
-  app.get('/:id/documento-retiro', auth, async (request, reply) => {
+  // La historia de vinculación: entró, salió, volvió.
+  //
+  // Sin los documentos, que pesan y casi nunca se abren todos a la vez: cada
+  // evento dice si tiene soporte y se pide por su propia ruta.
+  app.get('/:id/vinculacion', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
     const col = await prisma.colaborador.findFirst({
-      where: { id, empresaId: request.empresaId },
-      select: { documentoRetiro: true, documentoRetiroTipo: true, documentoRetiroNombre: true },
+      where: { id, empresaId: request.empresaId }, select: { id: true },
     });
-    if (!col?.documentoRetiro) return reply.status(404).send({ error: 'Sin documento' });
-    return {
-      documento: col.documentoRetiro,
-      documentoTipo: col.documentoRetiroTipo,
-      documentoNombre: col.documentoRetiroNombre,
-    };
+    if (!col) return reply.status(404).send({ error: 'No encontrado' });
+    return prisma.vinculacionEvento.findMany({
+      where: { colaboradorId: id },
+      select: {
+        id: true, tipo: true, fecha: true, motivo: true, nota: true,
+        documentoTipo: true, documentoNombre: true, creadoEn: true,
+      },
+      orderBy: [{ fecha: 'desc' }, { creadoEn: 'desc' }],
+    });
+  });
+
+  // El soporte de UN evento. Cuelga del evento y no de la persona porque la
+  // carta de renuncia de un retiro no es la del siguiente.
+  app.get('/vinculacion/:eventoId/documento', auth, async (request, reply) => {
+    const { eventoId } = request.params as { eventoId: string };
+    const ev = await prisma.vinculacionEvento.findFirst({
+      where: { id: eventoId, colaborador: { empresaId: request.empresaId } },
+      select: { documento: true, documentoTipo: true, documentoNombre: true },
+    });
+    if (!ev?.documento) return reply.status(404).send({ error: 'Sin documento' });
+    return { documento: ev.documento, documentoTipo: ev.documentoTipo, documentoNombre: ev.documentoNombre };
   });
 
   // Los que ya no están. Van en su propia ruta y no en el listado principal
@@ -294,7 +349,6 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       select: {
         id: true, nombre: true, apellido: true, cedula: true, cargo: true,
         salarioMensual: true, fechaRetiro: true, motivoRetiro: true, creadoEn: true,
-        documentoRetiroTipo: true, documentoRetiroNombre: true,
       },
       orderBy: [{ fechaRetiro: 'desc' }, { nombre: 'asc' }],
     });
@@ -328,13 +382,12 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
 
     const colaborador = await prisma.colaborador.update({
       where: { id },
-      data: {
-        activo: true, fechaRetiro: null, motivoRetiro: null, retiroProgramado: null,
-        // El soporte era de ESE retiro. Si vuelve y se va otra vez, el documento
-        // que valga será el nuevo, y dejar el viejo confundiría la trazabilidad.
-        documentoRetiro: null, documentoRetiroTipo: null, documentoRetiroNombre: null,
-      },
+      // El estado vuelve a cero, pero la historia NO se toca: el retiro anterior
+      // sigue en `vinculacion_eventos` con su fecha, su motivo y su soporte.
+      data: { activo: true, fechaRetiro: null, motivoRetiro: null, retiroProgramado: null },
     });
+    await registrarEvento({ colaboradorId: id, tipo: 'REINGRESO',
+      fecha: medianocheBogota(hoyEnBogota()), usuarioId: request.usuarioId ?? null });
     // Sus días esperados quedaron congelados con el horario del día que se fue.
     try {
       await regenerarDiasDeColaborador(id);

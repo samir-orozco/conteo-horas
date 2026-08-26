@@ -215,14 +215,6 @@ model Colaborador {
   // para un certificado laboral y para una inspección del Ministerio.
   fechaRetiro      DateTime?
   motivoRetiro     MotivoRetiro?
-  // Soporte del retiro: carta de renuncia, carta de terminación, acta. Es lo
-  // que sostiene la trazabilidad el día que alguien reclame o venga una
-  // inspección: la fecha y el motivo sin documento son la versión de una sola
-  // parte. Se guarda en la fila, como el resto de adjuntos del producto, y NO
-  // viaja en la ficha: se pide aparte por su peso.
-  documentoRetiro       String?  @db.LongText
-  documentoRetiroTipo   String?
-  documentoRetiroNombre String?
   // Resto del modelo de precio por colaborador: cuando el cobro dependía del
   // número de personas, el retiro se aplazaba a fin de mes para no regalar el
   // mes pagado. Hoy el precio es plano por plan y no mira cuántos hay, así que
@@ -234,6 +226,7 @@ model Colaborador {
   registros        Registro[]
   permisos         Permiso[]
   contratos        Contrato[]
+  vinculacion      VinculacionEvento[]
   diasEsperados    DiaEsperado[]
   sedes            ColaboradorSede[]
 
@@ -351,6 +344,7 @@ model Registro {
   entradaEstimada Boolean     @default(false)
   // Foto de verificación facial al marcar (se elimina automáticamente a los 2 meses)
   fotoEntrada    String?      @db.LongText
+  cambios        RegistroCambio[]
   fotoSalida     String?      @db.LongText
   // Auditoría de correcciones manuales
   editadoPor     String?
@@ -602,6 +596,67 @@ enum EstadoRetiro {
   APROBADO
   PAGADO
   RECHAZADO
+}
+
+// Qué se cambió al editar una marcación, campo por campo.
+//
+// `Registro.editadoPor` y `editadoEn` ya decían QUE alguien la tocó y cuándo,
+// pero no qué hizo. Eso no sirve el día que un trabajador reclama una llegada
+// tarde: hay que poder decir que la entrada pasó de 8:15 a 8:00, quién lo hizo
+// y cuándo, no solo que "alguien editó esto".
+//
+// El nombre del usuario se copia aquí a propósito, en vez de solo referenciarlo:
+// si esa cuenta se borra, el historial tiene que seguir diciendo quién fue.
+model RegistroCambio {
+  id            String   @id @default(cuid())
+  registroId    String
+  registro      Registro @relation(fields: [registroId], references: [id], onDelete: Cascade)
+  campo         String
+  antes         String   @db.Text
+  despues       String   @db.Text
+  usuarioId     String?
+  usuarioNombre String?
+  creadoEn      DateTime @default(now())
+
+  @@index([registroId, creadoEn])
+  @@map("registro_cambios")
+}
+
+// Historia de la vinculación de una persona con la empresa.
+//
+// Los campos `fechaRetiro` y `motivoRetiro` de `Colaborador` guardan el estado
+// de HOY, que es lo que la lista necesita para pintar el estado sin cruzar
+// tablas. Pero solo recuerdan el ÚLTIMO retiro: quien renuncia, vuelve y se va
+// otra vez, borraba el primero. Esta tabla guarda todo lo que pasó, en orden, y
+// es la que permite responder "¿cuántas veces ha estado aquí y por qué se fue
+// cada vez?".
+//
+// El soporte cuelga del evento y no de la persona, por la misma razón: la carta
+// de renuncia de 2024 no es la de 2026.
+model VinculacionEvento {
+  id            String       @id @default(cuid())
+  colaboradorId String
+  colaborador   Colaborador  @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  tipo          TipoVinculacion
+  fecha         DateTime     // medianoche de Bogotá, misma convención que el resto
+  motivo        MotivoRetiro? // solo en los retiros
+  nota          String?      @db.Text
+  documento       String?    @db.LongText
+  documentoTipo   String?
+  documentoNombre String?
+  // Quién lo registró. Queda como null si el usuario se borra: importa más
+  // conservar el evento que saber quién lo escribió.
+  usuarioId     String?
+  creadoEn      DateTime     @default(now())
+
+  @@index([colaboradorId, fecha])
+  @@map("vinculacion_eventos")
+}
+
+enum TipoVinculacion {
+  INGRESO
+  RETIRO
+  REINGRESO
 }
 
 // Por qué salió. Importa para la liquidación: la indemnización del artículo 64

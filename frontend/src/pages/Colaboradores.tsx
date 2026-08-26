@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, X, Eye, ArrowUpRight, MessageCircle, LogOut, Undo2 } from 'lucide-react';
 import api from '../lib/api';
 import { useMiPlan } from '../lib/plan';
+import { useAuth } from '../context/AuthContext';
 import SelectorSedes from '../components/SelectorSedes';
 import ModalRetiro from '../features/colaboradores/ModalRetiro';
+import ModalReingreso from '../features/colaboradores/ModalReingreso';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 
 type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[] };
@@ -37,21 +39,38 @@ export function resumenFranjas(franjas?: Franja[]): string {
   }).join(' · ');
 }
 
-const WPP_MAS_150 = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
+// Enlace de WhatsApp para pedir más cupo.
+//
+// Antes era un texto fijo que decía "más de 150 colaboradores" aunque el tope
+// real fuera otro, y llegaba sin firma: al otro lado aparecía un número suelto
+// pidiendo algo, sin saber de quién ni de qué empresa. Ahora lleva el nombre de
+// quien escribe, la empresa y el plan con su tope, que es lo que se necesita
+// para atenderlo sin tener que preguntar tres cosas primero.
+const WPP_NUMERO = '573166435723';
+function enlaceMasCupo(nombre?: string, empresa?: string | null, nombrePlan?: string, limite?: number | null) {
+  const quien = nombre ? `soy ${nombre}` : 'les escribo';
+  const deDonde = empresa ? ` de ${empresa}` : '';
+  const cual = nombrePlan && limite != null
+    ? ` Estoy en el plan ${nombrePlan}, que llega hasta ${limite} colaboradores, y ya lo tengo lleno.`
+    : '';
+  const texto = `Hola, ${quien}${deDonde}.${cual} Necesito agregar más colaboradores a mi cuenta de HoraPro. ¿Me ayudan?`;
+  return `https://wa.me/${WPP_NUMERO}?text=${encodeURIComponent(texto)}`;
+}
 
 export default function Colaboradores() {
   const navigate = useNavigate();
-  const { plan } = useMiPlan();
+  const { plan, recargar: recargarPlan } = useMiPlan();
+  const { usuario } = useAuth();
   const [lista, setLista] = useState<Colaborador[]>([]);
   const [modal, setModal] = useState(false);
   const [editando, setEditando] = useState<Colaborador | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY);
   const [retirando, setRetirando] = useState<Colaborador | null>(null);
+  const [reingresando, setReingresando] = useState<{ id: string; nombre: string; apellido: string } | null>(null);
   // Pestaña activa. Los retirados van aparte para que ningún total de la
   // operación de hoy los cuente por accidente.
   const [pestana, setPestana] = useState<'todos' | 'activos' | 'retirados'>('activos');
   const [retirados, setRetirados] = useState<Retirado[]>([]);
-  const [errorRetirados, setErrorRetirados] = useState('');
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [sedes, setSedes] = useState<{ id: string; nombre: string }[]>([]);
   const [errorForm, setErrorForm] = useState('');
@@ -115,17 +134,6 @@ export default function Colaboradores() {
     }
   };
 
-  const reingresar = async (r: { id: string }) => {
-    setErrorRetirados('');
-    try {
-      await api.post(`/colaboradores/${r.id}/reingresar`);
-      await recargarTodo();
-    } catch (err) {
-      const e = err as { response?: { data?: { error?: string } } };
-      setErrorRetirados(e.response?.data?.error ?? 'No pudimos reingresar a esa persona.');
-    }
-  };
-
   const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
   const limite = plan && !plan.ilimitado ? plan.limite : null; // null = ilimitado
@@ -156,7 +164,7 @@ export default function Colaboradores() {
         <h2 className="text-2xl font-bold text-ink">Colaboradores</h2>
         {topado ? (
           esEmpresarial ? (
-            <a href={WPP_MAS_150} target="_blank" rel="noopener noreferrer"
+            <a href={enlaceMasCupo(usuario?.nombre, usuario?.empresaNombre, plan?.nombrePlan, limite)} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 bg-[#25D366] hover:brightness-95 text-white px-4 py-2 rounded-xl text-sm font-semibold">
               <MessageCircle size={16} /> ¿Más de {limite}? Escríbenos
             </a>
@@ -209,8 +217,6 @@ export default function Colaboradores() {
         </div>
       )}
 
-      {errorRetirados && <p className="text-sm text-red-600 mb-3">{errorRetirados}</p>}
-
       <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
         {pestanaActiva !== 'activos' && (
           <p className="text-xs text-muted px-4 py-3 border-b border-gray-100">
@@ -261,7 +267,7 @@ export default function Colaboradores() {
                         <button onClick={() => setRetirando(lista.find(c => c.id === col.id) ?? null)} title="Registrar retiro" className="p-1.5 text-muted hover:bg-gray-100 hover:text-ink rounded-lg"><LogOut size={15} /></button>
                       </>
                     ) : (
-                      <button onClick={() => reingresar(col)}
+                      <button onClick={() => setReingresando(col)}
                         className="flex items-center gap-1.5 text-xs font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg">
                         <Undo2 size={13} /> Reingresar
                       </button>
@@ -279,6 +285,15 @@ export default function Colaboradores() {
         </table>
       </div>
 
+      {reingresando && (
+        <ModalReingreso
+          persona={reingresando}
+          plan={plan}
+          onCerrar={() => setReingresando(null)}
+          onListo={async () => { setReingresando(null); await recargarTodo(); recargarPlan(); }}
+        />
+      )}
+
       {retirando && (
         <ModalRetiro
           colaborador={retirando}
@@ -286,7 +301,7 @@ export default function Colaboradores() {
           // Las dos listas se refrescan JUNTAS. Lanzándolas sueltas, React
           // pintaba en cuanto respondía la primera: la persona ya aparecía como
           // retirada y todavía seguía en la lista de activos, o sea dos veces.
-          onListo={async () => { setRetirando(null); await recargarTodo(); }}
+          onListo={async () => { setRetirando(null); await recargarTodo(); recargarPlan(); }}
         />
       )}
 

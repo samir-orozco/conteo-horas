@@ -9,6 +9,7 @@ import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import SelectorColaborador from '../components/SelectorColaborador';
 import FotosJornada from '../components/FotosJornada';
+import ActividadRegistro from '../features/registros/ActividadRegistro';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
@@ -743,6 +744,10 @@ export default function Registros() {
                     </>
                   )}
                 </div>
+              )}
+
+              {(jornadaEditada?.id ?? editando?.id) && (
+                <ActividadRegistro registroId={(jornadaEditada?.id ?? editando?.id)!} />
               )}
 
               <div className="flex gap-3 justify-end">

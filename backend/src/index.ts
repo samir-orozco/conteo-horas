@@ -111,6 +111,8 @@ app.decorate('requireEmpresa', async (request: any, reply: any) => {
     });
   }
   request.empresaId = payload.empresaId;
+  request.usuarioId = payload.id;
+  request.usuarioNombre = payload.nombre;
 });
 
 app.decorate('requireSuperAdmin', async (request: any, reply: any) => {

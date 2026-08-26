@@ -9,6 +9,7 @@ import { rangoDiaBogota } from '../utils/fechas';
 import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
 } from '../utils/saldoTiempo';
+import { diferenciasDeRegistro, type EstadoRegistro } from '../utils/cambiosRegistro';
 import {
   resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca,
   marcacionQueCierra, agruparEnJornadas, instantesDeJornada, momentosDelDia,
@@ -36,6 +37,25 @@ function camposRegistro(body: any, esNuevo: boolean) {
 
 export default async function registroRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
+
+  // Deja constancia de qué cambió al editar una marcación.
+  //
+  // No se espera el resultado en quien llama: si el historial falla, la
+  // corrección igual tiene que guardarse. Perder la bitácora es malo; perder la
+  // corrección del trabajador es peor.
+  async function anotarCambios(
+    registroId: string, antes: EstadoRegistro, cambios: Partial<EstadoRegistro>,
+    usuarioId?: string, usuarioNombre?: string,
+  ) {
+    const difs = diferenciasDeRegistro(antes, cambios);
+    if (!difs.length) return;
+    await prisma.registroCambio.createMany({
+      data: difs.map(d => ({
+        registroId, campo: d.campo, antes: d.antes, despues: d.despues,
+        usuarioId: usuarioId ?? null, usuarioNombre: usuarioNombre ?? null,
+      })),
+    });
+  }
 
   // Por qué se valida ANTES de guardar y no se arregla al mostrar: un tramo
   // imposible no tiene forma correcta de pintarse. Quien corregía la salida de
@@ -604,6 +624,10 @@ export default async function registroRoutes(app: FastifyInstance) {
     );
     if (motivo) return reply.status(400).send(motivo);
 
+    // Se anota ANTES del update: después, `existente` ya no sería el estado viejo.
+    await anotarCambios(id, existente as any, cambios, request.usuarioId, request.usuarioNombre)
+      .catch(err => request.log.error(err, 'No se pudo anotar el cambio del registro'));
+
     const actualizado = await prisma.registro.update({
       where: { id },
       data: { ...cambios, editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
@@ -723,6 +747,16 @@ export default async function registroRoutes(app: FastifyInstance) {
       editadoEn: new Date(),
     };
 
+    // La bitácora se calcula ANTES de la transacción, mientras `esta[0]` sigue
+    // siendo el estado viejo, y se escribe después de que el guardado salga
+    // bien: anotar un cambio que luego se revierte sería peor que no anotarlo.
+    const cambiosPrimera = {
+      entrada: t.entrada, salida: nuevos[0].salida,
+      salidaAlmuerzo: !!t.descansoSalida,
+      tipo: comunes.tipo, observacion: comunes.observacion, fecha: comunes.fecha,
+    };
+    const antesPrimera = { ...esta[0] } as any;
+
     await prisma.$transaction(async (tx) => {
       await tx.registro.update({
         where: { id: esta[0].id },
@@ -739,8 +773,28 @@ export default async function registroRoutes(app: FastifyInstance) {
       }
     });
 
+    await anotarCambios(esta[0].id, antesPrimera, cambiosPrimera, request.usuarioId, request.usuarioNombre)
+      .catch(err => request.log.error(err, 'No se pudo anotar el cambio de la jornada'));
+
     await asegurarDiaSinFallar(colaboradorId, fechaBase, app.log);
     return { ok: true };
+  });
+
+  // Actividad de una marcación: qué se cambió, quién y cuándo.
+  //
+  // Va en su propia ruta y no dentro del listado porque el listado trae cientos
+  // de filas y esto solo se mira cuando alguien abre UNA para revisarla.
+  app.get('/:id/cambios', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const existe = await prisma.registro.findFirst({
+      where: { id, colaborador: { empresaId: request.empresaId } }, select: { id: true },
+    });
+    if (!existe) return reply.status(404).send({ error: 'Registro no encontrado' });
+    return prisma.registroCambio.findMany({
+      where: { registroId: id },
+      select: { id: true, campo: true, antes: true, despues: true, usuarioNombre: true, creadoEn: true },
+      orderBy: { creadoEn: 'desc' },
+    });
   });
 
   app.delete('/:id', auth, async (request, reply) => {

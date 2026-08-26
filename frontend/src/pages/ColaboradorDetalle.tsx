@@ -18,6 +18,8 @@ import PanelContratos from '../features/contratos/PanelContratos';
 import VisorDocumento from '../components/VisorDocumento';
 import { TIPO_PERMISO_LABEL } from '../constants/permisos';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
+import ModalReingreso from '../features/colaboradores/ModalReingreso';
+import HistorialVinculacion from '../features/colaboradores/HistorialVinculacion';
 import { useMiPlan } from '../lib/plan';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
@@ -28,8 +30,6 @@ type Colaborador = {
   sedeIds?: string[];
   creadoEn?: string;
   fechaRetiro?: string | null; motivoRetiro?: string | null;
-  documentoRetiroTipo?: string | null; documentoRetiroNombre?: string | null;
-  tieneDocumentoRetiro?: boolean;
 };
 type Tardanzas = {
   sinHorario: boolean;
@@ -58,7 +58,7 @@ export default function ColaboradorDetalle() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { plan } = useMiPlan();
+  const { plan, recargar: recargarPlan } = useMiPlan();
   const [col, setCol] = useState<Colaborador | null>(null);
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [permisos, setPermisos] = useState<Permiso[]>([]);
@@ -118,25 +118,18 @@ export default function ColaboradorDetalle() {
     return resto === 0 ? `${anios} año${anios === 1 ? '' : 's'}` : `${anios} a ${resto} m`;
   })();
 
-  const verSoporteRetiro = async () => {
+  // Sirve para cualquier documento pedido por su ruta: el soporte de un evento
+  // de vinculación, y lo que venga después.
+  const verDocumento = async (url: string, nombre: string | null) => {
     try {
-      const r = await api.get(`/colaboradores/${id}/documento-retiro`);
-      setEvidenciaVer({ data: r.data.documento, tipo: r.data.documentoTipo, nombre: r.data.documentoNombre });
+      const r = await api.get(url);
+      setEvidenciaVer({ data: r.data.documento, tipo: r.data.documentoTipo, nombre: r.data.documentoNombre ?? nombre });
     } catch {
-      setToast('No pudimos abrir el soporte.');
+      setToast('No pudimos abrir el documento.');
     }
   };
 
-  const reingresarColaborador = async () => {
-    try {
-      await api.post(`/colaboradores/${id}/reingresar`);
-      cargar();
-      setToast('Reingresado. Vuelve a contar para el cupo de tu plan.');
-    } catch (err) {
-      const e = err as { response?: { data?: { error?: string } } };
-      setToast(e.response?.data?.error ?? 'No pudimos reingresarlo.');
-    }
-  };
+  const [confirmandoReingreso, setConfirmandoReingreso] = useState(false);
 
   const guardarEdicion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -313,7 +306,7 @@ export default function ColaboradorDetalle() {
                 ni aparece en reportes ni en el kiosco.
               </p>
             </div>
-            <button onClick={reingresarColaborador}
+            <button onClick={() => setConfirmandoReingreso(true)}
               className="flex items-center gap-1.5 text-xs font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg shrink-0">
               <Undo2 size={13} /> Reingresar
             </button>
@@ -338,27 +331,13 @@ export default function ColaboradorDetalle() {
             </div>
           </div>
 
-          <div className="mt-3">
-            {col.tieneDocumentoRetiro ? (
-              <button onClick={verSoporteRetiro}
-                className="inline-flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-lg border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 transition-colors">
-                <span className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${
-                  col.documentoRetiroTipo === 'application/pdf' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-                  <FileText size={12} />
-                </span>
-                <span className="text-[11px] font-medium text-ink truncate">
-                  {col.documentoRetiroNombre || 'Ver soporte'}
-                </span>
-              </button>
-            ) : (
-              <p className="text-[11px] text-muted">
-                Sin soporte adjunto. La fecha y el motivo sin documento son la versión de una sola parte:
-                si tienes la carta, vale la pena guardarla al registrar el retiro.
-              </p>
-            )}
-          </div>
+          <p className="text-[11px] text-muted mt-3">
+            El soporte de esta salida y las anteriores están en su historia, más abajo.
+          </p>
         </div>
       )}
+
+      <HistorialVinculacion colaboradorId={col.id} onVerDocumento={verDocumento} />
 
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Datos */}
@@ -758,6 +737,20 @@ export default function ColaboradorDetalle() {
       )}
 
       {/* Visor de evidencia (imagen inline o PDF) */}
+      {confirmandoReingreso && col && (
+        <ModalReingreso
+          persona={col}
+          plan={plan}
+          onCerrar={() => setConfirmandoReingreso(false)}
+          onListo={() => {
+            setConfirmandoReingreso(false);
+            cargar();
+            recargarPlan();
+            setToast('Reingresado. Vuelve a contar para el cupo de tu plan.');
+          }}
+        />
+      )}
+
       {evidenciaVer && <VisorDocumento doc={evidenciaVer} onCerrar={() => setEvidenciaVer(null)} />}
     </div>
   );
