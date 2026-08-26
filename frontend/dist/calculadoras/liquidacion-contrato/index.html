@@ -3,22 +3,22 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Calculadora: cuánto cuesta la jornada de 42 horas | HoraPro</title>
-<meta name="description" content="Calcula en pesos lo que la reducción de jornada de la Ley 2101 le suma a tu nómina: horas extra por persona, costo mensual y anual, y la diferencia contra la jornada anterior de 44 horas." />
-<link rel="canonical" href="https://horapro.co/calculadoras/jornada-42-horas/" />
+<title>Calculadora de liquidación laboral 2026 | HoraPro</title>
+<meta name="description" content="Calcula cesantías, intereses, prima, vacaciones e indemnización por despido sin justa causa con la normativa colombiana vigente: salario mínimo de $1.750.905 y auxilio de $249.095. Gratis y sin registro." />
+<link rel="canonical" href="https://horapro.co/calculadoras/liquidacion-contrato/" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <meta name="theme-color" content="#FFD85E" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="HoraPro" />
 <meta property="og:locale" content="es_CO" />
-<meta property="og:url" content="https://horapro.co/calculadoras/jornada-42-horas/" />
-<meta property="og:title" content="Calculadora: cuánto cuesta la jornada de 42 horas | HoraPro" />
-<meta property="og:description" content="Calcula en pesos lo que la reducción de jornada de la Ley 2101 le suma a tu nómina: horas extra por persona, costo mensual y anual, y la diferencia contra la jornada anterior de 44 horas." />
+<meta property="og:url" content="https://horapro.co/calculadoras/liquidacion-contrato/" />
+<meta property="og:title" content="Calculadora de liquidación laboral 2026 | HoraPro" />
+<meta property="og:description" content="Calcula cesantías, intereses, prima, vacaciones e indemnización por despido sin justa causa con la normativa colombiana vigente: salario mínimo de $1.750.905 y auxilio de $249.095. Gratis y sin registro." />
 <meta property="og:image" content="https://horapro.co/og-image.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Calculadora: cuánto cuesta la jornada de 42 horas | HoraPro" />
-<meta name="twitter:description" content="Calcula en pesos lo que la reducción de jornada de la Ley 2101 le suma a tu nómina: horas extra por persona, costo mensual y anual, y la diferencia contra la jornada anterior de 44 horas." />
+<meta name="twitter:title" content="Calculadora de liquidación laboral 2026 | HoraPro" />
+<meta name="twitter:description" content="Calcula cesantías, intereses, prima, vacaciones e indemnización por despido sin justa causa con la normativa colombiana vigente: salario mínimo de $1.750.905 y auxilio de $249.095. Gratis y sin registro." />
 <meta name="twitter:image" content="https://horapro.co/og-image.png" />
 <style>
 *,*::before,*::after{box-sizing:border-box}
@@ -229,37 +229,38 @@ a{color:#303030}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 @media(max-width:560px){.calc-total strong{font-size:26px}}
 
-.calc .campos{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}
-.calc .campos>div{min-width:0}
-.calc .campos input[type=number]{width:100%;font-size:22px;font-weight:800;padding:10px 14px;
-  border:1px solid #dcdcdc;border-radius:12px;color:#303030;font-variant-numeric:tabular-nums;
-  background:#fff}
-/* Solo los campos sueltos: el del salario va envuelto en .pesos y su anillo lo
-   pone la pildora, para no dibujar un recuadro dentro de otro. */
-.calc .campos input[type=number]:focus{outline:2px solid #FFD85E;outline-offset:1px;border-color:#FFD85E}
-.calc .campos .pesos{max-width:none}
-.calc .campos .pesos input{font-size:22px}
-.calc .campos .pista{font-size:12.5px;margin:7px 0 0;line-height:1.4}
+.calc .campos-liq{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}
+.calc .campos-liq>div{min-width:0}
+.calc .campos-liq input[type=date],.calc .campos-liq select{width:100%;font-size:16px;font-weight:600;
+  padding:11px 13px;border:1px solid #dcdcdc;border-radius:12px;color:#303030;background:#fff;
+  font-family:inherit}
+.calc .campos-liq input:focus,.calc .campos-liq select:focus{outline:2px solid #FFD85E;
+  outline-offset:1px;border-color:#FFD85E}
+.calc .campos-liq .pesos{max-width:none}
+.calc .campos-liq .pesos input{font-size:20px}
+.calc .campos-liq .pista{font-size:12.5px;margin:7px 0 0;line-height:1.4}
+.fila-check{display:flex;align-items:flex-start;gap:11px;padding:15px 24px;background:#FFF6D9;
+  border-bottom:1px solid #F5E3A8;font-size:15.5px;line-height:1.5;cursor:pointer}
+.fila-check input{width:19px;height:19px;margin:2px 0 0;accent-color:#303030;flex:none;cursor:pointer}
 .calc-cuerpo{padding:6px 24px}
 .par-dato{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
   padding:13px 0;border-bottom:1px solid #f0f0f0;font-size:15.5px}
 .par-dato:last-child{border-bottom:0}
-.par-dato strong{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
-.aviso{margin:0 24px 18px;background:#FDECEC;border:1px solid #F3C9C9;color:#8a2b2b;
-  border-radius:12px;padding:14px 16px;font-size:14.5px;line-height:1.55}
-.calc-delta{background:#FFF6D9;border-top:1px solid #F5E3A8;padding:16px 24px;display:flex;
-  align-items:baseline;gap:10px;flex-wrap:wrap;font-size:15px}
-.calc-delta strong{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums;color:#7a5c00}
-/* El aviso de tope aparece y desaparece; sin esto el atributo hidden pierde
-   contra el display:block que trae la clase. */
-.aviso[hidden],.calc-delta[hidden]{display:none}
-@media(max-width:640px){
-  .calc .campos{grid-template-columns:1fr}
-  .par-dato{flex-direction:column;gap:2px}
-  .par-dato strong{font-size:21px}
+.par-dato .tenue{display:block;font-size:13px;line-height:1.4}
+.par-dato strong{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.par-dato[hidden]{display:none}
+/* Las formulas se parten en varios renglones antes que empujar la tabla fuera
+   de la pantalla. Van en los espacios, o sea entre termino y termino. */
+td.formula,th.formula{white-space:normal;color:#4a4a4a}
+#fila-indem strong{color:#8a2b2b}
+@media(max-width:760px){.calc .campos-liq{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){
+  .calc .campos-liq{grid-template-columns:1fr}
+  .par-dato{flex-direction:column;gap:3px}
+  .par-dato strong{font-size:20px}
 }
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://horapro.co/calculadoras/jornada-42-horas/","name":"Cuánto cuesta la jornada de 42 horas","description":"Calcula en pesos lo que la reducción de jornada de la Ley 2101 le suma a tu nómina: horas extra por persona, costo mensual y anual, y la diferencia contra la jornada anterior de 44 horas.","url":"https://horapro.co/calculadoras/jornada-42-horas/","applicationCategory":"BusinessApplication","operatingSystem":"Cualquiera con navegador web","inLanguage":"es-CO","dateModified":"2026-08-26","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"COP"},"publisher":{"@type":"Organization","name":"HoraPro","url":"https://horapro.co","logo":{"@type":"ImageObject","url":"https://horapro.co/logo.svg"}}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://horapro.co/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://horapro.co/blog/"},{"@type":"ListItem","position":3,"name":"Cuánto cuesta la jornada de 42 horas","item":"https://horapro.co/calculadoras/jornada-42-horas/"}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://horapro.co/calculadoras/liquidacion-contrato/","name":"Calculadora de liquidación de contrato","description":"Calcula cesantías, intereses, prima, vacaciones e indemnización por despido sin justa causa con la normativa colombiana vigente: salario mínimo de $1.750.905 y auxilio de $249.095. Gratis y sin registro.","url":"https://horapro.co/calculadoras/liquidacion-contrato/","applicationCategory":"BusinessApplication","operatingSystem":"Cualquiera con navegador web","inLanguage":"es-CO","dateModified":"2026-08-26","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"COP"},"publisher":{"@type":"Organization","name":"HoraPro","url":"https://horapro.co","logo":{"@type":"ImageObject","url":"https://horapro.co/logo.svg"}}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://horapro.co/"},{"@type":"ListItem","position":2,"name":"Blog","item":"https://horapro.co/blog/"},{"@type":"ListItem","position":3,"name":"Calculadora de liquidación de contrato","item":"https://horapro.co/calculadoras/liquidacion-contrato/"}]}]}</script>
 </head>
 <body>
 <header class="cab"><div class="env">
@@ -278,8 +279,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
       <span class="sep">›</span><span class="pastilla">Calculadora</span>
     </nav>
     <div style="max-width:820px">
-      <h1>Cuánto cuesta la jornada de 42 horas</h1>
-      <p style="font-size:17px;color:#4a4a4a;margin:0">Gratis, sin registro. Actualizada el 26 de agosto de 2026 con la jornada de 42 horas vigente desde el 15 de julio de 2026.</p>
+      <h1>Calculadora de liquidación de contrato</h1>
+      <p style="font-size:17px;color:#4a4a4a;margin:0">Gratis, sin registro. Actualizada el 26 de agosto de 2026 con el salario mínimo de $1.750.905 y el auxilio de $249.095 de 2026.</p>
     </div>
   </div></div>
 
@@ -288,110 +289,142 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
       <aside class="lateral">
         <h4>Compartir</h4>
         <div class="compartir">
-          <a href="https://wa.me/?text=Cu%C3%A1nto%20cuesta%20la%20jornada%20de%2042%20horas%0Ahttps%3A%2F%2Fhorapro.co%2Fcalculadoras%2Fjornada-42-horas%2F" target="_blank" rel="noopener" aria-label="Compartir por WhatsApp">WA</a>
-          <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fhorapro.co%2Fcalculadoras%2Fjornada-42-horas%2F" target="_blank" rel="noopener" aria-label="Compartir en LinkedIn">in</a>
+          <a href="https://wa.me/?text=Calculadora%20de%20liquidaci%C3%B3n%20de%20contrato%0Ahttps%3A%2F%2Fhorapro.co%2Fcalculadoras%2Fliquidacion-contrato%2F" target="_blank" rel="noopener" aria-label="Compartir por WhatsApp">WA</a>
+          <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fhorapro.co%2Fcalculadoras%2Fliquidacion-contrato%2F" target="_blank" rel="noopener" aria-label="Compartir en LinkedIn">in</a>
         </div>
         <div class="indice"><h4>En esta página</h4><ol>
-          <li><a href="#calc">La calculadora</a></li><li><a href="#que-cambio">Qué cambió exactamente</a></li><li><a href="#tres-salidas">Las tres salidas</a></li><li><a href="#ojo">Dónde se equivoca la gente</a></li>
+          <li><a href="#calc">La calculadora</a></li><li><a href="#que-se-paga">Qué se paga y sobre qué base</a></li><li><a href="#indemnizacion">La indemnización</a></li><li><a href="#ojo">Dónde se equivoca la gente</a></li>
         </ol></div>
       </aside>
       <article class="cuerpo">
-<p class="entradilla">La jornada bajó a <strong>42 horas</strong> semanales y ningún salario bajó con ella. Eso significa que la hora vale más y que las horas extra empiezan antes. Esta calculadora dice cuánto cuesta esa diferencia en tu operación, al mes y al año.</p>
+<p class="entradilla">Cesantías, intereses, prima y vacaciones, y la indemnización si el despido fue sin justa causa. Con el salario mínimo de $1.750.905 y el auxilio de $249.095 que rigen en 2026.</p>
 
 <div class="calc" id="calc">
-  <div class="calc-cab campos">
+  <div class="calc-cab campos-liq">
     <div>
-      <label for="personas">Personas</label>
-      <input type="number" id="personas" min="1" max="5000" step="1" value="10" inputmode="numeric" />
+      <label for="salario">Salario mensual</label>
+      <div class="pesos"><span>$</span><input type="text" id="salario" value="1.750.905" inputmode="numeric" autocomplete="off" /></div>
     </div>
     <div>
-      <label for="salario">Salario promedio</label>
-      <div class="pesos"><span>$</span><input type="text" id="salario" value="2.000.000" inputmode="numeric" autocomplete="off" /></div>
+      <label for="tipo">Tipo de contrato</label>
+      <select id="tipo">
+        <option value="INDEFINIDO" selected>Término indefinido</option>
+        <option value="FIJO">Término fijo</option>
+      </select>
     </div>
     <div>
-      <label for="horas">Horas por semana</label>
-      <input type="number" id="horas" min="1" max="80" step="0.5" value="48" inputmode="decimal" />
-      <p class="pista tenue">Las que trabaja cada persona de verdad</p>
+      <label for="ingreso">Entró el</label>
+      <input type="date" id="ingreso" value="2025-02-26" />
+    </div>
+    <div>
+      <label for="retiro">Sale el</label>
+      <input type="date" id="retiro" value="2026-08-26" />
+    </div>
+    <div id="caja-pactada" hidden>
+      <label for="pactada">El contrato iba hasta</label>
+      <input type="date" id="pactada" value="" />
+      <p class="pista tenue">Para saber cuántos salarios faltaban</p>
+    </div>
+    <div>
+      <label for="cesantias-desde">Cesantías pendientes desde</label>
+      <input type="date" id="cesantias-desde" value="2025-02-26" />
+      <p class="pista tenue">Si ya te las consignaron, pon el 1 de enero</p>
     </div>
   </div>
+
+  <label class="fila-check">
+    <input type="checkbox" id="sin-justa-causa" />
+    <span>El despido fue <strong>sin justa causa</strong> (suma la indemnización del artículo 64)</span>
+  </label>
 
   <div class="calc-cuerpo">
     <div class="par-dato">
-      <span>Horas extra por persona, a la semana</span>
-      <strong id="extras">6</strong>
+      <span>Tiempo liquidado <span class="tenue" id="antiguedad-txt">(año comercial de 360 días)</span></span>
+      <strong id="dias">541 días</strong>
     </div>
     <div class="par-dato">
-      <span>Valor de la hora ordinaria <span class="tenue">(salario entre 210)</span></span>
-      <strong id="hora">$9.524</strong>
+      <span>Cesantías <span class="tenue">salario + auxilio, por los días pendientes</span></span>
+      <strong id="cesantias">$3.005.556</strong>
     </div>
     <div class="par-dato">
-      <span>Con la jornada anterior de 44 horas costaba</span>
-      <strong id="antes">$2.272.727</strong>
+      <span>Intereses a las cesantías <span class="tenue">12% anual</span></span>
+      <strong id="intereses">$542.002</strong>
     </div>
-  </div>
-
-  <div id="aviso-tope" class="aviso" hidden>
-    <strong>Ojo: eso pasa el tope legal.</strong> La ley permite 2 horas extra al día y
-    12 a la semana (artículo 167 del Código Sustantivo del Trabajo). Por encima de ahí
-    ya no es un asunto de plata: es una infracción, y la salida es contratar o reorganizar turnos.
+    <div class="par-dato">
+      <span>Prima de servicios <span class="tenue" id="prima-dias">56 días del semestre</span></span>
+      <strong id="prima">$311.111</strong>
+    </div>
+    <div class="par-dato">
+      <span>Vacaciones <span class="tenue">salario sin auxilio</span></span>
+      <strong id="vacaciones">$1.315.611</strong>
+    </div>
+    <div class="par-dato" id="fila-indem" hidden>
+      <span>Indemnización <span class="tenue" id="indem-detalle"></span></span>
+      <strong id="indemnizacion">$0</strong>
+    </div>
   </div>
 
   <div class="calc-total">
     <div class="izq">
-      <span class="rot">Extras al mes, toda tu gente</span>
-      <p id="desglose">$357.143 por persona · $42.857.143 al año</p>
+      <span class="rot">Total a pagar</span>
+      <p id="desglose">Contrato a término indefinido · 26 de febrero de 2025 a 26 de agosto de 2026</p>
     </div>
-    <strong id="total">$3.571.429</strong>
+    <strong id="total">$5.174.279</strong>
   </div>
-  <div class="calc-delta" id="delta-caja">
-    <span>Lo que sumó la reducción de 44 a 42 horas</span>
-    <strong id="delta">$1.298.701</strong>
-    <span class="tenue">al mes</span>
-  </div>
-  <p class="calc-pie">Cuenta solo el valor de las horas extra diurnas, con factor 1,25. No incluye prestaciones ni aportes, que suben la cifra real, ni recargos nocturnos o dominicales. Para esos está la <a href="/calculadoras/horas-extra-recargos/">calculadora de recargos</a>.</p>
+  <p class="calc-pie">Sobre estos valores no se descuenta salud ni pensión, salvo la indemnización, que sí es base de aportes. Tampoco incluye el pago de la seguridad social del último mes ni descuentos por préstamos o embargos.</p>
 </div>
 
-<h2 id="que-cambio">Qué cambió exactamente</h2>
+<h2 id="que-se-paga">Qué se paga, y sobre qué base</h2>
 
-<p>La Ley 2101 de 2021 bajó la jornada máxima de 48 a 42 horas semanales, y lo hizo por escalones para dar tiempo a acomodarse:</p>
+<p>Las cuatro prestaciones no se calculan igual, y esa es la primera fuente de error. El auxilio de transporte cuenta como salario para las cesantías y la prima, pero no para las vacaciones.</p>
 
 <table>
-  <thead><tr><th>Desde</th><th>Jornada semanal</th><th>Horas del mes</th></tr></thead>
+  <thead><tr><th>Concepto</th><th>Base</th><th class="formula">Cómo se calcula</th></tr></thead>
   <tbody>
-    <tr><td>Antes de julio de 2023</td><td>48 horas</td><td>240</td></tr>
-    <tr><td>15/07/2023</td><td>47 horas</td><td>235</td></tr><tr><td>15/07/2024</td><td>46 horas</td><td>230</td></tr><tr><td>15/07/2025</td><td>44 horas</td><td>220</td></tr><tr><td>15/07/2026</td><td>42 horas</td><td>210</td></tr>
+    <tr><td>Cesantías</td><td>Salario + auxilio</td><td class="formula">base × días ÷ 360</td></tr>
+    <tr><td>Intereses a las cesantías</td><td>Las cesantías</td><td class="formula">cesantías × días × 12% ÷ 360</td></tr>
+    <tr><td>Prima de servicios</td><td>Salario + auxilio</td><td class="formula">base × días del semestre ÷ 360</td></tr>
+    <tr><td>Vacaciones</td><td>Salario, <strong>sin</strong> auxilio</td><td class="formula">salario × días ÷ 720</td></tr>
   </tbody>
 </table>
 
-<p>Lo importante no es el número de horas, es el <strong>divisor</strong>. El valor de la hora sale del salario dividido entre las horas del mes, así que pasar de 240 a 210 sube el valor de cada hora un 14% sin que nadie haya recibido un aumento.</p>
+<p>El auxilio de transporte de 2026 es de <strong>$249.095</strong> y lo recibe quien devenga hasta dos salarios mínimos, es decir hasta $3.501.810. Por encima de eso no entra en la cuenta.</p>
 
-<h2 id="tres-salidas">Las tres salidas, y ninguna es gratis</h2>
+<p>Las vacaciones se dividen entre 720 y no entre 360 porque son quince días hábiles por año, o sea medio mes de salario.</p>
 
-<p>Si tu operación necesitaba 48 horas por persona a la semana, sigue necesitándolas. Lo único que cambió es cómo se pagan:</p>
+<h2 id="indemnizacion">La indemnización, que no siempre va</h2>
 
-<ul>
-  <li><strong>Pagar las extras.</strong> Es lo que calcula esta página. Tiene techo: 12 horas por semana y 2 por día. Pasado eso no es legal, por mucho que se quiera pagar.</li>
-  <li><strong>Contratar más gente.</strong> Reparte las horas sin extras, pero suma prestaciones, aportes y dotación por cada contrato nuevo.</li>
-  <li><strong>Reducir la operación.</strong> Cerrar antes o abrir menos días. No cuesta nómina, cuesta ventas.</li>
-</ul>
+<p>La indemnización del artículo 64 del Código Sustantivo del Trabajo <strong>solo se paga si el despido fue sin justa causa</strong>. Si la persona renunció, o si el contrato a término fijo llegó a su fecha con preaviso, no hay indemnización: solo las prestaciones de arriba.</p>
 
-<p>Lo que no es una salida es no darse cuenta. La jornada bajó el 15 de julio de 2026 y las horas por encima de 42 son extra desde ese día, se hayan liquidado como tal o no. Cuando alguien reclame, el retroactivo se cuenta desde ahí.</p>
+<p>Cuando sí va, hay tres reglas distintas:</p>
+
+<table>
+  <thead><tr><th>Caso</th><th>Indemnización</th></tr></thead>
+  <tbody>
+    <tr><td>Término fijo</td><td>Los salarios que faltaban para cumplir el plazo, con un piso de 15 días</td></tr>
+    <tr><td>Indefinido, menos de 10 mínimos ($17.509.050)</td><td>30 días por el primer año, más 20 por cada año adicional</td></tr>
+    <tr><td>Indefinido, 10 mínimos o más</td><td>20 días por el primer año, más 15 por cada año adicional</td></tr>
+  </tbody>
+</table>
+
+<p>Las fracciones de año se pagan proporcionalmente, pero el primer año no: quien lleva cuatro meses en un contrato indefinido recibe los 30 días completos, no una parte.</p>
 
 <h2 id="ojo">Dónde se equivoca la gente</h2>
 
 <ul>
-  <li>Seguir dividiendo el salario entre 240. Ese divisor corresponde a la jornada de 48 horas y lleva tres escalones desactualizado.</li>
-  <li>Creer que la reducción baja el salario. No: el salario mensual es el mismo, se trabaja menos por la misma plata.</li>
-  <li>Pensar que la jornada se puede pactar más larga en el contrato. El máximo legal es máximo, y lo que se firme por encima no vale.</li>
-  <li>Contar las horas del almuerzo dentro de la jornada. El descanso no es tiempo de trabajo, salvo que se haya pactado.</li>
+  <li><strong>Meter el auxilio de transporte en las vacaciones.</strong> Va en cesantías y prima, no en vacaciones.</li>
+  <li><strong>Volver a cobrar cesantías ya consignadas.</strong> Si el empleador las consignó al fondo en febrero, al salir solo se deben las del año en curso. Por eso la calculadora tiene esa fecha aparte.</li>
+  <li><strong>Contar los meses de 31 días como 31.</strong> La liquidación va en año comercial: todos los meses son de 30 y el año es de 360.</li>
+  <li><strong>Dar por hecha la indemnización.</strong> En una renuncia no existe, y es el reclamo más común que no prospera.</li>
+  <li><strong>Olvidar que el contrato a término fijo que pasó de cuatro años ya es indefinido</strong> por la Ley 2466 de 2025, y entonces la indemnización se calcula con la regla del indefinido, no con la de los salarios faltantes.</li>
 </ul>
 
 <div class="cierre-cta">
-  <p><strong>El problema real no es la cuenta, es saber cuántas horas trabajó cada quien.</strong> HoraPro registra la jornada y marca las extras solas, con la jornada legal vigente en la fecha de cada turno. Precio por empresa, no por empleado.</p>
+  <p><strong>Para que esta cuenta salga sola hace falta saber qué firmó cada quien.</strong> HoraPro lleva el contrato de cada colaborador con su tipo, sus prórrogas y su documento, y avisa 30 días antes de cada vencimiento. Precio por empresa, no por empleado.</p>
   <p><a class="cta" href="/registro">Probar gratis 7 días</a></p>
 </div>
 
-<p class="cierre">Si lo que buscas es el detalle de cada recargo, está en la <a href="/calculadoras/horas-extra-recargos/">calculadora de horas extra y recargos</a> y en <a href="/blog/jornada-laboral-colombia-2026/">la jornada laboral en 2026</a>.</p>
+<p class="cierre">Esta calculadora resuelve el final del contrato. Para lo de cada mes están la <a href="/calculadoras/horas-extra-recargos/">calculadora de horas extra y recargos</a> y la de <a href="/calculadoras/jornada-42-horas/">cuánto cuesta la jornada de 42 horas</a>.</p>
 </article>
     </div>
   </main>
@@ -401,58 +434,105 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
   </div></footer>
 <script>
 (function () {
-  var elPersonas = document.getElementById('personas');
-  var elSalario = document.getElementById('salario');
-  var elHoras = document.getElementById('horas');
-  if (!elPersonas || !elSalario || !elHoras) return;
+  var el = function (id) { return document.getElementById(id); };
+  var salario = el('salario'), tipo = el('tipo'), ingreso = el('ingreso'), retiro = el('retiro');
+  var pactada = el('pactada'), cajaPactada = el('caja-pactada'), cesDesde = el('cesantias-desde');
+  var sinJusta = el('sin-justa-causa');
+  if (!salario || !ingreso || !retiro) return;
 
-  var JORNADA = 42;
-  var ANTES = 44;
-  var SEMANAS = 5;
-  var FACTOR = 1.25;
-  var TOPE = 12;
+  var SMLMV = 1750905, AUXILIO = 249095, TOPE_AUX = 3501810;
+  var TOPE_ALTO = 17509050, PISO_FIJO = 15;
 
   function pesos(n) { return '$' + Math.round(n).toLocaleString('es-CO'); }
   function soloDigitos(s) { return (s || '').replace(/[^0-9]/g, ''); }
-  function poner(id, txt) { var e = document.getElementById(id); if (e) e.textContent = txt; }
 
-  function costo(jornada, salario, horasSemana, personas) {
-    var extras = Math.max(0, horasSemana - jornada);
-    var hora = salario / (jornada * SEMANAS);
-    return extras * SEMANAS * hora * FACTOR * personas;
+  /* Año comercial: meses de 30 y años de 360, con el día 31 contado como 30. */
+  function dias360(desde, hasta) {
+    if (!desde || !hasta) return 0;
+    var a = desde.split('-').map(Number), b = hasta.split('-').map(Number);
+    var d = (b[0] - a[0]) * 360 + (b[1] - a[1]) * 30 + (Math.min(b[2], 30) - Math.min(a[2], 30)) + 1;
+    return Math.max(0, d);
+  }
+
+  function inicioSemestre(iso) {
+    var p = iso.split('-');
+    return Number(p[1]) <= 6 ? p[0] + '-01-01' : p[0] + '-07-01';
+  }
+
+  function largo(iso) {
+    if (!iso) return '';
+    return new Date(iso + 'T12:00:00').toLocaleDateString('es-CO',
+      { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   function calcular() {
-    var personas = Math.max(1, parseInt(elPersonas.value, 10) || 0);
-    var salario = parseInt(soloDigitos(elSalario.value), 10) || 0;
-    var horas = parseFloat(elHoras.value) || 0;
+    var base = parseInt(soloDigitos(salario.value), 10) || 0;
+    var esFijo = tipo.value === 'FIJO';
+    cajaPactada.hidden = !esFijo;
 
-    var extras = Math.max(0, horas - JORNADA);
-    var hoy = costo(JORNADA, salario, horas, personas);
-    var ayer = costo(ANTES, salario, horas, personas);
+    var d = dias360(ingreso.value, retiro.value);
+    var arranqueCes = (cesDesde.value && cesDesde.value > ingreso.value) ? cesDesde.value : ingreso.value;
+    var dCes = dias360(arranqueCes, retiro.value);
+    var aux = (base > 0 && base <= TOPE_AUX) ? AUXILIO : 0;
+    var conAux = base + aux;
 
-    poner('extras', extras.toLocaleString('es-CO'));
-    poner('hora', pesos(salario / (JORNADA * SEMANAS)));
-    poner('antes', pesos(ayer));
-    poner('total', pesos(hoy));
-    poner('desglose', pesos(personas > 0 ? hoy / personas : 0) + ' por persona · ' + pesos(hoy * 12) + ' al año');
-    poner('delta', pesos(hoy - ayer));
+    var cesantias = conAux * dCes / 360;
+    var intereses = cesantias * dCes * 0.12 / 360;
+    var semestre = inicioSemestre(retiro.value || '');
+    var desdePrima = semestre > ingreso.value ? semestre : ingreso.value;
+    var dPrima = dias360(desdePrima, retiro.value);
+    var prima = conAux * dPrima / 360;
+    var vacaciones = base * d / 720;
 
-    var caja = document.getElementById('delta-caja');
-    if (caja) caja.hidden = !(hoy - ayer > 0);
-    var aviso = document.getElementById('aviso-tope');
-    if (aviso) aviso.hidden = extras <= TOPE;
+    var indem = 0, detalle = '';
+    if (sinJusta.checked) {
+      var diaSal = base / 30;
+      if (esFijo) {
+        var faltan = (pactada.value && pactada.value > retiro.value)
+          ? dias360(retiro.value, pactada.value) - 1 : 0;
+        var diasI = Math.max(faltan, PISO_FIJO);
+        indem = diasI * diaSal;
+        detalle = diasI + ' días que faltaban del plazo';
+        if (faltan < PISO_FIJO) detalle = 'piso legal de ' + PISO_FIJO + ' días';
+      } else {
+        var anios = d / 360;
+        var alto = base >= TOPE_ALTO;
+        var pri = alto ? 20 : 30, adic = alto ? 15 : 20;
+        var diasN = anios <= 1 ? pri : pri + adic * (anios - 1);
+        indem = diasN * diaSal;
+        detalle = diasN.toFixed(1).replace('.', ',') + ' días · ' + pri + ' del primer año'
+          + (anios > 1 ? ' más ' + adic + ' por año adicional' : '');
+      }
+    }
+
+    el('dias').textContent = d.toLocaleString('es-CO') + ' días';
+    el('cesantias').textContent = pesos(cesantias);
+    el('intereses').textContent = pesos(intereses);
+    el('prima').textContent = pesos(prima);
+    el('prima-dias').textContent = dPrima + ' días del semestre';
+    el('vacaciones').textContent = pesos(vacaciones);
+    el('fila-indem').hidden = !sinJusta.checked;
+    el('indemnizacion').textContent = pesos(indem);
+    el('indem-detalle').textContent = detalle;
+    el('total').textContent = pesos(cesantias + intereses + prima + vacaciones + indem);
+    el('desglose').textContent = (esFijo ? 'Contrato a término fijo' : 'Contrato a término indefinido')
+      + (ingreso.value && retiro.value ? ' · ' + largo(ingreso.value) + ' a ' + largo(retiro.value) : '');
+    el('antiguedad-txt').textContent = aux > 0
+      ? '(año comercial de 360 días · con auxilio de transporte)'
+      : '(año comercial de 360 días · sin auxilio, supera dos mínimos)';
   }
 
-  elSalario.addEventListener('input', function () {
-    var d = soloDigitos(elSalario.value);
-    var alFinal = elSalario.selectionStart >= elSalario.value.length;
-    elSalario.value = d ? parseInt(d, 10).toLocaleString('es-CO') : '';
-    if (alFinal) elSalario.setSelectionRange(elSalario.value.length, elSalario.value.length);
+  salario.addEventListener('input', function () {
+    var dg = soloDigitos(salario.value);
+    var alFinal = salario.selectionStart >= salario.value.length;
+    salario.value = dg ? parseInt(dg, 10).toLocaleString('es-CO') : '';
+    if (alFinal) salario.setSelectionRange(salario.value.length, salario.value.length);
     calcular();
   });
-  elPersonas.addEventListener('input', calcular);
-  elHoras.addEventListener('input', calcular);
+  [tipo, ingreso, retiro, pactada, cesDesde, sinJusta].forEach(function (c) {
+    if (c) c.addEventListener('change', calcular);
+    if (c) c.addEventListener('input', calcular);
+  });
   calcular();
 })();
 </script>
