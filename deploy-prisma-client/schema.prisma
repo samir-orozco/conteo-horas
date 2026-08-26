@@ -210,7 +210,16 @@ model Colaborador {
   horarioId        String?
   horario          Horario?          @relation(fields: [horarioId], references: [id])
   activo           Boolean           @default(true)
-  // Si el mes ya está pagado, el "borrado" se programa para fin de mes
+  // Retiro: cuándo salió y por qué. Antes solo quedaba `activo: false`, así que
+  // se perdía la fecha, y esa fecha es justo la que se necesita para liquidar,
+  // para un certificado laboral y para una inspección del Ministerio.
+  fechaRetiro      DateTime?
+  motivoRetiro     MotivoRetiro?
+  // Resto del modelo de precio por colaborador: cuando el cobro dependía del
+  // número de personas, el retiro se aplazaba a fin de mes para no regalar el
+  // mes pagado. Hoy el precio es plano por plan y no mira cuántos hay, así que
+  // aplazar no protege un peso: solo bloquea contratar al reemplazo. Se deja el
+  // campo porque puede haber retiros programados sin aplicar en producción.
   retiroProgramado DateTime?
   creadoEn         DateTime          @default(now())
   actualizadoEn    DateTime          @updatedAt
@@ -585,6 +594,17 @@ enum EstadoRetiro {
   APROBADO
   PAGADO
   RECHAZADO
+}
+
+// Por qué salió. Importa para la liquidación: la indemnización del artículo 64
+// solo existe en el despido sin justa causa.
+enum MotivoRetiro {
+  RENUNCIA
+  FIN_CONTRATO
+  SIN_JUSTA_CAUSA
+  JUSTA_CAUSA
+  FIN_OBRA
+  OTRO
 }
 
 enum TipoContrato {

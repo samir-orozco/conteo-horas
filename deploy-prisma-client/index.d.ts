@@ -167,6 +167,18 @@ export const EstadoPago: {
 export type EstadoPago = (typeof EstadoPago)[keyof typeof EstadoPago]
 
 
+export const MotivoRetiro: {
+  RENUNCIA: 'RENUNCIA',
+  FIN_CONTRATO: 'FIN_CONTRATO',
+  SIN_JUSTA_CAUSA: 'SIN_JUSTA_CAUSA',
+  JUSTA_CAUSA: 'JUSTA_CAUSA',
+  FIN_OBRA: 'FIN_OBRA',
+  OTRO: 'OTRO'
+};
+
+export type MotivoRetiro = (typeof MotivoRetiro)[keyof typeof MotivoRetiro]
+
+
 export const TipoRegistro: {
   NORMAL: 'NORMAL',
   PERMISO: 'PERMISO',
@@ -269,6 +281,10 @@ export const MetodoPago: typeof $Enums.MetodoPago
 export type EstadoPago = $Enums.EstadoPago
 
 export const EstadoPago: typeof $Enums.EstadoPago
+
+export type MotivoRetiro = $Enums.MotivoRetiro
+
+export const MotivoRetiro: typeof $Enums.MotivoRetiro
 
 export type TipoRegistro = $Enums.TipoRegistro
 
@@ -12124,6 +12140,8 @@ export namespace Prisma {
     rostroEnroladoEn: Date | null
     horarioId: string | null
     activo: boolean | null
+    fechaRetiro: Date | null
+    motivoRetiro: $Enums.MotivoRetiro | null
     retiroProgramado: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -12143,6 +12161,8 @@ export namespace Prisma {
     rostroEnroladoEn: Date | null
     horarioId: string | null
     activo: boolean | null
+    fechaRetiro: Date | null
+    motivoRetiro: $Enums.MotivoRetiro | null
     retiroProgramado: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -12163,6 +12183,8 @@ export namespace Prisma {
     rostroEnroladoEn: number
     horarioId: number
     activo: number
+    fechaRetiro: number
+    motivoRetiro: number
     retiroProgramado: number
     creadoEn: number
     actualizadoEn: number
@@ -12192,6 +12214,8 @@ export namespace Prisma {
     rostroEnroladoEn?: true
     horarioId?: true
     activo?: true
+    fechaRetiro?: true
+    motivoRetiro?: true
     retiroProgramado?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -12211,6 +12235,8 @@ export namespace Prisma {
     rostroEnroladoEn?: true
     horarioId?: true
     activo?: true
+    fechaRetiro?: true
+    motivoRetiro?: true
     retiroProgramado?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -12231,6 +12257,8 @@ export namespace Prisma {
     rostroEnroladoEn?: true
     horarioId?: true
     activo?: true
+    fechaRetiro?: true
+    motivoRetiro?: true
     retiroProgramado?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -12338,6 +12366,8 @@ export namespace Prisma {
     rostroEnroladoEn: Date | null
     horarioId: string | null
     activo: boolean
+    fechaRetiro: Date | null
+    motivoRetiro: $Enums.MotivoRetiro | null
     retiroProgramado: Date | null
     creadoEn: Date
     actualizadoEn: Date
@@ -12377,6 +12407,8 @@ export namespace Prisma {
     rostroEnroladoEn?: boolean
     horarioId?: boolean
     activo?: boolean
+    fechaRetiro?: boolean
+    motivoRetiro?: boolean
     retiroProgramado?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -12406,6 +12438,8 @@ export namespace Prisma {
     rostroEnroladoEn?: boolean
     horarioId?: boolean
     activo?: boolean
+    fechaRetiro?: boolean
+    motivoRetiro?: boolean
     retiroProgramado?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -12448,6 +12482,8 @@ export namespace Prisma {
       rostroEnroladoEn: Date | null
       horarioId: string | null
       activo: boolean
+      fechaRetiro: Date | null
+      motivoRetiro: $Enums.MotivoRetiro | null
       retiroProgramado: Date | null
       creadoEn: Date
       actualizadoEn: Date
@@ -12841,6 +12877,8 @@ export namespace Prisma {
     readonly rostroEnroladoEn: FieldRef<"Colaborador", 'DateTime'>
     readonly horarioId: FieldRef<"Colaborador", 'String'>
     readonly activo: FieldRef<"Colaborador", 'Boolean'>
+    readonly fechaRetiro: FieldRef<"Colaborador", 'DateTime'>
+    readonly motivoRetiro: FieldRef<"Colaborador", 'MotivoRetiro'>
     readonly retiroProgramado: FieldRef<"Colaborador", 'DateTime'>
     readonly creadoEn: FieldRef<"Colaborador", 'DateTime'>
     readonly actualizadoEn: FieldRef<"Colaborador", 'DateTime'>
@@ -27101,6 +27139,8 @@ export namespace Prisma {
     rostroEnroladoEn: 'rostroEnroladoEn',
     horarioId: 'horarioId',
     activo: 'activo',
+    fechaRetiro: 'fechaRetiro',
+    motivoRetiro: 'motivoRetiro',
     retiroProgramado: 'retiroProgramado',
     creadoEn: 'creadoEn',
     actualizadoEn: 'actualizadoEn'
@@ -27446,6 +27486,13 @@ export namespace Prisma {
    * Reference to a field of type 'EstadoPago'
    */
   export type EnumEstadoPagoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoPago'>
+    
+
+
+  /**
+   * Reference to a field of type 'MotivoRetiro'
+   */
+  export type EnumMotivoRetiroFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MotivoRetiro'>
     
 
 
@@ -28274,6 +28321,8 @@ export namespace Prisma {
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     activo?: BoolFilter<"Colaborador"> | boolean
+    fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
+    motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
     retiroProgramado?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
@@ -28301,6 +28350,8 @@ export namespace Prisma {
     rostroEnroladoEn?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     activo?: SortOrder
+    fechaRetiro?: SortOrderInput | SortOrder
+    motivoRetiro?: SortOrderInput | SortOrder
     retiroProgramado?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -28332,6 +28383,8 @@ export namespace Prisma {
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     activo?: BoolFilter<"Colaborador"> | boolean
+    fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
+    motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
     retiroProgramado?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
@@ -28359,6 +28412,8 @@ export namespace Prisma {
     rostroEnroladoEn?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     activo?: SortOrder
+    fechaRetiro?: SortOrderInput | SortOrder
+    motivoRetiro?: SortOrderInput | SortOrder
     retiroProgramado?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -28387,6 +28442,8 @@ export namespace Prisma {
     rostroEnroladoEn?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     activo?: BoolWithAggregatesFilter<"Colaborador"> | boolean
+    fechaRetiro?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
+    motivoRetiro?: EnumMotivoRetiroNullableWithAggregatesFilter<"Colaborador"> | $Enums.MotivoRetiro | null
     retiroProgramado?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Colaborador"> | Date | string
@@ -30452,6 +30509,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -30479,6 +30538,8 @@ export namespace Prisma {
     rostroEnroladoEn?: Date | string | null
     horarioId?: string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -30502,6 +30563,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30529,6 +30592,8 @@ export namespace Prisma {
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30554,6 +30619,8 @@ export namespace Prisma {
     rostroEnroladoEn?: Date | string | null
     horarioId?: string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -30572,6 +30639,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30592,6 +30661,8 @@ export namespace Prisma {
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32841,6 +32912,13 @@ export namespace Prisma {
     ultimoUso?: SortOrder
   }
 
+  export type EnumMotivoRetiroNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.MotivoRetiro | EnumMotivoRetiroFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MotivoRetiro[] | null
+    notIn?: $Enums.MotivoRetiro[] | null
+    not?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel> | $Enums.MotivoRetiro | null
+  }
+
   export type HorarioNullableRelationFilter = {
     is?: HorarioWhereInput | null
     isNot?: HorarioWhereInput | null
@@ -32916,6 +32994,8 @@ export namespace Prisma {
     rostroEnroladoEn?: SortOrder
     horarioId?: SortOrder
     activo?: SortOrder
+    fechaRetiro?: SortOrder
+    motivoRetiro?: SortOrder
     retiroProgramado?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -32939,6 +33019,8 @@ export namespace Prisma {
     rostroEnroladoEn?: SortOrder
     horarioId?: SortOrder
     activo?: SortOrder
+    fechaRetiro?: SortOrder
+    motivoRetiro?: SortOrder
     retiroProgramado?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -32958,6 +33040,8 @@ export namespace Prisma {
     rostroEnroladoEn?: SortOrder
     horarioId?: SortOrder
     activo?: SortOrder
+    fechaRetiro?: SortOrder
+    motivoRetiro?: SortOrder
     retiroProgramado?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -32965,6 +33049,16 @@ export namespace Prisma {
 
   export type ColaboradorSumOrderByAggregateInput = {
     salarioMensual?: SortOrder
+  }
+
+  export type EnumMotivoRetiroNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MotivoRetiro | EnumMotivoRetiroFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MotivoRetiro[] | null
+    notIn?: $Enums.MotivoRetiro[] | null
+    not?: NestedEnumMotivoRetiroNullableWithAggregatesFilter<$PrismaModel> | $Enums.MotivoRetiro | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel>
+    _max?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel>
   }
 
   export type FloatNullableFilter<$PrismaModel = never> = {
@@ -34655,6 +34749,10 @@ export namespace Prisma {
     connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
   }
 
+  export type NullableEnumMotivoRetiroFieldUpdateOperationsInput = {
+    set?: $Enums.MotivoRetiro | null
+  }
+
   export type EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput = {
     create?: XOR<EmpresaCreateWithoutColaboradoresInput, EmpresaUncheckedCreateWithoutColaboradoresInput>
     connectOrCreate?: EmpresaCreateOrConnectWithoutColaboradoresInput
@@ -35781,6 +35879,23 @@ export namespace Prisma {
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
+  export type NestedEnumMotivoRetiroNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.MotivoRetiro | EnumMotivoRetiroFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MotivoRetiro[] | null
+    notIn?: $Enums.MotivoRetiro[] | null
+    not?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel> | $Enums.MotivoRetiro | null
+  }
+
+  export type NestedEnumMotivoRetiroNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MotivoRetiro | EnumMotivoRetiroFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MotivoRetiro[] | null
+    notIn?: $Enums.MotivoRetiro[] | null
+    not?: NestedEnumMotivoRetiroNullableWithAggregatesFilter<$PrismaModel> | $Enums.MotivoRetiro | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel>
+    _max?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel>
+  }
+
   export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel> | null
     in?: number[] | null
@@ -36005,6 +36120,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -36030,6 +36147,8 @@ export namespace Prisma {
     rostroEnroladoEn?: Date | string | null
     horarioId?: string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -36426,6 +36545,8 @@ export namespace Prisma {
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     activo?: BoolFilter<"Colaborador"> | boolean
+    fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
+    motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
     retiroProgramado?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
@@ -37195,6 +37316,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -37220,6 +37343,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38320,6 +38445,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38346,6 +38473,8 @@ export namespace Prisma {
     rostroEnroladoEn?: Date | string | null
     horarioId?: string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38417,6 +38546,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38443,6 +38574,8 @@ export namespace Prisma {
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38504,6 +38637,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38530,6 +38665,8 @@ export namespace Prisma {
     rostroEnroladoEn?: Date | string | null
     horarioId?: string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38568,6 +38705,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38594,6 +38733,8 @@ export namespace Prisma {
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38616,6 +38757,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38642,6 +38785,8 @@ export namespace Prisma {
     rostroEnroladoEn?: Date | string | null
     horarioId?: string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38755,6 +38900,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38781,6 +38928,8 @@ export namespace Prisma {
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38858,6 +39007,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38884,6 +39035,8 @@ export namespace Prisma {
     rostroEnroladoEn?: Date | string | null
     horarioId?: string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38965,6 +39118,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38991,6 +39146,8 @@ export namespace Prisma {
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40286,6 +40443,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -40312,6 +40471,8 @@ export namespace Prisma {
     rostroEnroladoEn?: Date | string | null
     horarioId?: string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -40380,6 +40541,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40406,6 +40569,8 @@ export namespace Prisma {
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40559,6 +40724,8 @@ export namespace Prisma {
     rostroEnroladoEn?: Date | string | null
     horarioId?: string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -40692,6 +40859,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40717,6 +40886,8 @@ export namespace Prisma {
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40741,6 +40912,8 @@ export namespace Prisma {
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41041,6 +41214,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -41089,6 +41264,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41114,6 +41291,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41138,6 +41317,8 @@ export namespace Prisma {
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
