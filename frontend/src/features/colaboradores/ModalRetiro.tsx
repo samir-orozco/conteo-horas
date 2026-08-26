@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LogOut, AlertTriangle } from 'lucide-react';
 import api from '../../lib/api';
+import CampoEvidencia, { type CambioEvidencia } from '../../components/CampoEvidencia';
 import { MOTIVOS } from './motivos';
 
 // Registrar el retiro de un colaborador.
@@ -18,6 +19,7 @@ export default function ModalRetiro({ colaborador, onCerrar, onListo }: {
   const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
   const [fecha, setFecha] = useState(hoy);
   const [motivo, setMotivo] = useState('RENUNCIA');
+  const [adjunto, setAdjunto] = useState<CambioEvidencia>({ tipo: 'sin-cambio' });
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,7 +30,12 @@ export default function ModalRetiro({ colaborador, onCerrar, onListo }: {
     e.preventDefault();
     setGuardando(true); setError('');
     try {
-      await api.post(`/colaboradores/${colaborador.id}/retirar`, { fecha, motivo });
+      const cuerpo: { fecha: string; motivo: string; documento?: string; documentoNombre?: string } = { fecha, motivo };
+      if (adjunto.tipo === 'nuevo') {
+        cuerpo.documento = adjunto.evidencia.data;
+        cuerpo.documentoNombre = adjunto.evidencia.nombre;
+      }
+      await api.post(`/colaboradores/${colaborador.id}/retirar`, cuerpo);
       onListo();
     } catch (err) {
       const e = err as { response?: { data?: { error?: string } } };
@@ -71,6 +78,19 @@ export default function ModalRetiro({ colaborador, onCerrar, onListo }: {
             Esa fecha es futura. El retiro se registra de una vez, así que la persona deja de aparecer hoy.
           </p>
         )}
+
+        {/* El soporte es lo que sostiene la trazabilidad: la fecha y el motivo
+            sin documento son la versión de una sola parte. Opcional a
+            propósito, para no frenar el registro de quien no lo tiene a mano. */}
+        <div>
+          <label className="block text-xs font-medium text-muted mb-1">
+            Soporte <span className="text-gray-400">(opcional)</span>
+          </label>
+          <CampoEvidencia onCambio={setAdjunto} />
+          <p className="text-[11px] text-muted mt-1">
+            Carta de renuncia, carta de terminación o acta. Queda guardado en su ficha.
+          </p>
+        </div>
 
         {/* Se dice qué se conserva y qué cambia, porque el botón viejo decía
             "Eliminar" y la gente no sabía si estaba perdiendo el historial. */}

@@ -5,7 +5,7 @@ import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import {
   ArrowLeft, Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
-  ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Lock,
+  ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Lock, Undo2,
 } from 'lucide-react';
 import api from '../lib/api';
 import { formatearMiles, parsearMiles, resumenFranjas, type Franja } from './Colaboradores';
@@ -17,6 +17,7 @@ import CampoEvidencia, { type CambioEvidencia } from '../components/CampoEvidenc
 import PanelContratos from '../features/contratos/PanelContratos';
 import VisorDocumento from '../components/VisorDocumento';
 import { TIPO_PERMISO_LABEL } from '../constants/permisos';
+import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 import { useMiPlan } from '../lib/plan';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
@@ -25,6 +26,10 @@ type Colaborador = {
   email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean;
   horarioId?: string | null; horario?: Horario | null; rostroEnroladoEn?: string | null;
   sedeIds?: string[];
+  creadoEn?: string;
+  fechaRetiro?: string | null; motivoRetiro?: string | null;
+  documentoRetiroTipo?: string | null; documentoRetiroNombre?: string | null;
+  tieneDocumentoRetiro?: boolean;
 };
 type Tardanzas = {
   sinHorario: boolean;
@@ -99,6 +104,39 @@ export default function ColaboradorDetalle() {
     api.get('/sedes').then(r => setSedes(r.data)).catch(() => setSedes([]));
   }, [id]);
   useEffect(() => { cargar(); }, [cargar]);
+
+  // Cuánto duró la relación laboral, en palabras. Se cuenta desde que se creó
+  // la ficha, que es lo más cercano al ingreso que hay guardado hoy.
+  const tiempoQueEstuvo = (() => {
+    if (!col?.fechaRetiro || !col?.creadoEn) return '—';
+    const dias = Math.max(0, Math.round(
+      (new Date(col.fechaRetiro).getTime() - new Date(col.creadoEn).getTime()) / 86400000) + 1);
+    if (dias < 31) return `${dias} día${dias === 1 ? '' : 's'}`;
+    const meses = Math.round(dias / 30.44);
+    if (meses < 12) return `${meses} mes${meses === 1 ? '' : 'es'}`;
+    const anios = Math.floor(meses / 12), resto = meses % 12;
+    return resto === 0 ? `${anios} año${anios === 1 ? '' : 's'}` : `${anios} a ${resto} m`;
+  })();
+
+  const verSoporteRetiro = async () => {
+    try {
+      const r = await api.get(`/colaboradores/${id}/documento-retiro`);
+      setEvidenciaVer({ data: r.data.documento, tipo: r.data.documentoTipo, nombre: r.data.documentoNombre });
+    } catch {
+      setToast('No pudimos abrir el soporte.');
+    }
+  };
+
+  const reingresarColaborador = async () => {
+    try {
+      await api.post(`/colaboradores/${id}/reingresar`);
+      cargar();
+      setToast('Reingresado. Vuelve a contar para el cupo de tu plan.');
+    } catch (err) {
+      const e = err as { response?: { data?: { error?: string } } };
+      setToast(e.response?.data?.error ?? 'No pudimos reingresarlo.');
+    }
+  };
 
   const guardarEdicion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,9 +295,70 @@ export default function ColaboradorDetalle() {
           <p className="text-sm text-muted">{col.cargo || 'Sin cargo'} · CC {col.cedula}</p>
         </div>
         <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${col.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-          {col.activo ? 'ACTIVO' : 'INACTIVO'}
+          {col.activo ? 'ACTIVO' : 'RETIRADO'}
         </span>
       </div>
+
+      {/* Constancia del retiro.
+          Va arriba de todo y no en una pestaña porque es lo primero que hay que
+          saber al abrir esta ficha: lo que se vea más abajo (horas, novedades,
+          contratos) es historia, no la operación de hoy. */}
+      {!col.activo && (
+        <div className="bg-white rounded-card border border-gray-200 p-5">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <p className="font-semibold text-ink flex items-center gap-2 mb-1"><LogOut size={16} /> Ya no trabaja aquí</p>
+              <p className="text-sm text-muted">
+                Todo lo que ves abajo es su historial y se conserva completo. No cuenta para el cupo de tu plan
+                ni aparece en reportes ni en el kiosco.
+              </p>
+            </div>
+            <button onClick={reingresarColaborador}
+              className="flex items-center gap-1.5 text-xs font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg shrink-0">
+              <Undo2 size={13} /> Reingresar
+            </button>
+          </div>
+
+          <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-[repeat(auto-fit,minmax(7rem,1fr))] gap-x-4 gap-y-3 mt-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Último día</p>
+              <p className="text-sm font-semibold text-ink">
+                {col.fechaRetiro ? new Date(col.fechaRetiro).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Sin registrar'}
+              </p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Motivo</p>
+              <p className="text-sm font-semibold text-ink">
+                {col.motivoRetiro ? (ETIQUETA_MOTIVO[col.motivoRetiro] ?? col.motivoRetiro) : 'Sin registrar'}
+              </p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Alcanzó a estar</p>
+              <p className="text-sm font-semibold text-ink">{tiempoQueEstuvo}</p>
+            </div>
+          </div>
+
+          <div className="mt-3">
+            {col.tieneDocumentoRetiro ? (
+              <button onClick={verSoporteRetiro}
+                className="inline-flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-lg border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 transition-colors">
+                <span className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${
+                  col.documentoRetiroTipo === 'application/pdf' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
+                  <FileText size={12} />
+                </span>
+                <span className="text-[11px] font-medium text-ink truncate">
+                  {col.documentoRetiroNombre || 'Ver soporte'}
+                </span>
+              </button>
+            ) : (
+              <p className="text-[11px] text-muted">
+                Sin soporte adjunto. La fecha y el motivo sin documento son la versión de una sola parte:
+                si tienes la carta, vale la pena guardarla al registrar el retiro.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Datos */}

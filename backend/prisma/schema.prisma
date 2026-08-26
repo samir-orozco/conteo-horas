@@ -215,6 +215,14 @@ model Colaborador {
   // para un certificado laboral y para una inspección del Ministerio.
   fechaRetiro      DateTime?
   motivoRetiro     MotivoRetiro?
+  // Soporte del retiro: carta de renuncia, carta de terminación, acta. Es lo
+  // que sostiene la trazabilidad el día que alguien reclame o venga una
+  // inspección: la fecha y el motivo sin documento son la versión de una sola
+  // parte. Se guarda en la fila, como el resto de adjuntos del producto, y NO
+  // viaja en la ficha: se pide aparte por su peso.
+  documentoRetiro       String?  @db.LongText
+  documentoRetiroTipo   String?
+  documentoRetiroNombre String?
   // Resto del modelo de precio por colaborador: cuando el cobro dependía del
   // número de personas, el retiro se aplazaba a fin de mes para no regalar el
   // mes pagado. Hoy el precio es plano por plan y no mira cuántos hay, así que

@@ -6,6 +6,7 @@ import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
 import { medianocheBogota, hoyEnBogota } from '../utils/fechas';
+import { documentoValido, tipoDeDocumento, nombreDeDocumento } from '../utils/documentos';
 import { regenerarDiasDeColaborador, mantenerVentanaDeColaborador } from '../utils/materializarDias';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
@@ -66,8 +67,15 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (!col) return reply.status(404).send({ error: 'No encontrado' });
     // Se aplana a una lista de ids: es lo que el selector múltiple necesita, y
     // evita que el frontend tenga que conocer la tabla de unión.
-    const { sedes, ...resto } = col as any;
-    return { ...resto, sedeIds: (sedes ?? []).map((s: any) => s.sedeId) };
+    // `documentoRetiro` es un LongText y esta ficha se carga cada vez que se
+    // abre un perfil. Se saca aquí y se pide aparte, igual que los documentos
+    // de contratos, para no mover un PDF entero en cada visita.
+    const { sedes, documentoRetiro, ...resto } = col as any;
+    return {
+      ...resto,
+      tieneDocumentoRetiro: !!documentoRetiro,
+      sedeIds: (sedes ?? []).map((s: any) => s.sedeId),
+    };
   });
 
   // Valida que el horario asignado sea de la misma empresa
@@ -207,7 +215,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   // el mismo día para que el reemplazo pueda entrar.
   app.post('/:id/retirar', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { fecha, motivo } = (request.body ?? {}) as { fecha?: string; motivo?: string };
+    const { fecha, motivo, documento, documentoNombre } = (request.body ?? {}) as {
+      fecha?: string; motivo?: string; documento?: string; documentoNombre?: string;
+    };
 
     const existente = await prisma.colaborador.findFirst({
       where: { id, empresaId: request.empresaId }, select: { id: true, activo: true },
@@ -222,14 +232,22 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: 'Motivo de retiro no válido.' });
     }
 
+    const datos: any = {
+      activo: false,
+      fechaRetiro,
+      motivoRetiro: (motivo ?? 'OTRO') as any,
+      retiroProgramado: null,
+    };
+    if (documentoValido(documento)) {
+      datos.documentoRetiro = documento;
+      datos.documentoRetiroTipo = tipoDeDocumento(documento);
+      datos.documentoRetiroNombre = nombreDeDocumento(documentoNombre);
+    }
+
     const colaborador = await prisma.colaborador.update({
-      where: { id },
-      data: {
-        activo: false,
-        fechaRetiro,
-        motivoRetiro: (motivo ?? 'OTRO') as any,
-        retiroProgramado: null,
-      },
+      where: { id }, data: datos,
+      select: { id: true, nombre: true, apellido: true, activo: true, fechaRetiro: true,
+        motivoRetiro: true, documentoRetiroTipo: true, documentoRetiroNombre: true },
     });
     await cerrarContratoVigente(id);
     return colaborador;
@@ -251,6 +269,21 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     return { ...colaborador, retiroInmediato: true };
   });
 
+  // El soporte del retiro, servido aparte por su peso.
+  app.get('/:id/documento-retiro', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const col = await prisma.colaborador.findFirst({
+      where: { id, empresaId: request.empresaId },
+      select: { documentoRetiro: true, documentoRetiroTipo: true, documentoRetiroNombre: true },
+    });
+    if (!col?.documentoRetiro) return reply.status(404).send({ error: 'Sin documento' });
+    return {
+      documento: col.documentoRetiro,
+      documentoTipo: col.documentoRetiroTipo,
+      documentoNombre: col.documentoRetiroNombre,
+    };
+  });
+
   // Los que ya no están. Van en su propia ruta y no en el listado principal
   // para que ninguna pantalla los cuente por accidente en un total de la
   // operación de hoy.
@@ -261,6 +294,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       select: {
         id: true, nombre: true, apellido: true, cedula: true, cargo: true,
         salarioMensual: true, fechaRetiro: true, motivoRetiro: true, creadoEn: true,
+        documentoRetiroTipo: true, documentoRetiroNombre: true,
       },
       orderBy: [{ fechaRetiro: 'desc' }, { nombre: 'asc' }],
     });
@@ -294,7 +328,12 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
 
     const colaborador = await prisma.colaborador.update({
       where: { id },
-      data: { activo: true, fechaRetiro: null, motivoRetiro: null, retiroProgramado: null },
+      data: {
+        activo: true, fechaRetiro: null, motivoRetiro: null, retiroProgramado: null,
+        // El soporte era de ESE retiro. Si vuelve y se va otra vez, el documento
+        // que valga será el nuevo, y dejar el viejo confundiría la trazabilidad.
+        documentoRetiro: null, documentoRetiroTipo: null, documentoRetiroNombre: null,
+      },
     });
     // Sus días esperados quedaron congelados con el horario del día que se fue.
     try {

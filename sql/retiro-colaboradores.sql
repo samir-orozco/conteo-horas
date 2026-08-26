@@ -15,5 +15,14 @@ ALTER TABLE `colaboradores`
   ADD COLUMN `motivoRetiro` enum('RENUNCIA','FIN_CONTRATO','SIN_JUSTA_CAUSA','JUSTA_CAUSA','FIN_OBRA','OTRO')
     COLLATE utf8mb4_unicode_ci DEFAULT NULL;
 
--- Comprobación: debe devolver las dos columnas nuevas.
--- SHOW COLUMNS FROM `colaboradores` WHERE Field IN ('fechaRetiro','motivoRetiro');
+-- Soporte del retiro: carta de renuncia, carta de terminación o acta. La fecha
+-- y el motivo sin documento son la versión de una sola parte; con el soporte
+-- adjunto hay trazabilidad frente a un reclamo o una inspección.
+ALTER TABLE `colaboradores`
+  ADD COLUMN `documentoRetiro` longtext COLLATE utf8mb4_unicode_ci,
+  ADD COLUMN `documentoRetiroTipo` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  ADD COLUMN `documentoRetiroNombre` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL;
+
+-- Comprobación: debe devolver las cinco columnas nuevas.
+-- SHOW COLUMNS FROM `colaboradores`
+--   WHERE Field IN ('fechaRetiro','motivoRetiro','documentoRetiro','documentoRetiroTipo','documentoRetiroNombre');

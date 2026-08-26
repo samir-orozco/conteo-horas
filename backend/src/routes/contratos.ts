@@ -5,6 +5,7 @@ import { prisma } from '../prisma';
 import { notificar, type TipoNotif } from '../utils/notificaciones';
 import { estadoDelContrato, type ContratoParaCalculo, type ProrrogaParaCalculo } from '../utils/contratos';
 import { medianocheBogota } from '../utils/fechas';
+import { documentoValido } from '../utils/documentos';
 
 // Las fechas llegan del formulario como "YYYY-MM-DD" y se anclan a medianoche de
 // BOGOTÁ, no de UTC. `new Date("2026-04-01")` son las 00:00 UTC, que en Colombia
@@ -13,15 +14,6 @@ import { medianocheBogota } from '../utils/fechas';
 // kiosco guarda las marcaciones.
 const fechaBogota = (v: unknown): Date | null =>
   typeof v === 'string' && v.length >= 10 ? medianocheBogota(v) : null;
-
-// Documento del contrato: PDF o imagen en base64, con tope de tamaño. Mismo
-// patrón y mismo límite que la evidencia de las novedades.
-const MAX_DOC = 4_200_000;
-function documentoValido(v: unknown): v is string {
-  return typeof v === 'string'
-    && /^data:(image\/(jpeg|png|webp)|application\/pdf);base64,/.test(v)
-    && v.length < MAX_DOC;
-}
 
 const TIPOS = new Set(['INDEFINIDO', 'FIJO', 'OBRA_LABOR', 'APRENDIZAJE']);
 

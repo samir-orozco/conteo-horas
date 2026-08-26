@@ -49,7 +49,7 @@ export default function Colaboradores() {
   const [retirando, setRetirando] = useState<Colaborador | null>(null);
   // Pestaña activa. Los retirados van aparte para que ningún total de la
   // operación de hoy los cuente por accidente.
-  const [pestana, setPestana] = useState<'activos' | 'retirados'>('activos');
+  const [pestana, setPestana] = useState<'todos' | 'activos' | 'retirados'>('activos');
   const [retirados, setRetirados] = useState<Retirado[]>([]);
   const [errorRetirados, setErrorRetirados] = useState('');
   const [horarios, setHorarios] = useState<Horario[]>([]);
@@ -61,6 +61,22 @@ export default function Colaboradores() {
   const cargarRetirados = () => api.get('/colaboradores/inactivos')
     .then(r => setRetirados(r.data))
     .catch(() => setRetirados([]));
+
+  // Refresca las dos listas y fija los dos estados en el MISMO tick.
+  //
+  // Llamar a cargar() y cargarRetirados() por separado no basta, ni siquiera
+  // esperándolas con Promise.all: cada una hace su setState dentro de su propio
+  // `then`, en microtareas distintas, así que React alcanza a pintar con una
+  // lista nueva y la otra vieja. En pantalla eso era la misma persona apareciendo
+  // dos veces, como activa y como retirada a la vez.
+  const recargarTodo = async () => {
+    const [act, inact] = await Promise.all([
+      api.get('/colaboradores'),
+      api.get('/colaboradores/inactivos').catch(() => ({ data: [] })),
+    ]);
+    setLista(act.data);
+    setRetirados(inact.data);
+  };
 
   useEffect(() => {
     cargar();
@@ -99,11 +115,11 @@ export default function Colaboradores() {
     }
   };
 
-  const reingresar = async (r: Retirado) => {
+  const reingresar = async (r: { id: string }) => {
     setErrorRetirados('');
     try {
       await api.post(`/colaboradores/${r.id}/reingresar`);
-      await Promise.all([cargar(), cargarRetirados()]);
+      await recargarTodo();
     } catch (err) {
       const e = err as { response?: { data?: { error?: string } } };
       setErrorRetirados(e.response?.data?.error ?? 'No pudimos reingresar a esa persona.');
@@ -119,6 +135,18 @@ export default function Colaboradores() {
   // retirado la pestaña desaparece, y si el estado seguía en 'retirados' la
   // pantalla quedaba en blanco sin forma de volver.
   const pestanaActiva = retirados.length === 0 ? 'activos' : pestana;
+
+  // Una sola lista con su estado, que es como se responde "¿esta persona
+  // todavía trabaja aquí?" sin tener que cambiar de pestaña para averiguarlo.
+  type Fila = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
+    salarioMensual: number; activo: boolean; fechaRetiro?: string | null; motivoRetiro?: string | null };
+  const filas: Fila[] = pestanaActiva === 'retirados'
+    ? retirados.map(r => ({ ...r, activo: false }))
+    : pestanaActiva === 'activos'
+      ? lista.map(c => ({ ...c, activo: true }))
+      : [...lista.map(c => ({ ...c, activo: true })), ...retirados.map(r => ({ ...r, activo: false }))]
+          .filter((f, i, todas) => todas.findIndex(o => o.id === f.id) === i)
+          .sort((a, b) => Number(b.activo) - Number(a.activo) || a.nombre.localeCompare(b.nombre));
   const esEmpresarial = plan?.plan === 'EMPRESARIAL';
   const pct = limite ? Math.min(100, Math.round((usados / limite) * 100)) : 0;
 
@@ -168,112 +196,97 @@ export default function Colaboradores() {
           pestaña vacía que solo estorba. */}
       {retirados.length > 0 && (
         <div className="flex items-center gap-1 mb-4 bg-gray-100 rounded-xl p-1 w-fit text-sm font-semibold">
-          <button onClick={() => setPestana('activos')}
-            className={`px-4 py-1.5 rounded-lg transition-colors ${pestanaActiva === 'activos' ? 'bg-white shadow text-ink' : 'text-muted hover:text-ink'}`}>
-            Activos <span className="font-normal">({lista.length})</span>
-          </button>
-          <button onClick={() => setPestana('retirados')}
-            className={`px-4 py-1.5 rounded-lg transition-colors ${pestanaActiva === 'retirados' ? 'bg-white shadow text-ink' : 'text-muted hover:text-ink'}`}>
-            Retirados <span className="font-normal">({retirados.length})</span>
-          </button>
+          {([
+            ['activos', 'Activos', lista.length],
+            ['retirados', 'Retirados', retirados.length],
+            ['todos', 'Todos', lista.length + retirados.length],
+          ] as const).map(([clave, texto, n]) => (
+            <button key={clave} onClick={() => setPestana(clave)}
+              className={`px-4 py-1.5 rounded-lg transition-colors ${pestanaActiva === clave ? 'bg-white shadow text-ink' : 'text-muted hover:text-ink'}`}>
+              {texto} <span className="font-normal">({n})</span>
+            </button>
+          ))}
         </div>
       )}
 
-      {pestanaActiva === 'retirados' ? (
-        <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
+      {errorRetirados && <p className="text-sm text-red-600 mb-3">{errorRetirados}</p>}
+
+      <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
+        {pestanaActiva !== 'activos' && (
           <p className="text-xs text-muted px-4 py-3 border-b border-gray-100">
-            Ya no cuentan para el cupo de tu plan y no aparecen en reportes ni en el kiosco,
+            Los retirados no cuentan para el cupo de tu plan y no aparecen en reportes ni en el kiosco,
             pero conservan todo su historial. Reingresar recupera la ficha completa.
           </p>
-          {errorRetirados && <p className="text-sm text-red-600 px-4 py-2">{errorRetirados}</p>}
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-muted uppercase text-xs">
-              <tr>
-                <th className="px-4 py-3 text-left">Nombre</th>
-                <th className="px-4 py-3 text-left hidden md:table-cell">Salió el</th>
-                <th className="px-4 py-3 text-left hidden md:table-cell">Motivo</th>
-                <th className="px-4 py-3 text-center">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {retirados.map(r => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-ink">
-                    {r.nombre} {r.apellido}
-                    <span className="block text-xs text-muted font-normal md:hidden">
-                      {r.fechaRetiro ? new Date(r.fechaRetiro).toLocaleDateString('es-CO') : 'sin fecha'}
-                      {r.motivoRetiro ? ` · ${ETIQUETA_MOTIVO[r.motivoRetiro] ?? r.motivoRetiro}` : ''}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted hidden md:table-cell">
-                    {r.fechaRetiro ? new Date(r.fechaRetiro).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-muted hidden md:table-cell">
-                    {r.motivoRetiro ? (ETIQUETA_MOTIVO[r.motivoRetiro] ?? r.motivoRetiro) : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-2">
-                      <button onClick={() => navigate(`/app/colaboradores/${r.id}`)} title="Ver historial"
-                        className="p-1.5 text-muted hover:bg-primary/30 hover:text-ink rounded-lg"><Eye size={15} /></button>
-                      <button onClick={() => reingresar(r)}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg">
-                        <Undo2 size={13} /> Reingresar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-      <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
+        )}
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-muted uppercase text-xs">
             <tr>
               <th className="px-4 py-3 text-left">Nombre</th>
+              <th className="px-4 py-3 text-left">Estado</th>
               <th className="px-4 py-3 text-left hidden md:table-cell">Cédula</th>
-              <th className="px-4 py-3 text-left hidden md:table-cell">Cargo</th>
-              <th className="px-4 py-3 text-right">Salario</th>
+              <th className="px-4 py-3 text-left hidden lg:table-cell">Cargo</th>
+              <th className="px-4 py-3 text-right hidden sm:table-cell">Salario</th>
               <th className="px-4 py-3 text-center">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {lista.map(col => (
+            {filas.map(col => (
               <tr key={col.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/app/colaboradores/${col.id}`)}>
-                <td className="px-4 py-3 font-medium text-ink">
-                  {col.nombre} {col.apellido}
-                  {col.retiroProgramado && (
-                    <span className="ml-2 text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                      RETIRO {new Date(col.retiroProgramado).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
-                    </span>
+                <td className="px-4 py-3 font-medium text-ink">{col.nombre} {col.apellido}</td>
+                <td className="px-4 py-3">
+                  {col.activo ? (
+                    <span className="text-[10px] font-bold bg-green-100 text-green-800 px-2 py-0.5 rounded-full">ACTIVO</span>
+                  ) : (
+                    <>
+                      <span className="text-[10px] font-bold bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">RETIRADO</span>
+                      {/* La fecha y el motivo van pegados al estado: sin eso,
+                          "retirado" no dice ni cuándo ni por qué, que es
+                          justamente lo que se busca al mirar esta lista. */}
+                      <span className="block text-[11px] text-muted mt-1">
+                        {col.fechaRetiro ? new Date(col.fechaRetiro).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : 'sin fecha'}
+                        {col.motivoRetiro ? ` · ${ETIQUETA_MOTIVO[col.motivoRetiro] ?? col.motivoRetiro}` : ''}
+                      </span>
+                    </>
                   )}
                 </td>
                 <td className="px-4 py-3 text-muted hidden md:table-cell">{col.cedula}</td>
-                <td className="px-4 py-3 text-muted hidden md:table-cell">{col.cargo || '-'}</td>
-                <td className="px-4 py-3 text-right text-ink">{fmt(col.salarioMensual)}</td>
+                <td className="px-4 py-3 text-muted hidden lg:table-cell">{col.cargo || '-'}</td>
+                <td className="px-4 py-3 text-right text-ink hidden sm:table-cell">{fmt(col.salarioMensual)}</td>
                 <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-center gap-2">
-                    <button onClick={() => navigate(`/app/colaboradores/${col.id}`)} title="Ver detalle" className="p-1.5 text-muted hover:bg-primary/30 hover:text-ink rounded-lg"><Eye size={15} /></button>
-                    <button onClick={() => abrir(col)} title="Editar" className="p-1.5 text-muted hover:bg-primary/30 hover:text-ink rounded-lg"><Edit2 size={15} /></button>
-                    <button onClick={() => setRetirando(col)} title="Registrar retiro" className="p-1.5 text-muted hover:bg-gray-100 hover:text-ink rounded-lg"><LogOut size={15} /></button>
+                    <button onClick={() => navigate(`/app/colaboradores/${col.id}`)} title={col.activo ? 'Ver detalle' : 'Ver historial'} className="p-1.5 text-muted hover:bg-primary/30 hover:text-ink rounded-lg"><Eye size={15} /></button>
+                    {col.activo ? (
+                      <>
+                        <button onClick={() => abrir(lista.find(c => c.id === col.id))} title="Editar" className="p-1.5 text-muted hover:bg-primary/30 hover:text-ink rounded-lg"><Edit2 size={15} /></button>
+                        <button onClick={() => setRetirando(lista.find(c => c.id === col.id) ?? null)} title="Registrar retiro" className="p-1.5 text-muted hover:bg-gray-100 hover:text-ink rounded-lg"><LogOut size={15} /></button>
+                      </>
+                    ) : (
+                      <button onClick={() => reingresar(col)}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg">
+                        <Undo2 size={13} /> Reingresar
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
             ))}
-            {lista.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-10 text-center text-muted">Aún no hay colaboradores</td></tr>
+            {filas.length === 0 && (
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-muted">
+                {pestanaActiva === 'retirados' ? 'Nadie se ha retirado todavía' : 'Aún no hay colaboradores'}
+              </td></tr>
             )}
           </tbody>
         </table>
       </div>
-      )}
 
       {retirando && (
         <ModalRetiro
           colaborador={retirando}
           onCerrar={() => setRetirando(null)}
-          onListo={() => { setRetirando(null); cargar(); cargarRetirados(); }}
+          // Las dos listas se refrescan JUNTAS. Lanzándolas sueltas, React
+          // pintaba en cuanto respondía la primera: la persona ya aparecía como
+          // retirada y todavía seguía en la lista de activos, o sea dos veces.
+          onListo={async () => { setRetirando(null); await recargarTodo(); }}
         />
       )}
 
