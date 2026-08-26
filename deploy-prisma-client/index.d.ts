@@ -12142,6 +12142,9 @@ export namespace Prisma {
     activo: boolean | null
     fechaRetiro: Date | null
     motivoRetiro: $Enums.MotivoRetiro | null
+    documentoRetiro: string | null
+    documentoRetiroTipo: string | null
+    documentoRetiroNombre: string | null
     retiroProgramado: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -12163,6 +12166,9 @@ export namespace Prisma {
     activo: boolean | null
     fechaRetiro: Date | null
     motivoRetiro: $Enums.MotivoRetiro | null
+    documentoRetiro: string | null
+    documentoRetiroTipo: string | null
+    documentoRetiroNombre: string | null
     retiroProgramado: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -12185,6 +12191,9 @@ export namespace Prisma {
     activo: number
     fechaRetiro: number
     motivoRetiro: number
+    documentoRetiro: number
+    documentoRetiroTipo: number
+    documentoRetiroNombre: number
     retiroProgramado: number
     creadoEn: number
     actualizadoEn: number
@@ -12216,6 +12225,9 @@ export namespace Prisma {
     activo?: true
     fechaRetiro?: true
     motivoRetiro?: true
+    documentoRetiro?: true
+    documentoRetiroTipo?: true
+    documentoRetiroNombre?: true
     retiroProgramado?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -12237,6 +12249,9 @@ export namespace Prisma {
     activo?: true
     fechaRetiro?: true
     motivoRetiro?: true
+    documentoRetiro?: true
+    documentoRetiroTipo?: true
+    documentoRetiroNombre?: true
     retiroProgramado?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -12259,6 +12274,9 @@ export namespace Prisma {
     activo?: true
     fechaRetiro?: true
     motivoRetiro?: true
+    documentoRetiro?: true
+    documentoRetiroTipo?: true
+    documentoRetiroNombre?: true
     retiroProgramado?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -12368,6 +12386,9 @@ export namespace Prisma {
     activo: boolean
     fechaRetiro: Date | null
     motivoRetiro: $Enums.MotivoRetiro | null
+    documentoRetiro: string | null
+    documentoRetiroTipo: string | null
+    documentoRetiroNombre: string | null
     retiroProgramado: Date | null
     creadoEn: Date
     actualizadoEn: Date
@@ -12409,6 +12430,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: boolean
     motivoRetiro?: boolean
+    documentoRetiro?: boolean
+    documentoRetiroTipo?: boolean
+    documentoRetiroNombre?: boolean
     retiroProgramado?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -12440,6 +12464,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: boolean
     motivoRetiro?: boolean
+    documentoRetiro?: boolean
+    documentoRetiroTipo?: boolean
+    documentoRetiroNombre?: boolean
     retiroProgramado?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -12484,6 +12511,9 @@ export namespace Prisma {
       activo: boolean
       fechaRetiro: Date | null
       motivoRetiro: $Enums.MotivoRetiro | null
+      documentoRetiro: string | null
+      documentoRetiroTipo: string | null
+      documentoRetiroNombre: string | null
       retiroProgramado: Date | null
       creadoEn: Date
       actualizadoEn: Date
@@ -12879,6 +12909,9 @@ export namespace Prisma {
     readonly activo: FieldRef<"Colaborador", 'Boolean'>
     readonly fechaRetiro: FieldRef<"Colaborador", 'DateTime'>
     readonly motivoRetiro: FieldRef<"Colaborador", 'MotivoRetiro'>
+    readonly documentoRetiro: FieldRef<"Colaborador", 'String'>
+    readonly documentoRetiroTipo: FieldRef<"Colaborador", 'String'>
+    readonly documentoRetiroNombre: FieldRef<"Colaborador", 'String'>
     readonly retiroProgramado: FieldRef<"Colaborador", 'DateTime'>
     readonly creadoEn: FieldRef<"Colaborador", 'DateTime'>
     readonly actualizadoEn: FieldRef<"Colaborador", 'DateTime'>
@@ -27141,6 +27174,9 @@ export namespace Prisma {
     activo: 'activo',
     fechaRetiro: 'fechaRetiro',
     motivoRetiro: 'motivoRetiro',
+    documentoRetiro: 'documentoRetiro',
+    documentoRetiroTipo: 'documentoRetiroTipo',
+    documentoRetiroNombre: 'documentoRetiroNombre',
     retiroProgramado: 'retiroProgramado',
     creadoEn: 'creadoEn',
     actualizadoEn: 'actualizadoEn'
@@ -28323,6 +28359,9 @@ export namespace Prisma {
     activo?: BoolFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
+    documentoRetiro?: StringNullableFilter<"Colaborador"> | string | null
+    documentoRetiroTipo?: StringNullableFilter<"Colaborador"> | string | null
+    documentoRetiroNombre?: StringNullableFilter<"Colaborador"> | string | null
     retiroProgramado?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
@@ -28352,6 +28391,9 @@ export namespace Prisma {
     activo?: SortOrder
     fechaRetiro?: SortOrderInput | SortOrder
     motivoRetiro?: SortOrderInput | SortOrder
+    documentoRetiro?: SortOrderInput | SortOrder
+    documentoRetiroTipo?: SortOrderInput | SortOrder
+    documentoRetiroNombre?: SortOrderInput | SortOrder
     retiroProgramado?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -28385,6 +28427,9 @@ export namespace Prisma {
     activo?: BoolFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
+    documentoRetiro?: StringNullableFilter<"Colaborador"> | string | null
+    documentoRetiroTipo?: StringNullableFilter<"Colaborador"> | string | null
+    documentoRetiroNombre?: StringNullableFilter<"Colaborador"> | string | null
     retiroProgramado?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
@@ -28414,6 +28459,9 @@ export namespace Prisma {
     activo?: SortOrder
     fechaRetiro?: SortOrderInput | SortOrder
     motivoRetiro?: SortOrderInput | SortOrder
+    documentoRetiro?: SortOrderInput | SortOrder
+    documentoRetiroTipo?: SortOrderInput | SortOrder
+    documentoRetiroNombre?: SortOrderInput | SortOrder
     retiroProgramado?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -28444,6 +28492,9 @@ export namespace Prisma {
     activo?: BoolWithAggregatesFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableWithAggregatesFilter<"Colaborador"> | $Enums.MotivoRetiro | null
+    documentoRetiro?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
+    documentoRetiroTipo?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
+    documentoRetiroNombre?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     retiroProgramado?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Colaborador"> | Date | string
@@ -30511,6 +30562,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -30540,6 +30594,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -30565,6 +30622,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30594,6 +30654,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30621,6 +30684,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -30641,6 +30707,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30663,6 +30732,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -32996,6 +33068,9 @@ export namespace Prisma {
     activo?: SortOrder
     fechaRetiro?: SortOrder
     motivoRetiro?: SortOrder
+    documentoRetiro?: SortOrder
+    documentoRetiroTipo?: SortOrder
+    documentoRetiroNombre?: SortOrder
     retiroProgramado?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -33021,6 +33096,9 @@ export namespace Prisma {
     activo?: SortOrder
     fechaRetiro?: SortOrder
     motivoRetiro?: SortOrder
+    documentoRetiro?: SortOrder
+    documentoRetiroTipo?: SortOrder
+    documentoRetiroNombre?: SortOrder
     retiroProgramado?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -33042,6 +33120,9 @@ export namespace Prisma {
     activo?: SortOrder
     fechaRetiro?: SortOrder
     motivoRetiro?: SortOrder
+    documentoRetiro?: SortOrder
+    documentoRetiroTipo?: SortOrder
+    documentoRetiroNombre?: SortOrder
     retiroProgramado?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -36122,6 +36203,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -36149,6 +36233,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -36547,6 +36634,9 @@ export namespace Prisma {
     activo?: BoolFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
+    documentoRetiro?: StringNullableFilter<"Colaborador"> | string | null
+    documentoRetiroTipo?: StringNullableFilter<"Colaborador"> | string | null
+    documentoRetiroNombre?: StringNullableFilter<"Colaborador"> | string | null
     retiroProgramado?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
@@ -37318,6 +37408,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -37345,6 +37438,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38447,6 +38543,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38475,6 +38574,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38548,6 +38650,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38576,6 +38681,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38639,6 +38747,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38667,6 +38778,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38707,6 +38821,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38735,6 +38852,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38759,6 +38879,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38787,6 +38910,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38902,6 +39028,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38930,6 +39059,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39009,6 +39141,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -39037,6 +39172,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -39120,6 +39258,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39148,6 +39289,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40445,6 +40589,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -40473,6 +40620,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -40543,6 +40693,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40571,6 +40724,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40726,6 +40882,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -40861,6 +41020,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40888,6 +41050,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40914,6 +41079,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41216,6 +41384,9 @@ export namespace Prisma {
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
+    documentoRetiro?: string | null
+    documentoRetiroTipo?: string | null
+    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -41266,6 +41437,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41293,6 +41467,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41319,6 +41496,9 @@ export namespace Prisma {
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string

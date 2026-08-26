@@ -251,6 +251,9 @@ exports.Prisma.ColaboradorScalarFieldEnum = {
   activo: 'activo',
   fechaRetiro: 'fechaRetiro',
   motivoRetiro: 'motivoRetiro',
+  documentoRetiro: 'documentoRetiro',
+  documentoRetiroTipo: 'documentoRetiroTipo',
+  documentoRetiroNombre: 'documentoRetiroNombre',
   retiroProgramado: 'retiroProgramado',
   creadoEn: 'creadoEn',
   actualizadoEn: 'actualizadoEn'
