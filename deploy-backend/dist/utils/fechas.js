@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.rangoDiaBogota = rangoDiaBogota;
 exports.medianocheBogota = medianocheBogota;
+exports.hoyEnBogota = hoyEnBogota;
 exports.rangoReporte = rangoReporte;
 const date_fns_tz_1 = require("date-fns-tz");
 const TZ = 'America/Bogota';
@@ -19,6 +20,15 @@ function rangoDiaBogota(ahora = new Date()) {
 function medianocheBogota(fecha) {
     const [a, m, d] = fecha.slice(0, 10).split('-').map(Number);
     return new Date(Date.UTC(a, m - 1, d, 5, 0, 0));
+}
+// Hoy en Bogotá como "YYYY-MM-DD". Existe porque `new Date().toISOString()` da
+// la fecha UTC, y entre las 7 p.m. y la medianoche de Bogotá esa fecha ya es la
+// de mañana: un retiro registrado a las 8 p.m. quedaría fechado al día
+// siguiente.
+function hoyEnBogota(ahora = new Date()) {
+    const b = (0, date_fns_tz_1.toZonedTime)(ahora, TZ);
+    const dos = (n) => String(n).padStart(2, '0');
+    return `${b.getFullYear()}-${dos(b.getMonth() + 1)}-${dos(b.getDate())}`;
 }
 // Rango de un reporte a partir de dos fechas "YYYY-MM-DD".
 //
