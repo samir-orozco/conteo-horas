@@ -3,6 +3,8 @@ import {
   JORNADAS, PERIODOS, tiposDelPeriodo, jornadaVigente, periodoVigente,
   horasMes, valorHora, reglasEn,
   SEMANAS_MES, extrasSemanales, costoExtrasMes, TOPE_EXTRAS_SEMANA,
+  SMLMV, AUXILIO_TRANSPORTE, TOPE_AUXILIO, tieneAuxilio, diasEntreFechas,
+  inicioSemestre, prestaciones, indemnizacion, TOPE_SALARIO_ALTO, diasCalendario,
   // @ts-expect-error: el generador del blog es Node puro y este módulo es .mjs
 } from '../../../frontend/blog/reglas-legales.mjs';
 
@@ -182,5 +184,132 @@ describe('costo de las horas extra, que es lo que alimenta la calculadora de jor
 
   it('el tope legal de extras sigue siendo 12 a la semana', () => {
     expect(TOPE_EXTRAS_SEMANA).toBe(12);
+  });
+});
+
+describe('cifras de 2026 fijadas por decreto', () => {
+  it('el salario mínimo y el auxilio de transporte son los del decreto', () => {
+    // Decreto 1469 de 2025 (salario) y 1470 de 2025 (auxilio). Juntos dan
+    // exactamente dos millones, que es como se anunció.
+    expect(SMLMV).toBe(1_750_905);
+    expect(AUXILIO_TRANSPORTE).toBe(249_095);
+    expect(SMLMV + AUXILIO_TRANSPORTE).toBe(2_000_000);
+  });
+
+  it('el auxilio se pierde justo por encima de dos salarios mínimos', () => {
+    expect(TOPE_AUXILIO).toBe(3_501_810);
+    expect(tieneAuxilio(TOPE_AUXILIO)).toBe(true);
+    expect(tieneAuxilio(TOPE_AUXILIO + 1)).toBe(false);
+  });
+});
+
+describe('días de la liquidación, en año comercial', () => {
+  it('cuenta los dos extremos', () => {
+    expect(diasEntreFechas('2026-01-01', '2026-01-01')).toBe(1);
+  });
+
+  it('un mes es 30 días aunque el mes tenga 31', () => {
+    expect(diasEntreFechas('2026-01-01', '2026-01-31')).toBe(30);
+  });
+
+  it('un año exacto son 360, no 365, y de ahí sale un mes redondo de cesantías', () => {
+    expect(diasEntreFechas('2025-01-01', '2025-12-31')).toBe(360);
+    // El calendario sí cuenta 365: la diferencia es la convención, no un error.
+    expect(diasCalendario('2025-01-01', '2025-12-31')).toBe(365);
+  });
+
+  it('del 1 de marzo de 2025 al 25 de agosto de 2026: 1 año, 5 meses y 25 días', () => {
+    expect(diasEntreFechas('2025-03-01', '2026-08-25')).toBe(535);
+    expect(360 + 5 * 30 + 25).toBe(535);
+  });
+
+  it('el semestre de prima arranca el 1 de enero o el 1 de julio', () => {
+    expect(inicioSemestre('2026-06-30')).toBe('2026-01-01');
+    expect(inicioSemestre('2026-07-01')).toBe('2026-07-01');
+    expect(inicioSemestre('2026-12-31')).toBe('2026-07-01');
+  });
+});
+
+describe('prestaciones al terminar el contrato', () => {
+  const caso = { salario: SMLMV, fechaInicio: '2025-03-01', fechaFin: '2026-08-25' };
+
+  it('las cuatro cifras, cotejadas a mano', () => {
+    const p = prestaciones(caso);
+    // Base con auxilio: 1.750.905 + 249.095 = 2.000.000 · 535 días comerciales
+    expect(p.dias).toBe(535);
+    expect(p.auxilio).toBe(249_095);
+    expect(Math.round(p.cesantias)).toBe(2_972_222);       // 2.000.000 × 535/360
+    expect(Math.round(p.intereses)).toBe(530_046);         // cesantías × 535 × 12%/360
+    expect(p.diasPrima).toBe(55);                          // desde el 1 de julio
+    expect(Math.round(p.prima)).toBe(305_556);             // 2.000.000 × 55/360
+    expect(Math.round(p.vacaciones)).toBe(1_301_020);      // SIN auxilio: 1.750.905 × 535/720
+    expect(Math.round(p.total)).toBe(5_108_844);
+  });
+
+  it('las vacaciones no llevan auxilio de transporte y las cesantías sí', () => {
+    const p = prestaciones({ salario: SMLMV, fechaInicio: '2025-01-01', fechaFin: '2025-12-31' });
+    // Un año: cesantías = un mes CON auxilio, vacaciones = medio mes SIN auxilio.
+    expect(Math.round(p.cesantias)).toBe(SMLMV + AUXILIO_TRANSPORTE);
+    expect(Math.round(p.vacaciones)).toBe(Math.round(SMLMV / 2));
+  });
+
+  it('quien gana por encima del tope no recibe auxilio', () => {
+    const p = prestaciones({ salario: 5_000_000, fechaInicio: '2026-01-01', fechaFin: '2026-12-31' });
+    expect(p.auxilio).toBe(0);
+    expect(Math.round(p.cesantias)).toBe(5_000_000);
+  });
+
+  it('si ya consignaron las cesantías, solo se deben las del año en curso', () => {
+    const completo = prestaciones(caso);
+    const desdeEnero = prestaciones({ ...caso, desdeCesantias: '2026-01-01' });
+    expect(desdeEnero.diasCesantias).toBe(235);
+    expect(Math.round(desdeEnero.cesantias)).toBe(1_305_556);
+    // Las vacaciones NO se recortan: se acumulan hasta que se toman o se pagan.
+    expect(desdeEnero.vacaciones).toBe(completo.vacaciones);
+  });
+});
+
+describe('indemnización por despido sin justa causa, artículo 64', () => {
+  it('en término fijo se pagan los salarios que faltaban del plazo', () => {
+    // Sale el 25 de agosto de un contrato que iba hasta el 31 de diciembre.
+    // En año comercial faltan 125 días: los 5 que quedaban de agosto más los
+    // cuatro meses completos de septiembre a diciembre.
+    const i = indemnizacion({ tipo: 'FIJO', salario: 3_000_000,
+      fechaInicio: '2026-01-01', fechaFin: '2026-08-25', fechaFinPactada: '2026-12-31' });
+    expect(i.dias).toBe(125);
+    expect(5 + 4 * 30).toBe(125);
+    expect(Math.round(i.valor)).toBe(Math.round(125 * 3_000_000 / 30));
+  });
+
+  it('el término fijo nunca baja de quince días, aunque falte menos', () => {
+    const i = indemnizacion({ tipo: 'FIJO', salario: 3_000_000,
+      fechaInicio: '2026-01-01', fechaFin: '2026-08-25', fechaFinPactada: '2026-08-31' });
+    expect(i.dias).toBe(15);
+  });
+
+  it('el primer año del indefinido son 30 días completos, sin prorratear', () => {
+    const i = indemnizacion({ tipo: 'INDEFINIDO', salario: 3_000_000,
+      fechaInicio: '2026-01-01', fechaFin: '2026-04-30' });
+    expect(i.dias).toBe(30);
+  });
+
+  it('pasado el año son 30 más 20 por cada año adicional, proporcional', () => {
+    const i = indemnizacion({ tipo: 'INDEFINIDO', salario: SMLMV,
+      fechaInicio: '2025-03-01', fechaFin: '2026-08-25' });
+    // 535 días son 1,48611 años: 30 + 20 × 0,48611
+    expect(i.dias).toBeCloseTo(39.7222, 3);
+    expect(Math.round(i.valor)).toBe(2_318_328);
+    expect(i.regla).toBe('INDEFINIDO');
+  });
+
+  it('con diez salarios mínimos o más son 20 y 15, no 30 y 20', () => {
+    expect(TOPE_SALARIO_ALTO).toBe(17_509_050);
+    const debajo = indemnizacion({ tipo: 'INDEFINIDO', salario: TOPE_SALARIO_ALTO - 1,
+      fechaInicio: '2024-01-01', fechaFin: '2026-08-25' });
+    const encima = indemnizacion({ tipo: 'INDEFINIDO', salario: TOPE_SALARIO_ALTO,
+      fechaInicio: '2024-01-01', fechaFin: '2026-08-25' });
+    expect(debajo.regla).toBe('INDEFINIDO');
+    expect(encima.regla).toBe('INDEFINIDO_ALTO');
+    expect(debajo.dias).toBeGreaterThan(encima.dias);
   });
 });

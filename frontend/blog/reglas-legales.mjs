@@ -111,3 +111,123 @@ export function costoExtrasMes({ salario, jornada, horasSemana, factor }) {
 // techo: pasado ese punto no es un asunto de plata, es una infracción.
 export const TOPE_EXTRAS_SEMANA = 12;
 export const TOPE_EXTRAS_DIA = 2;
+
+// ===== Liquidación al terminar un contrato =====
+//
+// Cifras de 2026, fijadas por decreto. Cuando cambien en enero hay que tocarlas
+// aquí y en la prueba del backend, que las vigila igual que a los recargos.
+export const SMLMV = 1_750_905;            // Decreto 1469 de 2025
+export const AUXILIO_TRANSPORTE = 249_095; // Decreto 1470 de 2025
+// El auxilio solo lo recibe quien devenga hasta dos salarios mínimos.
+export const TOPE_AUXILIO = 2 * SMLMV;
+
+export const tieneAuxilio = salario => salario > 0 && salario <= TOPE_AUXILIO;
+
+// Días entre dos fechas de calendario, ambas incluidas. La liquidación se
+// prorratea sobre año comercial de 360 días, que es la convención del CST.
+export const DIAS_ANIO_COMERCIAL = 360;
+
+// Días de calendario, ambos extremos incluidos. Sirve para mostrar cuánto duró
+// de verdad la relación, no para liquidar.
+export function diasCalendario(desdeISO, hastaISO) {
+  if (!desdeISO || !hastaISO) return 0;
+  const d = new Date(desdeISO.slice(0, 10) + 'T00:00:00');
+  const h = new Date(hastaISO.slice(0, 10) + 'T00:00:00');
+  if (isNaN(d) || isNaN(h)) return 0;
+  return Math.max(0, Math.round((h - d) / 86400000) + 1);
+}
+
+// Días para liquidar, en año comercial: meses de 30 días y años de 360.
+//
+// Es la convención del CST y la que usa la nómina colombiana, y no es un
+// detalle cosmético: con días de calendario, un año exacto de servicio da
+// 365/360 de mes de cesantías en vez de un mes redondo, que es justo lo que
+// dice el artículo 249. El día 31 cuenta como 30, por eso el `min`.
+export function diasEntreFechas(desdeISO, hastaISO) {
+  if (!desdeISO || !hastaISO) return 0;
+  const [a1, m1, d1] = desdeISO.slice(0, 10).split('-').map(Number);
+  const [a2, m2, d2] = hastaISO.slice(0, 10).split('-').map(Number);
+  if (!a1 || !a2) return 0;
+  const dias = (a2 - a1) * 360 + (m2 - m1) * 30 + (Math.min(d2, 30) - Math.min(d1, 30)) + 1;
+  return Math.max(0, dias);
+}
+
+// Inicio del semestre de prima que contiene esa fecha: 1 de enero o 1 de julio.
+export function inicioSemestre(iso) {
+  const [a, m] = iso.slice(0, 10).split('-').map(Number);
+  return m <= 6 ? `${a}-01-01` : `${a}-07-01`;
+}
+
+// Las cuatro prestaciones que se liquidan al salir.
+//
+// La base NO es la misma en todas, y ahí es donde más se equivoca la gente:
+// cesantías y prima se calculan sobre salario MÁS auxilio de transporte, porque
+// el auxilio se considera salario para esos efectos (art. 7 Ley 1ª de 1963).
+// Las vacaciones se calculan sobre el salario solo, sin auxilio.
+// `desdeCesantias` existe porque las cesantías se consignan al fondo cada 14 de
+// febrero. Quien ya las tiene consignadas no las vuelve a cobrar al salir: solo
+// le deben las del año en curso. Sin este parámetro, la calculadora daría una
+// cifra inflada a casi todo el mundo. Las vacaciones sí van sobre toda la
+// antigüedad, porque se acumulan hasta que se toman o se pagan.
+export function prestaciones({ salario, fechaInicio, fechaFin, desdeCesantias }) {
+  const dias = diasEntreFechas(fechaInicio, fechaFin);
+  const arranqueCes = desdeCesantias && desdeCesantias > fechaInicio ? desdeCesantias : fechaInicio;
+  const diasCesantias = diasEntreFechas(arranqueCes, fechaFin);
+  const auxilio = tieneAuxilio(salario) ? AUXILIO_TRANSPORTE : 0;
+  const baseConAuxilio = salario + auxilio;
+
+  const cesantias = baseConAuxilio * diasCesantias / DIAS_ANIO_COMERCIAL;
+  const intereses = cesantias * diasCesantias * 0.12 / DIAS_ANIO_COMERCIAL;
+
+  // La prima se debe por el semestre en curso: desde el 1 de enero o el 1 de
+  // julio, o desde que entró, lo que sea más tarde.
+  const arranqueSemestre = inicioSemestre(fechaFin);
+  const desdePrima = arranqueSemestre > fechaInicio ? arranqueSemestre : fechaInicio;
+  const diasPrima = diasEntreFechas(desdePrima, fechaFin);
+  const prima = baseConAuxilio * diasPrima / DIAS_ANIO_COMERCIAL;
+
+  // 15 días hábiles de vacaciones por año equivalen a medio salario, de ahí el 720.
+  const vacaciones = salario * dias / (DIAS_ANIO_COMERCIAL * 2);
+
+  return { dias, diasCesantias, diasPrima, auxilio, cesantias, intereses, prima, vacaciones,
+    total: cesantias + intereses + prima + vacaciones };
+}
+
+// Indemnización por despido sin justa causa (art. 64 CST).
+//
+// Tres reglas distintas, y la que aplica depende del tipo de contrato y del
+// salario:
+//  - Término fijo: los salarios que faltaban para cumplir el plazo, con un piso
+//    de 15 días.
+//  - Indefinido con menos de 10 salarios mínimos: 30 días por el primer año más
+//    20 por cada año adicional, proporcional por fracción.
+//  - Indefinido con 10 salarios mínimos o más: 20 días por el primer año más 15
+//    por cada año adicional.
+export const TOPE_SALARIO_ALTO = 10 * SMLMV;
+export const PISO_INDEMNIZACION_FIJO = 15;
+
+export function indemnizacion({ tipo, salario, fechaInicio, fechaFin, fechaFinPactada }) {
+  const diaDeSalario = salario / 30;
+
+  if (tipo === 'FIJO') {
+    // Lo que faltaba del plazo, contado desde el día siguiente a la salida.
+    const faltantes = fechaFinPactada && fechaFinPactada > fechaFin
+      ? diasEntreFechas(fechaFin, fechaFinPactada) - 1
+      : 0;
+    const dias = Math.max(faltantes, PISO_INDEMNIZACION_FIJO);
+    return { dias, valor: dias * diaDeSalario, regla: 'FIJO' };
+  }
+
+  const diasTrabajados = diasEntreFechas(fechaInicio, fechaFin);
+  const anios = diasTrabajados / DIAS_ANIO_COMERCIAL;
+  const alto = salario >= TOPE_SALARIO_ALTO;
+  const primerAnio = alto ? 20 : 30;
+  const porAnioAdicional = alto ? 15 : 20;
+
+  // Hasta el primer año no se prorratea: son los 30 (o 20) días completos.
+  const dias = anios <= 1
+    ? primerAnio
+    : primerAnio + porAnioAdicional * (anios - 1);
+
+  return { dias, valor: dias * diaDeSalario, regla: alto ? 'INDEFINIDO_ALTO' : 'INDEFINIDO' };
+}

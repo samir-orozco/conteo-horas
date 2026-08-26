@@ -16,6 +16,7 @@ import { ARTICULOS, SITIO } from '../blog/articulos/index.mjs';
 import { paginaIndice, paginaArticulo, paginaCalculadora, paginaCalculadorasIndice } from '../blog/plantilla.mjs';
 import calculadoraHorasExtra from '../blog/calculadoras/horas-extra.mjs';
 import calculadoraJornada42 from '../blog/calculadoras/jornada-42-horas.mjs';
+import calculadoraLiquidacion from '../blog/calculadoras/liquidacion.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(raiz, 'dist');
@@ -50,7 +51,7 @@ for (const a of conImagenReal) {
 // Calculadoras. Se generan con la fecha de hoy, así que cada publicación las
 // deja con las reglas vigentes ese día sin que nadie tenga que acordarse: al
 // cruzar el 1 de julio de 2027 el dominical pasa solo del 90 al 100%.
-const CALCULADORAS = [calculadoraHorasExtra(hoy), calculadoraJornada42(hoy)];
+const CALCULADORAS = [calculadoraLiquidacion(hoy), calculadoraHorasExtra(hoy), calculadoraJornada42(hoy)];
 await escribir('calculadoras/index.html', paginaCalculadorasIndice(CALCULADORAS));
 for (const c of CALCULADORAS) {
   await escribir(`${c.ruta.replace(/^\/|\/$/g, '')}/index.html`, paginaCalculadora(c));
