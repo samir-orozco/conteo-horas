@@ -14,6 +14,12 @@ export const fechaLarga = (iso: string | Date) =>
     timeZone: TZ, day: 'numeric', month: 'long', year: 'numeric',
   });
 
+// "24 de ago de 2026", para tablas donde el mes largo no cabe.
+export const fechaCorta = (iso: string | Date) =>
+  new Date(iso).toLocaleDateString('es-CO', {
+    timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric',
+  });
+
 // "agosto de 2026", para decir desde cuándo sin la precisión del día.
 export const mesYAnio = (iso: string | Date) =>
   new Date(iso).toLocaleDateString('es-CO', { timeZone: TZ, month: 'long', year: 'numeric' });

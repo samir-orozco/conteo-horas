@@ -1,0 +1,96 @@
+import { descargarExcelHojas } from '../../lib/exportar';
+
+// Las manda el servidor (GET /colaboradores/formato). No se declaran aquí a
+// propósito: son el contrato entre el archivo que se descarga y el validador
+// que lo lee, y una copia local se separaría del original sin avisar.
+export type Columna = {
+  clave: string; titulo: string; obligatoria: boolean; ejemplo: string; ayuda?: string;
+};
+
+export type FilaCruda = Record<string, string>;
+
+// "Cédula" y "CEDULA" son la misma columna. La mitad de los Excel que circulan
+// perdieron las tildes por el camino.
+const normalizar = (v: unknown) =>
+  String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+
+const celda = (v: unknown) => (v === null || v === undefined ? '' : String(v).trim());
+
+// Cuántos títulos conocidos tiene que traer una fila para considerarla el
+// encabezado. Dos evita confundirla con una fila de datos donde alguien escribió
+// "Nombre" como cargo.
+const MINIMO_TITULOS = 2;
+
+// Convierte la hoja (matriz de celdas) en filas con nombre de campo.
+//
+// Casa por el TÍTULO del encabezado y no por la posición: la gente reordena las
+// columnas, y casar por posición sería casar por suerte. Si el encabezado no se
+// reconoce, no se adivina: devolver filas mal mapeadas crearía gente con el
+// cargo en el nombre.
+export function mapearHoja(matriz: unknown[][], columnas: Columna[]): FilaCruda[] {
+  const porTitulo = new Map(columnas.map(c => [normalizar(c.titulo), c.clave]));
+
+  // El encabezado no siempre es la primera fila: alguien le pone un título
+  // arriba a la hoja todo el tiempo.
+  let iEncabezado = -1;
+  for (let i = 0; i < Math.min(matriz.length, 10); i++) {
+    const reconocidas = (matriz[i] ?? []).filter(c => porTitulo.has(normalizar(c))).length;
+    if (reconocidas >= MINIMO_TITULOS) { iEncabezado = i; break; }
+  }
+  if (iEncabezado === -1) return [];
+
+  // Posición de cada columna conocida dentro de la hoja.
+  const posicion = new Map<string, number>();
+  (matriz[iEncabezado] ?? []).forEach((titulo, j) => {
+    const clave = porTitulo.get(normalizar(titulo));
+    if (clave && !posicion.has(clave)) posicion.set(clave, j);
+  });
+
+  const filas: FilaCruda[] = [];
+  for (const cruda of matriz.slice(iEncabezado + 1)) {
+    const fila: FilaCruda = {};
+    for (const c of columnas) {
+      const j = posicion.get(c.clave);
+      fila[c.clave] = j === undefined ? '' : celda((cruda ?? [])[j]);
+    }
+    // Excel arrastra filas vacías al final. No son un error, son el final.
+    if (Object.values(fila).some(v => v !== '')) filas.push(fila);
+  }
+  return filas;
+}
+
+// Lee el archivo que eligió la persona y devuelve la primera hoja como matriz.
+// SheetJS se carga solo aquí, igual que en la exportación: son cientos de
+// kilobytes que no tienen por qué estar en el paquete de arranque.
+export async function leerHoja(archivo: File): Promise<unknown[][]> {
+  const XLSX = await import('xlsx');
+  const datos = new Uint8Array(await archivo.arrayBuffer());
+  const libro = XLSX.read(datos, { type: 'array' });
+  const hoja = libro.Sheets[libro.SheetNames[0]];
+  if (!hoja) return [];
+  return XLSX.utils.sheet_to_json<unknown[]>(hoja, { header: 1, blankrows: false, raw: false });
+}
+
+// Genera el formato para descargar: una hoja con los títulos y un ejemplo, y
+// otra con las instrucciones y los horarios que existen de verdad.
+export function descargarFormato(columnas: Columna[], horarios: string[]) {
+  const instrucciones: string[][] = [
+    ['Cómo llenar este formato'],
+    [''],
+    ['1. Escribe una fila por persona, debajo del encabezado de la hoja "Colaboradores".'],
+    ['2. Borra la fila de ejemplo antes de subirlo.'],
+    ['3. No cambies los títulos de las columnas. Puedes moverlas de lugar si quieres.'],
+    ['4. Al subirlo verás una vista previa con los errores antes de crear a nadie.'],
+    [''],
+    ['Columna', '¿Obligatoria?', 'Cómo se escribe'],
+    ...columnas.map(c => [c.titulo, c.obligatoria ? 'Sí' : 'No', c.ayuda ?? '']),
+    [''],
+    ['Horarios que puedes escribir en la columna "Horario"'],
+    ...(horarios.length ? horarios.map(h => [h]) : [['Todavía no has creado ningún horario.']]),
+  ];
+
+  return descargarExcelHojas('formato-colaboradores', [
+    { nombre: 'Colaboradores', columnas: columnas.map(c => c.titulo), filas: [columnas.map(c => c.ejemplo)] },
+    { nombre: 'Instrucciones', columnas: instrucciones[0], filas: instrucciones.slice(1) },
+  ]);
+}

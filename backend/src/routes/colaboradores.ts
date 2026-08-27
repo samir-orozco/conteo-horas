@@ -6,6 +6,8 @@ import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
 import { fotoPerfilValida, fotoParaEnrolar } from '../utils/fotoPerfil';
+import { resumenDeContrato } from '../utils/estadoContratoResumen';
+import { validarImportacion, COLUMNAS_FORMATO } from '../utils/importarColaboradores';
 import { medianocheBogota, hoyEnBogota } from '../utils/fechas';
 import { documentoValido, tipoDeDocumento, nombreDeDocumento } from '../utils/documentos';
 import { retiroEsCoherente, fechaMinimaDeRetiro } from '../utils/vinculacion';
@@ -74,13 +76,32 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     // mostrarlas sin pedir cada colaborador por separado.
     const filas = await prisma.colaborador.findMany({
       where: { empresaId: request.empresaId, activo: true },
-      include: { sedes: { select: { sedeId: true } } },
+      include: {
+        sedes: { select: { sedeId: true } },
+        // El contrato vigente, para poder decir en la lista quién tiene el
+        // preaviso encima sin abrir ficha por ficha. Solo el más reciente:
+        // vigente debería haber uno, y si hubiera dos manda el nuevo.
+        contratos: {
+          where: { estado: 'VIGENTE' },
+          select: {
+            tipo: true, fechaInicio: true, fechaFin: true, fechaInicioPractica: true,
+            prorrogas: { select: { desde: true, hasta: true } },
+          },
+          orderBy: { fechaInicio: 'desc' },
+          take: 1,
+        },
+      },
       orderBy: { nombre: 'asc' },
     });
+    const hoy = new Date();
     // La foto se descarta aquí: la lista no la pinta, y mandar una por persona
     // en cada carga son cientos de kilobytes que nadie mira. Se pide con la
     // ficha, que es donde se ve.
-    return filas.map(({ sedes, foto: _foto, ...c }) => ({ ...c, sedeIds: sedes.map(s => s.sedeId) }));
+    return filas.map(({ sedes, contratos, foto: _foto, ...c }) => ({
+      ...c,
+      sedeIds: sedes.map(s => s.sedeId),
+      estadoContrato: resumenDeContrato(contratos[0] ?? null, hoy),
+    }));
   });
 
   app.get('/:id', auth, async (request, reply) => {
@@ -131,6 +152,97 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     }
     return data;
   }
+
+  // Las columnas del formato de carga masiva, y los horarios que se pueden
+  // escribir en él.
+  //
+  // Las manda el servidor y no las define la pantalla a propósito: son el
+  // contrato entre el archivo que alguien descarga y el validador que lo lee.
+  // Si viviera una copia en el frontend, cambiar una columna aquí dejaría
+  // generando formatos que ya no validan.
+  app.get('/formato', auth, async (request) => {
+    const horarios = await prisma.horario.findMany({
+      where: { empresaId: request.empresaId! },
+      select: { nombre: true },
+      orderBy: { nombre: 'asc' },
+    });
+    return { columnas: COLUMNAS_FORMATO, horarios: horarios.map(h => h.nombre) };
+  });
+
+  // Carga masiva desde el formato de Excel.
+  //
+  // Se valida TODO antes de crear nada. Con 40 filas y un error en la 37,
+  // crear las 36 primeras deja a la empresa sin saber qué quedó y qué no, y sin
+  // poder volver a subir el archivo completo.
+  //
+  // `soloValidar` es lo que usa la vista previa: mismo camino, misma
+  // validación, sin escribir. Así lo que se ve en pantalla es exactamente lo
+  // que el servidor va a hacer, y no una segunda opinión del navegador.
+  app.post('/masivo', auth, async (request, reply) => {
+    const { filas, soloValidar } = request.body as { filas: unknown; soloValidar?: boolean };
+    if (!Array.isArray(filas)) return reply.status(400).send({ error: 'Formato inválido' });
+    if (filas.length > 500) {
+      return reply.status(400).send({ error: 'El archivo trae más de 500 filas. Súbelo por partes.' });
+    }
+
+    const [horarios, existentes, cap] = await Promise.all([
+      prisma.horario.findMany({ where: { empresaId: request.empresaId! }, select: { id: true, nombre: true } }),
+      prisma.colaborador.findMany({ where: { empresaId: request.empresaId! }, select: { cedula: true, activo: true } }),
+      capacidadesEmpresa(request.empresaId!),
+    ]);
+    const activos = existentes.filter(c => c.activo).length;
+
+    const resultado = validarImportacion(filas as Record<string, unknown>[], {
+      horariosPorNombre: new Map(horarios.map(h => [h.nombre.toLowerCase(), h.id])),
+      cedulasActivas: new Set(existentes.filter(c => c.activo).map(c => c.cedula)),
+      cedulasRetiradas: new Set(existentes.filter(c => !c.activo).map(c => c.cedula)),
+      cupoDisponible: cap.limite === Infinity ? Number.MAX_SAFE_INTEGER : Math.max(0, cap.limite - activos),
+    });
+
+    const respuesta = {
+      ...resultado,
+      // Number.MAX_SAFE_INTEGER no se le muestra a nadie: si el plan es
+      // ilimitado, la pantalla no habla de cupo.
+      cupoDisponible: cap.limite === Infinity ? null : resultado.cupoDisponible,
+      nombrePlan: cap.nombrePlan,
+      creados: 0,
+    };
+
+    const hayProblemas = resultado.errores.length > 0 || resultado.excedeCupo || resultado.vacio;
+    if (soloValidar || hayProblemas) return respuesta;
+
+    const creados = await prisma.$transaction(
+      resultado.validas.map(c => prisma.colaborador.create({
+        data: {
+          empresaId: request.empresaId!,
+          nombre: c.nombre, apellido: c.apellido, cedula: c.cedula,
+          cargo: c.cargo, salarioMensual: c.salarioMensual,
+          email: c.email, telefono: c.telefono,
+          fechaNacimiento: c.fechaNacimiento ? new Date(`${c.fechaNacimiento}T12:00:00Z`) : null,
+          horarioId: c.horarioId,
+        },
+        select: { id: true },
+      })),
+    );
+
+    // Fuera de la transacción, igual que en el alta individual: si materializar
+    // los días falla, el colaborador ya existe y la pasada diaria lo recoge.
+    // Perder la ficha por eso sería peor.
+    for (const { id } of creados) {
+      await registrarEvento({
+        colaboradorId: id, tipo: 'INGRESO',
+        fecha: medianocheBogota(hoyEnBogota()), usuarioId: request.usuarioId ?? null,
+        nota: 'Creado en una carga masiva',
+      });
+      try {
+        await mantenerVentanaDeColaborador(id);
+      } catch (err) {
+        request.log.error(err, 'No se pudo materializar la ventana de un colaborador importado');
+      }
+    }
+
+    return { ...respuesta, creados: creados.length };
+  });
 
   app.post('/', auth, async (request, reply) => {
     const { sedeIds, ...cuerpo } = request.body as any;

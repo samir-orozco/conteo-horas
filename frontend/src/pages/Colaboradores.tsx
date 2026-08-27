@@ -1,15 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, X, Eye, ArrowUpRight, MessageCircle, LogOut, Undo2 } from 'lucide-react';
+import { Plus, Edit2, X, Eye, ArrowUpRight, MessageCircle, LogOut, Undo2, FileSpreadsheet } from 'lucide-react';
 import api from '../lib/api';
 import { useMiPlan } from '../lib/plan';
 import { useAuth } from '../context/AuthContext';
 import SelectorSedes from '../components/SelectorSedes';
 import ModalRetiro from '../features/colaboradores/ModalRetiro';
 import ModalReingreso from '../features/colaboradores/ModalReingreso';
+import ModalImportar from '../features/colaboradores/ModalImportar';
+import Toast from '../components/Toast';
+import { estadoContrato, FILTROS_CONTRATO, cumpleFiltroContrato } from '../features/colaboradores/estadoContrato';
+import { fechaCorta } from '../lib/fechas';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 
-type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[] };
+type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; estadoContrato?: string | null };
+// Los colores del chip de contrato. Se quedan en la pantalla y no en la regla:
+// qué es urgente lo decide estadoContrato.ts, cómo se ve lo decide esto.
+const TONO_CHIP: Record<string, string> = {
+  rojo: 'bg-red-100 text-red-700',
+  ambar: 'bg-amber-100 text-amber-800',
+  verde: 'bg-green-100 text-green-800',
+  gris: 'bg-gray-100 text-gray-600',
+};
+
 export type Franja = { dias: string[]; horaEntrada: string; horaSalida: string };
 type Horario = { id: string; nombre: string; franjas: Franja[] };
 type FormData = Omit<Colaborador, 'id' | 'activo'>;
@@ -143,11 +156,15 @@ export default function Colaboradores() {
   // retirado la pestaña desaparece, y si el estado seguía en 'retirados' la
   // pantalla quedaba en blanco sin forma de volver.
   const pestanaActiva = retirados.length === 0 ? 'activos' : pestana;
+  const [filtroContrato, setFiltroContrato] = useState('todos');
+  const [modalImportar, setModalImportar] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   // Una sola lista con su estado, que es como se responde "¿esta persona
   // todavía trabaja aquí?" sin tener que cambiar de pestaña para averiguarlo.
   type Fila = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
-    salarioMensual: number; activo: boolean; fechaRetiro?: string | null; motivoRetiro?: string | null };
+    salarioMensual: number; activo: boolean; fechaRetiro?: string | null; motivoRetiro?: string | null;
+    estadoContrato?: string | null };
   const filas: Fila[] = pestanaActiva === 'retirados'
     ? retirados.map(r => ({ ...r, activo: false }))
     : pestanaActiva === 'activos'
@@ -155,6 +172,10 @@ export default function Colaboradores() {
       : [...lista.map(c => ({ ...c, activo: true })), ...retirados.map(r => ({ ...r, activo: false }))]
           .filter((f, i, todas) => todas.findIndex(o => o.id === f.id) === i)
           .sort((a, b) => Number(b.activo) - Number(a.activo) || a.nombre.localeCompare(b.nombre));
+
+  // El filtro de contrato solo aplica a quien sigue trabajando: el contrato de
+  // un retirado ya no hay que renovarlo.
+  const visibles = filas.filter(f => !f.activo || cumpleFiltroContrato(filtroContrato, f.estadoContrato));
   const esEmpresarial = plan?.plan === 'EMPRESARIAL';
   const pct = limite ? Math.min(100, Math.round((usados / limite) * 100)) : 0;
 
@@ -175,9 +196,18 @@ export default function Colaboradores() {
             </button>
           )
         ) : (
-          <button onClick={() => abrir()} className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl text-sm font-semibold">
-            <Plus size={16} />Agregar
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Subir varios va al lado de agregar uno: es la misma tarea con
+                otro volumen, y quien llega con 40 personas en un Excel no
+                debería tener que buscarla en otro menú. */}
+            <button onClick={() => setModalImportar(true)}
+              className="flex items-center gap-2 border-2 border-gray-200 hover:border-primary text-ink px-4 py-2 rounded-xl text-sm font-semibold">
+              <FileSpreadsheet size={16} /><span className="hidden sm:inline">Subir varios</span>
+            </button>
+            <button onClick={() => abrir()} className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl text-sm font-semibold">
+              <Plus size={16} />Agregar
+            </button>
+          </div>
         )}
       </div>
 
@@ -200,10 +230,11 @@ export default function Colaboradores() {
         </div>
       )}
 
+      <div className="flex items-end justify-between gap-3 flex-wrap mb-4">
       {/* La pestaña de retirados solo aparece cuando hay alguien: si no, es una
           pestaña vacía que solo estorba. */}
-      {retirados.length > 0 && (
-        <div className="flex items-center gap-1 mb-4 bg-gray-100 rounded-xl p-1 w-fit text-sm font-semibold">
+      {retirados.length > 0 ? (
+        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-fit text-sm font-semibold">
           {([
             ['activos', 'Activos', lista.length],
             ['retirados', 'Retirados', retirados.length],
@@ -215,7 +246,26 @@ export default function Colaboradores() {
             </button>
           ))}
         </div>
-      )}
+      ) : <span />}
+
+        {/* El filtro por contrato. No es una pestaña más porque se cruza con
+            ellas: se puede querer ver los activos por vencer, o todos los que
+            no tienen contrato. */}
+        {lista.length > 0 && (
+          <label className="flex items-center gap-2 text-sm">
+            <span className="text-muted">Contrato</span>
+            <select
+              value={filtroContrato}
+              onChange={e => setFiltroContrato(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {FILTROS_CONTRATO.map(f => (
+                <option key={f.valor} value={f.valor}>{f.etiqueta}</option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
 
       <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
         {pestanaActiva !== 'activos' && (
@@ -229,6 +279,7 @@ export default function Colaboradores() {
             <tr>
               <th className="px-4 py-3 text-left">Nombre</th>
               <th className="px-4 py-3 text-left">Estado</th>
+              <th className="px-4 py-3 text-left hidden sm:table-cell">Contrato</th>
               <th className="px-4 py-3 text-left hidden md:table-cell">Cédula</th>
               <th className="px-4 py-3 text-left hidden lg:table-cell">Cargo</th>
               <th className="px-4 py-3 text-right hidden sm:table-cell">Salario</th>
@@ -236,7 +287,7 @@ export default function Colaboradores() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filas.map(col => (
+            {visibles.map(col => (
               <tr key={col.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/app/colaboradores/${col.id}`)}>
                 <td className="px-4 py-3 font-medium text-ink">{col.nombre} {col.apellido}</td>
                 <td className="px-4 py-3">
@@ -249,11 +300,17 @@ export default function Colaboradores() {
                           "retirado" no dice ni cuándo ni por qué, que es
                           justamente lo que se busca al mirar esta lista. */}
                       <span className="block text-[11px] text-muted mt-1">
-                        {col.fechaRetiro ? new Date(col.fechaRetiro).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : 'sin fecha'}
+                        {col.fechaRetiro ? fechaCorta(col.fechaRetiro) : 'sin fecha'}
                         {col.motivoRetiro ? ` · ${ETIQUETA_MOTIVO[col.motivoRetiro] ?? col.motivoRetiro}` : ''}
                       </span>
                     </>
                   )}
+                </td>
+                <td className="px-4 py-3 hidden sm:table-cell">
+                  {col.activo ? (() => {
+                    const e = estadoContrato(col.estadoContrato);
+                    return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TONO_CHIP[e.tono]}`}>{e.etiqueta.toUpperCase()}</span>;
+                  })() : <span className="text-muted">—</span>}
                 </td>
                 <td className="px-4 py-3 text-muted hidden md:table-cell">{col.cedula}</td>
                 <td className="px-4 py-3 text-muted hidden lg:table-cell">{col.cargo || '-'}</td>
@@ -302,6 +359,20 @@ export default function Colaboradores() {
           // pintaba en cuanto respondía la primera: la persona ya aparecía como
           // retirada y todavía seguía en la lista de activos, o sea dos veces.
           onListo={async () => { setRetirando(null); await recargarTodo(); recargarPlan(); }}
+        />
+      )}
+
+      <Toast mensaje={toast} onClose={() => setToast(null)} />
+
+      {modalImportar && (
+        <ModalImportar
+          onCerrar={() => setModalImportar(false)}
+          onListo={async (creados) => {
+            setModalImportar(false);
+            await recargarTodo();
+            recargarPlan();
+            setToast(`Se ${creados === 1 ? 'creó 1 colaborador' : `crearon ${creados} colaboradores`}.`);
+          }}
         />
       )}
 
