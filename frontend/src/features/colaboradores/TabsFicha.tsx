@@ -29,7 +29,7 @@ export default function TabsFicha({ activo, onCambiar, contadores }: {
 
   return (
     <div role="tablist" aria-label="Secciones del colaborador"
-      className="flex items-center gap-1 overflow-x-auto border-b border-gray-200 -mb-px">
+      className="hp-tabs-scroll flex items-center gap-1 overflow-x-auto border-b border-gray-200">
       {TABS.map(t => {
         const esActivo = t.clave === activo;
         const n = contadores[t.clave];
@@ -41,7 +41,7 @@ export default function TabsFicha({ activo, onCambiar, contadores }: {
             type="button"
             aria-selected={esActivo}
             onClick={() => onCambiar(t.clave)}
-            className={`relative shrink-0 px-3 sm:px-4 py-2.5 text-[13px] sm:text-sm font-semibold border-b-2 transition-colors ${
+            className={`relative shrink-0 px-3 sm:px-4 py-2.5 text-[13px] sm:text-sm font-semibold border-b-2 rounded-t-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${
               esActivo
                 ? 'border-ink text-ink'
                 : 'border-transparent text-muted hover:text-ink hover:border-gray-300'

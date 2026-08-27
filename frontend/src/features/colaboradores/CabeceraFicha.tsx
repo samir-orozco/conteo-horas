@@ -62,7 +62,7 @@ export default function CabeceraFicha({ persona, onVolver, onEditar }: {
         </button>
       </div>
 
-      <div className="px-5 pb-5 flex flex-col items-center text-center sm:flex-row sm:items-end sm:text-left sm:gap-5">
+      <div className="px-5 pb-6 flex flex-col items-center text-center sm:flex-row sm:items-end sm:text-left sm:gap-5">
         {/* El avatar monta sobre la portada. El margen negativo es la mitad de
             su alto, para que quede partido justo por el borde. */}
         <div className="relative -mt-12 sm:-mt-10 shrink-0">
@@ -85,7 +85,7 @@ export default function CabeceraFicha({ persona, onVolver, onEditar }: {
           />
         </div>
 
-        <div className="min-w-0 mt-3 sm:mt-0 sm:pb-1 flex-1">
+        <div className="min-w-0 mt-3 sm:mt-0 sm:pb-2 flex-1">
           <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
             <h1 className="text-2xl font-bold text-ink truncate">{nombreCompleto}</h1>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
