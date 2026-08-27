@@ -25,7 +25,7 @@ import { fechaLarga } from '../lib/fechas';
 import { diasDeVinculacion, enPalabras } from '../features/colaboradores/tiempoVinculado';
 import HistorialVinculacion, { type Evento as EventoVinculacion } from '../features/colaboradores/HistorialVinculacion';
 import TabsFicha from '../features/colaboradores/TabsFicha';
-import { tabDesdeUrl, urlConTab, type ClaveTab } from '../features/colaboradores/tabs';
+import { useTabFicha } from '../features/colaboradores/useTabFicha';
 import { useMiPlan } from '../lib/plan';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
@@ -181,11 +181,7 @@ export default function ColaboradorDetalle() {
   // El tab abierto vive en la direccion, no solo en el estado: asi se puede
   // compartir un enlace directo a los contratos de alguien, y el boton de
   // atras del navegador devuelve al tab anterior en vez de salir de la ficha.
-  const [tab, setTab] = useState<ClaveTab>(() => tabDesdeUrl(window.location.search));
-  const cambiarTab = (t: ClaveTab) => {
-    setTab(t);
-    window.history.replaceState({}, '', window.location.pathname + urlConTab(window.location.search, t));
-  };
+  const [tab, cambiarTab] = useTabFicha();
 
   const guardarEdicion = async (e: React.FormEvent) => {
     e.preventDefault();

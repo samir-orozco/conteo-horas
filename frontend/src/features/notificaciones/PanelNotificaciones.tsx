@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckCheck, AlarmClock, Clock, CalendarOff, Bell, X } from 'lucide-react';
+import { rutaDeNotificacion } from './ruta';
 import type { Notificacion } from './types';
 import type { NotifState } from './useNotificaciones';
 
@@ -23,8 +24,10 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
 
   const abrir = (n: Notificacion) => {
     if (!n.leida) marcarLeida(n.id);
-    if (n.entidad === 'colaborador' && n.entidadId) navigate(`/app/colaboradores/${n.entidadId}`);
-    else if (n.entidad === 'registro') navigate('/app/registros');
+    // A dónde lleva cada aviso es una regla, y vive probada en ruta.ts. Los de
+    // contrato abren la ficha directo en el tab de contratos.
+    const destino = rutaDeNotificacion(n);
+    if (destino) navigate(destino);
     onClose();
   };
 

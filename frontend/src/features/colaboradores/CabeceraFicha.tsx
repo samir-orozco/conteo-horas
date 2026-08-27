@@ -94,8 +94,12 @@ export default function CabeceraFicha({
 
       <div className="px-5 pb-6 flex flex-col items-center text-center sm:flex-row sm:items-end sm:text-left sm:gap-5">
         {/* El avatar monta sobre la portada. El margen negativo es la mitad de
-            su alto, para que quede partido justo por el borde. */}
-        <div className="relative -mt-12 sm:-mt-10 shrink-0">
+            su alto, para que quede partido justo por el borde.
+            Va anclado arriba (self-start) y no al fondo de la fila: si se
+            alinea al fondo, cuánto monta sobre la portada pasa a depender de
+            lo alto que sea el bloque de texto, y darle aire al nombre lo
+            despegaba de la portada. */}
+        <div className="relative -mt-12 sm:-mt-10 sm:self-start shrink-0">
           {/* El círculo es el control de la foto: es donde uno va a buscarla,
               y no hay que cazar un lápiz escondido en otra parte. */}
           <button
@@ -156,7 +160,10 @@ export default function CabeceraFicha({
           )}
         </div>
 
-        <div className="min-w-0 mt-3 sm:mt-0 sm:pb-2 flex-1">
+        {/* El nombre lleva arriba el mismo aire que la fila de datos deja
+            abajo. Sin el padding, el bloque se pega al borde de la portada
+            porque items-end lo estira hasta llenar la línea. */}
+        <div className="min-w-0 mt-3 sm:mt-0 sm:pt-6 flex-1">
           <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
             <h1 className="text-2xl font-bold text-ink truncate">{nombreCompleto}</h1>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
