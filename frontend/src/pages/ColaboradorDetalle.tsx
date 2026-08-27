@@ -372,26 +372,33 @@ export default function ColaboradorDetalle() {
       {tab === 'resumen' && (<>
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Datos */}
-        <div className="bg-white rounded-card border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold text-ink">Datos</p>
-            <button
-              onClick={() => { setFormEdit({ nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: col.fechaNacimiento ? new Date(col.fechaNacimiento).toISOString().slice(0, 10) : '', salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [] }); setModalEditar(true); }}
-              className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary/40 hover:bg-primary px-2.5 py-1.5 rounded-lg">
-              <Edit2 size={13} /> Editar
-            </button>
-          </div>
+        {/* Editar vive solo en la cabecera. Dos botones que abren el mismo
+            formulario obligan a decidir cuál usar, y no hay diferencia. */}
+        <div className="bg-white rounded-card border border-gray-200 p-5 flex flex-col">
+          <p className="font-semibold text-ink mb-3">Datos</p>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between gap-2"><dt className="text-muted">Cédula</dt><dd className="text-ink font-medium">{col.cedula}</dd></div>
             <div className="flex justify-between gap-2"><dt className="text-muted">Email</dt><dd className="text-ink font-medium truncate">{col.email || '—'}</dd></div>
             <div className="flex justify-between gap-2"><dt className="text-muted">Teléfono</dt><dd className="text-ink font-medium">{col.telefono || '—'}</dd></div>
-            <div className="flex justify-between gap-2"><dt className="text-muted">Horario</dt><dd className="text-ink font-medium text-right">{col.horario ? `${col.horario.nombre} · ${resumenFranjas(col.horario.franjas)}` : 'Sin asignar'}</dd></div>
+            {/* El nombre arriba y las franjas debajo, en gris más pequeño. En
+                una sola línea el valor se partía por la mitad y quedaba dentado. */}
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted shrink-0">Horario</dt>
+              <dd className="text-right min-w-0">
+                {col.horario ? (
+                  <>
+                    <span className="block text-ink font-medium truncate">{col.horario.nombre}</span>
+                    <span className="block text-xs text-muted">{resumenFranjas(col.horario.franjas)}</span>
+                  </>
+                ) : <span className="text-ink font-medium">Sin asignar</span>}
+              </dd>
+            </div>
             <div className="flex justify-between gap-2 border-t border-gray-100 pt-2"><dt className="text-muted">Salario</dt><dd className="text-ink font-bold">{cop(col.salarioMensual)}</dd></div>
           </dl>
         </div>
 
         {/* Resumen del mes: adicional al salario (recargos + extras) */}
-        <div className="bg-white rounded-card border border-gray-200 p-5">
+        <div className="bg-white rounded-card border border-gray-200 p-5 flex flex-col">
           <p className="font-semibold text-ink mb-1 flex items-center gap-2"><BadgeDollarSign size={16} /> Adicional al salario · este mes</p>
           <p className="text-xs text-muted mb-3">Recargos y horas extra que se pagan además del salario base</p>
           {liq && liq.liquidacion.length > 0 ? (
@@ -410,19 +417,26 @@ export default function ColaboradorDetalle() {
               </div>
             </>
           ) : (
-            <p className="text-sm text-muted">Sin horas registradas este mes.</p>
+            <div className="flex-1 flex items-center">
+              <p className="text-sm text-muted">Sin horas registradas este mes.</p>
+            </div>
           )}
         </div>
 
         {/* Llegadas tarde del mes */}
-        <div className="bg-white rounded-card border border-gray-200 p-5">
+        <div className="bg-white rounded-card border border-gray-200 p-5 flex flex-col">
           <p className="font-semibold text-ink mb-3 flex items-center gap-2">
             <AlarmClock size={16} className={tardanzas && tardanzas.diasTarde > 0 ? 'text-orange-500' : 'text-green-600'} /> Llegadas tarde
           </p>
           {!tardanzas || tardanzas.sinHorario ? (
-            <p className="text-sm text-muted">Asigna un horario para controlar las llegadas tarde.</p>
+            <div className="flex-1 flex items-center">
+              <p className="text-sm text-muted">Asigna un horario para controlar las llegadas tarde.</p>
+            </div>
           ) : tardanzas.diasTarde === 0 ? (
-            <p className="text-sm text-green-700">Sin llegadas tarde este mes ✓</p>
+            <div className="flex-1 flex items-center gap-2 text-green-700">
+              <Check size={16} className="shrink-0" />
+              <p className="text-sm">Sin llegadas tarde este mes</p>
+            </div>
           ) : (
             <>
               <p className="text-sm text-orange-700 font-semibold mb-2">
@@ -447,18 +461,25 @@ export default function ColaboradorDetalle() {
           <p className="font-semibold text-ink mb-1 flex items-center gap-2"><ScanFace size={16} /> Reconocimiento facial</p>
           {col.rostroEnroladoEn ? (
             <>
-              <p className="text-xs text-green-700 mb-4 flex-1 flex items-center gap-1.5">
-                <Check size={14} /> Registrado el {format(new Date(col.rostroEnroladoEn), "d 'de' MMMM 'de' yyyy", { locale: es })}. Ya puede marcar con su rostro en el kiosco.
-              </p>
-              <div className="flex gap-2">
-                <button onClick={() => setModalCamara(true)}
-                  className="flex-1 border-2 border-gray-200 hover:border-primary text-ink font-semibold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2">
-                  <ScanFace size={16} /> Actualizar
-                </button>
-                <button onClick={() => setConfirmarEliminarRostro(true)}
-                  className="px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50" title="Eliminar registro">
-                  <Trash2 size={16} />
-                </button>
+              {/* La tarjeta ocupa todo el ancho, así que el botón no se estira:
+                  un "Actualizar" de 900px no se lee como un botón. El estado a
+                  la izquierda y las acciones a la derecha, como cualquier fila. */}
+              <div className="flex flex-col items-start gap-3 mt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
+                <p className="text-xs text-green-700 flex items-center gap-1.5 min-w-0">
+                  <Check size={14} className="shrink-0" />
+                  <span>Registrado el {format(new Date(col.rostroEnroladoEn), "d 'de' MMMM 'de' yyyy", { locale: es })}. Ya puede marcar con su rostro en el kiosco.</span>
+                </p>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => setModalCamara(true)}
+                    className="border-2 border-gray-200 hover:border-primary text-ink font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2">
+                    <ScanFace size={16} /> Actualizar
+                  </button>
+                  <button onClick={() => setConfirmarEliminarRostro(true)}
+                    className="px-3 py-2 rounded-xl text-red-500 border-2 border-transparent hover:border-red-100 hover:bg-red-50"
+                    title="Eliminar registro" aria-label="Eliminar registro de rostro">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             </>
           ) : (
@@ -473,7 +494,7 @@ export default function ColaboradorDetalle() {
                 <span>Usa gafas habitualmente (se hará una toma adicional sin gafas para reconocerlo en ambos casos).</span>
               </label>
               <button onClick={() => setModalCamara(true)} disabled={!consentimientoRostro}
-                className="w-full bg-primary hover:bg-primary-dark text-ink font-semibold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                className="w-full sm:w-auto sm:px-6 bg-primary hover:bg-primary-dark text-ink font-semibold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                 <ScanFace size={16} /> Registrar rostro
               </button>
             </>
