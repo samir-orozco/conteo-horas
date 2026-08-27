@@ -19,3 +19,10 @@ if (!window.matchMedia) {
     dispatchEvent: () => false,
   })) as unknown as typeof window.matchMedia;
 }
+
+// jsdom tampoco implementa scrollIntoView. Sin esto, cualquier componente que
+// traiga algo a la vista al montar revienta en las pruebas por una razón que
+// no tiene nada que ver con lo que se está probando.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}

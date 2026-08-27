@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import {
-  ArrowLeft, Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
+  Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
   ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Lock, Undo2,
 } from 'lucide-react';
 import api from '../lib/api';
@@ -19,7 +19,10 @@ import VisorDocumento from '../components/VisorDocumento';
 import { TIPO_PERMISO_LABEL } from '../constants/permisos';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 import ModalReingreso from '../features/colaboradores/ModalReingreso';
-import HistorialVinculacion from '../features/colaboradores/HistorialVinculacion';
+import CabeceraFicha from '../features/colaboradores/CabeceraFicha';
+import { fechaLarga } from '../lib/fechas';
+import { diasDeVinculacion, enPalabras } from '../features/colaboradores/tiempoVinculado';
+import HistorialVinculacion, { type Evento as EventoVinculacion } from '../features/colaboradores/HistorialVinculacion';
 import TabsFicha from '../features/colaboradores/TabsFicha';
 import { tabDesdeUrl, urlConTab, type ClaveTab } from '../features/colaboradores/tabs';
 import { useMiPlan } from '../lib/plan';
@@ -62,6 +65,14 @@ export default function ColaboradorDetalle() {
 
   const { plan, recargar: recargarPlan } = useMiPlan();
   const [col, setCol] = useState<Colaborador | null>(null);
+  // La historia vive aquí y no dentro del componente porque la tarjeta de
+  // retiro necesita los mismos eventos para calcular cuánto estuvo. Pedirlos
+  // dos veces sería pedir dos veces lo mismo.
+  // Guarda de quién es, no solo qué es. Sin el id, una respuesta lenta de la
+  // ficha anterior se pinta sobre la que se está viendo, y la tarjeta de
+  // retiro le atribuye a esta persona la antigüedad de la otra.
+  const [historia, setHistoria] = useState<{ id: string; eventos: EventoVinculacion[] | null; error: boolean }>(
+    { id: '', eventos: null, error: false });
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [permisos, setPermisos] = useState<Permiso[]>([]);
   const [liq, setLiq] = useState<Liquidacion | null>(null);
@@ -95,30 +106,32 @@ export default function ColaboradorDetalle() {
   const hace30 = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000);
   const iso = (d: Date) => d.toISOString().slice(0, 10);
 
+  const cargarHistoria = useCallback(() => {
+    if (!id) return;
+    api.get(`/colaboradores/${id}/vinculacion`)
+      .then(r => setHistoria({ id, eventos: r.data, error: false }))
+      .catch(() => setHistoria({ id, eventos: null, error: true }));
+  }, [id]);
+
   const cargar = useCallback(() => {
     if (!id) return;
     api.get(`/colaboradores/${id}`).then(r => setCol(r.data));
+    cargarHistoria();
     api.get('/registros', { params: { colaboradorId: id, desde: iso(hace30), hasta: iso(hoy) } }).then(r => setRegistros(r.data));
     api.get('/permisos', { params: { colaboradorId: id } }).then(r => setPermisos(r.data));
     api.get('/reportes/liquidacion', { params: { colaboradorId: id, desde: iso(inicioMes), hasta: iso(hoy) } }).then(r => setLiq(r.data));
     api.get('/reportes/tardanzas', { params: { colaboradorId: id, desde: iso(inicioMes), hasta: iso(hoy) } }).then(r => setTardanzas(r.data));
     api.get('/horarios').then(r => setHorarios(r.data));
     api.get('/sedes').then(r => setSedes(r.data)).catch(() => setSedes([]));
-  }, [id]);
+  }, [id, cargarHistoria]);
   useEffect(() => { cargar(); }, [cargar]);
 
-  // Cuánto duró la relación laboral, en palabras. Se cuenta desde que se creó
-  // la ficha, que es lo más cercano al ingreso que hay guardado hoy.
-  const tiempoQueEstuvo = (() => {
-    if (!col?.fechaRetiro || !col?.creadoEn) return '—';
-    const dias = Math.max(0, Math.round(
-      (new Date(col.fechaRetiro).getTime() - new Date(col.creadoEn).getTime()) / 86400000) + 1);
-    if (dias < 31) return `${dias} día${dias === 1 ? '' : 's'}`;
-    const meses = Math.round(dias / 30.44);
-    if (meses < 12) return `${meses} mes${meses === 1 ? '' : 'es'}`;
-    const anios = Math.floor(meses / 12), resto = meses % 12;
-    return resto === 0 ? `${anios} año${anios === 1 ? '' : 's'}` : `${anios} a ${resto} m`;
-  })();
+  const suHistoria = historia.id === id ? historia : { eventos: null, error: false };
+
+  // Se suman las etapas reales de vinculación, no el lapso de punta a punta.
+  // Quien entró en 2022, se fue, y volvió en 2026 trabajó dos meses, no cuatro
+  // años, y la historia que está en el tab de al lado lo deja en evidencia.
+  const duracion = suHistoria.eventos ? enPalabras(diasDeVinculacion(suHistoria.eventos, hoy)) : '—';
 
   // Sirve para cualquier documento pedido por su ruta: el soporte de un evento
   // de vinculación, y lo que venga después.
@@ -288,43 +301,24 @@ export default function ColaboradorDetalle() {
 
   return (
     <div className="p-6 md:p-8 space-y-6">
-      {/* Encabezado */}
-      {/* Cabecera. Los datos que identifican a la persona van en una sola línea
-          bajo el nombre, y no repartidos en tarjetas: son lo que se mira de
-          pasada para confirmar que se abrió la ficha correcta. */}
-      <div className="bg-white rounded-card border border-gray-200 p-5">
-        <div className="flex items-start gap-4">
-          <button onClick={() => navigate('/app/colaboradores')}
-            title="Volver a colaboradores"
-            className="p-2 -ml-2 rounded-lg hover:bg-gray-100 text-muted shrink-0"><ArrowLeft size={18} /></button>
-
-          <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold text-ink shrink-0">
-            {col.nombre[0]}{col.apellido[0]}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-2xl font-bold text-ink">{col.nombre} {col.apellido}</h1>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${col.activo ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}`}>
-                {col.activo ? 'ACTIVO' : 'RETIRADO'}
-              </span>
-            </div>
-            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-sm text-muted mt-1.5">
-              <span>{col.cargo || 'Sin cargo'}</span>
-              <span>CC {col.cedula}</span>
-              {col.creadoEn && <span>Desde {format(new Date(col.creadoEn), "MMM yyyy", { locale: es })}</span>}
-              <span>{cop(col.salarioMensual)}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => { setFormEdit({ nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: col.fechaNacimiento ? new Date(col.fechaNacimiento).toISOString().slice(0, 10) : '', salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [] }); setModalEditar(true); }}
-              className="flex items-center gap-1.5 text-xs font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg">
-              <Edit2 size={13} /> Editar
-            </button>
-          </div>
-        </div>
-      </div>
+      <CabeceraFicha
+        persona={{
+          nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,
+          cedula: col.cedula, salarioMensual: col.salarioMensual,
+          creadoEn: col.creadoEn, activo: col.activo,
+        }}
+        onVolver={() => navigate('/app/colaboradores')}
+        onEditar={() => {
+          setFormEdit({
+            nombre: col.nombre, apellido: col.apellido, cedula: col.cedula,
+            cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '',
+            fechaNacimiento: col.fechaNacimiento ? new Date(col.fechaNacimiento).toISOString().slice(0, 10) : '',
+            salarioMensual: col.salarioMensual, horarioId: col.horarioId || '',
+            sedeIds: col.sedeIds ?? [],
+          });
+          setModalEditar(true);
+        }}
+      />
 
       {/* Constancia del retiro.
           Va arriba de todo y no en una pestaña porque es lo primero que hay que
@@ -350,7 +344,7 @@ export default function ColaboradorDetalle() {
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Último día</p>
               <p className="text-sm font-semibold text-ink">
-                {col.fechaRetiro ? new Date(col.fechaRetiro).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Sin registrar'}
+                {col.fechaRetiro ? fechaLarga(col.fechaRetiro) : 'Sin registrar'}
               </p>
             </div>
             <div className="min-w-0">
@@ -361,7 +355,7 @@ export default function ColaboradorDetalle() {
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Alcanzó a estar</p>
-              <p className="text-sm font-semibold text-ink">{tiempoQueEstuvo}</p>
+              <p className="text-sm font-semibold text-ink">{duracion}</p>
             </div>
           </div>
 
@@ -539,7 +533,8 @@ export default function ColaboradorDetalle() {
       {tab === 'contratos' && <PanelContratos colaboradorId={col.id} />}
 
       {tab === 'historia' && (
-        <HistorialVinculacion colaboradorId={col.id} onVerDocumento={verDocumento} />
+        <HistorialVinculacion key={col.id} eventos={suHistoria.eventos} error={suHistoria.error}
+          onVerDocumento={verDocumento} onReintentar={cargarHistoria} />
       )}
 
       <div className={`grid gap-4 [&>*]:min-w-0 ${tab === 'novedades' || tab === 'asistencia' ? '' : 'hidden'}`}>

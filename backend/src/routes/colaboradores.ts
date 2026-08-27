@@ -317,14 +317,28 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       where: { id, empresaId: request.empresaId }, select: { id: true },
     });
     if (!col) return reply.status(404).send({ error: 'No encontrado' });
-    return prisma.vinculacionEvento.findMany({
+    const eventos = await prisma.vinculacionEvento.findMany({
       where: { colaboradorId: id },
       select: {
         id: true, tipo: true, fecha: true, motivo: true, nota: true,
-        documentoTipo: true, documentoNombre: true, creadoEn: true,
+        documentoTipo: true, documentoNombre: true, creadoEn: true, usuarioId: true,
       },
       orderBy: [{ fecha: 'desc' }, { creadoEn: 'desc' }],
     });
+
+    // Quién registró cada movimiento. Se resuelve aquí y no con una relación en
+    // el esquema para no atar el evento al usuario: si el usuario se borra, el
+    // evento tiene que sobrevivir, que es justamente lo que se está auditando.
+    const ids = [...new Set(eventos.map(e => e.usuarioId).filter((x): x is string => !!x))];
+    const usuarios = ids.length
+      ? await prisma.usuario.findMany({ where: { id: { in: ids } }, select: { id: true, nombre: true } })
+      : [];
+    const nombre = new Map(usuarios.map(u => [u.id, u.nombre]));
+
+    return eventos.map(({ usuarioId, ...e }) => ({
+      ...e,
+      usuarioNombre: usuarioId ? nombre.get(usuarioId) ?? null : null,
+    }));
   });
 
   // El soporte de UN evento. Cuelga del evento y no de la persona porque la

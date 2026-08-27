@@ -176,6 +176,19 @@ así, apuntando a los archivos del cambio:
 npx vitest run --coverage --coverage.reporter=text --coverage.include='src/utils/<archivo>.ts'
 ```
 
+### Las pruebas del frontend corren fuera de Bogotá, a propósito
+
+`vite.config.ts` fija `TZ: 'America/Los_Angeles'` en las pruebas. No es un
+capricho: todo lo que se le muestra a una persona se formatea en hora de Bogotá,
+y las fechas de vinculación se guardan a medianoche de Bogotá (05:00 UTC). Si
+alguien olvida el `timeZone` en un `toLocaleDateString`, en la máquina de un
+desarrollador colombiano la prueba pasa igual y el error llega a producción
+pintando el día anterior.
+
+Al montar esta regla apareció un caso real: la línea de tiempo del colaborador
+mostraba un reingreso del 1 de septiembre como 31 de agosto para cualquiera al
+occidente de Colombia. El formateo compartido vive en `src/lib/fechas.ts`.
+
 ### Lo que sigue pendiente
 
 1. ~~Vitest en el backend~~ — hecho.

@@ -16,6 +16,11 @@ export default defineConfig({
     // El blog es HTML estático generado por su propio script y no tiene nada
     // que Vitest pueda montar.
     exclude: ['node_modules', 'dist', 'blog'],
+    // Las pruebas corren en una zona horaria que NO es la de Bogotá, a
+    // propósito. Todo el producto formatea en hora de Bogotá; si alguien
+    // olvida el timeZone, en la máquina de un desarrollador colombiano la
+    // prueba pasa igual y el defecto llega a producción. Aquí no.
+    env: { TZ: 'America/Los_Angeles' },
     coverage: {
       provider: 'v8',
       // Solo lo que este proyecto escribe. Sin esto, la cobertura la diluyen

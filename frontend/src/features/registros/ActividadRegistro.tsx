@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { History } from 'lucide-react';
 import api from '../../lib/api';
+import { fechaYHora } from '../../lib/fechas';
 
 type Cambio = {
   id: string;
@@ -20,10 +21,7 @@ const NOMBRE_CAMPO: Record<string, string> = {
   salidaAlmuerzo: 'la marca de salida al almuerzo',
 };
 
-const cuando = (iso: string) =>
-  new Date(iso).toLocaleString('es-CO', {
-    day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
-  });
+
 
 // Actividad de una marcación: qué se cambió, quién y cuándo.
 //
@@ -57,7 +55,7 @@ export default function ActividadRegistro({ registroId }: { registroId: string }
               <span className="font-mono bg-primary/30 px-1 rounded">{c.despues}</span>
             </span>
             <span className="block text-gray-400 mt-0.5">
-              {c.usuarioNombre ?? 'Usuario eliminado'} · {cuando(c.creadoEn)}
+              {c.usuarioNombre ?? 'Usuario eliminado'} · {fechaYHora(c.creadoEn)}
             </span>
           </li>
         ))}
