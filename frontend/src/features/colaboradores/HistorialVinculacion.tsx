@@ -40,9 +40,9 @@ export default function HistorialVinculacion({ colaboradorId, onVerDocumento }: 
       .catch(() => setEventos([]));
   }, [colaboradorId]);
 
-  // Con un solo ingreso no hay historia que contar: sería una tarjeta que
-  // repite lo que ya dice la ficha.
-  if (!eventos || eventos.length <= 1) return null;
+  // Mientras carga no se pinta nada: un esqueleto que aparece y desaparece en
+  // 200ms molesta más que el vacío.
+  if (!eventos) return null;
 
   return (
     <div className="bg-white rounded-card border border-gray-200 p-5">
@@ -54,6 +54,9 @@ export default function HistorialVinculacion({ colaboradorId, onVerDocumento }: 
         vuelva a entrar.
       </p>
 
+      {eventos.length === 0 ? (
+        <p className="text-sm text-muted">Sin movimientos registrados.</p>
+      ) : (
       <div className="relative">
         {/* La línea vertical que une los hitos. Va detrás de los puntos. */}
         <div className="absolute left-[13px] top-2 bottom-2 w-px bg-gray-200" aria-hidden="true" />
@@ -91,6 +94,7 @@ export default function HistorialVinculacion({ colaboradorId, onVerDocumento }: 
           })}
         </ol>
       </div>
+      )}
     </div>
   );
 }

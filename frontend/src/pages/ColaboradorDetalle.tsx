@@ -20,6 +20,8 @@ import { TIPO_PERMISO_LABEL } from '../constants/permisos';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 import ModalReingreso from '../features/colaboradores/ModalReingreso';
 import HistorialVinculacion from '../features/colaboradores/HistorialVinculacion';
+import TabsFicha from '../features/colaboradores/TabsFicha';
+import { tabDesdeUrl, urlConTab, type ClaveTab } from '../features/colaboradores/tabs';
 import { useMiPlan } from '../lib/plan';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
@@ -130,6 +132,15 @@ export default function ColaboradorDetalle() {
   };
 
   const [confirmandoReingreso, setConfirmandoReingreso] = useState(false);
+
+  // El tab abierto vive en la direccion, no solo en el estado: asi se puede
+  // compartir un enlace directo a los contratos de alguien, y el boton de
+  // atras del navegador devuelve al tab anterior en vez de salir de la ficha.
+  const [tab, setTab] = useState<ClaveTab>(() => tabDesdeUrl(window.location.search));
+  const cambiarTab = (t: ClaveTab) => {
+    setTab(t);
+    window.history.replaceState({}, '', window.location.pathname + urlConTab(window.location.search, t));
+  };
 
   const guardarEdicion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,18 +289,41 @@ export default function ColaboradorDetalle() {
   return (
     <div className="p-6 md:p-8 space-y-6">
       {/* Encabezado */}
-      <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/app/colaboradores')} className="p-2 rounded-lg hover:bg-gray-100 text-muted"><ArrowLeft size={18} /></button>
-        <div className="bg-primary rounded-full w-14 h-14 flex items-center justify-center text-xl font-bold text-ink">
-          {col.nombre[0]}{col.apellido[0]}
+      {/* Cabecera. Los datos que identifican a la persona van en una sola línea
+          bajo el nombre, y no repartidos en tarjetas: son lo que se mira de
+          pasada para confirmar que se abrió la ficha correcta. */}
+      <div className="bg-white rounded-card border border-gray-200 p-5">
+        <div className="flex items-start gap-4">
+          <button onClick={() => navigate('/app/colaboradores')}
+            title="Volver a colaboradores"
+            className="p-2 -ml-2 rounded-lg hover:bg-gray-100 text-muted shrink-0"><ArrowLeft size={18} /></button>
+
+          <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold text-ink shrink-0">
+            {col.nombre[0]}{col.apellido[0]}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-2xl font-bold text-ink">{col.nombre} {col.apellido}</h1>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${col.activo ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'}`}>
+                {col.activo ? 'ACTIVO' : 'RETIRADO'}
+              </span>
+            </div>
+            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-sm text-muted mt-1.5">
+              <span>{col.cargo || 'Sin cargo'}</span>
+              <span>CC {col.cedula}</span>
+              {col.creadoEn && <span>Desde {format(new Date(col.creadoEn), "MMM yyyy", { locale: es })}</span>}
+              <span>{cop(col.salarioMensual)}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => { setFormEdit({ nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: col.fechaNacimiento ? new Date(col.fechaNacimiento).toISOString().slice(0, 10) : '', salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [] }); setModalEditar(true); }}
+              className="flex items-center gap-1.5 text-xs font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg">
+              <Edit2 size={13} /> Editar
+            </button>
+          </div>
         </div>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-ink">{col.nombre} {col.apellido}</h1>
-          <p className="text-sm text-muted">{col.cargo || 'Sin cargo'} · CC {col.cedula}</p>
-        </div>
-        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${col.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-          {col.activo ? 'ACTIVO' : 'RETIRADO'}
-        </span>
       </div>
 
       {/* Constancia del retiro.
@@ -337,8 +371,11 @@ export default function ColaboradorDetalle() {
         </div>
       )}
 
-      <HistorialVinculacion colaboradorId={col.id} onVerDocumento={verDocumento} />
+      <TabsFicha activo={tab} onCambiar={cambiarTab} contadores={{
+        contratos: undefined, novedades: permisos.length || undefined,
+      }} />
 
+      {tab === 'resumen' && (<>
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Datos */}
         <div className="bg-white rounded-card border border-gray-200 p-5">
@@ -497,11 +534,16 @@ export default function ColaboradorDetalle() {
           columna entera y en el celular los dos paneles salían cortados por la
           derecha. Va en la rejilla y no en cada panel para que valga también
           para lo que se agregue después. */}
-      <div className="grid lg:grid-cols-2 gap-4 [&>*]:min-w-0">
-        {/* Contratos. Va antes de Novedades porque el contrato es el marco de la
-            relación laboral y las novedades ocurren dentro de él. */}
-        <PanelContratos colaboradorId={col.id} />
+      </>)}
 
+      {tab === 'contratos' && <PanelContratos colaboradorId={col.id} />}
+
+      {tab === 'historia' && (
+        <HistorialVinculacion colaboradorId={col.id} onVerDocumento={verDocumento} />
+      )}
+
+      <div className={`grid gap-4 [&>*]:min-w-0 ${tab === 'novedades' || tab === 'asistencia' ? '' : 'hidden'}`}>
+        {tab === 'novedades' && (<>
         {/* Novedades: vacaciones, incapacidades, licencias, permisos */}
         <div className="bg-white rounded-card border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
@@ -532,7 +574,9 @@ export default function ColaboradorDetalle() {
           </div>
         </div>
 
-        {/* Kardex */}
+        </>)}
+
+        {tab === 'asistencia' && (
         <div className="bg-white rounded-card border border-gray-200 p-5">
           <p className="font-semibold text-ink mb-3">Kardex — últimos 30 días</p>
           <div className="space-y-1 max-h-80 overflow-y-auto">
@@ -570,6 +614,7 @@ export default function ColaboradorDetalle() {
             ))}
           </div>
         </div>
+        )}
       </div>
 
       {/* Modal editar datos */}
