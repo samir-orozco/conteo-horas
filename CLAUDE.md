@@ -140,3 +140,46 @@ Orden propuesto. Cada paso da valor por sí solo. **El paso 1 ya está hecho.**
 
 Mientras falten los pasos 2 a 5, la sección 2 rige solo donde hay pruebas, y la
 sección 5 cubre el resto.
+
+---
+
+## 7. Actualización: el frontend ya tiene pruebas y hay cobertura
+
+Lo que decía la advertencia del encabezado sobre el frontend dejó de ser cierto
+el 26 de agosto de 2026. El estado real ahora:
+
+| | Backend | Frontend |
+|---|---|---|
+| Pruebas | Vitest, `npm test` | Vitest + Testing Library, `npm test` |
+| Tipos | `npx tsc --noEmit` | `npx tsc -b` (más estricto) |
+| Linter | **sigue sin haber** | ESLint, `npm run lint` |
+| Cobertura | `npm run test:cobertura` | `npm run test:cobertura` |
+| Mutación | sigue sin haber | sigue sin haber |
+
+Con eso, el ciclo de la sección 2 **ya puede regir también en los componentes**,
+no solo en `src/utils/`. Las pruebas de interfaz se escriben con Testing Library
+y consultan por lo que ve una persona (texto, rol), no por clases de CSS: una
+prueba que se rompe al renombrar una clase no está probando comportamiento.
+
+### Qué exigir de la cobertura
+
+El número global no sirve como puerta y no se debe usar como tal. Hoy el backend
+entero está en 17% porque las rutas no tienen pruebas, mientras el motor de horas
+(`jornada`, `saldoTiempo`, `tardanzas`, `almuerzo`, `diasEsperados`) está entre
+96% y 100%. Ese contraste es el dato honesto: **lo que calcula dinero está
+cubierto, lo que hace de plomería no.**
+
+La puerta es sobre **lo nuevo o lo que se toca**: por encima del 80%. Medirlo
+así, apuntando a los archivos del cambio:
+
+```
+npx vitest run --coverage --coverage.reporter=text --coverage.include='src/utils/<archivo>.ts'
+```
+
+### Lo que sigue pendiente
+
+1. ~~Vitest en el backend~~ — hecho.
+2. **Linter en el backend.** Sigue siendo el hueco más grande.
+3. ~~Cobertura~~ — hecha en los dos lados.
+4. **Pruebas de integración de las rutas**, con base de datos de prueba.
+5. **Mutación** (Stryker), al final y solo sobre el motor de horas.
