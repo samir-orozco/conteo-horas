@@ -8,14 +8,16 @@ const persona = {
   salarioMensual: 1750905, creadoEn: '2026-07-06T05:00:00.000Z', activo: true,
 };
 
-const montar = (over = {}, acciones = {}) => render(
+const montar = (over = {}, acciones: Record<string, unknown> = {}) => render(
   <CabeceraFicha
     persona={{ ...persona, ...over }}
-    onVolver={vi.fn()}
-    onEditar={vi.fn()}
+    onVolver={vi.fn()} onEditar={vi.fn()}
+    onArchivoFoto={vi.fn()} onQuitarFoto={vi.fn()}
     {...acciones}
   />,
 );
+
+const jpg = () => new File(['x'], 'yo.jpg', { type: 'image/jpeg' });
 
 describe('la cabecera de la ficha', () => {
   it('muestra quién es y lo que lo identifica de un vistazo', () => {
@@ -45,8 +47,6 @@ describe('la cabecera de la ficha', () => {
   });
 
   it('quien está retirado se ve retirado, y no solo por el color', () => {
-    // El punto de estado es verde o gris. Quien no distingue esos dos colores
-    // necesita la palabra.
     montar({ activo: false });
     expect(screen.getByText('RETIRADO')).toBeInTheDocument();
   });
@@ -68,5 +68,60 @@ describe('la cabecera de la ficha', () => {
   it('sin fecha de ingreso no inventa un "desde"', () => {
     montar({ creadoEn: null });
     expect(screen.queryByText(/Desde/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('la foto, desde el propio círculo', () => {
+  it('el círculo es un control y dice de quién es la foto que se va a cambiar', async () => {
+    montar();
+    expect(screen.getByRole('button', { name: /foto de Julián Restrepo/i })).toBeInTheDocument();
+  });
+
+  it('ofrece subir una foto', async () => {
+    montar();
+    await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));
+    expect(screen.getByText(/Subir una foto/i)).toBeInTheDocument();
+  });
+
+  it('quitar la foto solo aparece cuando hay una: no se quita lo que no existe', async () => {
+    montar();
+    await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));
+    expect(screen.queryByText(/Quitar la foto/i)).not.toBeInTheDocument();
+
+    await userEvent.keyboard('{Escape}');
+    montar({ foto: 'data:image/jpeg;base64,xxx' });
+    await userEvent.click(screen.getAllByRole('button', { name: /foto de Julián Restrepo/i })[1]);
+    expect(screen.getByText(/Quitar la foto/i)).toBeInTheDocument();
+  });
+
+  it('elegir un archivo lo entrega tal cual, sin tocarlo', async () => {
+    const onArchivoFoto = vi.fn();
+    montar({}, { onArchivoFoto });
+    await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));
+    await userEvent.upload(screen.getByLabelText(/Subir una foto/i), jpg());
+    expect(onArchivoFoto).toHaveBeenCalledWith(expect.any(File));
+  });
+
+  it('un PDF no pasa, y se dice por qué antes de subir nada', async () => {
+    const onArchivoFoto = vi.fn();
+    montar({}, { onArchivoFoto });
+    await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));
+    await userEvent.upload(screen.getByLabelText(/Subir una foto/i),
+      new File(['x'], 'contrato.pdf', { type: 'application/pdf' }));
+    expect(onArchivoFoto).not.toHaveBeenCalled();
+    expect(screen.getByText(/JPG, PNG o WEBP/i)).toBeInTheDocument();
+  });
+
+  it('quitar la foto avisa a quien manda', async () => {
+    const onQuitarFoto = vi.fn();
+    montar({ foto: 'data:image/jpeg;base64,xxx' }, { onQuitarFoto });
+    await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));
+    await userEvent.click(screen.getByText(/Quitar la foto/i));
+    expect(onQuitarFoto).toHaveBeenCalled();
+  });
+
+  it('mientras guarda lo dice, para que nadie vuelva a hacer clic', () => {
+    montar({}, { guardandoFoto: true });
+    expect(screen.getByText(/Guardando/i)).toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ import { calcularValorHora } from '../utils/horasColombiana';
 import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
+import { fotoPerfilValida, fotoParaEnrolar } from '../utils/fotoPerfil';
 import { medianocheBogota, hoyEnBogota } from '../utils/fechas';
 import { documentoValido, tipoDeDocumento, nombreDeDocumento } from '../utils/documentos';
 import { retiroEsCoherente, fechaMinimaDeRetiro } from '../utils/vinculacion';
@@ -76,7 +77,10 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       include: { sedes: { select: { sedeId: true } } },
       orderBy: { nombre: 'asc' },
     });
-    return filas.map(({ sedes, ...c }) => ({ ...c, sedeIds: sedes.map(s => s.sedeId) }));
+    // La foto se descarta aquí: la lista no la pinta, y mandar una por persona
+    // en cada carga son cientos de kilobytes que nadie mira. Se pide con la
+    // ficha, que es donde se ve.
+    return filas.map(({ sedes, foto: _foto, ...c }) => ({ ...c, sedeIds: sedes.map(s => s.sedeId) }));
   });
 
   app.get('/:id', auth, async (request, reply) => {
@@ -412,22 +416,58 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   });
 
   // Enrolamiento facial guiado: guarda VARIAS muestras (frente, perfiles,
-  // con/sin gafas — 128 floats cada una) capturadas en el navegador. La imagen
-  // nunca llega al servidor. rostroEnroladoEn queda como evidencia de que hubo
-  // consentimiento explícito (dato biométrico, Ley 1581).
+  // con/sin gafas — 128 floats cada una) capturadas en el navegador.
+  // rostroEnroladoEn queda como evidencia de que hubo consentimiento explícito
+  // (dato biométrico, Ley 1581).
+  //
+  // Puede traer además la primera toma como foto de perfil. Solo se guarda si
+  // la ficha todavía no tiene una: quien ya eligió una foto a mano no puede
+  // perderla porque alguien vuelva a enrolar el rostro.
   app.post('/:id/rostro', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { descriptores } = request.body as { descriptores: unknown };
+    const { descriptores, foto } = request.body as { descriptores: unknown; foto?: unknown };
     const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
     if (!esListaDescriptoresValida(descriptores)) {
       return reply.status(400).send({ error: 'Muestras faciales inválidas' });
     }
+    const primeraFoto = fotoParaEnrolar(existente.foto, foto);
     const colaborador = await prisma.colaborador.update({
       where: { id },
-      data: { rostroDescriptor: descriptores, rostroEnroladoEn: new Date() },
+      data: {
+        rostroDescriptor: descriptores,
+        rostroEnroladoEn: new Date(),
+        ...(primeraFoto ? { foto: primeraFoto } : {}),
+      },
     });
-    return { ok: true, rostroEnroladoEn: colaborador.rostroEnroladoEn };
+    return { ok: true, rostroEnroladoEn: colaborador.rostroEnroladoEn, foto: colaborador.foto };
+  });
+
+  // La foto de perfil, puesta a mano.
+  app.put('/:id/foto', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { foto } = request.body as { foto: unknown };
+    const existente = await prisma.colaborador.findFirst({
+      where: { id, empresaId: request.empresaId }, select: { id: true },
+    });
+    if (!existente) return reply.status(404).send({ error: 'No encontrado' });
+    if (!fotoPerfilValida(foto)) {
+      return reply.status(400).send({ error: 'La foto debe ser JPG, PNG o WEBP y pesar menos de 500 KB.' });
+    }
+    await prisma.colaborador.update({ where: { id }, data: { foto } });
+    return { ok: true };
+  });
+
+  // Quitarla. No toca el descriptor: son dos datos distintos y se borran por
+  // separado, que es justamente para lo que están en columnas distintas.
+  app.delete('/:id/foto', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const existente = await prisma.colaborador.findFirst({
+      where: { id, empresaId: request.empresaId }, select: { id: true },
+    });
+    if (!existente) return reply.status(404).send({ error: 'No encontrado' });
+    await prisma.colaborador.update({ where: { id }, data: { foto: null } });
+    return { ok: true };
   });
 
   app.delete('/:id/rostro', auth, async (request, reply) => {

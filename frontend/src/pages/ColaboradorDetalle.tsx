@@ -20,6 +20,7 @@ import { TIPO_PERMISO_LABEL } from '../constants/permisos';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 import ModalReingreso from '../features/colaboradores/ModalReingreso';
 import CabeceraFicha from '../features/colaboradores/CabeceraFicha';
+import { aFotoDePerfil } from '../features/colaboradores/foto';
 import { fechaLarga } from '../lib/fechas';
 import { diasDeVinculacion, enPalabras } from '../features/colaboradores/tiempoVinculado';
 import HistorialVinculacion, { type Evento as EventoVinculacion } from '../features/colaboradores/HistorialVinculacion';
@@ -31,7 +32,7 @@ type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Fra
 type Colaborador = {
   id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
   email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean;
-  horarioId?: string | null; horario?: Horario | null; rostroEnroladoEn?: string | null;
+  horarioId?: string | null; horario?: Horario | null; rostroEnroladoEn?: string | null; foto?: string | null;
   sedeIds?: string[];
   creadoEn?: string;
   fechaRetiro?: string | null; motivoRetiro?: string | null;
@@ -106,6 +107,8 @@ export default function ColaboradorDetalle() {
   const hace30 = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000);
   const iso = (d: Date) => d.toISOString().slice(0, 10);
 
+  const [guardandoFoto, setGuardandoFoto] = useState(false);
+
   const cargarHistoria = useCallback(() => {
     if (!id) return;
     api.get(`/colaboradores/${id}/vinculacion`)
@@ -125,6 +128,35 @@ export default function ColaboradorDetalle() {
     api.get('/sedes').then(r => setSedes(r.data)).catch(() => setSedes([]));
   }, [id, cargarHistoria]);
   useEffect(() => { cargar(); }, [cargar]);
+
+  // Van después de `cargar` porque lo llaman: definirlas antes deja una
+  // referencia hacia adelante que el compilador de React no puede memoizar.
+  //
+  // La foto se recorta en el navegador antes de subirla. Una foto de celular
+  // sin tocar son varios megabytes dentro de la fila del colaborador.
+  const cambiarFoto = async (archivo: File) => {
+    setGuardandoFoto(true);
+    try {
+      const foto = await aFotoDePerfil(archivo);
+      await api.put(`/colaboradores/${id}/foto`, { foto });
+      setToast('Foto actualizada');
+      cargar();
+    } catch (err) {
+      const e = err as { response?: { data?: { error?: string } }; message?: string };
+      setToast(e.response?.data?.error ?? e.message ?? 'No pudimos guardar la foto');
+    } finally { setGuardandoFoto(false); }
+  };
+
+  const quitarFoto = async () => {
+    setGuardandoFoto(true);
+    try {
+      await api.delete(`/colaboradores/${id}/foto`);
+      setToast('Foto quitada');
+      cargar();
+    } catch {
+      setToast('No pudimos quitar la foto');
+    } finally { setGuardandoFoto(false); }
+  };
 
   const suHistoria = historia.id === id ? historia : { eventos: null, error: false };
 
@@ -199,11 +231,14 @@ export default function ColaboradorDetalle() {
     }
   };
 
-  const capturarRostro = async (descriptores: number[][]) => {
+  // La primera toma del escaneo viaja como foto de perfil. El servidor solo la
+  // usa si la ficha no tiene una todavía, así que volver a enrolar no le pisa
+  // la foto a quien ya eligió otra.
+  const capturarRostro = async (descriptores: number[][], foto: string) => {
     setGuardandoRostro(true);
     setErrorRostro('');
     try {
-      await api.post(`/colaboradores/${id}/rostro`, { descriptores });
+      await api.post(`/colaboradores/${id}/rostro`, { descriptores, foto });
       setModalCamara(false);
       setConsentimientoRostro(false);
       setToast('Rostro registrado con éxito');
@@ -305,8 +340,11 @@ export default function ColaboradorDetalle() {
         persona={{
           nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,
           cedula: col.cedula, salarioMensual: col.salarioMensual,
-          creadoEn: col.creadoEn, activo: col.activo,
+          creadoEn: col.creadoEn, activo: col.activo, foto: col.foto,
         }}
+        onArchivoFoto={cambiarFoto}
+        onQuitarFoto={quitarFoto}
+        guardandoFoto={guardandoFoto}
         onVolver={() => navigate('/app/colaboradores')}
         onEditar={() => {
           setFormEdit({
@@ -484,7 +522,7 @@ export default function ColaboradorDetalle() {
             </>
           ) : (
             <>
-              <p className="text-xs text-muted mb-3 flex-1">Registra su rostro para que marque en el kiosco sin digitar la cédula. La captura es guiada (frente y perfiles) y solo se guarda un cálculo matemático, nunca la foto.</p>
+              <p className="text-xs text-muted mb-3 flex-1">Registra su rostro para que marque en el kiosco sin digitar la cédula. La captura es guiada (frente y perfiles). Del rostro se guarda un cálculo matemático, no una imagen: ese cálculo no se puede volver a convertir en una cara. La primera toma sí queda como foto de perfil, y se puede quitar desde el círculo de la foto.</p>
               <label className="flex items-start gap-2 text-xs text-muted mb-2 cursor-pointer">
                 <input type="checkbox" checked={consentimientoRostro} onChange={e => setConsentimientoRostro(e.target.checked)} className="mt-0.5 rounded" />
                 <span>El colaborador autoriza el tratamiento de su rostro como dato biométrico, conforme a la Ley 1581 de 2012 (Habeas Data).</span>

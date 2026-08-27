@@ -204,9 +204,14 @@ model Colaborador {
   telefono         String?
   fechaNacimiento  DateTime?
   salarioMensual   Float
-  // Reconocimiento facial: descriptor matemático (128 floats), nunca la imagen
+  // Reconocimiento facial: descriptor matemático (128 floats). El descriptor no
+  // es una imagen y no se puede volver a convertir en una.
   rostroDescriptor Json?
   rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
+  // Foto de perfil (data URL). Es dato personal común, NO biométrico: sirve
+  // para reconocer a quién se está mirando en la ficha, no para autenticar. Va
+  // aparte del descriptor a propósito, para poder borrar una sin borrar la otra.
+  foto             String?   @db.LongText
   horarioId        String?
   horario          Horario?   @relation(fields: [horarioId], references: [id])
   activo           Boolean    @default(true)
