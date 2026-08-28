@@ -74,15 +74,15 @@ describe('la tabla que queda después de subir', () => {
   it('precarga lo que traía el archivo, en campos que se pueden tocar', async () => {
     montar();
     await subir();
-    expect(screen.getByLabelText(/Nombre de la fila 1/i)).toHaveValue('Ana');
-    expect(screen.getByLabelText(/Cédula de la fila 1/i)).toHaveValue('111');
-    expect(screen.getByLabelText(/Nombre de la fila 2/i)).toHaveValue('Luis');
+    expect(screen.getByLabelText('Nombre de la fila 1')).toHaveValue('Ana');
+    expect(screen.getByLabelText('Cédula de la fila 1')).toHaveValue('111');
+    expect(screen.getByLabelText('Nombre de la fila 2')).toHaveValue('Luis');
   });
 
   it('se puede corregir un dato sin volver a tocar el Excel', async () => {
     montar();
     await subir();
-    const campo = screen.getByLabelText(/Nombre de la fila 1/i);
+    const campo = screen.getByLabelText('Nombre de la fila 1');
     await userEvent.clear(campo);
     await userEvent.type(campo, 'Ana María');
     expect(campo).toHaveValue('Ana María');
@@ -91,16 +91,16 @@ describe('la tabla que queda después de subir', () => {
   it('cada persona tiene su propio selector de horario', async () => {
     montar();
     await subir();
-    const sel = screen.getByLabelText(/Horario de la fila 1/i);
+    const sel = screen.getByLabelText('Horario de la fila 1');
     await userEvent.selectOptions(sel, 'h2');
     expect(sel).toHaveValue('h2');
-    expect(screen.getByLabelText(/Horario de la fila 2/i)).toHaveValue('');
+    expect(screen.getByLabelText('Horario de la fila 2')).toHaveValue('');
   });
 
   it('sin horario es una opción válida, no un hueco', async () => {
     montar();
     await subir();
-    const sel = screen.getByLabelText(/Horario de la fila 1/i);
+    const sel = screen.getByLabelText('Horario de la fila 1');
     expect(within(sel).getByRole('option', { name: /Sin horario/i })).toBeInTheDocument();
   });
 
@@ -108,43 +108,114 @@ describe('la tabla que queda después de subir', () => {
     montar();
     await subir();
     await userEvent.selectOptions(screen.getByLabelText(/Horario para todos/i), 'h1');
-    expect(screen.getByLabelText(/Horario de la fila 1/i)).toHaveValue('h1');
-    expect(screen.getByLabelText(/Horario de la fila 2/i)).toHaveValue('h1');
+    expect(screen.getByLabelText('Horario de la fila 1')).toHaveValue('h1');
+    expect(screen.getByLabelText('Horario de la fila 2')).toHaveValue('h1');
   });
 
   it('después del global, cada uno se puede cambiar aparte', async () => {
     montar();
     await subir();
     await userEvent.selectOptions(screen.getByLabelText(/Horario para todos/i), 'h1');
-    await userEvent.selectOptions(screen.getByLabelText(/Horario de la fila 2/i), 'h2');
-    expect(screen.getByLabelText(/Horario de la fila 1/i)).toHaveValue('h1');
-    expect(screen.getByLabelText(/Horario de la fila 2/i)).toHaveValue('h2');
+    await userEvent.selectOptions(screen.getByLabelText('Horario de la fila 2'), 'h2');
+    expect(screen.getByLabelText('Horario de la fila 1')).toHaveValue('h1');
+    expect(screen.getByLabelText('Horario de la fila 2')).toHaveValue('h2');
   });
 
   it('se puede agregar a alguien que no venía en el archivo', async () => {
     montar();
     await subir();
     await userEvent.click(screen.getByRole('button', { name: /Agregar una fila/i }));
-    expect(screen.getByLabelText(/Nombre de la fila 3/i)).toHaveValue('');
+    expect(screen.getByLabelText('Nombre de la fila 3')).toHaveValue('');
   });
 
   it('y quitar a alguien que no va', async () => {
     montar();
     await subir();
     await userEvent.click(screen.getByRole('button', { name: /Quitar la fila 1/i }));
-    expect(screen.getByLabelText(/Nombre de la fila 1/i)).toHaveValue('Luis');
+    expect(screen.getByLabelText('Nombre de la fila 1')).toHaveValue('Luis');
   });
 });
 
 describe('los errores, en su celda', () => {
-  it('marcan el campo exacto y dicen qué pasa', async () => {
+  it('marcan el campo exacto', async () => {
     post.mockResolvedValueOnce({ data: { ...OK, conDatos: 2,
       errores: [{ fila: 3, campo: 'cedula', mensaje: 'La cédula 222 ya está registrada en tu empresa.' }] } });
     montar();
     await subir();
-    expect(await screen.findByText(/ya está registrada/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Cédula de la fila 2/i)).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByLabelText(/Cédula de la fila 1/i)).not.toHaveAttribute('aria-invalid', 'true');
+    await waitFor(() => expect(screen.getByLabelText('Cédula de la fila 2')).toHaveAttribute('aria-invalid', 'true'));
+    expect(screen.getByLabelText('Cédula de la fila 1')).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('el mensaje no estira la fila: va en un aviso que se abre al pasar por encima', async () => {
+    // Un mensaje de cuatro renglones dentro de la celda hacía crecer la fila
+    // entera y desalineaba la tabla.
+    post.mockResolvedValueOnce({ data: { ...OK, conDatos: 2,
+      errores: [{ fila: 3, campo: 'cedula', mensaje: 'La cédula 222 ya está registrada en tu empresa.' }] } });
+    montar();
+    await subir();
+    expect(await screen.findByRole('button', { name: /Qué pasa con Cédula de la fila 2/i })).toBeInTheDocument();
+  });
+
+  it('el mensaje sigue en la página, para quien no puede pasar el mouse por encima', async () => {
+    // Un globo que solo existe al hacer hover deja fuera a quien navega con
+    // teclado o con lector de pantalla.
+    post.mockResolvedValueOnce({ data: { ...OK, conDatos: 2,
+      errores: [{ fila: 3, campo: 'cedula', mensaje: 'La cédula 222 ya está registrada en tu empresa.' }] } });
+    montar();
+    await subir();
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(/ya está registrada/i);
+  });
+
+  it('el campo con error apunta a su explicación', async () => {
+    post.mockResolvedValueOnce({ data: { ...OK, conDatos: 2,
+      errores: [{ fila: 3, campo: 'cedula', mensaje: 'La cédula 222 ya está registrada en tu empresa.' }] } });
+    montar();
+    await subir();
+    const campo = await screen.findByLabelText('Cédula de la fila 2');
+    const id = campo.getAttribute('aria-describedby');
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id!)).toHaveTextContent(/ya está registrada/i);
+  });
+
+  it('una celda sin error no lleva aviso ni apunta a nada', async () => {
+    post.mockResolvedValueOnce({ data: { ...OK, conDatos: 2,
+      errores: [{ fila: 3, campo: 'cedula', mensaje: 'x' }] } });
+    montar();
+    await subir();
+    await waitFor(() => expect(screen.getByLabelText('Cédula de la fila 2')).toHaveAttribute('aria-invalid', 'true'));
+    expect(screen.getByLabelText('Cédula de la fila 1')).not.toHaveAttribute('aria-describedby');
+    expect(screen.queryByRole('button', { name: /Qué pasa con Cédula de la fila 1/i })).not.toBeInTheDocument();
+  });
+
+  it('borrar la fila del error NO se lo hereda a la siguiente', async () => {
+    // Los errores se guardan por número de fila. Al borrar la 1, la que era 2
+    // pasa a ser 1: sin corregir el índice, la persona equivocada queda
+    // marcada en rojo y la que fallaba ya ni está.
+    post.mockResolvedValueOnce({ data: { ...OK, conDatos: 2,
+      errores: [{ fila: 2, campo: 'cedula', mensaje: 'La cédula 111 ya está registrada en tu empresa.' }] } });
+    montar();
+    await subir();
+    await waitFor(() => expect(screen.getByLabelText('Cédula de la fila 1')).toHaveAttribute('aria-invalid', 'true'));
+
+    await userEvent.click(screen.getByRole('button', { name: /Quitar la fila 1/i }));
+
+    expect(screen.getByLabelText('Nombre de la fila 1')).toHaveValue('Luis');
+    expect(screen.getByLabelText('Cédula de la fila 1')).not.toHaveAttribute('aria-invalid', 'true');
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+  });
+
+  it('borrar una fila de arriba corre los errores de las de abajo, no los borra', async () => {
+    post.mockResolvedValueOnce({ data: { ...OK, conDatos: 2,
+      errores: [{ fila: 3, campo: 'cedula', mensaje: 'La cédula 222 ya está registrada en tu empresa.' }] } });
+    montar();
+    await subir();
+    await waitFor(() => expect(screen.getByLabelText('Cédula de la fila 2')).toHaveAttribute('aria-invalid', 'true'));
+
+    await userEvent.click(screen.getByRole('button', { name: /Quitar la fila 1/i }));
+
+    // Luis subió a la fila 1 y su error se fue con él.
+    expect(screen.getByLabelText('Nombre de la fila 1')).toHaveValue('Luis');
+    expect(screen.getByLabelText('Cédula de la fila 1')).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('corregir la celda le quita la marca sin esperar al servidor', async () => {
@@ -154,7 +225,7 @@ describe('los errores, en su celda', () => {
       errores: [{ fila: 2, campo: 'nombre', mensaje: 'Falta el nombre.' }] } });
     montar();
     await subir();
-    const campo = screen.getByLabelText(/Nombre de la fila 1/i);
+    const campo = screen.getByLabelText('Nombre de la fila 1');
     await waitFor(() => expect(campo).toHaveAttribute('aria-invalid', 'true'));
     await userEvent.type(campo, 'x');
     expect(campo).not.toHaveAttribute('aria-invalid', 'true');
@@ -165,7 +236,7 @@ describe('crear', () => {
   it('manda lo que quedó en la tabla, no lo que traía el archivo', async () => {
     montar();
     await subir();
-    const campo = screen.getByLabelText(/Nombre de la fila 1/i);
+    const campo = screen.getByLabelText('Nombre de la fila 1');
     await userEvent.clear(campo);
     await userEvent.type(campo, 'Corregida');
     await userEvent.selectOptions(screen.getByLabelText(/Horario para todos/i), 'h1');
@@ -221,7 +292,7 @@ describe('crear', () => {
     post.mockRejectedValueOnce({ response: { data: { error: 'Internal Server Error' } } });
     await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
     expect(await screen.findByText(/Internal Server Error/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Nombre de la fila 1/i)).toHaveValue('Ana');
+    expect(screen.getByLabelText('Nombre de la fila 1')).toHaveValue('Ana');
   });
 });
 
@@ -229,26 +300,26 @@ describe('la sede, igual que el horario', () => {
   it('cada persona tiene su selector', async () => {
     montar();
     await subir();
-    const sel = screen.getByLabelText(/Sede de la fila 1/i);
+    const sel = screen.getByLabelText('Sede de la fila 1');
     await userEvent.selectOptions(sel, 's2');
     expect(sel).toHaveValue('s2');
-    expect(screen.getByLabelText(/Sede de la fila 2/i)).toHaveValue('');
+    expect(screen.getByLabelText('Sede de la fila 2')).toHaveValue('');
   });
 
   it('y hay uno para ponérsela a todos', async () => {
     montar();
     await subir();
     await userEvent.selectOptions(screen.getByLabelText(/Sede para todos/i), 's1');
-    expect(screen.getByLabelText(/Sede de la fila 1/i)).toHaveValue('s1');
-    expect(screen.getByLabelText(/Sede de la fila 2/i)).toHaveValue('s1');
+    expect(screen.getByLabelText('Sede de la fila 1')).toHaveValue('s1');
+    expect(screen.getByLabelText('Sede de la fila 2')).toHaveValue('s1');
   });
 
   it('poner la sede a todos no le borra el horario a nadie', async () => {
     montar();
     await subir();
-    await userEvent.selectOptions(screen.getByLabelText(/Horario de la fila 1/i), 'h2');
+    await userEvent.selectOptions(screen.getByLabelText('Horario de la fila 1'), 'h2');
     await userEvent.selectOptions(screen.getByLabelText(/Sede para todos/i), 's1');
-    expect(screen.getByLabelText(/Horario de la fila 1/i)).toHaveValue('h2');
+    expect(screen.getByLabelText('Horario de la fila 1')).toHaveValue('h2');
   });
 
   it('sin sedes creadas, la columna no estorba', async () => {
@@ -258,7 +329,7 @@ describe('la sede, igual que el horario', () => {
     montar();
     await subir();
     expect(screen.queryByLabelText(/Sede para todos/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/Sede de la fila 1/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Sede de la fila 1')).not.toBeInTheDocument();
   });
 
   it('la sede viaja al crear', async () => {
@@ -277,13 +348,13 @@ describe('la fecha de nacimiento', () => {
     // "11/12/85" en la hoja tiene que verse como la fecha que se va a guardar.
     montar();
     await subir();
-    expect(screen.getByLabelText(/Fecha de nacimiento de la fila 1/i)).toHaveValue('1985-12-11');
+    expect(screen.getByLabelText('Fecha de nacimiento de la fila 1')).toHaveValue('1985-12-11');
   });
 
   it('se corrige con un calendario, no escribiendo el formato de memoria', async () => {
     montar();
     await subir();
-    expect(screen.getByLabelText(/Fecha de nacimiento de la fila 1/i)).toHaveAttribute('type', 'date');
+    expect(screen.getByLabelText('Fecha de nacimiento de la fila 1')).toHaveAttribute('type', 'date');
   });
 
   it('una fecha vacía también se llena con el calendario', async () => {
@@ -291,7 +362,7 @@ describe('la fecha de nacimiento', () => {
     // justo en el caso en que más ayuda el calendario.
     montar();
     await subir();
-    const campo = screen.getByLabelText(/Fecha de nacimiento de la fila 2/i);
+    const campo = screen.getByLabelText('Fecha de nacimiento de la fila 2');
     expect(campo).toHaveValue('');
     expect(campo).toHaveAttribute('type', 'date');
   });
@@ -303,7 +374,7 @@ describe('la fecha de nacimiento', () => {
     ]);
     montar();
     await subir();
-    const campo = screen.getByLabelText(/Fecha de nacimiento de la fila 1/i);
+    const campo = screen.getByLabelText('Fecha de nacimiento de la fila 1');
     expect(campo).toHaveAttribute('type', 'text');
     expect(campo).toHaveValue('no sé');
   });

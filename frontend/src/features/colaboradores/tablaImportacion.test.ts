@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filaVacia, mapaDeErrores, conValorGlobal, hayDatos, CLAVE_HORARIO, CLAVE_SEDE } from './tablaImportacion';
+import { filaVacia, mapaDeErrores, conValorGlobal, hayDatos, erroresSinFila, CLAVE_HORARIO, CLAVE_SEDE } from './tablaImportacion';
 import type { Columna } from './formatoImportacion';
 
 const COLUMNAS: Columna[] = [
@@ -115,5 +115,50 @@ describe('lo que se aplica a todos de un golpe', () => {
   it('poner la sede no borra el horario que ya estaba', () => {
     const r = conValorGlobal(filas, CLAVE_SEDE, 's1');
     expect(r[1][CLAVE_HORARIO]).toBe('h2');
+  });
+});
+
+describe('los errores cuando se borra una fila', () => {
+  // Los errores se guardan por NÚMERO de fila. Al borrar la 1, la que era 2
+  // pasa a ser 1: si no se corren, hereda un error que no es suyo y la persona
+  // equivocada aparece marcada en rojo.
+  const errores = () => new Map([
+    ['0:cedula', 'La cédula de Ana ya existe.'],
+    ['2:nombre', 'Falta el nombre de Luis.'],
+    ['2:salarioMensual', 'Falta el salario de Luis.'],
+  ]);
+
+  it('el error de la fila borrada se va con ella', () => {
+    const r = erroresSinFila(errores(), 0);
+    expect(r.has('0:cedula')).toBe(false);
+  });
+
+  it('los de las filas de abajo se corren, no se quedan donde estaban', () => {
+    const r = erroresSinFila(errores(), 0);
+    expect(r.get('1:nombre')).toBe('Falta el nombre de Luis.');
+    expect(r.get('1:salarioMensual')).toBe('Falta el salario de Luis.');
+    expect(r.has('2:nombre')).toBe(false);
+  });
+
+  it('borrar una fila de abajo no toca las de arriba', () => {
+    const r = erroresSinFila(errores(), 2);
+    expect(r.get('0:cedula')).toBe('La cédula de Ana ya existe.');
+    expect(r.size).toBe(1);
+  });
+
+  it('borrar una fila sin errores deja todo como estaba, solo corrido', () => {
+    const r = erroresSinFila(errores(), 1);
+    expect(r.get('0:cedula')).toBe('La cédula de Ana ya existe.');
+    expect(r.get('1:nombre')).toBe('Falta el nombre de Luis.');
+  });
+
+  it('sin errores no hay nada que correr', () => {
+    expect(erroresSinFila(new Map(), 0).size).toBe(0);
+  });
+
+  it('no muta el mapa que le dieron', () => {
+    const original = errores();
+    erroresSinFila(original, 0);
+    expect(original.has('0:cedula')).toBe(true);
   });
 });

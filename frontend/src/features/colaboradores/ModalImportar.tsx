@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Upload, Download, X, AlertTriangle, FileSpreadsheet, Plus, Trash2 } from 'lucide-react';
+import { Upload, Download, X, AlertTriangle, FileSpreadsheet, Plus, Trash2, AlertCircle } from 'lucide-react';
 import api from '../../lib/api';
 import { descargarFormato, leerHoja, mapearHoja, type Columna } from './formatoImportacion';
 import {
-  filaVacia, hayDatos, mapaDeErrores, conValorGlobal,
+  filaVacia, hayDatos, mapaDeErrores, conValorGlobal, erroresSinFila,
   CLAVE_HORARIO, CLAVE_SEDE, type FilaEditable, type ErrorFila,
 } from './tablaImportacion';
 
@@ -214,8 +214,12 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
               </div>
 
               {/* La tabla se desplaza sola: con nueve columnas no cabe en un
-                  teléfono, y encogerla haría ilegible cada celda. */}
-              <div className="border border-gray-200 rounded-xl overflow-x-auto">
+                  teléfono, y encogerla haría ilegible cada celda.
+                  Ojo: overflow-x:auto obliga al navegador a recortar TAMBIÉN en
+                  vertical, así que el globo del error de la última fila queda
+                  cortado. El hueco de abajo le hace sitio, y solo aparece
+                  cuando hay algo que mostrar. */}
+              <div className={`border border-gray-200 rounded-xl overflow-x-auto ${errores.size > 0 ? 'pb-16' : ''}`}>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-muted uppercase text-[11px]">
                     <tr>
@@ -232,28 +236,53 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filas.map((fila, i) => (
-                      <tr key={i} className="align-top">
+                      <tr key={i} className={`align-top ${
+                        columnas.some(c => errores.has(`${i}:${c.clave}`)) ? 'bg-red-50/60' : ''}`}>
                         <td className="px-2 py-1.5 text-[11px] text-gray-400">{i + 1}</td>
                         {columnas.map(c => {
                           const malo = errores.get(`${i}:${c.clave}`);
+                          const idAviso = `imp-${i}-${c.clave}`;
                           return (
                             <td key={c.clave} className="px-2 py-1.5">
-                              {/* Las fechas se corrigen con el calendario del
-                                  navegador, no escribiendo AAAA-MM-DD de
-                                  memoria. Si lo que vino del Excel no se pudo
-                                  acomodar, el campo de fecha lo rechazaría y
-                                  quedaría en blanco escondiendo el dato: en ese
-                                  caso se deja como texto para poder verlo. */}
-                              <input
-                                type={c.tipo === 'fecha' && cabeEnCalendario(fila[c.clave]) ? 'date' : 'text'}
-                                aria-label={`${c.titulo} de la fila ${i + 1}`}
-                                aria-invalid={malo ? true : undefined}
-                                value={fila[c.clave] ?? ''}
-                                onChange={e => cambiar(i, c.clave, e.target.value)}
-                                className={`w-full min-w-[7rem] border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ${
-                                  malo ? 'border-red-400 bg-red-50 focus:ring-red-300' : 'border-gray-300 focus:ring-primary'}`}
-                              />
-                              {malo && <span className="block text-[11px] text-red-700 mt-0.5 max-w-[14rem]">{malo}</span>}
+                              {/* El mensaje NO va debajo del campo: uno de
+                                  cuatro renglones estiraba la fila entera y
+                                  desalineaba la tabla. Va en un globo que se
+                                  abre al pasar por encima del aviso, y queda
+                                  en la página para quien no puede pasar el
+                                  mouse. */}
+                              <div className="group/celda relative flex items-center gap-1">
+                                {/* Las fechas se corrigen con el calendario del
+                                    navegador, no escribiendo AAAA-MM-DD de
+                                    memoria. Si lo que vino del Excel no se pudo
+                                    acomodar, el campo de fecha lo rechazaría y
+                                    quedaría en blanco escondiendo el dato: en
+                                    ese caso se deja como texto para verlo. */}
+                                <input
+                                  type={c.tipo === 'fecha' && cabeEnCalendario(fila[c.clave]) ? 'date' : 'text'}
+                                  aria-label={`${c.titulo} de la fila ${i + 1}`}
+                                  aria-invalid={malo ? true : undefined}
+                                  aria-describedby={malo ? idAviso : undefined}
+                                  value={fila[c.clave] ?? ''}
+                                  onChange={e => cambiar(i, c.clave, e.target.value)}
+                                  className={`w-full min-w-[7rem] border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ${
+                                    malo ? 'border-red-400 bg-red-50 focus:ring-red-300' : 'border-gray-300 focus:ring-primary'}`}
+                                />
+                                {malo && (
+                                  <>
+                                    <button type="button"
+                                      aria-label={`Qué pasa con ${c.titulo} de la fila ${i + 1}`}
+                                      className="shrink-0 text-red-500 hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300 rounded-full">
+                                      <AlertCircle size={16} />
+                                    </button>
+                                    <span
+                                      id={idAviso}
+                                      role="tooltip"
+                                      className="pointer-events-none absolute left-0 top-full z-20 mt-1 w-56 rounded-lg bg-ink px-2.5 py-2 text-[11px] leading-snug text-white shadow-lg opacity-0 invisible transition-opacity group-hover/celda:opacity-100 group-hover/celda:visible group-focus-within/celda:opacity-100 group-focus-within/celda:visible">
+                                      {malo}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </td>
                           );
                         })}
@@ -282,7 +311,10 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
                         <td className="px-2 py-1.5">
                           <button type="button"
                             aria-label={`Quitar la fila ${i + 1}`}
-                            onClick={() => setFilas(f => (f ?? []).filter((_, j) => j !== i))}
+                            onClick={() => {
+                              setFilas(f => (f ?? []).filter((_, j) => j !== i));
+                              setErrores(m => erroresSinFila(m, i));
+                            }}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50">
                             <Trash2 size={15} />
                           </button>

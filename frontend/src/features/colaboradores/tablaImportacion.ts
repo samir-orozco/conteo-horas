@@ -45,3 +45,20 @@ export function mapaDeErrores(errores: ErrorFila[]): Map<string, string> {
 export function conValorGlobal(filas: FilaEditable[], clave: string, valor: string): FilaEditable[] {
   return filas.map(f => (hayDatos(f) ? { ...f, [clave]: valor } : { ...f }));
 }
+
+// Los errores después de borrar una fila.
+//
+// Se guardan por NÚMERO de fila. Al borrar la 1, la que era 2 pasa a ser 1: si
+// no se corren, hereda un error que no es suyo y la persona equivocada aparece
+// marcada en rojo mientras la que fallaba ya no está.
+export function erroresSinFila(errores: Map<string, string>, borrada: number): Map<string, string> {
+  const salida = new Map<string, string>();
+  for (const [llave, mensaje] of errores) {
+    const corte = llave.indexOf(':');
+    const fila = Number(llave.slice(0, corte));
+    const campo = llave.slice(corte + 1);
+    if (fila === borrada) continue;
+    salida.set(`${fila > borrada ? fila - 1 : fila}:${campo}`, mensaje);
+  }
+  return salida;
+}
