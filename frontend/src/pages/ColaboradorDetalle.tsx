@@ -20,6 +20,9 @@ import { TIPO_PERMISO_LABEL } from '../constants/permisos';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 import ModalReingreso from '../features/colaboradores/ModalReingreso';
 import CabeceraFicha from '../features/colaboradores/CabeceraFicha';
+import LineaDeTiempo from '../components/LineaDeTiempo';
+import { aspectoDeNovedad, rangoDeNovedad } from '../features/colaboradores/novedades';
+import { tiempoRelativo } from '../features/colaboradores/tiempoRelativo';
 import { aFotoDePerfil } from '../features/colaboradores/foto';
 import { fechaLarga } from '../lib/fechas';
 import { diasDeVinculacion, enPalabras } from '../features/colaboradores/tiempoVinculado';
@@ -594,34 +597,49 @@ export default function ColaboradorDetalle() {
 
       <div className={`grid gap-4 [&>*]:min-w-0 ${tab === 'novedades' || tab === 'asistencia' ? '' : 'hidden'}`}>
         {tab === 'novedades' && (<>
-        {/* Novedades: vacaciones, incapacidades, licencias, permisos */}
-        <div className="bg-white rounded-card border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold text-ink flex items-center gap-2"><CalendarOff size={16} /> Novedades</p>
+        {/* Novedades: vacaciones, incapacidades, licencias, permisos.
+            Misma línea de tiempo que la historia de vinculación: son la misma
+            forma de leer (qué pasó, cuándo, con qué soporte), así que comparten
+            componente en vez de tener dos diseños que se parecen. */}
+        <div className="bg-white rounded-card border border-gray-200">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold text-ink flex items-center gap-2"><CalendarOff size={16} /> Novedades</p>
+              <p className="text-xs text-muted mt-1">
+                Vacaciones, incapacidades, licencias y permisos. Los días con novedad no
+                cuentan como ausencia.
+              </p>
+            </div>
             <button onClick={() => { setErrorNovedad(''); setEditandoNovedad(null); setNovedad(EMPTY_NOVEDAD); setCambioEvidencia({ tipo: 'sin-cambio' }); setModalNovedad(true); }}
-              className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-2.5 py-1.5 rounded-lg">
+              className="flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-2.5 py-1.5 rounded-lg shrink-0">
               <Plus size={13} /> Agregar
             </button>
           </div>
-          <p className="text-xs text-muted mb-3">Vacaciones, incapacidades, licencias y permisos. Los días con novedad no cuentan como ausencia.</p>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {permisos.length === 0 && <p className="text-sm text-muted">Sin novedades registradas.</p>}
-            {permisos.map(p => (
-              <button key={p.id} onClick={() => setVerNovedad(p)}
-                className="w-full flex items-start justify-between gap-2 bg-gray-50 hover:bg-gray-100 rounded-xl px-3.5 py-2.5 text-left transition-colors">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink">{TIPO_PERMISO_LABEL[p.tipo] ?? p.tipo}</p>
-                  <p className="text-xs text-muted truncate">
-                    {format(new Date(p.fechaInicio), 'd MMM', { locale: es })} → {format(new Date(p.fechaFin), 'd MMM yyyy', { locale: es })}
-                    {p.descripcion ? ` · ${p.descripcion}` : ''}
-                  </p>
-                </div>
-                <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${p.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                  {p.aprobado ? 'APROBADA' : 'PENDIENTE'}
-                </span>
-              </button>
-            ))}
-          </div>
+
+          {permisos.length === 0 ? (
+            <p className="text-sm text-muted px-5 py-6">Sin novedades registradas.</p>
+          ) : (
+            <LineaDeTiempo
+              sustantivo={{ singular: 'novedad', plural: 'novedades' }}
+              hitos={permisos.map(p => {
+                const a = aspectoDeNovedad(p.tipo, p.aprobado);
+                return {
+                  id: p.id,
+                  icono: a.icono,
+                  tono: a.tono,
+                  insignia: a.insignia,
+                  titulo: TIPO_PERMISO_LABEL[p.tipo] ?? p.tipo,
+                  detalle: rangoDeNovedad(p.fechaInicio, p.fechaFin),
+                  nota: p.descripcion || null,
+                  adjunto: p.evidenciaTipo
+                    ? { nombre: p.evidenciaNombre || 'Evidencia', tipo: p.evidenciaTipo, onAbrir: () => verEvidencia(p.id) }
+                    : null,
+                  rotulo: tiempoRelativo(new Date(p.fechaInicio), new Date()),
+                  onAbrir: () => setVerNovedad(p),
+                };
+              })}
+            />
+          )}
         </div>
 
         </>)}

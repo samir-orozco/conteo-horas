@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { History, LogIn, LogOut, Undo2, FileText, Image as ImageIcon, ChevronDown, AlertTriangle } from 'lucide-react';
+import { History, LogIn, LogOut, Undo2, AlertTriangle } from 'lucide-react';
 import { ETIQUETA_MOTIVO } from './motivos';
 import { tiempoRelativo } from './tiempoRelativo';
 import { fechaLarga } from '../../lib/fechas';
+import LineaDeTiempo, { type Hito, type TonoHito } from '../../components/LineaDeTiempo';
 
 export type Evento = {
   id: string;
@@ -15,15 +15,11 @@ export type Evento = {
   usuarioNombre: string | null;
 };
 
-const ASPECTO = {
-  INGRESO:   { icono: LogIn,  texto: 'Ingresó',   color: 'bg-green-100 text-green-700 ring-green-50' },
-  RETIRO:    { icono: LogOut, texto: 'Se retiró', color: 'bg-red-100 text-red-700 ring-red-50' },
-  REINGRESO: { icono: Undo2,  texto: 'Reingresó', color: 'bg-blue-100 text-blue-700 ring-blue-50' },
+const ASPECTO: Record<Evento['tipo'], { icono: typeof LogIn; texto: string; tono: TonoHito }> = {
+  INGRESO:   { icono: LogIn,  texto: 'Ingresó',   tono: 'verde' },
+  RETIRO:    { icono: LogOut, texto: 'Se retiró', tono: 'rojo' },
+  REINGRESO: { icono: Undo2,  texto: 'Reingresó', tono: 'azul' },
 };
-
-// Cuántos se ven antes de pedir el resto. Cuatro alcanzan para el caso normal
-// (entró, salió, volvió, se fue) sin empujar el tab fuera de la pantalla.
-const VISIBLES = 4;
 
 // Historia de vinculación: entró, salió, volvió.
 //
@@ -37,8 +33,6 @@ export default function HistorialVinculacion({ eventos, error, onVerDocumento, o
   onVerDocumento: (url: string, nombre: string | null) => void;
   onReintentar: () => void;
 }) {
-  const [todos, setTodos] = useState(false);
-
   // Un fallo de red no es una historia vacía. Decir "sin movimientos" cuando
   // en realidad no se pudo preguntar es afirmar algo falso sobre el historial
   // legal de una persona.
@@ -65,8 +59,28 @@ export default function HistorialVinculacion({ eventos, error, onVerDocumento, o
   if (!eventos) return null;
 
   const hoy = new Date();
-  const ocultos = Math.max(0, eventos.length - VISIBLES);
-  const alaVista = todos ? eventos : eventos.slice(0, VISIBLES);
+  const hitos: Hito[] = eventos.map(e => {
+    const a = ASPECTO[e.tipo];
+    return {
+      id: e.id,
+      icono: a.icono,
+      tono: a.tono,
+      titulo: a.texto,
+      detalle: <>{e.motivo && <>{ETIQUETA_MOTIVO[e.motivo] ?? e.motivo} · </>}{fechaLarga(e.fecha)}</>,
+      nota: e.nota,
+      adjunto: e.documentoTipo
+        ? {
+            // "Soporte" y no el genérico "Adjunto": aquí el archivo es la
+            // carta de renuncia o el acta, y así se llama en el resto de la ficha.
+            nombre: e.documentoNombre || 'Soporte',
+            tipo: e.documentoTipo,
+            onAbrir: () => onVerDocumento(`/colaboradores/vinculacion/${e.id}/documento`, e.documentoNombre),
+          }
+        : null,
+      rotulo: tiempoRelativo(new Date(e.fecha), hoy),
+      autor: e.usuarioNombre ? `Registrado por ${e.usuarioNombre}` : null,
+    };
+  });
 
   return (
     <div className="bg-white rounded-card border border-gray-200">
@@ -83,81 +97,7 @@ export default function HistorialVinculacion({ eventos, error, onVerDocumento, o
       {eventos.length === 0 ? (
         <p className="text-sm text-muted px-5 py-6">Sin movimientos registrados.</p>
       ) : (
-        <>
-          <ol className="px-5 py-5">
-            {alaVista.map((e, i) => {
-              const a = ASPECTO[e.tipo];
-              const Icono = a.icono;
-              const esUltimo = i === alaVista.length - 1;
-              const esPdf = e.documentoTipo === 'application/pdf';
-              const rotulo = tiempoRelativo(new Date(e.fecha), hoy);
-              return (
-                <li key={e.id} className="relative flex gap-4 pb-6 last:pb-0">
-                  {/* La línea que une los hitos. No se pinta bajo el último:
-                      colgaría hacia un vacío. */}
-                  {!esUltimo && (
-                    <span className="absolute left-[15px] top-9 -bottom-1 w-px bg-gray-200" aria-hidden="true" />
-                  )}
-                  <span className={`w-[31px] h-[31px] rounded-full flex items-center justify-center shrink-0 ring-4 ${a.color}`}>
-                    <Icono size={15} />
-                  </span>
-
-                  <div className="min-w-0 flex-1 pt-1">
-                    <p className="text-sm font-bold text-ink leading-tight">{a.texto}</p>
-                    <p className="text-sm text-muted mt-0.5">
-                      {e.motivo && <>{ETIQUETA_MOTIVO[e.motivo] ?? e.motivo} · </>}
-                      {fechaLarga(e.fecha)}
-                    </p>
-                    {e.nota && (
-                      <p className="text-xs text-muted mt-1.5 leading-snug border-l-2 border-gray-200 pl-2.5">
-                        {e.nota}
-                      </p>
-                    )}
-
-                    {e.documentoTipo && (
-                      <div className="mt-2.5 rounded-xl border border-gray-200 bg-gray-50/70 p-2">
-                        <button
-                          onClick={() => onVerDocumento(`/colaboradores/vinculacion/${e.id}/documento`, e.documentoNombre)}
-                          className="flex items-center gap-2.5 max-w-full text-left rounded-lg px-1.5 py-1 hover:bg-white transition-colors">
-                          <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                            esPdf ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-                            {esPdf ? <FileText size={16} /> : <ImageIcon size={16} />}
-                          </span>
-                          <span className="min-w-0">
-                            <span className="block text-xs font-semibold text-ink truncate">
-                              {e.documentoNombre || 'Soporte'}
-                            </span>
-                            <span className="block text-[11px] text-muted">
-                              {esPdf ? 'PDF' : 'Imagen'}
-                            </span>
-                          </span>
-                        </button>
-                      </div>
-                    )}
-
-                    {(rotulo || e.usuarioNombre) && (
-                      <p className="text-[11px] text-gray-400 mt-2">
-                        {rotulo && <span className="font-semibold tracking-wide">{rotulo}</span>}
-                        {rotulo && e.usuarioNombre && <span> · </span>}
-                        {e.usuarioNombre && <span>Registrado por {e.usuarioNombre}</span>}
-                      </p>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-
-          {ocultos > 0 && !todos && (
-            <button
-              type="button"
-              onClick={() => setTodos(true)}
-              className="w-full px-5 py-3 border-t border-gray-100 text-sm font-semibold text-blue-600 hover:bg-gray-50 flex items-center justify-center gap-1.5 rounded-b-card transition-colors">
-              Ver {ocultos} movimiento{ocultos === 1 ? '' : 's'} más
-              <ChevronDown size={15} />
-            </button>
-          )}
-        </>
+        <LineaDeTiempo hitos={hitos} sustantivo={{ singular: 'movimiento', plural: 'movimientos' }} />
       )}
     </div>
   );
