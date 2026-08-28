@@ -267,6 +267,9 @@ export default function Colaboradores() {
             ]}
             seleccion={filtros}
             onCambiar={setFiltros}
+            // El botón vive pegado al borde derecho de la pantalla, así que el
+            // menú tiene que crecer hacia la izquierda o se sale.
+            alinear="derecha"
           />
         )}
       </div>

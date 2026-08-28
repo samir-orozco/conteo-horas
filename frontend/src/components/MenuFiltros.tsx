@@ -15,10 +15,14 @@ export type Seleccion = Record<string, string[]>;
 // de colaboradores. Es el mismo gesto en los dos sitios: marcar lo que se
 // quiere ver. Tenerlo dos veces significaba que arreglarle algo a uno dejaba el
 // otro atrás.
-export default function MenuFiltros({ grupos, seleccion, onCambiar }: {
+export default function MenuFiltros({ grupos, seleccion, onCambiar, alinear = 'izquierda' }: {
   grupos: GrupoFiltro[];
   seleccion: Seleccion;
   onCambiar: (nueva: Seleccion) => void;
+  // Hacia dónde se abre. Lo decide quien lo usa porque depende de dónde esté
+  // el botón: pegado al borde derecho de la pantalla, un menú que crece hacia
+  // la derecha se sale y se ve cortado.
+  alinear?: 'izquierda' | 'derecha';
 }) {
   const [abierto, setAbierto] = useState(false);
 
@@ -59,7 +63,8 @@ export default function MenuFiltros({ grupos, seleccion, onCambiar }: {
         <>
           <button type="button" aria-label="Cerrar los filtros" tabIndex={-1}
             onClick={() => setAbierto(false)} className="fixed inset-0 !mt-0 z-30 cursor-default" />
-          <div className="absolute top-full mt-1 left-0 z-40 w-60 max-h-[60dvh] overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-200 py-1.5">
+          <div className={`absolute top-full mt-1 z-40 w-60 max-h-[60dvh] overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-200 py-1.5 ${
+            alinear === 'derecha' ? 'right-0' : 'left-0'}`}>
             {conOpciones.map((g, i) => (
               <div key={g.clave} className={i > 0 ? 'mt-1.5 pt-1.5 border-t border-gray-100' : ''}>
                 <p className="px-3.5 pb-1.5 text-xs font-semibold text-muted">{g.titulo}</p>
@@ -86,7 +91,7 @@ export default function MenuFiltros({ grupos, seleccion, onCambiar }: {
             {cuantos > 0 && (
               <button type="button"
                 onClick={() => { onCambiar({}); setAbierto(false); }}
-                className="w-full mt-1.5 pt-2 border-t border-gray-100 px-3.5 pb-1 text-sm font-semibold text-red-500 hover:text-red-600 text-left">
+                className="w-full mt-1.5 pt-2 border-t border-gray-100 px-3.5 pb-1 text-sm font-semibold text-red-500 hover:text-red-600 text-center">
                 Limpiar filtros
               </button>
             )}
