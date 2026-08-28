@@ -6,6 +6,7 @@ const COLUMNAS: Columna[] = [
   { clave: 'apellido', titulo: 'Apellido', obligatoria: true, ejemplo: 'Gómez' },
   { clave: 'cedula', titulo: 'Cédula', obligatoria: true, ejemplo: '123' },
   { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1' },
+  { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', tipo: 'fecha' },
 ];
 
 describe('leer la hoja que subieron', () => {
@@ -14,7 +15,8 @@ describe('leer la hoja que subieron', () => {
       ['Nombre', 'Apellido', 'Cédula', 'Salario mensual'],
       ['Ana', 'Gómez', '123', '1750905'],
     ], COLUMNAS);
-    expect(filas).toEqual([{ nombre: 'Ana', apellido: 'Gómez', cedula: '123', salarioMensual: '1750905' }]);
+    expect(filas).toHaveLength(1);
+    expect(filas[0]).toMatchObject({ nombre: 'Ana', apellido: 'Gómez', cedula: '123', salarioMensual: '1750905' });
   });
 
   it('aguanta que muevan las columnas de lugar', () => {
@@ -23,7 +25,7 @@ describe('leer la hoja que subieron', () => {
       ['Cédula', 'Salario mensual', 'Nombre', 'Apellido'],
       ['123', '1750905', 'Ana', 'Gómez'],
     ], COLUMNAS);
-    expect(filas[0]).toEqual({ cedula: '123', salarioMensual: '1750905', nombre: 'Ana', apellido: 'Gómez' });
+    expect(filas[0]).toMatchObject({ cedula: '123', salarioMensual: '1750905', nombre: 'Ana', apellido: 'Gómez' });
   });
 
   it('no se rompe por tildes ni por mayúsculas', () => {
@@ -43,7 +45,8 @@ describe('leer la hoja que subieron', () => {
       ['Ana', 'Gómez', '123', '1750905', 'lo que sea'],
     ], COLUMNAS);
     expect(filas[0]).not.toHaveProperty('Notas internas');
-    expect(Object.keys(filas[0])).toHaveLength(4);
+    // Solo las columnas declaradas, ni una más.
+    expect(Object.keys(filas[0]).sort()).toEqual(COLUMNAS.map(c => c.clave).sort());
   });
 
   it('una columna que falta queda vacía, no rompe la lectura', () => {
@@ -90,5 +93,33 @@ describe('leer la hoja que subieron', () => {
   it('una hoja vacía no revienta', () => {
     expect(mapearHoja([], COLUMNAS)).toEqual([]);
     expect(mapearHoja([[]], COLUMNAS)).toEqual([]);
+  });
+
+  it('las columnas de fecha se normalizan al leerlas, no al validarlas', () => {
+    // Así la tabla muestra de una la fecha que se va a guardar, y quien mira
+    // puede comprobar que "11/12/85" quedó como esperaba.
+    const filas = mapearHoja([
+      ['Nombre', 'Apellido', 'Cédula', 'Salario mensual', 'Fecha de nacimiento'],
+      ['Ana', 'Gómez', '123', '1750905', '11/12/85'],
+      ['Luis', 'Paz', '456', '1750905', new Date(1994, 2, 15)],
+    ], COLUMNAS);
+    expect(filas[0].fechaNacimiento).toBe('1985-12-11');
+    expect(filas[1].fechaNacimiento).toBe('1994-03-15');
+  });
+
+  it('lo que no es fecha se deja como vino, para que se vea y se corrija', () => {
+    const filas = mapearHoja([
+      ['Nombre', 'Apellido', 'Cédula', 'Salario mensual', 'Fecha de nacimiento'],
+      ['Ana', 'Gómez', '123', '1750905', 'no sé'],
+    ], COLUMNAS);
+    expect(filas[0].fechaNacimiento).toBe('no sé');
+  });
+
+  it('las columnas que no son fecha no se tocan', () => {
+    const filas = mapearHoja([
+      ['Nombre', 'Apellido', 'Cédula', 'Salario mensual'],
+      ['11/12/85', 'Gómez', '123', '1750905'],
+    ], COLUMNAS);
+    expect(filas[0].nombre).toBe('11/12/85');
   });
 });

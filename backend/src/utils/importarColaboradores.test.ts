@@ -3,6 +3,7 @@ import { validarImportacion, COLUMNAS_FORMATO, type ContextoImportacion } from '
 
 const ctx = (over: Partial<ContextoImportacion> = {}): ContextoImportacion => ({
   horariosValidos: new Set(['h1', 'h2']),
+  sedesValidas: new Set(['s1', 's2']),
   cedulasActivas: new Set<string>(),
   cedulasRetiradas: new Set<string>(),
   cupoDisponible: 100,
@@ -12,7 +13,7 @@ const ctx = (over: Partial<ContextoImportacion> = {}): ContextoImportacion => ({
 const fila = (over: Record<string, unknown> = {}) => ({
   nombre: 'Ana', apellido: 'Gómez', cedula: '1020304050',
   cargo: 'Vigilante', salarioMensual: '1750905', email: '', telefono: '',
-  fechaNacimiento: '', horarioId: '', ...over,
+  fechaNacimiento: '', horarioId: '', sedeId: '', ...over,
 });
 
 const errores = (r: ReturnType<typeof validarImportacion>) => r.errores.map(e => `${e.fila}:${e.campo}`);
@@ -118,7 +119,7 @@ describe('la validación de una carga masiva', () => {
 
   it('una fila completamente vacía se ignora, no se reporta como error', () => {
     // Excel arrastra filas vacías al final todo el tiempo.
-    const vacia = { nombre: '', apellido: '', cedula: '', cargo: '', salarioMensual: '', email: '', telefono: '', fechaNacimiento: '', horarioId: '' };
+    const vacia = { nombre: '', apellido: '', cedula: '', cargo: '', salarioMensual: '', email: '', telefono: '', fechaNacimiento: '', horarioId: '', sedeId: '' };
     const r = validarImportacion([fila(), vacia, vacia], ctx());
     expect(r.errores).toEqual([]);
     expect(r.validas).toHaveLength(1);
@@ -180,5 +181,35 @@ describe('la validación de una carga masiva', () => {
     const r = validarImportacion([fila(), fila({ cedula: 'X' }), fila({ cedula: '9' })], ctx());
     expect(r.conDatos).toBe(3);
     expect(r.validas).toHaveLength(2);
+  });
+
+  it('la sede también se elige en la pantalla, igual que el horario', () => {
+    const r = validarImportacion([fila({ sedeId: 's1' })], ctx());
+    expect(r.errores).toEqual([]);
+    expect(r.validas[0].sedeId).toBe('s1');
+  });
+
+  it('una sede de otra empresa no pasa', () => {
+    expect(errores(validarImportacion([fila({ sedeId: 'ajena' })], ctx()))).toContain('2:sedeId');
+  });
+
+  it('sin sede se crea igual', () => {
+    const r = validarImportacion([fila({ sedeId: '' })], ctx());
+    expect(r.errores).toEqual([]);
+    expect(r.validas[0].sedeId).toBeNull();
+  });
+
+  it('elegir horario y sede sin escribir nada más no convierte la fila en real', () => {
+    // El global los pone en todas las filas, incluidas las vacías del final.
+    const soloElecciones = { nombre: '', apellido: '', cedula: '', cargo: '', salarioMensual: '',
+      email: '', telefono: '', fechaNacimiento: '', horarioId: 'h1', sedeId: 's1' };
+    const r = validarImportacion([fila(), soloElecciones], ctx());
+    expect(r.errores).toEqual([]);
+    expect(r.conDatos).toBe(1);
+  });
+
+  it('la columna de fecha viene marcada como fecha, para que la tabla pinte un calendario', () => {
+    const f = COLUMNAS_FORMATO.find(c => c.clave === 'fechaNacimiento');
+    expect(f?.tipo).toBe('fecha');
   });
 });

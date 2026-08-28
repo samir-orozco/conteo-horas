@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filaVacia, mapaDeErrores, conHorarioGlobal, hayDatos, CLAVE_HORARIO } from './tablaImportacion';
+import { filaVacia, mapaDeErrores, conValorGlobal, hayDatos, CLAVE_HORARIO, CLAVE_SEDE } from './tablaImportacion';
 import type { Columna } from './formatoImportacion';
 
 const COLUMNAS: Columna[] = [
@@ -9,7 +9,7 @@ const COLUMNAS: Columna[] = [
 
 describe('una fila nueva de la tabla', () => {
   it('trae todas las columnas vacías, y el horario también', () => {
-    expect(filaVacia(COLUMNAS)).toEqual({ nombre: '', cedula: '', [CLAVE_HORARIO]: '' });
+    expect(filaVacia(COLUMNAS)).toEqual({ nombre: '', cedula: '', [CLAVE_HORARIO]: '', [CLAVE_SEDE]: '' });
   });
 
   it('no comparte objeto con otra fila nueva', () => {
@@ -29,11 +29,12 @@ describe('saber si una fila tiene algo escrito', () => {
     expect(hayDatos({ nombre: '   ', cedula: '' })).toBe(false);
   });
 
-  it('elegir un horario sin escribir nada más NO convierte la fila en real', () => {
-    // Aplicar el horario global a todas llenaría ese campo en las filas
-    // vacías del final. Si eso las volviera reales, el servidor las
-    // reportaría como filas sin nombre y sin cédula.
+  it('elegir horario o sede sin escribir nada más NO convierte la fila en real', () => {
+    // Los selectores globales llenan esos campos en todas las filas, incluidas
+    // las vacías del final. Si eso las volviera reales, el servidor las
+    // reportaría como personas sin nombre y sin cédula.
     expect(hayDatos({ nombre: '', cedula: '', [CLAVE_HORARIO]: 'h1' })).toBe(false);
+    expect(hayDatos({ nombre: '', cedula: '', [CLAVE_SEDE]: 's1' })).toBe(false);
   });
 
   it('con cualquier dato real sí cuenta', () => {
@@ -72,7 +73,7 @@ describe('los errores, puestos en su celda', () => {
   });
 });
 
-describe('el horario que se aplica a todos', () => {
+describe('lo que se aplica a todos de un golpe', () => {
   const filas = [
     { nombre: 'Ana', cedula: '1', [CLAVE_HORARIO]: '' },
     { nombre: 'Luis', cedula: '2', [CLAVE_HORARIO]: 'h2' },
@@ -80,28 +81,39 @@ describe('el horario que se aplica a todos', () => {
   ];
 
   it('se lo pone a todas las filas con datos', () => {
-    const r = conHorarioGlobal(filas, 'h1');
+    const r = conValorGlobal(filas, CLAVE_HORARIO, 'h1');
     expect(r[0][CLAVE_HORARIO]).toBe('h1');
     expect(r[1][CLAVE_HORARIO]).toBe('h1');
   });
 
   it('pisa el que ya tenían: para eso se aplica a todos', () => {
-    expect(conHorarioGlobal(filas, 'h1')[1][CLAVE_HORARIO]).toBe('h1');
+    expect(conValorGlobal(filas, CLAVE_HORARIO, 'h1')[1][CLAVE_HORARIO]).toBe('h1');
   });
 
   it('no toca las filas vacías', () => {
     // Llenarlas las convertiría en filas a medio escribir.
-    expect(conHorarioGlobal(filas, 'h1')[2][CLAVE_HORARIO]).toBe('');
+    expect(conValorGlobal(filas, CLAVE_HORARIO, 'h1')[2][CLAVE_HORARIO]).toBe('');
   });
 
   it('elegir "sin horario" lo quita de todas', () => {
     const conAlgo = [{ nombre: 'Ana', cedula: '1', [CLAVE_HORARIO]: 'h2' }];
-    expect(conHorarioGlobal(conAlgo, '')[0][CLAVE_HORARIO]).toBe('');
+    expect(conValorGlobal(conAlgo, CLAVE_HORARIO, '')[0][CLAVE_HORARIO]).toBe('');
   });
 
   it('devuelve filas nuevas, no muta las que le dieron', () => {
     const original = [{ nombre: 'Ana', cedula: '1', [CLAVE_HORARIO]: '' }];
-    conHorarioGlobal(original, 'h1');
+    conValorGlobal(original, CLAVE_HORARIO, 'h1');
     expect(original[0][CLAVE_HORARIO]).toBe('');
+  });
+
+  it('sirve igual para la sede', () => {
+    const r = conValorGlobal(filas, CLAVE_SEDE, 's1');
+    expect(r[0][CLAVE_SEDE]).toBe('s1');
+    expect(r[2][CLAVE_SEDE]).toBeUndefined();
+  });
+
+  it('poner la sede no borra el horario que ya estaba', () => {
+    const r = conValorGlobal(filas, CLAVE_SEDE, 's1');
+    expect(r[1][CLAVE_HORARIO]).toBe('h2');
   });
 });

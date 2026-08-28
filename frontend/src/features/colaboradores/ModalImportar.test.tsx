@@ -19,8 +19,10 @@ const COLUMNAS = [
   { clave: 'nombre', titulo: 'Nombre', obligatoria: true, ejemplo: 'Ana' },
   { clave: 'cedula', titulo: 'Cédula', obligatoria: true, ejemplo: '123' },
   { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1' },
+  { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', tipo: 'fecha' },
 ];
 const HORARIOS = [{ id: 'h1', nombre: 'Turno diurno' }, { id: 'h2', nombre: 'Turno nocturno' }];
+const SEDES = [{ id: 's1', nombre: 'Sede norte' }, { id: 's2', nombre: 'Sede centro' }];
 
 const OK = { validas: [], errores: [], excedeCupo: false, vacio: false, conDatos: 0, creados: 0 };
 
@@ -31,11 +33,11 @@ const montar = (props = {}) => render(<ModalImportar onCerrar={vi.fn()} onListo=
 
 beforeEach(() => {
   vi.clearAllMocks();
-  get.mockResolvedValue({ data: { columnas: COLUMNAS, horarios: HORARIOS } });
+  get.mockResolvedValue({ data: { columnas: COLUMNAS, horarios: HORARIOS, sedes: SEDES } });
   leerHoja.mockResolvedValue([
-    ['Nombre', 'Cédula', 'Salario mensual'],
-    ['Ana', '111', '1750905'],
-    ['Luis', '222', '2000000'],
+    ['Nombre', 'Cédula', 'Salario mensual', 'Fecha de nacimiento'],
+    ['Ana', '111', '1750905', '11/12/85'],
+    ['Luis', '222', '2000000', ''],
   ]);
   post.mockResolvedValue({ data: OK });
 });
@@ -220,5 +222,89 @@ describe('crear', () => {
     await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
     expect(await screen.findByText(/Internal Server Error/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Nombre de la fila 1/i)).toHaveValue('Ana');
+  });
+});
+
+describe('la sede, igual que el horario', () => {
+  it('cada persona tiene su selector', async () => {
+    montar();
+    await subir();
+    const sel = screen.getByLabelText(/Sede de la fila 1/i);
+    await userEvent.selectOptions(sel, 's2');
+    expect(sel).toHaveValue('s2');
+    expect(screen.getByLabelText(/Sede de la fila 2/i)).toHaveValue('');
+  });
+
+  it('y hay uno para ponérsela a todos', async () => {
+    montar();
+    await subir();
+    await userEvent.selectOptions(screen.getByLabelText(/Sede para todos/i), 's1');
+    expect(screen.getByLabelText(/Sede de la fila 1/i)).toHaveValue('s1');
+    expect(screen.getByLabelText(/Sede de la fila 2/i)).toHaveValue('s1');
+  });
+
+  it('poner la sede a todos no le borra el horario a nadie', async () => {
+    montar();
+    await subir();
+    await userEvent.selectOptions(screen.getByLabelText(/Horario de la fila 1/i), 'h2');
+    await userEvent.selectOptions(screen.getByLabelText(/Sede para todos/i), 's1');
+    expect(screen.getByLabelText(/Horario de la fila 1/i)).toHaveValue('h2');
+  });
+
+  it('sin sedes creadas, la columna no estorba', async () => {
+    // Una empresa de una sola oficina no tiene por qué ver una columna que
+    // solo puede decir "sin sede".
+    get.mockResolvedValue({ data: { columnas: COLUMNAS, horarios: HORARIOS, sedes: [] } });
+    montar();
+    await subir();
+    expect(screen.queryByLabelText(/Sede para todos/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Sede de la fila 1/i)).not.toBeInTheDocument();
+  });
+
+  it('la sede viaja al crear', async () => {
+    montar();
+    await subir();
+    await userEvent.selectOptions(screen.getByLabelText(/Sede para todos/i), 's2');
+    post.mockResolvedValueOnce({ data: { ...OK, creados: 2 } });
+    await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
+    const enviado = post.mock.calls[post.mock.calls.length - 1][1] as { filas: Record<string, string>[] };
+    expect(enviado.filas[0].sedeId).toBe('s2');
+  });
+});
+
+describe('la fecha de nacimiento', () => {
+  it('llega ya acomodada desde el Excel, no como la escribió quien lo llenó', async () => {
+    // "11/12/85" en la hoja tiene que verse como la fecha que se va a guardar.
+    montar();
+    await subir();
+    expect(screen.getByLabelText(/Fecha de nacimiento de la fila 1/i)).toHaveValue('1985-12-11');
+  });
+
+  it('se corrige con un calendario, no escribiendo el formato de memoria', async () => {
+    montar();
+    await subir();
+    expect(screen.getByLabelText(/Fecha de nacimiento de la fila 1/i)).toHaveAttribute('type', 'date');
+  });
+
+  it('una fecha vacía también se llena con el calendario', async () => {
+    // Si cayera a texto por estar vacía, habría que escribir AAAA-MM-DD a mano
+    // justo en el caso en que más ayuda el calendario.
+    montar();
+    await subir();
+    const campo = screen.getByLabelText(/Fecha de nacimiento de la fila 2/i);
+    expect(campo).toHaveValue('');
+    expect(campo).toHaveAttribute('type', 'date');
+  });
+
+  it('lo que no se pudo acomodar se deja como texto, para poder verlo y arreglarlo', async () => {
+    leerHoja.mockResolvedValueOnce([
+      ['Nombre', 'Cédula', 'Salario mensual', 'Fecha de nacimiento'],
+      ['Ana', '111', '1750905', 'no sé'],
+    ]);
+    montar();
+    await subir();
+    const campo = screen.getByLabelText(/Fecha de nacimiento de la fila 1/i);
+    expect(campo).toHaveAttribute('type', 'text');
+    expect(campo).toHaveValue('no sé');
   });
 });

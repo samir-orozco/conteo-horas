@@ -366,6 +366,7 @@ export default function Colaboradores() {
 
       {modalImportar && (
         <ModalImportar
+          plan={plan}
           onCerrar={() => setModalImportar(false)}
           onListo={async (creados) => {
             setModalImportar(false);

@@ -161,14 +161,19 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   // Si viviera una copia en el frontend, cambiar una columna aquí dejaría
   // generando formatos que ya no validan.
   app.get('/formato', auth, async (request) => {
-    const horarios = await prisma.horario.findMany({
-      where: { empresaId: request.empresaId! },
-      select: { id: true, nombre: true },
-      orderBy: { nombre: 'asc' },
-    });
-    // Los horarios van con id porque la pantalla los ofrece en un selector por
-    // fila, no porque haya que escribirlos en el archivo.
-    return { columnas: COLUMNAS_FORMATO, horarios };
+    // Horarios y sedes van con id porque la pantalla los ofrece en selectores
+    // por fila, no porque haya que escribirlos en el archivo.
+    const [horarios, sedes] = await Promise.all([
+      prisma.horario.findMany({
+        where: { empresaId: request.empresaId! },
+        select: { id: true, nombre: true }, orderBy: { nombre: 'asc' },
+      }),
+      prisma.sede.findMany({
+        where: { empresaId: request.empresaId!, activa: true },
+        select: { id: true, nombre: true }, orderBy: { nombre: 'asc' },
+      }),
+    ]);
+    return { columnas: COLUMNAS_FORMATO, horarios, sedes };
   });
 
   // Carga masiva desde el formato de Excel.
@@ -191,8 +196,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     // "Internal Server Error" y no había forma de saber por qué sin el servidor
     // delante. Ahora el registro dice qué llegó y qué falló.
     try {
-    const [horarios, existentes, cap] = await Promise.all([
+    const [horarios, sedes, existentes, cap] = await Promise.all([
       prisma.horario.findMany({ where: { empresaId: request.empresaId! }, select: { id: true } }),
+      prisma.sede.findMany({ where: { empresaId: request.empresaId!, activa: true }, select: { id: true } }),
       prisma.colaborador.findMany({ where: { empresaId: request.empresaId! }, select: { cedula: true, activo: true } }),
       capacidadesEmpresa(request.empresaId!),
     ]);
@@ -200,6 +206,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
 
     const resultado = validarImportacion(filas as Record<string, unknown>[], {
       horariosValidos: new Set(horarios.map(h => h.id)),
+      sedesValidas: new Set(sedes.map(x => x.id)),
       cedulasActivas: new Set(existentes.filter(c => c.activo).map(c => c.cedula)),
       cedulasRetiradas: new Set(existentes.filter(c => !c.activo).map(c => c.cedula)),
       cupoDisponible: cap.limite === Infinity ? Number.MAX_SAFE_INTEGER : Math.max(0, cap.limite - activos),
@@ -234,7 +241,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     // Fuera de la transacción, igual que en el alta individual: si materializar
     // los días falla, el colaborador ya existe y la pasada diaria lo recoge.
     // Perder la ficha por eso sería peor.
-    for (const { id } of creados) {
+    for (const [i, { id }] of creados.entries()) {
+      const sedeId = resultado.validas[i]?.sedeId;
+      if (sedeId) await sincronizarSedes(id, [sedeId], request.empresaId!);
       await registrarEvento({
         colaboradorId: id, tipo: 'INGRESO',
         fecha: medianocheBogota(hoyEnBogota()), usuarioId: request.usuarioId ?? null,

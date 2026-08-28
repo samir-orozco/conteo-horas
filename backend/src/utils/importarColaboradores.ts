@@ -7,7 +7,12 @@
 // Todo se valida antes de crear nada. Con 40 filas y un error en la 37, crear
 // las 36 primeras deja a la empresa sin saber qué quedó y qué no.
 
-export type ColumnaFormato = { clave: string; titulo: string; obligatoria: boolean; ejemplo: string; ayuda?: string };
+export type ColumnaFormato = {
+  clave: string; titulo: string; obligatoria: boolean; ejemplo: string; ayuda?: string;
+  // De esto depende cómo se lee la celda del Excel y qué control pinta la
+  // tabla. Lo decide el servidor porque es parte del contrato del formato.
+  tipo?: 'texto' | 'fecha';
+};
 
 // Las columnas del archivo, en orden. Es la misma lista que genera el formato
 // que se descarga, para que el que se baja y el que se valida no se separen.
@@ -19,7 +24,7 @@ export const COLUMNAS_FORMATO: ColumnaFormato[] = [
   { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1750905', ayuda: 'En pesos, sin centavos' },
   { clave: 'email', titulo: 'Correo', obligatoria: false, ejemplo: 'ana@empresa.co' },
   { clave: 'telefono', titulo: 'Teléfono', obligatoria: false, ejemplo: '3001234567' },
-  { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', ayuda: 'AAAA-MM-DD' },
+  { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', ayuda: 'Día/mes/año. Se acomoda sola al leerla.', tipo: 'fecha' },
 ];
 
 // El horario NO va en el archivo: se elige en la tabla de la pantalla, de una
@@ -27,6 +32,7 @@ export const COLUMNAS_FORMATO: ColumnaFormato[] = [
 // un dedazo dejaba la fila entera en error por algo que se resuelve con un
 // clic. Llega por su id, junto al resto de la fila.
 const CLAVE_HORARIO = 'horarioId';
+const CLAVE_SEDE = 'sedeId';
 
 export type FilaCruda = Record<string, unknown>;
 
@@ -34,6 +40,7 @@ export type ContextoImportacion = {
   // Los ids de horario de ESTA empresa. El id viaja desde el navegador, y que
   // la lista solo ofrezca los propios no impide que alguien mande otro a mano.
   horariosValidos: Set<string>;
+  sedesValidas: Set<string>;
   cedulasActivas: Set<string>;
   // Quien está retirado conserva su ficha y su historial. Crear una nueva con
   // la misma cédula chocaría con la restricción única, y aunque no chocara le
@@ -45,7 +52,7 @@ export type ContextoImportacion = {
 export type ColaboradorImportado = {
   nombre: string; apellido: string; cedula: string; cargo: string | null;
   salarioMensual: number; email: string | null; telefono: string | null;
-  fechaNacimiento: string | null; horarioId: string | null;
+  fechaNacimiento: string | null; horarioId: string | null; sedeId: string | null;
 };
 
 export type ErrorImportacion = { fila: number; campo: string; mensaje: string };
@@ -96,7 +103,11 @@ export function validarImportacion(filas: FilaCruda[], ctx: ContextoImportacion)
 
     // Excel arrastra filas vacías al final. Una fila sin nada no es un error,
     // es el final del archivo.
-    const vacia = COLUMNAS_FORMATO.every(c => v(c.clave) === '') && v(CLAVE_HORARIO) === '';
+    // Se mira solo lo que viene del ARCHIVO. El horario y la sede se eligen en
+    // la pantalla, y el selector global los pone en todas las filas: si contaran
+    // aquí, una fila vacía del final pasaría a reportarse como una persona sin
+    // nombre y sin cédula.
+    const vacia = COLUMNAS_FORMATO.every(c => v(c.clave) === '');
     if (vacia) return;
     conDatos++;
 
@@ -134,12 +145,17 @@ export function validarImportacion(filas: FilaCruda[], ctx: ContextoImportacion)
       err('fechaNacimiento', `"${nacimiento}" no es una fecha. Se escribe como AAAA-MM-DD.`);
     }
 
-    const elegido = v(CLAVE_HORARIO);
-    let horarioId: string | null = null;
-    if (elegido) {
-      if (ctx.horariosValidos.has(elegido)) horarioId = elegido;
-      else err(CLAVE_HORARIO, 'Ese horario no existe en tu empresa. Elige uno de la lista.');
-    }
+    // El id viaja desde el navegador: que la lista solo ofrezca los propios no
+    // impide que alguien mande otro a mano.
+    const elegir = (clave: string, validos: Set<string>, que: string): string | null => {
+      const valor = v(clave);
+      if (!valor) return null;
+      if (validos.has(valor)) return valor;
+      err(clave, `Esa ${que} no existe en tu empresa. Elige una de la lista.`);
+      return null;
+    };
+    const horarioId = elegir(CLAVE_HORARIO, ctx.horariosValidos, 'jornada');
+    const sedeId = elegir(CLAVE_SEDE, ctx.sedesValidas, 'sede');
 
     if (rota) return;
     validas.push({
@@ -150,6 +166,7 @@ export function validarImportacion(filas: FilaCruda[], ctx: ContextoImportacion)
       telefono: v('telefono') || null,
       fechaNacimiento: nacimiento || null,
       horarioId,
+      sedeId,
     });
   });
 

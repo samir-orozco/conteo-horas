@@ -3,11 +3,11 @@ import { Upload, Download, X, AlertTriangle, FileSpreadsheet, Plus, Trash2 } fro
 import api from '../../lib/api';
 import { descargarFormato, leerHoja, mapearHoja, type Columna } from './formatoImportacion';
 import {
-  filaVacia, hayDatos, mapaDeErrores, conHorarioGlobal,
-  CLAVE_HORARIO, type FilaEditable, type ErrorFila,
+  filaVacia, hayDatos, mapaDeErrores, conValorGlobal,
+  CLAVE_HORARIO, CLAVE_SEDE, type FilaEditable, type ErrorFila,
 } from './tablaImportacion';
 
-type Horario = { id: string; nombre: string };
+type Opcion = { id: string; nombre: string };
 
 type Resultado = {
   errores: ErrorFila[];
@@ -18,6 +18,11 @@ type Resultado = {
   nombrePlan?: string;
   creados: number;
 };
+
+// Un campo de fecha vacío sí puede ser un calendario. Lo que no puede serlo es
+// uno con texto que el navegador no entienda: lo borraría de la vista y el dato
+// desaparecería sin que nadie se enterara.
+const cabeEnCalendario = (v: string | undefined) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 const HOJAS = ['.xlsx', '.xls', '.csv'];
 const esHoja = (f: File) => HOJAS.some(e => f.name.toLowerCase().endsWith(e));
@@ -35,12 +40,16 @@ const esHoja = (f: File) => HOJAS.some(e => f.name.toLowerCase().endsWith(e));
 //
 // "Crear" valida y crea en la MISMA llamada: el servidor no crea nada si algo
 // está mal. Así no hay dos verdades sobre el mismo archivo.
-export default function ModalImportar({ onCerrar, onListo }: {
+export default function ModalImportar({ onCerrar, onListo, plan }: {
   onCerrar: () => void;
   onListo: (creados: number) => void;
+  // Para la barra de cupo del pie. Llega de la pantalla, que ya lo tiene: pedirlo
+  // otra vez aquí sería una consulta de más para el mismo dato.
+  plan?: { colaboradores?: number; limite?: number | null; ilimitado?: boolean; nombrePlan?: string } | null;
 }) {
   const [columnas, setColumnas] = useState<Columna[]>([]);
-  const [horarios, setHorarios] = useState<Horario[]>([]);
+  const [horarios, setHorarios] = useState<Opcion[]>([]);
+  const [sedes, setSedes] = useState<Opcion[]>([]);
   const [filas, setFilas] = useState<FilaEditable[] | null>(null);
   const [errores, setErrores] = useState<Map<string, string>>(new Map());
   const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -49,7 +58,7 @@ export default function ModalImportar({ onCerrar, onListo }: {
 
   useEffect(() => {
     api.get('/colaboradores/formato')
-      .then(r => { setColumnas(r.data.columnas); setHorarios(r.data.horarios); })
+      .then(r => { setColumnas(r.data.columnas); setHorarios(r.data.horarios); setSedes(r.data.sedes ?? []); })
       .catch(() => setError('No pudimos cargar el formato. Vuelve a abrir esta ventana.'));
   }, []);
 
@@ -123,7 +132,13 @@ export default function ModalImportar({ onCerrar, onListo }: {
         </div>
 
         <div className="px-6 pb-6 overflow-y-auto space-y-4">
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <p className="text-sm font-bold text-ink">1. Trae tus datos</p>
+            <p className="text-xs text-muted mt-0.5 mb-3">
+              Baja el formato, escribe una fila por persona y súbelo. El horario y la sede
+              no van en el archivo: se eligen aquí.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-3">
             <button type="button" onClick={() => descargarFormato(columnas)} disabled={!columnas.length}
               className="flex items-center justify-center gap-2 border-2 border-gray-200 hover:border-primary text-ink font-semibold py-3 rounded-xl text-sm disabled:opacity-50">
               <Download size={16} /> Descargar el formato
@@ -132,6 +147,7 @@ export default function ModalImportar({ onCerrar, onListo }: {
               <Upload size={16} /> Subir el formato
               <input type="file" accept=".xlsx,.xls,.csv" onChange={elegir} className="sr-only" disabled={ocupado} />
             </label>
+            </div>
           </div>
 
           {error && (
@@ -159,23 +175,42 @@ export default function ModalImportar({ onCerrar, onListo }: {
 
           {filas && filas.length > 0 && (
             <>
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <label className="flex items-center gap-2 text-sm">
-                  <span className="text-muted">Horario para todos</span>
-                  <select
-                    aria-label="Horario para todos"
-                    defaultValue=""
-                    onChange={e => setFilas(f => conHorarioGlobal(f ?? [], e.target.value))}
-                    className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option value="">Sin horario</option>
-                    {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre}</option>)}
-                  </select>
-                </label>
-                {errores.size > 0 && (
-                  <p className="text-sm text-red-700 font-semibold flex items-center gap-1.5">
-                    <AlertTriangle size={14} /> {errores.size} dato{errores.size === 1 ? '' : 's'} por corregir
-                  </p>
-                )}
+              <div className="pt-1">
+                <p className="text-sm font-bold text-ink">2. Revisa y corrige</p>
+                <p className="text-xs text-muted mt-0.5">
+                  Esto es lo que se va a crear. Puedes cambiar cualquier dato aquí mismo,
+                  sin volver al Excel.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                <p className="text-xs font-semibold text-ink">Aplicar a todos</p>
+                <p className="text-[11px] text-muted mt-0.5 mb-2.5">
+                  Lo pone en todas las filas de una vez. Después puedes cambiar a quien sea la excepción.
+                </p>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {[
+                    { clave: CLAVE_HORARIO, etiqueta: 'Horario para todos', vacio: 'Sin horario', opciones: horarios },
+                    ...(sedes.length ? [{ clave: CLAVE_SEDE, etiqueta: 'Sede para todos', vacio: 'Sin sede', opciones: sedes }] : []),
+                  ].map(g => (
+                    <label key={g.clave} className="flex items-center gap-2 text-sm">
+                      <span className="text-muted">{g.etiqueta.replace(' para todos', '')}</span>
+                      <select
+                        aria-label={g.etiqueta}
+                        defaultValue=""
+                        onChange={e => setFilas(f => conValorGlobal(f ?? [], g.clave, e.target.value))}
+                        className="border border-gray-300 bg-white rounded-lg px-3 py-1.5 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option value="">{g.vacio}</option>
+                        {g.opciones.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+                      </select>
+                    </label>
+                  ))}
+                  {errores.size > 0 && (
+                    <p className="text-sm text-red-700 font-semibold flex items-center gap-1.5 ml-auto">
+                      <AlertTriangle size={14} /> {errores.size} dato{errores.size === 1 ? '' : 's'} por corregir
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* La tabla se desplaza sola: con nueve columnas no cabe en un
@@ -191,6 +226,7 @@ export default function ModalImportar({ onCerrar, onListo }: {
                         </th>
                       ))}
                       <th className="px-2 py-2 text-left font-semibold">Horario</th>
+                      {sedes.length > 0 && <th className="px-2 py-2 text-left font-semibold">Sede</th>}
                       <th className="px-2 py-2 w-8"><span className="sr-only">Quitar</span></th>
                     </tr>
                   </thead>
@@ -202,7 +238,14 @@ export default function ModalImportar({ onCerrar, onListo }: {
                           const malo = errores.get(`${i}:${c.clave}`);
                           return (
                             <td key={c.clave} className="px-2 py-1.5">
+                              {/* Las fechas se corrigen con el calendario del
+                                  navegador, no escribiendo AAAA-MM-DD de
+                                  memoria. Si lo que vino del Excel no se pudo
+                                  acomodar, el campo de fecha lo rechazaría y
+                                  quedaría en blanco escondiendo el dato: en ese
+                                  caso se deja como texto para poder verlo. */}
                               <input
+                                type={c.tipo === 'fecha' && cabeEnCalendario(fila[c.clave]) ? 'date' : 'text'}
                                 aria-label={`${c.titulo} de la fila ${i + 1}`}
                                 aria-invalid={malo ? true : undefined}
                                 value={fila[c.clave] ?? ''}
@@ -224,6 +267,18 @@ export default function ModalImportar({ onCerrar, onListo }: {
                             {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre}</option>)}
                           </select>
                         </td>
+                        {sedes.length > 0 && (
+                          <td className="px-2 py-1.5">
+                            <select
+                              aria-label={`Sede de la fila ${i + 1}`}
+                              value={fila[CLAVE_SEDE] ?? ''}
+                              onChange={e => cambiar(i, CLAVE_SEDE, e.target.value)}
+                              className="w-full min-w-[9rem] border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                              <option value="">Sin sede</option>
+                              {sedes.map(x => <option key={x.id} value={x.id}>{x.nombre}</option>)}
+                            </select>
+                          </td>
+                        )}
                         <td className="px-2 py-1.5">
                           <button type="button"
                             aria-label={`Quitar la fila ${i + 1}`}
@@ -248,6 +303,22 @@ export default function ModalImportar({ onCerrar, onListo }: {
         </div>
 
         <div className="flex gap-3 justify-end items-center px-6 py-4 border-t border-gray-100">
+          {/* El cupo, con la barra incluyendo a los que se van a crear: lo que
+              importa antes de darle al botón es cómo va a quedar, no cómo está. */}
+          {!plan?.ilimitado && typeof plan?.limite === 'number' && (
+            <div className="mr-auto min-w-0 max-w-[16rem]">
+              <p className="text-xs text-muted">
+                <b className="text-ink">{(plan.colaboradores ?? 0) + n}</b> de {plan.limite} cupos
+                {n > 0 && <span className="text-muted"> con estos {n}</span>}
+              </p>
+              <div className="h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${((plan.colaboradores ?? 0) + n) > plan.limite ? 'bg-red-500' : 'bg-primary'}`}
+                  style={{ width: `${Math.min(100, Math.round((((plan.colaboradores ?? 0) + n) / plan.limite) * 100))}%` }}
+                />
+              </div>
+            </div>
+          )}
           {ocupado && <span className="text-sm text-muted mr-auto">Revisando...</span>}
           <button type="button" onClick={onCerrar}
             className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
