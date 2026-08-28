@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { estadoContrato, FILTROS_CONTRATO, cumpleFiltroContrato } from './estadoContrato';
+import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros } from './estadoContrato';
 
 describe('cómo se pinta el estado del contrato en la lista', () => {
   it('traduce cada estado que manda el servidor', () => {
@@ -30,34 +30,66 @@ describe('cómo se pinta el estado del contrato en la lista', () => {
   });
 });
 
-describe('el filtro por estado de contrato', () => {
-  it('"todos" no filtra nada', () => {
-    expect(cumpleFiltroContrato('todos', 'VIGENTE')).toBe(true);
-    expect(cumpleFiltroContrato('todos', 'SIN_CONTRATO')).toBe(true);
-    expect(cumpleFiltroContrato('todos', undefined)).toBe(true);
+describe('el filtro combinado de la lista', () => {
+  const persona = (over = {}) => ({ estadoContrato: 'VIGENTE', sedeIds: ['s1'], ...over });
+
+  it('sin nada marcado pasa todo el mundo', () => {
+    expect(cumpleFiltros(persona(), {})).toBe(true);
+    expect(cumpleFiltros(persona({ estadoContrato: null, sedeIds: [] }), {})).toBe(true);
+    expect(cumpleFiltros(persona(), { contrato: [], sede: [] })).toBe(true);
   });
 
-  it('un filtro puntual deja pasar solo lo suyo', () => {
-    expect(cumpleFiltroContrato('POR_VENCER', 'POR_VENCER')).toBe(true);
-    expect(cumpleFiltroContrato('POR_VENCER', 'VIGENTE')).toBe(false);
+  it('marcar un estado de contrato deja pasar solo ese', () => {
+    expect(cumpleFiltros(persona({ estadoContrato: 'POR_VENCER' }), { contrato: ['POR_VENCER'] })).toBe(true);
+    expect(cumpleFiltros(persona({ estadoContrato: 'VIGENTE' }), { contrato: ['POR_VENCER'] })).toBe(false);
+  });
+
+  it('marcar varios es "o", no "y": nadie tiene dos estados a la vez', () => {
+    const sel = { contrato: ['POR_VENCER', 'VENCIDO'] };
+    expect(cumpleFiltros(persona({ estadoContrato: 'VENCIDO' }), sel)).toBe(true);
+    expect(cumpleFiltros(persona({ estadoContrato: 'VIGENTE' }), sel)).toBe(false);
   });
 
   it('"requieren atención" junta lo que hay que resolver ya', () => {
     // Es el filtro que de verdad se usa: no interesa la taxonomía, interesa
     // sobre quién hay que actuar esta semana.
-    expect(cumpleFiltroContrato('atencion', 'PREAVISO_VENCIDO')).toBe(true);
-    expect(cumpleFiltroContrato('atencion', 'VENCIDO')).toBe(true);
-    expect(cumpleFiltroContrato('atencion', 'POR_VENCER')).toBe(true);
-    expect(cumpleFiltroContrato('atencion', 'SIN_CONTRATO')).toBe(true);
-    expect(cumpleFiltroContrato('atencion', 'VIGENTE')).toBe(false);
-    expect(cumpleFiltroContrato('atencion', 'INDEFINIDO')).toBe(false);
+    const sel = { contrato: ['ATENCION'] };
+    for (const e of ['PREAVISO_VENCIDO', 'VENCIDO', 'POR_VENCER', 'SIN_CONTRATO']) {
+      expect(cumpleFiltros(persona({ estadoContrato: e }), sel)).toBe(true);
+    }
+    expect(cumpleFiltros(persona({ estadoContrato: 'VIGENTE' }), sel)).toBe(false);
+    expect(cumpleFiltros(persona({ estadoContrato: 'INDEFINIDO' }), sel)).toBe(false);
   });
 
-  it('los filtros que se ofrecen tienen todos etiqueta', () => {
-    expect(FILTROS_CONTRATO.length).toBeGreaterThan(2);
-    for (const f of FILTROS_CONTRATO) {
-      expect(f.etiqueta.length).toBeGreaterThan(0);
-      expect(f.valor.length).toBeGreaterThan(0);
+  it('la sede filtra por lo que tiene asignado', () => {
+    expect(cumpleFiltros(persona({ sedeIds: ['s1', 's2'] }), { sede: ['s2'] })).toBe(true);
+    expect(cumpleFiltros(persona({ sedeIds: ['s1'] }), { sede: ['s2'] })).toBe(false);
+  });
+
+  it('quien no tiene sede se puede buscar aparte', () => {
+    // Es justo a quien hay que asignarle una.
+    expect(cumpleFiltros(persona({ sedeIds: [] }), { sede: ['SIN_SEDE'] })).toBe(true);
+    expect(cumpleFiltros(persona({ sedeIds: ['s1'] }), { sede: ['SIN_SEDE'] })).toBe(false);
+  });
+
+  it('los dos grupos se cruzan: es "y" entre grupos', () => {
+    // "Por vencer" Y "de la sede norte", no lo uno o lo otro.
+    const sel = { contrato: ['POR_VENCER'], sede: ['s1'] };
+    expect(cumpleFiltros(persona({ estadoContrato: 'POR_VENCER', sedeIds: ['s1'] }), sel)).toBe(true);
+    expect(cumpleFiltros(persona({ estadoContrato: 'POR_VENCER', sedeIds: ['s2'] }), sel)).toBe(false);
+    expect(cumpleFiltros(persona({ estadoContrato: 'VIGENTE', sedeIds: ['s1'] }), sel)).toBe(false);
+  });
+
+  it('sin sedeIds del servidor no revienta', () => {
+    expect(cumpleFiltros({ estadoContrato: 'VIGENTE' }, { sede: ['s1'] })).toBe(false);
+    expect(cumpleFiltros({ estadoContrato: 'VIGENTE' }, {})).toBe(true);
+  });
+
+  it('las opciones de contrato que se ofrecen tienen todas texto', () => {
+    expect(OPCIONES_CONTRATO.length).toBeGreaterThan(3);
+    for (const o of OPCIONES_CONTRATO) {
+      expect(o.texto.length).toBeGreaterThan(0);
+      expect(o.valor.length).toBeGreaterThan(0);
     }
   });
 });

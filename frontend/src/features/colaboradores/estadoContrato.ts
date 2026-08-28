@@ -26,19 +26,45 @@ export function estadoContrato(clave: string | null | undefined): { etiqueta: st
 // prorrogado solo por no haber avisado.
 const REQUIEREN_ATENCION = ['PREAVISO_VENCIDO', 'VENCIDO', 'POR_VENCER', 'SIN_CONTRATO'];
 
-export const FILTROS_CONTRATO: { valor: string; etiqueta: string }[] = [
-  { valor: 'todos', etiqueta: 'Todos los contratos' },
-  { valor: 'atencion', etiqueta: 'Requieren atención' },
-  { valor: 'PREAVISO_VENCIDO', etiqueta: 'Se prorrogaron solos' },
-  { valor: 'VENCIDO', etiqueta: 'Vencidos' },
-  { valor: 'POR_VENCER', etiqueta: 'Por vencer' },
-  { valor: 'VIGENTE', etiqueta: 'Vigentes' },
-  { valor: 'INDEFINIDO', etiqueta: 'Indefinidos' },
-  { valor: 'SIN_CONTRATO', etiqueta: 'Sin contrato' },
+// Valores especiales del filtro. No son estados que devuelva el servidor: son
+// atajos que agrupan varios.
+export const ATENCION = 'ATENCION';
+export const SIN_SEDE = 'SIN_SEDE';
+
+// "Requieren atención" va primero porque es el que de verdad se usa: no
+// interesa la taxonomía, interesa sobre quién hay que actuar esta semana.
+export const OPCIONES_CONTRATO: { valor: string; texto: string }[] = [
+  { valor: ATENCION, texto: 'Requieren atención' },
+  { valor: 'PREAVISO_VENCIDO', texto: 'Se prorrogaron solos' },
+  { valor: 'VENCIDO', texto: 'Vencidos' },
+  { valor: 'POR_VENCER', texto: 'Por vencer' },
+  { valor: 'VIGENTE', texto: 'Vigentes' },
+  { valor: 'INDEFINIDO', texto: 'Indefinidos' },
+  { valor: 'SIN_CONTRATO', texto: 'Sin contrato' },
 ];
 
-export function cumpleFiltroContrato(filtro: string, estado: string | null | undefined): boolean {
-  if (filtro === 'todos') return true;
-  if (filtro === 'atencion') return !!estado && REQUIEREN_ATENCION.includes(estado);
-  return estado === filtro;
+type Filtrable = { estadoContrato?: string | null; sedeIds?: string[] };
+
+// ¿Esta persona pasa los filtros marcados?
+//
+// Dentro de un grupo es "o" (nadie tiene dos estados de contrato a la vez);
+// entre grupos es "y" ("por vencer" Y "de la sede norte"). Un grupo sin nada
+// marcado no filtra: marcar cero cosas no puede significar "ninguna".
+export function cumpleFiltros(persona: Filtrable, seleccion: Record<string, string[]>): boolean {
+  const contrato = seleccion.contrato ?? [];
+  if (contrato.length) {
+    const estado = persona.estadoContrato;
+    const pasa = contrato.some(v =>
+      v === ATENCION ? !!estado && REQUIEREN_ATENCION.includes(estado) : estado === v);
+    if (!pasa) return false;
+  }
+
+  const sede = seleccion.sede ?? [];
+  if (sede.length) {
+    const suyas = persona.sedeIds ?? [];
+    const pasa = sede.some(v => (v === SIN_SEDE ? suyas.length === 0 : suyas.includes(v)));
+    if (!pasa) return false;
+  }
+
+  return true;
 }

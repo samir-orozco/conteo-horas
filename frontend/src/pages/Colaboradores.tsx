@@ -9,11 +9,12 @@ import ModalRetiro from '../features/colaboradores/ModalRetiro';
 import ModalReingreso from '../features/colaboradores/ModalReingreso';
 import ModalImportar from '../features/colaboradores/ModalImportar';
 import Toast from '../components/Toast';
-import { estadoContrato, FILTROS_CONTRATO, cumpleFiltroContrato } from '../features/colaboradores/estadoContrato';
+import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros, SIN_SEDE } from '../features/colaboradores/estadoContrato';
+import MenuFiltros from '../components/MenuFiltros';
 import { fechaCorta } from '../lib/fechas';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 
-type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; estadoContrato?: string | null };
+type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null };
 // Los colores del chip de contrato. Se quedan en la pantalla y no en la regla:
 // qué es urgente lo decide estadoContrato.ts, cómo se ve lo decide esto.
 const TONO_CHIP: Record<string, string> = {
@@ -156,7 +157,7 @@ export default function Colaboradores() {
   // retirado la pestaña desaparece, y si el estado seguía en 'retirados' la
   // pantalla quedaba en blanco sin forma de volver.
   const pestanaActiva = retirados.length === 0 ? 'activos' : pestana;
-  const [filtroContrato, setFiltroContrato] = useState('todos');
+  const [filtros, setFiltros] = useState<Record<string, string[]>>({});
   const [modalImportar, setModalImportar] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -164,7 +165,7 @@ export default function Colaboradores() {
   // todavía trabaja aquí?" sin tener que cambiar de pestaña para averiguarlo.
   type Fila = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
     salarioMensual: number; activo: boolean; fechaRetiro?: string | null; motivoRetiro?: string | null;
-    estadoContrato?: string | null };
+    estadoContrato?: string | null; sedeIds?: string[]; sedeNombres?: string[] };
   const filas: Fila[] = pestanaActiva === 'retirados'
     ? retirados.map(r => ({ ...r, activo: false }))
     : pestanaActiva === 'activos'
@@ -175,7 +176,13 @@ export default function Colaboradores() {
 
   // El filtro de contrato solo aplica a quien sigue trabajando: el contrato de
   // un retirado ya no hay que renovarlo.
-  const visibles = filas.filter(f => !f.activo || cumpleFiltroContrato(filtroContrato, f.estadoContrato));
+  const visibles = filas.filter(f => !f.activo || cumpleFiltros(f, filtros));
+
+  // Las sedes que de verdad existen entre los colaboradores. Ofrecer una sede
+  // que nadie tiene solo da resultados vacíos.
+  const sedesDelFiltro = [...new Map(
+    lista.flatMap(c => (c.sedeIds ?? []).map((id, i) => [id, (c.sedeNombres ?? [])[i] ?? 'Sede'] as const)),
+  )].map(([valor, texto]) => ({ valor, texto })).sort((a, b) => a.texto.localeCompare(b.texto));
   const esEmpresarial = plan?.plan === 'EMPRESARIAL';
   const pct = limite ? Math.min(100, Math.round((usados / limite) * 100)) : 0;
 
@@ -248,22 +255,19 @@ export default function Colaboradores() {
         </div>
       ) : <span />}
 
-        {/* El filtro por contrato. No es una pestaña más porque se cruza con
-            ellas: se puede querer ver los activos por vencer, o todos los que
-            no tienen contrato. */}
+        {/* Los filtros no son una pestaña más porque se cruzan con ellas: se
+            puede querer ver los activos por vencer de una sede en concreto. */}
         {lista.length > 0 && (
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-muted">Contrato</span>
-            <select
-              value={filtroContrato}
-              onChange={e => setFiltroContrato(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {FILTROS_CONTRATO.map(f => (
-                <option key={f.valor} value={f.valor}>{f.etiqueta}</option>
-              ))}
-            </select>
-          </label>
+          <MenuFiltros
+            grupos={[
+              { clave: 'contrato', titulo: 'Contrato', opciones: OPCIONES_CONTRATO },
+              { clave: 'sede', titulo: 'Sede', opciones: sedesDelFiltro.length
+                  ? [...sedesDelFiltro, { valor: SIN_SEDE, texto: 'Sin sede' }]
+                  : [] },
+            ]}
+            seleccion={filtros}
+            onCambiar={setFiltros}
+          />
         )}
       </div>
 
@@ -280,6 +284,7 @@ export default function Colaboradores() {
               <th className="px-4 py-3 text-left">Nombre</th>
               <th className="px-4 py-3 text-left">Estado</th>
               <th className="px-4 py-3 text-left hidden sm:table-cell">Contrato</th>
+              <th className="px-4 py-3 text-left hidden lg:table-cell">Sede</th>
               <th className="px-4 py-3 text-left hidden md:table-cell">Cédula</th>
               <th className="px-4 py-3 text-left hidden lg:table-cell">Cargo</th>
               <th className="px-4 py-3 text-right hidden sm:table-cell">Salario</th>
@@ -312,6 +317,11 @@ export default function Colaboradores() {
                     return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TONO_CHIP[e.tono]}`}>{e.etiqueta.toUpperCase()}</span>;
                   })() : <span className="text-muted">—</span>}
                 </td>
+                <td className="px-4 py-3 text-muted hidden lg:table-cell">
+                  {col.sedeNombres?.length
+                    ? col.sedeNombres.join(' · ')
+                    : <span className="text-gray-400">Sin sede</span>}
+                </td>
                 <td className="px-4 py-3 text-muted hidden md:table-cell">{col.cedula}</td>
                 <td className="px-4 py-3 text-muted hidden lg:table-cell">{col.cargo || '-'}</td>
                 <td className="px-4 py-3 text-right text-ink hidden sm:table-cell">{fmt(col.salarioMensual)}</td>
@@ -334,7 +344,7 @@ export default function Colaboradores() {
               </tr>
             ))}
             {filas.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-muted">
+              <tr><td colSpan={8} className="px-4 py-10 text-center text-muted">
                 {pestanaActiva === 'retirados' ? 'Nadie se ha retirado todavía' : 'Aún no hay colaboradores'}
               </td></tr>
             )}

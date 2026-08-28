@@ -77,7 +77,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     const filas = await prisma.colaborador.findMany({
       where: { empresaId: request.empresaId, activo: true },
       include: {
-        sedes: { select: { sedeId: true } },
+        // Con el nombre, no solo el id: la lista pinta una columna de sede y
+        // pedir los nombres aparte sería una consulta por cada carga.
+        sedes: { select: { sedeId: true, sede: { select: { nombre: true } } } },
         // El contrato vigente, para poder decir en la lista quién tiene el
         // preaviso encima sin abrir ficha por ficha. Solo el más reciente:
         // vigente debería haber uno, y si hubiera dos manda el nuevo.
@@ -100,6 +102,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     return filas.map(({ sedes, contratos, foto: _foto, ...c }) => ({
       ...c,
       sedeIds: sedes.map(s => s.sedeId),
+      sedeNombres: sedes.map(s => s.sede.nombre),
       estadoContrato: resumenDeContrato(contratos[0] ?? null, hoy),
     }));
   });
@@ -110,7 +113,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       where: { id, empresaId: request.empresaId },
       include: {
         horario: { include: { franjas: true } },
-        sedes: { select: { sedeId: true } },
+        // Con el nombre, no solo el id: la lista pinta una columna de sede y
+        // pedir los nombres aparte sería una consulta por cada carga.
+        sedes: { select: { sedeId: true, sede: { select: { nombre: true } } } },
       },
     });
     if (!col) return reply.status(404).send({ error: 'No encontrado' });

@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Camera, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Eye } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
+import MenuFiltros from '../components/MenuFiltros';
 import SelectorColaborador from '../components/SelectorColaborador';
 import FotosJornada from '../components/FotosJornada';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
@@ -193,7 +194,6 @@ export default function Registros() {
   // exactamente la búsqueda de todo lo que hay que arreglar.
   const [filtroLlegada, setFiltroLlegada] = useState<string[]>([]);
   const [filtroSalida, setFiltroSalida] = useState<string[]>([]);
-  const [menuFiltro, setMenuFiltro] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(50);
 
@@ -384,13 +384,7 @@ export default function Registros() {
 
   // El menú NO se cierra al elegir: con varias opciones a la vez, cerrarse en
   // cada clic haría imposible componer una búsqueda.
-  const alternar = (lista: string[], set: (v: string[]) => void, v: string) => {
-    set(lista.includes(v) ? lista.filter(x => x !== v) : [...lista, v]);
-    setPagina(1);
-  };
-  const limpiarFiltros = () => { setFiltroLlegada([]); setFiltroSalida([]); setPagina(1); setMenuFiltro(false); };
-  const cuantosFiltros = filtroLlegada.length + filtroSalida.length;
-  const hayFiltro = cuantosFiltros > 0;
+  const hayFiltro = filtroLlegada.length + filtroSalida.length > 0;
 
   // La columna de Almuerzo aparece cuando ese día descuenta almuerzo, tenga o no
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
@@ -425,64 +419,20 @@ export default function Registros() {
           onCambiar={(d, h) => { setDesde(d); setHasta(h); setPagina(1); }}
         />
 
-        {/* Filtro de llegada. El punto ámbar dice que hay un filtro puesto sin
-            tener que abrir el menú: una tabla filtrada que parece completa hace
-            sacar conclusiones sobre datos que no están. */}
-        <div className="relative">
-          <button onClick={() => setMenuFiltro(v => !v)}
-            className={`relative flex items-center gap-2 border rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              hayFiltro ? 'border-primary bg-primary/10 text-ink' : 'border-gray-300 text-ink hover:bg-gray-50'}`}>
-            <SlidersHorizontal size={15} />
-            Filtros
-            {hayFiltro && (
-              <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center">
-                {cuantosFiltros}
-              </span>
-            )}
-          </button>
-
-          {menuFiltro && (
-            <>
-              <div className="fixed inset-0 !mt-0 z-30" onClick={() => setMenuFiltro(false)} />
-              <div className="absolute top-full mt-1 left-0 z-40 w-56 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden py-1.5">
-                {([
-                  {
-                    grupo: 'Llegada', valor: filtroLlegada, set: setFiltroLlegada,
-                    opciones: [{ v: 'TARDE', texto: 'Tarde' }, { v: 'A_TIEMPO', texto: 'A tiempo' }],
-                  },
-                  {
-                    grupo: 'Salida', valor: filtroSalida, set: setFiltroSalida,
-                    opciones: [{ v: 'ESTIMADA', texto: 'No marcó salida' }, { v: 'SIN_SALIDA', texto: 'Sin salida' }],
-                  },
-                ]).map((g, gi) => (
-                  <div key={g.grupo} className={gi > 0 ? 'mt-1.5 pt-1.5 border-t border-gray-100' : ''}>
-                    <p className="px-3.5 pb-1.5 text-xs font-semibold text-muted">{g.grupo}</p>
-                    {g.opciones.map(op => {
-                      const activo = g.valor.includes(op.v);
-                      return (
-                        <button key={op.v} onClick={() => alternar(g.valor, g.set, op.v)}
-                          className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors ${
-                            activo ? 'bg-green-50 text-green-700 font-semibold' : 'text-ink hover:bg-gray-50'}`}>
-                          <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                            activo ? 'bg-green-600 border-green-600' : 'border-gray-300'}`}>
-                            {activo && <Check size={11} className="text-white" strokeWidth={3} />}
-                          </span>
-                          {op.texto}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-                {hayFiltro && (
-                  <button onClick={limpiarFiltros}
-                    className="w-full mt-1.5 pt-2 border-t border-gray-100 px-3.5 pb-1 text-sm font-semibold text-red-500 hover:text-red-600">
-                    Limpiar filtros
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+        <MenuFiltros
+          grupos={[
+            { clave: 'llegada', titulo: 'Llegada', opciones: [
+              { valor: 'TARDE', texto: 'Tarde' }, { valor: 'A_TIEMPO', texto: 'A tiempo' }] },
+            { clave: 'salida', titulo: 'Salida', opciones: [
+              { valor: 'ESTIMADA', texto: 'No marcó salida' }, { valor: 'SIN_SALIDA', texto: 'Sin salida' }] },
+          ]}
+          seleccion={{ llegada: filtroLlegada, salida: filtroSalida }}
+          onCambiar={sel => {
+            setFiltroLlegada(sel.llegada ?? []);
+            setFiltroSalida(sel.salida ?? []);
+            setPagina(1);
+          }}
+        />
       </div>
 
       <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-800 rounded-xl px-4 py-2.5 text-xs mb-4">
