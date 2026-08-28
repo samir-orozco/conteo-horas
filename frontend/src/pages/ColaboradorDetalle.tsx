@@ -23,7 +23,7 @@ import CabeceraFicha from '../features/colaboradores/CabeceraFicha';
 import LineaDeTiempo from '../components/LineaDeTiempo';
 import { aspectoDeNovedad, rangoDeNovedad } from '../features/colaboradores/novedades';
 import { tiempoRelativo } from '../features/colaboradores/tiempoRelativo';
-import { aFotoDePerfil } from '../features/colaboradores/foto';
+import { aFotoDePerfil, miniaturaDe } from '../features/colaboradores/foto';
 import { fechaLarga } from '../lib/fechas';
 import { diasDeVinculacion, enPalabras } from '../features/colaboradores/tiempoVinculado';
 import HistorialVinculacion, { type Evento as EventoVinculacion } from '../features/colaboradores/HistorialVinculacion';
@@ -140,8 +140,8 @@ export default function ColaboradorDetalle() {
   const cambiarFoto = async (archivo: File) => {
     setGuardandoFoto(true);
     try {
-      const foto = await aFotoDePerfil(archivo);
-      await api.put(`/colaboradores/${id}/foto`, { foto });
+      const { foto, mini } = await aFotoDePerfil(archivo);
+      await api.put(`/colaboradores/${id}/foto`, { foto, fotoMini: mini });
       setToast('Foto actualizada');
       cargar();
     } catch (err) {
@@ -237,7 +237,11 @@ export default function ColaboradorDetalle() {
     setGuardandoRostro(true);
     setErrorRostro('');
     try {
-      await api.post(`/colaboradores/${id}/rostro`, { descriptores, foto });
+      // La miniatura se saca aquí y no en el servidor: el navegador ya tiene la
+      // imagen y un canvas, y el servidor tendría que traerse una librería
+      // entera para hacer lo mismo.
+      const fotoMini = await miniaturaDe(foto).catch(() => null);
+      await api.post(`/colaboradores/${id}/rostro`, { descriptores, foto, fotoMini });
       setModalCamara(false);
       setConsentimientoRostro(false);
       setToast('Rostro registrado con éxito');

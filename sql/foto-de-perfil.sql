@@ -7,5 +7,10 @@
 -- LONGTEXT porque se guarda como data URL en base64. El tope real lo pone la
 -- aplicación (MAX_FOTO en src/utils/fotoPerfil.ts): unos 500 KB.
 
+-- Son dos: la grande para la ficha y una miniatura para las listas. La lista
+-- pide la foto de TODOS, y mandar la grande por cada persona son cientos de
+-- kilobytes por carga.
+
 ALTER TABLE colaboradores
-  ADD COLUMN foto LONGTEXT NULL;
+  ADD COLUMN foto LONGTEXT NULL,
+  ADD COLUMN fotoMini LONGTEXT NULL;

@@ -5,7 +5,7 @@ import { calcularValorHora } from '../utils/horasColombiana';
 import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
-import { fotoPerfilValida, fotoParaEnrolar } from '../utils/fotoPerfil';
+import { fotoPerfilValida, fotoParaEnrolar, miniValida } from '../utils/fotoPerfil';
 import { resumenDeContrato } from '../utils/estadoContratoResumen';
 import { validarImportacion, COLUMNAS_FORMATO } from '../utils/importarColaboradores';
 import { medianocheBogota, hoyEnBogota } from '../utils/fechas';
@@ -96,9 +96,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       orderBy: { nombre: 'asc' },
     });
     const hoy = new Date();
-    // La foto se descarta aquí: la lista no la pinta, y mandar una por persona
-    // en cada carga son cientos de kilobytes que nadie mira. Se pide con la
-    // ficha, que es donde se ve.
+    // Viaja la miniatura, nunca la grande: la lista pinta un círculo de 36
+    // píxeles, y mandar la de la ficha por cada persona son cientos de
+    // kilobytes por carga. La grande se pide con la ficha, que es donde se ve.
     return filas.map(({ sedes, contratos, foto: _foto, ...c }) => ({
       ...c,
       sedeIds: sedes.map(s => s.sedeId),
@@ -564,19 +564,22 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   // perderla porque alguien vuelva a enrolar el rostro.
   app.post('/:id/rostro', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { descriptores, foto } = request.body as { descriptores: unknown; foto?: unknown };
+    const { descriptores, foto, fotoMini } = request.body as {
+      descriptores: unknown; foto?: unknown; fotoMini?: unknown;
+    };
     const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
     if (!esListaDescriptoresValida(descriptores)) {
       return reply.status(400).send({ error: 'Muestras faciales inválidas' });
     }
     const primeraFoto = fotoParaEnrolar(existente.foto, foto);
+    const primeraMini = primeraFoto && miniValida(fotoMini) ? fotoMini : null;
     const colaborador = await prisma.colaborador.update({
       where: { id },
       data: {
         rostroDescriptor: descriptores,
         rostroEnroladoEn: new Date(),
-        ...(primeraFoto ? { foto: primeraFoto } : {}),
+        ...(primeraFoto ? { foto: primeraFoto, fotoMini: primeraMini } : {}),
       },
     });
     return { ok: true, rostroEnroladoEn: colaborador.rostroEnroladoEn, foto: colaborador.foto };
@@ -585,7 +588,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   // La foto de perfil, puesta a mano.
   app.put('/:id/foto', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { foto } = request.body as { foto: unknown };
+    const { foto, fotoMini } = request.body as { foto: unknown; fotoMini: unknown };
     const existente = await prisma.colaborador.findFirst({
       where: { id, empresaId: request.empresaId }, select: { id: true },
     });
@@ -593,7 +596,12 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (!fotoPerfilValida(foto)) {
       return reply.status(400).send({ error: 'La foto debe ser JPG, PNG o WEBP y pesar menos de 500 KB.' });
     }
-    await prisma.colaborador.update({ where: { id }, data: { foto } });
+    // La miniatura es opcional: si no llega o no vale, la lista cae a las
+    // iniciales, que es mejor que rechazar la foto entera por su versión chica.
+    await prisma.colaborador.update({
+      where: { id },
+      data: { foto, fotoMini: miniValida(fotoMini) ? fotoMini : null },
+    });
     return { ok: true };
   });
 
@@ -605,7 +613,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       where: { id, empresaId: request.empresaId }, select: { id: true },
     });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
-    await prisma.colaborador.update({ where: { id }, data: { foto: null } });
+    await prisma.colaborador.update({ where: { id }, data: { foto: null, fotoMini: null } });
     return { ok: true };
   });
 

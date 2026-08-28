@@ -212,6 +212,10 @@ model Colaborador {
   // para reconocer a quién se está mirando en la ficha, no para autenticar. Va
   // aparte del descriptor a propósito, para poder borrar una sin borrar la otra.
   foto             String?   @db.LongText
+  // La misma foto, chiquita, para las listas. Se guarda aparte y no se recorta
+  // al vuelo porque la lista la pide para TODOS: mandar la grande son cientos
+  // de kilobytes por carga, y en un plan de 150 personas son megas.
+  fotoMini         String?   @db.LongText
   horarioId        String?
   horario          Horario?   @relation(fields: [horarioId], references: [id])
   activo           Boolean    @default(true)

@@ -11,10 +11,11 @@ import ModalImportar from '../features/colaboradores/ModalImportar';
 import Toast from '../components/Toast';
 import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros, SIN_SEDE } from '../features/colaboradores/estadoContrato';
 import MenuFiltros from '../components/MenuFiltros';
+import AvatarMini from '../components/AvatarMini';
 import { fechaCorta } from '../lib/fechas';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 
-type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null };
+type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null };
 // Los colores del chip de contrato. Se quedan en la pantalla y no en la regla:
 // qué es urgente lo decide estadoContrato.ts, cómo se ve lo decide esto.
 const TONO_CHIP: Record<string, string> = {
@@ -165,7 +166,8 @@ export default function Colaboradores() {
   // todavía trabaja aquí?" sin tener que cambiar de pestaña para averiguarlo.
   type Fila = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
     salarioMensual: number; activo: boolean; fechaRetiro?: string | null; motivoRetiro?: string | null;
-    estadoContrato?: string | null; sedeIds?: string[]; sedeNombres?: string[] };
+    estadoContrato?: string | null; sedeIds?: string[]; sedeNombres?: string[];
+    fotoMini?: string | null };
   const filas: Fila[] = pestanaActiva === 'retirados'
     ? retirados.map(r => ({ ...r, activo: false }))
     : pestanaActiva === 'activos'
@@ -288,7 +290,6 @@ export default function Colaboradores() {
               <th className="px-4 py-3 text-left">Estado</th>
               <th className="px-4 py-3 text-left hidden sm:table-cell">Contrato</th>
               <th className="px-4 py-3 text-left hidden lg:table-cell">Sede</th>
-              <th className="px-4 py-3 text-left hidden md:table-cell">Cédula</th>
               <th className="px-4 py-3 text-left hidden lg:table-cell">Cargo</th>
               <th className="px-4 py-3 text-right hidden sm:table-cell">Salario</th>
               <th className="px-4 py-3 text-center">Acciones</th>
@@ -297,7 +298,19 @@ export default function Colaboradores() {
           <tbody className="divide-y divide-gray-100">
             {visibles.map(col => (
               <tr key={col.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/app/colaboradores/${col.id}`)}>
-                <td className="px-4 py-3 font-medium text-ink">{col.nombre} {col.apellido}</td>
+                {/* La cédula va bajo el nombre y no en su propia columna: es
+                    el dato con el que se confirma que es la persona correcta,
+                    y ahí se lee de un vistazo sin cruzar la fila entera. */}
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <AvatarMini nombre={col.nombre} apellido={col.apellido}
+                      foto={col.fotoMini} activo={col.activo} />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-ink truncate">{col.nombre} {col.apellido}</p>
+                      <p className="text-xs text-muted">{col.cedula}</p>
+                    </div>
+                  </div>
+                </td>
                 <td className="px-4 py-3">
                   {col.activo ? (
                     <span className="text-[10px] font-bold bg-green-100 text-green-800 px-2 py-0.5 rounded-full">ACTIVO</span>
@@ -317,7 +330,9 @@ export default function Colaboradores() {
                 <td className="px-4 py-3 hidden sm:table-cell">
                   {col.activo ? (() => {
                     const e = estadoContrato(col.estadoContrato);
-                    return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TONO_CHIP[e.tono]}`}>{e.etiqueta.toUpperCase()}</span>;
+                    // whitespace-nowrap: "SE PRORROGÓ SOLO" se partía en dos líneas y
+                    // desnivelaba la fila entera.
+                    return <span className={`inline-block whitespace-nowrap text-[10px] font-bold px-2 py-0.5 rounded-full ${TONO_CHIP[e.tono]}`}>{e.etiqueta.toUpperCase()}</span>;
                   })() : <span className="text-muted">—</span>}
                 </td>
                 <td className="px-4 py-3 text-muted hidden lg:table-cell">
@@ -325,7 +340,6 @@ export default function Colaboradores() {
                     ? col.sedeNombres.join(' · ')
                     : <span className="text-gray-400">Sin sede</span>}
                 </td>
-                <td className="px-4 py-3 text-muted hidden md:table-cell">{col.cedula}</td>
                 <td className="px-4 py-3 text-muted hidden lg:table-cell">{col.cargo || '-'}</td>
                 <td className="px-4 py-3 text-right text-ink hidden sm:table-cell">{fmt(col.salarioMensual)}</td>
                 <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
@@ -347,7 +361,7 @@ export default function Colaboradores() {
               </tr>
             ))}
             {filas.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-10 text-center text-muted">
+              <tr><td colSpan={7} className="px-4 py-10 text-center text-muted">
                 {pestanaActiva === 'retirados' ? 'Nadie se ha retirado todavía' : 'Aún no hay colaboradores'}
               </td></tr>
             )}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fotoPerfilValida, fotoParaEnrolar, MAX_FOTO } from './fotoPerfil';
+import { fotoPerfilValida, fotoParaEnrolar, miniValida, MAX_FOTO, MAX_MINI } from './fotoPerfil';
 
 const jpeg = (relleno = 100) => 'data:image/jpeg;base64,' + 'A'.repeat(relleno);
 
@@ -78,5 +78,27 @@ describe('qué foto deja el enrolamiento facial', () => {
     expect(fotoParaEnrolar(null, 'data:application/pdf;base64,AAAA')).toBeNull();
     expect(fotoParaEnrolar(null, 'https://ejemplo.co/x.jpg')).toBeNull();
     expect(fotoParaEnrolar(null, 12345)).toBeNull();
+  });
+});
+
+describe('la miniatura que viaja en las listas', () => {
+  const jpg = (n: number) => 'data:image/jpeg;base64,' + 'A'.repeat(n);
+
+  it('acepta lo que produce recortar a 64 píxeles', () => {
+    // Un JPEG de 64px al 70% son un par de kilobytes.
+    expect(miniValida(jpg(4_000))).toBe(true);
+  });
+
+  it('tiene su propio tope, más bajo que el de la grande', () => {
+    expect(MAX_MINI).toBeLessThan(MAX_FOTO);
+    expect(miniValida(jpg(MAX_MINI))).toBe(false);
+    // Y una foto de tamaño de ficha no pasa por miniatura.
+    expect(miniValida(jpg(200_000))).toBe(false);
+  });
+
+  it('sigue rechazando lo que no es una imagen de cámara', () => {
+    expect(miniValida('data:image/svg+xml;base64,AAAA')).toBe(false);
+    expect(miniValida('https://ejemplo.co/x.jpg')).toBe(false);
+    expect(miniValida(null)).toBe(false);
   });
 });

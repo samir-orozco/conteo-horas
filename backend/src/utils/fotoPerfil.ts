@@ -30,3 +30,12 @@ export function fotoParaEnrolar(fotoActual: string | null, fotoDelEscaneo: unkno
   if (fotoActual) return null;
   return fotoPerfilValida(fotoDelEscaneo) ? fotoDelEscaneo : null;
 }
+
+// La miniatura tiene su propio tope: si la grande cabe en 500 KB, la chica no
+// tiene por qué pesar más que un icono. Un valor fuera de rango se descarta en
+// vez de guardarse, y la lista cae a las iniciales.
+export const MAX_MINI = 60_000;
+
+export function miniValida(v: unknown): v is string {
+  return fotoPerfilValida(v) && v.length < MAX_MINI;
+}
