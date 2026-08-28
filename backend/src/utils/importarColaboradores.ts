@@ -20,15 +20,20 @@ export const COLUMNAS_FORMATO: ColumnaFormato[] = [
   { clave: 'email', titulo: 'Correo', obligatoria: false, ejemplo: 'ana@empresa.co' },
   { clave: 'telefono', titulo: 'Teléfono', obligatoria: false, ejemplo: '3001234567' },
   { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', ayuda: 'AAAA-MM-DD' },
-  { clave: 'horario', titulo: 'Horario', obligatoria: false, ejemplo: 'Turno diurno', ayuda: 'El nombre exacto de un horario ya creado' },
 ];
+
+// El horario NO va en el archivo: se elige en la tabla de la pantalla, de una
+// lista. Escribirlo a mano obligaba a copiar el nombre exacto de un horario, y
+// un dedazo dejaba la fila entera en error por algo que se resuelve con un
+// clic. Llega por su id, junto al resto de la fila.
+const CLAVE_HORARIO = 'horarioId';
 
 export type FilaCruda = Record<string, unknown>;
 
 export type ContextoImportacion = {
-  // Nombre del horario en minúsculas -> id. En minúsculas porque nadie escribe
-  // "Turno Diurno" dos veces igual.
-  horariosPorNombre: Map<string, string>;
+  // Los ids de horario de ESTA empresa. El id viaja desde el navegador, y que
+  // la lista solo ofrezca los propios no impide que alguien mande otro a mano.
+  horariosValidos: Set<string>;
   cedulasActivas: Set<string>;
   // Quien está retirado conserva su ficha y su historial. Crear una nueva con
   // la misma cédula chocaría con la restricción única, y aunque no chocara le
@@ -91,7 +96,7 @@ export function validarImportacion(filas: FilaCruda[], ctx: ContextoImportacion)
 
     // Excel arrastra filas vacías al final. Una fila sin nada no es un error,
     // es el final del archivo.
-    const vacia = COLUMNAS_FORMATO.every(c => v(c.clave) === '');
+    const vacia = COLUMNAS_FORMATO.every(c => v(c.clave) === '') && v(CLAVE_HORARIO) === '';
     if (vacia) return;
     conDatos++;
 
@@ -129,11 +134,11 @@ export function validarImportacion(filas: FilaCruda[], ctx: ContextoImportacion)
       err('fechaNacimiento', `"${nacimiento}" no es una fecha. Se escribe como AAAA-MM-DD.`);
     }
 
-    const horario = v('horario');
+    const elegido = v(CLAVE_HORARIO);
     let horarioId: string | null = null;
-    if (horario) {
-      horarioId = ctx.horariosPorNombre.get(horario.toLowerCase()) ?? null;
-      if (!horarioId) err('horario', `No existe un horario llamado "${horario}".`);
+    if (elegido) {
+      if (ctx.horariosValidos.has(elegido)) horarioId = elegido;
+      else err(CLAVE_HORARIO, 'Ese horario no existe en tu empresa. Elige uno de la lista.');
     }
 
     if (rota) return;

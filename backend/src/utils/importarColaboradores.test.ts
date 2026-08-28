@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { validarImportacion, COLUMNAS_FORMATO, type ContextoImportacion } from './importarColaboradores';
 
 const ctx = (over: Partial<ContextoImportacion> = {}): ContextoImportacion => ({
-  horariosPorNombre: new Map([['turno diurno', 'h1'], ['turno nocturno', 'h2']]),
+  horariosValidos: new Set(['h1', 'h2']),
   cedulasActivas: new Set<string>(),
   cedulasRetiradas: new Set<string>(),
   cupoDisponible: 100,
@@ -12,7 +12,7 @@ const ctx = (over: Partial<ContextoImportacion> = {}): ContextoImportacion => ({
 const fila = (over: Record<string, unknown> = {}) => ({
   nombre: 'Ana', apellido: 'Gómez', cedula: '1020304050',
   cargo: 'Vigilante', salarioMensual: '1750905', email: '', telefono: '',
-  fechaNacimiento: '', horario: '', ...over,
+  fechaNacimiento: '', horarioId: '', ...over,
 });
 
 const errores = (r: ReturnType<typeof validarImportacion>) => r.errores.map(e => `${e.fila}:${e.campo}`);
@@ -85,22 +85,29 @@ describe('la validación de una carga masiva', () => {
     expect(validarImportacion([fila({ email: '' })], ctx()).errores).toEqual([]);
   });
 
-  it('el horario se escribe por su nombre y se resuelve a su id', () => {
-    const r = validarImportacion([fila({ horario: 'Turno Diurno' })], ctx());
+  it('el horario llega elegido desde la pantalla, no escrito en el Excel', () => {
+    // Escribirlo a mano en una celda obligaba a copiar el nombre exacto. Se
+    // elige de una lista, así que llega como id.
+    const r = validarImportacion([fila({ horarioId: 'h1' })], ctx());
     expect(r.errores).toEqual([]);
     expect(r.validas[0].horarioId).toBe('h1');
   });
 
-  it('un horario que no existe se dice con nombre propio, no "dato inválido"', () => {
-    const r = validarImportacion([fila({ horario: 'Turno marciano' })], ctx());
-    expect(errores(r)).toContain('2:horario');
-    expect(r.errores[0].mensaje).toMatch(/Turno marciano/);
+  it('un horario de otra empresa no pasa, aunque venga en la petición', () => {
+    // El id viaja desde el navegador. Que la lista solo ofrezca los propios no
+    // impide que alguien mande otro a mano.
+    const r = validarImportacion([fila({ horarioId: 'de-otra-empresa' })], ctx());
+    expect(errores(r)).toContain('2:horarioId');
   });
 
   it('sin horario se crea igual: se puede asignar después', () => {
-    const r = validarImportacion([fila({ horario: '' })], ctx());
+    const r = validarImportacion([fila({ horarioId: '' })], ctx());
     expect(r.errores).toEqual([]);
     expect(r.validas[0].horarioId).toBeNull();
+  });
+
+  it('el formato que se descarga ya no trae columna de horario', () => {
+    expect(COLUMNAS_FORMATO.map(c => c.clave)).not.toContain('horario');
   });
 
   it('la fecha de nacimiento, si viene, tiene que ser una fecha real', () => {
@@ -111,7 +118,7 @@ describe('la validación de una carga masiva', () => {
 
   it('una fila completamente vacía se ignora, no se reporta como error', () => {
     // Excel arrastra filas vacías al final todo el tiempo.
-    const vacia = { nombre: '', apellido: '', cedula: '', cargo: '', salarioMensual: '', email: '', telefono: '', fechaNacimiento: '', horario: '' };
+    const vacia = { nombre: '', apellido: '', cedula: '', cargo: '', salarioMensual: '', email: '', telefono: '', fechaNacimiento: '', horarioId: '' };
     const r = validarImportacion([fila(), vacia, vacia], ctx());
     expect(r.errores).toEqual([]);
     expect(r.validas).toHaveLength(1);

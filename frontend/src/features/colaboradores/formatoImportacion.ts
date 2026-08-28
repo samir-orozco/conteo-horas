@@ -73,20 +73,18 @@ export async function leerHoja(archivo: File): Promise<unknown[][]> {
 
 // Genera el formato para descargar: una hoja con los títulos y un ejemplo, y
 // otra con las instrucciones y los horarios que existen de verdad.
-export function descargarFormato(columnas: Columna[], horarios: string[]) {
+export function descargarFormato(columnas: Columna[]) {
   const instrucciones: string[][] = [
     ['Cómo llenar este formato'],
     [''],
     ['1. Escribe una fila por persona, debajo del encabezado de la hoja "Colaboradores".'],
     ['2. Borra la fila de ejemplo antes de subirlo.'],
     ['3. No cambies los títulos de las columnas. Puedes moverlas de lugar si quieres.'],
-    ['4. Al subirlo verás una vista previa con los errores antes de crear a nadie.'],
+    ['4. Al subirlo verás una tabla donde puedes corregir todo antes de crear a nadie.'],
+    ['5. El horario NO va en este archivo: se elige en esa tabla, de una lista.'],
     [''],
     ['Columna', '¿Obligatoria?', 'Cómo se escribe'],
     ...columnas.map(c => [c.titulo, c.obligatoria ? 'Sí' : 'No', c.ayuda ?? '']),
-    [''],
-    ['Horarios que puedes escribir en la columna "Horario"'],
-    ...(horarios.length ? horarios.map(h => [h]) : [['Todavía no has creado ningún horario.']]),
   ];
 
   return descargarExcelHojas('formato-colaboradores', [

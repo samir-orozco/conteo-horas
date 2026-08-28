@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ModalImportar from './ModalImportar';
 
@@ -18,118 +18,207 @@ vi.mock('./formatoImportacion', async (real) => ({
 const COLUMNAS = [
   { clave: 'nombre', titulo: 'Nombre', obligatoria: true, ejemplo: 'Ana' },
   { clave: 'cedula', titulo: 'Cédula', obligatoria: true, ejemplo: '123' },
+  { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1' },
 ];
+const HORARIOS = [{ id: 'h1', nombre: 'Turno diurno' }, { id: 'h2', nombre: 'Turno nocturno' }];
+
+const OK = { validas: [], errores: [], excedeCupo: false, vacio: false, conDatos: 0, creados: 0 };
 
 const archivo = () => new File(['x'], 'gente.xlsx',
   { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-const montar = (props = {}) =>
-  render(<ModalImportar onCerrar={vi.fn()} onListo={vi.fn()} {...props} />);
+const montar = (props = {}) => render(<ModalImportar onCerrar={vi.fn()} onListo={vi.fn()} {...props} />);
 
 beforeEach(() => {
-  // Sin esto las llamadas se acumulan entre pruebas y "la segunda llamada" es
-  // la de otra prueba.
   vi.clearAllMocks();
-  get.mockResolvedValue({ data: { columnas: COLUMNAS, horarios: ['Turno diurno'] } });
-  leerHoja.mockResolvedValue([['Nombre', 'Cédula'], ['Ana', '123']]);
+  get.mockResolvedValue({ data: { columnas: COLUMNAS, horarios: HORARIOS } });
+  leerHoja.mockResolvedValue([
+    ['Nombre', 'Cédula', 'Salario mensual'],
+    ['Ana', '111', '1750905'],
+    ['Luis', '222', '2000000'],
+  ]);
+  post.mockResolvedValue({ data: OK });
 });
 
 const subir = async () => {
   await userEvent.upload(await screen.findByLabelText(/Subir el formato/i), archivo());
+  await screen.findByRole('table');
 };
 
-describe('el modal de carga masiva', () => {
-  it('explica los dos pasos antes de pedir nada', async () => {
+describe('antes de subir nada', () => {
+  it('ofrece descargar el formato y subirlo', async () => {
     montar();
     expect(await screen.findByRole('button', { name: /Descargar el formato/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/Subir el formato/i)).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
-  it('descarga el formato con los horarios reales de la empresa', async () => {
+  it('el formato ya no lleva columna de horario: eso se elige aquí', async () => {
     montar();
     await userEvent.click(await screen.findByRole('button', { name: /Descargar el formato/i }));
-    expect(descargarFormato).toHaveBeenCalledWith(COLUMNAS, ['Turno diurno']);
+    expect(descargarFormato).toHaveBeenCalledWith(COLUMNAS);
   });
 
-  it('al subir un archivo lo valida SIN crear nada todavía', async () => {
-    // La vista previa tiene que pasar por el servidor: si validara el
-    // navegador, lo que se ve podría no ser lo que el servidor va a hacer.
-    post.mockResolvedValueOnce({ data: { validas: [{ nombre: 'Ana' }], errores: [], excedeCupo: false, vacio: false, creados: 0 } });
+  it('un archivo que no es hoja de cálculo se rechaza antes de leerlo', async () => {
     montar();
-    await subir();
-    await waitFor(() => expect(post).toHaveBeenCalled());
-    expect(post.mock.calls[0][1]).toMatchObject({ soloValidar: true });
-    expect(await screen.findByRole('button', { name: /Crear 1 colaborador/i })).toBeInTheDocument();
-  });
-
-  it('muestra los errores por fila, con el número que se ve en Excel', async () => {
-    post.mockResolvedValueOnce({ data: {
-      validas: [], excedeCupo: false, vacio: false, creados: 0,
-      errores: [{ fila: 7, campo: 'cedula', mensaje: 'La cédula 123 ya está registrada en tu empresa.' }],
-    } });
-    montar();
-    await subir();
-    expect(await screen.findByText(/Fila 7/i)).toBeInTheDocument();
-    expect(screen.getByText(/ya está registrada/i)).toBeInTheDocument();
-  });
-
-  it('con errores no deja crear: primero se arregla el archivo', async () => {
-    post.mockResolvedValueOnce({ data: {
-      validas: [], excedeCupo: false, vacio: false, creados: 0,
-      errores: [{ fila: 2, campo: 'nombre', mensaje: 'Falta el nombre.' }],
-    } });
-    montar();
-    await subir();
-    await screen.findByText(/Falta el nombre/i);
-    expect(screen.queryByRole('button', { name: /Crear \d+ colaborador/i })).not.toBeInTheDocument();
-  });
-
-  it('si no caben en el plan lo dice con números', async () => {
-    post.mockResolvedValueOnce({ data: {
-      validas: [{}, {}, {}], errores: [], excedeCupo: true, vacio: false, conDatos: 5,
-      cupoDisponible: 2, nombrePlan: 'Empresarial', creados: 0,
-    } });
-    montar();
-    await subir();
-    // Habla del archivo (5 filas), no de las que sirven.
-    expect(await screen.findByText(/trae 5 colaboradores/i)).toBeInTheDocument();
-    expect(screen.getByText(/Empresarial/)).toBeInTheDocument();
-    expect(screen.getByText(/cupo para/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Crear \d+ colaborador/i })).not.toBeInTheDocument();
-  });
-
-  it('un archivo sin filas lo dice, en vez de dejar el modal mudo', async () => {
-    post.mockResolvedValueOnce({ data: { validas: [], errores: [], excedeCupo: false, vacio: true, creados: 0 } });
-    montar();
-    await subir();
-    expect(await screen.findByText(/no tiene ninguna fila/i)).toBeInTheDocument();
-  });
-
-  it('confirmar crea de verdad y avisa cuántos', async () => {
-    post.mockResolvedValueOnce({ data: { validas: [{}, {}], errores: [], excedeCupo: false, vacio: false, creados: 0 } });
-    post.mockResolvedValueOnce({ data: { creados: 2, errores: [], validas: [{}, {}], excedeCupo: false, vacio: false } });
-    const onListo = vi.fn();
-    montar({ onListo });
-    await subir();
-    await userEvent.click(await screen.findByRole('button', { name: /Crear 2 colaboradores/i }));
-    await waitFor(() => expect(onListo).toHaveBeenCalledWith(2));
-    expect(post.mock.calls[1][1]).toMatchObject({ soloValidar: false });
-  });
-
-  it('un archivo que no es una hoja de cálculo se rechaza antes de subirlo', async () => {
-    montar();
-    // applyAccept: false imita a quien elige "todos los archivos" en el
-    // diálogo del sistema, que es la única forma de que llegue un PNG.
     await userEvent.upload(await screen.findByLabelText(/Subir el formato/i),
       new File(['x'], 'foto.png', { type: 'image/png' }), { applyAccept: false });
     expect(await screen.findByText(/Excel/i)).toBeInTheDocument();
-    expect(post).not.toHaveBeenCalled();
+    expect(leerHoja).not.toHaveBeenCalled();
   });
+});
 
-  it('si el servidor falla lo dice, en vez de quedarse pensando', async () => {
-    post.mockRejectedValueOnce({ response: { data: { error: 'El archivo trae más de 500 filas.' } } });
+describe('la tabla que queda después de subir', () => {
+  it('precarga lo que traía el archivo, en campos que se pueden tocar', async () => {
     montar();
     await subir();
-    expect(await screen.findByText(/más de 500 filas/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nombre de la fila 1/i)).toHaveValue('Ana');
+    expect(screen.getByLabelText(/Cédula de la fila 1/i)).toHaveValue('111');
+    expect(screen.getByLabelText(/Nombre de la fila 2/i)).toHaveValue('Luis');
+  });
+
+  it('se puede corregir un dato sin volver a tocar el Excel', async () => {
+    montar();
+    await subir();
+    const campo = screen.getByLabelText(/Nombre de la fila 1/i);
+    await userEvent.clear(campo);
+    await userEvent.type(campo, 'Ana María');
+    expect(campo).toHaveValue('Ana María');
+  });
+
+  it('cada persona tiene su propio selector de horario', async () => {
+    montar();
+    await subir();
+    const sel = screen.getByLabelText(/Horario de la fila 1/i);
+    await userEvent.selectOptions(sel, 'h2');
+    expect(sel).toHaveValue('h2');
+    expect(screen.getByLabelText(/Horario de la fila 2/i)).toHaveValue('');
+  });
+
+  it('sin horario es una opción válida, no un hueco', async () => {
+    montar();
+    await subir();
+    const sel = screen.getByLabelText(/Horario de la fila 1/i);
+    expect(within(sel).getByRole('option', { name: /Sin horario/i })).toBeInTheDocument();
+  });
+
+  it('el horario global se lo pone a todos de un golpe', async () => {
+    montar();
+    await subir();
+    await userEvent.selectOptions(screen.getByLabelText(/Horario para todos/i), 'h1');
+    expect(screen.getByLabelText(/Horario de la fila 1/i)).toHaveValue('h1');
+    expect(screen.getByLabelText(/Horario de la fila 2/i)).toHaveValue('h1');
+  });
+
+  it('después del global, cada uno se puede cambiar aparte', async () => {
+    montar();
+    await subir();
+    await userEvent.selectOptions(screen.getByLabelText(/Horario para todos/i), 'h1');
+    await userEvent.selectOptions(screen.getByLabelText(/Horario de la fila 2/i), 'h2');
+    expect(screen.getByLabelText(/Horario de la fila 1/i)).toHaveValue('h1');
+    expect(screen.getByLabelText(/Horario de la fila 2/i)).toHaveValue('h2');
+  });
+
+  it('se puede agregar a alguien que no venía en el archivo', async () => {
+    montar();
+    await subir();
+    await userEvent.click(screen.getByRole('button', { name: /Agregar una fila/i }));
+    expect(screen.getByLabelText(/Nombre de la fila 3/i)).toHaveValue('');
+  });
+
+  it('y quitar a alguien que no va', async () => {
+    montar();
+    await subir();
+    await userEvent.click(screen.getByRole('button', { name: /Quitar la fila 1/i }));
+    expect(screen.getByLabelText(/Nombre de la fila 1/i)).toHaveValue('Luis');
+  });
+});
+
+describe('los errores, en su celda', () => {
+  it('marcan el campo exacto y dicen qué pasa', async () => {
+    post.mockResolvedValueOnce({ data: { ...OK, conDatos: 2,
+      errores: [{ fila: 3, campo: 'cedula', mensaje: 'La cédula 222 ya está registrada en tu empresa.' }] } });
+    montar();
+    await subir();
+    expect(await screen.findByText(/ya está registrada/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Cédula de la fila 2/i)).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText(/Cédula de la fila 1/i)).not.toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('corregir la celda le quita la marca sin esperar al servidor', async () => {
+    // Dejarla en rojo mientras se escribe la corrección se lee como que lo
+    // nuevo también está mal.
+    post.mockResolvedValueOnce({ data: { ...OK, conDatos: 2,
+      errores: [{ fila: 2, campo: 'nombre', mensaje: 'Falta el nombre.' }] } });
+    montar();
+    await subir();
+    const campo = screen.getByLabelText(/Nombre de la fila 1/i);
+    await waitFor(() => expect(campo).toHaveAttribute('aria-invalid', 'true'));
+    await userEvent.type(campo, 'x');
+    expect(campo).not.toHaveAttribute('aria-invalid', 'true');
+  });
+});
+
+describe('crear', () => {
+  it('manda lo que quedó en la tabla, no lo que traía el archivo', async () => {
+    montar();
+    await subir();
+    const campo = screen.getByLabelText(/Nombre de la fila 1/i);
+    await userEvent.clear(campo);
+    await userEvent.type(campo, 'Corregida');
+    await userEvent.selectOptions(screen.getByLabelText(/Horario para todos/i), 'h1');
+
+    post.mockResolvedValueOnce({ data: { ...OK, creados: 2 } });
+    await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
+
+    const enviado = post.mock.calls[post.mock.calls.length - 1][1] as { filas: Record<string, string>[]; soloValidar: boolean };
+    expect(enviado.soloValidar).toBe(false);
+    expect(enviado.filas[0].nombre).toBe('Corregida');
+    expect(enviado.filas[0].horarioId).toBe('h1');
+  });
+
+  it('si el servidor encuentra errores no crea, los muestra y la tabla sigue ahí', async () => {
+    montar();
+    await subir();
+    post.mockResolvedValueOnce({ data: { ...OK, conDatos: 2,
+      errores: [{ fila: 2, campo: 'salarioMensual', mensaje: 'Falta el salario, o no es un número.' }] } });
+    const onListo = vi.fn();
+    montar({ onListo });
+    await userEvent.click(screen.getAllByRole('button', { name: /Crear 2 colaboradores/i })[0]);
+    expect(onListo).not.toHaveBeenCalled();
+  });
+
+  it('cuando sí crea, avisa cuántos', async () => {
+    const onListo = vi.fn();
+    montar({ onListo });
+    await subir();
+    post.mockResolvedValueOnce({ data: { ...OK, creados: 2 } });
+    await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
+    await waitFor(() => expect(onListo).toHaveBeenCalledWith(2));
+  });
+
+  it('no ofrece crear cuando no hay ninguna fila con datos', async () => {
+    leerHoja.mockResolvedValueOnce([['Nombre', 'Cédula', 'Salario mensual']]);
+    montar();
+    await userEvent.upload(await screen.findByLabelText(/Subir el formato/i), archivo());
+    expect(await screen.findByText(/no tiene ninguna fila/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Crear \d+/i })).not.toBeInTheDocument();
+  });
+
+  it('si no caben en el plan lo dice y no deja crear', async () => {
+    post.mockResolvedValueOnce({ data: { ...OK, excedeCupo: true, conDatos: 2, cupoDisponible: 1, nombrePlan: 'Empresarial' } });
+    montar();
+    await subir();
+    expect(await screen.findByText(/No caben en tu plan/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Crear \d+/i })).not.toBeInTheDocument();
+  });
+
+  it('si el servidor se cae lo dice, sin perder lo que ya estaba escrito', async () => {
+    montar();
+    await subir();
+    post.mockRejectedValueOnce({ response: { data: { error: 'Internal Server Error' } } });
+    await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
+    expect(await screen.findByText(/Internal Server Error/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nombre de la fila 1/i)).toHaveValue('Ana');
   });
 });

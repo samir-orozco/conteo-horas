@@ -163,10 +163,12 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   app.get('/formato', auth, async (request) => {
     const horarios = await prisma.horario.findMany({
       where: { empresaId: request.empresaId! },
-      select: { nombre: true },
+      select: { id: true, nombre: true },
       orderBy: { nombre: 'asc' },
     });
-    return { columnas: COLUMNAS_FORMATO, horarios: horarios.map(h => h.nombre) };
+    // Los horarios van con id porque la pantalla los ofrece en un selector por
+    // fila, no porque haya que escribirlos en el archivo.
+    return { columnas: COLUMNAS_FORMATO, horarios };
   });
 
   // Carga masiva desde el formato de Excel.
@@ -185,15 +187,19 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: 'El archivo trae más de 500 filas. Súbelo por partes.' });
     }
 
+    // Todo el cuerpo va envuelto: si algo revienta aquí, la pantalla mostraba
+    // "Internal Server Error" y no había forma de saber por qué sin el servidor
+    // delante. Ahora el registro dice qué llegó y qué falló.
+    try {
     const [horarios, existentes, cap] = await Promise.all([
-      prisma.horario.findMany({ where: { empresaId: request.empresaId! }, select: { id: true, nombre: true } }),
+      prisma.horario.findMany({ where: { empresaId: request.empresaId! }, select: { id: true } }),
       prisma.colaborador.findMany({ where: { empresaId: request.empresaId! }, select: { cedula: true, activo: true } }),
       capacidadesEmpresa(request.empresaId!),
     ]);
     const activos = existentes.filter(c => c.activo).length;
 
     const resultado = validarImportacion(filas as Record<string, unknown>[], {
-      horariosPorNombre: new Map(horarios.map(h => [h.nombre.toLowerCase(), h.id])),
+      horariosValidos: new Set(horarios.map(h => h.id)),
       cedulasActivas: new Set(existentes.filter(c => c.activo).map(c => c.cedula)),
       cedulasRetiradas: new Set(existentes.filter(c => !c.activo).map(c => c.cedula)),
       cupoDisponible: cap.limite === Infinity ? Number.MAX_SAFE_INTEGER : Math.max(0, cap.limite - activos),
@@ -242,6 +248,13 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     }
 
     return { ...respuesta, creados: creados.length };
+    } catch (err) {
+      request.log.error({ err, filas: filas.length, soloValidar }, 'Falló la carga masiva de colaboradores');
+      const detalle = err instanceof Error ? err.message.split('\n')[0] : 'error desconocido';
+      return reply.status(500).send({
+        error: `No pudimos procesar el archivo: ${detalle}`,
+      });
+    }
   });
 
   app.post('/', auth, async (request, reply) => {
