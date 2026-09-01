@@ -193,49 +193,51 @@ model DispositivoKiosco {
 }
 
 model Colaborador {
-  id                    String            @id @default(cuid())
-  empresaId             String
-  empresa               Empresa           @relation(fields: [empresaId], references: [id])
-  nombre                String
-  apellido              String
-  cedula                String // marcación en kiosco por cédula
-  cargo                 String?
-  email                 String?
-  telefono              String?
-  fechaNacimiento       DateTime?
-  salarioMensual        Float
-  // Reconocimiento facial: descriptor matemático (128 floats), nunca la imagen
-  rostroDescriptor      Json?
-  rostroEnroladoEn      DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
-  horarioId             String?
-  horario               Horario?          @relation(fields: [horarioId], references: [id])
-  activo                Boolean           @default(true)
+  id               String              @id @default(cuid())
+  empresaId        String
+  empresa          Empresa             @relation(fields: [empresaId], references: [id])
+  nombre           String
+  apellido         String
+  cedula           String // marcación en kiosco por cédula
+  cargo            String?
+  email            String?
+  telefono         String?
+  fechaNacimiento  DateTime?
+  salarioMensual   Float
+  // Reconocimiento facial: descriptor matemático (128 floats). El descriptor no
+  // es una imagen y no se puede volver a convertir en una.
+  rostroDescriptor Json?
+  rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
+  // Foto de perfil (data URL). Es dato personal común, NO biométrico: sirve
+  // para reconocer a quién se está mirando en la ficha, no para autenticar. Va
+  // aparte del descriptor a propósito, para poder borrar una sin borrar la otra.
+  foto             String?             @db.LongText
+  // La misma foto, chiquita, para las listas. Se guarda aparte y no se recorta
+  // al vuelo porque la lista la pide para TODOS: mandar la grande son cientos
+  // de kilobytes por carga, y en un plan de 150 personas son megas.
+  fotoMini         String?             @db.LongText
+  horarioId        String?
+  horario          Horario?            @relation(fields: [horarioId], references: [id])
+  activo           Boolean             @default(true)
   // Retiro: cuándo salió y por qué. Antes solo quedaba `activo: false`, así que
   // se perdía la fecha, y esa fecha es justo la que se necesita para liquidar,
   // para un certificado laboral y para una inspección del Ministerio.
-  fechaRetiro           DateTime?
-  motivoRetiro          MotivoRetiro?
-  // Soporte del retiro: carta de renuncia, carta de terminación, acta. Es lo
-  // que sostiene la trazabilidad el día que alguien reclame o venga una
-  // inspección: la fecha y el motivo sin documento son la versión de una sola
-  // parte. Se guarda en la fila, como el resto de adjuntos del producto, y NO
-  // viaja en la ficha: se pide aparte por su peso.
-  documentoRetiro       String?           @db.LongText
-  documentoRetiroTipo   String?
-  documentoRetiroNombre String?
+  fechaRetiro      DateTime?
+  motivoRetiro     MotivoRetiro?
   // Resto del modelo de precio por colaborador: cuando el cobro dependía del
   // número de personas, el retiro se aplazaba a fin de mes para no regalar el
   // mes pagado. Hoy el precio es plano por plan y no mira cuántos hay, así que
   // aplazar no protege un peso: solo bloquea contratar al reemplazo. Se deja el
   // campo porque puede haber retiros programados sin aplicar en producción.
-  retiroProgramado      DateTime?
-  creadoEn              DateTime          @default(now())
-  actualizadoEn         DateTime          @updatedAt
-  registros             Registro[]
-  permisos              Permiso[]
-  contratos             Contrato[]
-  diasEsperados         DiaEsperado[]
-  sedes                 ColaboradorSede[]
+  retiroProgramado DateTime?
+  creadoEn         DateTime            @default(now())
+  actualizadoEn    DateTime            @updatedAt
+  registros        Registro[]
+  permisos         Permiso[]
+  contratos        Contrato[]
+  vinculacion      VinculacionEvento[]
+  diasEsperados    DiaEsperado[]
+  sedes            ColaboradorSede[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
@@ -325,37 +327,38 @@ model DiaEsperado {
 }
 
 model Registro {
-  id              String       @id @default(cuid())
+  id              String           @id @default(cuid())
   colaboradorId   String
-  colaborador     Colaborador  @relation(fields: [colaboradorId], references: [id])
+  colaborador     Colaborador      @relation(fields: [colaboradorId], references: [id])
   // Sede donde OCURRIÓ la marcación. Es distinto de las sedes asignadas al
   // colaborador: el filtro por sede de los reportes tiene que decir dónde marcó
   // de verdad, no dónde debería. Null en todo lo anterior a la función.
   sedeId          String?
-  sede            Sede?        @relation(fields: [sedeId], references: [id])
+  sede            Sede?            @relation(fields: [sedeId], references: [id])
   fecha           DateTime
   entrada         DateTime?
   salida          DateTime?
-  tipo            TipoRegistro @default(NORMAL)
+  tipo            TipoRegistro     @default(NORMAL)
   observacion     String?
   // Salida generada por el auto-cierre (la persona no marcó): se muestra como chip
   // "No marcó salida" en la columna Salida para que el admin la revise. No toca `tipo`,
   // así la liquidación del día sigue siendo correcta (NORMAL/FESTIVO).
-  salidaEstimada  Boolean      @default(false)
+  salidaEstimada  Boolean          @default(false)
   // La salida fue a almorzar, no el fin de la jornada. Lo dice el propio
   // colaborador en el kiosco: el sistema no puede adivinarlo.
-  salidaAlmuerzo  Boolean      @default(false)
+  salidaAlmuerzo  Boolean          @default(false)
   // El regreso del almuerzo lo puso el sistema porque nadie lo marcó. Va en el
   // dato y no solo en el color: el día que alguien reclame, el registro tiene
   // que poder decir que esa hora no la marcó una persona.
-  entradaEstimada Boolean      @default(false)
+  entradaEstimada Boolean          @default(false)
   // Foto de verificación facial al marcar (se elimina automáticamente a los 2 meses)
-  fotoEntrada     String?      @db.LongText
-  fotoSalida      String?      @db.LongText
+  fotoEntrada     String?          @db.LongText
+  cambios         RegistroCambio[]
+  fotoSalida      String?          @db.LongText
   // Auditoría de correcciones manuales
   editadoPor      String?
   editadoEn       DateTime?
-  creadoEn        DateTime     @default(now())
+  creadoEn        DateTime         @default(now())
   // Novedades que nacieron de ESTA marcación (salida temprana en el kiosco).
   // Se borran con ella: son parte de la marcación, no registros independientes.
   novedades       Permiso[]
@@ -602,6 +605,67 @@ enum EstadoRetiro {
   APROBADO
   PAGADO
   RECHAZADO
+}
+
+// Qué se cambió al editar una marcación, campo por campo.
+//
+// `Registro.editadoPor` y `editadoEn` ya decían QUE alguien la tocó y cuándo,
+// pero no qué hizo. Eso no sirve el día que un trabajador reclama una llegada
+// tarde: hay que poder decir que la entrada pasó de 8:15 a 8:00, quién lo hizo
+// y cuándo, no solo que "alguien editó esto".
+//
+// El nombre del usuario se copia aquí a propósito, en vez de solo referenciarlo:
+// si esa cuenta se borra, el historial tiene que seguir diciendo quién fue.
+model RegistroCambio {
+  id            String   @id @default(cuid())
+  registroId    String
+  registro      Registro @relation(fields: [registroId], references: [id], onDelete: Cascade)
+  campo         String
+  antes         String   @db.Text
+  despues       String   @db.Text
+  usuarioId     String?
+  usuarioNombre String?
+  creadoEn      DateTime @default(now())
+
+  @@index([registroId, creadoEn])
+  @@map("registro_cambios")
+}
+
+// Historia de la vinculación de una persona con la empresa.
+//
+// Los campos `fechaRetiro` y `motivoRetiro` de `Colaborador` guardan el estado
+// de HOY, que es lo que la lista necesita para pintar el estado sin cruzar
+// tablas. Pero solo recuerdan el ÚLTIMO retiro: quien renuncia, vuelve y se va
+// otra vez, borraba el primero. Esta tabla guarda todo lo que pasó, en orden, y
+// es la que permite responder "¿cuántas veces ha estado aquí y por qué se fue
+// cada vez?".
+//
+// El soporte cuelga del evento y no de la persona, por la misma razón: la carta
+// de renuncia de 2024 no es la de 2026.
+model VinculacionEvento {
+  id              String          @id @default(cuid())
+  colaboradorId   String
+  colaborador     Colaborador     @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  tipo            TipoVinculacion
+  fecha           DateTime // medianoche de Bogotá, misma convención que el resto
+  motivo          MotivoRetiro? // solo en los retiros
+  nota            String?         @db.Text
+  documento       String?         @db.LongText
+  documentoTipo   String?
+  documentoNombre String?
+  // Quién lo registró. Queda como null si el usuario se borra: importa más
+  // conservar el evento que saber quién lo escribió.
+  usuarioId       String?
+  creadoEn        DateTime        @default(now())
+
+  @@index([colaboradorId, fecha])
+  @@map("vinculacion_eventos")
+}
+
+enum TipoVinculacion {
+  INGRESO
+  RETIRO
+  REINGRESO
 }
 
 // Por qué salió. Importa para la liquidación: la indemnización del artículo 64

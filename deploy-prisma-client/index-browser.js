@@ -247,13 +247,12 @@ exports.Prisma.ColaboradorScalarFieldEnum = {
   salarioMensual: 'salarioMensual',
   rostroDescriptor: 'rostroDescriptor',
   rostroEnroladoEn: 'rostroEnroladoEn',
+  foto: 'foto',
+  fotoMini: 'fotoMini',
   horarioId: 'horarioId',
   activo: 'activo',
   fechaRetiro: 'fechaRetiro',
   motivoRetiro: 'motivoRetiro',
-  documentoRetiro: 'documentoRetiro',
-  documentoRetiroTipo: 'documentoRetiroTipo',
-  documentoRetiroNombre: 'documentoRetiroNombre',
   retiroProgramado: 'retiroProgramado',
   creadoEn: 'creadoEn',
   actualizadoEn: 'actualizadoEn'
@@ -421,6 +420,31 @@ exports.Prisma.SolicitudRetiroScalarFieldEnum = {
   procesadoPor: 'procesadoPor'
 };
 
+exports.Prisma.RegistroCambioScalarFieldEnum = {
+  id: 'id',
+  registroId: 'registroId',
+  campo: 'campo',
+  antes: 'antes',
+  despues: 'despues',
+  usuarioId: 'usuarioId',
+  usuarioNombre: 'usuarioNombre',
+  creadoEn: 'creadoEn'
+};
+
+exports.Prisma.VinculacionEventoScalarFieldEnum = {
+  id: 'id',
+  colaboradorId: 'colaboradorId',
+  tipo: 'tipo',
+  fecha: 'fecha',
+  motivo: 'motivo',
+  nota: 'nota',
+  documento: 'documento',
+  documentoTipo: 'documentoTipo',
+  documentoNombre: 'documentoNombre',
+  usuarioId: 'usuarioId',
+  creadoEn: 'creadoEn'
+};
+
 exports.Prisma.ContratoScalarFieldEnum = {
   id: 'id',
   colaboradorId: 'colaboradorId',
@@ -553,6 +577,12 @@ exports.EstadoRetiro = exports.$Enums.EstadoRetiro = {
   RECHAZADO: 'RECHAZADO'
 };
 
+exports.TipoVinculacion = exports.$Enums.TipoVinculacion = {
+  INGRESO: 'INGRESO',
+  RETIRO: 'RETIRO',
+  REINGRESO: 'REINGRESO'
+};
+
 exports.TipoContrato = exports.$Enums.TipoContrato = {
   INDEFINIDO: 'INDEFINIDO',
   FIJO: 'FIJO',
@@ -588,6 +618,8 @@ exports.Prisma.ModelName = {
   Afiliado: 'Afiliado',
   Comision: 'Comision',
   SolicitudRetiro: 'SolicitudRetiro',
+  RegistroCambio: 'RegistroCambio',
+  VinculacionEvento: 'VinculacionEvento',
   Contrato: 'Contrato',
   ProrrogaContrato: 'ProrrogaContrato'
 };

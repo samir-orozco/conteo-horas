@@ -124,6 +124,16 @@ export type Comision = $Result.DefaultSelection<Prisma.$ComisionPayload>
  */
 export type SolicitudRetiro = $Result.DefaultSelection<Prisma.$SolicitudRetiroPayload>
 /**
+ * Model RegistroCambio
+ * 
+ */
+export type RegistroCambio = $Result.DefaultSelection<Prisma.$RegistroCambioPayload>
+/**
+ * Model VinculacionEvento
+ * 
+ */
+export type VinculacionEvento = $Result.DefaultSelection<Prisma.$VinculacionEventoPayload>
+/**
  * Model Contrato
  * 
  */
@@ -251,6 +261,15 @@ export const EstadoRetiro: {
 export type EstadoRetiro = (typeof EstadoRetiro)[keyof typeof EstadoRetiro]
 
 
+export const TipoVinculacion: {
+  INGRESO: 'INGRESO',
+  RETIRO: 'RETIRO',
+  REINGRESO: 'REINGRESO'
+};
+
+export type TipoVinculacion = (typeof TipoVinculacion)[keyof typeof TipoVinculacion]
+
+
 export const TipoContrato: {
   INDEFINIDO: 'INDEFINIDO',
   FIJO: 'FIJO',
@@ -313,6 +332,10 @@ export const EstadoComision: typeof $Enums.EstadoComision
 export type EstadoRetiro = $Enums.EstadoRetiro
 
 export const EstadoRetiro: typeof $Enums.EstadoRetiro
+
+export type TipoVinculacion = $Enums.TipoVinculacion
+
+export const TipoVinculacion: typeof $Enums.TipoVinculacion
 
 export type TipoContrato = $Enums.TipoContrato
 
@@ -664,6 +687,26 @@ export class PrismaClient<
     * ```
     */
   get solicitudRetiro(): Prisma.SolicitudRetiroDelegate<ExtArgs>;
+
+  /**
+   * `prisma.registroCambio`: Exposes CRUD operations for the **RegistroCambio** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RegistroCambios
+    * const registroCambios = await prisma.registroCambio.findMany()
+    * ```
+    */
+  get registroCambio(): Prisma.RegistroCambioDelegate<ExtArgs>;
+
+  /**
+   * `prisma.vinculacionEvento`: Exposes CRUD operations for the **VinculacionEvento** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more VinculacionEventos
+    * const vinculacionEventos = await prisma.vinculacionEvento.findMany()
+    * ```
+    */
+  get vinculacionEvento(): Prisma.VinculacionEventoDelegate<ExtArgs>;
 
   /**
    * `prisma.contrato`: Exposes CRUD operations for the **Contrato** model.
@@ -1147,6 +1190,8 @@ export namespace Prisma {
     Afiliado: 'Afiliado',
     Comision: 'Comision',
     SolicitudRetiro: 'SolicitudRetiro',
+    RegistroCambio: 'RegistroCambio',
+    VinculacionEvento: 'VinculacionEvento',
     Contrato: 'Contrato',
     ProrrogaContrato: 'ProrrogaContrato'
   };
@@ -1164,7 +1209,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "contrato" | "prorrogaContrato"
+      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "vinculacionEvento" | "contrato" | "prorrogaContrato"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2620,6 +2665,138 @@ export namespace Prisma {
           }
         }
       }
+      RegistroCambio: {
+        payload: Prisma.$RegistroCambioPayload<ExtArgs>
+        fields: Prisma.RegistroCambioFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RegistroCambioFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegistroCambioPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RegistroCambioFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegistroCambioPayload>
+          }
+          findFirst: {
+            args: Prisma.RegistroCambioFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegistroCambioPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RegistroCambioFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegistroCambioPayload>
+          }
+          findMany: {
+            args: Prisma.RegistroCambioFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegistroCambioPayload>[]
+          }
+          create: {
+            args: Prisma.RegistroCambioCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegistroCambioPayload>
+          }
+          createMany: {
+            args: Prisma.RegistroCambioCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.RegistroCambioDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegistroCambioPayload>
+          }
+          update: {
+            args: Prisma.RegistroCambioUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegistroCambioPayload>
+          }
+          deleteMany: {
+            args: Prisma.RegistroCambioDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RegistroCambioUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RegistroCambioUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RegistroCambioPayload>
+          }
+          aggregate: {
+            args: Prisma.RegistroCambioAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRegistroCambio>
+          }
+          groupBy: {
+            args: Prisma.RegistroCambioGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RegistroCambioGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RegistroCambioCountArgs<ExtArgs>
+            result: $Utils.Optional<RegistroCambioCountAggregateOutputType> | number
+          }
+        }
+      }
+      VinculacionEvento: {
+        payload: Prisma.$VinculacionEventoPayload<ExtArgs>
+        fields: Prisma.VinculacionEventoFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VinculacionEventoFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VinculacionEventoPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VinculacionEventoFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VinculacionEventoPayload>
+          }
+          findFirst: {
+            args: Prisma.VinculacionEventoFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VinculacionEventoPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VinculacionEventoFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VinculacionEventoPayload>
+          }
+          findMany: {
+            args: Prisma.VinculacionEventoFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VinculacionEventoPayload>[]
+          }
+          create: {
+            args: Prisma.VinculacionEventoCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VinculacionEventoPayload>
+          }
+          createMany: {
+            args: Prisma.VinculacionEventoCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.VinculacionEventoDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VinculacionEventoPayload>
+          }
+          update: {
+            args: Prisma.VinculacionEventoUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VinculacionEventoPayload>
+          }
+          deleteMany: {
+            args: Prisma.VinculacionEventoDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VinculacionEventoUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.VinculacionEventoUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VinculacionEventoPayload>
+          }
+          aggregate: {
+            args: Prisma.VinculacionEventoAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVinculacionEvento>
+          }
+          groupBy: {
+            args: Prisma.VinculacionEventoGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VinculacionEventoGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VinculacionEventoCountArgs<ExtArgs>
+            result: $Utils.Optional<VinculacionEventoCountAggregateOutputType> | number
+          }
+        }
+      }
       Contrato: {
         payload: Prisma.$ContratoPayload<ExtArgs>
         fields: Prisma.ContratoFieldRefs
@@ -3090,6 +3267,7 @@ export namespace Prisma {
     registros: number
     permisos: number
     contratos: number
+    vinculacion: number
     diasEsperados: number
     sedes: number
   }
@@ -3098,6 +3276,7 @@ export namespace Prisma {
     registros?: boolean | ColaboradorCountOutputTypeCountRegistrosArgs
     permisos?: boolean | ColaboradorCountOutputTypeCountPermisosArgs
     contratos?: boolean | ColaboradorCountOutputTypeCountContratosArgs
+    vinculacion?: boolean | ColaboradorCountOutputTypeCountVinculacionArgs
     diasEsperados?: boolean | ColaboradorCountOutputTypeCountDiasEsperadosArgs
     sedes?: boolean | ColaboradorCountOutputTypeCountSedesArgs
   }
@@ -3132,6 +3311,13 @@ export namespace Prisma {
    */
   export type ColaboradorCountOutputTypeCountContratosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ContratoWhereInput
+  }
+
+  /**
+   * ColaboradorCountOutputType without action
+   */
+  export type ColaboradorCountOutputTypeCountVinculacionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VinculacionEventoWhereInput
   }
 
   /**
@@ -3194,10 +3380,12 @@ export namespace Prisma {
    */
 
   export type RegistroCountOutputType = {
+    cambios: number
     novedades: number
   }
 
   export type RegistroCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    cambios?: boolean | RegistroCountOutputTypeCountCambiosArgs
     novedades?: boolean | RegistroCountOutputTypeCountNovedadesArgs
   }
 
@@ -3210,6 +3398,13 @@ export namespace Prisma {
      * Select specific fields to fetch from the RegistroCountOutputType
      */
     select?: RegistroCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * RegistroCountOutputType without action
+   */
+  export type RegistroCountOutputTypeCountCambiosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RegistroCambioWhereInput
   }
 
   /**
@@ -12138,13 +12333,12 @@ export namespace Prisma {
     fechaNacimiento: Date | null
     salarioMensual: number | null
     rostroEnroladoEn: Date | null
+    foto: string | null
+    fotoMini: string | null
     horarioId: string | null
     activo: boolean | null
     fechaRetiro: Date | null
     motivoRetiro: $Enums.MotivoRetiro | null
-    documentoRetiro: string | null
-    documentoRetiroTipo: string | null
-    documentoRetiroNombre: string | null
     retiroProgramado: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -12162,13 +12356,12 @@ export namespace Prisma {
     fechaNacimiento: Date | null
     salarioMensual: number | null
     rostroEnroladoEn: Date | null
+    foto: string | null
+    fotoMini: string | null
     horarioId: string | null
     activo: boolean | null
     fechaRetiro: Date | null
     motivoRetiro: $Enums.MotivoRetiro | null
-    documentoRetiro: string | null
-    documentoRetiroTipo: string | null
-    documentoRetiroNombre: string | null
     retiroProgramado: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -12187,13 +12380,12 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor: number
     rostroEnroladoEn: number
+    foto: number
+    fotoMini: number
     horarioId: number
     activo: number
     fechaRetiro: number
     motivoRetiro: number
-    documentoRetiro: number
-    documentoRetiroTipo: number
-    documentoRetiroNombre: number
     retiroProgramado: number
     creadoEn: number
     actualizadoEn: number
@@ -12221,13 +12413,12 @@ export namespace Prisma {
     fechaNacimiento?: true
     salarioMensual?: true
     rostroEnroladoEn?: true
+    foto?: true
+    fotoMini?: true
     horarioId?: true
     activo?: true
     fechaRetiro?: true
     motivoRetiro?: true
-    documentoRetiro?: true
-    documentoRetiroTipo?: true
-    documentoRetiroNombre?: true
     retiroProgramado?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -12245,13 +12436,12 @@ export namespace Prisma {
     fechaNacimiento?: true
     salarioMensual?: true
     rostroEnroladoEn?: true
+    foto?: true
+    fotoMini?: true
     horarioId?: true
     activo?: true
     fechaRetiro?: true
     motivoRetiro?: true
-    documentoRetiro?: true
-    documentoRetiroTipo?: true
-    documentoRetiroNombre?: true
     retiroProgramado?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -12270,13 +12460,12 @@ export namespace Prisma {
     salarioMensual?: true
     rostroDescriptor?: true
     rostroEnroladoEn?: true
+    foto?: true
+    fotoMini?: true
     horarioId?: true
     activo?: true
     fechaRetiro?: true
     motivoRetiro?: true
-    documentoRetiro?: true
-    documentoRetiroTipo?: true
-    documentoRetiroNombre?: true
     retiroProgramado?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -12382,13 +12571,12 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor: JsonValue | null
     rostroEnroladoEn: Date | null
+    foto: string | null
+    fotoMini: string | null
     horarioId: string | null
     activo: boolean
     fechaRetiro: Date | null
     motivoRetiro: $Enums.MotivoRetiro | null
-    documentoRetiro: string | null
-    documentoRetiroTipo: string | null
-    documentoRetiroNombre: string | null
     retiroProgramado: Date | null
     creadoEn: Date
     actualizadoEn: Date
@@ -12426,13 +12614,12 @@ export namespace Prisma {
     salarioMensual?: boolean
     rostroDescriptor?: boolean
     rostroEnroladoEn?: boolean
+    foto?: boolean
+    fotoMini?: boolean
     horarioId?: boolean
     activo?: boolean
     fechaRetiro?: boolean
     motivoRetiro?: boolean
-    documentoRetiro?: boolean
-    documentoRetiroTipo?: boolean
-    documentoRetiroNombre?: boolean
     retiroProgramado?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -12441,6 +12628,7 @@ export namespace Prisma {
     registros?: boolean | Colaborador$registrosArgs<ExtArgs>
     permisos?: boolean | Colaborador$permisosArgs<ExtArgs>
     contratos?: boolean | Colaborador$contratosArgs<ExtArgs>
+    vinculacion?: boolean | Colaborador$vinculacionArgs<ExtArgs>
     diasEsperados?: boolean | Colaborador$diasEsperadosArgs<ExtArgs>
     sedes?: boolean | Colaborador$sedesArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
@@ -12460,13 +12648,12 @@ export namespace Prisma {
     salarioMensual?: boolean
     rostroDescriptor?: boolean
     rostroEnroladoEn?: boolean
+    foto?: boolean
+    fotoMini?: boolean
     horarioId?: boolean
     activo?: boolean
     fechaRetiro?: boolean
     motivoRetiro?: boolean
-    documentoRetiro?: boolean
-    documentoRetiroTipo?: boolean
-    documentoRetiroNombre?: boolean
     retiroProgramado?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -12478,6 +12665,7 @@ export namespace Prisma {
     registros?: boolean | Colaborador$registrosArgs<ExtArgs>
     permisos?: boolean | Colaborador$permisosArgs<ExtArgs>
     contratos?: boolean | Colaborador$contratosArgs<ExtArgs>
+    vinculacion?: boolean | Colaborador$vinculacionArgs<ExtArgs>
     diasEsperados?: boolean | Colaborador$diasEsperadosArgs<ExtArgs>
     sedes?: boolean | Colaborador$sedesArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
@@ -12491,6 +12679,7 @@ export namespace Prisma {
       registros: Prisma.$RegistroPayload<ExtArgs>[]
       permisos: Prisma.$PermisoPayload<ExtArgs>[]
       contratos: Prisma.$ContratoPayload<ExtArgs>[]
+      vinculacion: Prisma.$VinculacionEventoPayload<ExtArgs>[]
       diasEsperados: Prisma.$DiaEsperadoPayload<ExtArgs>[]
       sedes: Prisma.$ColaboradorSedePayload<ExtArgs>[]
     }
@@ -12507,13 +12696,12 @@ export namespace Prisma {
       salarioMensual: number
       rostroDescriptor: Prisma.JsonValue | null
       rostroEnroladoEn: Date | null
+      foto: string | null
+      fotoMini: string | null
       horarioId: string | null
       activo: boolean
       fechaRetiro: Date | null
       motivoRetiro: $Enums.MotivoRetiro | null
-      documentoRetiro: string | null
-      documentoRetiroTipo: string | null
-      documentoRetiroNombre: string | null
       retiroProgramado: Date | null
       creadoEn: Date
       actualizadoEn: Date
@@ -12862,6 +13050,7 @@ export namespace Prisma {
     registros<T extends Colaborador$registrosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$registrosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findMany"> | Null>
     permisos<T extends Colaborador$permisosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$permisosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PermisoPayload<ExtArgs>, T, "findMany"> | Null>
     contratos<T extends Colaborador$contratosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$contratosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ContratoPayload<ExtArgs>, T, "findMany"> | Null>
+    vinculacion<T extends Colaborador$vinculacionArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$vinculacionArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "findMany"> | Null>
     diasEsperados<T extends Colaborador$diasEsperadosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$diasEsperadosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findMany"> | Null>
     sedes<T extends Colaborador$sedesArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$sedesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findMany"> | Null>
     /**
@@ -12905,13 +13094,12 @@ export namespace Prisma {
     readonly salarioMensual: FieldRef<"Colaborador", 'Float'>
     readonly rostroDescriptor: FieldRef<"Colaborador", 'Json'>
     readonly rostroEnroladoEn: FieldRef<"Colaborador", 'DateTime'>
+    readonly foto: FieldRef<"Colaborador", 'String'>
+    readonly fotoMini: FieldRef<"Colaborador", 'String'>
     readonly horarioId: FieldRef<"Colaborador", 'String'>
     readonly activo: FieldRef<"Colaborador", 'Boolean'>
     readonly fechaRetiro: FieldRef<"Colaborador", 'DateTime'>
     readonly motivoRetiro: FieldRef<"Colaborador", 'MotivoRetiro'>
-    readonly documentoRetiro: FieldRef<"Colaborador", 'String'>
-    readonly documentoRetiroTipo: FieldRef<"Colaborador", 'String'>
-    readonly documentoRetiroNombre: FieldRef<"Colaborador", 'String'>
     readonly retiroProgramado: FieldRef<"Colaborador", 'DateTime'>
     readonly creadoEn: FieldRef<"Colaborador", 'DateTime'>
     readonly actualizadoEn: FieldRef<"Colaborador", 'DateTime'>
@@ -13286,6 +13474,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ContratoScalarFieldEnum | ContratoScalarFieldEnum[]
+  }
+
+  /**
+   * Colaborador.vinculacion
+   */
+  export type Colaborador$vinculacionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+    where?: VinculacionEventoWhereInput
+    orderBy?: VinculacionEventoOrderByWithRelationInput | VinculacionEventoOrderByWithRelationInput[]
+    cursor?: VinculacionEventoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: VinculacionEventoScalarFieldEnum | VinculacionEventoScalarFieldEnum[]
   }
 
   /**
@@ -16541,6 +16749,7 @@ export namespace Prisma {
     creadoEn?: boolean
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
     sede?: boolean | Registro$sedeArgs<ExtArgs>
+    cambios?: boolean | Registro$cambiosArgs<ExtArgs>
     novedades?: boolean | Registro$novedadesArgs<ExtArgs>
     _count?: boolean | RegistroCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["registro"]>
@@ -16568,6 +16777,7 @@ export namespace Prisma {
   export type RegistroInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
     sede?: boolean | Registro$sedeArgs<ExtArgs>
+    cambios?: boolean | Registro$cambiosArgs<ExtArgs>
     novedades?: boolean | Registro$novedadesArgs<ExtArgs>
     _count?: boolean | RegistroCountOutputTypeDefaultArgs<ExtArgs>
   }
@@ -16577,6 +16787,7 @@ export namespace Prisma {
     objects: {
       colaborador: Prisma.$ColaboradorPayload<ExtArgs>
       sede: Prisma.$SedePayload<ExtArgs> | null
+      cambios: Prisma.$RegistroCambioPayload<ExtArgs>[]
       novedades: Prisma.$PermisoPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -16938,6 +17149,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     sede<T extends Registro$sedeArgs<ExtArgs> = {}>(args?: Subset<T, Registro$sedeArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    cambios<T extends Registro$cambiosArgs<ExtArgs> = {}>(args?: Subset<T, Registro$cambiosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "findMany"> | Null>
     novedades<T extends Registro$novedadesArgs<ExtArgs> = {}>(args?: Subset<T, Registro$novedadesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PermisoPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -17295,6 +17507,26 @@ export namespace Prisma {
      */
     include?: SedeInclude<ExtArgs> | null
     where?: SedeWhereInput
+  }
+
+  /**
+   * Registro.cambios
+   */
+  export type Registro$cambiosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+    where?: RegistroCambioWhereInput
+    orderBy?: RegistroCambioOrderByWithRelationInput | RegistroCambioOrderByWithRelationInput[]
+    cursor?: RegistroCambioWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RegistroCambioScalarFieldEnum | RegistroCambioScalarFieldEnum[]
   }
 
   /**
@@ -25089,6 +25321,1863 @@ export namespace Prisma {
 
 
   /**
+   * Model RegistroCambio
+   */
+
+  export type AggregateRegistroCambio = {
+    _count: RegistroCambioCountAggregateOutputType | null
+    _min: RegistroCambioMinAggregateOutputType | null
+    _max: RegistroCambioMaxAggregateOutputType | null
+  }
+
+  export type RegistroCambioMinAggregateOutputType = {
+    id: string | null
+    registroId: string | null
+    campo: string | null
+    antes: string | null
+    despues: string | null
+    usuarioId: string | null
+    usuarioNombre: string | null
+    creadoEn: Date | null
+  }
+
+  export type RegistroCambioMaxAggregateOutputType = {
+    id: string | null
+    registroId: string | null
+    campo: string | null
+    antes: string | null
+    despues: string | null
+    usuarioId: string | null
+    usuarioNombre: string | null
+    creadoEn: Date | null
+  }
+
+  export type RegistroCambioCountAggregateOutputType = {
+    id: number
+    registroId: number
+    campo: number
+    antes: number
+    despues: number
+    usuarioId: number
+    usuarioNombre: number
+    creadoEn: number
+    _all: number
+  }
+
+
+  export type RegistroCambioMinAggregateInputType = {
+    id?: true
+    registroId?: true
+    campo?: true
+    antes?: true
+    despues?: true
+    usuarioId?: true
+    usuarioNombre?: true
+    creadoEn?: true
+  }
+
+  export type RegistroCambioMaxAggregateInputType = {
+    id?: true
+    registroId?: true
+    campo?: true
+    antes?: true
+    despues?: true
+    usuarioId?: true
+    usuarioNombre?: true
+    creadoEn?: true
+  }
+
+  export type RegistroCambioCountAggregateInputType = {
+    id?: true
+    registroId?: true
+    campo?: true
+    antes?: true
+    despues?: true
+    usuarioId?: true
+    usuarioNombre?: true
+    creadoEn?: true
+    _all?: true
+  }
+
+  export type RegistroCambioAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RegistroCambio to aggregate.
+     */
+    where?: RegistroCambioWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RegistroCambios to fetch.
+     */
+    orderBy?: RegistroCambioOrderByWithRelationInput | RegistroCambioOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RegistroCambioWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RegistroCambios from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RegistroCambios.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RegistroCambios
+    **/
+    _count?: true | RegistroCambioCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RegistroCambioMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RegistroCambioMaxAggregateInputType
+  }
+
+  export type GetRegistroCambioAggregateType<T extends RegistroCambioAggregateArgs> = {
+        [P in keyof T & keyof AggregateRegistroCambio]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRegistroCambio[P]>
+      : GetScalarType<T[P], AggregateRegistroCambio[P]>
+  }
+
+
+
+
+  export type RegistroCambioGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RegistroCambioWhereInput
+    orderBy?: RegistroCambioOrderByWithAggregationInput | RegistroCambioOrderByWithAggregationInput[]
+    by: RegistroCambioScalarFieldEnum[] | RegistroCambioScalarFieldEnum
+    having?: RegistroCambioScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RegistroCambioCountAggregateInputType | true
+    _min?: RegistroCambioMinAggregateInputType
+    _max?: RegistroCambioMaxAggregateInputType
+  }
+
+  export type RegistroCambioGroupByOutputType = {
+    id: string
+    registroId: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId: string | null
+    usuarioNombre: string | null
+    creadoEn: Date
+    _count: RegistroCambioCountAggregateOutputType | null
+    _min: RegistroCambioMinAggregateOutputType | null
+    _max: RegistroCambioMaxAggregateOutputType | null
+  }
+
+  type GetRegistroCambioGroupByPayload<T extends RegistroCambioGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RegistroCambioGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RegistroCambioGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RegistroCambioGroupByOutputType[P]>
+            : GetScalarType<T[P], RegistroCambioGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RegistroCambioSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    registroId?: boolean
+    campo?: boolean
+    antes?: boolean
+    despues?: boolean
+    usuarioId?: boolean
+    usuarioNombre?: boolean
+    creadoEn?: boolean
+    registro?: boolean | RegistroDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["registroCambio"]>
+
+
+  export type RegistroCambioSelectScalar = {
+    id?: boolean
+    registroId?: boolean
+    campo?: boolean
+    antes?: boolean
+    despues?: boolean
+    usuarioId?: boolean
+    usuarioNombre?: boolean
+    creadoEn?: boolean
+  }
+
+  export type RegistroCambioInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    registro?: boolean | RegistroDefaultArgs<ExtArgs>
+  }
+
+  export type $RegistroCambioPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RegistroCambio"
+    objects: {
+      registro: Prisma.$RegistroPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      registroId: string
+      campo: string
+      antes: string
+      despues: string
+      usuarioId: string | null
+      usuarioNombre: string | null
+      creadoEn: Date
+    }, ExtArgs["result"]["registroCambio"]>
+    composites: {}
+  }
+
+  type RegistroCambioGetPayload<S extends boolean | null | undefined | RegistroCambioDefaultArgs> = $Result.GetResult<Prisma.$RegistroCambioPayload, S>
+
+  type RegistroCambioCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<RegistroCambioFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: RegistroCambioCountAggregateInputType | true
+    }
+
+  export interface RegistroCambioDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RegistroCambio'], meta: { name: 'RegistroCambio' } }
+    /**
+     * Find zero or one RegistroCambio that matches the filter.
+     * @param {RegistroCambioFindUniqueArgs} args - Arguments to find a RegistroCambio
+     * @example
+     * // Get one RegistroCambio
+     * const registroCambio = await prisma.registroCambio.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RegistroCambioFindUniqueArgs>(args: SelectSubset<T, RegistroCambioFindUniqueArgs<ExtArgs>>): Prisma__RegistroCambioClient<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one RegistroCambio that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {RegistroCambioFindUniqueOrThrowArgs} args - Arguments to find a RegistroCambio
+     * @example
+     * // Get one RegistroCambio
+     * const registroCambio = await prisma.registroCambio.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RegistroCambioFindUniqueOrThrowArgs>(args: SelectSubset<T, RegistroCambioFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RegistroCambioClient<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first RegistroCambio that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegistroCambioFindFirstArgs} args - Arguments to find a RegistroCambio
+     * @example
+     * // Get one RegistroCambio
+     * const registroCambio = await prisma.registroCambio.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RegistroCambioFindFirstArgs>(args?: SelectSubset<T, RegistroCambioFindFirstArgs<ExtArgs>>): Prisma__RegistroCambioClient<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first RegistroCambio that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegistroCambioFindFirstOrThrowArgs} args - Arguments to find a RegistroCambio
+     * @example
+     * // Get one RegistroCambio
+     * const registroCambio = await prisma.registroCambio.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RegistroCambioFindFirstOrThrowArgs>(args?: SelectSubset<T, RegistroCambioFindFirstOrThrowArgs<ExtArgs>>): Prisma__RegistroCambioClient<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more RegistroCambios that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegistroCambioFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RegistroCambios
+     * const registroCambios = await prisma.registroCambio.findMany()
+     * 
+     * // Get first 10 RegistroCambios
+     * const registroCambios = await prisma.registroCambio.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const registroCambioWithIdOnly = await prisma.registroCambio.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RegistroCambioFindManyArgs>(args?: SelectSubset<T, RegistroCambioFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a RegistroCambio.
+     * @param {RegistroCambioCreateArgs} args - Arguments to create a RegistroCambio.
+     * @example
+     * // Create one RegistroCambio
+     * const RegistroCambio = await prisma.registroCambio.create({
+     *   data: {
+     *     // ... data to create a RegistroCambio
+     *   }
+     * })
+     * 
+     */
+    create<T extends RegistroCambioCreateArgs>(args: SelectSubset<T, RegistroCambioCreateArgs<ExtArgs>>): Prisma__RegistroCambioClient<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many RegistroCambios.
+     * @param {RegistroCambioCreateManyArgs} args - Arguments to create many RegistroCambios.
+     * @example
+     * // Create many RegistroCambios
+     * const registroCambio = await prisma.registroCambio.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RegistroCambioCreateManyArgs>(args?: SelectSubset<T, RegistroCambioCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a RegistroCambio.
+     * @param {RegistroCambioDeleteArgs} args - Arguments to delete one RegistroCambio.
+     * @example
+     * // Delete one RegistroCambio
+     * const RegistroCambio = await prisma.registroCambio.delete({
+     *   where: {
+     *     // ... filter to delete one RegistroCambio
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RegistroCambioDeleteArgs>(args: SelectSubset<T, RegistroCambioDeleteArgs<ExtArgs>>): Prisma__RegistroCambioClient<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one RegistroCambio.
+     * @param {RegistroCambioUpdateArgs} args - Arguments to update one RegistroCambio.
+     * @example
+     * // Update one RegistroCambio
+     * const registroCambio = await prisma.registroCambio.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RegistroCambioUpdateArgs>(args: SelectSubset<T, RegistroCambioUpdateArgs<ExtArgs>>): Prisma__RegistroCambioClient<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more RegistroCambios.
+     * @param {RegistroCambioDeleteManyArgs} args - Arguments to filter RegistroCambios to delete.
+     * @example
+     * // Delete a few RegistroCambios
+     * const { count } = await prisma.registroCambio.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RegistroCambioDeleteManyArgs>(args?: SelectSubset<T, RegistroCambioDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RegistroCambios.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegistroCambioUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RegistroCambios
+     * const registroCambio = await prisma.registroCambio.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RegistroCambioUpdateManyArgs>(args: SelectSubset<T, RegistroCambioUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RegistroCambio.
+     * @param {RegistroCambioUpsertArgs} args - Arguments to update or create a RegistroCambio.
+     * @example
+     * // Update or create a RegistroCambio
+     * const registroCambio = await prisma.registroCambio.upsert({
+     *   create: {
+     *     // ... data to create a RegistroCambio
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RegistroCambio we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RegistroCambioUpsertArgs>(args: SelectSubset<T, RegistroCambioUpsertArgs<ExtArgs>>): Prisma__RegistroCambioClient<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of RegistroCambios.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegistroCambioCountArgs} args - Arguments to filter RegistroCambios to count.
+     * @example
+     * // Count the number of RegistroCambios
+     * const count = await prisma.registroCambio.count({
+     *   where: {
+     *     // ... the filter for the RegistroCambios we want to count
+     *   }
+     * })
+    **/
+    count<T extends RegistroCambioCountArgs>(
+      args?: Subset<T, RegistroCambioCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RegistroCambioCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RegistroCambio.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegistroCambioAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RegistroCambioAggregateArgs>(args: Subset<T, RegistroCambioAggregateArgs>): Prisma.PrismaPromise<GetRegistroCambioAggregateType<T>>
+
+    /**
+     * Group by RegistroCambio.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RegistroCambioGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RegistroCambioGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RegistroCambioGroupByArgs['orderBy'] }
+        : { orderBy?: RegistroCambioGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RegistroCambioGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRegistroCambioGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RegistroCambio model
+   */
+  readonly fields: RegistroCambioFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RegistroCambio.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RegistroCambioClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    registro<T extends RegistroDefaultArgs<ExtArgs> = {}>(args?: Subset<T, RegistroDefaultArgs<ExtArgs>>): Prisma__RegistroClient<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RegistroCambio model
+   */ 
+  interface RegistroCambioFieldRefs {
+    readonly id: FieldRef<"RegistroCambio", 'String'>
+    readonly registroId: FieldRef<"RegistroCambio", 'String'>
+    readonly campo: FieldRef<"RegistroCambio", 'String'>
+    readonly antes: FieldRef<"RegistroCambio", 'String'>
+    readonly despues: FieldRef<"RegistroCambio", 'String'>
+    readonly usuarioId: FieldRef<"RegistroCambio", 'String'>
+    readonly usuarioNombre: FieldRef<"RegistroCambio", 'String'>
+    readonly creadoEn: FieldRef<"RegistroCambio", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RegistroCambio findUnique
+   */
+  export type RegistroCambioFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+    /**
+     * Filter, which RegistroCambio to fetch.
+     */
+    where: RegistroCambioWhereUniqueInput
+  }
+
+  /**
+   * RegistroCambio findUniqueOrThrow
+   */
+  export type RegistroCambioFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+    /**
+     * Filter, which RegistroCambio to fetch.
+     */
+    where: RegistroCambioWhereUniqueInput
+  }
+
+  /**
+   * RegistroCambio findFirst
+   */
+  export type RegistroCambioFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+    /**
+     * Filter, which RegistroCambio to fetch.
+     */
+    where?: RegistroCambioWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RegistroCambios to fetch.
+     */
+    orderBy?: RegistroCambioOrderByWithRelationInput | RegistroCambioOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RegistroCambios.
+     */
+    cursor?: RegistroCambioWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RegistroCambios from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RegistroCambios.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RegistroCambios.
+     */
+    distinct?: RegistroCambioScalarFieldEnum | RegistroCambioScalarFieldEnum[]
+  }
+
+  /**
+   * RegistroCambio findFirstOrThrow
+   */
+  export type RegistroCambioFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+    /**
+     * Filter, which RegistroCambio to fetch.
+     */
+    where?: RegistroCambioWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RegistroCambios to fetch.
+     */
+    orderBy?: RegistroCambioOrderByWithRelationInput | RegistroCambioOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RegistroCambios.
+     */
+    cursor?: RegistroCambioWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RegistroCambios from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RegistroCambios.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RegistroCambios.
+     */
+    distinct?: RegistroCambioScalarFieldEnum | RegistroCambioScalarFieldEnum[]
+  }
+
+  /**
+   * RegistroCambio findMany
+   */
+  export type RegistroCambioFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+    /**
+     * Filter, which RegistroCambios to fetch.
+     */
+    where?: RegistroCambioWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RegistroCambios to fetch.
+     */
+    orderBy?: RegistroCambioOrderByWithRelationInput | RegistroCambioOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RegistroCambios.
+     */
+    cursor?: RegistroCambioWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RegistroCambios from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RegistroCambios.
+     */
+    skip?: number
+    distinct?: RegistroCambioScalarFieldEnum | RegistroCambioScalarFieldEnum[]
+  }
+
+  /**
+   * RegistroCambio create
+   */
+  export type RegistroCambioCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+    /**
+     * The data needed to create a RegistroCambio.
+     */
+    data: XOR<RegistroCambioCreateInput, RegistroCambioUncheckedCreateInput>
+  }
+
+  /**
+   * RegistroCambio createMany
+   */
+  export type RegistroCambioCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RegistroCambios.
+     */
+    data: RegistroCambioCreateManyInput | RegistroCambioCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RegistroCambio update
+   */
+  export type RegistroCambioUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+    /**
+     * The data needed to update a RegistroCambio.
+     */
+    data: XOR<RegistroCambioUpdateInput, RegistroCambioUncheckedUpdateInput>
+    /**
+     * Choose, which RegistroCambio to update.
+     */
+    where: RegistroCambioWhereUniqueInput
+  }
+
+  /**
+   * RegistroCambio updateMany
+   */
+  export type RegistroCambioUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RegistroCambios.
+     */
+    data: XOR<RegistroCambioUpdateManyMutationInput, RegistroCambioUncheckedUpdateManyInput>
+    /**
+     * Filter which RegistroCambios to update
+     */
+    where?: RegistroCambioWhereInput
+  }
+
+  /**
+   * RegistroCambio upsert
+   */
+  export type RegistroCambioUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+    /**
+     * The filter to search for the RegistroCambio to update in case it exists.
+     */
+    where: RegistroCambioWhereUniqueInput
+    /**
+     * In case the RegistroCambio found by the `where` argument doesn't exist, create a new RegistroCambio with this data.
+     */
+    create: XOR<RegistroCambioCreateInput, RegistroCambioUncheckedCreateInput>
+    /**
+     * In case the RegistroCambio was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RegistroCambioUpdateInput, RegistroCambioUncheckedUpdateInput>
+  }
+
+  /**
+   * RegistroCambio delete
+   */
+  export type RegistroCambioDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+    /**
+     * Filter which RegistroCambio to delete.
+     */
+    where: RegistroCambioWhereUniqueInput
+  }
+
+  /**
+   * RegistroCambio deleteMany
+   */
+  export type RegistroCambioDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RegistroCambios to delete
+     */
+    where?: RegistroCambioWhereInput
+  }
+
+  /**
+   * RegistroCambio without action
+   */
+  export type RegistroCambioDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RegistroCambio
+     */
+    select?: RegistroCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroCambioInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model VinculacionEvento
+   */
+
+  export type AggregateVinculacionEvento = {
+    _count: VinculacionEventoCountAggregateOutputType | null
+    _min: VinculacionEventoMinAggregateOutputType | null
+    _max: VinculacionEventoMaxAggregateOutputType | null
+  }
+
+  export type VinculacionEventoMinAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    tipo: $Enums.TipoVinculacion | null
+    fecha: Date | null
+    motivo: $Enums.MotivoRetiro | null
+    nota: string | null
+    documento: string | null
+    documentoTipo: string | null
+    documentoNombre: string | null
+    usuarioId: string | null
+    creadoEn: Date | null
+  }
+
+  export type VinculacionEventoMaxAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    tipo: $Enums.TipoVinculacion | null
+    fecha: Date | null
+    motivo: $Enums.MotivoRetiro | null
+    nota: string | null
+    documento: string | null
+    documentoTipo: string | null
+    documentoNombre: string | null
+    usuarioId: string | null
+    creadoEn: Date | null
+  }
+
+  export type VinculacionEventoCountAggregateOutputType = {
+    id: number
+    colaboradorId: number
+    tipo: number
+    fecha: number
+    motivo: number
+    nota: number
+    documento: number
+    documentoTipo: number
+    documentoNombre: number
+    usuarioId: number
+    creadoEn: number
+    _all: number
+  }
+
+
+  export type VinculacionEventoMinAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    tipo?: true
+    fecha?: true
+    motivo?: true
+    nota?: true
+    documento?: true
+    documentoTipo?: true
+    documentoNombre?: true
+    usuarioId?: true
+    creadoEn?: true
+  }
+
+  export type VinculacionEventoMaxAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    tipo?: true
+    fecha?: true
+    motivo?: true
+    nota?: true
+    documento?: true
+    documentoTipo?: true
+    documentoNombre?: true
+    usuarioId?: true
+    creadoEn?: true
+  }
+
+  export type VinculacionEventoCountAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    tipo?: true
+    fecha?: true
+    motivo?: true
+    nota?: true
+    documento?: true
+    documentoTipo?: true
+    documentoNombre?: true
+    usuarioId?: true
+    creadoEn?: true
+    _all?: true
+  }
+
+  export type VinculacionEventoAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VinculacionEvento to aggregate.
+     */
+    where?: VinculacionEventoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VinculacionEventos to fetch.
+     */
+    orderBy?: VinculacionEventoOrderByWithRelationInput | VinculacionEventoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VinculacionEventoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VinculacionEventos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VinculacionEventos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned VinculacionEventos
+    **/
+    _count?: true | VinculacionEventoCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VinculacionEventoMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VinculacionEventoMaxAggregateInputType
+  }
+
+  export type GetVinculacionEventoAggregateType<T extends VinculacionEventoAggregateArgs> = {
+        [P in keyof T & keyof AggregateVinculacionEvento]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVinculacionEvento[P]>
+      : GetScalarType<T[P], AggregateVinculacionEvento[P]>
+  }
+
+
+
+
+  export type VinculacionEventoGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VinculacionEventoWhereInput
+    orderBy?: VinculacionEventoOrderByWithAggregationInput | VinculacionEventoOrderByWithAggregationInput[]
+    by: VinculacionEventoScalarFieldEnum[] | VinculacionEventoScalarFieldEnum
+    having?: VinculacionEventoScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VinculacionEventoCountAggregateInputType | true
+    _min?: VinculacionEventoMinAggregateInputType
+    _max?: VinculacionEventoMaxAggregateInputType
+  }
+
+  export type VinculacionEventoGroupByOutputType = {
+    id: string
+    colaboradorId: string
+    tipo: $Enums.TipoVinculacion
+    fecha: Date
+    motivo: $Enums.MotivoRetiro | null
+    nota: string | null
+    documento: string | null
+    documentoTipo: string | null
+    documentoNombre: string | null
+    usuarioId: string | null
+    creadoEn: Date
+    _count: VinculacionEventoCountAggregateOutputType | null
+    _min: VinculacionEventoMinAggregateOutputType | null
+    _max: VinculacionEventoMaxAggregateOutputType | null
+  }
+
+  type GetVinculacionEventoGroupByPayload<T extends VinculacionEventoGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VinculacionEventoGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VinculacionEventoGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VinculacionEventoGroupByOutputType[P]>
+            : GetScalarType<T[P], VinculacionEventoGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VinculacionEventoSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    colaboradorId?: boolean
+    tipo?: boolean
+    fecha?: boolean
+    motivo?: boolean
+    nota?: boolean
+    documento?: boolean
+    documentoTipo?: boolean
+    documentoNombre?: boolean
+    usuarioId?: boolean
+    creadoEn?: boolean
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["vinculacionEvento"]>
+
+
+  export type VinculacionEventoSelectScalar = {
+    id?: boolean
+    colaboradorId?: boolean
+    tipo?: boolean
+    fecha?: boolean
+    motivo?: boolean
+    nota?: boolean
+    documento?: boolean
+    documentoTipo?: boolean
+    documentoNombre?: boolean
+    usuarioId?: boolean
+    creadoEn?: boolean
+  }
+
+  export type VinculacionEventoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+  }
+
+  export type $VinculacionEventoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "VinculacionEvento"
+    objects: {
+      colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      colaboradorId: string
+      tipo: $Enums.TipoVinculacion
+      fecha: Date
+      motivo: $Enums.MotivoRetiro | null
+      nota: string | null
+      documento: string | null
+      documentoTipo: string | null
+      documentoNombre: string | null
+      usuarioId: string | null
+      creadoEn: Date
+    }, ExtArgs["result"]["vinculacionEvento"]>
+    composites: {}
+  }
+
+  type VinculacionEventoGetPayload<S extends boolean | null | undefined | VinculacionEventoDefaultArgs> = $Result.GetResult<Prisma.$VinculacionEventoPayload, S>
+
+  type VinculacionEventoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<VinculacionEventoFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: VinculacionEventoCountAggregateInputType | true
+    }
+
+  export interface VinculacionEventoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['VinculacionEvento'], meta: { name: 'VinculacionEvento' } }
+    /**
+     * Find zero or one VinculacionEvento that matches the filter.
+     * @param {VinculacionEventoFindUniqueArgs} args - Arguments to find a VinculacionEvento
+     * @example
+     * // Get one VinculacionEvento
+     * const vinculacionEvento = await prisma.vinculacionEvento.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VinculacionEventoFindUniqueArgs>(args: SelectSubset<T, VinculacionEventoFindUniqueArgs<ExtArgs>>): Prisma__VinculacionEventoClient<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one VinculacionEvento that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {VinculacionEventoFindUniqueOrThrowArgs} args - Arguments to find a VinculacionEvento
+     * @example
+     * // Get one VinculacionEvento
+     * const vinculacionEvento = await prisma.vinculacionEvento.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VinculacionEventoFindUniqueOrThrowArgs>(args: SelectSubset<T, VinculacionEventoFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VinculacionEventoClient<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first VinculacionEvento that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VinculacionEventoFindFirstArgs} args - Arguments to find a VinculacionEvento
+     * @example
+     * // Get one VinculacionEvento
+     * const vinculacionEvento = await prisma.vinculacionEvento.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VinculacionEventoFindFirstArgs>(args?: SelectSubset<T, VinculacionEventoFindFirstArgs<ExtArgs>>): Prisma__VinculacionEventoClient<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first VinculacionEvento that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VinculacionEventoFindFirstOrThrowArgs} args - Arguments to find a VinculacionEvento
+     * @example
+     * // Get one VinculacionEvento
+     * const vinculacionEvento = await prisma.vinculacionEvento.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VinculacionEventoFindFirstOrThrowArgs>(args?: SelectSubset<T, VinculacionEventoFindFirstOrThrowArgs<ExtArgs>>): Prisma__VinculacionEventoClient<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more VinculacionEventos that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VinculacionEventoFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all VinculacionEventos
+     * const vinculacionEventos = await prisma.vinculacionEvento.findMany()
+     * 
+     * // Get first 10 VinculacionEventos
+     * const vinculacionEventos = await prisma.vinculacionEvento.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const vinculacionEventoWithIdOnly = await prisma.vinculacionEvento.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VinculacionEventoFindManyArgs>(args?: SelectSubset<T, VinculacionEventoFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a VinculacionEvento.
+     * @param {VinculacionEventoCreateArgs} args - Arguments to create a VinculacionEvento.
+     * @example
+     * // Create one VinculacionEvento
+     * const VinculacionEvento = await prisma.vinculacionEvento.create({
+     *   data: {
+     *     // ... data to create a VinculacionEvento
+     *   }
+     * })
+     * 
+     */
+    create<T extends VinculacionEventoCreateArgs>(args: SelectSubset<T, VinculacionEventoCreateArgs<ExtArgs>>): Prisma__VinculacionEventoClient<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many VinculacionEventos.
+     * @param {VinculacionEventoCreateManyArgs} args - Arguments to create many VinculacionEventos.
+     * @example
+     * // Create many VinculacionEventos
+     * const vinculacionEvento = await prisma.vinculacionEvento.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VinculacionEventoCreateManyArgs>(args?: SelectSubset<T, VinculacionEventoCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a VinculacionEvento.
+     * @param {VinculacionEventoDeleteArgs} args - Arguments to delete one VinculacionEvento.
+     * @example
+     * // Delete one VinculacionEvento
+     * const VinculacionEvento = await prisma.vinculacionEvento.delete({
+     *   where: {
+     *     // ... filter to delete one VinculacionEvento
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VinculacionEventoDeleteArgs>(args: SelectSubset<T, VinculacionEventoDeleteArgs<ExtArgs>>): Prisma__VinculacionEventoClient<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one VinculacionEvento.
+     * @param {VinculacionEventoUpdateArgs} args - Arguments to update one VinculacionEvento.
+     * @example
+     * // Update one VinculacionEvento
+     * const vinculacionEvento = await prisma.vinculacionEvento.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VinculacionEventoUpdateArgs>(args: SelectSubset<T, VinculacionEventoUpdateArgs<ExtArgs>>): Prisma__VinculacionEventoClient<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more VinculacionEventos.
+     * @param {VinculacionEventoDeleteManyArgs} args - Arguments to filter VinculacionEventos to delete.
+     * @example
+     * // Delete a few VinculacionEventos
+     * const { count } = await prisma.vinculacionEvento.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VinculacionEventoDeleteManyArgs>(args?: SelectSubset<T, VinculacionEventoDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VinculacionEventos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VinculacionEventoUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many VinculacionEventos
+     * const vinculacionEvento = await prisma.vinculacionEvento.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VinculacionEventoUpdateManyArgs>(args: SelectSubset<T, VinculacionEventoUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one VinculacionEvento.
+     * @param {VinculacionEventoUpsertArgs} args - Arguments to update or create a VinculacionEvento.
+     * @example
+     * // Update or create a VinculacionEvento
+     * const vinculacionEvento = await prisma.vinculacionEvento.upsert({
+     *   create: {
+     *     // ... data to create a VinculacionEvento
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the VinculacionEvento we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VinculacionEventoUpsertArgs>(args: SelectSubset<T, VinculacionEventoUpsertArgs<ExtArgs>>): Prisma__VinculacionEventoClient<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of VinculacionEventos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VinculacionEventoCountArgs} args - Arguments to filter VinculacionEventos to count.
+     * @example
+     * // Count the number of VinculacionEventos
+     * const count = await prisma.vinculacionEvento.count({
+     *   where: {
+     *     // ... the filter for the VinculacionEventos we want to count
+     *   }
+     * })
+    **/
+    count<T extends VinculacionEventoCountArgs>(
+      args?: Subset<T, VinculacionEventoCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VinculacionEventoCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a VinculacionEvento.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VinculacionEventoAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VinculacionEventoAggregateArgs>(args: Subset<T, VinculacionEventoAggregateArgs>): Prisma.PrismaPromise<GetVinculacionEventoAggregateType<T>>
+
+    /**
+     * Group by VinculacionEvento.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VinculacionEventoGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VinculacionEventoGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VinculacionEventoGroupByArgs['orderBy'] }
+        : { orderBy?: VinculacionEventoGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VinculacionEventoGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVinculacionEventoGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the VinculacionEvento model
+   */
+  readonly fields: VinculacionEventoFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for VinculacionEvento.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VinculacionEventoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the VinculacionEvento model
+   */ 
+  interface VinculacionEventoFieldRefs {
+    readonly id: FieldRef<"VinculacionEvento", 'String'>
+    readonly colaboradorId: FieldRef<"VinculacionEvento", 'String'>
+    readonly tipo: FieldRef<"VinculacionEvento", 'TipoVinculacion'>
+    readonly fecha: FieldRef<"VinculacionEvento", 'DateTime'>
+    readonly motivo: FieldRef<"VinculacionEvento", 'MotivoRetiro'>
+    readonly nota: FieldRef<"VinculacionEvento", 'String'>
+    readonly documento: FieldRef<"VinculacionEvento", 'String'>
+    readonly documentoTipo: FieldRef<"VinculacionEvento", 'String'>
+    readonly documentoNombre: FieldRef<"VinculacionEvento", 'String'>
+    readonly usuarioId: FieldRef<"VinculacionEvento", 'String'>
+    readonly creadoEn: FieldRef<"VinculacionEvento", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * VinculacionEvento findUnique
+   */
+  export type VinculacionEventoFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+    /**
+     * Filter, which VinculacionEvento to fetch.
+     */
+    where: VinculacionEventoWhereUniqueInput
+  }
+
+  /**
+   * VinculacionEvento findUniqueOrThrow
+   */
+  export type VinculacionEventoFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+    /**
+     * Filter, which VinculacionEvento to fetch.
+     */
+    where: VinculacionEventoWhereUniqueInput
+  }
+
+  /**
+   * VinculacionEvento findFirst
+   */
+  export type VinculacionEventoFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+    /**
+     * Filter, which VinculacionEvento to fetch.
+     */
+    where?: VinculacionEventoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VinculacionEventos to fetch.
+     */
+    orderBy?: VinculacionEventoOrderByWithRelationInput | VinculacionEventoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VinculacionEventos.
+     */
+    cursor?: VinculacionEventoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VinculacionEventos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VinculacionEventos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VinculacionEventos.
+     */
+    distinct?: VinculacionEventoScalarFieldEnum | VinculacionEventoScalarFieldEnum[]
+  }
+
+  /**
+   * VinculacionEvento findFirstOrThrow
+   */
+  export type VinculacionEventoFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+    /**
+     * Filter, which VinculacionEvento to fetch.
+     */
+    where?: VinculacionEventoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VinculacionEventos to fetch.
+     */
+    orderBy?: VinculacionEventoOrderByWithRelationInput | VinculacionEventoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VinculacionEventos.
+     */
+    cursor?: VinculacionEventoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VinculacionEventos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VinculacionEventos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VinculacionEventos.
+     */
+    distinct?: VinculacionEventoScalarFieldEnum | VinculacionEventoScalarFieldEnum[]
+  }
+
+  /**
+   * VinculacionEvento findMany
+   */
+  export type VinculacionEventoFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+    /**
+     * Filter, which VinculacionEventos to fetch.
+     */
+    where?: VinculacionEventoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VinculacionEventos to fetch.
+     */
+    orderBy?: VinculacionEventoOrderByWithRelationInput | VinculacionEventoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing VinculacionEventos.
+     */
+    cursor?: VinculacionEventoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VinculacionEventos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VinculacionEventos.
+     */
+    skip?: number
+    distinct?: VinculacionEventoScalarFieldEnum | VinculacionEventoScalarFieldEnum[]
+  }
+
+  /**
+   * VinculacionEvento create
+   */
+  export type VinculacionEventoCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+    /**
+     * The data needed to create a VinculacionEvento.
+     */
+    data: XOR<VinculacionEventoCreateInput, VinculacionEventoUncheckedCreateInput>
+  }
+
+  /**
+   * VinculacionEvento createMany
+   */
+  export type VinculacionEventoCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many VinculacionEventos.
+     */
+    data: VinculacionEventoCreateManyInput | VinculacionEventoCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VinculacionEvento update
+   */
+  export type VinculacionEventoUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+    /**
+     * The data needed to update a VinculacionEvento.
+     */
+    data: XOR<VinculacionEventoUpdateInput, VinculacionEventoUncheckedUpdateInput>
+    /**
+     * Choose, which VinculacionEvento to update.
+     */
+    where: VinculacionEventoWhereUniqueInput
+  }
+
+  /**
+   * VinculacionEvento updateMany
+   */
+  export type VinculacionEventoUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update VinculacionEventos.
+     */
+    data: XOR<VinculacionEventoUpdateManyMutationInput, VinculacionEventoUncheckedUpdateManyInput>
+    /**
+     * Filter which VinculacionEventos to update
+     */
+    where?: VinculacionEventoWhereInput
+  }
+
+  /**
+   * VinculacionEvento upsert
+   */
+  export type VinculacionEventoUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+    /**
+     * The filter to search for the VinculacionEvento to update in case it exists.
+     */
+    where: VinculacionEventoWhereUniqueInput
+    /**
+     * In case the VinculacionEvento found by the `where` argument doesn't exist, create a new VinculacionEvento with this data.
+     */
+    create: XOR<VinculacionEventoCreateInput, VinculacionEventoUncheckedCreateInput>
+    /**
+     * In case the VinculacionEvento was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VinculacionEventoUpdateInput, VinculacionEventoUncheckedUpdateInput>
+  }
+
+  /**
+   * VinculacionEvento delete
+   */
+  export type VinculacionEventoDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+    /**
+     * Filter which VinculacionEvento to delete.
+     */
+    where: VinculacionEventoWhereUniqueInput
+  }
+
+  /**
+   * VinculacionEvento deleteMany
+   */
+  export type VinculacionEventoDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VinculacionEventos to delete
+     */
+    where?: VinculacionEventoWhereInput
+  }
+
+  /**
+   * VinculacionEvento without action
+   */
+  export type VinculacionEventoDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VinculacionEvento
+     */
+    select?: VinculacionEventoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: VinculacionEventoInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model Contrato
    */
 
@@ -27170,13 +29259,12 @@ export namespace Prisma {
     salarioMensual: 'salarioMensual',
     rostroDescriptor: 'rostroDescriptor',
     rostroEnroladoEn: 'rostroEnroladoEn',
+    foto: 'foto',
+    fotoMini: 'fotoMini',
     horarioId: 'horarioId',
     activo: 'activo',
     fechaRetiro: 'fechaRetiro',
     motivoRetiro: 'motivoRetiro',
-    documentoRetiro: 'documentoRetiro',
-    documentoRetiroTipo: 'documentoRetiroTipo',
-    documentoRetiroNombre: 'documentoRetiroNombre',
     retiroProgramado: 'retiroProgramado',
     creadoEn: 'creadoEn',
     actualizadoEn: 'actualizadoEn'
@@ -27383,6 +29471,37 @@ export namespace Prisma {
   export type SolicitudRetiroScalarFieldEnum = (typeof SolicitudRetiroScalarFieldEnum)[keyof typeof SolicitudRetiroScalarFieldEnum]
 
 
+  export const RegistroCambioScalarFieldEnum: {
+    id: 'id',
+    registroId: 'registroId',
+    campo: 'campo',
+    antes: 'antes',
+    despues: 'despues',
+    usuarioId: 'usuarioId',
+    usuarioNombre: 'usuarioNombre',
+    creadoEn: 'creadoEn'
+  };
+
+  export type RegistroCambioScalarFieldEnum = (typeof RegistroCambioScalarFieldEnum)[keyof typeof RegistroCambioScalarFieldEnum]
+
+
+  export const VinculacionEventoScalarFieldEnum: {
+    id: 'id',
+    colaboradorId: 'colaboradorId',
+    tipo: 'tipo',
+    fecha: 'fecha',
+    motivo: 'motivo',
+    nota: 'nota',
+    documento: 'documento',
+    documentoTipo: 'documentoTipo',
+    documentoNombre: 'documentoNombre',
+    usuarioId: 'usuarioId',
+    creadoEn: 'creadoEn'
+  };
+
+  export type VinculacionEventoScalarFieldEnum = (typeof VinculacionEventoScalarFieldEnum)[keyof typeof VinculacionEventoScalarFieldEnum]
+
+
   export const ContratoScalarFieldEnum: {
     id: 'id',
     colaboradorId: 'colaboradorId',
@@ -27578,6 +29697,13 @@ export namespace Prisma {
    * Reference to a field of type 'EstadoRetiro'
    */
   export type EnumEstadoRetiroFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoRetiro'>
+    
+
+
+  /**
+   * Reference to a field of type 'TipoVinculacion'
+   */
+  export type EnumTipoVinculacionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TipoVinculacion'>
     
 
 
@@ -28355,13 +30481,12 @@ export namespace Prisma {
     salarioMensual?: FloatFilter<"Colaborador"> | number
     rostroDescriptor?: JsonNullableFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
+    foto?: StringNullableFilter<"Colaborador"> | string | null
+    fotoMini?: StringNullableFilter<"Colaborador"> | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     activo?: BoolFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
-    documentoRetiro?: StringNullableFilter<"Colaborador"> | string | null
-    documentoRetiroTipo?: StringNullableFilter<"Colaborador"> | string | null
-    documentoRetiroNombre?: StringNullableFilter<"Colaborador"> | string | null
     retiroProgramado?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
@@ -28370,6 +30495,7 @@ export namespace Prisma {
     registros?: RegistroListRelationFilter
     permisos?: PermisoListRelationFilter
     contratos?: ContratoListRelationFilter
+    vinculacion?: VinculacionEventoListRelationFilter
     diasEsperados?: DiaEsperadoListRelationFilter
     sedes?: ColaboradorSedeListRelationFilter
   }
@@ -28387,13 +30513,12 @@ export namespace Prisma {
     salarioMensual?: SortOrder
     rostroDescriptor?: SortOrderInput | SortOrder
     rostroEnroladoEn?: SortOrderInput | SortOrder
+    foto?: SortOrderInput | SortOrder
+    fotoMini?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     activo?: SortOrder
     fechaRetiro?: SortOrderInput | SortOrder
     motivoRetiro?: SortOrderInput | SortOrder
-    documentoRetiro?: SortOrderInput | SortOrder
-    documentoRetiroTipo?: SortOrderInput | SortOrder
-    documentoRetiroNombre?: SortOrderInput | SortOrder
     retiroProgramado?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -28402,6 +30527,7 @@ export namespace Prisma {
     registros?: RegistroOrderByRelationAggregateInput
     permisos?: PermisoOrderByRelationAggregateInput
     contratos?: ContratoOrderByRelationAggregateInput
+    vinculacion?: VinculacionEventoOrderByRelationAggregateInput
     diasEsperados?: DiaEsperadoOrderByRelationAggregateInput
     sedes?: ColaboradorSedeOrderByRelationAggregateInput
   }
@@ -28423,13 +30549,12 @@ export namespace Prisma {
     salarioMensual?: FloatFilter<"Colaborador"> | number
     rostroDescriptor?: JsonNullableFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
+    foto?: StringNullableFilter<"Colaborador"> | string | null
+    fotoMini?: StringNullableFilter<"Colaborador"> | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     activo?: BoolFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
-    documentoRetiro?: StringNullableFilter<"Colaborador"> | string | null
-    documentoRetiroTipo?: StringNullableFilter<"Colaborador"> | string | null
-    documentoRetiroNombre?: StringNullableFilter<"Colaborador"> | string | null
     retiroProgramado?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
@@ -28438,6 +30563,7 @@ export namespace Prisma {
     registros?: RegistroListRelationFilter
     permisos?: PermisoListRelationFilter
     contratos?: ContratoListRelationFilter
+    vinculacion?: VinculacionEventoListRelationFilter
     diasEsperados?: DiaEsperadoListRelationFilter
     sedes?: ColaboradorSedeListRelationFilter
   }, "id" | "empresaId_cedula">
@@ -28455,13 +30581,12 @@ export namespace Prisma {
     salarioMensual?: SortOrder
     rostroDescriptor?: SortOrderInput | SortOrder
     rostroEnroladoEn?: SortOrderInput | SortOrder
+    foto?: SortOrderInput | SortOrder
+    fotoMini?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     activo?: SortOrder
     fechaRetiro?: SortOrderInput | SortOrder
     motivoRetiro?: SortOrderInput | SortOrder
-    documentoRetiro?: SortOrderInput | SortOrder
-    documentoRetiroTipo?: SortOrderInput | SortOrder
-    documentoRetiroNombre?: SortOrderInput | SortOrder
     retiroProgramado?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -28488,13 +30613,12 @@ export namespace Prisma {
     salarioMensual?: FloatWithAggregatesFilter<"Colaborador"> | number
     rostroDescriptor?: JsonNullableWithAggregatesFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
+    foto?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
+    fotoMini?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     horarioId?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     activo?: BoolWithAggregatesFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableWithAggregatesFilter<"Colaborador"> | $Enums.MotivoRetiro | null
-    documentoRetiro?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
-    documentoRetiroTipo?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
-    documentoRetiroNombre?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     retiroProgramado?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Colaborador"> | Date | string
@@ -28777,6 +30901,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
     sede?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
+    cambios?: RegistroCambioListRelationFilter
     novedades?: PermisoListRelationFilter
   }
 
@@ -28799,6 +30924,7 @@ export namespace Prisma {
     creadoEn?: SortOrder
     colaborador?: ColaboradorOrderByWithRelationInput
     sede?: SedeOrderByWithRelationInput
+    cambios?: RegistroCambioOrderByRelationAggregateInput
     novedades?: PermisoOrderByRelationAggregateInput
   }
 
@@ -28824,6 +30950,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
     sede?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
+    cambios?: RegistroCambioListRelationFilter
     novedades?: PermisoListRelationFilter
   }, "id">
 
@@ -29538,6 +31665,161 @@ export namespace Prisma {
     solicitadoEn?: DateTimeWithAggregatesFilter<"SolicitudRetiro"> | Date | string
     procesadoEn?: DateTimeNullableWithAggregatesFilter<"SolicitudRetiro"> | Date | string | null
     procesadoPor?: StringNullableWithAggregatesFilter<"SolicitudRetiro"> | string | null
+  }
+
+  export type RegistroCambioWhereInput = {
+    AND?: RegistroCambioWhereInput | RegistroCambioWhereInput[]
+    OR?: RegistroCambioWhereInput[]
+    NOT?: RegistroCambioWhereInput | RegistroCambioWhereInput[]
+    id?: StringFilter<"RegistroCambio"> | string
+    registroId?: StringFilter<"RegistroCambio"> | string
+    campo?: StringFilter<"RegistroCambio"> | string
+    antes?: StringFilter<"RegistroCambio"> | string
+    despues?: StringFilter<"RegistroCambio"> | string
+    usuarioId?: StringNullableFilter<"RegistroCambio"> | string | null
+    usuarioNombre?: StringNullableFilter<"RegistroCambio"> | string | null
+    creadoEn?: DateTimeFilter<"RegistroCambio"> | Date | string
+    registro?: XOR<RegistroRelationFilter, RegistroWhereInput>
+  }
+
+  export type RegistroCambioOrderByWithRelationInput = {
+    id?: SortOrder
+    registroId?: SortOrder
+    campo?: SortOrder
+    antes?: SortOrder
+    despues?: SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    usuarioNombre?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    registro?: RegistroOrderByWithRelationInput
+  }
+
+  export type RegistroCambioWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: RegistroCambioWhereInput | RegistroCambioWhereInput[]
+    OR?: RegistroCambioWhereInput[]
+    NOT?: RegistroCambioWhereInput | RegistroCambioWhereInput[]
+    registroId?: StringFilter<"RegistroCambio"> | string
+    campo?: StringFilter<"RegistroCambio"> | string
+    antes?: StringFilter<"RegistroCambio"> | string
+    despues?: StringFilter<"RegistroCambio"> | string
+    usuarioId?: StringNullableFilter<"RegistroCambio"> | string | null
+    usuarioNombre?: StringNullableFilter<"RegistroCambio"> | string | null
+    creadoEn?: DateTimeFilter<"RegistroCambio"> | Date | string
+    registro?: XOR<RegistroRelationFilter, RegistroWhereInput>
+  }, "id">
+
+  export type RegistroCambioOrderByWithAggregationInput = {
+    id?: SortOrder
+    registroId?: SortOrder
+    campo?: SortOrder
+    antes?: SortOrder
+    despues?: SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    usuarioNombre?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    _count?: RegistroCambioCountOrderByAggregateInput
+    _max?: RegistroCambioMaxOrderByAggregateInput
+    _min?: RegistroCambioMinOrderByAggregateInput
+  }
+
+  export type RegistroCambioScalarWhereWithAggregatesInput = {
+    AND?: RegistroCambioScalarWhereWithAggregatesInput | RegistroCambioScalarWhereWithAggregatesInput[]
+    OR?: RegistroCambioScalarWhereWithAggregatesInput[]
+    NOT?: RegistroCambioScalarWhereWithAggregatesInput | RegistroCambioScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"RegistroCambio"> | string
+    registroId?: StringWithAggregatesFilter<"RegistroCambio"> | string
+    campo?: StringWithAggregatesFilter<"RegistroCambio"> | string
+    antes?: StringWithAggregatesFilter<"RegistroCambio"> | string
+    despues?: StringWithAggregatesFilter<"RegistroCambio"> | string
+    usuarioId?: StringNullableWithAggregatesFilter<"RegistroCambio"> | string | null
+    usuarioNombre?: StringNullableWithAggregatesFilter<"RegistroCambio"> | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"RegistroCambio"> | Date | string
+  }
+
+  export type VinculacionEventoWhereInput = {
+    AND?: VinculacionEventoWhereInput | VinculacionEventoWhereInput[]
+    OR?: VinculacionEventoWhereInput[]
+    NOT?: VinculacionEventoWhereInput | VinculacionEventoWhereInput[]
+    id?: StringFilter<"VinculacionEvento"> | string
+    colaboradorId?: StringFilter<"VinculacionEvento"> | string
+    tipo?: EnumTipoVinculacionFilter<"VinculacionEvento"> | $Enums.TipoVinculacion
+    fecha?: DateTimeFilter<"VinculacionEvento"> | Date | string
+    motivo?: EnumMotivoRetiroNullableFilter<"VinculacionEvento"> | $Enums.MotivoRetiro | null
+    nota?: StringNullableFilter<"VinculacionEvento"> | string | null
+    documento?: StringNullableFilter<"VinculacionEvento"> | string | null
+    documentoTipo?: StringNullableFilter<"VinculacionEvento"> | string | null
+    documentoNombre?: StringNullableFilter<"VinculacionEvento"> | string | null
+    usuarioId?: StringNullableFilter<"VinculacionEvento"> | string | null
+    creadoEn?: DateTimeFilter<"VinculacionEvento"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+  }
+
+  export type VinculacionEventoOrderByWithRelationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tipo?: SortOrder
+    fecha?: SortOrder
+    motivo?: SortOrderInput | SortOrder
+    nota?: SortOrderInput | SortOrder
+    documento?: SortOrderInput | SortOrder
+    documentoTipo?: SortOrderInput | SortOrder
+    documentoNombre?: SortOrderInput | SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    colaborador?: ColaboradorOrderByWithRelationInput
+  }
+
+  export type VinculacionEventoWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: VinculacionEventoWhereInput | VinculacionEventoWhereInput[]
+    OR?: VinculacionEventoWhereInput[]
+    NOT?: VinculacionEventoWhereInput | VinculacionEventoWhereInput[]
+    colaboradorId?: StringFilter<"VinculacionEvento"> | string
+    tipo?: EnumTipoVinculacionFilter<"VinculacionEvento"> | $Enums.TipoVinculacion
+    fecha?: DateTimeFilter<"VinculacionEvento"> | Date | string
+    motivo?: EnumMotivoRetiroNullableFilter<"VinculacionEvento"> | $Enums.MotivoRetiro | null
+    nota?: StringNullableFilter<"VinculacionEvento"> | string | null
+    documento?: StringNullableFilter<"VinculacionEvento"> | string | null
+    documentoTipo?: StringNullableFilter<"VinculacionEvento"> | string | null
+    documentoNombre?: StringNullableFilter<"VinculacionEvento"> | string | null
+    usuarioId?: StringNullableFilter<"VinculacionEvento"> | string | null
+    creadoEn?: DateTimeFilter<"VinculacionEvento"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+  }, "id">
+
+  export type VinculacionEventoOrderByWithAggregationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tipo?: SortOrder
+    fecha?: SortOrder
+    motivo?: SortOrderInput | SortOrder
+    nota?: SortOrderInput | SortOrder
+    documento?: SortOrderInput | SortOrder
+    documentoTipo?: SortOrderInput | SortOrder
+    documentoNombre?: SortOrderInput | SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    _count?: VinculacionEventoCountOrderByAggregateInput
+    _max?: VinculacionEventoMaxOrderByAggregateInput
+    _min?: VinculacionEventoMinOrderByAggregateInput
+  }
+
+  export type VinculacionEventoScalarWhereWithAggregatesInput = {
+    AND?: VinculacionEventoScalarWhereWithAggregatesInput | VinculacionEventoScalarWhereWithAggregatesInput[]
+    OR?: VinculacionEventoScalarWhereWithAggregatesInput[]
+    NOT?: VinculacionEventoScalarWhereWithAggregatesInput | VinculacionEventoScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"VinculacionEvento"> | string
+    colaboradorId?: StringWithAggregatesFilter<"VinculacionEvento"> | string
+    tipo?: EnumTipoVinculacionWithAggregatesFilter<"VinculacionEvento"> | $Enums.TipoVinculacion
+    fecha?: DateTimeWithAggregatesFilter<"VinculacionEvento"> | Date | string
+    motivo?: EnumMotivoRetiroNullableWithAggregatesFilter<"VinculacionEvento"> | $Enums.MotivoRetiro | null
+    nota?: StringNullableWithAggregatesFilter<"VinculacionEvento"> | string | null
+    documento?: StringNullableWithAggregatesFilter<"VinculacionEvento"> | string | null
+    documentoTipo?: StringNullableWithAggregatesFilter<"VinculacionEvento"> | string | null
+    documentoNombre?: StringNullableWithAggregatesFilter<"VinculacionEvento"> | string | null
+    usuarioId?: StringNullableWithAggregatesFilter<"VinculacionEvento"> | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"VinculacionEvento"> | Date | string
   }
 
   export type ContratoWhereInput = {
@@ -30559,12 +32841,11 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -30573,6 +32854,7 @@ export namespace Prisma {
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -30590,19 +32872,19 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     horarioId?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -30619,12 +32901,11 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30633,6 +32914,7 @@ export namespace Prisma {
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -30650,19 +32932,19 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -30680,13 +32962,12 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     horarioId?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -30704,12 +32985,11 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -30728,13 +33008,12 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -31034,6 +33313,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
     sede?: SedeCreateNestedOneWithoutRegistrosInput
+    cambios?: RegistroCambioCreateNestedManyWithoutRegistroInput
     novedades?: PermisoCreateNestedManyWithoutRegistroInput
   }
 
@@ -31054,6 +33334,7 @@ export namespace Prisma {
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
+    cambios?: RegistroCambioUncheckedCreateNestedManyWithoutRegistroInput
     novedades?: PermisoUncheckedCreateNestedManyWithoutRegistroInput
   }
 
@@ -31074,6 +33355,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
     sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    cambios?: RegistroCambioUpdateManyWithoutRegistroNestedInput
     novedades?: PermisoUpdateManyWithoutRegistroNestedInput
   }
 
@@ -31094,6 +33376,7 @@ export namespace Prisma {
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cambios?: RegistroCambioUncheckedUpdateManyWithoutRegistroNestedInput
     novedades?: PermisoUncheckedUpdateManyWithoutRegistroNestedInput
   }
 
@@ -31883,6 +34166,179 @@ export namespace Prisma {
     solicitadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     procesadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type RegistroCambioCreateInput = {
+    id?: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+    registro: RegistroCreateNestedOneWithoutCambiosInput
+  }
+
+  export type RegistroCambioUncheckedCreateInput = {
+    id?: string
+    registroId: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type RegistroCambioUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    registro?: RegistroUpdateOneRequiredWithoutCambiosNestedInput
+  }
+
+  export type RegistroCambioUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    registroId?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RegistroCambioCreateManyInput = {
+    id?: string
+    registroId: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type RegistroCambioUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RegistroCambioUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    registroId?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VinculacionEventoCreateInput = {
+    id?: string
+    tipo: $Enums.TipoVinculacion
+    fecha: Date | string
+    motivo?: $Enums.MotivoRetiro | null
+    nota?: string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    usuarioId?: string | null
+    creadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutVinculacionInput
+  }
+
+  export type VinculacionEventoUncheckedCreateInput = {
+    id?: string
+    colaboradorId: string
+    tipo: $Enums.TipoVinculacion
+    fecha: Date | string
+    motivo?: $Enums.MotivoRetiro | null
+    nota?: string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    usuarioId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type VinculacionEventoUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoVinculacionFieldUpdateOperationsInput | $Enums.TipoVinculacion
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    motivo?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutVinculacionNestedInput
+  }
+
+  export type VinculacionEventoUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoVinculacionFieldUpdateOperationsInput | $Enums.TipoVinculacion
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    motivo?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VinculacionEventoCreateManyInput = {
+    id?: string
+    colaboradorId: string
+    tipo: $Enums.TipoVinculacion
+    fecha: Date | string
+    motivo?: $Enums.MotivoRetiro | null
+    nota?: string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    usuarioId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type VinculacionEventoUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoVinculacionFieldUpdateOperationsInput | $Enums.TipoVinculacion
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    motivo?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VinculacionEventoUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoVinculacionFieldUpdateOperationsInput | $Enums.TipoVinculacion
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    motivo?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ContratoCreateInput = {
@@ -33014,6 +35470,12 @@ export namespace Prisma {
     none?: ContratoWhereInput
   }
 
+  export type VinculacionEventoListRelationFilter = {
+    every?: VinculacionEventoWhereInput
+    some?: VinculacionEventoWhereInput
+    none?: VinculacionEventoWhereInput
+  }
+
   export type DiaEsperadoListRelationFilter = {
     every?: DiaEsperadoWhereInput
     some?: DiaEsperadoWhereInput
@@ -33035,6 +35497,10 @@ export namespace Prisma {
   }
 
   export type ContratoOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type VinculacionEventoOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -33064,13 +35530,12 @@ export namespace Prisma {
     salarioMensual?: SortOrder
     rostroDescriptor?: SortOrder
     rostroEnroladoEn?: SortOrder
+    foto?: SortOrder
+    fotoMini?: SortOrder
     horarioId?: SortOrder
     activo?: SortOrder
     fechaRetiro?: SortOrder
     motivoRetiro?: SortOrder
-    documentoRetiro?: SortOrder
-    documentoRetiroTipo?: SortOrder
-    documentoRetiroNombre?: SortOrder
     retiroProgramado?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -33092,13 +35557,12 @@ export namespace Prisma {
     fechaNacimiento?: SortOrder
     salarioMensual?: SortOrder
     rostroEnroladoEn?: SortOrder
+    foto?: SortOrder
+    fotoMini?: SortOrder
     horarioId?: SortOrder
     activo?: SortOrder
     fechaRetiro?: SortOrder
     motivoRetiro?: SortOrder
-    documentoRetiro?: SortOrder
-    documentoRetiroTipo?: SortOrder
-    documentoRetiroNombre?: SortOrder
     retiroProgramado?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -33116,13 +35580,12 @@ export namespace Prisma {
     fechaNacimiento?: SortOrder
     salarioMensual?: SortOrder
     rostroEnroladoEn?: SortOrder
+    foto?: SortOrder
+    fotoMini?: SortOrder
     horarioId?: SortOrder
     activo?: SortOrder
     fechaRetiro?: SortOrder
     motivoRetiro?: SortOrder
-    documentoRetiro?: SortOrder
-    documentoRetiroTipo?: SortOrder
-    documentoRetiroNombre?: SortOrder
     retiroProgramado?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -33342,6 +35805,16 @@ export namespace Prisma {
   export type SedeNullableRelationFilter = {
     is?: SedeWhereInput | null
     isNot?: SedeWhereInput | null
+  }
+
+  export type RegistroCambioListRelationFilter = {
+    every?: RegistroCambioWhereInput
+    some?: RegistroCambioWhereInput
+    none?: RegistroCambioWhereInput
+  }
+
+  export type RegistroCambioOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type RegistroCountOrderByAggregateInput = {
@@ -33903,6 +36376,103 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumEstadoRetiroFilter<$PrismaModel>
     _max?: NestedEnumEstadoRetiroFilter<$PrismaModel>
+  }
+
+  export type RegistroRelationFilter = {
+    is?: RegistroWhereInput
+    isNot?: RegistroWhereInput
+  }
+
+  export type RegistroCambioCountOrderByAggregateInput = {
+    id?: SortOrder
+    registroId?: SortOrder
+    campo?: SortOrder
+    antes?: SortOrder
+    despues?: SortOrder
+    usuarioId?: SortOrder
+    usuarioNombre?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type RegistroCambioMaxOrderByAggregateInput = {
+    id?: SortOrder
+    registroId?: SortOrder
+    campo?: SortOrder
+    antes?: SortOrder
+    despues?: SortOrder
+    usuarioId?: SortOrder
+    usuarioNombre?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type RegistroCambioMinOrderByAggregateInput = {
+    id?: SortOrder
+    registroId?: SortOrder
+    campo?: SortOrder
+    antes?: SortOrder
+    despues?: SortOrder
+    usuarioId?: SortOrder
+    usuarioNombre?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type EnumTipoVinculacionFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoVinculacion | EnumTipoVinculacionFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoVinculacion[]
+    notIn?: $Enums.TipoVinculacion[]
+    not?: NestedEnumTipoVinculacionFilter<$PrismaModel> | $Enums.TipoVinculacion
+  }
+
+  export type VinculacionEventoCountOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tipo?: SortOrder
+    fecha?: SortOrder
+    motivo?: SortOrder
+    nota?: SortOrder
+    documento?: SortOrder
+    documentoTipo?: SortOrder
+    documentoNombre?: SortOrder
+    usuarioId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type VinculacionEventoMaxOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tipo?: SortOrder
+    fecha?: SortOrder
+    motivo?: SortOrder
+    nota?: SortOrder
+    documento?: SortOrder
+    documentoTipo?: SortOrder
+    documentoNombre?: SortOrder
+    usuarioId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type VinculacionEventoMinOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tipo?: SortOrder
+    fecha?: SortOrder
+    motivo?: SortOrder
+    nota?: SortOrder
+    documento?: SortOrder
+    documentoTipo?: SortOrder
+    documentoNombre?: SortOrder
+    usuarioId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type EnumTipoVinculacionWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoVinculacion | EnumTipoVinculacionFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoVinculacion[]
+    notIn?: $Enums.TipoVinculacion[]
+    not?: NestedEnumTipoVinculacionWithAggregatesFilter<$PrismaModel> | $Enums.TipoVinculacion
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumTipoVinculacionFilter<$PrismaModel>
+    _max?: NestedEnumTipoVinculacionFilter<$PrismaModel>
   }
 
   export type EnumTipoContratoFilter<$PrismaModel = never> = {
@@ -34781,6 +37351,13 @@ export namespace Prisma {
     connect?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
   }
 
+  export type VinculacionEventoCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<VinculacionEventoCreateWithoutColaboradorInput, VinculacionEventoUncheckedCreateWithoutColaboradorInput> | VinculacionEventoCreateWithoutColaboradorInput[] | VinculacionEventoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: VinculacionEventoCreateOrConnectWithoutColaboradorInput | VinculacionEventoCreateOrConnectWithoutColaboradorInput[]
+    createMany?: VinculacionEventoCreateManyColaboradorInputEnvelope
+    connect?: VinculacionEventoWhereUniqueInput | VinculacionEventoWhereUniqueInput[]
+  }
+
   export type DiaEsperadoCreateNestedManyWithoutColaboradorInput = {
     create?: XOR<DiaEsperadoCreateWithoutColaboradorInput, DiaEsperadoUncheckedCreateWithoutColaboradorInput> | DiaEsperadoCreateWithoutColaboradorInput[] | DiaEsperadoUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: DiaEsperadoCreateOrConnectWithoutColaboradorInput | DiaEsperadoCreateOrConnectWithoutColaboradorInput[]
@@ -34814,6 +37391,13 @@ export namespace Prisma {
     connectOrCreate?: ContratoCreateOrConnectWithoutColaboradorInput | ContratoCreateOrConnectWithoutColaboradorInput[]
     createMany?: ContratoCreateManyColaboradorInputEnvelope
     connect?: ContratoWhereUniqueInput | ContratoWhereUniqueInput[]
+  }
+
+  export type VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<VinculacionEventoCreateWithoutColaboradorInput, VinculacionEventoUncheckedCreateWithoutColaboradorInput> | VinculacionEventoCreateWithoutColaboradorInput[] | VinculacionEventoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: VinculacionEventoCreateOrConnectWithoutColaboradorInput | VinculacionEventoCreateOrConnectWithoutColaboradorInput[]
+    createMany?: VinculacionEventoCreateManyColaboradorInputEnvelope
+    connect?: VinculacionEventoWhereUniqueInput | VinculacionEventoWhereUniqueInput[]
   }
 
   export type DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput = {
@@ -34894,6 +37478,20 @@ export namespace Prisma {
     deleteMany?: ContratoScalarWhereInput | ContratoScalarWhereInput[]
   }
 
+  export type VinculacionEventoUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<VinculacionEventoCreateWithoutColaboradorInput, VinculacionEventoUncheckedCreateWithoutColaboradorInput> | VinculacionEventoCreateWithoutColaboradorInput[] | VinculacionEventoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: VinculacionEventoCreateOrConnectWithoutColaboradorInput | VinculacionEventoCreateOrConnectWithoutColaboradorInput[]
+    upsert?: VinculacionEventoUpsertWithWhereUniqueWithoutColaboradorInput | VinculacionEventoUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: VinculacionEventoCreateManyColaboradorInputEnvelope
+    set?: VinculacionEventoWhereUniqueInput | VinculacionEventoWhereUniqueInput[]
+    disconnect?: VinculacionEventoWhereUniqueInput | VinculacionEventoWhereUniqueInput[]
+    delete?: VinculacionEventoWhereUniqueInput | VinculacionEventoWhereUniqueInput[]
+    connect?: VinculacionEventoWhereUniqueInput | VinculacionEventoWhereUniqueInput[]
+    update?: VinculacionEventoUpdateWithWhereUniqueWithoutColaboradorInput | VinculacionEventoUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: VinculacionEventoUpdateManyWithWhereWithoutColaboradorInput | VinculacionEventoUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: VinculacionEventoScalarWhereInput | VinculacionEventoScalarWhereInput[]
+  }
+
   export type DiaEsperadoUpdateManyWithoutColaboradorNestedInput = {
     create?: XOR<DiaEsperadoCreateWithoutColaboradorInput, DiaEsperadoUncheckedCreateWithoutColaboradorInput> | DiaEsperadoCreateWithoutColaboradorInput[] | DiaEsperadoUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: DiaEsperadoCreateOrConnectWithoutColaboradorInput | DiaEsperadoCreateOrConnectWithoutColaboradorInput[]
@@ -34962,6 +37560,20 @@ export namespace Prisma {
     update?: ContratoUpdateWithWhereUniqueWithoutColaboradorInput | ContratoUpdateWithWhereUniqueWithoutColaboradorInput[]
     updateMany?: ContratoUpdateManyWithWhereWithoutColaboradorInput | ContratoUpdateManyWithWhereWithoutColaboradorInput[]
     deleteMany?: ContratoScalarWhereInput | ContratoScalarWhereInput[]
+  }
+
+  export type VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<VinculacionEventoCreateWithoutColaboradorInput, VinculacionEventoUncheckedCreateWithoutColaboradorInput> | VinculacionEventoCreateWithoutColaboradorInput[] | VinculacionEventoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: VinculacionEventoCreateOrConnectWithoutColaboradorInput | VinculacionEventoCreateOrConnectWithoutColaboradorInput[]
+    upsert?: VinculacionEventoUpsertWithWhereUniqueWithoutColaboradorInput | VinculacionEventoUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: VinculacionEventoCreateManyColaboradorInputEnvelope
+    set?: VinculacionEventoWhereUniqueInput | VinculacionEventoWhereUniqueInput[]
+    disconnect?: VinculacionEventoWhereUniqueInput | VinculacionEventoWhereUniqueInput[]
+    delete?: VinculacionEventoWhereUniqueInput | VinculacionEventoWhereUniqueInput[]
+    connect?: VinculacionEventoWhereUniqueInput | VinculacionEventoWhereUniqueInput[]
+    update?: VinculacionEventoUpdateWithWhereUniqueWithoutColaboradorInput | VinculacionEventoUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: VinculacionEventoUpdateManyWithWhereWithoutColaboradorInput | VinculacionEventoUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: VinculacionEventoScalarWhereInput | VinculacionEventoScalarWhereInput[]
   }
 
   export type DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput = {
@@ -35152,11 +37764,25 @@ export namespace Prisma {
     connect?: SedeWhereUniqueInput
   }
 
+  export type RegistroCambioCreateNestedManyWithoutRegistroInput = {
+    create?: XOR<RegistroCambioCreateWithoutRegistroInput, RegistroCambioUncheckedCreateWithoutRegistroInput> | RegistroCambioCreateWithoutRegistroInput[] | RegistroCambioUncheckedCreateWithoutRegistroInput[]
+    connectOrCreate?: RegistroCambioCreateOrConnectWithoutRegistroInput | RegistroCambioCreateOrConnectWithoutRegistroInput[]
+    createMany?: RegistroCambioCreateManyRegistroInputEnvelope
+    connect?: RegistroCambioWhereUniqueInput | RegistroCambioWhereUniqueInput[]
+  }
+
   export type PermisoCreateNestedManyWithoutRegistroInput = {
     create?: XOR<PermisoCreateWithoutRegistroInput, PermisoUncheckedCreateWithoutRegistroInput> | PermisoCreateWithoutRegistroInput[] | PermisoUncheckedCreateWithoutRegistroInput[]
     connectOrCreate?: PermisoCreateOrConnectWithoutRegistroInput | PermisoCreateOrConnectWithoutRegistroInput[]
     createMany?: PermisoCreateManyRegistroInputEnvelope
     connect?: PermisoWhereUniqueInput | PermisoWhereUniqueInput[]
+  }
+
+  export type RegistroCambioUncheckedCreateNestedManyWithoutRegistroInput = {
+    create?: XOR<RegistroCambioCreateWithoutRegistroInput, RegistroCambioUncheckedCreateWithoutRegistroInput> | RegistroCambioCreateWithoutRegistroInput[] | RegistroCambioUncheckedCreateWithoutRegistroInput[]
+    connectOrCreate?: RegistroCambioCreateOrConnectWithoutRegistroInput | RegistroCambioCreateOrConnectWithoutRegistroInput[]
+    createMany?: RegistroCambioCreateManyRegistroInputEnvelope
+    connect?: RegistroCambioWhereUniqueInput | RegistroCambioWhereUniqueInput[]
   }
 
   export type PermisoUncheckedCreateNestedManyWithoutRegistroInput = {
@@ -35188,6 +37814,20 @@ export namespace Prisma {
     update?: XOR<XOR<SedeUpdateToOneWithWhereWithoutRegistrosInput, SedeUpdateWithoutRegistrosInput>, SedeUncheckedUpdateWithoutRegistrosInput>
   }
 
+  export type RegistroCambioUpdateManyWithoutRegistroNestedInput = {
+    create?: XOR<RegistroCambioCreateWithoutRegistroInput, RegistroCambioUncheckedCreateWithoutRegistroInput> | RegistroCambioCreateWithoutRegistroInput[] | RegistroCambioUncheckedCreateWithoutRegistroInput[]
+    connectOrCreate?: RegistroCambioCreateOrConnectWithoutRegistroInput | RegistroCambioCreateOrConnectWithoutRegistroInput[]
+    upsert?: RegistroCambioUpsertWithWhereUniqueWithoutRegistroInput | RegistroCambioUpsertWithWhereUniqueWithoutRegistroInput[]
+    createMany?: RegistroCambioCreateManyRegistroInputEnvelope
+    set?: RegistroCambioWhereUniqueInput | RegistroCambioWhereUniqueInput[]
+    disconnect?: RegistroCambioWhereUniqueInput | RegistroCambioWhereUniqueInput[]
+    delete?: RegistroCambioWhereUniqueInput | RegistroCambioWhereUniqueInput[]
+    connect?: RegistroCambioWhereUniqueInput | RegistroCambioWhereUniqueInput[]
+    update?: RegistroCambioUpdateWithWhereUniqueWithoutRegistroInput | RegistroCambioUpdateWithWhereUniqueWithoutRegistroInput[]
+    updateMany?: RegistroCambioUpdateManyWithWhereWithoutRegistroInput | RegistroCambioUpdateManyWithWhereWithoutRegistroInput[]
+    deleteMany?: RegistroCambioScalarWhereInput | RegistroCambioScalarWhereInput[]
+  }
+
   export type PermisoUpdateManyWithoutRegistroNestedInput = {
     create?: XOR<PermisoCreateWithoutRegistroInput, PermisoUncheckedCreateWithoutRegistroInput> | PermisoCreateWithoutRegistroInput[] | PermisoUncheckedCreateWithoutRegistroInput[]
     connectOrCreate?: PermisoCreateOrConnectWithoutRegistroInput | PermisoCreateOrConnectWithoutRegistroInput[]
@@ -35200,6 +37840,20 @@ export namespace Prisma {
     update?: PermisoUpdateWithWhereUniqueWithoutRegistroInput | PermisoUpdateWithWhereUniqueWithoutRegistroInput[]
     updateMany?: PermisoUpdateManyWithWhereWithoutRegistroInput | PermisoUpdateManyWithWhereWithoutRegistroInput[]
     deleteMany?: PermisoScalarWhereInput | PermisoScalarWhereInput[]
+  }
+
+  export type RegistroCambioUncheckedUpdateManyWithoutRegistroNestedInput = {
+    create?: XOR<RegistroCambioCreateWithoutRegistroInput, RegistroCambioUncheckedCreateWithoutRegistroInput> | RegistroCambioCreateWithoutRegistroInput[] | RegistroCambioUncheckedCreateWithoutRegistroInput[]
+    connectOrCreate?: RegistroCambioCreateOrConnectWithoutRegistroInput | RegistroCambioCreateOrConnectWithoutRegistroInput[]
+    upsert?: RegistroCambioUpsertWithWhereUniqueWithoutRegistroInput | RegistroCambioUpsertWithWhereUniqueWithoutRegistroInput[]
+    createMany?: RegistroCambioCreateManyRegistroInputEnvelope
+    set?: RegistroCambioWhereUniqueInput | RegistroCambioWhereUniqueInput[]
+    disconnect?: RegistroCambioWhereUniqueInput | RegistroCambioWhereUniqueInput[]
+    delete?: RegistroCambioWhereUniqueInput | RegistroCambioWhereUniqueInput[]
+    connect?: RegistroCambioWhereUniqueInput | RegistroCambioWhereUniqueInput[]
+    update?: RegistroCambioUpdateWithWhereUniqueWithoutRegistroInput | RegistroCambioUpdateWithWhereUniqueWithoutRegistroInput[]
+    updateMany?: RegistroCambioUpdateManyWithWhereWithoutRegistroInput | RegistroCambioUpdateManyWithWhereWithoutRegistroInput[]
+    deleteMany?: RegistroCambioScalarWhereInput | RegistroCambioScalarWhereInput[]
   }
 
   export type PermisoUncheckedUpdateManyWithoutRegistroNestedInput = {
@@ -35568,6 +38222,38 @@ export namespace Prisma {
     upsert?: AfiliadoUpsertWithoutRetirosInput
     connect?: AfiliadoWhereUniqueInput
     update?: XOR<XOR<AfiliadoUpdateToOneWithWhereWithoutRetirosInput, AfiliadoUpdateWithoutRetirosInput>, AfiliadoUncheckedUpdateWithoutRetirosInput>
+  }
+
+  export type RegistroCreateNestedOneWithoutCambiosInput = {
+    create?: XOR<RegistroCreateWithoutCambiosInput, RegistroUncheckedCreateWithoutCambiosInput>
+    connectOrCreate?: RegistroCreateOrConnectWithoutCambiosInput
+    connect?: RegistroWhereUniqueInput
+  }
+
+  export type RegistroUpdateOneRequiredWithoutCambiosNestedInput = {
+    create?: XOR<RegistroCreateWithoutCambiosInput, RegistroUncheckedCreateWithoutCambiosInput>
+    connectOrCreate?: RegistroCreateOrConnectWithoutCambiosInput
+    upsert?: RegistroUpsertWithoutCambiosInput
+    connect?: RegistroWhereUniqueInput
+    update?: XOR<XOR<RegistroUpdateToOneWithWhereWithoutCambiosInput, RegistroUpdateWithoutCambiosInput>, RegistroUncheckedUpdateWithoutCambiosInput>
+  }
+
+  export type ColaboradorCreateNestedOneWithoutVinculacionInput = {
+    create?: XOR<ColaboradorCreateWithoutVinculacionInput, ColaboradorUncheckedCreateWithoutVinculacionInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutVinculacionInput
+    connect?: ColaboradorWhereUniqueInput
+  }
+
+  export type EnumTipoVinculacionFieldUpdateOperationsInput = {
+    set?: $Enums.TipoVinculacion
+  }
+
+  export type ColaboradorUpdateOneRequiredWithoutVinculacionNestedInput = {
+    create?: XOR<ColaboradorCreateWithoutVinculacionInput, ColaboradorUncheckedCreateWithoutVinculacionInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutVinculacionInput
+    upsert?: ColaboradorUpsertWithoutVinculacionInput
+    connect?: ColaboradorWhereUniqueInput
+    update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutVinculacionInput, ColaboradorUpdateWithoutVinculacionInput>, ColaboradorUncheckedUpdateWithoutVinculacionInput>
   }
 
   export type ColaboradorCreateNestedOneWithoutContratosInput = {
@@ -36112,6 +38798,23 @@ export namespace Prisma {
     _max?: NestedEnumEstadoRetiroFilter<$PrismaModel>
   }
 
+  export type NestedEnumTipoVinculacionFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoVinculacion | EnumTipoVinculacionFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoVinculacion[]
+    notIn?: $Enums.TipoVinculacion[]
+    not?: NestedEnumTipoVinculacionFilter<$PrismaModel> | $Enums.TipoVinculacion
+  }
+
+  export type NestedEnumTipoVinculacionWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoVinculacion | EnumTipoVinculacionFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoVinculacion[]
+    notIn?: $Enums.TipoVinculacion[]
+    not?: NestedEnumTipoVinculacionWithAggregatesFilter<$PrismaModel> | $Enums.TipoVinculacion
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumTipoVinculacionFilter<$PrismaModel>
+    _max?: NestedEnumTipoVinculacionFilter<$PrismaModel>
+  }
+
   export type NestedEnumTipoContratoFilter<$PrismaModel = never> = {
     equals?: $Enums.TipoContrato | EnumTipoContratoFieldRefInput<$PrismaModel>
     in?: $Enums.TipoContrato[]
@@ -36200,12 +38903,11 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -36213,6 +38915,7 @@ export namespace Prisma {
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -36229,19 +38932,19 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     horarioId?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -36630,13 +39333,12 @@ export namespace Prisma {
     salarioMensual?: FloatFilter<"Colaborador"> | number
     rostroDescriptor?: JsonNullableFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
+    foto?: StringNullableFilter<"Colaborador"> | string | null
+    fotoMini?: StringNullableFilter<"Colaborador"> | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     activo?: BoolFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
-    documentoRetiro?: StringNullableFilter<"Colaborador"> | string | null
-    documentoRetiroTipo?: StringNullableFilter<"Colaborador"> | string | null
-    documentoRetiroNombre?: StringNullableFilter<"Colaborador"> | string | null
     retiroProgramado?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
@@ -37405,12 +40107,11 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -37418,6 +40119,7 @@ export namespace Prisma {
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -37435,18 +40137,18 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -37854,6 +40556,7 @@ export namespace Prisma {
     editadoEn?: Date | string | null
     creadoEn?: Date | string
     sede?: SedeCreateNestedOneWithoutRegistrosInput
+    cambios?: RegistroCambioCreateNestedManyWithoutRegistroInput
     novedades?: PermisoCreateNestedManyWithoutRegistroInput
   }
 
@@ -37873,6 +40576,7 @@ export namespace Prisma {
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
+    cambios?: RegistroCambioUncheckedCreateNestedManyWithoutRegistroInput
     novedades?: PermisoUncheckedCreateNestedManyWithoutRegistroInput
   }
 
@@ -37969,6 +40673,42 @@ export namespace Prisma {
 
   export type ContratoCreateManyColaboradorInputEnvelope = {
     data: ContratoCreateManyColaboradorInput | ContratoCreateManyColaboradorInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type VinculacionEventoCreateWithoutColaboradorInput = {
+    id?: string
+    tipo: $Enums.TipoVinculacion
+    fecha: Date | string
+    motivo?: $Enums.MotivoRetiro | null
+    nota?: string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    usuarioId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type VinculacionEventoUncheckedCreateWithoutColaboradorInput = {
+    id?: string
+    tipo: $Enums.TipoVinculacion
+    fecha: Date | string
+    motivo?: $Enums.MotivoRetiro | null
+    nota?: string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    usuarioId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type VinculacionEventoCreateOrConnectWithoutColaboradorInput = {
+    where: VinculacionEventoWhereUniqueInput
+    create: XOR<VinculacionEventoCreateWithoutColaboradorInput, VinculacionEventoUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type VinculacionEventoCreateManyColaboradorInputEnvelope = {
+    data: VinculacionEventoCreateManyColaboradorInput | VinculacionEventoCreateManyColaboradorInput[]
     skipDuplicates?: boolean
   }
 
@@ -38248,6 +40988,39 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFilter<"Contrato"> | Date | string
   }
 
+  export type VinculacionEventoUpsertWithWhereUniqueWithoutColaboradorInput = {
+    where: VinculacionEventoWhereUniqueInput
+    update: XOR<VinculacionEventoUpdateWithoutColaboradorInput, VinculacionEventoUncheckedUpdateWithoutColaboradorInput>
+    create: XOR<VinculacionEventoCreateWithoutColaboradorInput, VinculacionEventoUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type VinculacionEventoUpdateWithWhereUniqueWithoutColaboradorInput = {
+    where: VinculacionEventoWhereUniqueInput
+    data: XOR<VinculacionEventoUpdateWithoutColaboradorInput, VinculacionEventoUncheckedUpdateWithoutColaboradorInput>
+  }
+
+  export type VinculacionEventoUpdateManyWithWhereWithoutColaboradorInput = {
+    where: VinculacionEventoScalarWhereInput
+    data: XOR<VinculacionEventoUpdateManyMutationInput, VinculacionEventoUncheckedUpdateManyWithoutColaboradorInput>
+  }
+
+  export type VinculacionEventoScalarWhereInput = {
+    AND?: VinculacionEventoScalarWhereInput | VinculacionEventoScalarWhereInput[]
+    OR?: VinculacionEventoScalarWhereInput[]
+    NOT?: VinculacionEventoScalarWhereInput | VinculacionEventoScalarWhereInput[]
+    id?: StringFilter<"VinculacionEvento"> | string
+    colaboradorId?: StringFilter<"VinculacionEvento"> | string
+    tipo?: EnumTipoVinculacionFilter<"VinculacionEvento"> | $Enums.TipoVinculacion
+    fecha?: DateTimeFilter<"VinculacionEvento"> | Date | string
+    motivo?: EnumMotivoRetiroNullableFilter<"VinculacionEvento"> | $Enums.MotivoRetiro | null
+    nota?: StringNullableFilter<"VinculacionEvento"> | string | null
+    documento?: StringNullableFilter<"VinculacionEvento"> | string | null
+    documentoTipo?: StringNullableFilter<"VinculacionEvento"> | string | null
+    documentoNombre?: StringNullableFilter<"VinculacionEvento"> | string | null
+    usuarioId?: StringNullableFilter<"VinculacionEvento"> | string | null
+    creadoEn?: DateTimeFilter<"VinculacionEvento"> | Date | string
+  }
+
   export type DiaEsperadoUpsertWithWhereUniqueWithoutColaboradorInput = {
     where: DiaEsperadoWhereUniqueInput
     update: XOR<DiaEsperadoUpdateWithoutColaboradorInput, DiaEsperadoUncheckedUpdateWithoutColaboradorInput>
@@ -38403,6 +41176,7 @@ export namespace Prisma {
     editadoEn?: Date | string | null
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
+    cambios?: RegistroCambioCreateNestedManyWithoutRegistroInput
     novedades?: PermisoCreateNestedManyWithoutRegistroInput
   }
 
@@ -38422,6 +41196,7 @@ export namespace Prisma {
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
+    cambios?: RegistroCambioUncheckedCreateNestedManyWithoutRegistroInput
     novedades?: PermisoUncheckedCreateNestedManyWithoutRegistroInput
   }
 
@@ -38540,12 +41315,11 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38554,6 +41328,7 @@ export namespace Prisma {
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
   }
 
@@ -38570,19 +41345,19 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     horarioId?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
@@ -38647,12 +41422,11 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38661,6 +41435,7 @@ export namespace Prisma {
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
   }
 
@@ -38677,19 +41452,19 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
@@ -38744,12 +41519,11 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38758,6 +41532,7 @@ export namespace Prisma {
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
 
@@ -38774,19 +41549,19 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     horarioId?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
@@ -38818,12 +41593,11 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38832,6 +41606,7 @@ export namespace Prisma {
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
 
@@ -38848,19 +41623,19 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
@@ -38876,12 +41651,11 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -38889,6 +41663,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -38906,18 +41681,18 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     horarioId?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -38958,6 +41733,36 @@ export namespace Prisma {
   export type SedeCreateOrConnectWithoutRegistrosInput = {
     where: SedeWhereUniqueInput
     create: XOR<SedeCreateWithoutRegistrosInput, SedeUncheckedCreateWithoutRegistrosInput>
+  }
+
+  export type RegistroCambioCreateWithoutRegistroInput = {
+    id?: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type RegistroCambioUncheckedCreateWithoutRegistroInput = {
+    id?: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type RegistroCambioCreateOrConnectWithoutRegistroInput = {
+    where: RegistroCambioWhereUniqueInput
+    create: XOR<RegistroCambioCreateWithoutRegistroInput, RegistroCambioUncheckedCreateWithoutRegistroInput>
+  }
+
+  export type RegistroCambioCreateManyRegistroInputEnvelope = {
+    data: RegistroCambioCreateManyRegistroInput | RegistroCambioCreateManyRegistroInput[]
+    skipDuplicates?: boolean
   }
 
   export type PermisoCreateWithoutRegistroInput = {
@@ -39025,12 +41830,11 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39038,6 +41842,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -39055,18 +41860,18 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -39110,6 +41915,36 @@ export namespace Prisma {
     colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
   }
 
+  export type RegistroCambioUpsertWithWhereUniqueWithoutRegistroInput = {
+    where: RegistroCambioWhereUniqueInput
+    update: XOR<RegistroCambioUpdateWithoutRegistroInput, RegistroCambioUncheckedUpdateWithoutRegistroInput>
+    create: XOR<RegistroCambioCreateWithoutRegistroInput, RegistroCambioUncheckedCreateWithoutRegistroInput>
+  }
+
+  export type RegistroCambioUpdateWithWhereUniqueWithoutRegistroInput = {
+    where: RegistroCambioWhereUniqueInput
+    data: XOR<RegistroCambioUpdateWithoutRegistroInput, RegistroCambioUncheckedUpdateWithoutRegistroInput>
+  }
+
+  export type RegistroCambioUpdateManyWithWhereWithoutRegistroInput = {
+    where: RegistroCambioScalarWhereInput
+    data: XOR<RegistroCambioUpdateManyMutationInput, RegistroCambioUncheckedUpdateManyWithoutRegistroInput>
+  }
+
+  export type RegistroCambioScalarWhereInput = {
+    AND?: RegistroCambioScalarWhereInput | RegistroCambioScalarWhereInput[]
+    OR?: RegistroCambioScalarWhereInput[]
+    NOT?: RegistroCambioScalarWhereInput | RegistroCambioScalarWhereInput[]
+    id?: StringFilter<"RegistroCambio"> | string
+    registroId?: StringFilter<"RegistroCambio"> | string
+    campo?: StringFilter<"RegistroCambio"> | string
+    antes?: StringFilter<"RegistroCambio"> | string
+    despues?: StringFilter<"RegistroCambio"> | string
+    usuarioId?: StringNullableFilter<"RegistroCambio"> | string | null
+    usuarioNombre?: StringNullableFilter<"RegistroCambio"> | string | null
+    creadoEn?: DateTimeFilter<"RegistroCambio"> | Date | string
+  }
+
   export type PermisoUpsertWithWhereUniqueWithoutRegistroInput = {
     where: PermisoWhereUniqueInput
     update: XOR<PermisoUpdateWithoutRegistroInput, PermisoUncheckedUpdateWithoutRegistroInput>
@@ -39138,12 +41973,11 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -39151,6 +41985,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -39168,18 +42003,18 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     horarioId?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -39206,6 +42041,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
     sede?: SedeCreateNestedOneWithoutRegistrosInput
+    cambios?: RegistroCambioCreateNestedManyWithoutRegistroInput
   }
 
   export type RegistroUncheckedCreateWithoutNovedadesInput = {
@@ -39225,6 +42061,7 @@ export namespace Prisma {
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
+    cambios?: RegistroCambioUncheckedCreateNestedManyWithoutRegistroInput
   }
 
   export type RegistroCreateOrConnectWithoutNovedadesInput = {
@@ -39255,12 +42092,11 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39268,6 +42104,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -39285,18 +42122,18 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -39329,6 +42166,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
     sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    cambios?: RegistroCambioUpdateManyWithoutRegistroNestedInput
   }
 
   export type RegistroUncheckedUpdateWithoutNovedadesInput = {
@@ -39348,6 +42186,7 @@ export namespace Prisma {
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cambios?: RegistroCambioUncheckedUpdateManyWithoutRegistroNestedInput
   }
 
   export type EmpresaCreateWithoutFestivosInput = {
@@ -40574,6 +43413,234 @@ export namespace Prisma {
     comisiones?: ComisionUncheckedUpdateManyWithoutAfiliadoNestedInput
   }
 
+  export type RegistroCreateWithoutCambiosInput = {
+    id?: string
+    fecha: Date | string
+    entrada?: Date | string | null
+    salida?: Date | string | null
+    tipo?: $Enums.TipoRegistro
+    observacion?: string | null
+    salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
+    fotoEntrada?: string | null
+    fotoSalida?: string | null
+    editadoPor?: string | null
+    editadoEn?: Date | string | null
+    creadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
+    sede?: SedeCreateNestedOneWithoutRegistrosInput
+    novedades?: PermisoCreateNestedManyWithoutRegistroInput
+  }
+
+  export type RegistroUncheckedCreateWithoutCambiosInput = {
+    id?: string
+    colaboradorId: string
+    sedeId?: string | null
+    fecha: Date | string
+    entrada?: Date | string | null
+    salida?: Date | string | null
+    tipo?: $Enums.TipoRegistro
+    observacion?: string | null
+    salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    entradaEstimada?: boolean
+    fotoEntrada?: string | null
+    fotoSalida?: string | null
+    editadoPor?: string | null
+    editadoEn?: Date | string | null
+    creadoEn?: Date | string
+    novedades?: PermisoUncheckedCreateNestedManyWithoutRegistroInput
+  }
+
+  export type RegistroCreateOrConnectWithoutCambiosInput = {
+    where: RegistroWhereUniqueInput
+    create: XOR<RegistroCreateWithoutCambiosInput, RegistroUncheckedCreateWithoutCambiosInput>
+  }
+
+  export type RegistroUpsertWithoutCambiosInput = {
+    update: XOR<RegistroUpdateWithoutCambiosInput, RegistroUncheckedUpdateWithoutCambiosInput>
+    create: XOR<RegistroCreateWithoutCambiosInput, RegistroUncheckedCreateWithoutCambiosInput>
+    where?: RegistroWhereInput
+  }
+
+  export type RegistroUpdateToOneWithWhereWithoutCambiosInput = {
+    where?: RegistroWhereInput
+    data: XOR<RegistroUpdateWithoutCambiosInput, RegistroUncheckedUpdateWithoutCambiosInput>
+  }
+
+  export type RegistroUpdateWithoutCambiosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
+    sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    novedades?: PermisoUpdateManyWithoutRegistroNestedInput
+  }
+
+  export type RegistroUncheckedUpdateWithoutCambiosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    novedades?: PermisoUncheckedUpdateManyWithoutRegistroNestedInput
+  }
+
+  export type ColaboradorCreateWithoutVinculacionInput = {
+    id?: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    horario?: HorarioCreateNestedOneWithoutColaboradoresInput
+    registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorUncheckedCreateWithoutVinculacionInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    horarioId?: string | null
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorCreateOrConnectWithoutVinculacionInput = {
+    where: ColaboradorWhereUniqueInput
+    create: XOR<ColaboradorCreateWithoutVinculacionInput, ColaboradorUncheckedCreateWithoutVinculacionInput>
+  }
+
+  export type ColaboradorUpsertWithoutVinculacionInput = {
+    update: XOR<ColaboradorUpdateWithoutVinculacionInput, ColaboradorUncheckedUpdateWithoutVinculacionInput>
+    create: XOR<ColaboradorCreateWithoutVinculacionInput, ColaboradorUncheckedCreateWithoutVinculacionInput>
+    where?: ColaboradorWhereInput
+  }
+
+  export type ColaboradorUpdateToOneWithWhereWithoutVinculacionInput = {
+    where?: ColaboradorWhereInput
+    data: XOR<ColaboradorUpdateWithoutVinculacionInput, ColaboradorUncheckedUpdateWithoutVinculacionInput>
+  }
+
+  export type ColaboradorUpdateWithoutVinculacionInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
+    registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorUncheckedUpdateWithoutVinculacionInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
   export type ColaboradorCreateWithoutContratosInput = {
     id?: string
     nombre: string
@@ -40586,12 +43653,11 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -40599,6 +43665,7 @@ export namespace Prisma {
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
   }
@@ -40616,18 +43683,18 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     horarioId?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
   }
@@ -40690,12 +43757,11 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40703,6 +43769,7 @@ export namespace Prisma {
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -40720,18 +43787,18 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -40878,13 +43945,12 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     horarioId?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -41017,12 +44083,11 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41030,6 +44095,7 @@ export namespace Prisma {
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -41046,19 +44112,19 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -41075,13 +44141,12 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41381,12 +44446,11 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
-    documentoRetiro?: string | null
-    documentoRetiroTipo?: string | null
-    documentoRetiroNombre?: string | null
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -41434,12 +44498,11 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41447,6 +44510,7 @@ export namespace Prisma {
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
   }
@@ -41464,18 +44528,18 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
   }
@@ -41493,12 +44557,11 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
-    documentoRetiro?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroTipo?: NullableStringFieldUpdateOperationsInput | string | null
-    documentoRetiroNombre?: NullableStringFieldUpdateOperationsInput | string | null
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41554,6 +44617,19 @@ export namespace Prisma {
     actualizadoEn?: Date | string
   }
 
+  export type VinculacionEventoCreateManyColaboradorInput = {
+    id?: string
+    tipo: $Enums.TipoVinculacion
+    fecha: Date | string
+    motivo?: $Enums.MotivoRetiro | null
+    nota?: string | null
+    documento?: string | null
+    documentoTipo?: string | null
+    documentoNombre?: string | null
+    usuarioId?: string | null
+    creadoEn?: Date | string
+  }
+
   export type DiaEsperadoCreateManyColaboradorInput = {
     id?: string
     fecha: Date | string
@@ -41594,6 +44670,7 @@ export namespace Prisma {
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    cambios?: RegistroCambioUpdateManyWithoutRegistroNestedInput
     novedades?: PermisoUpdateManyWithoutRegistroNestedInput
   }
 
@@ -41613,6 +44690,7 @@ export namespace Prisma {
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cambios?: RegistroCambioUncheckedUpdateManyWithoutRegistroNestedInput
     novedades?: PermisoUncheckedUpdateManyWithoutRegistroNestedInput
   }
 
@@ -41730,6 +44808,45 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VinculacionEventoUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoVinculacionFieldUpdateOperationsInput | $Enums.TipoVinculacion
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    motivo?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VinculacionEventoUncheckedUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoVinculacionFieldUpdateOperationsInput | $Enums.TipoVinculacion
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    motivo?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VinculacionEventoUncheckedUpdateManyWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoVinculacionFieldUpdateOperationsInput | $Enums.TipoVinculacion
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    motivo?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    documento?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoTipo?: NullableStringFieldUpdateOperationsInput | string | null
+    documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DiaEsperadoUpdateWithoutColaboradorInput = {
@@ -41858,6 +44975,7 @@ export namespace Prisma {
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
+    cambios?: RegistroCambioUpdateManyWithoutRegistroNestedInput
     novedades?: PermisoUpdateManyWithoutRegistroNestedInput
   }
 
@@ -41877,6 +44995,7 @@ export namespace Prisma {
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cambios?: RegistroCambioUncheckedUpdateManyWithoutRegistroNestedInput
     novedades?: PermisoUncheckedUpdateManyWithoutRegistroNestedInput
   }
 
@@ -41898,6 +45017,16 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type RegistroCambioCreateManyRegistroInput = {
+    id?: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+  }
+
   export type PermisoCreateManyRegistroInput = {
     id?: string
     colaboradorId: string
@@ -41912,6 +45041,36 @@ export namespace Prisma {
     evidenciaTipo?: string | null
     evidenciaNombre?: string | null
     creadoEn?: Date | string
+  }
+
+  export type RegistroCambioUpdateWithoutRegistroInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RegistroCambioUncheckedUpdateWithoutRegistroInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RegistroCambioUncheckedUpdateManyWithoutRegistroInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type PermisoUpdateWithoutRegistroInput = {
@@ -42359,6 +45518,14 @@ export namespace Prisma {
      * @deprecated Use SolicitudRetiroDefaultArgs instead
      */
     export type SolicitudRetiroArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SolicitudRetiroDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RegistroCambioDefaultArgs instead
+     */
+    export type RegistroCambioArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RegistroCambioDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use VinculacionEventoDefaultArgs instead
+     */
+    export type VinculacionEventoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VinculacionEventoDefaultArgs<ExtArgs>
     /**
      * @deprecated Use ContratoDefaultArgs instead
      */
