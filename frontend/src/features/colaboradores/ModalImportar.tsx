@@ -154,12 +154,19 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
 
   return (
     <div data-testid="fondo" className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-[60] p-4" onClick={intentarCerrar}>
+      {/* La sacudida va en este envoltorio y no en el modal: la animación es una
+          sola propiedad CSS, así que compartir elemento con hp-pop hacía que al
+          terminar la sacudida el animation-name volviera a hp-pop y el modal se
+          viera abrir otra vez. */}
+      <div
+        className={`w-full max-w-5xl ${sacudiendo ? 'hp-sacudida' : ''}`}
+        // Solo la de este elemento: la animación de entrada de la tabla burbujea
+        // hasta aquí y apagaría la sacudida a mitad de camino.
+        onAnimationEnd={e => { if (e.target === e.currentTarget) setSacudiendo(false); }}
+        onClick={e => e.stopPropagation()}>
       <div
         ref={caja}
-        onAnimationEnd={() => setSacudiendo(false)}
-        className={`hp-pop bg-white rounded-2xl w-full max-w-5xl shadow-xl flex flex-col max-h-[92dvh] ${
-          sacudiendo ? 'hp-sacudida' : ''}`}
-        onClick={e => e.stopPropagation()}>
+        className="hp-pop bg-white rounded-2xl w-full shadow-xl flex flex-col max-h-[92dvh]">
         <div className="flex items-start justify-between gap-4 p-6 pb-4">
           <div>
             <h3 className="font-bold text-lg text-ink flex items-center gap-2">
@@ -430,6 +437,7 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
             </button>
           )}
         </div>
+      </div>
       </div>
 
       {confirmandoCierre && (

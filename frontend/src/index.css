@@ -152,13 +152,18 @@ body {
 .hp-reveal.hp-in { animation: hp-rise 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 
 /* Sacudida del modal cuando se intenta crear y algo está mal.
-   Corta y sin rebote: es un "espera", no una celebración. */
+   Apenas un pestañeo: dice "espera" y se quita. Un zarandeo largo se lee como
+   que algo se rompió, cuando lo único que pasa es que falta corregir un dato.
+
+   Va en un envoltorio propio, NUNCA en el mismo elemento que hp-pop: la
+   animación es una sola propiedad, así que al terminar la sacudida el
+   animation-name volvía a hp-pop y el modal se veía abrir otra vez. */
 @keyframes hp-sacudida {
   0%, 100% { transform: translateX(0); }
-  15%, 45%, 75% { transform: translateX(-7px); }
-  30%, 60%, 90% { transform: translateX(7px); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
 }
-.hp-sacudida { animation: hp-sacudida 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+.hp-sacudida { animation: hp-sacudida 0.16s ease-in-out 2; }
 
 @media (prefers-reduced-motion: reduce) {
   .hp-float, .hp-float-slow, .hp-spin-slow, .hp-ripple, .hp-scan-line, .hp-sacudida { animation: none; }
