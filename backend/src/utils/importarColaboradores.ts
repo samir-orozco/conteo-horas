@@ -142,7 +142,9 @@ export function validarImportacion(filas: FilaCruda[], ctx: ContextoImportacion)
 
     const nacimiento = v('fechaNacimiento');
     if (nacimiento && !esFechaReal(nacimiento)) {
-      err('fechaNacimiento', `"${nacimiento}" no es una fecha. Se escribe como AAAA-MM-DD.`);
+      // No dice "escríbela como AAAA-MM-DD" porque ya no se escribe: en la
+      // tabla es un calendario. Lo que hay que hacer es elegirla ahí.
+      err('fechaNacimiento', `"${nacimiento}" no es una fecha. Elígela en el calendario de esa columna.`);
     }
 
     // El id viaja desde el navegador: que la lista solo ofrezca los propios no
