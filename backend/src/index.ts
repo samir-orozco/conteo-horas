@@ -190,9 +190,17 @@ const start = async () => {
     limpiarFotosAntiguas();
     setInterval(limpiarFotosAntiguas, 24 * 60 * 60 * 1000);
     // Cierra turnos que quedaron sin salida (marca "No marcó salida" para revisar).
-    // Al arrancar y cada 24h; es idempotente y solo actúa sobre días ya pasados.
+    //
+    // Cada HORA, no cada 24: un turno olvidado solo se vuelve elegible a la
+    // medianoche del día siguiente (el barrido solo toca días ya pasados), así
+    // que con una pasada diaria la hora a la que se cierra es la hora a la que
+    // arrancó el proceso. El despliegue del 31/08 reinició la app a las 22:12 y
+    // dejó el barrido corriendo a las 22:12: los turnos olvidados del lunes se
+    // vieron abiertos toda la jornada del martes y solo se habrían cerrado esa
+    // noche. Con una pasada por hora se cierran poco después de medianoche, sin
+    // importar cuándo arrancó la app. Es una consulta indexada y es idempotente.
     cerrarTurnosOlvidados(app.log);
-    setInterval(() => cerrarTurnosOlvidados(app.log), 24 * 60 * 60 * 1000);
+    setInterval(() => cerrarTurnosOlvidados(app.log), 60 * 60 * 1000);
 
     // Almuerzos que quedaron sin regreso. No se cierran solos: la evidencia de
     // quien volvió y no marcó es idéntica a la de quien se fue para la casa, así

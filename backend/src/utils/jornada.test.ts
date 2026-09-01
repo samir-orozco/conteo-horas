@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, instantesDeJornada, momentosDelDia } from './jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, instantesDeJornada, momentosDelDia } from './jornada';
 
 // El almuerzo no vive en un registro: vive en el HUECO entre dos. Un día con
 // almuerzo son dos tramos —08:00-12:00 y 13:00-17:00— y lo que hay en medio es
@@ -506,6 +506,38 @@ describe('marcacionQueCierra', () => {
 
   it('sin ninguna salida no hay nada que cierre', () => {
     expect(marcacionQueCierra([m(bog(8), null)])).toBeNull();
+  });
+});
+
+// La jornada puede estar cerrada POR EL SISTEMA aunque ninguna marcación tenga
+// hora de salida: cuando el auto-cierre no encuentra la franja del colaborador,
+// marca `salidaEstimada` y deja la hora en null a propósito, para que la ponga
+// el admin. Sin esto, la tabla de Registros pintaba esas filas como si nadie
+// las hubiera tocado y el chip "No marcó salida" no aparecía nunca.
+describe('laCerroElSistema', () => {
+  const m = (salida: Date | null, salidaEstimada = false, salidaAlmuerzo = false) =>
+    ({ entrada: bog(8), salida, salidaAlmuerzo, entradaEstimada: false, salidaEstimada });
+
+  it('una jornada que nadie tocó no la cerró el sistema', () => {
+    expect(laCerroElSistema([m(bog(17))])).toBe(false);
+  });
+
+  it('la reconoce cuando el sistema estimó la hora de salida', () => {
+    expect(laCerroElSistema([m(bog(16), true)])).toBe(true);
+  });
+
+  it('la reconoce cuando el sistema cerró SIN hora de salida', () => {
+    // El caso que se perdía: `salida` en null, pero marcada por el sistema.
+    expect(laCerroElSistema([m(null, true)])).toBe(true);
+  });
+
+  it('la reconoce aunque la marca esté en un tramo anterior', () => {
+    // Salió al descanso y no volvió a marcar: el tramo marcado es el primero.
+    expect(laCerroElSistema([m(bog(12), true, true), m(null)])).toBe(true);
+  });
+
+  it('un turno abierto de verdad sigue sin estar cerrado', () => {
+    expect(laCerroElSistema([m(null)])).toBe(false);
   });
 });
 
