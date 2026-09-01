@@ -267,7 +267,9 @@ async function registroRoutes(app) {
                     // día entero: en un día con dos jornadas no son el mismo número.
                     minutosAlmuerzoAqui: jornada.minutosAlmuerzoAqui,
                     entradaEstimada: primera.entradaEstimada,
-                    salidaEstimada: cierra?.salidaEstimada ?? false,
+                    // No sale de `cierra`: el auto-cierre sin franja marca la jornada y
+                    // deja la hora en null, y entonces ninguna marcación la cierra.
+                    salidaEstimada: (0, jornada_1.laCerroElSistema)(marcaciones),
                     salidaAlmuerzo: cierra?.salidaAlmuerzo ?? false,
                     tieneFotoEntrada: !!primera.fotoEntrada,
                     tieneFotoSalida: !!cierra?.fotoSalida,

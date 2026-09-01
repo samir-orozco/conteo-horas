@@ -5,6 +5,7 @@ exports.resumirAlmuerzoDelDia = resumirAlmuerzoDelDia;
 exports.tramoQueChoca = tramoQueChoca;
 exports.instantesDeJornada = instantesDeJornada;
 exports.marcacionQueCierra = marcacionQueCierra;
+exports.laCerroElSistema = laCerroElSistema;
 exports.agruparEnJornadas = agruparEnJornadas;
 exports.momentosDelDia = momentosDelDia;
 exports.partirDiaEnJornadas = partirDiaEnJornadas;
@@ -148,6 +149,19 @@ function marcacionQueCierra(marcaciones) {
     const vueltaDespues = marcaciones.some(m => m.entrada && !m.salida
         && m.entrada.getTime() >= ultima.salida.getTime());
     return vueltaDespues ? null : ultima;
+}
+// Si el auto-cierre tocó esta jornada.
+//
+// No basta con mirar la marcación que la cierra: cuando el barrido no encuentra
+// la franja del colaborador (sin horario, horario inactivo, o un día que ninguna
+// franja cubre) marca `salidaEstimada` y deja la hora en null a propósito, para
+// que la ponga el admin. En esa jornada NINGUNA marcación tiene salida, así que
+// `marcacionQueCierra` devuelve null y la marca se perdía: la tabla de Registros
+// pintaba la fila igual que un turno que nadie tocó, mientras el detalle del
+// mismo registro decía "El sistema cerró este turno".
+function laCerroElSistema(marcaciones) {
+    const cierra = marcacionQueCierra(marcaciones);
+    return cierra ? cierra.salidaEstimada : marcaciones.some(m => m.salidaEstimada);
 }
 // Agrupa las marcaciones de un día en jornadas. Un tramo se funde con el
 // siguiente SOLO si cerró saliendo al descanso.
