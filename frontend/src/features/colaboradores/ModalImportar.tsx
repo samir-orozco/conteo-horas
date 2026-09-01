@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Upload, Download, X, AlertTriangle, FileSpreadsheet, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { Upload, X, AlertTriangle, FileSpreadsheet, Plus, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
+import { alEscribirMiles } from '../../lib/dinero';
 import { descargarFormato, leerHoja, mapearHoja, type Columna } from './formatoImportacion';
 import {
   filaVacia, hayDatos, mapaDeErrores, conValorGlobal, erroresSinFila,
@@ -55,6 +56,8 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState('');
+  const [arrastrando, setArrastrando] = useState(false);
+  const [confirmandoCierre, setConfirmandoCierre] = useState(false);
 
   useEffect(() => {
     api.get('/colaboradores/formato')
@@ -79,9 +82,7 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
     } finally { setOcupado(false); }
   };
 
-  const elegir = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const archivo = e.target.files?.[0];
-    e.target.value = '';
+  const recibir = async (archivo: File | undefined) => {
     if (!archivo) return;
     setError(''); setResultado(null); setErrores(new Map());
     if (!esHoja(archivo)) {
@@ -100,6 +101,25 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
     } finally { setOcupado(false); }
   };
 
+  const elegir = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0];
+    e.target.value = '';
+    recibir(archivo);
+  };
+
+  const soltar = (e: React.DragEvent) => {
+    e.preventDefault();
+    setArrastrando(false);
+    recibir(e.dataTransfer?.files?.[0]);
+  };
+
+  // Cerrar con la tabla llena borra las correcciones. Se avisa antes; sin nada
+  // subido, el clic fuera cierra de una y el caso rápido sigue siendo rápido.
+  const intentarCerrar = () => {
+    if (conDatos.length > 0) setConfirmandoCierre(true);
+    else onCerrar();
+  };
+
   const cambiar = (i: number, clave: string, valor: string) => {
     setFilas(f => (f ?? []).map((fila, j) => (j === i ? { ...fila, [clave]: valor } : fila)));
     // La marca de error se quita al escribir: dejarla en rojo mientras se
@@ -116,7 +136,7 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
   const n = conDatos.length;
 
   return (
-    <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-[60] p-4" onClick={onCerrar}>
+    <div data-testid="fondo" className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-[60] p-4" onClick={intentarCerrar}>
       <div className="hp-pop bg-white rounded-2xl w-full max-w-5xl shadow-xl flex flex-col max-h-[92dvh]" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 p-6 pb-4">
           <div>
@@ -128,7 +148,7 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
               que puedes corregir antes de crear a nadie.
             </p>
           </div>
-          <button onClick={onCerrar} aria-label="Cerrar"><X size={20} className="text-gray-400" /></button>
+          <button onClick={intentarCerrar} aria-label="Cerrar"><X size={20} className="text-gray-400" /></button>
         </div>
 
         <div className="px-6 pb-6 overflow-y-auto space-y-4">
@@ -138,16 +158,40 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
               Baja el formato, escribe una fila por persona y súbelo. El horario y la sede
               no van en el archivo: se eligen aquí.
             </p>
-            <div className="grid sm:grid-cols-2 gap-3">
-            <button type="button" onClick={() => descargarFormato(columnas)} disabled={!columnas.length}
-              className="flex items-center justify-center gap-2 border-2 border-gray-200 hover:border-primary text-ink font-semibold py-3 rounded-xl text-sm disabled:opacity-50">
-              <Download size={16} /> Descargar el formato
-            </button>
-            <label className={`flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-ink font-semibold py-3 rounded-xl text-sm cursor-pointer ${ocupado ? 'opacity-60 pointer-events-none' : ''}`}>
-              <Upload size={16} /> Subir el formato
-              <input type="file" accept=".xlsx,.xls,.csv" onChange={elegir} className="sr-only" disabled={ocupado} />
+            <label
+              data-testid="zona-archivo"
+              onDragOver={e => { e.preventDefault(); setArrastrando(true); }}
+              onDragLeave={() => setArrastrando(false)}
+              onDrop={soltar}
+              className={`block rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
+                ocupado ? 'border-gray-200 bg-gray-50 cursor-default'
+                : arrastrando ? 'border-primary bg-primary/10 cursor-copy'
+                : 'border-gray-300 hover:border-primary hover:bg-gray-50 cursor-pointer'}`}>
+              {ocupado ? (
+                <>
+                  <Loader2 size={22} className="mx-auto text-muted animate-spin" />
+                  <p className="text-sm text-muted mt-2">Leyendo el archivo...</p>
+                </>
+              ) : (
+                <>
+                  <Upload size={22} className="mx-auto text-gray-400" />
+                  <p className="text-sm text-ink mt-2">
+                    Arrastra el archivo o <span className="font-semibold text-blue-600">elígelo aquí</span>
+                  </p>
+                  <p className="text-xs text-muted mt-0.5">XLSX, XLS o CSV</p>
+                </>
+              )}
+              <input type="file" accept=".xlsx,.xls,.csv" onChange={elegir}
+                aria-label="Subir el formato" className="sr-only" disabled={ocupado} />
             </label>
-            </div>
+
+            <p className="text-xs text-muted mt-3 text-center">
+              ¿No tienes el formato?{' '}
+              <button type="button" onClick={() => descargarFormato(columnas)} disabled={!columnas.length}
+                className="font-semibold text-blue-600 hover:underline disabled:opacity-50 disabled:no-underline">
+                Descárgalo aquí
+              </button>
+            </p>
           </div>
 
           {error && (
@@ -174,7 +218,7 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
           )}
 
           {filas && filas.length > 0 && (
-            <>
+            <div className="hp-reveal hp-in space-y-4">
               <div className="pt-1">
                 <p className="text-sm font-bold text-ink">2. Revisa y corrige</p>
                 <p className="text-xs text-muted mt-0.5">
@@ -263,7 +307,10 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
                                   aria-invalid={malo ? true : undefined}
                                   aria-describedby={malo ? idAviso : undefined}
                                   value={fila[c.clave] ?? ''}
-                                  onChange={e => cambiar(i, c.clave, e.target.value)}
+                                  onChange={e => cambiar(i, c.clave,
+                                    // El dinero se lee con sus puntos: "1750905"
+                                    // hay que contarlo con el dedo.
+                                    c.clave === 'salarioMensual' ? alEscribirMiles(e.target.value) : e.target.value)}
                                   className={`w-full min-w-[7rem] border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ${
                                     malo ? 'border-red-400 bg-red-50 focus:ring-red-300' : 'border-gray-300 focus:ring-primary'}`}
                                 />
@@ -330,7 +377,7 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
                 className="flex items-center gap-1.5 text-sm font-semibold text-ink border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg">
                 <Plus size={14} /> Agregar una fila
               </button>
-            </>
+            </div>
           )}
         </div>
 
@@ -352,7 +399,7 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
             </div>
           )}
           {ocupado && <span className="text-sm text-muted mr-auto">Revisando...</span>}
-          <button type="button" onClick={onCerrar}
+          <button type="button" onClick={intentarCerrar}
             className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
           {puedeCrear && (
             <button type="button" onClick={() => revisar(filas ?? [], false)}
@@ -362,6 +409,31 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
           )}
         </div>
       </div>
+
+      {confirmandoCierre && (
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-[70] p-4"
+          onClick={e => { e.stopPropagation(); setConfirmandoCierre(false); }}>
+          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg text-ink flex items-center gap-2">
+              <AlertTriangle size={18} className="text-amber-500" /> Vas a perder lo que corregiste
+            </h3>
+            <p className="text-sm text-muted mt-1">
+              Tienes {conDatos.length} persona{conDatos.length === 1 ? '' : 's'} en la tabla.
+              Si sales ahora hay que volver a subir el archivo y corregirlo otra vez.
+            </p>
+            <div className="flex gap-3 justify-end mt-5">
+              <button type="button" onClick={() => setConfirmandoCierre(false)}
+                className="px-4 py-2 text-sm text-ink border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold">
+                Seguir editando
+              </button>
+              <button type="button" onClick={onCerrar}
+                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg">
+                Sí, salir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

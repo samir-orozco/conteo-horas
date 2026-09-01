@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ModalImportar from './ModalImportar';
 
@@ -18,7 +18,7 @@ vi.mock('./formatoImportacion', async (real) => ({
 const COLUMNAS = [
   { clave: 'nombre', titulo: 'Nombre', obligatoria: true, ejemplo: 'Ana' },
   { clave: 'cedula', titulo: 'Cédula', obligatoria: true, ejemplo: '123' },
-  { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1' },
+  { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1', tipo: 'dinero' },
   { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', tipo: 'fecha' },
 ];
 const HORARIOS = [{ id: 'h1', nombre: 'Turno diurno' }, { id: 'h2', nombre: 'Turno nocturno' }];
@@ -50,14 +50,14 @@ const subir = async () => {
 describe('antes de subir nada', () => {
   it('ofrece descargar el formato y subirlo', async () => {
     montar();
-    expect(await screen.findByRole('button', { name: /Descargar el formato/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Desc[aá]rgalo aqu[ií]/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/Subir el formato/i)).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
   it('el formato ya no lleva columna de horario: eso se elige aquí', async () => {
     montar();
-    await userEvent.click(await screen.findByRole('button', { name: /Descargar el formato/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /Desc[aá]rgalo aqu[ií]/i }));
     expect(descargarFormato).toHaveBeenCalledWith(COLUMNAS);
   });
 
@@ -377,5 +377,112 @@ describe('la fecha de nacimiento', () => {
     const campo = screen.getByLabelText('Fecha de nacimiento de la fila 1');
     expect(campo).toHaveAttribute('type', 'text');
     expect(campo).toHaveValue('no sé');
+  });
+});
+
+describe('cerrar sin perder el trabajo', () => {
+  it('sin nada subido, el clic fuera cierra de una', async () => {
+    const onCerrar = vi.fn();
+    montar({ onCerrar });
+    await screen.findByLabelText(/Subir el formato/i);
+    await userEvent.click(screen.getByTestId('fondo'));
+    expect(onCerrar).toHaveBeenCalled();
+  });
+
+  it('con la tabla llena NO cierra de una: avisa antes', async () => {
+    // Veinte filas corregidas se pierden con un clic torcido.
+    const onCerrar = vi.fn();
+    montar({ onCerrar });
+    await subir();
+    await userEvent.click(screen.getByTestId('fondo'));
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.getByText(/vas a perder/i)).toBeInTheDocument();
+  });
+
+  it('y si confirma, cierra', async () => {
+    const onCerrar = vi.fn();
+    montar({ onCerrar });
+    await subir();
+    await userEvent.click(screen.getByTestId('fondo'));
+    await userEvent.click(screen.getByRole('button', { name: /Sí, salir/i }));
+    expect(onCerrar).toHaveBeenCalled();
+  });
+
+  it('si se arrepiente, la tabla sigue ahí', async () => {
+    const onCerrar = vi.fn();
+    montar({ onCerrar });
+    await subir();
+    await userEvent.click(screen.getByTestId('fondo'));
+    await userEvent.click(screen.getByRole('button', { name: /Seguir editando/i }));
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Nombre de la fila 1')).toHaveValue('Ana');
+  });
+
+  it('la X y Cancelar avisan igual: es el mismo trabajo el que se pierde', async () => {
+    const onCerrar = vi.fn();
+    montar({ onCerrar });
+    await subir();
+    await userEvent.click(screen.getByRole('button', { name: /^Cerrar$/i }));
+    expect(onCerrar).not.toHaveBeenCalled();
+    expect(screen.getByText(/vas a perder/i)).toBeInTheDocument();
+  });
+});
+
+describe('el salario, como se lee la plata', () => {
+  it('llega del Excel ya con sus puntos', async () => {
+    montar();
+    await subir();
+    expect(screen.getByLabelText('Salario mensual de la fila 1')).toHaveValue('1.750.905');
+  });
+
+  it('los puntos aparecen solos al escribir', async () => {
+    montar();
+    await subir();
+    const campo = screen.getByLabelText('Salario mensual de la fila 1');
+    await userEvent.clear(campo);
+    await userEvent.type(campo, '2400000');
+    expect(campo).toHaveValue('2.400.000');
+  });
+
+  it('borrarlo deja el campo vacío, no un cero', async () => {
+    montar();
+    await subir();
+    const campo = screen.getByLabelText('Salario mensual de la fila 1');
+    await userEvent.clear(campo);
+    expect(campo).toHaveValue('');
+  });
+
+  it('viaja con puntos y el servidor lo entiende', async () => {
+    montar();
+    await subir();
+    post.mockResolvedValueOnce({ data: { ...OK, creados: 2 } });
+    await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
+    const enviado = post.mock.calls[post.mock.calls.length - 1][1] as { filas: Record<string, string>[] };
+    expect(enviado.filas[0].salarioMensual).toBe('1.750.905');
+  });
+});
+
+describe('soltar el archivo encima', () => {
+  it('se puede arrastrar hasta la zona, no solo elegirlo', async () => {
+    montar();
+    const zona = await screen.findByTestId('zona-archivo');
+    fireEvent.drop(zona, { dataTransfer: { files: [archivo()] } });
+    await screen.findByRole('table');
+    expect(leerHoja).toHaveBeenCalled();
+  });
+
+  it('soltar algo que no es hoja de cálculo se rechaza igual', async () => {
+    montar();
+    const zona = await screen.findByTestId('zona-archivo');
+    fireEvent.drop(zona, { dataTransfer: { files: [new File(['x'], 'foto.png', { type: 'image/png' })] } });
+    expect(await screen.findByText(/Excel/i)).toBeInTheDocument();
+    expect(leerHoja).not.toHaveBeenCalled();
+  });
+
+  it('soltar sin archivo no rompe nada', async () => {
+    montar();
+    const zona = await screen.findByTestId('zona-archivo');
+    fireEvent.drop(zona, { dataTransfer: { files: [] } });
+    expect(leerHoja).not.toHaveBeenCalled();
   });
 });

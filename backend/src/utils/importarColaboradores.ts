@@ -11,7 +11,7 @@ export type ColumnaFormato = {
   clave: string; titulo: string; obligatoria: boolean; ejemplo: string; ayuda?: string;
   // De esto depende cómo se lee la celda del Excel y qué control pinta la
   // tabla. Lo decide el servidor porque es parte del contrato del formato.
-  tipo?: 'texto' | 'fecha';
+  tipo?: 'texto' | 'fecha' | 'dinero';
 };
 
 // Las columnas del archivo, en orden. Es la misma lista que genera el formato
@@ -21,7 +21,7 @@ export const COLUMNAS_FORMATO: ColumnaFormato[] = [
   { clave: 'apellido', titulo: 'Apellido', obligatoria: true, ejemplo: 'Gómez Ruiz' },
   { clave: 'cedula', titulo: 'Cédula', obligatoria: true, ejemplo: '1020304050', ayuda: 'Solo números, sin puntos' },
   { clave: 'cargo', titulo: 'Cargo', obligatoria: false, ejemplo: 'Vigilante' },
-  { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1750905', ayuda: 'En pesos, sin centavos' },
+  { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1750905', ayuda: 'En pesos, sin centavos', tipo: 'dinero' },
   { clave: 'email', titulo: 'Correo', obligatoria: false, ejemplo: 'ana@empresa.co' },
   { clave: 'telefono', titulo: 'Teléfono', obligatoria: false, ejemplo: '3001234567' },
   { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', ayuda: 'Día/mes/año. Se acomoda sola al leerla.', tipo: 'fecha' },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Save, Package } from 'lucide-react';
 import api from '../../lib/api';
-import { formatearMiles, parsearMiles } from '../Colaboradores';
+import { formatearMiles, parsearMiles } from '../../lib/dinero';
 
 const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);

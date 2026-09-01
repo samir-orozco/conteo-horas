@@ -4,7 +4,7 @@ import { Plus, X, Wallet, Power, Link as LinkIcon, Infinity as InfinityIcon, Ima
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
-import { formatearMiles, parsearMiles } from '../Colaboradores';
+import { formatearMiles, parsearMiles } from '../../lib/dinero';
 import { copiarTexto } from '../../lib/clipboard';
 
 const cop = (n: number) =>

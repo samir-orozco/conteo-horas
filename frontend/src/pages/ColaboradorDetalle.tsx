@@ -8,7 +8,8 @@ import {
   ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Lock, Undo2,
 } from 'lucide-react';
 import api from '../lib/api';
-import { formatearMiles, parsearMiles, resumenFranjas, type Franja } from './Colaboradores';
+import { resumenFranjas, type Franja } from './Colaboradores';
+import { formatearMiles, parsearMiles } from '../lib/dinero';
 import CamaraRostro from '../components/CamaraRostro';
 import ConfirmDialog from '../components/ConfirmDialog';
 import SelectorSedes from '../components/SelectorSedes';

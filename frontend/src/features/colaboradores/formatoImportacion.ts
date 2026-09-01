@@ -1,5 +1,6 @@
 import { descargarExcelHojas } from '../../lib/exportar';
 import { normalizarFecha } from './fechaImportada';
+import { alEscribirMiles } from '../../lib/dinero';
 
 // Las manda el servidor (GET /colaboradores/formato). No se declaran aquí a
 // propósito: son el contrato entre el archivo que se descarga y el validador
@@ -8,7 +9,7 @@ export type Columna = {
   clave: string; titulo: string; obligatoria: boolean; ejemplo: string; ayuda?: string;
   // Qué clase de dato es. Lo dice el servidor porque de eso depende cómo se lee
   // la celda y qué control se pinta en la tabla.
-  tipo?: 'texto' | 'fecha';
+  tipo?: 'texto' | 'fecha' | 'dinero';
 };
 
 export type FilaCruda = Record<string, string>;
@@ -59,7 +60,11 @@ export function mapearHoja(matriz: unknown[][], columnas: Columna[]): FilaCruda[
       // Las fechas se normalizan AL LEER y no al validar: así la tabla muestra
       // de una la fecha que se va a guardar, y quien mira puede comprobar que
       // "11/12/85" quedó como esperaba.
-      fila[c.clave] = c.tipo === 'fecha' ? normalizarFecha(bruto) : celda(bruto);
+      fila[c.clave] = c.tipo === 'fecha' ? normalizarFecha(bruto)
+        // El dinero se muestra con sus puntos desde que entra: "1750905" hay
+        // que contarlo con el dedo para saber si son millones.
+        : c.tipo === 'dinero' ? alEscribirMiles(celda(bruto))
+        : celda(bruto);
     }
     // Excel arrastra filas vacías al final. No son un error, son el final.
     if (Object.values(fila).some(v => v !== '')) filas.push(fila);

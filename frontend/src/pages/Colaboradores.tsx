@@ -12,6 +12,7 @@ import Toast from '../components/Toast';
 import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros, SIN_SEDE } from '../features/colaboradores/estadoContrato';
 import MenuFiltros from '../components/MenuFiltros';
 import AvatarMini from '../components/AvatarMini';
+import { formatearMiles, parsearMiles } from '../lib/dinero';
 import { fechaCorta } from '../lib/fechas';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 
@@ -37,8 +38,6 @@ const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email
 export const soloFecha = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 10) : '');
 
 // Formato de pesos colombianos mientras se digita: 1750000 → 1.750.000
-export const formatearMiles = (n: number) => (n ? new Intl.NumberFormat('es-CO').format(n) : '');
-export const parsearMiles = (s: string) => Number(s.replace(/\D/g, '')) || 0;
 
 // Resumen compacto de las franjas de un horario: "Lun–Vie 08:00—17:00 · Sáb 08:00—12:00"
 const ORDEN_DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
