@@ -363,6 +363,12 @@ model Registro {
   // Se borran con ella: son parte de la marcación, no registros independientes.
   novedades      Permiso[]
 
+  // El barrido de turnos olvidados corre cada hora sobre esta tabla, que es la
+  // que más crece del producto. Sin este índice el plan es un `Table scan` sobre
+  // todo el historial de todas las empresas. Las igualdades van primero y el
+  // rango último: es la única forma de que MySQL use las tres partes.
+  // Ver `sql/indice-turnos-abiertos.sql` para las mediciones.
+  @@index([salidaEstimada, salida, entrada])
   @@map("registros")
 }
 
