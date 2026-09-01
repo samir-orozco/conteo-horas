@@ -7,11 +7,31 @@ const horasColombiana_1 = require("../utils/horasColombiana");
 const vigencias_1 = require("../utils/vigencias");
 const capacidades_1 = require("../utils/capacidades");
 const rostro_1 = require("../utils/rostro");
+const fotoPerfil_1 = require("../utils/fotoPerfil");
+const estadoContratoResumen_1 = require("../utils/estadoContratoResumen");
+const importarColaboradores_1 = require("../utils/importarColaboradores");
 const fechas_1 = require("../utils/fechas");
 const documentos_1 = require("../utils/documentos");
+const vinculacion_1 = require("../utils/vinculacion");
 const materializarDias_1 = require("../utils/materializarDias");
 async function colaboradorRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
+    // Deja constancia de un movimiento de vinculación. Todo lo que mueve el
+    // estado de "trabaja aquí" pasa por acá, para que la línea de tiempo no
+    // dependa de que alguien se acuerde de escribirla.
+    async function registrarEvento(opts) {
+        const datos = {
+            colaboradorId: opts.colaboradorId, tipo: opts.tipo, fecha: opts.fecha,
+            motivo: (opts.motivo ?? null), nota: opts.nota ?? null,
+            usuarioId: opts.usuarioId ?? null,
+        };
+        if ((0, documentos_1.documentoValido)(opts.documento)) {
+            datos.documento = opts.documento;
+            datos.documentoTipo = (0, documentos_1.tipoDeDocumento)(opts.documento);
+            datos.documentoNombre = (0, documentos_1.nombreDeDocumento)(opts.documentoNombre);
+        }
+        await prisma_1.prisma.vinculacionEvento.create({ data: datos });
+    }
     // Cierra el contrato vigente de quien se retira. Sin esto el módulo de
     // contratos seguiría avisando del vencimiento de alguien que ya no está.
     async function cerrarContratoVigente(colaboradorId) {
@@ -38,6 +58,8 @@ async function colaboradorRoutes(app) {
                 where: { id: c.id },
                 data: { activo: false, fechaRetiro: c.retiroProgramado, retiroProgramado: null },
             });
+            await registrarEvento({ colaboradorId: c.id, tipo: 'RETIRO', fecha: c.retiroProgramado,
+                nota: 'Retiro que había quedado programado a fin de mes' });
             await cerrarContratoVigente(c.id);
         }
     }
@@ -47,10 +69,35 @@ async function colaboradorRoutes(app) {
         // mostrarlas sin pedir cada colaborador por separado.
         const filas = await prisma_1.prisma.colaborador.findMany({
             where: { empresaId: request.empresaId, activo: true },
-            include: { sedes: { select: { sedeId: true } } },
+            include: {
+                // Con el nombre, no solo el id: la lista pinta una columna de sede y
+                // pedir los nombres aparte sería una consulta por cada carga.
+                sedes: { select: { sedeId: true, sede: { select: { nombre: true } } } },
+                // El contrato vigente, para poder decir en la lista quién tiene el
+                // preaviso encima sin abrir ficha por ficha. Solo el más reciente:
+                // vigente debería haber uno, y si hubiera dos manda el nuevo.
+                contratos: {
+                    where: { estado: 'VIGENTE' },
+                    select: {
+                        tipo: true, fechaInicio: true, fechaFin: true, fechaInicioPractica: true,
+                        prorrogas: { select: { desde: true, hasta: true } },
+                    },
+                    orderBy: { fechaInicio: 'desc' },
+                    take: 1,
+                },
+            },
             orderBy: { nombre: 'asc' },
         });
-        return filas.map(({ sedes, ...c }) => ({ ...c, sedeIds: sedes.map(s => s.sedeId) }));
+        const hoy = new Date();
+        // Viaja la miniatura, nunca la grande: la lista pinta un círculo de 36
+        // píxeles, y mandar la de la ficha por cada persona son cientos de
+        // kilobytes por carga. La grande se pide con la ficha, que es donde se ve.
+        return filas.map(({ sedes, contratos, foto: _foto, ...c }) => ({
+            ...c,
+            sedeIds: sedes.map(s => s.sedeId),
+            sedeNombres: sedes.map(s => s.sede.nombre),
+            estadoContrato: (0, estadoContratoResumen_1.resumenDeContrato)(contratos[0] ?? null, hoy),
+        }));
     });
     app.get('/:id', auth, async (request, reply) => {
         const { id } = request.params;
@@ -58,22 +105,17 @@ async function colaboradorRoutes(app) {
             where: { id, empresaId: request.empresaId },
             include: {
                 horario: { include: { franjas: true } },
-                sedes: { select: { sedeId: true } },
+                // Con el nombre, no solo el id: la lista pinta una columna de sede y
+                // pedir los nombres aparte sería una consulta por cada carga.
+                sedes: { select: { sedeId: true, sede: { select: { nombre: true } } } },
             },
         });
         if (!col)
             return reply.status(404).send({ error: 'No encontrado' });
         // Se aplana a una lista de ids: es lo que el selector múltiple necesita, y
         // evita que el frontend tenga que conocer la tabla de unión.
-        // `documentoRetiro` es un LongText y esta ficha se carga cada vez que se
-        // abre un perfil. Se saca aquí y se pide aparte, igual que los documentos
-        // de contratos, para no mover un PDF entero en cada visita.
-        const { sedes, documentoRetiro, ...resto } = col;
-        return {
-            ...resto,
-            tieneDocumentoRetiro: !!documentoRetiro,
-            sedeIds: (sedes ?? []).map((s) => s.sedeId),
-        };
+        const { sedes, ...resto } = col;
+        return { ...resto, sedeIds: (sedes ?? []).map((s) => s.sedeId) };
     });
     // Valida que el horario asignado sea de la misma empresa
     async function horarioValido(horarioId, empresaId) {
@@ -107,6 +149,113 @@ async function colaboradorRoutes(app) {
         }
         return data;
     }
+    // Las columnas del formato de carga masiva, y los horarios que se pueden
+    // escribir en él.
+    //
+    // Las manda el servidor y no las define la pantalla a propósito: son el
+    // contrato entre el archivo que alguien descarga y el validador que lo lee.
+    // Si viviera una copia en el frontend, cambiar una columna aquí dejaría
+    // generando formatos que ya no validan.
+    app.get('/formato', auth, async (request) => {
+        // Horarios y sedes van con id porque la pantalla los ofrece en selectores
+        // por fila, no porque haya que escribirlos en el archivo.
+        const [horarios, sedes] = await Promise.all([
+            prisma_1.prisma.horario.findMany({
+                where: { empresaId: request.empresaId },
+                select: { id: true, nombre: true }, orderBy: { nombre: 'asc' },
+            }),
+            prisma_1.prisma.sede.findMany({
+                where: { empresaId: request.empresaId, activa: true },
+                select: { id: true, nombre: true }, orderBy: { nombre: 'asc' },
+            }),
+        ]);
+        return { columnas: importarColaboradores_1.COLUMNAS_FORMATO, horarios, sedes };
+    });
+    // Carga masiva desde el formato de Excel.
+    //
+    // Se valida TODO antes de crear nada. Con 40 filas y un error en la 37,
+    // crear las 36 primeras deja a la empresa sin saber qué quedó y qué no, y sin
+    // poder volver a subir el archivo completo.
+    //
+    // `soloValidar` es lo que usa la vista previa: mismo camino, misma
+    // validación, sin escribir. Así lo que se ve en pantalla es exactamente lo
+    // que el servidor va a hacer, y no una segunda opinión del navegador.
+    app.post('/masivo', auth, async (request, reply) => {
+        const { filas, soloValidar } = request.body;
+        if (!Array.isArray(filas))
+            return reply.status(400).send({ error: 'Formato inválido' });
+        if (filas.length > 500) {
+            return reply.status(400).send({ error: 'El archivo trae más de 500 filas. Súbelo por partes.' });
+        }
+        // Todo el cuerpo va envuelto: si algo revienta aquí, la pantalla mostraba
+        // "Internal Server Error" y no había forma de saber por qué sin el servidor
+        // delante. Ahora el registro dice qué llegó y qué falló.
+        try {
+            const [horarios, sedes, existentes, cap] = await Promise.all([
+                prisma_1.prisma.horario.findMany({ where: { empresaId: request.empresaId }, select: { id: true } }),
+                prisma_1.prisma.sede.findMany({ where: { empresaId: request.empresaId, activa: true }, select: { id: true } }),
+                prisma_1.prisma.colaborador.findMany({ where: { empresaId: request.empresaId }, select: { cedula: true, activo: true } }),
+                (0, capacidades_1.capacidadesEmpresa)(request.empresaId),
+            ]);
+            const activos = existentes.filter(c => c.activo).length;
+            const resultado = (0, importarColaboradores_1.validarImportacion)(filas, {
+                horariosValidos: new Set(horarios.map(h => h.id)),
+                sedesValidas: new Set(sedes.map(x => x.id)),
+                cedulasActivas: new Set(existentes.filter(c => c.activo).map(c => c.cedula)),
+                cedulasRetiradas: new Set(existentes.filter(c => !c.activo).map(c => c.cedula)),
+                cupoDisponible: cap.limite === Infinity ? Number.MAX_SAFE_INTEGER : Math.max(0, cap.limite - activos),
+            });
+            const respuesta = {
+                ...resultado,
+                // Number.MAX_SAFE_INTEGER no se le muestra a nadie: si el plan es
+                // ilimitado, la pantalla no habla de cupo.
+                cupoDisponible: cap.limite === Infinity ? null : resultado.cupoDisponible,
+                nombrePlan: cap.nombrePlan,
+                creados: 0,
+            };
+            const hayProblemas = resultado.errores.length > 0 || resultado.excedeCupo || resultado.vacio;
+            if (soloValidar || hayProblemas)
+                return respuesta;
+            const creados = await prisma_1.prisma.$transaction(resultado.validas.map(c => prisma_1.prisma.colaborador.create({
+                data: {
+                    empresaId: request.empresaId,
+                    nombre: c.nombre, apellido: c.apellido, cedula: c.cedula,
+                    cargo: c.cargo, salarioMensual: c.salarioMensual,
+                    email: c.email, telefono: c.telefono,
+                    fechaNacimiento: c.fechaNacimiento ? new Date(`${c.fechaNacimiento}T12:00:00Z`) : null,
+                    horarioId: c.horarioId,
+                },
+                select: { id: true },
+            })));
+            // Fuera de la transacción, igual que en el alta individual: si materializar
+            // los días falla, el colaborador ya existe y la pasada diaria lo recoge.
+            // Perder la ficha por eso sería peor.
+            for (const [i, { id }] of creados.entries()) {
+                const sedeId = resultado.validas[i]?.sedeId;
+                if (sedeId)
+                    await sincronizarSedes(id, [sedeId], request.empresaId);
+                await registrarEvento({
+                    colaboradorId: id, tipo: 'INGRESO',
+                    fecha: (0, fechas_1.medianocheBogota)((0, fechas_1.hoyEnBogota)()), usuarioId: request.usuarioId ?? null,
+                    nota: 'Creado en una carga masiva',
+                });
+                try {
+                    await (0, materializarDias_1.mantenerVentanaDeColaborador)(id);
+                }
+                catch (err) {
+                    request.log.error(err, 'No se pudo materializar la ventana de un colaborador importado');
+                }
+            }
+            return { ...respuesta, creados: creados.length };
+        }
+        catch (err) {
+            request.log.error({ err, filas: filas.length, soloValidar }, 'Falló la carga masiva de colaboradores');
+            const detalle = err instanceof Error ? err.message.split('\n')[0] : 'error desconocido';
+            return reply.status(500).send({
+                error: `No pudimos procesar el archivo: ${detalle}`,
+            });
+        }
+    });
     app.post('/', auth, async (request, reply) => {
         const { sedeIds, ...cuerpo } = request.body;
         const data = normalizar(cuerpo);
@@ -156,12 +305,17 @@ async function colaboradorRoutes(app) {
             catch (err) {
                 request.log.error(err, 'No se pudieron regenerar los días del colaborador reactivado');
             }
+            await registrarEvento({ colaboradorId: reactivado.id, tipo: 'REINGRESO',
+                fecha: (0, fechas_1.medianocheBogota)((0, fechas_1.hoyEnBogota)()), usuarioId: request.usuarioId ?? null,
+                nota: 'Reingresó al volver a registrar su cédula' });
             await sincronizarSedes(reactivado.id, sedeIds, request.empresaId);
             return reply.status(200).send({ ...reactivado, reactivado: true });
         }
         const colaborador = await prisma_1.prisma.colaborador.create({
             data: { ...data, empresaId: request.empresaId },
         });
+        await registrarEvento({ colaboradorId: colaborador.id, tipo: 'INGRESO',
+            fecha: (0, fechas_1.medianocheBogota)((0, fechas_1.hoyEnBogota)()), usuarioId: request.usuarioId ?? null });
         await materializar(colaborador.id);
         await sincronizarSedes(colaborador.id, sedeIds, request.empresaId);
         return reply.status(201).send(colaborador);
@@ -220,21 +374,34 @@ async function colaboradorRoutes(app) {
         if (motivo && !MOTIVOS.includes(motivo)) {
             return reply.status(400).send({ error: 'Motivo de retiro no válido.' });
         }
-        const datos = {
-            activo: false,
-            fechaRetiro,
-            motivoRetiro: (motivo ?? 'OTRO'),
-            retiroProgramado: null,
-        };
-        if ((0, documentos_1.documentoValido)(documento)) {
-            datos.documentoRetiro = documento;
-            datos.documentoRetiroTipo = (0, documentos_1.tipoDeDocumento)(documento);
-            datos.documentoRetiroNombre = (0, documentos_1.nombreDeDocumento)(documentoNombre);
+        // Un retiro fechado antes del último reingreso deja una historia imposible:
+        // la persona habría salido antes de volver. Se rechaza con la fecha desde
+        // la que sí es válido, para que quien lo registra sepa qué corregir.
+        const historia = await prisma_1.prisma.vinculacionEvento.findMany({
+            where: { colaboradorId: id }, select: { tipo: true, fecha: true },
+        });
+        if (!(0, vinculacion_1.retiroEsCoherente)(fechaRetiro, historia)) {
+            const desde = (0, vinculacion_1.fechaMinimaDeRetiro)(historia);
+            return reply.status(400).send({
+                error: `El retiro no puede ser anterior a su último ingreso, del ${desde.toISOString().slice(0, 10)}.`,
+                codigo: 'RETIRO_ANTERIOR_AL_INGRESO',
+                fechaMinima: desde.toISOString().slice(0, 10),
+            });
         }
         const colaborador = await prisma_1.prisma.colaborador.update({
-            where: { id }, data: datos,
-            select: { id: true, nombre: true, apellido: true, activo: true, fechaRetiro: true,
-                motivoRetiro: true, documentoRetiroTipo: true, documentoRetiroNombre: true },
+            where: { id },
+            data: {
+                activo: false,
+                fechaRetiro,
+                motivoRetiro: (motivo ?? 'OTRO'),
+                retiroProgramado: null,
+            },
+            select: { id: true, nombre: true, apellido: true, activo: true, fechaRetiro: true, motivoRetiro: true },
+        });
+        await registrarEvento({
+            colaboradorId: id, tipo: 'RETIRO', fecha: fechaRetiro,
+            motivo: motivo ?? 'OTRO', usuarioId: request.usuarioId ?? null,
+            documento, documentoNombre,
         });
         await cerrarContratoVigente(id);
         return colaborador;
@@ -246,28 +413,60 @@ async function colaboradorRoutes(app) {
         const existente = await prisma_1.prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'No encontrado' });
+        const fechaRetiro = (0, fechas_1.medianocheBogota)((0, fechas_1.hoyEnBogota)());
         const colaborador = await prisma_1.prisma.colaborador.update({
             where: { id },
-            data: { activo: false, fechaRetiro: (0, fechas_1.medianocheBogota)((0, fechas_1.hoyEnBogota)()), retiroProgramado: null },
+            data: { activo: false, fechaRetiro, retiroProgramado: null },
         });
+        await registrarEvento({ colaboradorId: id, tipo: 'RETIRO', fecha: fechaRetiro,
+            usuarioId: request.usuarioId ?? null });
         await cerrarContratoVigente(id);
         // `retiroInmediato` se mantiene por compatibilidad con el frontend actual.
         return { ...colaborador, retiroInmediato: true };
     });
-    // El soporte del retiro, servido aparte por su peso.
-    app.get('/:id/documento-retiro', auth, async (request, reply) => {
+    // La historia de vinculación: entró, salió, volvió.
+    //
+    // Sin los documentos, que pesan y casi nunca se abren todos a la vez: cada
+    // evento dice si tiene soporte y se pide por su propia ruta.
+    app.get('/:id/vinculacion', auth, async (request, reply) => {
         const { id } = request.params;
         const col = await prisma_1.prisma.colaborador.findFirst({
-            where: { id, empresaId: request.empresaId },
-            select: { documentoRetiro: true, documentoRetiroTipo: true, documentoRetiroNombre: true },
+            where: { id, empresaId: request.empresaId }, select: { id: true },
         });
-        if (!col?.documentoRetiro)
+        if (!col)
+            return reply.status(404).send({ error: 'No encontrado' });
+        const eventos = await prisma_1.prisma.vinculacionEvento.findMany({
+            where: { colaboradorId: id },
+            select: {
+                id: true, tipo: true, fecha: true, motivo: true, nota: true,
+                documentoTipo: true, documentoNombre: true, creadoEn: true, usuarioId: true,
+            },
+            orderBy: [{ fecha: 'desc' }, { creadoEn: 'desc' }],
+        });
+        // Quién registró cada movimiento. Se resuelve aquí y no con una relación en
+        // el esquema para no atar el evento al usuario: si el usuario se borra, el
+        // evento tiene que sobrevivir, que es justamente lo que se está auditando.
+        const ids = [...new Set(eventos.map(e => e.usuarioId).filter((x) => !!x))];
+        const usuarios = ids.length
+            ? await prisma_1.prisma.usuario.findMany({ where: { id: { in: ids } }, select: { id: true, nombre: true } })
+            : [];
+        const nombre = new Map(usuarios.map(u => [u.id, u.nombre]));
+        return eventos.map(({ usuarioId, ...e }) => ({
+            ...e,
+            usuarioNombre: usuarioId ? nombre.get(usuarioId) ?? null : null,
+        }));
+    });
+    // El soporte de UN evento. Cuelga del evento y no de la persona porque la
+    // carta de renuncia de un retiro no es la del siguiente.
+    app.get('/vinculacion/:eventoId/documento', auth, async (request, reply) => {
+        const { eventoId } = request.params;
+        const ev = await prisma_1.prisma.vinculacionEvento.findFirst({
+            where: { id: eventoId, colaborador: { empresaId: request.empresaId } },
+            select: { documento: true, documentoTipo: true, documentoNombre: true },
+        });
+        if (!ev?.documento)
             return reply.status(404).send({ error: 'Sin documento' });
-        return {
-            documento: col.documentoRetiro,
-            documentoTipo: col.documentoRetiroTipo,
-            documentoNombre: col.documentoRetiroNombre,
-        };
+        return { documento: ev.documento, documentoTipo: ev.documentoTipo, documentoNombre: ev.documentoNombre };
     });
     // Los que ya no están. Van en su propia ruta y no en el listado principal
     // para que ninguna pantalla los cuente por accidente en un total de la
@@ -279,7 +478,6 @@ async function colaboradorRoutes(app) {
             select: {
                 id: true, nombre: true, apellido: true, cedula: true, cargo: true,
                 salarioMensual: true, fechaRetiro: true, motivoRetiro: true, creadoEn: true,
-                documentoRetiroTipo: true, documentoRetiroNombre: true,
             },
             orderBy: [{ fechaRetiro: 'desc' }, { nombre: 'asc' }],
         });
@@ -312,13 +510,12 @@ async function colaboradorRoutes(app) {
         }
         const colaborador = await prisma_1.prisma.colaborador.update({
             where: { id },
-            data: {
-                activo: true, fechaRetiro: null, motivoRetiro: null, retiroProgramado: null,
-                // El soporte era de ESE retiro. Si vuelve y se va otra vez, el documento
-                // que valga será el nuevo, y dejar el viejo confundiría la trazabilidad.
-                documentoRetiro: null, documentoRetiroTipo: null, documentoRetiroNombre: null,
-            },
+            // El estado vuelve a cero, pero la historia NO se toca: el retiro anterior
+            // sigue en `vinculacion_eventos` con su fecha, su motivo y su soporte.
+            data: { activo: true, fechaRetiro: null, motivoRetiro: null, retiroProgramado: null },
         });
+        await registrarEvento({ colaboradorId: id, tipo: 'REINGRESO',
+            fecha: (0, fechas_1.medianocheBogota)((0, fechas_1.hoyEnBogota)()), usuarioId: request.usuarioId ?? null });
         // Sus días esperados quedaron congelados con el horario del día que se fue.
         try {
             await (0, materializarDias_1.regenerarDiasDeColaborador)(id);
@@ -329,23 +526,65 @@ async function colaboradorRoutes(app) {
         return colaborador;
     });
     // Enrolamiento facial guiado: guarda VARIAS muestras (frente, perfiles,
-    // con/sin gafas — 128 floats cada una) capturadas en el navegador. La imagen
-    // nunca llega al servidor. rostroEnroladoEn queda como evidencia de que hubo
-    // consentimiento explícito (dato biométrico, Ley 1581).
+    // con/sin gafas — 128 floats cada una) capturadas en el navegador.
+    // rostroEnroladoEn queda como evidencia de que hubo consentimiento explícito
+    // (dato biométrico, Ley 1581).
+    //
+    // Puede traer además la primera toma como foto de perfil. Solo se guarda si
+    // la ficha todavía no tiene una: quien ya eligió una foto a mano no puede
+    // perderla porque alguien vuelva a enrolar el rostro.
     app.post('/:id/rostro', auth, async (request, reply) => {
         const { id } = request.params;
-        const { descriptores } = request.body;
+        const { descriptores, foto, fotoMini } = request.body;
         const existente = await prisma_1.prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'No encontrado' });
         if (!(0, rostro_1.esListaDescriptoresValida)(descriptores)) {
             return reply.status(400).send({ error: 'Muestras faciales inválidas' });
         }
+        const primeraFoto = (0, fotoPerfil_1.fotoParaEnrolar)(existente.foto, foto);
+        const primeraMini = primeraFoto && (0, fotoPerfil_1.miniValida)(fotoMini) ? fotoMini : null;
         const colaborador = await prisma_1.prisma.colaborador.update({
             where: { id },
-            data: { rostroDescriptor: descriptores, rostroEnroladoEn: new Date() },
+            data: {
+                rostroDescriptor: descriptores,
+                rostroEnroladoEn: new Date(),
+                ...(primeraFoto ? { foto: primeraFoto, fotoMini: primeraMini } : {}),
+            },
         });
-        return { ok: true, rostroEnroladoEn: colaborador.rostroEnroladoEn };
+        return { ok: true, rostroEnroladoEn: colaborador.rostroEnroladoEn, foto: colaborador.foto };
+    });
+    // La foto de perfil, puesta a mano.
+    app.put('/:id/foto', auth, async (request, reply) => {
+        const { id } = request.params;
+        const { foto, fotoMini } = request.body;
+        const existente = await prisma_1.prisma.colaborador.findFirst({
+            where: { id, empresaId: request.empresaId }, select: { id: true },
+        });
+        if (!existente)
+            return reply.status(404).send({ error: 'No encontrado' });
+        if (!(0, fotoPerfil_1.fotoPerfilValida)(foto)) {
+            return reply.status(400).send({ error: 'La foto debe ser JPG, PNG o WEBP y pesar menos de 500 KB.' });
+        }
+        // La miniatura es opcional: si no llega o no vale, la lista cae a las
+        // iniciales, que es mejor que rechazar la foto entera por su versión chica.
+        await prisma_1.prisma.colaborador.update({
+            where: { id },
+            data: { foto, fotoMini: (0, fotoPerfil_1.miniValida)(fotoMini) ? fotoMini : null },
+        });
+        return { ok: true };
+    });
+    // Quitarla. No toca el descriptor: son dos datos distintos y se borran por
+    // separado, que es justamente para lo que están en columnas distintas.
+    app.delete('/:id/foto', auth, async (request, reply) => {
+        const { id } = request.params;
+        const existente = await prisma_1.prisma.colaborador.findFirst({
+            where: { id, empresaId: request.empresaId }, select: { id: true },
+        });
+        if (!existente)
+            return reply.status(404).send({ error: 'No encontrado' });
+        await prisma_1.prisma.colaborador.update({ where: { id }, data: { foto: null, fotoMini: null } });
+        return { ok: true };
     });
     app.delete('/:id/rostro', auth, async (request, reply) => {
         const { id } = request.params;

@@ -9,6 +9,7 @@ const diasEsperados_1 = require("../utils/diasEsperados");
 const materializarDias_1 = require("../utils/materializarDias");
 const fechas_1 = require("../utils/fechas");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
+const cambiosRegistro_1 = require("../utils/cambiosRegistro");
 const jornada_1 = require("../utils/jornada");
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -37,6 +38,22 @@ function camposRegistro(body, esNuevo) {
 }
 async function registroRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
+    // Deja constancia de qué cambió al editar una marcación.
+    //
+    // No se espera el resultado en quien llama: si el historial falla, la
+    // corrección igual tiene que guardarse. Perder la bitácora es malo; perder la
+    // corrección del trabajador es peor.
+    async function anotarCambios(registroId, antes, cambios, usuarioId, usuarioNombre) {
+        const difs = (0, cambiosRegistro_1.diferenciasDeRegistro)(antes, cambios);
+        if (!difs.length)
+            return;
+        await index_1.prisma.registroCambio.createMany({
+            data: difs.map(d => ({
+                registroId, campo: d.campo, antes: d.antes, despues: d.despues,
+                usuarioId: usuarioId ?? null, usuarioNombre: usuarioNombre ?? null,
+            })),
+        });
+    }
     // Por qué se valida ANTES de guardar y no se arregla al mostrar: un tramo
     // imposible no tiene forma correcta de pintarse. Quien corregía la salida de
     // la mañana para ponerle la hora real de la tarde se tragaba el tramo del
@@ -569,6 +586,9 @@ async function registroRoutes(app) {
         const motivo = await motivoParaRechazar(cambios.colaboradorId ?? existente.colaboradorId, cambios.fecha ?? existente.fecha, cambios.entrada !== undefined ? cambios.entrada : existente.entrada, cambios.salida !== undefined ? cambios.salida : existente.salida, id);
         if (motivo)
             return reply.status(400).send(motivo);
+        // Se anota ANTES del update: después, `existente` ya no sería el estado viejo.
+        await anotarCambios(id, existente, cambios, request.usuarioId, request.usuarioNombre)
+            .catch(err => request.log.error(err, 'No se pudo anotar el cambio del registro'));
         const actualizado = await index_1.prisma.registro.update({
             where: { id },
             data: { ...cambios, editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
@@ -682,6 +702,15 @@ async function registroRoutes(app) {
             editadoPor: payload.email ?? payload.id,
             editadoEn: new Date(),
         };
+        // La bitácora se calcula ANTES de la transacción, mientras `esta[0]` sigue
+        // siendo el estado viejo, y se escribe después de que el guardado salga
+        // bien: anotar un cambio que luego se revierte sería peor que no anotarlo.
+        const cambiosPrimera = {
+            entrada: t.entrada, salida: nuevos[0].salida,
+            salidaAlmuerzo: !!t.descansoSalida,
+            tipo: comunes.tipo, observacion: comunes.observacion, fecha: comunes.fecha,
+        };
+        const antesPrimera = { ...esta[0] };
         await index_1.prisma.$transaction(async (tx) => {
             await tx.registro.update({
                 where: { id: esta[0].id },
@@ -700,8 +729,27 @@ async function registroRoutes(app) {
                 await tx.registro.delete({ where: { id: segunda.id } });
             }
         });
+        await anotarCambios(esta[0].id, antesPrimera, cambiosPrimera, request.usuarioId, request.usuarioNombre)
+            .catch(err => request.log.error(err, 'No se pudo anotar el cambio de la jornada'));
         await (0, materializarDias_1.asegurarDiaSinFallar)(colaboradorId, fechaBase, app.log);
         return { ok: true };
+    });
+    // Actividad de una marcación: qué se cambió, quién y cuándo.
+    //
+    // Va en su propia ruta y no dentro del listado porque el listado trae cientos
+    // de filas y esto solo se mira cuando alguien abre UNA para revisarla.
+    app.get('/:id/cambios', auth, async (request, reply) => {
+        const { id } = request.params;
+        const existe = await index_1.prisma.registro.findFirst({
+            where: { id, colaborador: { empresaId: request.empresaId } }, select: { id: true },
+        });
+        if (!existe)
+            return reply.status(404).send({ error: 'Registro no encontrado' });
+        return index_1.prisma.registroCambio.findMany({
+            where: { registroId: id },
+            select: { id: true, campo: true, antes: true, despues: true, usuarioNombre: true, creadoEn: true },
+            orderBy: { creadoEn: 'desc' },
+        });
     });
     app.delete('/:id', auth, async (request, reply) => {
         const { id } = request.params;
