@@ -176,6 +176,10 @@ así, apuntando a los archivos del cambio:
 npx vitest run --coverage --coverage.reporter=text --coverage.include='src/utils/<archivo>.ts'
 ```
 
+Con un matiz que aprendimos después, en 8.2: la puerta es sobre la **decisión**,
+no sobre el archivo. Un archivo que mezcla decisión y plomería no va a llegar al
+80% y no debe intentarlo a la fuerza.
+
 ### Las pruebas del frontend corren fuera de Bogotá, a propósito
 
 `vite.config.ts` fija `TZ: 'America/Los_Angeles'` en las pruebas. No es un
@@ -196,3 +200,131 @@ occidente de Colombia. El formateo compartido vive en `src/lib/fechas.ts`.
 3. ~~Cobertura~~ — hecha en los dos lados.
 4. **Pruebas de integración de las rutas**, con base de datos de prueba.
 5. **Mutación** (Stryker), al final y solo sobre el motor de horas.
+
+---
+
+## 8. Reglas que salieron de un fallo real (1 de septiembre de 2026)
+
+Las seis salen del mismo incidente y ninguna es teoría: **el auto-cierre de
+turnos dejó de cerrar y nadie se enteró durante dos semanas, con la suite en
+verde todo el tiempo.** Cuatro turnos del lunes seguían abiertos el martes al
+mediodía en producción.
+
+El diagnóstico, para que se entienda de dónde sale cada regla: el barrido corría
+cada 24 horas contadas *desde el arranque del proceso*. Como solo toca días ya
+pasados, la hora a la que cierra los turnos es la hora a la que arrancó la app.
+El despliegue del 31/08 la reinició a las 22:12 y con eso movió el barrido a las
+22:12. Encima, cuando no encontraba la franja marcaba el turno y dejaba la hora
+en null a propósito, y la ruta perdía esa marca camino al frontend, así que en
+la tabla se veía idéntico a un turno que nadie tocó.
+
+Los tres defectos vivían en `index.ts`, `registros.ts` y la plomería de
+`cierreTurnos.ts`. **Ninguno en una función pura.** Es decir: exactamente donde
+el ciclo de la sección 2 no llega. De ahí las reglas.
+
+### 8.1 Las pruebas del backend corren fuera de Bogotá, igual que las del frontend
+
+La sección 7 ya explica por qué el frontend fija `TZ: 'America/Los_Angeles'`. El
+backend tenía la misma exposición y ninguna guarda, siendo que es **el que
+calcula el dinero** con fechas ancladas a medianoche de Bogotá (05:00 UTC).
+
+`vitest.config.ts` del backend ahora fija la misma zona. Se comprobó antes de
+fijarla que la suite entera pasaba así, de modo que no esconde nada preexistente.
+
+Al escribir una prueba con fechas, darlas en UTC explícito y no con
+`new Date(2026, 7, 31)`, que depende del reloj de quien la corre:
+
+```ts
+// Un instante dado en hora de Bogotá (UTC-5 todo el año, sin horario de verano).
+const bog = (a: number, mes: number, d: number, h: number, min = 0) =>
+  new Date(Date.UTC(a, mes - 1, d, h + 5, min, 0));
+```
+
+### 8.2 La puerta de cobertura es sobre la DECISIÓN, no sobre el archivo
+
+`cierreTurnos.ts` quedó en 59% después de arreglarlo, y ese es el número
+**correcto**: la mitad no cubierta es la que habla con MySQL. Exigirle 80% al
+archivo obliga a una de dos cosas malas, bloquear el arreglo o escribir una
+prueba de mentira para llegar al número.
+
+La regla: **si un archivo mezcla decisión y plomería, la decisión se saca a una
+función pura y es esa la que tiene que pasar del 80%.** La plomería se verifica
+como dice la sección 5.
+
+En ese arreglo la decisión salió a `decidirCierre` (qué hora de salida se le
+pone a alguien que no marcó), que es justo lo que mueve dinero. Quedó al 100%
+mientras el archivo entero está al 59%.
+
+**Se reportan los dos números, no solo el bueno.**
+
+### 8.3 Trabajos periódicos: tres formas de fallar en silencio
+
+Van juntas porque las tres se dieron a la vez en el mismo trabajo.
+
+1. **Un intervalo anclado al arranque corre a la hora del último despliegue.** Si
+   la tarea solo actúa sobre días ya pasados, `setInterval(f, 24h)` la deja
+   corriendo a la hora en que se reinició el servidor. Anclar al reloj, o correr
+   lo bastante seguido para que la hora de arranque no importe.
+2. **Un trabajo que solo habla cuando hace algo es indistinguible de uno que
+   nunca corrió.** El barrido solo escribía en el log cuando cerraba turnos.
+   Registrar siempre, incluida la pasada que no encontró nada.
+3. **Un `catch` que devuelve un valor neutro y sigue convierte una caída en un
+   silencio.** `cerrarTurnosOlvidados` devolvía 0 tanto si no había nada que
+   cerrar como si la consulta explotaba. Si el catch se traga el error, que al
+   menos deje huella distinguible del camino normal.
+
+Los otros trabajos diarios (`avisarAlmuerzosSinRegreso`, el aviso de contratos y
+`mantenerVentana`) siguen con el patrón de 24 horas anclado al arranque y no se
+han revisado con esta vara.
+
+### 8.4 Ninguna consulta de un trabajo periódico o una ruta caliente se da por buena sin ver su `EXPLAIN`
+
+En el commit del arreglo se escribió "es una consulta indexada" sin comprobarlo,
+y era falso: `registros`, la tabla que más rápido crece del producto, no tenía
+ningún índice que sirviera. El plan real era `Table scan`.
+
+Medido sobre una tabla de prueba con la misma estructura y 1.048.576 filas:
+
+| | plan | tiempo |
+|---|---|---|
+| sin índice | `Table scan` sobre 1,04M filas | 233 ms |
+| con índice | `Covering index range scan`, 30 filas | 0 ms |
+
+Dos corolarios:
+
+- **Un `Table scan` sobre `registros` o `dias_esperados` no se acepta**, ni
+  siquiera en un trabajo que corre una vez al día. Crecen con el historial de
+  todas las empresas juntas.
+- **Los índices se agregan cuando la tabla está pequeña.** El `ALTER` es
+  instantáneo con cientos de filas y caro con millones. Esperar a tener el
+  problema es esperar a que la cura también duela.
+
+En un índice compuesto el orden no es decorativo: MySQL solo usa todas las
+partes si las igualdades van primero y el rango va último. Ver
+`sql/indice-turnos-abiertos.sql`.
+
+### 8.5 `prisma` se importa de `./prisma`, nunca de `./index`
+
+`cierreTurnos.ts` traía el cliente de `'../index'`, así que importarlo levantaba
+Fastify entero: correr `npm test` abría el puerto 3001 y disparaba las tareas
+diarias **contra la base de desarrollo**.
+
+Quedan **18 archivos** con ese import (16 rutas y dos utilidades,
+`kioscoConfig.ts` y `capacidades.ts`). Hoy es inofensivo para las rutas, porque
+`index.ts` las importa de todas formas. Deja de serlo el día que se escriban las
+pruebas de integración de rutas, el pendiente número 4: ese día las 18 levantan
+el servidor. Arreglarlas antes de llegar ahí, no después.
+
+### 8.6 Mientras no existan las pruebas de integración, se parte en dos y se dice cuál es cuál
+
+La sección 5 dice cómo verificar lo que la suite no cubre, pero no qué hacer con
+el código nuevo que cae en esa zona. El protocolo:
+
+1. Sacar la decisión a una función pura y probarla con el ciclo de la sección 2.
+2. Verificar la costura a mano contra datos reales, con un script en
+   `backend/prisma/` que cree el caso, corra la función de verdad, compruebe lo
+   que escribió y **borre lo que creó**.
+3. Decir explícitamente cuál de las dos cosas respalda cada afirmación.
+
+Ejemplo vivo: `backend/prisma/diagnostico-autocierre.ts`, que es de solo lectura
+y dice, turno por turno, qué haría el barrido y por qué.
