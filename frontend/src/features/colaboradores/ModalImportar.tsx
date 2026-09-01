@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Upload, X, AlertTriangle, FileSpreadsheet, Plus, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 import { alEscribirMiles } from '../../lib/dinero';
@@ -58,6 +58,12 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
   const [error, setError] = useState('');
   const [arrastrando, setArrastrando] = useState(false);
   const [confirmandoCierre, setConfirmandoCierre] = useState(false);
+  // La clase se quita al terminar la animación, no con una key. Con key, React
+  // remonta la tabla entera en cada intento fallido: se pierde el foco y la
+  // posición del scroll, justo cuando se acaba de mover la vista hasta el
+  // error.
+  const [sacudiendo, setSacudiendo] = useState(false);
+  const caja = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api.get('/colaboradores/formato')
@@ -75,7 +81,18 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
       const datos = r.data as Resultado;
       setResultado(datos);
       setErrores(mapaDeErrores(datos.errores ?? []));
-      if (!soloValidar && datos.creados > 0) onListo(datos.creados);
+      if (!soloValidar && datos.creados > 0) return onListo(datos.creados);
+
+      // Se le dio a crear y no se creó nada. La sacudida dice "espera", pero
+      // con veinte filas el error puede estar fuera de pantalla: sin llevar la
+      // vista hasta él, solo se sabe que algo pasa y hay que ir a buscarlo.
+      if (!soloValidar) {
+        setSacudiendo(true);
+        requestAnimationFrame(() => {
+          caja.current?.querySelector('[aria-invalid="true"]')
+            ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        });
+      }
     } catch (err) {
       const e = err as { response?: { data?: { error?: string } } };
       setError(e.response?.data?.error ?? 'No pudimos hablar con el servidor.');
@@ -137,7 +154,12 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
 
   return (
     <div data-testid="fondo" className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-[60] p-4" onClick={intentarCerrar}>
-      <div className="hp-pop bg-white rounded-2xl w-full max-w-5xl shadow-xl flex flex-col max-h-[92dvh]" onClick={e => e.stopPropagation()}>
+      <div
+        ref={caja}
+        onAnimationEnd={() => setSacudiendo(false)}
+        className={`hp-pop bg-white rounded-2xl w-full max-w-5xl shadow-xl flex flex-col max-h-[92dvh] ${
+          sacudiendo ? 'hp-sacudida' : ''}`}
+        onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 p-6 pb-4">
           <div>
             <h3 className="font-bold text-lg text-ink flex items-center gap-2">

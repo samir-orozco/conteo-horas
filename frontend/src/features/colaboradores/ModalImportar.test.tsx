@@ -486,3 +486,42 @@ describe('soltar el archivo encima', () => {
     expect(leerHoja).not.toHaveBeenCalled();
   });
 });
+
+describe('cuando se le da a crear y algo está mal', () => {
+  const conError = { ...OK, conDatos: 2,
+    errores: [{ fila: 3, campo: 'cedula', mensaje: 'La cédula 222 ya está registrada en tu empresa.' }] };
+
+  it('no crea, y deja los errores marcados en su celda', async () => {
+    const onListo = vi.fn();
+    montar({ onListo });
+    await subir();
+    post.mockResolvedValueOnce({ data: conError });
+    await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
+    await waitFor(() => expect(screen.getByLabelText('Cédula de la fila 2')).toHaveAttribute('aria-invalid', 'true'));
+    expect(onListo).not.toHaveBeenCalled();
+  });
+
+  it('lleva la vista hasta el primer error', async () => {
+    // Con veinte filas, el error puede quedar fuera de pantalla. Sacudir el
+    // modal sin mostrar QUÉ está mal solo dice "algo pasa" y deja buscando.
+    const traer = vi.spyOn(Element.prototype, 'scrollIntoView');
+    montar();
+    await subir();
+    post.mockResolvedValueOnce({ data: conError });
+    await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
+    await waitFor(() => expect(traer).toHaveBeenCalled());
+    expect(traer.mock.instances[traer.mock.instances.length - 1])
+      .toHaveAttribute('aria-label', 'Cédula de la fila 2');
+  });
+
+  it('no lleva la vista a ninguna parte cuando todo está bien', async () => {
+    const traer = vi.spyOn(Element.prototype, 'scrollIntoView');
+    montar();
+    await subir();
+    traer.mockClear();
+    post.mockResolvedValueOnce({ data: { ...OK, creados: 2 } });
+    await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
+    expect(traer).not.toHaveBeenCalled();
+  });
+});
