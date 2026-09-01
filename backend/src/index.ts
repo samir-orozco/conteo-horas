@@ -198,7 +198,15 @@ const start = async () => {
     // dejó el barrido corriendo a las 22:12: los turnos olvidados del lunes se
     // vieron abiertos toda la jornada del martes y solo se habrían cerrado esa
     // noche. Con una pasada por hora se cierran poco después de medianoche, sin
-    // importar cuándo arrancó la app. Es una consulta indexada y es idempotente.
+    // importar cuándo arrancó la app.
+    //
+    // Cada hora y no una vez de madrugada porque un turno nocturno (21:00→05:00)
+    // no es elegible hasta las 07:00 del día siguiente, cuando vence su gracia:
+    // una única pasada a medianoche lo dejaría abierto un día entero más.
+    //
+    // Que corra 24 veces al día sale gratis solo por el índice
+    // `(salidaEstimada, salida, entrada)`: sin él la consulta es un `Table scan`
+    // sobre todo el historial de marcaciones. Ver `sql/indice-turnos-abiertos.sql`.
     cerrarTurnosOlvidados(app.log);
     setInterval(() => cerrarTurnosOlvidados(app.log), 60 * 60 * 1000);
 
