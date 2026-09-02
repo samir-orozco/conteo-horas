@@ -244,7 +244,13 @@ export default function Marcador() {
   // cuando todavía no se sabe quién va a marcar: a un remoto lo dejaba plantado
   // sin llegar nunca a la pantalla de login. Quien decide bloquear es el
   // servidor, ya sabiendo quién es la persona.
-  if (empresa && exigeUbicacion && geo.permiso === 'sin-preguntar' && !omitioUbicacion) {
+  //
+  // La condición mira `errorUbic` además de `sin-preguntar` porque al fallar el
+  // GPS el permiso pasa a 'negado' en el mismo render: sin eso la pantalla se
+  // desmontaba justo cuando tenía algo que explicar, y su guía de iOS/Android y
+  // su botón de reintentar quedaban inalcanzables. Con esto se queda, y la
+  // puerta para seguir es el botón, no un fallo del navegador.
+  if (empresa && exigeUbicacion && (geo.permiso === 'sin-preguntar' || geo.errorUbic) && !omitioUbicacion) {
     return (
       <PantallaUbicacion
         empresa={empresa} errorUbic={geo.errorUbic}

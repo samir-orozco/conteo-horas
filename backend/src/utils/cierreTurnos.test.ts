@@ -34,12 +34,12 @@ describe('decidirCierre', () => {
       expect(d.cerrar).toBe(false);
     });
 
-    it('espera exactamente 2 horas tras la salida programada, ni una menos', () => {
-      // Turno nocturno del lunes: sale 05:00 del martes, la gracia va hasta las
-      // 07:00. Un minuto antes todavía no se toca.
+    it('espera las 18 horas completas de la ventana, ni un minuto menos', () => {
+      // Nocturno del lunes: entró a las 21:00, así que el kiosco le acepta la
+      // salida hasta las 15:00 del martes. Un minuto antes no se toca.
       const turno = { entrada: bog(2026, 8, 31, 21, 0), horario: NOCTURNO };
-      expect(decidirCierre(turno, bog(2026, 9, 1, 6, 59)).cerrar).toBe(false);
-      expect(decidirCierre(turno, bog(2026, 9, 1, 7, 0)).cerrar).toBe(true);
+      expect(decidirCierre(turno, bog(2026, 9, 1, 14, 59)).cerrar).toBe(false);
+      expect(decidirCierre(turno, bog(2026, 9, 1, 15, 0)).cerrar).toBe(true);
     });
   });
 
@@ -55,13 +55,13 @@ describe('decidirCierre', () => {
       expect(d.horaFranja).toBe('16:00');
     });
 
-    it('ya es elegible apenas pasa la medianoche, no al final del día siguiente', () => {
-      // Es la corrección del fallo: el barrido debe poder cerrarlo a las 00:30,
-      // no a las 22:00. La decisión no puede depender de la hora del día.
-      const d = decidirCierre(
-        { entrada: bog(2026, 8, 31, 6, 52), horario: OFICINA },
-        bog(2026, 9, 1, 0, 30),
-      );
+    it('se cierra de madrugada, no al final del día siguiente', () => {
+      // Es la corrección del fallo: entró a las 06:52, así que su ventana de 18
+      // horas vence a las 00:52 del martes y ahí ya le toca al barrido. Lo que
+      // NO puede pasar es lo de producción, que se cerrara a las 22:12.
+      const turno = { entrada: bog(2026, 8, 31, 6, 52), horario: OFICINA };
+      expect(decidirCierre(turno, bog(2026, 9, 1, 0, 30)).cerrar).toBe(false);
+      const d = decidirCierre(turno, bog(2026, 9, 1, 1, 0));
       expect(d.cerrar).toBe(true);
       expect(d.salida).toEqual(bog(2026, 8, 31, 16, 0));
     });
@@ -108,6 +108,68 @@ describe('decidirCierre', () => {
         bog(2026, 9, 1, 6, 0),
       );
       expect(d.cerrar).toBe(false);
+    });
+  });
+
+  describe('la entrada no cae dentro de su franja', () => {
+    // El ancla de la salida es el día de la ENTRADA, y hasta ahora nadie
+    // comprobaba que la entrada tuviera algo que ver con su franja. Con eso, una
+    // marca fuera de horario producía una salida absurda y la liquidación la
+    // tomaba como buena: es un número plausible, no una pantalla rota.
+    it('volvió de noche a hacer extras: no le pone una salida ANTERIOR a su entrada', () => {
+      // Entró a las 18:00 y su franja sale a las 16:00. Anclando al día de la
+      // entrada le escribiría una salida dos horas antes de que llegara.
+      const d = decidirCierre(
+        { entrada: bog(2026, 8, 31, 18, 0), horario: OFICINA },
+        bog(2026, 9, 2, 8, 0),
+      );
+      expect(d.cerrar).toBe(true);
+      expect(d.salida).toBeNull();
+    });
+
+    it('turno nocturno al que le cambian la hora: no le inventa una jornada de 28 horas', () => {
+      // Entró a la 01:00 del martes con franja 21:00→05:00. Como la franja cruza
+      // medianoche, el ancla se va al miércoles: 28 horas seguidas, liquidadas
+      // como ordinarias más extras más recargo nocturno.
+      const d = decidirCierre(
+        { entrada: bog(2026, 9, 1, 1, 0), horario: NOCTURNO },
+        bog(2026, 9, 3, 8, 0),
+      );
+      expect(d.cerrar).toBe(true);
+      expect(d.salida).toBeNull();
+    });
+
+    it('la jornada larga pero real sí conserva su hora', () => {
+      // 21:00 a 05:00 son ocho horas: eso no es absurdo y no se toca.
+      const d = decidirCierre(
+        { entrada: bog(2026, 8, 31, 21, 0), horario: NOCTURNO },
+        bog(2026, 9, 2, 8, 0),
+      );
+      expect(d.salida).toEqual(bog(2026, 9, 1, 5, 0));
+    });
+  });
+
+  describe('no le gana a quien todavía puede marcar su salida', () => {
+    // El kiosco acepta la salida de un turno durante 18 horas desde la entrada.
+    // Cerrarlo antes de que venza esa ventana le cambia sus horas REALES por las
+    // teóricas de su franja, y encima le quita la posibilidad de arreglarlo.
+    const NOCHE_DEL_LUNES = bog(2026, 8, 31, 21, 0);
+
+    it('el nocturno del lunes sigue intacto a media mañana del martes', () => {
+      // Diez horas desde la entrada. Con la vieja gracia de 2 horas ya estaría
+      // cerrado a las 07:00, y con el barrido corriendo cada hora eso dejó de
+      // ser teórico: le habría quitado sus horas reales antes de que llegara a
+      // marcarlas.
+      const d = decidirCierre({ entrada: NOCHE_DEL_LUNES, horario: NOCTURNO }, bog(2026, 9, 1, 7, 0));
+      expect(d.cerrar).toBe(false);
+    });
+
+    it('y se cierra cuando ya nadie puede marcarlo', () => {
+      // Pasadas las 18 horas el kiosco ya no lo reconoce como turno en curso,
+      // así que ahí sí queda huérfano y le toca al barrido.
+      const d = decidirCierre({ entrada: NOCHE_DEL_LUNES, horario: NOCTURNO }, bog(2026, 9, 1, 16, 0));
+      expect(d.cerrar).toBe(true);
+      expect(d.salida).toEqual(bog(2026, 9, 1, 5, 0));
     });
   });
 

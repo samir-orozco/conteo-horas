@@ -8,6 +8,7 @@ import { notificar } from '../utils/notificaciones';
 import { rangoDiaBogota } from '../utils/fechas';
 import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes } from '../utils/kioscoConfig';
 import { decidirUbicacionDeMarca, MODALIDAD_POR_DEFECTO } from '../utils/modalidad';
+import { VENTANA_TURNO_MS } from '../utils/cierreTurnos';
 import { puedeSalirAAlmorzar, dentroDeLaVentana } from '../utils/almuerzo';
 import { salidaAntesDeHora } from '../utils/tardanzas';
 import { almuerzoSinRegreso } from '../utils/cierreAlmuerzo';
@@ -25,7 +26,9 @@ const TIPOS_NOVEDAD = new Set([
 // Ventana máxima para considerar que una entrada abierta es el turno en curso al
 // marcar salida. Cubre turnos que cruzan medianoche (ej. 22:00→06:00) sin atar por
 // error una salida a un turno olvidado de días atrás (que el auto-cierre ya maneja).
-const VENTANA_TURNO_MS = 18 * 60 * 60 * 1000;
+//
+// La define el auto-cierre porque es él quien no puede violarla: mientras esta
+// ventana siga abierta, el turno es de la persona y el barrido no lo toca.
 
 // Candado en memoria contra marcas dobles concurrentes del mismo colaborador
 // (reintento de red, doble pestaña). El kiosco corre en un único proceso Node.
@@ -542,6 +545,10 @@ export default async function workerRoutes(app: FastifyInstance) {
           where: { id: abierto.id },
           data: {
             salida: ahora,
+            // La marcó la persona, así que deja de ser estimada. Si el barrido
+            // había alcanzado a marcarla sin hora, el chip "el sistema cerró
+            // este turno" se quedaba pegado sobre una salida real.
+            salidaEstimada: false,
             ...(esAlmuerzo ? { salidaAlmuerzo: true } : {}),
             ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
           },
