@@ -1,7 +1,12 @@
 // Tipos compartidos del kiosco público (Marcador).
+import type { Modalidad } from '../../features/colaboradores/modalidad';
 export type Sede = { id: string; nombre: string };
 
-export type Colaborador = { id: string; nombre: string; apellido: string; cargo: string | null };
+export type Colaborador = { id: string; nombre: string; apellido: string; cargo: string | null;
+  // Decide si se le valida la ubicación al marcar. El kiosco NO puede saberla
+  // antes del login: GET /kiosco/:token es por empresa, y ahí todavía no se sabe
+  // quién va a marcar. Llega en la respuesta del login, que es el primer momento.
+  modalidad: Modalidad };
 export type Estado = {
   dentroAhora: boolean;
   entradaAbierta: { entrada: string } | null;

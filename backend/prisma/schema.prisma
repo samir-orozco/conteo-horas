@@ -218,6 +218,11 @@ model Colaborador {
   fotoMini         String?   @db.LongText
   horarioId        String?
   horario          Horario?   @relation(fields: [horarioId], references: [id])
+  // No admite null a propósito: un null sería un cuarto estado que significa
+  // PRESENCIAL igual, y siendo no-nulo el compilador avisa si una ruta con
+  // `select` explícito olvida pedirlo (un undefined ahí bloquearía a un remoto
+  // en silencio, tratándolo como presencial).
+  modalidad        ModalidadTrabajo @default(PRESENCIAL)
   activo           Boolean    @default(true)
   // Retiro: cuándo salió y por qué. Antes solo quedaba `activo: false`, así que
   // se perdía la fecha, y esa fecha es justo la que se necesita para liquidar,
@@ -683,6 +688,22 @@ enum MotivoRetiro {
   JUSTA_CAUSA
   FIN_OBRA
   OTRO
+}
+
+// Cómo trabaja esta persona, que es lo que decide si la ubicación la bloquea.
+//
+// Hasta ahora la geocerca era una regla de la EMPRESA: si estaba configurada,
+// aplicaba a todo el mundo por igual. Eso deja por fuera a quien trabaja desde
+// la casa, que no puede marcar nunca.
+//
+//   PRESENCIAL  se valida como siempre: fuera de la geocerca, la marca se rechaza.
+//   HIBRIDO     nunca se bloquea. Si está dentro de una de sus sedes, queda
+//               registrado en cuál; si no, marca igual y el registro no lleva sede.
+//   REMOTO      no se le pide ni se le mira la ubicación.
+enum ModalidadTrabajo {
+  PRESENCIAL
+  HIBRIDO
+  REMOTO
 }
 
 enum TipoContrato {

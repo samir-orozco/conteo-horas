@@ -125,3 +125,22 @@ describe('la foto, desde el propio círculo', () => {
     expect(screen.getByText(/Guardando/i)).toBeInTheDocument();
   });
 });
+
+// La modalidad decide si a esta persona se le valida la ubicación al marcar, y
+// hasta ahora solo se veía abriendo el formulario de edición.
+describe('modalidad de trabajo', () => {
+  it('se ve sin tener que abrir el formulario', () => {
+    montar({ modalidad: 'REMOTO' });
+    expect(screen.getByText('Remoto')).toBeInTheDocument();
+  });
+
+  it('la presencial también se pinta: un hueco se leería como dato faltante', () => {
+    montar({ modalidad: 'PRESENCIAL' });
+    expect(screen.getByText('Presencial')).toBeInTheDocument();
+  });
+
+  it('sin el dato cae en presencial, que es como trabajaba todo el mundo antes', () => {
+    montar();
+    expect(screen.getByText('Presencial')).toBeInTheDocument();
+  });
+});

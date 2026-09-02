@@ -15,8 +15,10 @@ import AvatarMini from '../components/AvatarMini';
 import { formatearMiles, parsearMiles } from '../lib/dinero';
 import { fechaCorta } from '../lib/fechas';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
+import SelectorModalidad from '../components/SelectorModalidad';
+import { ETIQUETA_MODALIDAD, TONO_MODALIDAD, normalizarModalidad } from '../features/colaboradores/modalidad';
 
-type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null };
+type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null; modalidad?: string };
 // Los colores del chip de contrato. Se quedan en la pantalla y no en la regla:
 // qué es urgente lo decide estadoContrato.ts, cómo se ve lo decide esto.
 const TONO_CHIP: Record<string, string> = {
@@ -32,7 +34,7 @@ type FormData = Omit<Colaborador, 'id' | 'activo'>;
 type Retirado = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
   salarioMensual: number; fechaRetiro: string | null; motivoRetiro: string | null };
 
-const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [] };
+const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [], modalidad: 'PRESENCIAL' };
 
 // La fecha viene del backend como ISO; el input date necesita "YYYY-MM-DD"
 export const soloFecha = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 10) : '');
@@ -121,7 +123,7 @@ export default function Colaboradores() {
   const abrir = (col?: Colaborador) => {
     setEditando(col || null);
     setErrorForm('');
-    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [] } : EMPTY);
+    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [], modalidad: normalizarModalidad(col.modalidad) } : EMPTY);
     setModal(true);
   };
 
@@ -166,7 +168,7 @@ export default function Colaboradores() {
   type Fila = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
     salarioMensual: number; activo: boolean; fechaRetiro?: string | null; motivoRetiro?: string | null;
     estadoContrato?: string | null; sedeIds?: string[]; sedeNombres?: string[];
-    fotoMini?: string | null };
+    fotoMini?: string | null; modalidad?: string };
   const filas: Fila[] = pestanaActiva === 'retirados'
     ? retirados.map(r => ({ ...r, activo: false }))
     : pestanaActiva === 'activos'
@@ -335,9 +337,22 @@ export default function Colaboradores() {
                   })() : <span className="text-muted">—</span>}
                 </td>
                 <td className="px-4 py-3 text-muted hidden lg:table-cell">
-                  {col.sedeNombres?.length
-                    ? col.sedeNombres.join(' · ')
-                    : <span className="text-gray-400">Sin sede</span>}
+                  {/* La modalidad va DENTRO de esta celda y no en una columna
+                      nueva: la tabla ya tiene siete y una octava se escondería
+                      en móvil igual que estas. Y aquí explica el hueco, porque
+                      "Sin sede" en un remoto no es un dato que falte. */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span>
+                      {col.sedeNombres?.length
+                        ? col.sedeNombres.join(' · ')
+                        : <span className="text-gray-400">Sin sede</span>}
+                    </span>
+                    {col.activo && normalizarModalidad(col.modalidad) !== 'PRESENCIAL' && (
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${TONO_CHIP[TONO_MODALIDAD[normalizarModalidad(col.modalidad)]]}`}>
+                        {ETIQUETA_MODALIDAD[normalizarModalidad(col.modalidad)]}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-muted hidden lg:table-cell">{col.cargo || '-'}</td>
                 <td className="px-4 py-3 text-right text-ink hidden sm:table-cell">{fmt(col.salarioMensual)}</td>
@@ -435,8 +450,13 @@ export default function Colaboradores() {
                 </select>
               </div>
               <div className="col-span-2">
+                <SelectorModalidad valor={normalizarModalidad(form.modalidad)}
+                  onChange={m => setForm(p => ({ ...p, modalidad: m }))} />
+              </div>
+              <div className="col-span-2">
                 <SelectorSedes sedes={sedes} valor={(form.sedeIds as string[]) ?? []}
-                  onChange={ids => setForm(p => ({ ...p, sedeIds: ids }))} />
+                  onChange={ids => setForm(p => ({ ...p, sedeIds: ids }))}
+                  modalidad={normalizarModalidad(form.modalidad)} />
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-muted mb-1">Salario mensual (COP)</label>
