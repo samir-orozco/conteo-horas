@@ -11,9 +11,9 @@ const rostro_1 = require("../utils/rostro");
 const telegram_1 = require("../utils/telegram");
 const notificaciones_1 = require("../utils/notificaciones");
 const fechas_1 = require("../utils/fechas");
-const geo_1 = require("../utils/geo");
 const kioscoConfig_1 = require("../utils/kioscoConfig");
-const sedes_1 = require("../utils/sedes");
+const modalidad_1 = require("../utils/modalidad");
+const cierreTurnos_1 = require("../utils/cierreTurnos");
 const almuerzo_1 = require("../utils/almuerzo");
 const tardanzas_1 = require("../utils/tardanzas");
 const cierreAlmuerzo_1 = require("../utils/cierreAlmuerzo");
@@ -28,7 +28,9 @@ const TIPOS_NOVEDAD = new Set([
 // Ventana máxima para considerar que una entrada abierta es el turno en curso al
 // marcar salida. Cubre turnos que cruzan medianoche (ej. 22:00→06:00) sin atar por
 // error una salida a un turno olvidado de días atrás (que el auto-cierre ya maneja).
-const VENTANA_TURNO_MS = 18 * 60 * 60 * 1000;
+//
+// La define el auto-cierre porque es él quien no puede violarla: mientras esta
+// ventana siga abierta, el turno es de la persona y el barrido no lo toca.
 // Candado en memoria contra marcas dobles concurrentes del mismo colaborador
 // (reintento de red, doble pestaña). El kiosco corre en un único proceso Node.
 const marcandoAhora = new Set();
@@ -45,10 +47,23 @@ async function enroladosDeEmpresa(empresaId) {
         return hit.enrolados;
     const enrolados = await index_1.prisma.colaborador.findMany({
         where: { empresaId, activo: true, rostroDescriptor: { not: client_1.Prisma.DbNull } },
-        select: { id: true, nombre: true, apellido: true, cargo: true, cedula: true, empresaId: true, rostroDescriptor: true },
+        select: { id: true, nombre: true, apellido: true, cargo: true, cedula: true, empresaId: true, modalidad: true, rostroDescriptor: true },
     });
     cacheRostros.set(empresaId, { ts: Date.now(), enrolados });
     return enrolados;
+}
+// ¿A ESTA persona se le va a validar la ubicación al marcar?
+//
+// No basta con saber si la empresa usa geolocalización: eso es lo único que el
+// kiosco sabe ANTES del login, y con eso le anunciaba "sin ubicación no podrás
+// marcar" a gente a la que no se le iba a validar nada. Un presencial sin sedes
+// en una empresa que usa sedes, por ejemplo, no tiene contra qué compararse.
+async function seLeValidaLaUbicacion(colaboradorId, empresaId, modalidad) {
+    if (modalidad !== 'PRESENCIAL')
+        return false;
+    if ((await (0, kioscoConfig_1.sedesConGeocercaDe)(colaboradorId)).length > 0)
+        return true;
+    return (await (0, kioscoConfig_1.geocercoConfig)(empresaId)) !== null;
 }
 // Foto de verificación facial: data URI JPEG pequeño tomado en el navegador al
 // marcar. Valida el prefijo, el tamaño y que los bytes empiecen con la firma JPEG
@@ -87,7 +102,7 @@ async function almuerzoDelTurno(colaboradorId, fechaAncla) {
             select: { fecha: true, almuerzoInicio: true, almuerzoFin: true },
         }),
         index_1.prisma.registro.count({
-            where: { colaboradorId, salidaAlmuerzo: true, salida: { gte: new Date(Date.now() - VENTANA_TURNO_MS) } },
+            where: { colaboradorId, salidaAlmuerzo: true, salida: { gte: new Date(Date.now() - cierreTurnos_1.VENTANA_TURNO_MS) } },
         }),
     ]);
     const yaAlmorzo = marcados > 0;
@@ -252,8 +267,9 @@ async function workerRoutes(app) {
         });
         return {
             token,
-            colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo },
+            colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo, modalidad: col.modalidad },
             sedes: sedesDelCol.map(s => s.sede),
+            validaUbicacion: await seLeValidaLaUbicacion(col.id, col.empresaId, col.modalidad),
         };
     });
     // Login del kiosco con reconocimiento facial: el navegador ya calculó el
@@ -288,8 +304,9 @@ async function workerRoutes(app) {
         });
         return {
             token,
-            colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo },
+            colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo, modalidad: col.modalidad },
             sedes: sedesDelCol.map(s => s.sede),
+            validaUbicacion: await seLeValidaLaUbicacion(col.id, col.empresaId, col.modalidad),
         };
     });
     // Estado del día: retorna si hay entrada abierta (sin salida). Select mínimo: no
@@ -303,7 +320,7 @@ async function workerRoutes(app) {
             index_1.prisma.registro.findFirst({
                 where: {
                     colaboradorId: payload.id,
-                    entrada: { gte: new Date(Date.now() - VENTANA_TURNO_MS) },
+                    entrada: { gte: new Date(Date.now() - cierreTurnos_1.VENTANA_TURNO_MS) },
                     salida: null,
                 },
                 orderBy: { creadoEn: 'desc' },
@@ -327,7 +344,7 @@ async function workerRoutes(app) {
             index_1.prisma.registro.findFirst({
                 where: {
                     colaboradorId: payload.id,
-                    salida: { not: null, gte: new Date(Date.now() - VENTANA_TURNO_MS) },
+                    salida: { not: null, gte: new Date(Date.now() - cierreTurnos_1.VENTANA_TURNO_MS) },
                 },
                 orderBy: { salida: 'desc' },
                 select: { salida: true, salidaAlmuerzo: true },
@@ -397,46 +414,45 @@ async function workerRoutes(app) {
             // más abajo se comprueba además que caiga donde debe.
             const regresoPedido = typeof regresoA === 'string' && !Number.isNaN(Date.parse(regresoA))
                 ? new Date(regresoA) : null;
+            // El colaborador se lee ANTES de decidir sobre la ubicación, y ese orden
+            // es el cambio: la geocerca dejó de ser una regla de la empresa para ser
+            // una de la persona, así que hay que saber quién es antes de aplicarla.
+            const col = await index_1.prisma.colaborador.findUnique({
+                where: { id: payload.id },
+                include: { horario: { include: { franjas: true } } },
+            });
+            // Si el colaborador no aparece, se trata como PRESENCIAL: ante la duda, la
+            // opción segura es la que valida, no la que deja pasar.
+            const modalidad = col?.modalidad ?? modalidad_1.MODALIDAD_POR_DEFECTO;
             // ===== Dónde está marcando =====
             //
-            // Si tiene sedes asignadas, manda la geocerca de SUS sedes: basta estar
-            // dentro de cualquiera (quien rota entre locales marca en la que le toca
-            // ese día). Si no tiene sedes, rige la geocerca única de la empresa, que
-            // es como funcionó siempre — así nada se rompe antes de migrar.
-            let sedeDeLaMarca = null;
-            const sedesDelTrabajador = await (0, kioscoConfig_1.sedesConGeocercaDe)(payload.id);
-            if (sedesDelTrabajador.length > 0) {
-                const latN = Number(lat), lngN = Number(lng);
-                if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
-                    return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
-                }
-                const r = (0, sedes_1.resolverSedeDeMarcacion)(sedesDelTrabajador, latN, lngN);
-                if (!r.dentro) {
-                    // Se nombra la sede más cercana y la distancia: "fuera de ubicación" a
-                    // secas no le dice a la persona qué hacer.
-                    return reply.code(403).send({
-                        error: `Estás a ${r.distancia} m de ${r.sede?.nombre}. Debes marcar desde una de tus sedes.`,
-                        codigo: 'FUERA_DE_UBICACION', distancia: r.distancia, radio: r.sede?.radio ?? 0,
-                    });
-                }
-                sedeDeLaMarca = r.sede?.id ?? null;
+            // A un REMOTO no se le pide ni se le mira la ubicación, así que ni siquiera
+            // se consultan sus sedes. A un HIBRIDO sí se le miran, pero solo para dejar
+            // constancia de en cuál estaba: nunca para bloquearlo, y por eso tampoco se
+            // consulta la geocerca de la empresa, que no identifica ninguna sede.
+            const sedesDelTrabajador = modalidad === 'REMOTO' ? [] : await (0, kioscoConfig_1.sedesConGeocercaDe)(payload.id);
+            const geocercaEmpresa = modalidad === 'PRESENCIAL' && sedesDelTrabajador.length === 0
+                ? await (0, kioscoConfig_1.geocercoConfig)(payload.empresaId)
+                : null;
+            // POST /marcar es la única ruta del kiosco sin schema de Fastify, así que
+            // `lat` y `lng` llegan sin tipar. `Number(null)` y `Number('')` dan 0, que
+            // es finito y además es una coordenada real (el golfo de Guinea): por eso
+            // se comprueban los dos y no se acepta un 0 que en realidad es un faltante.
+            const latN = Number(lat), lngN = Number(lng);
+            const coords = Number.isFinite(latN) && Number.isFinite(lngN) && (lat !== null && lat !== '' && lng !== null && lng !== '')
+                ? { lat: latN, lng: lngN }
+                : null;
+            const decision = (0, modalidad_1.decidirUbicacionDeMarca)({ modalidad, sedes: sedesDelTrabajador, geocercaEmpresa, coords });
+            if (decision.accion === 'EXIGIR_COORDENADAS') {
+                return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
             }
-            else {
-                const geo = await (0, kioscoConfig_1.geocercoConfig)(payload.empresaId);
-                if (geo) {
-                    const latN = Number(lat), lngN = Number(lng);
-                    if (!Number.isFinite(latN) || !Number.isFinite(lngN)) {
-                        return reply.code(400).send({ error: 'Necesitamos tu ubicación para marcar. Activa el GPS y permite el acceso.', codigo: 'UBICACION_REQUERIDA' });
-                    }
-                    const dist = Math.round((0, geo_1.distanciaMetros)(latN, lngN, geo.lat, geo.lng));
-                    if (dist > geo.radio) {
-                        return reply.code(403).send({
-                            error: `Estás fuera de la ubicación de la empresa (a ${dist} m). Debes marcar desde el sitio de trabajo.`,
-                            codigo: 'FUERA_DE_UBICACION', distancia: dist, radio: geo.radio,
-                        });
-                    }
-                }
+            if (decision.accion === 'RECHAZAR') {
+                return reply.code(403).send({
+                    error: decision.mensaje, codigo: 'FUERA_DE_UBICACION',
+                    distancia: decision.distancia, radio: decision.radio,
+                });
             }
+            const sedeDeLaMarca = decision.sedeId;
             const ahora = new Date();
             const { ahoraBog, inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(ahora);
             // Turno abierto en curso: se busca por ventana (no por día calendario), para
@@ -445,16 +461,12 @@ async function workerRoutes(app) {
             const abierto = await index_1.prisma.registro.findFirst({
                 where: {
                     colaboradorId: payload.id,
-                    entrada: { gte: new Date(ahora.getTime() - VENTANA_TURNO_MS) },
+                    entrada: { gte: new Date(ahora.getTime() - cierreTurnos_1.VENTANA_TURNO_MS) },
                     salida: null,
                 },
                 orderBy: { creadoEn: 'desc' },
             });
             // Festivo legal (global) o propio de la empresa del colaborador
-            const col = await index_1.prisma.colaborador.findUnique({
-                where: { id: payload.id },
-                include: { horario: { include: { franjas: true } } },
-            });
             const festHoy = await index_1.prisma.diaFestivo.findFirst({
                 where: {
                     fecha: { gte: inicioDia, lt: finDia },
@@ -468,7 +480,14 @@ async function workerRoutes(app) {
                 // lo contrario haría imposible saber dónde trabajó realmente.
                 // Los turnos abiertos ANTES de existir las sedes no tienen sede: esos se
                 // dejan cerrar donde sea, o quedarían atrapados sin poder marcar salida.
-                if (abierto.sedeId && sedeDeLaMarca && abierto.sedeId !== sedeDeLaMarca) {
+                //
+                // Solo aplica a PRESENCIAL. A un HIBRIDO esta regla lo bloquearía justo a
+                // la hora de irse —abrió en El Poblado y cierra desde la casa— y quedaría
+                // con el turno atrapado sin poder cerrarlo desde ningún lado, que es
+                // exactamente lo que la modalidad viene a evitar. Lo que se pierde es
+                // fidelidad, no dinero: el registro sigue diciendo dónde se ABRIÓ, porque
+                // la actualización de la salida nunca escribe `sedeId`.
+                if (modalidad === 'PRESENCIAL' && abierto.sedeId && sedeDeLaMarca && abierto.sedeId !== sedeDeLaMarca) {
                     const sedeEntrada = sedesDelTrabajador.find(s => s.id === abierto.sedeId);
                     return reply.code(403).send({
                         error: `Abriste el turno en ${sedeEntrada?.nombre ?? 'otra sede'}. La salida debe marcarse en la misma sede.`,
@@ -508,6 +527,10 @@ async function workerRoutes(app) {
                     where: { id: abierto.id },
                     data: {
                         salida: ahora,
+                        // La marcó la persona, así que deja de ser estimada. Si el barrido
+                        // había alcanzado a marcarla sin hora, el chip "el sistema cerró
+                        // este turno" se quedaba pegado sobre una salida real.
+                        salidaEstimada: false,
                         ...(esAlmuerzo ? { salidaAlmuerzo: true } : {}),
                         ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
                     },
@@ -535,7 +558,7 @@ async function workerRoutes(app) {
                     where: {
                         colaboradorId: payload.id,
                         salidaAlmuerzo: true,
-                        salida: { not: null, gte: new Date(ahora.getTime() - VENTANA_TURNO_MS) },
+                        salida: { not: null, gte: new Date(ahora.getTime() - cierreTurnos_1.VENTANA_TURNO_MS) },
                     },
                     orderBy: { salida: 'desc' },
                     select: { fecha: true, salida: true },

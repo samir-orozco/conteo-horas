@@ -7,6 +7,7 @@ const horasColombiana_1 = require("../utils/horasColombiana");
 const vigencias_1 = require("../utils/vigencias");
 const capacidades_1 = require("../utils/capacidades");
 const rostro_1 = require("../utils/rostro");
+const modalidad_1 = require("../utils/modalidad");
 const fotoPerfil_1 = require("../utils/fotoPerfil");
 const estadoContratoResumen_1 = require("../utils/estadoContratoResumen");
 const importarColaboradores_1 = require("../utils/importarColaboradores");
@@ -147,8 +148,14 @@ async function colaboradorRoutes(app) {
         if ('fechaNacimiento' in data) {
             data.fechaNacimiento = data.fechaNacimiento ? new Date(`${data.fechaNacimiento}T12:00:00Z`) : null;
         }
+        if ('modalidad' in data)
+            data.modalidad = (0, modalidad_1.normalizarModalidad)(data.modalidad);
         return data;
     }
+    // La modalidad decide si a esta persona se le valida la ubicación al marcar,
+    // así que un valor que no se reconoce no puede pasar de largo: sin esto llega
+    // crudo al enum de MySQL y sale como un 500 sin explicación.
+    const modalidadInvalida = (data) => 'modalidad' in data && data.modalidad === null;
     // Las columnas del formato de carga masiva, y los horarios que se pueden
     // escribir en él.
     //
@@ -262,6 +269,9 @@ async function colaboradorRoutes(app) {
         if (!(await horarioValido(data.horarioId, request.empresaId))) {
             return reply.status(400).send({ error: 'Horario inválido' });
         }
+        if (modalidadInvalida(data)) {
+            return reply.status(400).send({ error: 'Modalidad de trabajo no válida' });
+        }
         // La cédula es única por empresa. Si ya existe desactivado (lo "borraron"),
         // se reactiva con los datos nuevos y conserva todo su historial de horas.
         const existente = await prisma_1.prisma.colaborador.findUnique({
@@ -329,6 +339,9 @@ async function colaboradorRoutes(app) {
         const data = normalizar(rest);
         if (!(await horarioValido(data.horarioId, request.empresaId))) {
             return reply.status(400).send({ error: 'Horario inválido' });
+        }
+        if (modalidadInvalida(data)) {
+            return reply.status(400).send({ error: 'Modalidad de trabajo no válida' });
         }
         const actualizado = await prisma_1.prisma.colaborador.update({ where: { id }, data });
         await sincronizarSedes(id, sedeIds, request.empresaId);
