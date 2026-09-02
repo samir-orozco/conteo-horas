@@ -54,6 +54,18 @@ async function enroladosDeEmpresa(empresaId: string): Promise<Enrolado[]> {
   return enrolados;
 }
 
+// ¿A ESTA persona se le va a validar la ubicación al marcar?
+//
+// No basta con saber si la empresa usa geolocalización: eso es lo único que el
+// kiosco sabe ANTES del login, y con eso le anunciaba "sin ubicación no podrás
+// marcar" a gente a la que no se le iba a validar nada. Un presencial sin sedes
+// en una empresa que usa sedes, por ejemplo, no tiene contra qué compararse.
+async function seLeValidaLaUbicacion(colaboradorId: string, empresaId: string, modalidad: ModalidadTrabajo): Promise<boolean> {
+  if (modalidad !== 'PRESENCIAL') return false;
+  if ((await sedesConGeocercaDe(colaboradorId)).length > 0) return true;
+  return (await geocercoConfig(empresaId)) !== null;
+}
+
 // Foto de verificación facial: data URI JPEG pequeño tomado en el navegador al
 // marcar. Valida el prefijo, el tamaño y que los bytes empiecen con la firma JPEG
 // (FF D8 FF), para no almacenar datos arbitrarios en la columna.
@@ -268,6 +280,7 @@ export default async function workerRoutes(app: FastifyInstance) {
       token,
       colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo, modalidad: col.modalidad },
       sedes: sedesDelCol.map(s => s.sede),
+      validaUbicacion: await seLeValidaLaUbicacion(col.id, col.empresaId, col.modalidad),
     };
   });
 
@@ -311,6 +324,7 @@ export default async function workerRoutes(app: FastifyInstance) {
       token,
       colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo, modalidad: col.modalidad },
       sedes: sedesDelCol.map(s => s.sede),
+      validaUbicacion: await seLeValidaLaUbicacion(col.id, col.empresaId, col.modalidad),
     };
   });
 

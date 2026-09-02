@@ -20,7 +20,7 @@ const montar = (modalidad: Modalidad, permiso: 'concedido' | 'negado') => render
     marcar={vi.fn()}
     onRegresoOlvidado={vi.fn()}
     marcando={false}
-    decisionUbic={decidirUbicacion({ modalidad, empresaPideUbicacion: true, permiso })}
+    decisionUbic={decidirUbicacion({ modalidad, validaUbicacion: true, permiso })}
     salir={vi.fn()}
   />,
 );

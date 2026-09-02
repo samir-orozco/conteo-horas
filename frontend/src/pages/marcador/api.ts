@@ -8,7 +8,7 @@ export const apiKiosco = axios.create({ baseURL: import.meta.env.VITE_API_URL ||
 const authHeader = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } });
 
 type InfoKiosco = { empresa: string; requiereDispositivo: boolean; permiteCedula: boolean; exigeUbicacion: boolean };
-type SesionResp = { token: string; colaborador: Colaborador; sedes?: Sede[] };
+type SesionResp = { token: string; colaborador: Colaborador; sedes?: Sede[]; validaUbicacion?: boolean };
 type MarcaResp = { accion: 'ENTRADA' | 'SALIDA'; hora: string; salidaTemprana?: boolean; salidaAlmuerzo?: boolean; regresoEstimado?: boolean };
 export type OpcionesMarca = { almuerzo?: boolean; regresoA?: string; novedadTipo?: string; novedadDescripcion?: string };
 

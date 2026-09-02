@@ -61,7 +61,9 @@ export default function Marcador() {
   // de saber quién es, la opción segura es la que valida).
   const decisionUbic = decidirUbicacion({
     modalidad: sesion.colaborador?.modalidad ?? 'PRESENCIAL',
-    empresaPideUbicacion: exigeUbicacion,
+    // Del login, que es quien sabe de esta persona. Antes de que exista sesión
+    // se cae a la config de la empresa, que es lo único disponible ahí.
+    validaUbicacion: sesion.validaUbicacion ?? exigeUbicacion,
     permiso: geo.permiso,
   });
   const vinculo = useVinculoDispositivo(marcadorToken, () => { setErrorLogin(''); setCapturaKey(k => k + 1); });

@@ -29,7 +29,7 @@ describe('SelectorModalidad', () => {
     expect(screen.getByText(/se rechaza/i)).toBeInTheDocument();
     rerender(<SelectorModalidad valor="REMOTO" onChange={() => {}} />);
     expect(screen.queryByText(/se rechaza/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/no se le pide ni se le mira la ubicación/i)).toBeInTheDocument();
+    expect(screen.getByText(/su ubicación no se valida ni se envía/i)).toBeInTheDocument();
   });
 
   it('elegir otra avisa a quien manda', async () => {

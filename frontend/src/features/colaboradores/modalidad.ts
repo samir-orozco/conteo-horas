@@ -18,7 +18,7 @@ export const ETIQUETA_MODALIDAD: Record<Modalidad, string> = {
 export const AYUDA_MODALIDAD: Record<Modalidad, string> = {
   PRESENCIAL: 'Se le valida la ubicación al marcar. Si está fuera del sitio de trabajo, la marcación se rechaza.',
   HIBRIDO: 'Puede marcar desde donde sea. Se usa su ubicación solo para registrar desde qué sede marcó, nunca para bloquearlo.',
-  REMOTO: 'No se le pide ni se le mira la ubicación. Marca desde donde esté.',
+  REMOTO: 'Su ubicación no se valida ni se envía: marca desde donde esté. El kiosco puede ofrecerle activarla al entrar, porque ahí todavía no sabe quién es.',
 };
 
 export const TONO_MODALIDAD: Record<Modalidad, Tono> = {
