@@ -250,6 +250,7 @@ exports.Prisma.ColaboradorScalarFieldEnum = {
   foto: 'foto',
   fotoMini: 'fotoMini',
   horarioId: 'horarioId',
+  modalidad: 'modalidad',
   activo: 'activo',
   fechaRetiro: 'fechaRetiro',
   motivoRetiro: 'motivoRetiro',
@@ -515,6 +516,12 @@ exports.EstadoPago = exports.$Enums.EstadoPago = {
   PENDIENTE: 'PENDIENTE',
   APROBADO: 'APROBADO',
   RECHAZADO: 'RECHAZADO'
+};
+
+exports.ModalidadTrabajo = exports.$Enums.ModalidadTrabajo = {
+  PRESENCIAL: 'PRESENCIAL',
+  HIBRIDO: 'HIBRIDO',
+  REMOTO: 'REMOTO'
 };
 
 exports.MotivoRetiro = exports.$Enums.MotivoRetiro = {
