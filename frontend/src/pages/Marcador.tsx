@@ -13,6 +13,8 @@ import PantallaLogin from './marcador/pantallas/PantallaLogin';
 import PantallaSalidaTemprana from './marcador/pantallas/PantallaSalidaTemprana';
 import PantallaMarcar from './marcador/pantallas/PantallaMarcar';
 import RegresoOlvidado from './marcador/pantallas/RegresoOlvidado';
+import { decidirUbicacion } from './marcador/decisionUbicacion';
+import { mensajeGeo } from './marcador/geo';
 
 // Kiosco HoraPro — se abre con el link único de cada empresa: /marcador/<token>
 // Orquesta los hooks (sesión, geolocalización, dispositivo, flash) y decide qué
@@ -26,6 +28,10 @@ export default function Marcador() {
   // Config del kiosco (viene de /worker/kiosco/:token)
   const [permiteCedula, setPermiteCedula] = useState(true);
   const [exigeUbicacion, setExigeUbicacion] = useState(false);
+  // Ya vio la pantalla que ofrece activar la ubicación y decidió seguir sin
+  // darla. No es lo mismo que negar el permiso del navegador: es no querer ni
+  // que se lo pregunten.
+  const [omitioUbicacion, setOmitioUbicacion] = useState(false);
 
   // Estado del login/UI
   const [modoRostro, setModoRostro] = useState(false);
@@ -48,6 +54,16 @@ export default function Marcador() {
 
   const sesion = useSesionKiosco(marcadorToken);
   const geo = useGeolocalizacion();
+
+  // Qué hacer con la ubicación de QUIEN está marcando. Antes esto era una sola
+  // pregunta por empresa; ahora depende de la persona, y la persona solo se
+  // conoce después del login (por eso el valor por defecto es PRESENCIAL: antes
+  // de saber quién es, la opción segura es la que valida).
+  const decisionUbic = decidirUbicacion({
+    modalidad: sesion.colaborador?.modalidad ?? 'PRESENCIAL',
+    empresaPideUbicacion: exigeUbicacion,
+    permiso: geo.permiso,
+  });
   const vinculo = useVinculoDispositivo(marcadorToken, () => { setErrorLogin(''); setCapturaKey(k => k + 1); });
 
   const nombreColab = sesion.colaborador ? `${sesion.colaborador.nombre} ${sesion.colaborador.apellido}` : '';
@@ -55,6 +71,8 @@ export default function Marcador() {
   // salir(): libera la sesión y deja el kiosco listo para el siguiente colaborador
   const salir = () => {
     sesion.limpiarSesion();
+    geo.limpiar();
+    setOmitioUbicacion(false);
     setCedula('');
     setErrorLogin('');
     setModoRostro(!permiteCedula); // si solo hay rostro, vuelve a la cámara
@@ -143,13 +161,19 @@ export default function Marcador() {
     geo.setErrorUbic(null);
     try {
       let ubic: { lat?: number; lng?: number } = {};
-      if (exigeUbicacion) {
-        // Ya capturamos la ubicación al entrar (gate). Refrescamos y, si falla,
-        // usamos la del gate (permiso ya concedido → esto casi nunca falla).
+      // Quién necesita coordenadas lo decide la modalidad de ESTA persona, no la
+      // configuración de la empresa. Antes se capturaban siempre que la empresa
+      // usara geolocalización, incluso para quien tenía prometido que no.
+      if (decisionUbic.capturarCoords) {
         try {
           ubic = await geo.obtenerUbicacion();
-        } catch {
-          if (geo.ubicOk) ubic = geo.ubicOk;
+        } catch (e) {
+          // Ya NO se cae de vuelta a `geo.ubicOk`. Sin muro, esa lectura puede
+          // ser de otra persona de hace horas en la misma tablet: para un
+          // presencial dejaría pasar una marca desde fuera con una lectura vieja
+          // de dentro, y para un híbrido escribiría la sede equivocada, que es
+          // justo el dato que esta funcionalidad viene a producir.
+          geo.setErrorUbic(mensajeGeo(e));
         }
       }
       const r = await apiMarcar(sesion.token, {
@@ -215,8 +239,19 @@ export default function Marcador() {
     );
   }
   if (linkInvalido) return <PantallaLinkInvalido />;
-  if (empresa && exigeUbicacion && !geo.ubicOk) {
-    return <PantallaUbicacion empresa={empresa} errorUbic={geo.errorUbic} activarUbicacion={geo.activarUbicacion} buscandoUbic={geo.buscandoUbic} />;
+  // Se OFRECE la ubicación antes del login, no se exige. Antes esto era un muro
+  // (`!geo.ubicOk` y no se pasaba de ahí), y esa decisión se tomaba por EMPRESA,
+  // cuando todavía no se sabe quién va a marcar: a un remoto lo dejaba plantado
+  // sin llegar nunca a la pantalla de login. Quien decide bloquear es el
+  // servidor, ya sabiendo quién es la persona.
+  if (empresa && exigeUbicacion && geo.permiso === 'sin-preguntar' && !omitioUbicacion) {
+    return (
+      <PantallaUbicacion
+        empresa={empresa} errorUbic={geo.errorUbic}
+        activarUbicacion={geo.activarUbicacion} buscandoUbic={geo.buscandoUbic}
+        onContinuar={() => setOmitioUbicacion(true)}
+      />
+    );
   }
   if (!sesion.token || !sesion.colaborador) {
     return (
@@ -261,7 +296,7 @@ export default function Marcador() {
       colaborador={sesion.colaborador} sedes={sesion.sedes} ahora={ahora} estado={sesion.estado}
       marcar={marcar} marcando={marcando}
       onRegresoOlvidado={() => setPreguntandoRegreso(true)}
-      exigeUbicacion={exigeUbicacion} ubicOk={geo.ubicOk} salir={salir}
+      decisionUbic={decisionUbic} salir={salir}
     />
   );
 }

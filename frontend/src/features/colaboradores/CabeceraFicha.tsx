@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { ArrowLeft, Edit2, Briefcase, IdCard, CalendarDays, Banknote, Camera, Upload, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit2, Briefcase, IdCard, CalendarDays, Banknote, Camera, Upload, Trash2, MapPinned } from 'lucide-react';
 import { mesYAnio } from '../../lib/fechas';
+import { ETIQUETA_MODALIDAD, normalizarModalidad } from './modalidad';
 
 export type PersonaCabecera = {
   nombre: string;
@@ -11,6 +12,8 @@ export type PersonaCabecera = {
   creadoEn?: string | null;
   activo: boolean;
   foto?: string | null;
+  // Opcional para no obligar a quien ya construye este objeto sin ella.
+  modalidad?: string | null;
 };
 
 const cop = (n: number) => '$' + n.toLocaleString('es-CO');
@@ -72,6 +75,9 @@ export default function CabeceraFicha({
       ? [{ icono: CalendarDays, texto: `Desde ${mesYAnio(persona.creadoEn)}` }]
       : []),
     { icono: Banknote, texto: cop(persona.salarioMensual) },
+    // Se pinta SIEMPRE, incluida Presencial. Un hueco se lee como "no tiene
+    // dato", que es otra cosa: aquí siempre hay una respuesta.
+    { icono: MapPinned, texto: ETIQUETA_MODALIDAD[normalizarModalidad(persona.modalidad)] },
   ];
 
   return (

@@ -13,6 +13,8 @@ import { formatearMiles, parsearMiles } from '../lib/dinero';
 import CamaraRostro from '../components/CamaraRostro';
 import ConfirmDialog from '../components/ConfirmDialog';
 import SelectorSedes from '../components/SelectorSedes';
+import SelectorModalidad from '../components/SelectorModalidad';
+import { normalizarModalidad } from '../features/colaboradores/modalidad';
 import Toast from '../components/Toast';
 import CampoEvidencia, { type CambioEvidencia } from '../components/CampoEvidencia';
 import PanelContratos from '../features/contratos/PanelContratos';
@@ -38,6 +40,7 @@ type Colaborador = {
   email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean;
   horarioId?: string | null; horario?: Horario | null; rostroEnroladoEn?: string | null; foto?: string | null;
   sedeIds?: string[];
+  modalidad?: string;
   creadoEn?: string;
   fechaRetiro?: string | null; motivoRetiro?: string | null;
 };
@@ -345,6 +348,7 @@ export default function ColaboradorDetalle() {
           nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,
           cedula: col.cedula, salarioMensual: col.salarioMensual,
           creadoEn: col.creadoEn, activo: col.activo, foto: col.foto,
+          modalidad: col.modalidad,
         }}
         onArchivoFoto={cambiarFoto}
         onQuitarFoto={quitarFoto}
@@ -357,6 +361,7 @@ export default function ColaboradorDetalle() {
             fechaNacimiento: col.fechaNacimiento ? new Date(col.fechaNacimiento).toISOString().slice(0, 10) : '',
             salarioMensual: col.salarioMensual, horarioId: col.horarioId || '',
             sedeIds: col.sedeIds ?? [],
+            modalidad: normalizarModalidad(col.modalidad),
           });
           setModalEditar(true);
         }}
@@ -719,8 +724,13 @@ export default function ColaboradorDetalle() {
                 </select>
               </div>
               <div className="col-span-2">
+                <SelectorModalidad valor={normalizarModalidad((formEdit as { modalidad?: string }).modalidad)}
+                  onChange={m => setFormEdit((p: object) => ({ ...p, modalidad: m }))} />
+              </div>
+              <div className="col-span-2">
                 <SelectorSedes sedes={sedes} valor={formEdit.sedeIds ?? []}
-                  onChange={ids => setFormEdit((p: object) => ({ ...p, sedeIds: ids }))} />
+                  onChange={ids => setFormEdit((p: object) => ({ ...p, sedeIds: ids }))}
+                  modalidad={normalizarModalidad((formEdit as { modalidad?: string }).modalidad)} />
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-muted mb-1">Salario mensual (COP)</label>
