@@ -145,7 +145,7 @@ export default {
   // La tarjeta del cierre habla de lo que este lector acaba de leer, no del
   // producto en general: llega después de doce minutos sobre preavisos y topes.
   remate: {
-    titulo: 'Ningún contrato se le vence sin avisarle',
+    titulo: 'Un contrato no debería renovarse por olvido',
     texto: 'HoraPro lleva los contratos de su equipo con estas reglas adentro: cuenta las prórrogas, calcula cuándo cada uno se vuelve indefinido y le avisa 30 días antes del vencimiento, que es cuando todavía se puede decidir. Siete días de prueba, sin tarjeta.',
   },
   faq: [
