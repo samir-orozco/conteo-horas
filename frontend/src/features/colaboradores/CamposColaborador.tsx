@@ -30,6 +30,12 @@ export type ValoresColaborador = {
 
 const ENTRADA = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary';
 
+// El ancho de un campo es una promesa sobre lo que cabe adentro. Una cédula de
+// diez dígitos en una caja de setecientos píxeles se lee como un error, y al
+// lado de un salario que mide la mitad, como un descuido.
+const CORTO = 'sm:max-w-[13rem]';   // cédula, fecha, salario
+const MEDIO = 'sm:max-w-[26rem]';   // cargo
+
 export default function CamposColaborador({
   valores, onCambio, horarios, sedes, resumenFranjas, foto,
 }: {
@@ -67,16 +73,16 @@ export default function CamposColaborador({
         </div>
       </CampoFormulario>
 
-      <CampoFormulario rotulo="Cédula" descripcion="Con esta marca en el kiosco." obligatorio>
+      <CampoFormulario rotulo="Cédula" descripcion="Es la que digita para marcar en el kiosco." obligatorio>
         {id => (
-          <input id={id} value={valores.cedula ?? ''} inputMode="numeric" required className={ENTRADA}
+          <input id={id} value={valores.cedula ?? ''} inputMode="numeric" required className={`${ENTRADA} ${CORTO}`}
             onChange={e => onCambio({ cedula: e.target.value })} />
         )}
       </CampoFormulario>
 
       <CampoFormulario rotulo="Cargo">
         {id => (
-          <input id={id} value={valores.cargo ?? ''} placeholder="Auxiliar, vigilante, cajera..." className={ENTRADA}
+          <input id={id} value={valores.cargo ?? ''} placeholder="Auxiliar, vigilante, cajera..." className={`${ENTRADA} ${MEDIO}`}
             onChange={e => onCambio({ cargo: e.target.value })} />
         )}
       </CampoFormulario>
@@ -92,15 +98,15 @@ export default function CamposColaborador({
 
       <CampoFormulario rotulo="Fecha de nacimiento" descripcion="Opcional.">
         {id => (
-          <input id={id} type="date" value={valores.fechaNacimiento ?? ''} className={`${ENTRADA} sm:max-w-[13rem]`}
+          <input id={id} type="date" value={valores.fechaNacimiento ?? ''} className={`${ENTRADA} ${CORTO}`}
             onChange={e => onCambio({ fechaNacimiento: e.target.value })} />
         )}
       </CampoFormulario>
 
       <CampoFormulario rotulo="Horario de trabajo"
-        descripcion="Define qué se le exige cada día: llegadas tarde, horas extra y descanso.">
+        descripcion="Define qué se le exige cada día: llegadas tarde, extras y descanso.">
         {id => (
-          <select id={id} value={valores.horarioId ?? ''} className={ENTRADA}
+          <select id={id} value={valores.horarioId ?? ''} className={`${ENTRADA} ${MEDIO}`}
             onChange={e => onCambio({ horarioId: e.target.value })}>
             <option value="">Sin horario (no controla llegadas tarde)</option>
             {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre} · {resumenFranjas(h.franjas)}</option>)}
@@ -125,7 +131,7 @@ export default function CamposColaborador({
       <CampoFormulario rotulo="Salario mensual"
         descripcion="Con esto se calcula su hora extra y sus recargos." obligatorio>
         {id => (
-          <div className="relative sm:max-w-[13rem]">
+          <div className={`relative ${CORTO}`}>
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">$</span>
             <input id={id} type="text" inputMode="numeric" required placeholder="1.750.000"
               value={formatearMiles(valores.salarioMensual ?? 0)} className={`${ENTRADA} pl-7`}

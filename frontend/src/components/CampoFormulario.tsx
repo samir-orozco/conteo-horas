@@ -34,7 +34,7 @@ export default function CampoFormulario({
   );
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] gap-1.5 sm:gap-5 py-3.5">
+    <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,12.5rem)_minmax(0,1fr)] gap-1.5 sm:gap-5 py-3.5">
       <div className="sm:pt-2">
         {grupo
           ? <span id={idRotulo} className="block text-sm font-medium text-ink">{texto}</span>
