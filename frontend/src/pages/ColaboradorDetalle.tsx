@@ -9,11 +9,9 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import { resumenFranjas, type Franja } from './Colaboradores';
-import { formatearMiles, parsearMiles } from '../lib/dinero';
 import CamaraRostro from '../components/CamaraRostro';
 import ConfirmDialog from '../components/ConfirmDialog';
-import SelectorSedes from '../components/SelectorSedes';
-import SelectorModalidad from '../components/SelectorModalidad';
+import CamposColaborador, { type ValoresColaborador } from '../features/colaboradores/CamposColaborador';
 import { normalizarModalidad } from '../features/colaboradores/modalidad';
 import Toast from '../components/Toast';
 import CampoEvidencia, { type CambioEvidencia } from '../components/CampoEvidencia';
@@ -698,52 +696,30 @@ export default function ColaboradorDetalle() {
       {/* Modal editar datos */}
       {modalEditar && formEdit && (
         <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl">
-            <div className="flex items-center justify-between mb-4">
+          {/* Mismos campos que el formulario de la lista, con el mismo
+              componente: cuando estaban duplicados, uno ganaba un campo y el
+              otro no. La foto NO va aquí: en la ficha se cambia desde el
+              círculo de la cabecera, que es donde se está viendo. */}
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl flex flex-col max-h-[92dvh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
               <h3 className="font-bold text-lg text-ink">Editar datos</h3>
-              <button onClick={() => setModalEditar(false)}><X size={20} className="text-gray-400" /></button>
+              <button onClick={() => setModalEditar(false)} aria-label="Cerrar"><X size={20} className="text-gray-400" /></button>
             </div>
-            <form onSubmit={guardarEdicion} className="grid grid-cols-2 gap-4">
-              {(['nombre', 'apellido', 'cedula', 'cargo', 'email', 'telefono'] as const).map(field => (
-                <div key={field} className={field === 'email' ? 'col-span-2' : ''}>
-                  <label className="block text-xs font-medium text-muted mb-1 capitalize">{field}</label>
-                  <input value={formEdit[field]} onChange={e => setFormEdit((p: any) => ({ ...p, [field]: e.target.value }))}
-                    className={input} required={['nombre', 'apellido', 'cedula'].includes(field)} />
-                </div>
-              ))}
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-muted mb-1">Fecha de nacimiento</label>
-                <input type="date" value={formEdit.fechaNacimiento || ''}
-                  onChange={e => setFormEdit((p: any) => ({ ...p, fechaNacimiento: e.target.value }))} className={input} />
+            <form onSubmit={guardarEdicion} className="flex flex-col min-h-0 flex-1">
+              <div className="overflow-y-auto px-6">
+                <CamposColaborador
+                  valores={formEdit as ValoresColaborador}
+                  onCambio={parcial => setFormEdit((p: object) => ({ ...p, ...parcial }))}
+                  horarios={horarios}
+                  sedes={sedes}
+                  resumenFranjas={resumenFranjas}
+                />
               </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-muted mb-1">Horario de trabajo</label>
-                <select value={formEdit.horarioId || ''} onChange={e => setFormEdit((p: any) => ({ ...p, horarioId: e.target.value }))} className={input}>
-                  <option value="">Sin horario (no controla llegadas tarde)</option>
-                  {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre} · {resumenFranjas(h.franjas)}</option>)}
-                </select>
-              </div>
-              <div className="col-span-2">
-                <SelectorModalidad valor={normalizarModalidad((formEdit as { modalidad?: string }).modalidad)}
-                  onChange={m => setFormEdit((p: object) => ({ ...p, modalidad: m }))} />
-              </div>
-              <div className="col-span-2">
-                <SelectorSedes sedes={sedes} valor={formEdit.sedeIds ?? []}
-                  onChange={ids => setFormEdit((p: object) => ({ ...p, sedeIds: ids }))}
-                  modalidad={normalizarModalidad((formEdit as { modalidad?: string }).modalidad)} />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-muted mb-1">Salario mensual (COP)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">$</span>
-                  <input type="text" inputMode="numeric" value={formatearMiles(formEdit.salarioMensual)}
-                    onChange={e => setFormEdit((p: any) => ({ ...p, salarioMensual: parsearMiles(e.target.value) }))}
-                    className={`${input} pl-7`} required />
-                </div>
-              </div>
-              <div className="col-span-2 flex gap-3 justify-end mt-2">
-                <button type="button" onClick={() => setModalEditar(false)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                <button type="submit" className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark">Guardar</button>
+              <div className="px-6 py-4 border-t border-gray-100 shrink-0 flex gap-3 justify-end">
+                <button type="button" onClick={() => setModalEditar(false)}
+                  className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                <button type="submit"
+                  className="px-5 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark">Guardar cambios</button>
               </div>
             </form>
           </div>

@@ -4,7 +4,6 @@ import { Plus, Edit2, X, Eye, ArrowUpRight, MessageCircle, LogOut, Undo2, FileSp
 import api from '../lib/api';
 import { useMiPlan } from '../lib/plan';
 import { useAuth } from '../context/AuthContext';
-import SelectorSedes from '../components/SelectorSedes';
 import ModalRetiro from '../features/colaboradores/ModalRetiro';
 import ModalReingreso from '../features/colaboradores/ModalReingreso';
 import ModalImportar from '../features/colaboradores/ModalImportar';
@@ -12,13 +11,13 @@ import Toast from '../components/Toast';
 import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros, SIN_SEDE } from '../features/colaboradores/estadoContrato';
 import MenuFiltros from '../components/MenuFiltros';
 import AvatarMini from '../components/AvatarMini';
-import { formatearMiles, parsearMiles } from '../lib/dinero';
 import { fechaCorta } from '../lib/fechas';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
-import SelectorModalidad from '../components/SelectorModalidad';
+import CamposColaborador, { type ValoresColaborador } from '../features/colaboradores/CamposColaborador';
+import { payloadColaborador } from '../features/colaboradores/payloadColaborador';
 import { ETIQUETA_MODALIDAD, TONO_MODALIDAD, normalizarModalidad } from '../features/colaboradores/modalidad';
 
-type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null; modalidad?: string };
+type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null; modalidad?: string; foto?: string | null };
 // Los colores del chip de contrato. Se quedan en la pantalla y no en la regla:
 // qué es urgente lo decide estadoContrato.ts, cómo se ve lo decide esto.
 const TONO_CHIP: Record<string, string> = {
@@ -34,7 +33,7 @@ type FormData = Omit<Colaborador, 'id' | 'activo'>;
 type Retirado = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
   salarioMensual: number; fechaRetiro: string | null; motivoRetiro: string | null };
 
-const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [], modalidad: 'PRESENCIAL' };
+const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [], modalidad: 'PRESENCIAL', foto: null, fotoMini: null };
 
 // La fecha viene del backend como ISO; el input date necesita "YYYY-MM-DD"
 export const soloFecha = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 10) : '');
@@ -91,6 +90,9 @@ export default function Colaboradores() {
   const [sedes, setSedes] = useState<{ id: string; nombre: string }[]>([]);
   const [errorForm, setErrorForm] = useState('');
   const [guardando, setGuardando] = useState(false);
+  // Si la foto se cambió en ESTA edición. Sin esto no se puede distinguir "no
+  // la tocó" de "la quitó", y son cosas opuestas.
+  const [fotoTocada, setFotoTocada] = useState(false);
 
   const cargar = () => api.get('/colaboradores').then(r => setLista(r.data));
   const cargarRetirados = () => api.get('/colaboradores/inactivos')
@@ -123,7 +125,8 @@ export default function Colaboradores() {
   const abrir = (col?: Colaborador) => {
     setEditando(col || null);
     setErrorForm('');
-    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [], modalidad: normalizarModalidad(col.modalidad) } : EMPTY);
+    setFotoTocada(false);
+    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [], modalidad: normalizarModalidad(col.modalidad), foto: col.fotoMini ?? null, fotoMini: col.fotoMini ?? null } : EMPTY);
     setModal(true);
   };
 
@@ -132,13 +135,7 @@ export default function Colaboradores() {
     setGuardando(true);
     setErrorForm('');
     try {
-      const payload = {
-        ...form,
-        horarioId: form.horarioId || null,
-        sedeIds: (form.sedeIds as string[]) ?? [],
-        // Fecha vacía debe ir como null (Prisma rechaza el string vacío en un campo de fecha)
-        fechaNacimiento: form.fechaNacimiento ? form.fechaNacimiento : null,
-      };
+      const payload = payloadColaborador(form as Record<string, unknown>, fotoTocada);
       if (editando) await api.put(`/colaboradores/${editando.id}`, payload);
       else await api.post('/colaboradores', payload);
       setModal(false);
@@ -421,67 +418,49 @@ export default function Colaboradores() {
       {/* Modal formulario */}
       {modal && (
         <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl">
-            <div className="flex items-center justify-between mb-4">
+          {/* Más ancho que antes y con scroll propio: el formulario pasó de
+              rótulos encima de cada campo a rótulo y explicación a la izquierda,
+              que es lo que deja explicar qué hace cada dato sin que la pantalla
+              se vuelva un muro de texto. */}
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl flex flex-col max-h-[92dvh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
               <h3 className="font-bold text-lg text-ink">{editando ? 'Editar colaborador' : 'Nuevo colaborador'}</h3>
-              <button onClick={() => setModal(false)}><X size={20} className="text-gray-400" /></button>
+              <button onClick={() => setModal(false)} aria-label="Cerrar"><X size={20} className="text-gray-400" /></button>
             </div>
-            <form onSubmit={guardar} className="grid grid-cols-2 gap-4">
-              {(['nombre', 'apellido', 'cedula', 'cargo', 'email', 'telefono'] as const).map(field => (
-                <div key={field} className={field === 'email' ? 'col-span-2' : ''}>
-                  <label className="block text-xs font-medium text-muted mb-1 capitalize">{field}</label>
-                  <input value={form[field] as string} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    required={['nombre', 'apellido', 'cedula'].includes(field)} />
+
+            <form onSubmit={guardar} className="flex flex-col min-h-0 flex-1">
+              <div className="overflow-y-auto px-6">
+                <CamposColaborador
+                  valores={form as ValoresColaborador}
+                  onCambio={parcial => setForm(p => ({ ...p, ...parcial }))}
+                  horarios={horarios}
+                  sedes={sedes}
+                  resumenFranjas={resumenFranjas}
+                  foto={{
+                    onCambio: fotos => { setFotoTocada(true); setForm(p => ({ ...p, foto: fotos?.foto ?? null, fotoMini: fotos?.mini ?? null })); },
+                    onError: setErrorForm,
+                  }}
+                />
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-100 shrink-0">
+                {errorForm && (
+                  <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{errorForm}</p>
+                )}
+                <div className="flex gap-3 justify-end">
+                  <button type="button" onClick={() => setModal(false)}
+                    className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                  <button type="submit" disabled={guardando}
+                    className="px-5 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark disabled:opacity-60">
+                    {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear colaborador'}
+                  </button>
                 </div>
-              ))}
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-muted mb-1">Fecha de nacimiento</label>
-                <input type="date" value={(form.fechaNacimiento as string) || ''}
-                  onChange={e => setForm(p => ({ ...p, fechaNacimiento: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-muted mb-1">Horario de trabajo</label>
-                <select value={form.horarioId || ''} onChange={e => setForm(p => ({ ...p, horarioId: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                  <option value="">Sin horario (no controla llegadas tarde)</option>
-                  {horarios.map(h => <option key={h.id} value={h.id}>{h.nombre} · {resumenFranjas(h.franjas)}</option>)}
-                </select>
-              </div>
-              <div className="col-span-2">
-                <SelectorModalidad valor={normalizarModalidad(form.modalidad)}
-                  onChange={m => setForm(p => ({ ...p, modalidad: m }))} />
-              </div>
-              <div className="col-span-2">
-                <SelectorSedes sedes={sedes} valor={(form.sedeIds as string[]) ?? []}
-                  onChange={ids => setForm(p => ({ ...p, sedeIds: ids }))}
-                  modalidad={normalizarModalidad(form.modalidad)} />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-muted mb-1">Salario mensual (COP)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">$</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={formatearMiles(form.salarioMensual)}
-                    onChange={e => setForm(p => ({ ...p, salarioMensual: parsearMiles(e.target.value) }))}
-                    placeholder="1.750.000"
-                    required
-                    className="w-full border border-gray-300 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              </div>
-              {errorForm && <p className="col-span-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{errorForm}</p>}
-              <div className="col-span-2 flex gap-3 justify-end mt-2">
-                <button type="button" onClick={() => setModal(false)} className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                <button type="submit" disabled={guardando} className="px-4 py-2 text-sm bg-primary text-ink font-semibold rounded-lg hover:bg-primary-dark disabled:opacity-60">{guardando ? 'Guardando...' : 'Guardar'}</button>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }

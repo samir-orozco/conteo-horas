@@ -11,17 +11,22 @@ import { AYUDA_MODALIDAD, OPCIONES_MODALIDAD, type Modalidad } from '../features
 // de un clic. Aquí la ayuda de abajo cambia con lo elegido y se lee antes de
 // guardar.
 export default function SelectorModalidad({
-  valor, onChange,
+  valor, onChange, sinRotulo = false,
 }: {
   valor: Modalidad;
   onChange: (m: Modalidad) => void;
+  // El formulario nuevo pone el rótulo en su columna izquierda; sin esto
+  // saldría dos veces.
+  sinRotulo?: boolean;
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-muted mb-1" id="rotulo-modalidad">
-        Modalidad de trabajo
-      </label>
-      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-labelledby="rotulo-modalidad">
+      {!sinRotulo && (
+        <label className="block text-xs font-medium text-muted mb-1" id="rotulo-modalidad">
+          Modalidad de trabajo
+        </label>
+      )}
+      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Modalidad de trabajo">
         {OPCIONES_MODALIDAD.map(o => {
           const activa = o.valor === valor;
           return (
