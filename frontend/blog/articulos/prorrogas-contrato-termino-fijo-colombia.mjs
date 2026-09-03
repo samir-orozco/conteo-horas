@@ -139,5 +139,37 @@ export default {
 <div class="nota">
   <p><strong>Sobre las fechas y los números de este artículo.</strong> Salen del texto de la Ley 2466 de 2025 y de los conceptos del Ministerio del Trabajo que la desarrollan. Son las mismas reglas que HoraPro tiene implementadas y probadas. Aun así, ninguna nota de blog reemplaza el concepto de un abogado laboralista sobre un caso concreto: si va a tomar una decisión sobre un contrato puntual, consúltelo.</p>
 </div>
+
+<div class="cierre-cta">
+  <p>Nada de esto se olvida por descuido. Se olvida porque son fechas que hay que revisar persona por persona, todos los meses, contra una tabla que la mayoría tiene desactualizada. <strong>HoraPro lo lleva por usted</strong>: cuenta las prórrogas, calcula la fecha en que cada contrato se vuelve indefinido y le avisa 30 días antes del vencimiento, que es cuando todavía se puede decidir.</p>
+  <p><a class="cta" href="/registro">Probar gratis 7 días</a></p>
+  <p>Precio por empresa, no por empleado. Y si solo necesita la cuenta de un caso puntual, ahí está la <a href="/calculadoras/liquidacion-contrato/">calculadora de liquidación de contrato</a>.</p>
+</div>
 `,
+  faq: [
+    {
+      p: '¿Cuántas veces se puede renovar un contrato a término fijo en Colombia?',
+      r: 'Las que las partes quieran, pero con una condición: si el contrato se pactó por menos de un año, después de la CUARTA prórroga ya no puede renovarse por un período inferior a un año. Antes de la Ley 2466 de 2025 ese límite estaba en la tercera prórroga, y es el número que todavía circula equivocado.',
+    },
+    {
+      p: '¿Cuánto dura máximo un contrato a término fijo?',
+      r: 'Cuatro años. Al agotar ese tope se convierte en contrato a término indefinido por ministerio de la ley, sin que nadie tenga que firmar nada. Antes de la reforma el tope era de tres años.',
+    },
+    {
+      p: '¿Qué pasa si no se avisa con 30 días de anticipación?',
+      r: 'El contrato se renueva solo, por un término igual al pactado o al de su última prórroga. No hace falta que las partes estén de acuerdo: basta el silencio. Terminarlo después exige pagar la indemnización del artículo 64 del CST, que en el término fijo equivale a los salarios que faltaban hasta el vencimiento.',
+    },
+    {
+      p: '¿Desde cuándo se cuentan los cuatro años en un contrato firmado antes de la reforma?',
+      r: 'Desde el 25 de junio de 2025, no desde la fecha de la firma. Para los contratos que ya estaban vigentes ese día, el tope de cuatro años empieza a contar con la entrada en vigencia de la Ley 2466 de 2025. Un contrato de 2019 se vuelve indefinido el 25 de junio de 2029.',
+    },
+    {
+      p: '¿El preaviso lo puede dar el trabajador?',
+      r: 'Sí. La ley habla de que ninguna de las partes manifieste su intención de terminar el contrato, así que el aviso lo puede dar cualquiera de las dos. Debe constar por escrito, y no es una carta de despido ni requiere justa causa: solo avisa que el plazo pactado se cumple y no se va a renovar.',
+    },
+    {
+      p: '¿Cuánto dura el contrato de aprendizaje y cuánto se le paga al aprendiz?',
+      r: 'La Ley 2466 de 2025 lo convirtió en un contrato laboral especial a término fijo con duración máxima de tres años, no cuatro. Durante la etapa lectiva el aprendiz recibe el 75% de un salario mínimo y durante la etapa práctica el 100%. Antes de la reforma eran 50% y 75%.',
+    },
+  ],
 };
