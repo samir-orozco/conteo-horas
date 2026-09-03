@@ -566,6 +566,24 @@ export function paginaCalculadora(c) {
   });
 }
 
+// El remate del artículo, la tarjeta oscura del final. Por defecto habla de lo
+// que hace el producto en general; un artículo puede traer el suyo y decir qué
+// le resuelve A ESE lector, que convierte mejor que un mensaje genérico al
+// cierre de doce minutos sobre un tema concreto.
+const REMATE_POR_DEFECTO = {
+  titulo: 'Deja de sacar las cuentas a mano',
+  texto: 'HoraPro registra la jornada y liquida recargos, extras, dominicales y festivos con la normativa colombiana al día. Siete días de prueba, sin tarjeta.',
+};
+
+const remate = (a) => {
+  const r = a.remate ?? REMATE_POR_DEFECTO;
+  return `<div class="remate">
+          <h2>${esc(r.titulo)}</h2>
+          <p>${esc(r.texto)}</p>
+          <a href="/registro" class="cta">${esc(r.boton ?? 'Probar gratis')}</a>
+        </div>`;
+};
+
 export function paginaArticulo(a, todos) {
   const url = `${SITIO.url}/blog/${a.slug}/`;
   // El SIGUIENTE de la lista, en circular, no "el primero que no sea este". Con
@@ -624,11 +642,7 @@ export function paginaArticulo(a, todos) {
         ${a.cuerpo}
         ${faq}
         <div class="bio">${avatar()}<div><b>${esc(AUTOR.nombre)}</b><br /><span>${esc(AUTOR.cargo)}</span><p>${esc(AUTOR.bio)}</p></div></div>
-        <div class="remate">
-          <h2>Deja de sacar las cuentas a mano</h2>
-          <p>HoraPro registra la jornada y liquida recargos, extras, dominicales y festivos con la normativa colombiana al día. Siete días de prueba, sin tarjeta.</p>
-          <a href="/registro" class="cta">Probar gratis</a>
-        </div>
+        ${remate(a)}
         ${siguiente}
       </article>
     </div>

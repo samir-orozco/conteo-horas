@@ -140,12 +140,14 @@ export default {
   <p><strong>Sobre las fechas y los números de este artículo.</strong> Salen del texto de la Ley 2466 de 2025 y de los conceptos del Ministerio del Trabajo que la desarrollan. Son las mismas reglas que HoraPro tiene implementadas y probadas. Aun así, ninguna nota de blog reemplaza el concepto de un abogado laboralista sobre un caso concreto: si va a tomar una decisión sobre un contrato puntual, consúltelo.</p>
 </div>
 
-<div class="cierre-cta">
-  <p>Nada de esto se olvida por descuido. Se olvida porque son fechas que hay que revisar persona por persona, todos los meses, contra una tabla que la mayoría tiene desactualizada. <strong>HoraPro lo lleva por usted</strong>: cuenta las prórrogas, calcula la fecha en que cada contrato se vuelve indefinido y le avisa 30 días antes del vencimiento, que es cuando todavía se puede decidir.</p>
-  <p><a class="cta" href="/registro">Probar gratis 7 días</a></p>
-  <p>Precio por empresa, no por empleado. Y si solo necesita la cuenta de un caso puntual, ahí está la <a href="/calculadoras/liquidacion-contrato/">calculadora de liquidación de contrato</a>.</p>
-</div>
+<p>Y si lo que necesita es la cuenta de un caso puntual que ya terminó, ahí está la <a href="/calculadoras/liquidacion-contrato/">calculadora de liquidación de contrato</a>.</p>
 `,
+  // La tarjeta del cierre habla de lo que este lector acaba de leer, no del
+  // producto en general: llega después de doce minutos sobre preavisos y topes.
+  remate: {
+    titulo: 'Ningún contrato se le vence sin avisarle',
+    texto: 'HoraPro lleva los contratos de su equipo con estas reglas adentro: cuenta las prórrogas, calcula cuándo cada uno se vuelve indefinido y le avisa 30 días antes del vencimiento, que es cuando todavía se puede decidir. Siete días de prueba, sin tarjeta.',
+  },
   faq: [
     {
       p: '¿Cuántas veces se puede renovar un contrato a término fijo en Colombia?',
