@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:cobertura": "vitest run --coverage"
+    "test:cobertura": "vitest run --coverage",
+    "indexnow": "node scripts/avisar-indexnow.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
