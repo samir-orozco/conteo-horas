@@ -1,23 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  X, ChevronRight, UtensilsCrossed, MousePointerClick, MapPin, Timer, History,
+  X, ChevronRight, FileSignature, Laptop, FileSpreadsheet, History, ListFilter,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { debeMostrarNovedades, vistaKey, apagadoKey, guiaKey } from './novedadesVisibles';
 
 // Novedades de la versión: se muestran UNA vez por usuario al entrar.
 //
-// Al publicar un lote nuevo se sube la VERSION y vuelven a aparecer, salvo a
-// quien haya pedido no verlas más. Son dos llaves distintas a propósito: "ya vi
-// las de agosto" y "no me muestres novedades nunca" son decisiones distintas, y
-// mezclarlas obligaría a elegir entre repetirle a alguien lo que ya leyó o no
-// contarle nunca lo que viene después.
-const VERSION = '2026-08';
-const vistaKey = (id: string) => `horapro_novedades_${VERSION}_${id}`;
-const apagadoKey = (id: string) => `horapro_novedades_off_${id}`;
+// El lote se REEMPLAZA, no se acumula: quien está adentro ya vio el anterior, y
+// repetírselo entierra lo que de verdad es nuevo. La decisión de mostrarlas y
+// las llaves de localStorage viven en novedadesVisibles.ts, que sí tiene pruebas.
 
 type Novedad = {
-  icono: typeof UtensilsCrossed;
+  icono: typeof FileSignature;
   titulo: string;
   texto: string;
   // A dónde lleva, para que la novedad no se quede en el anuncio.
@@ -33,87 +29,102 @@ const Chip = ({ tono, children }: { tono: string; children: React.ReactNode }) =
 
 const NOVEDADES: Novedad[] = [
   {
-    icono: UtensilsCrossed,
-    titulo: 'El descanso, como tú lo manejes',
-    texto: 'Puedes seguir descontando un tiempo fijo, o pedirle a tu gente que marque su descanso en el kiosco. Si lo marcan, quien se va temprano deja de pagar un descanso que nunca tomó. Le sirve igual al turno de día que al nocturno.',
-    enlace: { texto: 'Configurarlo en Horario', a: '/app/configuracion?tab=horario' },
+    icono: FileSignature,
+    titulo: 'Tus contratos avisan antes de vencerse',
+    texto: 'Un contrato a término fijo que no se preavisa con 30 días de anticipación se prorroga solo, por ley, por el mismo tiempo. HoraPro ahora lleva tus contratos, te avisa cuándo vence el preaviso y te deja adjuntar el documento y los otrosíes.',
+    enlace: { texto: 'Ver mis contratos', a: '/app/colaboradores' },
     vista: (
-      <div className="flex flex-col gap-2 w-full max-w-[240px]">
-        <div className="rounded-xl bg-primary px-3 py-2 text-ink text-xs font-bold text-center shadow-sm">
-          Salgo a mi descanso
-        </div>
-        <div className="rounded-xl bg-white/90 border border-gray-200 px-3 py-2 text-ink text-xs font-semibold text-center shadow-sm">
-          Termino mi jornada
-        </div>
-        <p className="text-[10px] text-ink/50 text-center mt-0.5">Lo que ve el colaborador al salir</p>
-      </div>
-    ),
-  },
-  {
-    icono: MousePointerClick,
-    titulo: 'Toca una marcación y ve todo el día',
-    texto: 'En Registros, al hacer clic en cualquier fila se abre el detalle: a qué hora entró y salió, su descanso, el tiempo contado del día frente a lo que pedía su horario, y las fotos de verificación.',
-    enlace: { texto: 'Ir a Registros', a: '/app/registros' },
-    vista: (
-      <div className="w-full max-w-[260px] rounded-xl bg-white/95 shadow-sm border border-gray-200 overflow-hidden text-[10px]">
-        <div className="grid grid-cols-4 gap-1 px-2.5 py-1.5 bg-gray-50 text-[9px] font-semibold uppercase text-muted">
-          <span>Entrada</span><span>Salida</span><span>Descanso</span><span>Llegada</span>
-        </div>
-        <div className="grid grid-cols-4 gap-1 px-2.5 py-2 items-center">
-          <span className="font-mono text-green-700">08:00</span>
-          <span className="font-mono text-red-600">17:10</span>
-          <span className="font-mono text-gray-700">12:05→13:02</span>
-          <Chip tono="bg-green-50 text-green-700">A tiempo</Chip>
-        </div>
-      </div>
-    ),
-  },
-  {
-    icono: MapPin,
-    titulo: 'Varias sedes, cada una con su ubicación',
-    texto: 'Si tienes más de un local, cada sede lleva su propia ubicación y su radio. Un colaborador puede tener varias asignadas, y los reportes se pueden filtrar por sede.',
-    enlace: { texto: 'Configurar sedes', a: '/app/configuracion?tab=sedes' },
-    vista: (
-      <div className="flex flex-col gap-1.5 w-full max-w-[220px]">
-        {['Sede principal', 'Bodega Norte', 'Punto Laureles'].map((s, i) => (
-          <div key={s} className="flex items-center gap-2 rounded-lg bg-white/90 border border-gray-200 px-2.5 py-1.5 shadow-sm">
-            <MapPin size={12} className="text-ink/40 shrink-0" />
-            <span className="text-[11px] text-ink font-medium truncate">{s}</span>
-            <span className="ml-auto text-[9px] text-muted shrink-0">{[150, 80, 200][i]} m</span>
+      <div className="flex flex-col gap-1.5 w-full max-w-[250px]">
+        {[
+          { n: 'Ana Giraldo', chip: 'Preaviso en 12 días', tono: 'bg-amber-100 text-amber-800' },
+          { n: 'Julián Torres', chip: 'Se prorrogó solo', tono: 'bg-red-100 text-red-700' },
+          { n: 'Sofía Ramos', chip: 'Vigente', tono: 'bg-green-50 text-green-700' },
+        ].map(x => (
+          <div key={x.n} className="flex items-center gap-2 rounded-lg bg-white/90 border border-gray-200 px-2.5 py-1.5 shadow-sm">
+            <span className="text-[11px] text-ink font-medium truncate">{x.n}</span>
+            <span className="ml-auto shrink-0"><Chip tono={x.tono}>{x.chip}</Chip></span>
           </div>
         ))}
       </div>
     ),
   },
   {
-    icono: Timer,
-    titulo: 'Tolerancia de salida',
-    texto: 'Los minutos sueltos que alguien se queda de más sin que nadie los autorizara dejan de pagarse como hora extra. Si se queda de verdad, cuenta completo.',
-    enlace: { texto: 'Ajustarla en Horario', a: '/app/configuracion?tab=horario' },
+    icono: Laptop,
+    titulo: 'Quien trabaja desde la casa ya puede marcar',
+    texto: 'Cada persona tiene su modalidad: presencial, híbrida o remota. Al remoto no se le pide ni se le mira la ubicación. Al híbrido no se le bloquea nunca, pero si está en una de tus sedes queda registrado en cuál. El presencial sigue igual que siempre.',
+    enlace: { texto: 'Asignarla en Colaboradores', a: '/app/colaboradores' },
     vista: (
-      <div className="w-full max-w-[240px] rounded-xl bg-white/95 border border-gray-200 shadow-sm px-3 py-2.5 text-[11px]">
-        <p className="text-ink">Salida programada <b>17:00</b></p>
-        <p className="text-muted mt-1">Marcó a las 17:08 · tolerancia 15 min</p>
-        <p className="text-green-700 font-semibold mt-1.5">Se liquida hasta las 17:00</p>
+      <div className="flex flex-col gap-2 w-full max-w-[250px]">
+        <div className="rounded-xl bg-white/95 border border-gray-200 px-3 py-2.5 shadow-sm">
+          <p className="text-[9px] font-semibold uppercase text-muted mb-1.5">Modalidad de trabajo</p>
+          <div className="flex gap-1.5">
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white border border-gray-300 text-muted">Presencial</span>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary/25 border border-primary text-ink">Híbrido</span>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white border border-gray-300 text-muted">Remoto</span>
+          </div>
+          <p className="text-[9px] text-muted mt-1.5 leading-snug">Puede marcar desde donde sea. Su ubicación solo registra la sede.</p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    icono: FileSpreadsheet,
+    titulo: 'Sube todo tu equipo con un Excel',
+    texto: 'Descargas el formato, lo llenas y lo cargas. Los datos aparecen en una tabla que puedes corregir antes de guardar, y el horario y la sede se eligen aquí, no en el archivo: a una persona o a todas de una vez.',
+    enlace: { texto: 'Probar la carga masiva', a: '/app/colaboradores' },
+    vista: (
+      <div className="w-full max-w-[265px] rounded-xl bg-white/95 shadow-sm border border-gray-200 overflow-hidden text-[10px]">
+        <div className="grid grid-cols-3 gap-1 px-2.5 py-1.5 bg-gray-50 text-[9px] font-semibold uppercase text-muted">
+          <span>Nombre</span><span>Cédula</span><span>Horario</span>
+        </div>
+        {[['Ana Giraldo', '1020304050'], ['Pedro Salazar', '1098765432']].map(([n, c]) => (
+          <div key={c} className="grid grid-cols-3 gap-1 px-2.5 py-1.5 items-center border-t border-gray-100">
+            <span className="text-ink truncate">{n}</span>
+            <span className="font-mono text-gray-600">{c}</span>
+            <span className="text-ink/60 truncate">Oficina</span>
+          </div>
+        ))}
+        <div className="px-2.5 py-1.5 border-t border-gray-100 bg-red-50/60 text-[9px] text-red-700">
+          Fila 4: la cédula ya existe
+        </div>
       </div>
     ),
   },
   {
     icono: History,
-    titulo: 'Cambiar un horario ya no mueve el pasado',
-    texto: 'Cada día guarda lo que su horario exigía ESE día. Ajustar la hora de entrada hoy deja de llenar de tardanzas los meses anteriores ni de cambiar liquidaciones que ya entregaste.',
+    titulo: 'Cada persona tiene su historia completa',
+    texto: 'La ficha del colaborador guarda su foto, cuándo entró, si se retiró y por qué, y si volvió. Con su soporte adjunto y su línea de tiempo, que es lo que necesitas el día que pidan un certificado laboral o llegue una inspección.',
+    enlace: { texto: 'Abrir un colaborador', a: '/app/colaboradores' },
     vista: (
-      <div className="flex flex-col gap-1.5 w-full max-w-[230px]">
+      <div className="flex flex-col gap-1.5 w-full max-w-[240px]">
         {[
-          { mes: 'Julio', chip: 'Guardado ese día', tono: 'bg-green-50 text-green-700' },
-          { mes: 'Agosto', chip: 'Guardado ese día', tono: 'bg-green-50 text-green-700' },
+          { t: 'Reingreso', f: '1 sep 2026', tono: 'bg-green-50 text-green-700' },
+          { t: 'Retiro · Renuncia', f: '14 mar 2026', tono: 'bg-gray-100 text-gray-600' },
+          { t: 'Ingreso', f: '2 ene 2024', tono: 'bg-green-50 text-green-700' },
         ].map(x => (
-          <div key={x.mes} className="flex items-center gap-2 rounded-lg bg-white/90 border border-gray-200 px-2.5 py-1.5 shadow-sm">
-            <span className="text-[11px] text-ink font-medium">{x.mes}</span>
-            <span className="ml-auto"><Chip tono={x.tono}>{x.chip}</Chip></span>
+          <div key={x.f} className="flex items-center gap-2 rounded-lg bg-white/90 border border-gray-200 px-2.5 py-1.5 shadow-sm">
+            <Chip tono={x.tono}>{x.t}</Chip>
+            <span className="ml-auto text-[10px] text-muted shrink-0">{x.f}</span>
           </div>
         ))}
-        <p className="text-[10px] text-ink/50 text-center mt-0.5">Sus reportes ya no cambian solos</p>
+      </div>
+    ),
+  },
+  {
+    icono: ListFilter,
+    titulo: 'Encuentra a quien buscas, no a todos',
+    texto: 'La lista de colaboradores muestra su foto, su sede y cómo va su contrato. Y se filtra por sede o por estado del contrato, para responder de una "a quién le vence algo este mes" sin ir persona por persona.',
+    enlace: { texto: 'Ir a Colaboradores', a: '/app/colaboradores' },
+    vista: (
+      <div className="w-full max-w-[235px] rounded-xl bg-white/95 border border-gray-200 shadow-sm p-2.5 text-[10px]">
+        <p className="text-[9px] font-semibold uppercase text-muted mb-1.5">Contrato</p>
+        {[['Requieren atención', true], ['Por vencer', true], ['Vigentes', false]].map(([txt, on]) => (
+          <div key={String(txt)} className="flex items-center gap-2 py-1">
+            <span className={`w-3 h-3 rounded border ${on ? 'bg-primary border-primary' : 'border-gray-300'}`} />
+            <span className="text-ink">{txt}</span>
+          </div>
+        ))}
+        <p className="text-[9px] text-muted text-center border-t border-gray-100 mt-1.5 pt-1.5">Limpiar filtros</p>
       </div>
     ),
   },
@@ -134,18 +145,19 @@ export default function Novedades({ forzado = false, onCerrar }: { forzado?: boo
   // le salten cuando cierre el video.
   useEffect(() => {
     if (!usuario || usuario.rol === 'SUPER_ADMIN') return;
-    if (localStorage.getItem(`horapro_guia_vista_${usuario.id}`)) return;
+    if (localStorage.getItem(guiaKey(usuario.id))) return;
     localStorage.setItem(vistaKey(usuario.id), '1');
   }, [usuario]);
 
   // Si se muestran o no se DERIVA, no se guarda en estado: son lecturas que no
   // cambian mientras la pantalla está viva.
-  const solas = !!usuario
-    && usuario.rol !== 'SUPER_ADMIN'
-    && !localStorage.getItem(apagadoKey(usuario.id))
-    && !localStorage.getItem(vistaKey(usuario.id))
-    && !!localStorage.getItem(`horapro_guia_vista_${usuario.id}`);
-  const abierto = !cerrado && (forzado || solas);
+  const abierto = !cerrado && debeMostrarNovedades({
+    rol: usuario?.rol ?? null,
+    vioLaGuia: !!usuario && !!localStorage.getItem(guiaKey(usuario.id)),
+    vioEstaVersion: !!usuario && !!localStorage.getItem(vistaKey(usuario.id)),
+    apagadas: !!usuario && !!localStorage.getItem(apagadoKey(usuario.id)),
+    forzado,
+  });
 
   const cerrar = () => {
     if (usuario) {
