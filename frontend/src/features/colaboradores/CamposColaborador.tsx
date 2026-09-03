@@ -87,6 +87,18 @@ export default function CamposColaborador({
         )}
       </CampoFormulario>
 
+      <CampoFormulario rotulo="Salario mensual"
+        descripcion="Con esto se calcula su hora extra y sus recargos." obligatorio>
+        {id => (
+          <div className={`relative ${CORTO}`}>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">$</span>
+            <input id={id} type="text" inputMode="numeric" required placeholder="1.750.000"
+              value={formatearMiles(valores.salarioMensual ?? 0)} className={`${ENTRADA} pl-7`}
+              onChange={e => onCambio({ salarioMensual: parsearMiles(e.target.value) })} />
+          </div>
+        )}
+      </CampoFormulario>
+
       <CampoFormulario rotulo="Contacto" descripcion="Opcional. Para ubicarlo si algo pasa con sus marcaciones." grupo>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <input type="email" value={valores.email ?? ''} placeholder="Correo" aria-label="Correo" className={ENTRADA}
@@ -127,18 +139,6 @@ export default function CamposColaborador({
             onChange={ids => onCambio({ sedeIds: ids })} />
         </CampoFormulario>
       )}
-
-      <CampoFormulario rotulo="Salario mensual"
-        descripcion="Con esto se calcula su hora extra y sus recargos." obligatorio>
-        {id => (
-          <div className={`relative ${CORTO}`}>
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">$</span>
-            <input id={id} type="text" inputMode="numeric" required placeholder="1.750.000"
-              value={formatearMiles(valores.salarioMensual ?? 0)} className={`${ENTRADA} pl-7`}
-              onChange={e => onCambio({ salarioMensual: parsearMiles(e.target.value) })} />
-          </div>
-        )}
-      </CampoFormulario>
     </div>
   );
 }
