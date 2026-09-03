@@ -17,14 +17,23 @@ Qué guardar aquí
    La foto del hombre cubierto de notas adhesivas.
    Va en el artículo "Jornada laboral en Colombia 2026".
 
-3. samir-orozco.jpg  (opcional)
+3. prorrogas-contrato-termino-fijo-colombia.webp
+   Contratos laborales sobre un escritorio junto a un calendario con fechas
+   marcadas. Va en el artículo "Prórrogas del contrato a término fijo".
+   OJO: este es .webp, no .jpg. Pesa la mitad con la misma calidad y Google lo
+   prefiere; el nombre del archivo ES el que Google lee para imágenes, así que
+   se deja igual al slug del artículo y no se toca.
+
+4. samir-orozco.jpg  (opcional)
    Foto tuya, cuadrada. Sin ella sale un círculo con tus iniciales.
    Para activarla, pon la ruta en el campo `foto` de blog/articulos/index.mjs.
 
 Medidas
 -------
 
-Portadas: 1200 x 630 px, JPG, por debajo de 250 kB. Es la misma imagen que se
+Portadas: 1200 x 630 px, por debajo de 250 kB. De aquí en adelante en WebP: pesa
+cerca de la mitad que un JPG con la misma calidad, y todos los navegadores que
+importan lo soportan desde hace años. Es la misma imagen que se
 ve al compartir el enlace por WhatsApp o LinkedIn, así que conviene que el
 motivo se entienda en pequeño y sin texto encima.
 
