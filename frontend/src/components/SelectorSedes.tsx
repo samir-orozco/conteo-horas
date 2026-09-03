@@ -12,11 +12,13 @@ export type SedeOpcion = { id: string; nombre: string };
 // La selección es múltiple a propósito: quien rota entre locales abre y cierra
 // turno en cualquiera de los suyos.
 export default function SelectorSedes({
-  sedes, valor, onChange, modalidad = 'PRESENCIAL',
+  sedes, valor, onChange, modalidad = 'PRESENCIAL', sinRotulo = false,
 }: {
   sedes: SedeOpcion[];
   valor: string[];
   onChange: (ids: string[]) => void;
+  // El formulario nuevo pone el rótulo en su columna izquierda.
+  sinRotulo?: boolean;
   // Cambia lo que las sedes SIGNIFICAN, así que cambia lo que este control dice.
   // Sin esto, la única frase de la pantalla que explica qué hace la geocerca
   // afirmaría lo contrario de lo que va a hacer el servidor.
@@ -36,9 +38,11 @@ export default function SelectorSedes({
 
   return (
     <div>
-      <label className="block text-xs font-medium text-muted mb-1">
-        {modalidad === 'HIBRIDO' ? 'Sedes que se le reconocen' : 'Sedes donde puede marcar'}
-      </label>
+      {!sinRotulo && (
+        <label className="block text-xs font-medium text-muted mb-1">
+          {modalidad === 'HIBRIDO' ? 'Sedes que se le reconocen' : 'Sedes donde puede marcar'}
+        </label>
+      )}
       <div className="flex flex-wrap gap-1.5">
         {sedes.map(s => {
           const activa = valor.includes(s.id);

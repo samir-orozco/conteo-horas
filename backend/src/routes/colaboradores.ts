@@ -165,6 +165,22 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   // crudo al enum de MySQL y sale como un 500 sin explicación.
   const modalidadInvalida = (data: any) => 'modalidad' in data && data.modalidad === null;
 
+  // La foto viaja como data URL dentro del cuerpo, y tanto POST como PUT hacen
+  // spread de lo que llega: sin esta guarda, una foto de celular sin recortar
+  // (varios megabytes) entra derecho a la fila del colaborador. La misma
+  // comprobación que ya hacía `PUT /:id/foto`, ahora también al crear.
+  function fotoInvalida(data: any): string | null {
+    if ('foto' in data && data.foto != null && !fotoPerfilValida(data.foto)) {
+      return 'La foto debe ser JPG, PNG o WEBP y pesar menos de 500 KB.';
+    }
+    if ('fotoMini' in data && data.fotoMini != null && !miniValida(data.fotoMini)) {
+      // La miniatura es una comodidad de la lista: si no sirve se descarta y la
+      // lista cae a las iniciales, en vez de rechazar la foto entera.
+      data.fotoMini = null;
+    }
+    return null;
+  }
+
   // Las columnas del formato de carga masiva, y los horarios que se pueden
   // escribir en él.
   //
@@ -287,6 +303,8 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (modalidadInvalida(data)) {
       return reply.status(400).send({ error: 'Modalidad de trabajo no válida' });
     }
+    const malaFoto = fotoInvalida(data);
+    if (malaFoto) return reply.status(400).send({ error: malaFoto });
 
     // La cédula es única por empresa. Si ya existe desactivado (lo "borraron"),
     // se reactiva con los datos nuevos y conserva todo su historial de horas.
@@ -361,6 +379,8 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (modalidadInvalida(data)) {
       return reply.status(400).send({ error: 'Modalidad de trabajo no válida' });
     }
+    const malaFoto = fotoInvalida(data);
+    if (malaFoto) return reply.status(400).send({ error: malaFoto });
     const actualizado = await prisma.colaborador.update({ where: { id }, data });
     await sincronizarSedes(id, sedeIds, request.empresaId!);
 
