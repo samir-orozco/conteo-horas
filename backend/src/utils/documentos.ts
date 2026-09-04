@@ -10,10 +10,47 @@
 // que esto son unos 3 MB de archivo real.
 export const MAX_DOC = 4_200_000;
 
-const PATRON = /^data:(image\/(jpeg|png|webp)|application\/pdf);base64,/;
+// El único Word que entra. Se nombra porque las rutas y el frontend lo repiten
+// y es una cadena de 71 caracteres que nadie escribe bien de memoria.
+export const MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+// Cada formato aceptado, con el prefijo en base64 de los bytes con los que
+// empieza ese tipo de archivo.
+//
+// POR QUÉ MIRAR LOS BYTES Y NO SOLO LA ETIQUETA: el tipo del data URI lo
+// escribe quien sube. Antes bastaba con poner "application/pdf" delante de
+// cualquier cosa para que entrara.
+//
+// HASTA DÓNDE LLEGA, QUE ES POCO Y CONVIENE SABERLO: esto detecta el mal
+// etiquetado y nada más. Todo .docx es un zip, así que un .xlsx o un .apk
+// renombrados pasan; y un .docx auténtico con contenido malicioso es un zip
+// perfectamente válido y también pasa. Lo que de verdad protege es lo otro:
+// que .doc y .docm queden fuera, porque son los dos formatos de Word que
+// pueden llevar macros.
+//
+// EL LARGO DE CADA PREFIJO NO ES ARBITRARIO. Base64 codifica de a 3 bytes en 4
+// caracteres, así que de una firma de n bytes solo los primeros
+// floor(n × 8 / 6) caracteres no dependen de lo que venga después. Alargar uno
+// de estos valores creyendo que lo hace más estricto rechaza archivos buenos.
+// Está comprobado sobre los 256 valores posibles del byte siguiente en
+// documentos.test.ts, y ese es el sitio para volver a comprobarlo.
+const FIRMAS = new Map<string, string>([
+  ['application/pdf', 'JVBERi'],      // %PDF-                     5 bytes
+  [MIME_DOCX, 'UEsDB'],               // 50 4B 03 04 (zip)         4 bytes
+  ['image/jpeg', '/9j/'],             // FF D8 FF                  3 bytes
+  ['image/png', 'iVBORw0KGg'],        // 89 50 4E 47 0D 0A 1A 0A   8 bytes
+  ['image/webp', 'UklGR'],            // RIFF                      4 bytes
+]);
+
+const SEPARADOR = ';base64,';
 
 export function documentoValido(v: unknown): v is string {
-  return typeof v === 'string' && PATRON.test(v) && v.length < MAX_DOC;
+  if (typeof v !== 'string' || v.length >= MAX_DOC) return false;
+  if (!v.startsWith('data:')) return false;
+  const corte = v.indexOf(SEPARADOR);
+  if (corte <= 5) return false;
+  const firma = FIRMAS.get(v.slice(5, corte));
+  return firma !== undefined && v.startsWith(firma, corte + SEPARADOR.length);
 }
 
 // El tipo MIME que viene dentro del propio data URI. Se lee de ahí y no de lo
@@ -22,8 +59,85 @@ export function tipoDeDocumento(dataUri: string): string {
   return dataUri.slice(5, dataUri.indexOf(';'));
 }
 
-// El nombre de archivo, recortado. Es texto libre del usuario y termina en la
-// base y en pantalla.
+// Los caracteres con los que un nombre deja de ser un nombre: separadores de
+// ruta, comillas, punto y coma y caracteres de control.
+//
+// No es defensa contra un ataque, y decirlo importa: el archivo nunca se
+// escribe en disco, así que aquí no hay ningún path traversal que evitar. Es
+// que este texto termina en el atributo download de un enlace y en la pantalla,
+// y ahí una barra o un salto de línea no significan nada bueno.
+// eslint-disable-next-line no-control-regex
+const PELIGROSOS = /[/\\:*?"<>|;\x00-\x1f]/g;
+
+// El nombre de archivo, limpio y recortado. Es texto libre del usuario y
+// termina en la base y en pantalla.
 export function nombreDeDocumento(v: unknown): string | null {
-  return typeof v === 'string' && v.trim() ? v.trim().slice(0, 120) : null;
+  if (typeof v !== 'string') return null;
+  const limpio = v
+    .replace(PELIGROSOS, '_')
+    .replace(/\.{2,}/g, '.')
+    .replace(/^[.\s]+/, '')
+    .trim();
+  return limpio ? limpio.slice(0, 120) : null;
+}
+
+// La extensión que le corresponde a cada tipo ya comprobado.
+const EXTENSION: Record<string, string> = {
+  'application/pdf': '.pdf',
+  [MIME_DOCX]: '.docx',
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+};
+
+// Del nombre solo se quita lo que de verdad parece una extensión. Quitar todo
+// lo que va después del último punto convierte "Contrato v1.2" en "Contrato v1".
+const EXTENSION_ESCRITA = /\.(pdf|docx?|docm|jpe?g|png|webp|gif|bmp|heic|heif|tiff?|avif|exe|zip)$/i;
+
+// Con qué nombre se baja el archivo.
+//
+// La extensión sale del tipo que ya se comprobó contra los bytes, no de la que
+// venía escrita en el nombre. Importa desde que entra Word: un .docx no se
+// puede previsualizar, así que descargarlo es la única forma de abrirlo, y
+// hasta ahora quien subía elegía con qué extensión lo recibía quien descarga.
+export function nombreParaDescargar(nombre: string | null, mime: string): string {
+  const base = (nombre ?? '').replace(EXTENSION_ESCRITA, '').trim();
+  return (base || 'documento') + (EXTENSION[mime] ?? '');
+}
+
+export const MOTIVO_RECHAZO =
+  'Ese archivo no se puede adjuntar. Solo aceptamos PDF, Word (.docx) y fotos en JPG o PNG. ' +
+  'Si tienes un .doc antiguo, ábrelo en Word y usa Guardar como para dejarlo en .docx.';
+
+// Qué hacer con el documento que vino en la petición.
+//
+// Son cuatro casos y confundir dos de ellos borra el archivo de alguien, así
+// que la decisión vive aquí, probada, y no repetida dentro de cada ruta:
+//
+//   null       quitar el adjunto (alguien pulsó la equis)
+//   undefined  no tocarlo (la petición venía a cambiar otra cosa)
+//   válido     guardarlo
+//   cualquier otra cosa  RECHAZAR
+//
+// El último caso es el que cambia. Antes las rutas hacían `else if (válido)`
+// sin `else`, así que un adjunto que no pasaba la validación se descartaba en
+// silencio: la persona veía "guardado", recibía un 200, y el archivo no estaba
+// en ninguna parte. Con Word entrando eso empeora, porque el error típico pasa
+// a ser subir un .doc viejo, que es justo lo que no se acepta.
+export type CambioDocumento =
+  | { accion: 'quitar' }
+  | { accion: 'dejar' }
+  | { accion: 'guardar'; documento: string; tipo: string; nombre: string | null }
+  | { accion: 'rechazar'; motivo: string };
+
+export function cambioDeDocumento(documento: unknown, nombre: unknown): CambioDocumento {
+  if (documento === null) return { accion: 'quitar' };
+  if (documento === undefined) return { accion: 'dejar' };
+  if (!documentoValido(documento)) return { accion: 'rechazar', motivo: MOTIVO_RECHAZO };
+  return {
+    accion: 'guardar',
+    documento,
+    tipo: tipoDeDocumento(documento),
+    nombre: nombreDeDocumento(nombre),
+  };
 }
