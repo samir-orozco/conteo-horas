@@ -1,6 +1,6 @@
 import { Registro, Horario, FranjaHorario, DiaFestivo } from '@prisma/client';
 import { toZonedTime } from 'date-fns-tz';
-import type { ExtraConfig } from './horasColombiana';
+import type { ExtraConfig, FranjaDeExtra } from './horasColombiana';
 
 const TZ = 'America/Bogota';
 export const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -43,19 +43,54 @@ function claveDia(d: Date): string {
   return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
 }
 
-// Arma el ExtraConfig del motor de horas. En modo HORARIO construye la ventana de
-// cada día de semana desde las franjas; sin horario activo cae a SEMANAL (fallback).
+// Arma el ExtraConfig del motor de horas, en modo HORARIO, desde los días YA
+// CONGELADOS: la ventana de cada FECHA es la que ese día exigía.
+//
+// Antes se armaba desde las franjas del horario vigente, indexada por día de la
+// semana. El reporte usaba los días congelados para todo lo demás, pero esta
+// pieza seguía leyendo el horario de HOY, así que cambiar un horario movía la
+// clasificación de extras de períodos ya liquidados. Medido con datos reales:
+// adelantar la entrada una hora le quitó $11.706 a un julio ya entregado, sin
+// que ningún dato de julio cambiara.
+//
+// El horario sigue haciendo falta para UNA cosa: sin uno activo se cae a
+// SEMANAL, que es el comportamiento de siempre y no se toca.
 type HorarioParaExtra = { activo: boolean; toleranciaMin: number; franjas: { dias: unknown; horaEntrada: string; horaSalida: string }[] };
-export function construirExtraConfig(modo: 'SEMANAL' | 'HORARIO', horario: HorarioParaExtra | null | undefined): ExtraConfig {
+export type DiaParaExtra = {
+  fecha: Date;
+  programado: boolean;
+  horaEntrada: string | null;
+  horaSalida: string | null;
+  toleranciaMin: number;
+};
+
+export function construirExtraConfig(
+  modo: 'SEMANAL' | 'HORARIO',
+  horario: HorarioParaExtra | null | undefined,
+  dias: DiaParaExtra[],
+): ExtraConfig {
   if (modo !== 'HORARIO' || !horario || !horario.activo) return { modo: 'SEMANAL' };
-  const franjaPorDia: Record<number, { ini: number; fin: number }> = {};
+
+  const franjaPorFecha: Record<string, FranjaDeExtra> = {};
+  for (const d of dias) {
+    franjaPorFecha[claveDia(d.fecha)] = d.programado && d.horaEntrada && d.horaSalida
+      ? { ini: minutosDe(d.horaEntrada), fin: minutosDe(d.horaSalida), toleranciaMin: d.toleranciaMin ?? 0 }
+      : null;
+  }
+
+  // Respaldo para las fechas sin fila congelada, con el horario vigente. Es lo
+  // que ya hace `combinarDiasEsperados` con los huecos, y lo que permite que un
+  // llamador sin días —el dashboard— siga comportándose como siempre.
+  const franjaPorDia: Record<number, FranjaDeExtra> = {};
+  const tol = horario.toleranciaMin ?? 0;
   for (const fr of horario.franjas) {
     for (const d of ((fr.dias as string[]) ?? [])) {
       const idx = DIAS_SEMANA.indexOf(d);
-      if (idx >= 0) franjaPorDia[idx] = { ini: minutosDe(fr.horaEntrada), fin: minutosDe(fr.horaSalida) };
+      if (idx >= 0) franjaPorDia[idx] = { ini: minutosDe(fr.horaEntrada), fin: minutosDe(fr.horaSalida), toleranciaMin: tol };
     }
   }
-  return { modo: 'HORARIO', franjaPorDia, toleranciaMin: horario.toleranciaMin ?? 0 };
+
+  return { modo: 'HORARIO', franjaPorFecha, franjaPorDia };
 }
 
 // Llegadas tarde: primera entrada de cada día contra lo que el horario exigía

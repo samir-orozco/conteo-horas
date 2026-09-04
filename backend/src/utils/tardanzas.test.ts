@@ -168,21 +168,41 @@ describe('calcularTardanzas — el pasado ya no se reescribe', () => {
 });
 
 describe('construirExtraConfig', () => {
-  it('en modo SEMANAL ignora el horario', () => {
-    expect(construirExtraConfig('SEMANAL', HORARIO)).toEqual({ modo: 'SEMANAL' });
+  // Días congelados: la franja que ese día EXIGÍA. Es lo que separa un reporte
+  // de julio de lo que el horario diga hoy.
+  const dia = (fecha: string, entrada: string | null, salida: string | null, tol = 3) => ({
+    fecha: new Date(`${fecha}T05:00:00.000Z`), // medianoche de Bogotá
+    programado: !!entrada, horaEntrada: entrada, horaSalida: salida, toleranciaMin: tol,
   });
 
-  it('en modo HORARIO arma la ventana de cada día', () => {
-    const cfg = construirExtraConfig('HORARIO', HORARIO);
+  it('en modo SEMANAL ignora el horario', () => {
+    expect(construirExtraConfig('SEMANAL', HORARIO, [dia('2026-07-01', '08:00', '16:00')])).toEqual({ modo: 'SEMANAL' });
+  });
+
+  it('arma la ventana de cada FECHA, no de cada día de la semana', () => {
+    // Los dos son miércoles y tienen franjas distintas: es exactamente lo que un
+    // mapa por día de semana no puede representar, y por eso un cambio de
+    // horario reescribía la clasificación de extras de un mes ya liquidado.
+    const cfg = construirExtraConfig('HORARIO', HORARIO, [
+      dia('2026-07-01', '08:00', '16:00'),
+      dia('2026-08-05', '06:00', '15:00'),
+      dia('2026-07-05', null, null),
+    ]);
     expect(cfg.modo).toBe('HORARIO');
-    expect(cfg.franjaPorDia![DIAS_SEMANA.indexOf('LUNES')]).toEqual({ ini: 480, fin: 960 });
-    expect(cfg.franjaPorDia![DIAS_SEMANA.indexOf('SABADO')]).toEqual({ ini: 480, fin: 720 });
-    expect(cfg.franjaPorDia![DIAS_SEMANA.indexOf('DOMINGO')]).toBeUndefined();
+    expect(cfg.franjaPorFecha!['2026-07-01']).toEqual({ ini: 480, fin: 960, toleranciaMin: 3 });
+    expect(cfg.franjaPorFecha!['2026-08-05']).toEqual({ ini: 360, fin: 900, toleranciaMin: 3 });
+    expect(cfg.franjaPorFecha!['2026-07-05']).toBeNull();
+  });
+
+  it('la tolerancia también sale del día, no del horario de hoy', () => {
+    const cfg = construirExtraConfig('HORARIO', HORARIO, [dia('2026-07-01', '08:00', '16:00', 15)]);
+    expect(cfg.franjaPorFecha!['2026-07-01']!.toleranciaMin).toBe(15);
   });
 
   it('sin horario activo cae a SEMANAL', () => {
-    expect(construirExtraConfig('HORARIO', { ...HORARIO, activo: false })).toEqual({ modo: 'SEMANAL' });
-    expect(construirExtraConfig('HORARIO', null)).toEqual({ modo: 'SEMANAL' });
+    const d = [dia('2026-07-01', '08:00', '16:00')];
+    expect(construirExtraConfig('HORARIO', { ...HORARIO, activo: false }, d)).toEqual({ modo: 'SEMANAL' });
+    expect(construirExtraConfig('HORARIO', null, d)).toEqual({ modo: 'SEMANAL' });
   });
 });
 

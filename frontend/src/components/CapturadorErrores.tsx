@@ -20,6 +20,16 @@ export default class CapturadorErrores extends Component<{ children: ReactNode }
   }
 
   onError = (e: ErrorEvent) => {
+    // "Script error." sin archivo ni línea es lo que el navegador entrega cuando
+    // el que falla es un script de OTRO origen: por seguridad borra mensaje,
+    // archivo, línea y stack. En esta app el único script externo es el
+    // reproductor de YouTube que `VideoVSL` inyecta en la landing, y en Safari de
+    // iOS lanza errores internos suyos con cierta frecuencia.
+    //
+    // No aporta nada —literalmente no hay información— y en cambio tapaba la
+    // aplicación entera con una pantalla negra llena de texto técnico. Un fallo
+    // dentro del reproductor de un video no puede tumbar HoraPro.
+    if (!e.filename && (!e.message || e.message === 'Script error.')) return;
     const stack = e.error?.stack ? `\n${e.error.stack}` : '';
     this.mostrar('global', `${e.message}\n@ ${e.filename}:${e.lineno}:${e.colno}${stack}`);
   };

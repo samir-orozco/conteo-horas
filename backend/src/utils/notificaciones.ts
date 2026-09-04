@@ -1,7 +1,16 @@
 import { prisma } from '../prisma';
 
 // Tipos de aviso interno que alimentan la campana del menú del admin.
-export type TipoNotif = 'NO_MARCO_SALIDA' | 'LLEGADA_TARDE' | 'NOVEDAD_PENDIENTE';
+export type TipoNotif =
+  | 'NO_MARCO_SALIDA'
+  | 'LLEGADA_TARDE'
+  | 'NOVEDAD_PENDIENTE'
+  // Contratos. El del preaviso es el que de verdad importa: si nadie avisa 30
+  // días antes, el contrato se prorroga solo por ley.
+  | 'CONTRATO_PREAVISO'
+  | 'CONTRATO_PREAVISO_VENCIDO'
+  | 'CONTRATO_A_INDEFINIDO'
+  | 'CONTRATO_ETAPA_APRENDIZ';
 
 type NuevaNotif = {
   tipo: TipoNotif;

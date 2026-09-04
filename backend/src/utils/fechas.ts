@@ -14,9 +14,19 @@ export function rangoDiaBogota(ahora: Date = new Date()): { ahoraBog: Date; inic
 // Medianoche de Bogotá de una fecha "YYYY-MM-DD", como instante UTC.
 // Colombia es UTC-5 fijo (no tiene horario de verano), así que son las 05:00.
 // Es la misma convención con la que el kiosco guarda `Registro.fecha`.
-function medianocheBogota(fecha: string): Date {
+export function medianocheBogota(fecha: string): Date {
   const [a, m, d] = fecha.slice(0, 10).split('-').map(Number);
   return new Date(Date.UTC(a, m - 1, d, 5, 0, 0));
+}
+
+// Hoy en Bogotá como "YYYY-MM-DD". Existe porque `new Date().toISOString()` da
+// la fecha UTC, y entre las 7 p.m. y la medianoche de Bogotá esa fecha ya es la
+// de mañana: un retiro registrado a las 8 p.m. quedaría fechado al día
+// siguiente.
+export function hoyEnBogota(ahora: Date = new Date()): string {
+  const b = toZonedTime(ahora, TZ);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${b.getFullYear()}-${dos(b.getMonth() + 1)}-${dos(b.getDate())}`;
 }
 
 // Rango de un reporte a partir de dos fechas "YYYY-MM-DD".

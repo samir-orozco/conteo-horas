@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { prisma } from '../index';
 import { enviarCorreo, plantillaCorreo, correoConfigurado } from '../utils/correo';
 import { calcularBilletera, limpiarPago } from '../utils/afiliados';
+import { comprobanteAGuardar } from '../utils/comprobantes';
 
 // Rutas de gestión de afiliados para el SUPER ADMIN (prefijo /api/admin/afiliados).
 // La cuenta de acceso del afiliado reusa Usuario (rol AFILIADO + afiliadoId), y la
@@ -157,12 +158,20 @@ export default async function afiliadoAdminRoutes(app: FastifyInstance) {
     if (retiro.estado === 'PAGADO' || retiro.estado === 'RECHAZADO') {
       return reply.status(409).send({ error: 'La solicitud ya fue procesada' });
     }
+    // El `??` de antes tenía dos agujeros: no miraba qué se estaba guardando, y
+    // con una cadena vacía ('' ?? viejo devuelve '') borraba el soporte de un
+    // pago ya hecho. El de siempre se conserva sin volver a validarlo: estas
+    // columnas nunca tuvieron regla, así que puede haber cualquier cosa
+    // guardada, y no se puede bloquear un retiro por un archivo viejo.
+    const soporte = comprobanteAGuardar(comprobanteBase64, retiro.comprobanteBase64);
+    if (!soporte.ok) return reply.status(400).send({ error: soporte.motivo });
+
     const email = (request.user as any)?.email ?? null;
     const actualizado = await prisma.solicitudRetiro.update({
       where: { id: retiroId },
       data: {
         estado,
-        comprobanteBase64: comprobanteBase64 ?? retiro.comprobanteBase64,
+        comprobanteBase64: soporte.comprobante,
         nota: nota ?? retiro.nota,
         procesadoEn: new Date(),
         procesadoPor: email,

@@ -3,11 +3,14 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
 import {
-  X, Edit2, Trash2, Camera, ImageOff, MapPin, UtensilsCrossed,
+  X, Edit2, Trash2, MapPin, UtensilsCrossed,
   Info, CalendarClock,
 } from 'lucide-react';
 import api from '../../lib/api';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import FotosJornada from '../../components/FotosJornada';
 import { TIPO_PERMISO_LABEL as TIPO_NOVEDAD } from '../../constants/permisos';
+import { type Momento } from '../../constants/momentos';
 
 const TZ = 'America/Bogota';
 
@@ -20,6 +23,9 @@ export type Jornada = {
     creadoEn: string; editadoPor: string | null; editadoEn: string | null;
     sede: { nombre: string; activa: boolean } | null;
     tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
+    // La novedad que nació de esta marcación se borra con ella. El diálogo de
+    // confirmación lo dice antes, no después.
+    tieneNovedadLigada?: boolean;
   };
   colaborador: { nombre: string; apellido: string; cargo: string | null };
   fecha: string;
@@ -29,7 +35,15 @@ export type Jornada = {
     almuerzoMin: number; almuerzoInicio: string | null; almuerzoFin: string | null;
     minutosEsperados: number; congelado: boolean;
   } | null;
-  tramos: { id: string; entrada: string | null; salida: string | null; salidaAlmuerzo: boolean; entradaEstimada: boolean; salidaEstimada: boolean }[];
+  tramos: {
+    id: string; entrada: string | null; salida: string | null;
+    salidaAlmuerzo: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
+    // Qué es cada extremo de este tramo dentro del día. Lo decide el backend:
+    // depende de los tramos vecinos, no del registro solo.
+    momentoEntrada: Momento | null; momentoSalida: Momento | null;
+    tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
+    tieneNovedadLigada?: boolean;
+  }[];
   almuerzo: {
     estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
     ventana: { inicio: string; fin: string } | null;
@@ -95,7 +109,9 @@ type Props = {
   // lista que tiene la tabla cargada (otro tramo del día, otro rango de fechas),
   // y buscarla allí dejaba el botón sin hacer nada.
   onEditar: (registro: RegistroEditable) => void;
-  onEliminar: (registroId: string) => void;
+  // Va también cuántas novedades se llevará por delante: el aviso se arma en la
+  // pantalla que muestra el diálogo, pero solo aquí se sabe el número.
+  onEliminar: (registroId: string, novedadesLigadas: number) => void;
   // Saltar a otra marcación del día. Desde que la tabla muestra una fila por
   // JORNADA, el regreso del almuerzo ya no tiene fila propia: si no se puede
   // llegar a él desde aquí, no se puede llegar de ninguna forma.
@@ -106,7 +122,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
   const [j, setJ] = useState<Jornada | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [guardandoNovedad, setGuardandoNovedad] = useState(false);
-  const [fotos, setFotos] = useState<{ fotoEntrada: string | null; fotoSalida: string | null } | null>(null);
+  const [confirmarBorrarNovedad, setConfirmarBorrarNovedad] = useState(false);
 
   // Al saltar a otro tramo el componente se remonta (lleva `key={registroId}`),
   // así que el estado arranca limpio solo y no hay que resetearlo aquí dentro.
@@ -122,18 +138,6 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
       });
     return () => { vigente = false; };
   }, [registroId]);
-
-  // Las fotos se piden aparte (son base64 pesado) y se pintan al final de la
-  // información, no en una vista que reemplaza el cuerpo: son evidencia de esta
-  // marcación, no un tema distinto.
-  useEffect(() => {
-    if (!j?.registro.tieneFotoEntrada && !j?.registro.tieneFotoSalida) return;
-    let vigente = true;
-    api.get(`/registros/${registroId}/fotos`)
-      .then(r => { if (vigente) setFotos(r.data); })
-      .catch(() => { /* la foto es evidencia opcional: no rompe el detalle */ });
-    return () => { vigente = false; };
-  }, [registroId, j?.registro.tieneFotoEntrada, j?.registro.tieneFotoSalida]);
 
   // La novedad se resuelve aquí, que es donde el administrador la está mirando.
   // Mandarlo a otra pantalla para aprobar lo que acaba de leer es la forma más
@@ -152,9 +156,26 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
     setGuardandoNovedad(false);
   };
 
+  // Borrar la novedad sin salir del día. Hasta ahora una novedad se podía crear
+  // y aprobar pero no quitar, así que las que quedaron huérfanas de una marcación
+  // borrada —las creadas antes de que existiera el vínculo— no había forma de
+  // limpiarlas desde ninguna pantalla.
+  const eliminarNovedad = async () => {
+    if (!j?.novedad) return;
+    setGuardandoNovedad(true);
+    try {
+      await api.delete(`/permisos/${j.novedad.id}`);
+      setConfirmarBorrarNovedad(false);
+      const { data } = await api.get(`/registros/${registroId}/jornada`);
+      setJ(data);
+    } catch {
+      setError('No pudimos eliminar la novedad.');
+    }
+    setGuardandoNovedad(false);
+  };
+
   const r = j?.registro;
   const entrada = hhmm(r?.entrada ?? null);
-  const salida = hhmm(r?.salida ?? null);
   const a = j?.almuerzo;
 
   // Extremos del día: la primera entrada y la última salida de todos los tramos.
@@ -162,6 +183,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
   const ultimaSalida = j ? hhmm([...j.tramos].reverse().find(t => t.salida)?.salida ?? null) : null;
 
   return (
+    <>
     <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onCerrar}>
       <div
         onClick={e => e.stopPropagation()}
@@ -344,6 +366,11 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                           : 'bg-green-600 hover:bg-green-700 text-white'}`}>
                       {guardandoNovedad ? 'Guardando...' : j.novedad.aprobado ? 'Quitar la aprobación' : 'Aprobar'}
                     </button>
+                    <button disabled={guardandoNovedad}
+                      onClick={() => setConfirmarBorrarNovedad(true)}
+                      className="px-4 py-2 rounded-lg text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 disabled:opacity-60">
+                      Eliminar novedad
+                    </button>
                   </div>
 
                   <p className="text-[11px] text-muted">
@@ -448,7 +475,8 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                           <span>
                             <span className="text-muted">{i + 1}.</span>{' '}
                             <span className="font-mono">{hhmm(t.entrada) ?? '—'} → {hhmm(t.salida) ?? '—'}</span>
-                            {t.salidaAlmuerzo && <span className="text-[11px] text-yellow-700"> · salió a su descanso</span>}
+                            {t.momentoSalida === 'SALIDA_ALMUERZO' && <span className="text-[11px] text-yellow-700"> · salió a su descanso</span>}
+                            {t.momentoEntrada === 'REGRESO_ALMUERZO' && <span className="text-[11px] text-yellow-700"> · volvió del descanso</span>}
                             {t.salidaEstimada && <span className="text-[11px] text-amber-700"> · salida estimada</span>}
                             {t.entradaEstimada && <span className="text-[11px] text-amber-700"> · regreso estimado</span>}
                           </span>
@@ -494,39 +522,13 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               </div>
             )}
 
-            {/* Verificación facial: la evidencia de esta marcación, al final de
-                todo lo demás. Antes vivía en una vista aparte que reemplazaba el
-                cuerpo, y ver la foto costaba perder de vista el resto. */}
-            {(r.tieneFotoEntrada || r.tieneFotoSalida) && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
-                  <Camera size={13} /> Verificación facial
-                </p>
-                {!fotos ? (
-                  <p className="text-sm text-gray-400 py-6 text-center">Cargando fotos...</p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    {[{ foto: fotos.fotoEntrada, label: 'Entrada', hora: entrada },
-                      { foto: fotos.fotoSalida, label: 'Salida', hora: salida }].map(({ foto, label, hora }) => (
-                      <div key={label}>
-                        <p className="text-[10px] font-semibold text-muted uppercase mb-1.5">{label}{hora && ` · ${hora}`}</p>
-                        {foto ? (
-                          /* Espejada: así se vio la persona a sí misma al marcar. */
-                          <img src={foto} alt={`Foto de ${label.toLowerCase()}`}
-                            className="w-full rounded-xl border border-gray-200 [transform:scaleX(-1)]" />
-                        ) : (
-                          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-3 py-6 text-center">
-                            <ImageOff size={20} className="mx-auto text-gray-400 mb-1.5" />
-                            <p className="text-[11px] text-muted">Sin foto: marcó con cédula o se cargó a mano.</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <p className="text-[11px] text-muted mt-2">Las fotos se eliminan automáticamente a los 2 meses.</p>
-              </div>
-            )}
+            {/* Verificación facial: la evidencia del DÍA, no la de esta
+                marcación. Mostrar solo el par de la marcación abierta era el bug:
+                en una jornada con almuerzo, la foto de la salida a almorzar
+                aparecía rotulada "Salida" —como si la persona se hubiera ido a su
+                casa a las 14:04 cuando volvió a las 14:50— y las dos marcas de la
+                tarde no se veían por ningún lado. */}
+            <FotosJornada registroId={registroId} />
 
             {/* Rastro de cambios y acciones */}
             <div className="border-t border-gray-100 pt-4">
@@ -541,7 +543,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                 ) : <p>Sin correcciones desde que se creó.</p>}
               </div>
               <div className="flex flex-wrap gap-2 justify-end">
-                <button onClick={() => onEliminar(r.id)}
+                <button onClick={() => onEliminar(r.id, r.tieneNovedadLigada ? 1 : 0)}
                   className="flex items-center gap-1.5 text-sm text-red-600 border border-red-200 rounded-lg px-4 py-2 hover:bg-red-50">
                   <Trash2 size={14} /> Eliminar
                 </button>
@@ -558,5 +560,23 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
         )}
       </div>
     </div>
+
+    {/* Fuera del contenedor del modal, no dentro: ese div tiene fondo difuminado
+        y animación, que crean un bloque contenedor y hacen que un `fixed` hijo se
+        posicione contra ÉL en vez de contra la ventana. Metido ahí dentro, el
+        diálogo salía encogido y encima del contenido, en lugar de cubrir la
+        pantalla. Como hermano, su z-[60] sí queda por encima de todo. */}
+    <ConfirmDialog
+      abierto={confirmarBorrarNovedad}
+      peligro
+      titulo="¿Eliminar esta novedad?"
+      subtitulo={j?.novedad?.aprobado
+        ? 'Estaba APROBADA, así que sus días no se exigían. Al eliminarla vuelven a contar como ausencia y la liquidación cambia. No se puede deshacer.'
+        : 'La marcación de ese día no se toca. Esta acción no se puede deshacer.'}
+      textoContinuar={guardandoNovedad ? 'Eliminando...' : 'Sí, eliminar'}
+      onContinuar={eliminarNovedad}
+      onCancelar={() => setConfirmarBorrarNovedad(false)}
+    />
+    </>
   );
 }

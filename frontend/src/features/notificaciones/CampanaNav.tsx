@@ -10,9 +10,21 @@ export default function CampanaNav({ notif, onNav }: { notif: NotifState; onNav?
   const [ancla, setAncla] = useState<DOMRect | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
+  // `onNav` cierra el menú móvil, y el panel vive DENTRO de este componente, que
+  // vive dentro de ese menú. Llamarlo al abrir desmontaba el panel en el mismo
+  // instante en que se montaba: en el celular, tocar "Notificaciones" no hacía
+  // nada visible. En escritorio no se notaba porque ahí `onNav` no existe.
+  //
+  // Se llama al CERRAR: el panel se abre sobre el menú (es un portal al body con
+  // z-201, así que lo tapa), y cuando se cierra —o cuando navega a una
+  // notificación— se lleva el menú con él.
   const abrir = () => {
     if (btnRef.current) setAncla(btnRef.current.getBoundingClientRect());
     setAbierto(true);
+  };
+
+  const cerrar = () => {
+    setAbierto(false);
     onNav?.();
   };
 
@@ -33,7 +45,7 @@ export default function CampanaNav({ notif, onNav }: { notif: NotifState; onNav?
         </span>
         Notificaciones
       </button>
-      {abierto && <PanelNotificaciones notif={notif} ancla={ancla} onClose={() => setAbierto(false)} />}
+      {abierto && <PanelNotificaciones notif={notif} ancla={ancla} onClose={cerrar} />}
     </>
   );
 }

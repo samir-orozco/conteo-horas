@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LogIn, LogOut, MapPin, Check, UtensilsCrossed } from 'lucide-react';
 import { es } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
+import type { DecisionUbicacion } from '../decisionUbicacion';
 import { horaBog } from '../helpers';
 import { TZ, type Colaborador, type Estado, type Sede } from '../tipos';
 import ConfirmarNuevaEntrada from './ConfirmarNuevaEntrada';
@@ -18,13 +19,15 @@ type Props = {
   // Volvió del almuerzo con la hora ya pasada: hay que preguntarle cuándo.
   onRegresoOlvidado: () => void;
   marcando: boolean;
-  exigeUbicacion: boolean;
-  ubicOk: { lat: number; lng: number } | null;
+  // Qué hacer con la ubicación de ESTA persona. Antes eran dos props sueltas
+  // (`exigeUbicacion` de la empresa y `ubicOk`) y la pantalla las combinaba a
+  // mano, así que la regla vivía repartida entre aquí y Marcador.tsx.
+  decisionUbic: DecisionUbicacion;
   salir: () => void;
 };
 
 // Pantalla principal: reloj + estado del día + botón grande de entrada/salida.
-export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado, marcar, marcando, exigeUbicacion, ubicOk, salir, onRegresoOlvidado }: Props) {
+export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado, marcar, marcando, decisionUbic, salir, onRegresoOlvidado }: Props) {
   const dentroAhora = estado?.dentroAhora ?? false;
   const entradaHace = estado?.entradaAbierta?.entrada ? horaBog(estado.entradaAbierta.entrada, 'HH:mm') : null;
   const cerradoHoy = estado?.turnoCerradoHoy ?? null;
@@ -116,7 +119,7 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
         >
           {enSuDescanso ? <UtensilsCrossed size={28} /> : dentroAhora ? <LogOut size={28} /> : <LogIn size={28} />}
           {marcando
-            ? (exigeUbicacion ? 'Ubicando...' : 'Registrando...')
+            ? decisionUbic.textoBoton
             : enSuDescanso ? 'Salgo a mi descanso'
             : dentroAhora ? 'Registrar Salida'
             : enAlmuerzo ? 'Volví de mi descanso'
@@ -136,9 +139,24 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
           </button>
         )}
 
-        {exigeUbicacion && ubicOk && (
+        {/* Lo que se le dice de su ubicación, que ya no es lo mismo para todos.
+            El aviso de "sin-gps-bloquea" es el caso NUEVO: antes no podía
+            existir, porque el muro no dejaba llegar hasta aquí sin permiso, y
+            enterarse por un flash rojo después de oprimir el botón deja a la
+            persona en un bucle sin saber qué hacer. */}
+        {decisionUbic.indicador === 'confirmada' && (
           <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-green-400/80">
             <MapPin size={12} /> Ubicación activada · marcarás desde la empresa
+          </p>
+        )}
+        {decisionUbic.indicador === 'registra-sede' && (
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-white/50">
+            <MapPin size={12} /> Se registrará desde qué sede marcas
+          </p>
+        )}
+        {decisionUbic.indicador === 'sin-gps-bloquea' && (
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-amber-400/90">
+            <MapPin size={12} /> Sin ubicación no podrás marcar. Actívala en tu navegador.
           </p>
         )}
 

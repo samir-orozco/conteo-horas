@@ -204,18 +204,43 @@ model Colaborador {
   telefono         String?
   fechaNacimiento  DateTime?
   salarioMensual   Float
-  // Reconocimiento facial: descriptor matemático (128 floats), nunca la imagen
+  // Reconocimiento facial: descriptor matemático (128 floats). El descriptor no
+  // es una imagen y no se puede volver a convertir en una.
   rostroDescriptor Json?
   rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
+  // Foto de perfil (data URL). Es dato personal común, NO biométrico: sirve
+  // para reconocer a quién se está mirando en la ficha, no para autenticar. Va
+  // aparte del descriptor a propósito, para poder borrar una sin borrar la otra.
+  foto             String?   @db.LongText
+  // La misma foto, chiquita, para las listas. Se guarda aparte y no se recorta
+  // al vuelo porque la lista la pide para TODOS: mandar la grande son cientos
+  // de kilobytes por carga, y en un plan de 150 personas son megas.
+  fotoMini         String?   @db.LongText
   horarioId        String?
   horario          Horario?   @relation(fields: [horarioId], references: [id])
+  // No admite null a propósito: un null sería un cuarto estado que significa
+  // PRESENCIAL igual, y siendo no-nulo el compilador avisa si una ruta con
+  // `select` explícito olvida pedirlo (un undefined ahí bloquearía a un remoto
+  // en silencio, tratándolo como presencial).
+  modalidad        ModalidadTrabajo @default(PRESENCIAL)
   activo           Boolean    @default(true)
-  // Si el mes ya está pagado, el "borrado" se programa para fin de mes
+  // Retiro: cuándo salió y por qué. Antes solo quedaba `activo: false`, así que
+  // se perdía la fecha, y esa fecha es justo la que se necesita para liquidar,
+  // para un certificado laboral y para una inspección del Ministerio.
+  fechaRetiro      DateTime?
+  motivoRetiro     MotivoRetiro?
+  // Resto del modelo de precio por colaborador: cuando el cobro dependía del
+  // número de personas, el retiro se aplazaba a fin de mes para no regalar el
+  // mes pagado. Hoy el precio es plano por plan y no mira cuántos hay, así que
+  // aplazar no protege un peso: solo bloquea contratar al reemplazo. Se deja el
+  // campo porque puede haber retiros programados sin aplicar en producción.
   retiroProgramado DateTime?
   creadoEn         DateTime   @default(now())
   actualizadoEn    DateTime   @updatedAt
   registros        Registro[]
   permisos         Permiso[]
+  contratos        Contrato[]
+  vinculacion      VinculacionEvento[]
   diasEsperados    DiaEsperado[]
   sedes            ColaboradorSede[]
 
@@ -333,12 +358,22 @@ model Registro {
   entradaEstimada Boolean     @default(false)
   // Foto de verificación facial al marcar (se elimina automáticamente a los 2 meses)
   fotoEntrada    String?      @db.LongText
+  cambios        RegistroCambio[]
   fotoSalida     String?      @db.LongText
   // Auditoría de correcciones manuales
   editadoPor     String?
   editadoEn      DateTime?
   creadoEn       DateTime     @default(now())
+  // Novedades que nacieron de ESTA marcación (salida temprana en el kiosco).
+  // Se borran con ella: son parte de la marcación, no registros independientes.
+  novedades      Permiso[]
 
+  // El barrido de turnos olvidados corre cada hora sobre esta tabla, que es la
+  // que más crece del producto. Sin este índice el plan es un `Table scan` sobre
+  // todo el historial de todas las empresas. Las igualdades van primero y el
+  // rango último: es la única forma de que MySQL use las tres partes.
+  // Ver `sql/indice-turnos-abiertos.sql` para las mediciones.
+  @@index([salidaEstimada, salida, entrada])
   @@map("registros")
 }
 
@@ -346,6 +381,16 @@ model Permiso {
   id              String      @id @default(cuid())
   colaboradorId   String
   colaborador     Colaborador @relation(fields: [colaboradorId], references: [id])
+  // La marcación que creó esta novedad, cuando nació de una salida temprana en
+  // el kiosco. Null cuando la cargó un admin a mano: esa vive por su cuenta.
+  //
+  // Existe porque un día puede tener varias novedades legítimas —cita médica en
+  // la mañana, una urgencia en la tarde— así que no se pueden identificar por
+  // colaborador y fecha. Sin este vínculo, borrar la marcación dejaba la novedad
+  // huérfana y pendiente de aprobar, y quien la aprobaba después excusaba una
+  // jornada cuya marcación ya no existía.
+  registroId      String?
+  registro        Registro?   @relation(fields: [registroId], references: [id], onDelete: Cascade)
   fechaInicio     DateTime
   fechaFin        DateTime
   // Novedad de parte del día ("cita médica de 14:00 a 17:00"). Vacías = día
@@ -571,4 +616,159 @@ enum EstadoRetiro {
   APROBADO
   PAGADO
   RECHAZADO
+}
+
+// Qué se cambió al editar una marcación, campo por campo.
+//
+// `Registro.editadoPor` y `editadoEn` ya decían QUE alguien la tocó y cuándo,
+// pero no qué hizo. Eso no sirve el día que un trabajador reclama una llegada
+// tarde: hay que poder decir que la entrada pasó de 8:15 a 8:00, quién lo hizo
+// y cuándo, no solo que "alguien editó esto".
+//
+// El nombre del usuario se copia aquí a propósito, en vez de solo referenciarlo:
+// si esa cuenta se borra, el historial tiene que seguir diciendo quién fue.
+model RegistroCambio {
+  id            String   @id @default(cuid())
+  registroId    String
+  registro      Registro @relation(fields: [registroId], references: [id], onDelete: Cascade)
+  campo         String
+  antes         String   @db.Text
+  despues       String   @db.Text
+  usuarioId     String?
+  usuarioNombre String?
+  creadoEn      DateTime @default(now())
+
+  @@index([registroId, creadoEn])
+  @@map("registro_cambios")
+}
+
+// Historia de la vinculación de una persona con la empresa.
+//
+// Los campos `fechaRetiro` y `motivoRetiro` de `Colaborador` guardan el estado
+// de HOY, que es lo que la lista necesita para pintar el estado sin cruzar
+// tablas. Pero solo recuerdan el ÚLTIMO retiro: quien renuncia, vuelve y se va
+// otra vez, borraba el primero. Esta tabla guarda todo lo que pasó, en orden, y
+// es la que permite responder "¿cuántas veces ha estado aquí y por qué se fue
+// cada vez?".
+//
+// El soporte cuelga del evento y no de la persona, por la misma razón: la carta
+// de renuncia de 2024 no es la de 2026.
+model VinculacionEvento {
+  id            String       @id @default(cuid())
+  colaboradorId String
+  colaborador   Colaborador  @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  tipo          TipoVinculacion
+  fecha         DateTime     // medianoche de Bogotá, misma convención que el resto
+  motivo        MotivoRetiro? // solo en los retiros
+  nota          String?      @db.Text
+  documento       String?    @db.LongText
+  documentoTipo   String?
+  documentoNombre String?
+  // Quién lo registró. Queda como null si el usuario se borra: importa más
+  // conservar el evento que saber quién lo escribió.
+  usuarioId     String?
+  creadoEn      DateTime     @default(now())
+
+  @@index([colaboradorId, fecha])
+  @@map("vinculacion_eventos")
+}
+
+enum TipoVinculacion {
+  INGRESO
+  RETIRO
+  REINGRESO
+}
+
+// Por qué salió. Importa para la liquidación: la indemnización del artículo 64
+// solo existe en el despido sin justa causa.
+enum MotivoRetiro {
+  RENUNCIA
+  FIN_CONTRATO
+  SIN_JUSTA_CAUSA
+  JUSTA_CAUSA
+  FIN_OBRA
+  OTRO
+}
+
+// Cómo trabaja esta persona, que es lo que decide si la ubicación la bloquea.
+//
+// Hasta ahora la geocerca era una regla de la EMPRESA: si estaba configurada,
+// aplicaba a todo el mundo por igual. Eso deja por fuera a quien trabaja desde
+// la casa, que no puede marcar nunca.
+//
+//   PRESENCIAL  se valida como siempre: fuera de la geocerca, la marca se rechaza.
+//   HIBRIDO     nunca se bloquea. Si está dentro de una de sus sedes, queda
+//               registrado en cuál; si no, marca igual y el registro no lleva sede.
+//   REMOTO      no se le pide ni se le mira la ubicación.
+enum ModalidadTrabajo {
+  PRESENCIAL
+  HIBRIDO
+  REMOTO
+}
+
+enum TipoContrato {
+  INDEFINIDO
+  FIJO
+  OBRA_LABOR
+  APRENDIZAJE
+}
+
+enum EstadoContrato {
+  VIGENTE
+  TERMINADO
+}
+
+// Contrato laboral. Un colaborador puede tener varios a lo largo del tiempo; el
+// que rige es el que está en estado VIGENTE, y la ruta se encarga de que no haya
+// dos a la vez.
+//
+// Registrarlo es OPCIONAL: quien no lo cargue no pierde ninguna función. Por eso
+// no hay migración de datos: inventar el tipo de contrato de alguien que ya está
+// en el sistema sería peor que dejarlo en blanco.
+model Contrato {
+  id                  String         @id @default(cuid())
+  colaboradorId       String
+  colaborador         Colaborador    @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  tipo                TipoContrato
+  fechaInicio         DateTime
+  // Null en indefinido y en obra o labor: esos no terminan en una fecha.
+  fechaFin            DateTime?
+  // Solo aprendizaje. Marca el paso de etapa lectiva a práctica, que es cuando la
+  // remuneración sube del 75% al 100% del salario mínimo (Ley 2466 de 2025).
+  fechaInicioPractica DateTime?
+  estado              EstadoContrato @default(VIGENTE)
+  // Al agotar el tope de cuatro años, el término fijo pasa a indefinido por
+  // ministerio de la ley. El sistema NO lo cambia solo: avisa, y Recursos Humanos
+  // lo confirma. Se guarda la fecha en vez de reescribir `tipo` para no perder el
+  // rastro de que este contrato nació a término fijo.
+  convertidoAIndefinidoEn DateTime?
+  // Contrato firmado, en base64. Mismo patrón que la evidencia de las novedades.
+  documento           String?        @db.LongText
+  documentoTipo       String?
+  documentoNombre     String?
+  observacion         String?        @db.Text
+  creadoEn            DateTime       @default(now())
+  actualizadoEn       DateTime       @updatedAt
+  prorrogas           ProrrogaContrato[]
+
+  @@index([colaboradorId, estado])
+  @@map("contratos")
+}
+
+// Cada prórroga es un otrosí con sus propias fechas y su propio documento. Van
+// en tabla aparte y no como campos del contrato porque son varias, y porque la
+// ley cuenta cuántas van para decidir si la siguiente ya debe ser de un año.
+model ProrrogaContrato {
+  id              String   @id @default(cuid())
+  contratoId      String
+  contrato        Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+  desde           DateTime
+  hasta           DateTime
+  documento       String?  @db.LongText
+  documentoTipo   String?
+  documentoNombre String?
+  creadoEn        DateTime @default(now())
+
+  @@index([contratoId])
+  @@map("prorrogas_contrato")
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rangoReporte } from './fechas';
+import { rangoReporte, hoyEnBogota, medianocheBogota } from './fechas';
 
 // Estas pruebas fijan el arreglo del bug del 2026-08-11: `new Date("2026-07-01")`
 // es medianoche UTC, que en Bogotá es el 30 de junio a las 7 p.m. Usarlo directo
@@ -39,5 +39,31 @@ describe('rangoReporte', () => {
   it('un rango de un solo día cubre exactamente 24 horas', () => {
     const { desdeF, finExclusivo } = rangoReporte('2026-07-15', '2026-07-15');
     expect(finExclusivo.getTime() - desdeF.getTime()).toBe(24 * 60 * 60 * 1000);
+  });
+});
+
+describe('hoyEnBogota', () => {
+  it('a media tarde da el mismo día que UTC', () => {
+    // 25 ago 2026, 15:00 UTC = 10:00 en Bogotá
+    expect(hoyEnBogota(new Date('2026-08-25T15:00:00Z'))).toBe('2026-08-25');
+  });
+
+  it('después de las 7 p.m. de Bogotá, UTC ya cambió de día y esta función no', () => {
+    // 26 ago 2026, 02:00 UTC = 25 ago, 9 p.m. en Bogotá. Es la razón de existir:
+    // un retiro registrado a esa hora quedaría fechado mañana con toISOString.
+    const instante = new Date('2026-08-26T02:00:00Z');
+    expect(instante.toISOString().slice(0, 10)).toBe('2026-08-26');
+    expect(hoyEnBogota(instante)).toBe('2026-08-25');
+  });
+
+  it('justo a medianoche de Bogotá ya es el día nuevo', () => {
+    // 05:00 UTC es 00:00 en Bogotá
+    expect(hoyEnBogota(new Date('2026-08-26T05:00:00Z'))).toBe('2026-08-26');
+    expect(hoyEnBogota(new Date('2026-08-26T04:59:00Z'))).toBe('2026-08-25');
+  });
+
+  it('el resultado sirve para medianocheBogota sin desfase', () => {
+    const iso = hoyEnBogota(new Date('2026-08-26T02:00:00Z'));
+    expect(medianocheBogota(iso).toISOString()).toBe('2026-08-25T05:00:00.000Z');
   });
 });

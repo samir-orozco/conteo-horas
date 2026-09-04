@@ -62,8 +62,10 @@ export default function TabMarcacion() {
           <div>
             <p className="font-semibold text-ink mb-1 flex items-center gap-2"><ScanFace size={17} /> Reconocimiento facial</p>
             <p className="text-sm text-muted">
-              Siempre disponible para quienes tengan su rostro registrado. La verificación
-              incluye prueba de vida y guarda una foto como evidencia de cada marcación.
+              Siempre disponible para quienes tengan su rostro registrado. Guarda una foto
+              como evidencia de cada marcación. Compara el rostro contra el que la persona
+              registró, pero no distingue a alguien presente de una fotografía suya: para
+              cerrar esa puerta, exige dispositivo autorizado o geocerca.
             </p>
           </div>
           <span className="text-xs font-bold bg-green-100 text-green-800 px-3 py-1.5 rounded-full shrink-0">Siempre activo</span>

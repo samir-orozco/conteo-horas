@@ -9,9 +9,10 @@ import { rangoDiaBogota } from '../utils/fechas';
 import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
 } from '../utils/saldoTiempo';
+import { diferenciasDeRegistro, type EstadoRegistro } from '../utils/cambiosRegistro';
 import {
   resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca,
-  marcacionQueCierra, agruparEnJornadas, instantesDeJornada,
+  marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, momentosDelDia,
 } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
@@ -36,6 +37,25 @@ function camposRegistro(body: any, esNuevo: boolean) {
 
 export default async function registroRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
+
+  // Deja constancia de qué cambió al editar una marcación.
+  //
+  // No se espera el resultado en quien llama: si el historial falla, la
+  // corrección igual tiene que guardarse. Perder la bitácora es malo; perder la
+  // corrección del trabajador es peor.
+  async function anotarCambios(
+    registroId: string, antes: EstadoRegistro, cambios: Partial<EstadoRegistro>,
+    usuarioId?: string, usuarioNombre?: string,
+  ) {
+    const difs = diferenciasDeRegistro(antes, cambios);
+    if (!difs.length) return;
+    await prisma.registroCambio.createMany({
+      data: difs.map(d => ({
+        registroId, campo: d.campo, antes: d.antes, despues: d.despues,
+        usuarioId: usuarioId ?? null, usuarioNombre: usuarioNombre ?? null,
+      })),
+    });
+  }
 
   // Por qué se valida ANTES de guardar y no se arregla al mostrar: un tramo
   // imposible no tiene forma correcta de pintarse. Quien corregía la salida de
@@ -155,6 +175,7 @@ export default async function registroRoutes(app: FastifyInstance) {
     // que nadie mira es tiempo que no se está pagando —o que se está pagando de
     // más— sin que nadie lo haya decidido.
     const novedadesPorDia = new Map<string, { id: string; tipo: string; aprobado: boolean; remunerada: boolean }>();
+    const novedadesLigadas = new Set<string>();
     if (registros.length > 0) {
       const fechas = registros.map(r => r.fecha.getTime());
       const desdeDia = rangoDiaBogota(new Date(Math.min(...fechas))).inicioDia;
@@ -166,7 +187,7 @@ export default async function registroRoutes(app: FastifyInstance) {
             fechaInicio: { lt: hastaDia },
             fechaFin: { gte: desdeDia },
           },
-          select: { id: true, colaboradorId: true, tipo: true, aprobado: true, fechaInicio: true, fechaFin: true },
+          select: { id: true, colaboradorId: true, tipo: true, aprobado: true, fechaInicio: true, fechaFin: true, registroId: true },
           orderBy: { creadoEn: 'asc' },
         }),
         prisma.configuracion.findUnique({
@@ -175,6 +196,11 @@ export default async function registroRoutes(app: FastifyInstance) {
         }),
       ]);
       const politica = parsearPoliticaPermisos(politicaCruda?.valor);
+      // Qué marcaciones arrastran una novedad si se borran. La novedad de una
+      // salida temprana es parte de su marcación y se va con ella (ON DELETE
+      // CASCADE), así que el diálogo de borrado tiene que poder avisarlo: si esa
+      // novedad ya estaba aprobada, borrarla mueve la liquidación.
+      for (const p of permisos) if (p.registroId) novedadesLigadas.add(p.registroId);
       // Un permiso puede cubrir varios días —unas vacaciones—, así que se
       // reparte por cada día que toca. Se queda el primero de cada día: la
       // tabla solo avisa de que hay algo; el detalle lo cuenta entero.
@@ -255,7 +281,9 @@ export default async function registroRoutes(app: FastifyInstance) {
           // día entero: en un día con dos jornadas no son el mismo número.
           minutosAlmuerzoAqui: jornada.minutosAlmuerzoAqui,
           entradaEstimada: primera.entradaEstimada,
-          salidaEstimada: cierra?.salidaEstimada ?? false,
+          // No sale de `cierra`: el auto-cierre sin franja marca la jornada y
+          // deja la hora en null, y entonces ninguna marcación la cierra.
+          salidaEstimada: laCerroElSistema(marcaciones),
           salidaAlmuerzo: cierra?.salidaAlmuerzo ?? false,
           tieneFotoEntrada: !!primera.fotoEntrada,
           tieneFotoSalida: !!cierra?.fotoSalida,
@@ -270,6 +298,7 @@ export default async function registroRoutes(app: FastifyInstance) {
             salidaEstimada: m.salidaEstimada,
             tieneFotoEntrada: !!m.fotoEntrada,
             tieneFotoSalida: !!m.fotoSalida,
+            tieneNovedadLigada: novedadesLigadas.has(m.id),
           })),
         });
       }
@@ -321,7 +350,7 @@ export default async function registroRoutes(app: FastifyInstance) {
 
     const { inicioDia, finDia } = rangoDiaBogota(registro.fecha);
 
-    const [delDia, congelado, festivo, novedad, fotos] = await Promise.all([
+    const [delDia, congelado, festivo, novedad, conFotoEntrada, conFotoSalida, ligadas] = await Promise.all([
       prisma.registro.findMany({
         where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
         orderBy: { entrada: 'asc' },
@@ -350,11 +379,29 @@ export default async function registroRoutes(app: FastifyInstance) {
         // que es donde el administrador la está mirando.
         select: { id: true, tipo: true, descripcion: true, aprobado: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true },
       }),
-      prisma.registro.findUnique({
-        where: { id },
-        select: { fotoEntrada: true, fotoSalida: true },
+      // Qué marcaciones del día tienen foto. Van dos consultas de IDs y no un
+      // `select` de las columnas: son LongText de hasta 300 KB y aquí solo hace
+      // falta saber si existen. Antes se traía el par entero del registro
+      // abierto —600 KB por la red— para calcular dos booleanos.
+      prisma.registro.findMany({
+        where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia }, fotoEntrada: { not: null } },
+        select: { id: true },
+      }),
+      prisma.registro.findMany({
+        where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia }, fotoSalida: { not: null } },
+        select: { id: true },
+      }),
+      // Qué marcaciones del día arrastran una novedad si se borran. La de una
+      // salida temprana es parte de su marcación y se va con ella; el diálogo de
+      // borrado tiene que decirlo antes, no después.
+      prisma.permiso.findMany({
+        where: { colaboradorId: registro.colaboradorId, registroId: { not: null }, fechaInicio: { lt: finDia }, fechaFin: { gte: inicioDia } },
+        select: { registroId: true },
       }),
     ]);
+    const tieneEntrada = new Set(conFotoEntrada.map(r => r.id));
+    const tieneSalida = new Set(conFotoSalida.map(r => r.id));
+    const conNovedadLigada = new Set(ligadas.map(p => p.registroId!));
 
     const [dia] = combinarDiasEsperados(
       inicioDia, finDia,
@@ -369,6 +416,12 @@ export default async function registroRoutes(app: FastifyInstance) {
     const fueCongelado = !!congelado && congelado.creadoEn.getTime() <= finDia.getTime();
 
     const almuerzo = resumirAlmuerzoDelDia(delDia, dia);
+
+    // Qué es cada marca dentro del día: entrada, salida al descanso, regreso o
+    // salida de verdad. Lo decide el dominio una vez, aquí, y no cada pantalla
+    // por su cuenta —que es como la foto de la salida a almorzar terminó
+    // rotulada "Salida".
+    const momentos = momentosDelDia(delDia);
 
     // La tardanza se mide solo en la primera entrada del día: volver del
     // almuerzo no es llegar tarde. Cuando no aplica se dice POR QUÉ, que un
@@ -403,13 +456,21 @@ export default async function registroRoutes(app: FastifyInstance) {
     return {
       registro: {
         ...datosRegistro,
-        tieneFotoEntrada: !!fotos?.fotoEntrada,
-        tieneFotoSalida: !!fotos?.fotoSalida,
+        tieneFotoEntrada: tieneEntrada.has(registro.id),
+        tieneFotoSalida: tieneSalida.has(registro.id),
+        tieneNovedadLigada: conNovedadLigada.has(registro.id),
       },
       colaborador: { nombre: colaborador.nombre, apellido: colaborador.apellido, cargo: colaborador.cargo },
       fecha: inicioDia,
       dia: dia ? { ...dia, congelado: fueCongelado } : null,
-      tramos: delDia,
+      tramos: delDia.map(t => ({
+        ...t,
+        momentoEntrada: momentos.get(t.id)?.entrada ?? null,
+        momentoSalida: momentos.get(t.id)?.salida ?? null,
+        tieneFotoEntrada: tieneEntrada.has(t.id),
+        tieneFotoSalida: tieneSalida.has(t.id),
+        tieneNovedadLigada: conNovedadLigada.has(t.id),
+      })),
       almuerzo,
       minutosDelDia: minutosContadosDelDia(delDia, dia),
       minutosTarde,
@@ -417,6 +478,57 @@ export default async function registroRoutes(app: FastifyInstance) {
       festivo,
       novedad: novedad ? { ...novedad, remunerada: novedadRemunerada } : null,
     };
+  });
+
+  // Fotos de verificación facial de TODO el día, cada una rotulada con lo que de
+  // verdad es.
+  //
+  // Existe porque `/:id/fotos` devuelve el par de UNA marcación, y una jornada
+  // con almuerzo son dos: pedir las dos de la primera traía la foto de la salida
+  // a almorzar como si fuera el fin de la jornada, y escondía las dos de la
+  // tarde. Cada pantalla resolvía eso por su cuenta —o no lo resolvía—, así que
+  // el rótulo se decide aquí, con `momentosDelDia`, y todas muestran lo mismo.
+  app.get('/:id/jornada/fotos', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const registro = await prisma.registro.findFirst({
+      where: { id, colaborador: { empresaId: request.empresaId } },
+      select: { colaboradorId: true, fecha: true },
+    });
+    if (!registro) return reply.status(404).send({ error: 'Registro no encontrado' });
+
+    const { inicioDia, finDia } = rangoDiaBogota(registro.fecha);
+    const delDia = await prisma.registro.findMany({
+      where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
+      orderBy: { entrada: 'asc' },
+      select: {
+        id: true, entrada: true, salida: true, salidaAlmuerzo: true,
+        entradaEstimada: true, salidaEstimada: true, fotoEntrada: true, fotoSalida: true,
+      },
+    });
+
+    const momentos = momentosDelDia(delDia);
+    const fotos: {
+      registroId: string; momento: string; hora: Date | null; foto: string | null; estimada: boolean;
+    }[] = [];
+    for (const m of delDia) {
+      const papel = momentos.get(m.id);
+      // Viajan TODOS los momentos del día, con o sin foto. Que a una marca le
+      // falte la foto es información, no un hueco: significa que se marcó con
+      // cédula o que alguien la cargó a mano, y quien está auditando el día
+      // necesita verlo. Las marcas sin hora no tienen momento y no aparecen.
+      if (papel?.entrada) {
+        fotos.push({ registroId: m.id, momento: papel.entrada, hora: m.entrada, foto: m.fotoEntrada, estimada: m.entradaEstimada });
+      }
+      if (papel?.salida) {
+        fotos.push({ registroId: m.id, momento: papel.salida, hora: m.salida, foto: m.fotoSalida, estimada: m.salidaEstimada });
+      }
+    }
+    // En orden cronológico: es como ocurrió el día y como se va a leer.
+    fotos.sort((a, b) => (a.hora?.getTime() ?? 0) - (b.hora?.getTime() ?? 0));
+    // La fecha viaja para que la pantalla pueda distinguir "marcó con cédula" de
+    // "la foto existió y ya se borró": el dato es el mismo `null` en los dos
+    // casos y solo la edad del día los separa.
+    return { fecha: inicioDia, fotos };
   });
 
   // Fotos de verificación facial de un registro (se conservan 2 meses)
@@ -514,6 +626,10 @@ export default async function registroRoutes(app: FastifyInstance) {
     );
     if (motivo) return reply.status(400).send(motivo);
 
+    // Se anota ANTES del update: después, `existente` ya no sería el estado viejo.
+    await anotarCambios(id, existente as any, cambios, request.usuarioId, request.usuarioNombre)
+      .catch(err => request.log.error(err, 'No se pudo anotar el cambio del registro'));
+
     const actualizado = await prisma.registro.update({
       where: { id },
       data: { ...cambios, editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
@@ -561,12 +677,13 @@ export default async function registroRoutes(app: FastifyInstance) {
     }
 
     // Las marcaciones que HOY componen esta jornada, para saber a cuáles escribir.
+    // Van por el día de ORIGEN, que es donde la marcación vive ahora mismo.
     const { inicioDia, finDia } = rangoDiaBogota(primera.fecha);
-    const delDia = await prisma.registro.findMany({
+    const delDiaOrigen = await prisma.registro.findMany({
       where: { colaboradorId: primera.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
       orderBy: { entrada: 'asc' },
     });
-    const jornadas = agruparEnJornadas(delDia.filter(r => r.entrada));
+    const jornadas = agruparEnJornadas(delDiaOrigen.filter(r => r.entrada));
     const esta = jornadas.find(j => j.some(m => m.id === id)) ?? [primera];
     if (esta.length > 2) {
       return reply.status(400).send({
@@ -588,10 +705,25 @@ export default async function registroRoutes(app: FastifyInstance) {
       salida: b.salida || undefined,
     });
 
-    // Los tramos que van a quedar, y con qué chocarían. Se comparan contra las
-    // OTRAS jornadas del día: las de esta se están reescribiendo enteras.
-    const idsPropios = new Set(esta.map(m => m.id));
-    const ajenos = delDia.filter(r => !idsPropios.has(r.id));
+    // Los tramos que van a quedar, y con qué chocarían.
+    //
+    // Se comparan contra el día de DESTINO y contra el colaborador de DESTINO,
+    // que pueden no ser los de origen. Mirar el día de origen —como se hacía—
+    // dejaba pasar la mudanza: corregirle la fecha a una jornada del 13 al 14 se
+    // validaba contra las marcaciones del 13, así que si el 14 ya tenía jornada
+    // quedaban dos solapadas y esas horas se contaban DOS VECES.
+    //
+    // Las marcaciones de esta jornada se excluyen: se están reescribiendo enteras.
+    const idsPropios = [...new Set(esta.map(m => m.id))];
+    const destino = rangoDiaBogota(fechaBase);
+    const ajenos = await prisma.registro.findMany({
+      where: {
+        colaboradorId,
+        fecha: { gte: destino.inicioDia, lt: destino.finDia },
+        id: { notIn: idsPropios },
+      },
+      select: { id: true, entrada: true, salida: true },
+    });
     const nuevos = [
       { entrada: t.entrada, salida: t.descansoSalida ?? t.salida },
       ...(t.descansoRegreso ? [{ entrada: t.descansoRegreso, salida: t.salida }] : []),
@@ -617,6 +749,16 @@ export default async function registroRoutes(app: FastifyInstance) {
       editadoEn: new Date(),
     };
 
+    // La bitácora se calcula ANTES de la transacción, mientras `esta[0]` sigue
+    // siendo el estado viejo, y se escribe después de que el guardado salga
+    // bien: anotar un cambio que luego se revierte sería peor que no anotarlo.
+    const cambiosPrimera = {
+      entrada: t.entrada, salida: nuevos[0].salida,
+      salidaAlmuerzo: !!t.descansoSalida,
+      tipo: comunes.tipo, observacion: comunes.observacion, fecha: comunes.fecha,
+    };
+    const antesPrimera = { ...esta[0] } as any;
+
     await prisma.$transaction(async (tx) => {
       await tx.registro.update({
         where: { id: esta[0].id },
@@ -633,8 +775,28 @@ export default async function registroRoutes(app: FastifyInstance) {
       }
     });
 
+    await anotarCambios(esta[0].id, antesPrimera, cambiosPrimera, request.usuarioId, request.usuarioNombre)
+      .catch(err => request.log.error(err, 'No se pudo anotar el cambio de la jornada'));
+
     await asegurarDiaSinFallar(colaboradorId, fechaBase, app.log);
     return { ok: true };
+  });
+
+  // Actividad de una marcación: qué se cambió, quién y cuándo.
+  //
+  // Va en su propia ruta y no dentro del listado porque el listado trae cientos
+  // de filas y esto solo se mira cuando alguien abre UNA para revisarla.
+  app.get('/:id/cambios', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const existe = await prisma.registro.findFirst({
+      where: { id, colaborador: { empresaId: request.empresaId } }, select: { id: true },
+    });
+    if (!existe) return reply.status(404).send({ error: 'Registro no encontrado' });
+    return prisma.registroCambio.findMany({
+      where: { registroId: id },
+      select: { id: true, campo: true, antes: true, despues: true, usuarioNombre: true, creadoEn: true },
+      orderBy: { creadoEn: 'desc' },
+    });
   });
 
   app.delete('/:id', auth, async (request, reply) => {

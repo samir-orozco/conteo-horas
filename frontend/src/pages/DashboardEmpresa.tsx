@@ -40,8 +40,14 @@ export default function DashboardEmpresa() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* El número cuenta solo a quien está en su puesto. Quien almuerza sale
+            de la cuenta pero sigue en la tarjeta de abajo, que lleva el mismo
+            título: sin decirlo aquí, el KPI diría 0 mientras la lista muestra
+            gente, y las dos cosas parecerían contradecirse. */}
         <Kpi icon={UserCheck} titulo="En planta ahora" valor={String(d.totales.enPlanta)} acento="text-green-600"
-          detalle={`de ${d.totales.colaboradoresActivos} colaboradores`} />
+          detalle={d.enDescanso?.length
+            ? `${d.enDescanso.length} en descanso · de ${d.totales.colaboradoresActivos} colaboradores`
+            : `de ${d.totales.colaboradoresActivos} colaboradores`} />
         <Kpi icon={Users} titulo="Colaboradores" valor={String(d.totales.colaboradoresActivos)} detalle="activos en la empresa" />
         <Kpi icon={Clock} titulo="Horas esta semana" valor={`${d.totales.horasSemana}h`} detalle="trabajadas por el equipo" />
         <Kpi icon={TrendingUp} titulo="Horas extra del mes" valor={`${d.totales.horasExtraMes}h`} acento="text-orange-500"
@@ -71,7 +77,7 @@ export default function DashboardEmpresa() {
       )}
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <EnPlantaCard items={d.enPlanta} />
+        <EnPlantaCard items={d.enPlanta} enDescanso={d.enDescanso ?? []} />
         <SalidasCard items={d.salidasRecientes} onVerFotos={setFotosDe} />
         <LlegadasTardeCard items={d.llegadasTardeHoy} />
         <SinMarcarCard items={d.sinMarcarHoy} />

@@ -9,6 +9,7 @@ import authRoutes from './routes/auth';
 import colaboradorRoutes from './routes/colaboradores';
 import registroRoutes from './routes/registros';
 import permisoRoutes from './routes/permisos';
+import contratoRoutes from './routes/contratos';
 import festivoRoutes from './routes/festivos';
 import configuracionRoutes from './routes/configuracion';
 import reporteRoutes from './routes/reportes';
@@ -25,6 +26,7 @@ import telegramRoutes from './routes/telegram';
 import notificacionRoutes from './routes/notificaciones';
 import { configurarWebhook } from './utils/telegram';
 import { cerrarTurnosOlvidados } from './utils/cierreTurnos';
+import { avisarContratosDeTodas } from './routes/contratos';
 import { avisarAlmuerzosSinRegreso } from './utils/cierreAlmuerzo';
 import { mantenerVentana } from './utils/materializarDias';
 import { estadoEfectivo, accesoPermitido } from './utils/suscripcion';
@@ -109,6 +111,8 @@ app.decorate('requireEmpresa', async (request: any, reply: any) => {
     });
   }
   request.empresaId = payload.empresaId;
+  request.usuarioId = payload.id;
+  request.usuarioNombre = payload.nombre;
 });
 
 app.decorate('requireSuperAdmin', async (request: any, reply: any) => {
@@ -141,6 +145,7 @@ app.register(authRoutes, { prefix: '/api/auth' });
 app.register(colaboradorRoutes, { prefix: '/api/colaboradores' });
 app.register(registroRoutes, { prefix: '/api/registros' });
 app.register(permisoRoutes, { prefix: '/api/permisos' });
+app.register(contratoRoutes, { prefix: '/api/contratos' });
 app.register(festivoRoutes, { prefix: '/api/festivos' });
 app.register(configuracionRoutes, { prefix: '/api/configuracion' });
 app.register(reporteRoutes, { prefix: '/api/reportes' });
@@ -185,15 +190,39 @@ const start = async () => {
     limpiarFotosAntiguas();
     setInterval(limpiarFotosAntiguas, 24 * 60 * 60 * 1000);
     // Cierra turnos que quedaron sin salida (marca "No marcó salida" para revisar).
-    // Al arrancar y cada 24h; es idempotente y solo actúa sobre días ya pasados.
+    //
+    // Cada HORA, no cada 24: un turno olvidado solo se vuelve elegible a la
+    // medianoche del día siguiente (el barrido solo toca días ya pasados), así
+    // que con una pasada diaria la hora a la que se cierra es la hora a la que
+    // arrancó el proceso. El despliegue del 31/08 reinició la app a las 22:12 y
+    // dejó el barrido corriendo a las 22:12: los turnos olvidados del lunes se
+    // vieron abiertos toda la jornada del martes y solo se habrían cerrado esa
+    // noche. Con una pasada por hora se cierran poco después de medianoche, sin
+    // importar cuándo arrancó la app.
+    //
+    // Cada hora y no una vez de madrugada porque un turno nocturno (21:00→05:00)
+    // no es elegible hasta las 07:00 del día siguiente, cuando vence su gracia:
+    // una única pasada a medianoche lo dejaría abierto un día entero más.
+    //
+    // Que corra 24 veces al día sale gratis solo por el índice
+    // `(salidaEstimada, salida, entrada)`: sin él la consulta es un `Table scan`
+    // sobre todo el historial de marcaciones. Ver `sql/indice-turnos-abiertos.sql`.
     cerrarTurnosOlvidados(app.log);
-    setInterval(() => cerrarTurnosOlvidados(app.log), 24 * 60 * 60 * 1000);
+    setInterval(() => cerrarTurnosOlvidados(app.log), 60 * 60 * 1000);
 
     // Almuerzos que quedaron sin regreso. No se cierran solos: la evidencia de
     // quien volvió y no marcó es idéntica a la de quien se fue para la casa, así
     // que darle la tarde por buena sería fabricar horas pagadas. Se avisa.
     avisarAlmuerzosSinRegreso(app.log);
     setInterval(() => avisarAlmuerzosSinRegreso(app.log), 24 * 60 * 60 * 1000);
+
+    // Vencimientos de contratos. Antes esto solo corría cuando alguien abría el
+    // tablero, así que la empresa que no entraba no se enteraba. Al arrancar y
+    // cada 24h, como los demás: en un hosting que duerme la app, el arranque es
+    // lo que de verdad garantiza el barrido, porque cualquier petición la
+    // despierta (incluida una marcación del kiosco).
+    avisarContratosDeTodas(app.log);
+    setInterval(() => avisarContratosDeTodas(app.log), 24 * 60 * 60 * 1000);
     // Materializa el día esperado de cada colaborador para hoy y las próximas
     // semanas. Sin esto la tabla se queda vacía y todo se resuelve con el
     // horario VIGENTE, que es justo lo que reescribía el pasado.

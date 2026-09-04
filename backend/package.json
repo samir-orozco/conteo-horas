@@ -13,7 +13,8 @@
     "prisma:studio": "prisma studio",
     "prisma:seed:prod": "ts-node prisma/seed-produccion.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:cobertura": "vitest run --coverage"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -40,6 +41,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^26.0.0",
     "@types/nodemailer": "^8.0.1",
+    "@vitest/coverage-v8": "^4.1.11",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",

@@ -24,9 +24,14 @@ Guía paso a paso. Sigue el orden.
 
 1. cPanel → **Setup Node.js App** → Create Application:
    - Node.js version: 18 o superior.
-   - Application root: `horapro-api` (sube ahí el contenido de la carpeta `backend/`, sin `node_modules`).
+   - Application root: **`horapro-co-api`** (sube ahí el contenido de la carpeta `backend/`, sin `node_modules`).
+     > ⚠️ Existe además un `~/horapro-api` de cuando la app vivía en
+     > `horapro.krumlab.com`. **Está muerto y no sirve nada.** Copiar el `dist`
+     > ahí no da error y deja producción con el código viejo. La ruta real
+     > siempre se lee del servidor:
+     > `grep PassengerAppRoot ~/horapro.co/api/.htaccess`
    - Application startup file: `dist/index.js`.
-2. En la terminal de la app (o SSH), dentro de `horapro-api`:
+2. En la terminal de la app (o SSH), dentro de `horapro-co-api`:
    ```bash
    npm install
    cp .env.example .env        # y completa TODOS los valores (ver sección 6)
@@ -48,7 +53,18 @@ cp .env.example .env          # VITE_API_URL=https://horapro.co/api
 npm install
 npm run build
 ```
-Sube el contenido de `frontend/dist/` a **`~/horapro.co/`** (el docroot real del subdominio, incluida la carpeta `models/` con los pesos del reconocimiento facial). En deploys posteriores: `rm -rf ~/horapro.co/assets && cp -R ~/horapro-repo/frontend/dist/. ~/horapro.co/` (no borres `.htaccess`, `models/` ni `api/`).
+Sube el contenido de `frontend/dist/` a **`~/horapro.co/`** (el docroot real del subdominio, incluida la carpeta `models/` con los pesos del reconocimiento facial). En deploys posteriores: `cp -R ~/horapro-repo/frontend/dist/. ~/horapro.co/` (no borres `.htaccess`, `models/` ni `api/`).
+
+> **No borres `assets/` antes de copiar.** La instrucción anterior empezaba con
+> `rm -rf ~/horapro.co/assets`, y eso elimina bundles que las pestañas ya
+> abiertas siguen pidiendo. La app carga tres módulos bajo demanda —`xlsx` al
+> exportar, `faceapi`, `clipboard`—, cada uno en su archivo con hash propio: quien
+> tuviera HoraPro abierto desde antes del despliegue y exportara un reporte
+> recibía un 404 y un error en pantalla.
+>
+> Los bundles nuevos llevan hash distinto, así que conviven con los viejos sin
+> pisarse. Ocupa unos megas por despliegue; se limpia a mano cada varios meses
+> mirando qué hash referencia el `index.html` actual.
 
 Crea `~/horapro.co/.htaccess` para que React Router maneje las rutas:
 ```apache
