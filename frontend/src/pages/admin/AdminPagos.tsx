@@ -129,7 +129,7 @@ export default function AdminPagos() {
               {detalle.comprobanteBase64 && (
                 <div className="mb-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Comprobante adjunto</p>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-1 flex flex-col max-h-64 overflow-auto">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-1 flex flex-col [&_img]:max-h-64 [&_iframe]:min-h-[16rem]">
                     <VistaDeAdjunto data={detalle.comprobanteBase64} tipo={tipoDeDataUri(detalle.comprobanteBase64)} nombre="Comprobante" />
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Camera, Trash2, UserRound } from 'lucide-react';
 import { aFotoDePerfil, type DosFotos } from './foto';
-import { ACEPTA_FOTO } from '../../lib/archivos';
+import { ACEPTA_FOTO, destinoDeArchivo } from '../../lib/archivos';
 
 // Foto de perfil al crear o editar un colaborador.
 //
@@ -27,6 +27,14 @@ export default function SelectorFoto({
 
   const elegir = async (f: File | undefined) => {
     if (!f) return;
+    // La misma guarda que CabeceraFicha. Los dos controles escriben la MISMA
+    // columna (colaborador.foto), así que sin esto el SVG se rechazaba en la
+    // ficha y entraba por el alta.
+    if (destinoDeArchivo(f.type) !== 'convertir') {
+      onError('Eso no es una foto. Sube una imagen desde tu celular o computador.');
+      if (archivo.current) archivo.current.value = '';
+      return;
+    }
     setProcesando(true);
     try {
       onCambio(await aFotoDePerfil(f));

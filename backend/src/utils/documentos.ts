@@ -44,13 +44,25 @@ const FIRMAS = new Map<string, string>([
 
 const SEPARADOR = ';base64,';
 
-export function documentoValido(v: unknown): v is string {
-  if (typeof v !== 'string' || v.length >= MAX_DOC) return false;
-  if (!v.startsWith('data:')) return false;
+// Que un data URI declare uno de los tipos permitidos Y traiga de verdad los
+// bytes de ese tipo.
+//
+// `permitidos` acota la lista: los documentos aceptan Word y PDF, las fotos de
+// perfil no. Se comparte para que no vuelva a pasar lo de permisos.ts, que
+// tenía su propia copia del regex y se quedó atrás.
+export function firmaCoincide(v: unknown, permitidos?: ReadonlySet<string>): v is string {
+  if (typeof v !== 'string' || !v.startsWith('data:')) return false;
   const corte = v.indexOf(SEPARADOR);
   if (corte <= 5) return false;
-  const firma = FIRMAS.get(v.slice(5, corte));
+  const mime = v.slice(5, corte);
+  if (permitidos && !permitidos.has(mime)) return false;
+  const firma = FIRMAS.get(mime);
   return firma !== undefined && v.startsWith(firma, corte + SEPARADOR.length);
+}
+
+export function documentoValido(v: unknown): v is string {
+  if (typeof v !== 'string' || v.length >= MAX_DOC) return false;
+  return firmaCoincide(v);
 }
 
 // El tipo MIME que viene dentro del propio data URI. Se lee de ahí y no de lo
@@ -66,8 +78,13 @@ export function tipoDeDocumento(dataUri: string): string {
 // escribe en disco, así que aquí no hay ningún path traversal que evitar. Es
 // que este texto termina en el atributo download de un enlace y en la pantalla,
 // y ahí una barra o un salto de línea no significan nada bueno.
+// Se incluyen los caracteres de control de dirección (U+200B a U+200F, U+202A a
+// U+202E, U+2066 a U+2069): no se ven, y hacen que el texto que sigue se pinte
+// al revés. Un nombre puede verse como "factura.pdf" en pantalla y ser otra
+// cosa. Con la extensión ya forzada desde el MIME el daño es menor, pero un
+// nombre que no se lee como es no tiene por qué llegar a la pantalla.
 // eslint-disable-next-line no-control-regex
-const PELIGROSOS = /[/\\:*?"<>|;\x00-\x1f]/g;
+const PELIGROSOS = /[/\\:*?"<>|;\x00-\x1f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g;
 
 // El nombre de archivo, limpio y recortado. Es texto libre del usuario y
 // termina en la base y en pantalla.
@@ -134,10 +151,15 @@ export function cambioDeDocumento(documento: unknown, nombre: unknown): CambioDo
   if (documento === null) return { accion: 'quitar' };
   if (documento === undefined) return { accion: 'dejar' };
   if (!documentoValido(documento)) return { accion: 'rechazar', motivo: MOTIVO_RECHAZO };
+  const tipo = tipoDeDocumento(documento);
   return {
     accion: 'guardar',
     documento,
-    tipo: tipoDeDocumento(documento),
-    nombre: nombreDeDocumento(nombre),
+    tipo,
+    // El nombre queda ya normalizado en la columna, con la extensión que le
+    // corresponde a los bytes que se acaban de comprobar. Si esto solo se
+    // hiciera al descargar, la base guardaría "contrato.exe" para siempre y
+    // cualquier consumidor que no pase por el visor lo entregaría así.
+    nombre: nombreParaDescargar(nombreDeDocumento(nombre), tipo),
   };
 }

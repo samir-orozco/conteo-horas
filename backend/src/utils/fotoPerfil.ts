@@ -1,3 +1,5 @@
+import { firmaCoincide } from './documentos';
+
 // Validación de la foto de perfil del colaborador.
 //
 // Va aparte de `documentos.ts` porque las reglas son distintas y más estrictas:
@@ -14,10 +16,16 @@ export const MAX_FOTO = 700_000;
 // SVG queda fuera a propósito, aunque sea una imagen: es un documento que puede
 // traer scripts, y servido desde el propio origen del sitio esos scripts corren
 // con sus permisos.
-const PATRON = /^data:image\/(jpeg|png|webp);base64,.+/;
+//
+// Se comprueba la FIRMA DE BYTES y no solo la etiqueta, con la misma función
+// que los documentos. La etiqueta la escribe quien sube: sin esto bastaba con
+// poner "image/jpeg" delante de cualquier cosa. Y se reusa en vez de copiarse
+// para no repetir lo que pasó con permisos.ts, que tenía su propia copia del
+// regex y se quedó atrás el día que se agregó un formato.
+const FORMATOS_DE_FOTO: ReadonlySet<string> = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export function fotoPerfilValida(v: unknown): v is string {
-  return typeof v === 'string' && PATRON.test(v) && v.length < MAX_FOTO;
+  return typeof v === 'string' && v.length < MAX_FOTO && firmaCoincide(v, FORMATOS_DE_FOTO);
 }
 
 // Qué foto debe quedar después de un enrolamiento facial, o null si ninguna.

@@ -3,7 +3,7 @@ import { Plus, X, Pencil, Link2, Copy, Check, Send, Users, Wallet, Handshake, Ma
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { procesarEvidencia } from '../../lib/evidencia';
-import { ACEPTA_COMPROBANTE } from '../../lib/archivos';
+import { ACEPTA_COMPROBANTE, claseDeArchivo } from '../../lib/archivos';
 import { mensajeDeError } from '../../lib/errores';
 
 type AfiliadoRow = {
@@ -77,6 +77,12 @@ export default function AdminAfiliados() {
     if (!file) return;
     try {
       const ev = await procesarEvidencia(file);
+      // procesarEvidencia es la funcion compartida con la evidencia de las
+      // novedades y acepta Word; un comprobante de pago no. Sin esto el
+      // navegador lo aceptaba y el servidor devolvia 400.
+      if (claseDeArchivo(ev.tipo) === 'word') {
+        throw new Error('El comprobante tiene que ser una foto o un PDF, no un documento de Word.');
+      }
       setErrorRetiro('');
       setCompRetiro(ev.data);
     } catch (err) {

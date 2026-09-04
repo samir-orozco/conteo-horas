@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CabeceraFicha from './CabeceraFicha';
 
@@ -102,18 +102,25 @@ describe('la foto, desde el propio círculo', () => {
     expect(onArchivoFoto).toHaveBeenCalledWith(expect.any(File));
   });
 
-  it('un PDF no pasa', async () => {
-    // Ya ni siquiera llega al manejador: el `accept` del input lo descarta un
-    // paso antes, así que no hay mensaje que mostrar. Lo que se comprueba aquí
-    // es la garantía que importa, que es que no se sube. La guarda en código,
-    // que es la que de verdad protege (el accept se salta eligiendo "todos los
-    // archivos", y arrastrar y soltar ni lo mira), la ejercita el caso del SVG.
+  it('un PDF no pasa, y se dice por qué', async () => {
+    // Se dispara el change a mano, SIN pasar por el filtro de `accept`.
+    //
+    // La primera versión de esta prueba usaba userEvent.upload y no podía
+    // fallar: userEvent respeta el accept del input, así que el archivo nunca
+    // llegaba al manejador y la aserción se cumplía sola. Comprobado por
+    // mutación: rompiendo la guarda del componente, la prueba seguía verde.
+    //
+    // Y el accept no es una defensa: se salta eligiendo "todos los archivos" y
+    // arrastrar y soltar ni lo mira. Lo que protege es la guarda, y esto es lo
+    // que la ejercita.
     const onArchivoFoto = vi.fn();
     montar({}, { onArchivoFoto });
     await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));
-    await userEvent.upload(screen.getByLabelText(/Subir una foto/i),
-      new File(['x'], 'contrato.pdf', { type: 'application/pdf' }));
+    const entrada = screen.getByLabelText(/Subir una foto/i) as HTMLInputElement;
+    const pdf = new File(['x'], 'contrato.pdf', { type: 'application/pdf' });
+    fireEvent.change(entrada, { target: { files: [pdf] } });
     expect(onArchivoFoto).not.toHaveBeenCalled();
+    expect(screen.getByText(/no es una foto/i)).toBeInTheDocument();
   });
 
   it('el SVG sí llega a la guarda, y ahí se rechaza con un mensaje', async () => {
@@ -127,10 +134,16 @@ describe('la foto, desde el propio círculo', () => {
     expect(screen.getByText(/no es una foto/i)).toBeInTheDocument();
   });
 
-  it('la foto de un iPhone SÍ pasa, aunque venga en HEIC', async () => {
-    // Antes había aquí una lista de tres formatos y un HEIC rebotaba con "La
-    // foto debe ser JPG, PNG o WEBP", sin que la persona pudiera hacer nada.
-    // Ahora entra y el canvas la convierte a WebP, que es lo que se pidió.
+  it('un HEIC ya no lo bloquea la guarda de formato', async () => {
+    // Lo que esta prueba comprueba, y NO más que eso: que la lista blanca de
+    // tres MIME ya no está, así que el archivo llega al manejador en vez de
+    // rebotar con "La foto debe ser JPG, PNG o WEBP".
+    //
+    // Lo que NO puede comprobar: que la foto se convierta. Eso lo hace el
+    // canvas, que jsdom no implementa, y encima depende de si el navegador sabe
+    // decodificar HEIC (Safari sí, Chrome en escritorio no). Cuando no sabe, el
+    // <img> falla y la persona recibe el mensaje de `cargar()`, que por eso
+    // dice qué hacer en vez de solo decir que no se pudo.
     const onArchivoFoto = vi.fn();
     montar({}, { onArchivoFoto });
     await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));

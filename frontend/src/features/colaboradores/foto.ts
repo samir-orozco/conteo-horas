@@ -53,7 +53,10 @@ const cargar = (src: string, alTerminar: () => void): Promise<HTMLImageElement> 
   new Promise((resolver, rechazar) => {
     const img = new Image();
     img.onload = () => { alTerminar(); resolver(img); };
-    img.onerror = () => { alTerminar(); rechazar(new Error('No pudimos leer esa imagen.')); };
+    // Este mensaje importa desde que entra cualquier formato de foto: un HEIC
+    // de iPhone lo decodifica Safari pero no Chrome en escritorio, y ahi lo
+    // util es decir que hacer, no solo que no se pudo.
+    img.onerror = () => { alTerminar(); rechazar(new Error('Tu navegador no puede leer ese formato de foto. Guárdala como JPG o PNG.')); };
     img.src = src;
   });
 

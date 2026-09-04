@@ -357,7 +357,10 @@ export default function AdminEmpresaDetalle() {
       {/* Visor de comprobante */}
       {comprobante && (
         <div className="fixed inset-0 !mt-0 bg-black/60 z-50 flex items-center justify-center p-6" onClick={() => setComprobante(null)}>
-          <div className="max-w-2xl w-full max-h-full overflow-auto rounded-xl bg-white p-2 flex flex-col" onClick={e => e.stopPropagation()}>
+          {/* Sin stopPropagation a proposito: este visor no tiene boton de
+              cerrar, y la unica forma de salir siempre fue el clic. Detener la
+              propagacion aqui lo dejaria sin salida. */}
+          <div className="max-w-2xl w-full max-h-full overflow-auto rounded-xl bg-white p-2 flex flex-col">
             <VistaDeAdjunto data={comprobante} tipo={tipoDeDataUri(comprobante)} nombre="Comprobante" />
           </div>
         </div>

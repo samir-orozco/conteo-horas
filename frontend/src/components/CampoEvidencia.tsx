@@ -75,20 +75,27 @@ export default function CampoEvidencia({ existente, onCambio }: Props) {
 
   // Chip de la evidencia ya guardada (modo edición)
   if (tieneExistente) {
-
     return (
-      <div className="flex items-center gap-3 border border-gray-200 rounded-xl p-3 bg-gray-50">
-        <div className="w-11 h-11 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
-          <IconoDeAdjunto tipo={existente!.tipo} size={18} />
+      <div>
+        <div className="flex items-center gap-3 border border-gray-200 rounded-xl p-3 bg-gray-50">
+          <div className="w-11 h-11 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
+            <IconoDeAdjunto tipo={existente!.tipo} size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-ink truncate">{existente!.nombre || rotuloDeArchivo(existente!.tipo)}</p>
+            <p className="text-xs text-muted">Evidencia adjunta</p>
+          </div>
+          <button type="button" onClick={() => inputRef.current?.click()} className="text-xs font-semibold text-primary-dark hover:underline px-1">Cambiar</button>
+          <button type="button" onClick={limpiar} className="p-1.5 text-gray-400 hover:bg-gray-200 rounded-lg"><X size={16} /></button>
+          <input ref={inputRef} type="file" accept={ACEPTA_DOCUMENTO} className="hidden"
+            onChange={e => tomarArchivo(e.target.files?.[0])} />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-ink truncate">{existente!.nombre || rotuloDeArchivo(existente!.tipo)}</p>
-          <p className="text-xs text-muted">Evidencia adjunta</p>
-        </div>
-        <button type="button" onClick={() => inputRef.current?.click()} className="text-xs font-semibold text-primary-dark hover:underline px-1">Cambiar</button>
-        <button type="button" onClick={limpiar} className="p-1.5 text-gray-400 hover:bg-gray-200 rounded-lg"><X size={16} /></button>
-        <input ref={inputRef} type="file" accept={ACEPTA_DOCUMENTO} className="hidden"
-          onChange={e => tomarArchivo(e.target.files?.[0])} />
+        {/* Esta rama no pintaba ni el error ni el "Procesando...". Pulsar
+            "Cambiar" sobre una evidencia ya guardada y elegir algo que no se
+            acepta no mostraba absolutamente nada: el archivo se rechazaba en
+            silencio y el chip viejo se quedaba ahí. */}
+        {cargando && <p className="text-xs text-muted mt-1.5">Procesando...</p>}
+        {error && <p className="text-xs text-red-600 mt-1.5">{error}</p>}
       </div>
     );
   }

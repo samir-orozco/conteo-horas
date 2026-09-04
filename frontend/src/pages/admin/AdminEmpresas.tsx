@@ -107,6 +107,12 @@ export default function AdminEmpresas() {
     if (!file) return;
     try {
       const ev = await procesarEvidencia(file);
+      // procesarEvidencia es la funcion compartida con la evidencia de las
+      // novedades y acepta Word; un comprobante de pago no. Sin esto el
+      // navegador lo aceptaba y el servidor devolvia 400.
+      if (claseDeArchivo(ev.tipo) === 'word') {
+        throw new Error('El comprobante tiene que ser una foto o un PDF, no un documento de Word.');
+      }
       setErrorPago('');
       setFormPago(p => ({ ...p, comprobanteBase64: ev.data, comprobanteTipo: ev.tipo }));
     } catch (err) {

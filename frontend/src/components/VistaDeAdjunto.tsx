@@ -1,5 +1,5 @@
 import { FileText, Download } from 'lucide-react';
-import { claseDeArchivo, nombreParaDescargar, rotuloDeArchivo } from '../lib/archivos';
+import { claseDeArchivo, nombreParaDescargar, rotuloDeArchivo, seVeEnLinea } from '../lib/archivos';
 
 // El cuerpo de un visor de adjuntos: el PDF en un iframe, la foto en un <img>,
 // y Word con lo único que se puede hacer con él, que es bajarlo.
@@ -13,6 +13,12 @@ import { claseDeArchivo, nombreParaDescargar, rotuloDeArchivo } from '../lib/arc
 export default function VistaDeAdjunto(
   { data, tipo, nombre }: { data: string; tipo?: string | null; nombre?: string | null },
 ) {
+  // La pregunta "se puede mostrar sin descargarlo" vive en lib/archivos.ts y no
+  // aqui, para que no se separen el dia que entre otro formato.
+  if (!seVeEnLinea(tipo)) {
+    return <ParaDescargar data={data} tipo={tipo} nombre={nombre} />;
+  }
+
   const clase = claseDeArchivo(tipo);
 
   if (clase === 'pdf') {
@@ -22,15 +28,17 @@ export default function VistaDeAdjunto(
     );
   }
 
-  if (clase === 'imagen') {
-    return (
-      <img src={data} alt={nombre || 'Documento'}
-        className="w-full object-contain rounded-lg max-h-[75vh]" />
-    );
-  }
+  return (
+    <img src={data} alt={nombre || 'Documento'}
+      className="w-full object-contain rounded-lg max-h-[75vh]" />
+  );
+}
 
-  // Word y cualquier otra cosa. Un .docx no se puede previsualizar en un
-  // iframe, así que la descarga no es un extra: es la única forma de abrirlo.
+// Word y cualquier otra cosa. Un .docx no se puede previsualizar en un iframe,
+// así que la descarga no es un extra: es la única forma de abrirlo.
+function ParaDescargar(
+  { data, tipo, nombre }: { data: string; tipo?: string | null; nombre?: string | null },
+) {
   return (
     <div className="flex-1 min-h-[40vh] flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
       <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center">

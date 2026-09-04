@@ -21,6 +21,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { documentoValido, MAX_DOC } from '../src/utils/documentos';
+import { fotoPerfilValida, miniValida } from '../src/utils/fotoPerfil';
 
 const prisma = new PrismaClient();
 
@@ -29,13 +30,15 @@ const prisma = new PrismaClient();
 // aparecería como ilegible.
 const CABEZA = 200;
 
-function describir(dato: string | null): { mime: string; pasa: boolean; largo: number } {
+type Validador = (v: unknown) => boolean;
+
+function describir(dato: string | null, valida: Validador = documentoValido) {
   if (!dato) return { mime: '(vacío)', pasa: true, largo: 0 };
   const cabeza = dato.slice(0, CABEZA);
   const corte = cabeza.indexOf(';base64,');
   return {
     mime: corte > 5 ? cabeza.slice(5, corte) : '(no es un data URI)',
-    pasa: documentoValido(dato),
+    pasa: valida(dato),
     largo: dato.length,
   };
 }
@@ -44,12 +47,13 @@ async function revisar(
   titulo: string,
   filas: { id: string; dato: string | null; nombre?: string | null }[],
   seValida: boolean,
+  valida: Validador = documentoValido,
 ) {
   const conDato = filas.filter(f => f.dato);
-  const malos = conDato.filter(f => !describir(f.dato).pasa);
+  const malos = conDato.filter(f => !describir(f.dato, valida).pasa);
   const porMime = new Map<string, number>();
   for (const f of conDato) {
-    const m = describir(f.dato).mime;
+    const m = describir(f.dato, valida).mime;
     porMime.set(m, (porMime.get(m) ?? 0) + 1);
   }
 
@@ -66,7 +70,7 @@ async function revisar(
   } else {
     console.log(`   ⚠ ${malos.length} NO pasarían si se reenviaran:`);
     for (const f of malos.slice(0, 10)) {
-      const d = describir(f.dato);
+      const d = describir(f.dato, valida);
       const causa = d.largo >= MAX_DOC ? `pesa ${d.largo} (tope ${MAX_DOC})` : 'formato o firma de bytes';
       console.log(`     ${f.id}  ${d.mime}  ${f.nombre ?? ''}  ← ${causa}`);
     }
@@ -75,13 +79,14 @@ async function revisar(
 }
 
 async function main() {
-  const [permisos, contratos, prorrogas, eventos, pagos, retiros] = await Promise.all([
+  const [permisos, contratos, prorrogas, eventos, pagos, retiros, colaboradores] = await Promise.all([
     prisma.permiso.findMany({ select: { id: true, evidencia: true, evidenciaNombre: true } }),
     prisma.contrato.findMany({ select: { id: true, documento: true, documentoNombre: true } }),
     prisma.prorrogaContrato.findMany({ select: { id: true, documento: true, documentoNombre: true } }),
     prisma.vinculacionEvento.findMany({ select: { id: true, documento: true, documentoNombre: true } }),
     prisma.pago.findMany({ select: { id: true, comprobanteBase64: true } }),
     prisma.solicitudRetiro.findMany({ select: { id: true, comprobanteBase64: true } }),
+    prisma.colaborador.findMany({ select: { id: true, foto: true, fotoMini: true, nombre: true } }),
   ]);
 
   console.log('ADJUNTOS YA GUARDADOS, contra la validación nueva. Solo lectura.');
@@ -92,6 +97,11 @@ async function main() {
   await revisar('Soportes de vinculación y retiro', eventos.map(e => ({ id: e.id, dato: e.documento, nombre: e.documentoNombre })), true);
   await revisar('Comprobantes de pago de empresa', pagos.map(p => ({ id: p.id, dato: p.comprobanteBase64 })), false);
   await revisar('Comprobantes de retiro de afiliado', retiros.map(r => ({ id: r.id, dato: r.comprobanteBase64 })), false);
+
+  // Las fotos van con su propio validador: son más estrictas que los documentos
+  // (no aceptan PDF ni Word) y tienen sus propios topes.
+  await revisar('Fotos de perfil', colaboradores.map(c => ({ id: c.id, dato: c.foto, nombre: c.nombre })), true, fotoPerfilValida);
+  await revisar('Miniaturas de las listas', colaboradores.map(c => ({ id: c.id, dato: c.fotoMini, nombre: c.nombre })), true, miniValida);
 
   console.log('\nRecordatorio: ninguna ruta GET valida, así que nada de lo listado');
   console.log('arriba deja de verse ni de descargarse. Un ⚠ significa que ESE');

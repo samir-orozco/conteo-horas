@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { leerHoja } from './formatoImportacion';
+import { normalizarFecha } from './fechaImportada';
 
 // La lectura del archivo que sube quien importa colaboradores.
 //
@@ -60,11 +61,26 @@ describe('leer la primera hoja de un archivo de Excel', () => {
     // distinto en un Excel gringo y en uno colombiano.
     const filas = await leerHoja(comoArchivo('importacion.xlsx',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'));
-    const fecha = filas[1][5];
-    expect(fecha).toBeInstanceOf(Date);
-    // Las pruebas corren en América/Los Ángeles a propósito (vite.config.ts).
-    // Se compara en UTC para que el valor no dependa del reloj de quien corre.
-    expect((fecha as Date).toISOString().slice(0, 10)).toBe('2026-01-15');
+    expect(filas[1][5]).toBeInstanceOf(Date);
+  });
+
+  it('el día que llega es el que dice la celda, en cualquier zona horaria', async () => {
+    // ESTE ES EL CASO QUE HAY QUE MIRAR CON CUIDADO, y la primera versión de
+    // esta prueba estaba mal.
+    //
+    // SheetJS arma el Date de modo que su RELOJ DE PARED coincida con lo que
+    // Excel muestra, y por eso `normalizarFecha` lee getFullYear/getMonth/
+    // getDate y no las partes UTC. Comparar con toISOString() es leerlo por
+    // donde no es: da un día distinto según el signo del huso, y la prueba
+    // pasaría en Bogotá y fallaría en Madrid.
+    //
+    // Se afirma sobre lo que el producto de verdad manda al backend, que es la
+    // cadena de normalizarFecha. Comprobado a mano en Bogotá, Los Ángeles, UTC
+    // y Tokio: las cuatro dan 2026-01-15.
+    const filas = await leerHoja(comoArchivo('importacion.xlsx',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'));
+    expect(normalizarFecha(filas[1][5])).toBe('2026-01-15');
+    expect(normalizarFecha(filas[2][5])).toBe('2025-12-01');
   });
 
   it('los números llegan como números, no como texto', async () => {
@@ -75,16 +91,23 @@ describe('leer la primera hoja de un archivo de Excel', () => {
     expect(filas[1][4]).toBe(1750000);
   });
 
-  it('las filas en blanco no llegan', async () => {
-    // `blankrows: false`. El formato que se descarga trae filas vacías al final
-    // y sin esto se intentaría crear colaboradores sin nombre.
+  it('las filas en blanco no llegan, pero sí lo que viene después', async () => {
+    // `blankrows: false`. El formato que se descarga trae huecos, y sin esto se
+    // intentaría crear colaboradores sin nombre.
     //
-    // Matiz que costó descubrir: una fila de cadenas vacías NO cuenta como
-    // fila en blanco para Excel y sí llega hasta aquí. De esa se encarga
-    // después `mapearHoja`, que descarta la que no tiene ningún valor.
+    // El fixture tiene un hueco de verdad en la fila 4 y datos en la 5, así que
+    // la hoja mide A1:F5 y de aquí tienen que salir 4: encabezado y tres
+    // personas. Que la última llegue es la mitad que importa: quitar las filas
+    // vacías no puede cortar la lectura en el primer hueco.
+    //
+    // Costó una versión equivocada: con una fila de CADENAS vacías esta prueba
+    // pasaba sin comprobar nada, porque para Excel esas son celdas con
+    // contenido. Se comprobó por mutación: quitando `blankrows: false` del
+    // código, esta prueba tiene que ponerse roja.
     const filas = await leerHoja(comoArchivo('importacion.xlsx',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'));
-    expect(filas).toHaveLength(3);
+    expect(filas).toHaveLength(4);
+    expect(filas[3][0]).toBe('Luz');
   });
 
   it('un archivo vacío devuelve una lista vacía en vez de reventar', async () => {

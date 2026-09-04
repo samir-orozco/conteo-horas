@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   documentoValido, tipoDeDocumento, nombreDeDocumento, nombreParaDescargar,
-  cambioDeDocumento,
+  cambioDeDocumento, firmaCoincide,
   MAX_DOC, MIME_DOCX,
 } from './documentos';
 
@@ -141,6 +141,32 @@ describe('qué documentos se aceptan', () => {
   });
 });
 
+describe('la firma se puede acotar a una lista más corta', () => {
+  // Es lo que usa fotoPerfil.ts para no aceptar PDF ni Word en un avatar. Se
+  // comparte en vez de copiarse para no repetir lo que pasó con permisos.ts,
+  // que tenía su propia copia del regex y se quedó atrás.
+  const SOLO_FOTOS = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+  it('deja pasar lo que está en la lista y trae sus bytes', () => {
+    expect(firmaCoincide(jpg, SOLO_FOTOS)).toBe(true);
+    expect(firmaCoincide(png, SOLO_FOTOS)).toBe(true);
+  });
+
+  it('rechaza lo que la firma acepta pero la lista no', () => {
+    expect(firmaCoincide(pdf, SOLO_FOTOS)).toBe(false);
+    expect(firmaCoincide(docx, SOLO_FOTOS)).toBe(false);
+  });
+
+  it('sin lista, vale cualquiera de los formatos conocidos', () => {
+    expect(firmaCoincide(pdf)).toBe(true);
+    expect(firmaCoincide(docx)).toBe(true);
+  });
+
+  it('la lista no salva a un archivo que miente sobre sus bytes', () => {
+    expect(firmaCoincide(uri('image/png', HTML), SOLO_FOTOS)).toBe(false);
+  });
+});
+
 describe('tipo y nombre', () => {
   it('el tipo se lee del propio data URI, no de lo que diga el cliente', () => {
     expect(tipoDeDocumento(pdf)).toBe('application/pdf');
@@ -174,6 +200,18 @@ describe('tipo y nombre', () => {
     expect(nombreDeDocumento('con\nsalto.docx')).toBe('con_salto.docx');
     expect(nombreDeDocumento('a"b;c<d>e|f.docx')).toBe('a_b_c_d_e_f.docx');
     expect(nombreDeDocumento('..')).toBeNull();
+  });
+
+  it('quita los caracteres que invierten el texto en pantalla', () => {
+    // U+202E (anulación de derecha a izquierda) hace que lo que sigue se pinte
+    // al revés: un nombre puede verse como "factura.pdf" y ser otra cosa. Con
+    // la extensión ya forzada desde el MIME el daño es menor, pero un nombre
+    // que no se lee como es no debe llegar a la pantalla.
+    expect(nombreDeDocumento('\u202Efdp.exe')).toBe('_fdp.exe');
+    expect(nombreDeDocumento('a\u200Bb.pdf')).toBe('a_b.pdf');
+    // Un nombre hecho solo de esos caracteres queda en guiones bajos, no en
+    // null: es inofensivo, y nombreParaDescargar le pone después la extensión.
+    expect(nombreDeDocumento('\u202D\u202E')).toBe('__');
     expect(nombreDeDocumento('.oculto.docx')).toBe('oculto.docx');
   });
 });
@@ -220,10 +258,19 @@ describe('qué se hace con el documento que llegó', () => {
     });
   });
 
-  it('sin nombre se guarda igual, con el nombre en null', () => {
+  it('sin nombre se guarda igual, con uno que se pueda descargar', () => {
     expect(cambioDeDocumento(pdf, undefined)).toEqual({
-      accion: 'guardar', documento: pdf, tipo: 'application/pdf', nombre: null,
+      accion: 'guardar', documento: pdf, tipo: 'application/pdf', nombre: 'documento.pdf',
     });
+  });
+
+  it('el nombre queda en la base ya con la extensión del tipo comprobado', () => {
+    // La normalización se hace al GUARDAR y no solo al descargar. Si solo se
+    // hiciera al descargar, la columna guardaría "contrato.exe" para siempre y
+    // cualquier consumidor que no pase por el visor lo entregaría así.
+    const r = cambioDeDocumento(docx, 'contrato.exe');
+    if (r.accion !== 'guardar') throw new Error('debía guardar');
+    expect(r.nombre).toBe('contrato.docx');
   });
 
   it('uno malo se RECHAZA, no se descarta en silencio', () => {
