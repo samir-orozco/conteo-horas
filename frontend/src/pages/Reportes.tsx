@@ -5,11 +5,14 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
-import { Search, AlarmClock, Info, Download, Lock, CalendarOff, Paperclip, X, FileText, Image as ImageIcon } from 'lucide-react';
+import { Search, AlarmClock, Info, Download, Lock, CalendarOff, Paperclip, X } from 'lucide-react';
 import api from '../lib/api';
 import { useMiPlan } from '../lib/plan';
 import { descargarExcelHojas } from '../lib/exportar';
 import { TIPO_PERMISO_LABEL } from './ColaboradorDetalle';
+import VistaDeAdjunto from '../components/VistaDeAdjunto';
+import IconoDeAdjunto from '../components/IconoDeAdjunto';
+import { nombreParaDescargar } from '../lib/archivos';
 
 const TZ = 'America/Bogota';
 
@@ -548,7 +551,7 @@ export default function Reportes() {
                   <p className="text-xs text-muted mb-1">Evidencia</p>
                   <button onClick={() => verEvidencia(verNovedad.id)} disabled={cargandoEvidencia}
                     className="flex items-center gap-2 text-sm font-medium text-primary-dark border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 disabled:opacity-60">
-                    {verNovedad.evidenciaTipo === 'application/pdf' ? <FileText size={16} className="text-red-500" /> : <ImageIcon size={16} />}
+                    <IconoDeAdjunto tipo={verNovedad.evidenciaTipo} />
                     {cargandoEvidencia ? 'Abriendo...' : (verNovedad.evidenciaNombre || 'Ver evidencia')}
                   </button>
                 </div>
@@ -568,15 +571,11 @@ export default function Reportes() {
             <div className="flex items-center justify-between mb-3 px-1">
               <p className="text-sm font-semibold text-ink truncate">{evidenciaVer.nombre || 'Evidencia'}</p>
               <div className="flex items-center gap-1">
-                <a href={evidenciaVer.data} download={evidenciaVer.nombre || 'evidencia'} title="Descargar" className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"><Download size={18} /></a>
+                <a href={evidenciaVer.data} download={nombreParaDescargar(evidenciaVer.nombre, evidenciaVer.tipo ?? '')} title="Descargar" className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"><Download size={18} /></a>
                 <button onClick={() => setEvidenciaVer(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
               </div>
             </div>
-            {evidenciaVer.tipo === 'application/pdf' ? (
-              <iframe src={evidenciaVer.data} title="Evidencia PDF" className="w-full flex-1 min-h-[60vh] rounded-lg border border-gray-200" />
-            ) : (
-              <img src={evidenciaVer.data} alt="Evidencia" className="w-full object-contain rounded-lg max-h-[75vh]" />
-            )}
+            <VistaDeAdjunto data={evidenciaVer.data} tipo={evidenciaVer.tipo} nombre={evidenciaVer.nombre} />
           </div>
         </div>
       )}

@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Camera, Info, SlidersHorizontal, Check, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Camera, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Eye } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
+import MenuFiltros from '../components/MenuFiltros';
 import SelectorColaborador from '../components/SelectorColaborador';
+import FotosJornada from '../components/FotosJornada';
+import ActividadRegistro from '../features/registros/ActividadRegistro';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
@@ -15,6 +18,10 @@ type Marcacion = {
   id: string; entrada: string | null; salida: string | null;
   salidaAlmuerzo: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
   tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
+  // La novedad que nació de esta marcación (salida temprana en el kiosco) se
+  // borra con ella. El diálogo tiene que decirlo ANTES: si esa novedad ya
+  // estaba aprobada, borrarla mueve la liquidación.
+  tieneNovedadLigada?: boolean;
 };
 // Una fila de la tabla es una JORNADA, no una marcación. Marcar el almuerzo
 // parte el día en dos tramos; los dos son la misma jornada y bajan juntos en
@@ -56,7 +63,6 @@ type Almuerzo = {
   seExcedio: boolean;
   minutosDeMas: number;
 };
-type Fotos = { fotoEntrada: string | null; fotoSalida: string | null };
 // Lo que devuelve el servidor cuando rechaza un guardado. `conflicto` solo viene
 // con el código de cruce, y trae la marcación que estorba para poder ofrecerse a
 // quitarla sin salir del formulario.
@@ -85,6 +91,7 @@ const marcasDe = (r: Registro): Marcacion[] => r.marcaciones ?? [{
   salidaAlmuerzo: r.salidaAlmuerzo ?? false, entradaEstimada: false,
   salidaEstimada: r.salidaEstimada ?? false,
   tieneFotoEntrada: r.tieneFotoEntrada, tieneFotoSalida: r.tieneFotoSalida,
+  tieneNovedadLigada: false,
 }];
 
 // Celda de almuerzo. El almuerzo llega solo en la jornada que lo contiene, así
@@ -158,10 +165,9 @@ export default function Registros() {
   // cuántas marcaciones se está tratando.
   const [jornadaEditada, setJornadaEditada] = useState<Registro | null>(null);
   const [fotosDe, setFotosDe] = useState<Registro | null>(null);
-  const [fotos, setFotos] = useState<Fotos | null>(null);
   // Qué marcaciones se van a borrar. Una jornada partida por el almuerzo son
   // dos, y borrar solo la primera dejaba la tarde suelta como una fila huérfana.
-  const [porEliminar, setPorEliminar] = useState<{ ids: string[]; horas: string } | null>(null);
+  const [porEliminar, setPorEliminar] = useState<{ ids: string[]; horas: string; novedades: number } | null>(null);
   // Detalle de una marcación. La fila de la tabla no se explica sola: el
   // almuerzo vive en el hueco entre dos filas y la tardanza solo se mide en la
   // primera entrada del día.
@@ -188,7 +194,6 @@ export default function Registros() {
   // exactamente la búsqueda de todo lo que hay que arreglar.
   const [filtroLlegada, setFiltroLlegada] = useState<string[]>([]);
   const [filtroSalida, setFiltroSalida] = useState<string[]>([]);
-  const [menuFiltro, setMenuFiltro] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(50);
 
@@ -379,13 +384,7 @@ export default function Registros() {
 
   // El menú NO se cierra al elegir: con varias opciones a la vez, cerrarse en
   // cada clic haría imposible componer una búsqueda.
-  const alternar = (lista: string[], set: (v: string[]) => void, v: string) => {
-    set(lista.includes(v) ? lista.filter(x => x !== v) : [...lista, v]);
-    setPagina(1);
-  };
-  const limpiarFiltros = () => { setFiltroLlegada([]); setFiltroSalida([]); setPagina(1); setMenuFiltro(false); };
-  const cuantosFiltros = filtroLlegada.length + filtroSalida.length;
-  const hayFiltro = cuantosFiltros > 0;
+  const hayFiltro = filtroLlegada.length + filtroSalida.length > 0;
 
   // La columna de Almuerzo aparece cuando ese día descuenta almuerzo, tenga o no
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
@@ -396,21 +395,9 @@ export default function Registros() {
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
 
   // Las fotos de una jornada partida por el almuerzo viven en marcaciones
-  // distintas: la de entrada en la que abrió la mañana, la de salida en la que
-  // cerró la tarde. Pedir las dos de un solo registro traía la foto de la salida
-  // a almorzar rotulada como fin de jornada.
-  const verFotos = async (r: Registro) => {
-    setFotosDe(r);
-    setFotos(null);
-    const marcas = marcasDe(r);
-    const abre = marcas[0] ?? { id: r.id };
-    const cierra = [...marcas].reverse().find(m => m.salida) ?? abre;
-    const [a, b] = await Promise.all([
-      api.get(`/registros/${abre.id}/fotos`),
-      cierra.id === abre.id ? null : api.get(`/registros/${cierra.id}/fotos`),
-    ]);
-    setFotos({ fotoEntrada: a.data.fotoEntrada, fotoSalida: (b ?? a).data.fotoSalida });
-  };
+  // distintas, y cuál es cuál depende de los tramos vecinos. Eso lo resuelve el
+  // backend y lo pide `FotosJornada`: aquí solo se dice de qué día se trata.
+  const verFotos = (r: Registro) => setFotosDe(r);
 
   return (
     <div className="p-6">
@@ -432,64 +419,20 @@ export default function Registros() {
           onCambiar={(d, h) => { setDesde(d); setHasta(h); setPagina(1); }}
         />
 
-        {/* Filtro de llegada. El punto ámbar dice que hay un filtro puesto sin
-            tener que abrir el menú: una tabla filtrada que parece completa hace
-            sacar conclusiones sobre datos que no están. */}
-        <div className="relative">
-          <button onClick={() => setMenuFiltro(v => !v)}
-            className={`relative flex items-center gap-2 border rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              hayFiltro ? 'border-primary bg-primary/10 text-ink' : 'border-gray-300 text-ink hover:bg-gray-50'}`}>
-            <SlidersHorizontal size={15} />
-            Filtros
-            {hayFiltro && (
-              <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[11px] font-bold flex items-center justify-center">
-                {cuantosFiltros}
-              </span>
-            )}
-          </button>
-
-          {menuFiltro && (
-            <>
-              <div className="fixed inset-0 !mt-0 z-30" onClick={() => setMenuFiltro(false)} />
-              <div className="absolute top-full mt-1 left-0 z-40 w-56 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden py-1.5">
-                {([
-                  {
-                    grupo: 'Llegada', valor: filtroLlegada, set: setFiltroLlegada,
-                    opciones: [{ v: 'TARDE', texto: 'Tarde' }, { v: 'A_TIEMPO', texto: 'A tiempo' }],
-                  },
-                  {
-                    grupo: 'Salida', valor: filtroSalida, set: setFiltroSalida,
-                    opciones: [{ v: 'ESTIMADA', texto: 'No marcó salida' }, { v: 'SIN_SALIDA', texto: 'Sin salida' }],
-                  },
-                ]).map((g, gi) => (
-                  <div key={g.grupo} className={gi > 0 ? 'mt-1.5 pt-1.5 border-t border-gray-100' : ''}>
-                    <p className="px-3.5 pb-1.5 text-xs font-semibold text-muted">{g.grupo}</p>
-                    {g.opciones.map(op => {
-                      const activo = g.valor.includes(op.v);
-                      return (
-                        <button key={op.v} onClick={() => alternar(g.valor, g.set, op.v)}
-                          className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors ${
-                            activo ? 'bg-green-50 text-green-700 font-semibold' : 'text-ink hover:bg-gray-50'}`}>
-                          <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                            activo ? 'bg-green-600 border-green-600' : 'border-gray-300'}`}>
-                            {activo && <Check size={11} className="text-white" strokeWidth={3} />}
-                          </span>
-                          {op.texto}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-                {hayFiltro && (
-                  <button onClick={limpiarFiltros}
-                    className="w-full mt-1.5 pt-2 border-t border-gray-100 px-3.5 pb-1 text-sm font-semibold text-red-500 hover:text-red-600">
-                    Limpiar filtros
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+        <MenuFiltros
+          grupos={[
+            { clave: 'llegada', titulo: 'Llegada', opciones: [
+              { valor: 'TARDE', texto: 'Tarde' }, { valor: 'A_TIEMPO', texto: 'A tiempo' }] },
+            { clave: 'salida', titulo: 'Salida', opciones: [
+              { valor: 'ESTIMADA', texto: 'No marcó salida' }, { valor: 'SIN_SALIDA', texto: 'Sin salida' }] },
+          ]}
+          seleccion={{ llegada: filtroLlegada, salida: filtroSalida }}
+          onCambiar={sel => {
+            setFiltroLlegada(sel.llegada ?? []);
+            setFiltroSalida(sel.salida ?? []);
+            setPagina(1);
+          }}
+        />
       </div>
 
       <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-800 rounded-xl px-4 py-2.5 text-xs mb-4">
@@ -580,6 +523,7 @@ export default function Registros() {
                     <button onClick={() => setPorEliminar({
                       ids: marcasDe(r).map(m => m.id),
                       horas: marcasDe(r).map(m => `${fmtHora(m.entrada)}–${fmtHora(m.salida)}`).join(' y '),
+                      novedades: marcasDe(r).filter(m => m.tieneNovedadLigada).length,
                     })} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
                   </div>
                 </td>
@@ -752,6 +696,10 @@ export default function Registros() {
                 </div>
               )}
 
+              {(jornadaEditada?.id ?? editando?.id) && (
+                <ActividadRegistro registroId={(jornadaEditada?.id ?? editando?.id)!} />
+              )}
+
               <div className="flex gap-3 justify-end">
                 <button type="button" onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
                 <button type="submit" className="px-4 py-2 text-sm bg-blue-800 text-white rounded-lg hover:bg-blue-700">Guardar</button>
@@ -772,28 +720,7 @@ export default function Registros() {
             <p className="text-sm text-muted mb-4">
               {fotosDe.colaborador.nombre} {fotosDe.colaborador.apellido} · {format(toZonedTime(new Date(fotosDe.fecha), TZ), "d 'de' MMMM", { locale: es })}
             </p>
-            {!fotos ? (
-              <p className="text-sm text-muted py-8 text-center">Cargando fotos...</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {[{ foto: fotos.fotoEntrada, label: 'Entrada', hora: fmtHora(fotosDe.entrada) },
-                  { foto: fotos.fotoSalida, label: 'Salida', hora: fmtHora(fotosDe.salida) }].map(({ foto, label, hora }) => (
-                  <div key={label}>
-                    <p className="text-xs font-semibold text-muted uppercase mb-1.5">{label} · {hora}</p>
-                    {foto ? (
-                      <img src={foto} alt={`Foto de ${label.toLowerCase()}`} className="w-full rounded-xl border border-gray-200 [transform:scaleX(-1)]" />
-                    ) : (
-                      <div className="w-full aspect-[4/3] rounded-xl bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 text-center px-3">
-                        Sin foto (marcó con cédula o fue registro manual)
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-[11px] text-muted mt-4 flex items-center gap-1.5">
-              <Info size={12} /> Las fotos se eliminan automáticamente a los 2 meses.
-            </p>
+            <FotosJornada registroId={fotosDe.id} />
           </div>
         </div>
       )}
@@ -820,7 +747,7 @@ export default function Registros() {
           }}
           // El detalle se cierra al eliminar: si no, queda encima mostrando una
           // marcación que ya no existe y el siguiente clic falla con un 404.
-          onEliminar={id => { setJornadaId(null); setPorEliminar({ ids: [id], horas: '' }); }}
+          onEliminar={(id, novedades) => { setJornadaId(null); setPorEliminar({ ids: [id], horas: '', novedades }); }}
           onVerMarcacion={setJornadaId}
         />
       )}
@@ -830,9 +757,15 @@ export default function Registros() {
         titulo={(porEliminar?.ids.length ?? 0) > 1
           ? `¿Eliminar las ${porEliminar!.ids.length} marcaciones de esta jornada?`
           : '¿Eliminar este registro?'}
-        subtitulo={porEliminar?.horas
-          ? `Se borran ${porEliminar.horas}. Esta acción no se puede deshacer.`
-          : 'Esta acción no se puede deshacer.'}
+        subtitulo={[
+          porEliminar?.horas ? `Se borran ${porEliminar.horas}.` : null,
+          // El aviso va primero en la frase y con su propio peso: es la parte que
+          // el administrador no espera, y la única que puede mover la nómina.
+          (porEliminar?.novedades ?? 0) > 0
+            ? `También se elimina ${porEliminar!.novedades === 1 ? 'la novedad que se reportó' : `las ${porEliminar!.novedades} novedades que se reportaron`} al marcar esta salida.`
+            : null,
+          'Esta acción no se puede deshacer.',
+        ].filter(Boolean).join(' ')}
         textoContinuar="Eliminar"
         peligro
         onContinuar={confirmarEliminar}

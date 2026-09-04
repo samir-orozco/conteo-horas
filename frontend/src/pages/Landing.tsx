@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Calculator, ScanFace, CalendarCheck, AlarmClock,
   ArrowRight, Check, ChevronDown, ShieldCheck, MapPin, MonitorSmartphone, Sparkles,
-  Send, Quote, Star, PlayCircle,
+  Send, Quote, Star, PlayCircle, Users,
 } from 'lucide-react';
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
@@ -32,7 +32,7 @@ function useReveal() {
 
 const BENEFICIOS = [
   { icon: Calculator, titulo: 'Liquidación automática', texto: 'Recargos nocturnos, dominicales, festivos y horas extra según la Ley 2466. Cero errores de cálculo, cero horas en Excel.' },
-  { icon: ScanFace, titulo: 'Facial anti-fraude', texto: 'Marcan con el rostro, con prueba de vida y foto de evidencia en cada registro. Nadie marca por otro.' },
+  { icon: ScanFace, titulo: 'Marcación con rostro', texto: 'Marcan con la cara, no con un código que se presta. Cada registro guarda la foto de quien marcó, y tú decides desde qué dispositivo y desde qué ubicación se puede marcar.' },
   { icon: MapPin, titulo: 'Marcación por GPS', texto: 'Deja que marquen desde su propio celular, pero solo estando dentro de la ubicación de la empresa (geocerca).' },
   { icon: AlarmClock, titulo: 'Control en tiempo real', texto: 'Quién está en planta, quién llegó tarde y quién no ha marcado, al instante y desde tu celular.' },
   { icon: Send, titulo: 'Alertas por Telegram', texto: 'Recibe un aviso apenas alguien llega tarde. Enterarte deja de depender de que te avisen.' },
@@ -58,7 +58,7 @@ const TESTIMONIOS = [
 const FAQ = [
   { q: '¿Qué software ofrece liquidación automática de nómina en Colombia?', a: 'HoraPro calcula automáticamente los recargos nocturnos, dominicales, festivos y las horas extra según la Ley 2466, y entrega el total listo para tu nómina, sin fórmulas de Excel ni errores de cálculo.' },
   { q: '¿Cuál es el mejor sistema para el control de horarios de trabajadores?', a: 'El mejor sistema registra la jornada de forma confiable y liquida solo. HoraPro permite marcar con reconocimiento facial o cédula desde cualquier tablet o celular, controla tardanzas en tiempo real y cumple la ley laboral colombiana.' },
-  { q: '¿Es legal el control de horario con reconocimiento facial o huella?', a: 'Sí. El control biométrico es legal en Colombia siempre que el trabajador dé su consentimiento y los datos se traten conforme a la Ley 1581 de protección de datos. HoraPro guarda una foto de evidencia y prueba de vida en cada marcación.' },
+  { q: '¿Es legal el control de horario con reconocimiento facial o huella?', a: 'Sí. El control biométrico es legal en Colombia siempre que el trabajador dé su consentimiento y los datos se traten conforme a la Ley 1581 de protección de datos. HoraPro pide esa autorización en pantalla, y del rostro registrado guarda un cálculo matemático que no se puede volver a convertir en una cara. La primera toma del registro queda como foto de perfil del colaborador y se puede quitar cuando se quiera. La foto de cada marcación se conserva como evidencia durante dos meses, después de los cuales se borra sola.' },
   { q: '¿Cuántas horas máximo se pueden trabajar por semana en Colombia?', a: 'La jornada máxima legal es de 42 horas semanales (Ley 2101 de 2021, en aplicación gradual). HoraPro aplica ese tope automáticamente y calcula las horas extra que lo superan.' },
   { q: '¿Necesito comprar algún equipo para fichar?', a: 'No. HoraPro funciona en cualquier tablet, computador o celular con navegador. El colaborador marca con su rostro o su cédula en el link del kiosco.' },
   { q: '¿La prueba gratis tiene límites?', a: 'Tienes acceso completo, sin tarjeta y sin restricciones. Al terminar decides si continúas.' },
@@ -108,6 +108,11 @@ export default function Landing() {
           <img src={logoCompleto} alt="HoraPro" className="h-8" />
           <nav className="flex items-center gap-2 sm:gap-3">
             <a href="#precios" className="hidden sm:block text-sm font-medium text-muted hover:text-ink px-3 py-2">Precios</a>
+            {/* <a> y no <Link>: el blog y las calculadoras son páginas estáticas
+                fuera de la SPA, así que necesitan una navegación real del
+                navegador. */}
+            <a href="/calculadoras/" className="hidden md:block text-sm font-medium text-muted hover:text-ink px-3 py-2">Calculadoras</a>
+            <a href="/blog/" className="hidden sm:block text-sm font-medium text-muted hover:text-ink px-3 py-2">Blog</a>
             {usuario ? (
               <Link to={panelUrl} className="text-sm font-bold bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl">Ir a mi panel</Link>
             ) : (
@@ -133,7 +138,7 @@ export default function Landing() {
             </span> sin hacer cuentas.
           </h1>
           <p className="text-lg text-muted mt-5 max-w-md">
-            HoraPro hace la <b className="text-ink">liquidación de nómina automática</b> —recargos, horas extra, dominicales y festivos— según la Ley 2466. Cero errores, cero horas en Excel.
+            HoraPro hace la <b className="text-ink">liquidación de nómina automática</b> de recargos, horas extra, dominicales y festivos, según la Ley 2466. Cero errores, cero horas en Excel.
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-8">
             {usuario ? (
@@ -147,7 +152,7 @@ export default function Landing() {
             )}
             <a href="#como" className="font-semibold text-ink px-5 py-3.5 rounded-xl hover:bg-gray-100">Ver cómo funciona</a>
           </div>
-          {!usuario && <p className="text-xs text-muted mt-3">Sin tarjeta · cancela cuando quieras · soporte por WhatsApp</p>}
+          {!usuario && <p className="text-xs text-muted mt-3">Sin tarjeta · cancela cuando quieras · <b className="text-ink">precio por empresa, no por empleado</b> · soporte por WhatsApp</p>}
 
           {/* Prueba visual también en móvil (en desktop se muestra la tarjeta flotante) */}
           <div className="md:hidden mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-5">
@@ -187,9 +192,10 @@ export default function Landing() {
       <section className="border-y border-gray-100 bg-[#f6f6f4]">
         <div className="max-w-6xl mx-auto px-5 py-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-muted">
           <span className="flex items-center gap-1.5"><ShieldCheck size={15} className="text-ink" /> Ley 2466 al día</span>
-          <span className="flex items-center gap-1.5"><ScanFace size={15} className="text-ink" /> Facial anti-fraude</span>
+          <span className="flex items-center gap-1.5"><ScanFace size={15} className="text-ink" /> Marcación con rostro</span>
           <span className="flex items-center gap-1.5"><MapPin size={15} className="text-ink" /> Datos en Colombia</span>
           <span className="flex items-center gap-1.5"><MonitorSmartphone size={15} className="text-ink" /> Sin instalar nada</span>
+          <span className="flex items-center gap-1.5"><Users size={15} className="text-ink" /> No cobramos por empleado</span>
           <span className="flex items-center gap-1.5"><CalendarCheck size={15} className="text-ink" /> {dias} días gratis</span>
         </div>
       </section>
@@ -279,7 +285,10 @@ export default function Landing() {
       <section id="precios" className="max-w-6xl mx-auto px-5 py-16 md:py-24">
         <div className="text-center mb-8 hp-reveal">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Un plan para cada tamaño</h2>
-          <p className="text-muted mt-3">Precio fijo, sin sorpresas. Empieza con {dias} días gratis, sin tarjeta.</p>
+          <p className="text-muted mt-3">
+            Pagas por tu empresa, no por cada empleado: si contratas a alguien más, tu cuenta no sube.
+            Empieza con {dias} días gratis, sin tarjeta.
+          </p>
           {/* Toggle mensual / anual */}
           <div className="inline-flex items-center gap-1 bg-gray-100 rounded-full p-1 mt-6 text-sm font-semibold">
             <button onClick={() => setAnual(false)} className={`px-4 py-1.5 rounded-full transition-colors ${!anual ? 'bg-white shadow text-ink' : 'text-muted'}`}>Mensual</button>
@@ -369,6 +378,7 @@ export default function Landing() {
             <CreditoKrumlab className="mt-0.5" />
           </div>
           <div className="flex gap-4 text-sm">
+            <a href="/blog/" className="text-muted hover:text-ink">Blog</a>
             {usuario ? (
               <Link to={panelUrl} className="font-semibold text-ink">Ir a mi panel</Link>
             ) : (

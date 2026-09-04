@@ -6,4 +6,26 @@ Disallow: /afiliado
 Disallow: /marcador
 Disallow: /api
 
+# Rastreadores de IA. Se permiten a propósito: el blog está escrito para que lo
+# citen cuando alguien le pregunte a un asistente por control de horarios o por
+# la jornada laboral en Colombia. Si algún día se quiere revertir, basta con
+# cambiar Allow por Disallow en cada uno.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
 Sitemap: https://horapro.co/sitemap.xml

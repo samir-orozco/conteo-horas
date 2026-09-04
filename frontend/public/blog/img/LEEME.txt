@@ -1,0 +1,57 @@
+Imágenes del blog
+=================
+
+Los artículos YA APUNTAN a los archivos de abajo. En cuanto los dejes en esta
+carpeta con esos nombres exactos y vuelvas a compilar, aparecen solos. Mientras
+no estén, la portada se pinta con un degradado de marca: se ve intencionado, no
+roto, así que el blog se puede publicar igual.
+
+Qué guardar aquí
+----------------
+
+1. software-control-horarios-colombia.jpg
+   La foto de la reunión: dos personas conversando frente al portátil.
+   Va en el artículo "Cómo elegir un software de control de horarios".
+
+2. jornada-laboral-colombia-2026.jpg
+   La foto del hombre cubierto de notas adhesivas.
+   Va en el artículo "Jornada laboral en Colombia 2026".
+
+3. prorrogas-contrato-termino-fijo-colombia.webp
+   Contratos laborales sobre un escritorio junto a un calendario con fechas
+   marcadas. Va en el artículo "Prórrogas del contrato a término fijo".
+   OJO: este es .webp, no .jpg. Pesa la mitad con la misma calidad y Google lo
+   prefiere; el nombre del archivo ES el que Google lee para imágenes, así que
+   se deja igual al slug del artículo y no se toca.
+
+4. samir-orozco.jpg  (opcional)
+   Foto tuya, cuadrada. Sin ella sale un círculo con tus iniciales.
+   Para activarla, pon la ruta en el campo `foto` de blog/articulos/index.mjs.
+
+Medidas
+-------
+
+Portadas: 1200 x 630 px, por debajo de 250 kB. De aquí en adelante en WebP: pesa
+cerca de la mitad que un JPG con la misma calidad, y todos los navegadores que
+importan lo soportan desde hace años. Es la misma imagen que se
+ve al compartir el enlace por WhatsApp o LinkedIn, así que conviene que el
+motivo se entienda en pequeño y sin texto encima.
+
+Foto de perfil: 400 x 400 px, cuadrada.
+
+Si las tuyas vienen más grandes, sirve igual, pero pesan de más y eso Google lo
+mide. Recortarlas a 1200 x 630 antes de subirlas vale la pena.
+
+Licencias
+---------
+
+Guarda dónde salió cada foto. Si vienen de un banco de imágenes, revisa que la
+licencia permita uso comercial: es contenido de la página de una empresa, no un
+uso personal.
+
+Textos alternativos
+-------------------
+
+Ya están escritos en cada artículo, en el campo `imagenAlt`, describiendo lo que
+se ve. Si cambias una foto por otra distinta, cambia también esa descripción:
+cuenta para accesibilidad y para posicionamiento.

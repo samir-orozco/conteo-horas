@@ -6,6 +6,7 @@ import {
   obtenerPrecios, calcularCobro, aplicarPagoAprobado, DIAS_PRUEBA,
 } from '../utils/suscripcion';
 import { capacidadesDe, esPlan, FEATURES, PLAN_IDS, obtenerPlanes, combinarPlanes } from '../utils/planes';
+import { comprobanteAGuardar } from '../utils/comprobantes';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
@@ -323,6 +324,12 @@ export default async function adminRoutes(app: FastifyInstance) {
       wompiTransaccionId?: string; nota?: string; comprobanteBase64?: string;
     };
 
+    // El comprobante se comprueba antes de tocar la suscripción. Es la única
+    // columna de archivo que no se validaba, y el archivo lo termina viendo el
+    // admin de la empresa, no solo quien lo sube.
+    const soporte = comprobanteAGuardar(comprobanteBase64, null);
+    if (!soporte.ok) return reply.status(400).send({ error: soporte.motivo });
+
     const susc = await prisma.suscripcion.findUnique({ where: { empresaId: id } });
     if (!susc) return reply.status(404).send({ error: 'La empresa no tiene suscripción' });
 
@@ -334,7 +341,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       metodo: metodo ?? 'MANUAL',
       wompiTransaccionId,
       nota,
-      comprobanteBase64,
+      comprobanteBase64: soporte.comprobante ?? undefined,
       registradoPor: payload?.email,
     });
     return reply.status(201).send({ ...pago, comprobanteBase64: undefined });

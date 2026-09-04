@@ -47,6 +47,25 @@ export function promediarDescriptores(lista: number[][]): number[] {
   return out;
 }
 
+// ESTO TIENE QUE SEGUIR SALIENDO EN JPEG. No es una preferencia.
+//
+// El resto del producto pasó a guardar las fotos en WebP. Esta no, porque del
+// otro lado hay un contrato duro que nadie ve desde aquí:
+// backend/src/routes/worker.ts:72-81 exige el prefijo `data:image/jpeg` Y los
+// bytes FF D8 FF, con su propio tope de 300.000. Y worker.ts:432 descarta la
+// foto que no pasa SIN devolver error.
+//
+// O sea que cambiar esta línea a WebP no rompería nada visible: las marcaciones
+// seguirían registrándose y simplemente perderían la foto de verificación, en
+// todas las empresas a la vez, sin un solo mensaje en ninguna parte.
+//
+// Además esta foto alimenta DOS caminos: el marcador (PantallaLogin.tsx, que es
+// el que valida JPEG) y el enrolamiento del rostro desde la ficha
+// (ColaboradorDetalle.tsx), que valida distinto. Quien lea solo el segundo va a
+// concluir que cambiarlo es inofensivo.
+//
+// Y no es un punto de subida: aquí no hay ningún archivo que la persona haya
+// elegido, se sintetiza un cuadro del video. No hay nada que convertir.
 export function capturarFoto(video: HTMLVideoElement): string {
   const ancho = 320;
   const alto = Math.round((video.videoHeight / video.videoWidth) * ancho) || 240;

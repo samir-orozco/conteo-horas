@@ -85,7 +85,7 @@
 | Ruta | Qué es |
 |---|---|
 | `~/app-repo` | Clon git del repo. Solo se usa para **traer** artefactos vía `git checkout -f <rama-build>` + `pull`. **No** es donde corre la app. |
-| `~/app-api` | La app Node desplegada de verdad: `dist/`, `node_modules/.prisma/client/` (copiado desde `prisma-build`), `.env` si aplica. |
+| `~/app-api` | La app Node desplegada de verdad: `dist/`, `node_modules/.prisma/client/` (copiado desde `prisma-build`), `.env` si aplica. **Su nombre NO se adivina ni se lee de la documentación: se lee del servidor** (paso B.0). |
 | `~/midominio.com/` | Docroot del frontend, servido por LiteSpeed. |
 
 ---
@@ -166,11 +166,25 @@ contra MySQL (local y en producción) funcionan sin cambios de comportamiento.
      ```
      mv .env.local.bak .env.local
      ```
-     Verifica que el bundle horneó la URL de prod y no `localhost`:
+     Verifica que el bundle horneó la URL de prod y no la local:
      ```
-     grep -rl "localhost" frontend/dist/assets/*.js
+     grep -c "localhost:3001" frontend/dist/assets/*.js | grep -v ":0"
      ```
      (debe no devolver nada)
+
+     > Antes aquí decía `grep -rl "localhost"` a secas, y eso **siempre** encuentra
+     > algo: react-router y otra dependencia llevan un `http://localhost` de
+     > respaldo interno, y el propio código tiene un
+     > `["localhost","127.0.0.1"].includes(location.hostname)` para detectar si
+     > corre en desarrollo. Ninguno es la URL de la API. Una comprobación que
+     > salta siempre se acaba ignorando, que es peor que no tenerla: hay que
+     > buscar el puerto del backend local, que es lo que de verdad no puede
+     > quedar horneado.
+
+     Y de paso, que sí esté la de producción:
+     ```
+     grep -c "https://horapro.co/api" frontend/dist/assets/*.js | grep -v ":0"
+     ```
 4. **Arma las ramas de build en un worktree temporal** (nunca con `git checkout` en tu carpeta de trabajo — los artefactos gitignored quedan sin seguimiento y git se niega a cambiar de rama de vuelta a `develop`):
    ```
    git worktree add /ruta/temporal/wt-frontend-build frontend-build
@@ -197,6 +211,22 @@ contra MySQL (local y en producción) funcionan sin cambios de comportamiento.
 
 ### B. En el servidor (Terminal de cPanel) — un comando por bloque
 
+**0. Confirma cuál es la app que de verdad corre.** No es opcional y no se salta:
+Passenger guarda la ruta real en el `.htaccess` del docroot, y es la única fuente
+confiable. La documentación puede estar desactualizada —lo estuvo: después de
+migrar de `horapro.krumlab.com` a `horapro.co` quedó registrada `~/horapro-api`,
+que ya no sirve nada, mientras la app viva es `~/horapro-co-api`. Copiar al
+directorio muerto no da ningún error: el `cp` funciona, el `restart.txt`
+funciona, y producción sigue con el código viejo.
+```
+grep PassengerAppRoot ~/midominio.com/api/.htaccess
+```
+Lo que imprima esa línea es `~/app-api` en todo lo que sigue. Para verlo desde
+otro ángulo, esto lista los procesos Node vivos con su ruta:
+```
+ps -eo pid,etime,cmd | grep -i node | grep -v grep
+```
+
 **1. Backend:**
 ```
 cd ~/app-repo && git checkout -f backend-build
@@ -214,6 +244,14 @@ git checkout -f prisma-build && git pull origin prisma-build
 ```
 cp -R deploy-prisma-client/. ~/app-api/node_modules/.prisma/client/
 ```
+**Comprueba que el archivo llegó a la app viva**, no a un directorio muerto.
+Busca algo que solo exista en el código nuevo (una ruta, un nombre de función):
+```
+grep -c "<algo-del-cambio>" ~/app-api/dist/routes/<archivo>.js
+```
+Si da `0`, copiaste al lugar equivocado: vuelve al paso B.0. Este chequeo existe
+porque su ausencia costó un despliegue entero dado por bueno.
+
 **Reinicia la app Node** (LiteSpeed honra la misma convención que Passenger):
 ```
 touch ~/app-api/tmp/restart.txt
@@ -234,7 +272,25 @@ cp -R frontend/dist/. ~/midominio.com/
 ```
 curl -s https://midominio.com/api/health; echo
 ```
-El chequeo debe tocar la base de datos, no solo confirmar que Node está vivo. Después, recarga dura en el navegador (Cmd/Ctrl+Shift+R).
+`/api/health` devuelve un objeto fijo: **no toca la base de datos ni ejecuta nada
+del código nuevo.** Un 200 ahí solo dice que el proceso Node está vivo. Sirve
+para descartar que el despliegue reventara al arrancar, y para nada más.
+
+Para saber si Prisma quedó bien —el riesgo real cuando se copia un cliente
+regenerado— hace falta una ruta pública que SÍ consulte la base. En este proyecto:
+```
+curl -s -o /dev/null -w "%{http_code}\n" https://midominio.com/api/worker/kiosco/xxx
+```
+**404** = Prisma arrancó, consultó la base y no encontró ese token: todo bien.
+**500** = el cliente de Prisma no cuadra con el esquema o no se copió donde debía.
+
+Y si el cambio agregó una ruta nueva, pídela sin token: tiene que responder
+**401**, no **404**. Es lo único que distingue "desplegado" de "copiado a otra
+parte".
+
+Al final, recarga dura en el navegador (Cmd/Ctrl+Shift+R) sobre algo que solo
+haga el código nuevo. Cuando el cambio no agrega rutas, ningún `curl` sustituye
+esto.
 
 > **`git checkout -f`, no `git checkout` a secas.** El clon del servidor acumula con
 > el tiempo cambios sueltos en el índice (de compilaciones manuales viejas, de
@@ -313,6 +369,19 @@ Verifica siempre que el bundle no contenga `localhost` antes de subirlo.
 - [ ] Diff de la rama de build revisado (renombrados, no cientos de "añadidos").
 - [ ] (Si cambió el esquema) migración aplicada en phpMyAdmin **y** `prisma-build` actualizado, **antes** de copiar el backend nuevo.
 - [ ] En el servidor: `git checkout -f` + `pull` + `cp -R` de cada artefacto, un comando por bloque.
+- [ ] **App root leído del `.htaccess` del docroot** (paso B.0), no de esta guía.
+- [ ] Los assets viejos del frontend **NO** se borraron. Los bundles llevan hash,
+      así que conviven; borrarlos rompe las pestañas abiertas que todavía piden un
+      módulo cargado bajo demanda (`xlsx`, etc.) y el usuario ve un error.
+- [ ] `grep` de algo del cambio dentro de `~/app-api/dist/` → distinto de `0`.
 - [ ] `touch tmp/restart.txt` si cambió el backend.
-- [ ] `curl /api/health` (que toque la BD) + prueba en el navegador con recarga dura.
+- [ ] `curl /api/health` → 200. **Ojo: no prueba nada del código nuevo** (devuelve
+      un objeto fijo, sin tocar la BD). Solo descarta que el proceso reventara.
+- [ ] Una ruta pública que consulte la BD (`/api/worker/kiosco/xxx` → **404**, no
+      500). Es lo que confirma que el cliente de Prisma quedó bien copiado.
+- [ ] Prueba en el navegador con recarga dura, sobre algo que solo haga el código
+      nuevo. Ningún `curl` sustituye esto cuando el cambio no agrega rutas.
+- [ ] **Si el cambio agregó una ruta**, probarla sin token: tiene que responder
+      `401`, no `404`. Un `404` ahí significa que el backend viejo sigue vivo, y
+      es lo único que distingue "desplegado" de "copiado a otra parte".
 - [ ] Worktrees temporales limpiados (`rm -rf` + `git worktree prune`).

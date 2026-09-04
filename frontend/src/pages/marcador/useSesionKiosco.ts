@@ -10,6 +10,9 @@ export function useSesionKiosco(marcadorToken: string | undefined) {
   const [token, setToken] = useState<string | null>(null);
   const [colaborador, setColaborador] = useState<Colaborador | null>(null);
   const [sedes, setSedes] = useState<Sede[]>([]);
+  // Si a ESTA persona se le va a validar la ubicación. Lo dice el login: la
+  // configuración de la empresa no alcanza para saberlo.
+  const [validaUbicacion, setValidaUbicacion] = useState<boolean | null>(null);
   const [estado, setEstado] = useState<Estado | null>(null);
 
   const cargarEstado = async (t: string) => { setEstado(await getEstado(t)); };
@@ -20,6 +23,7 @@ export function useSesionKiosco(marcadorToken: string | undefined) {
     setToken(r.token);
     setColaborador(r.colaborador);
     setSedes(r.sedes ?? []);
+    setValidaUbicacion(r.validaUbicacion ?? null);
   };
 
   const ingresarRostro = async (descriptor: number[], deviceToken?: string) => {
@@ -28,9 +32,16 @@ export function useSesionKiosco(marcadorToken: string | undefined) {
     setToken(r.token);
     setColaborador(r.colaborador);
     setSedes(r.sedes ?? []);
+    setValidaUbicacion(r.validaUbicacion ?? null);
   };
 
-  const limpiarSesion = () => { setToken(null); setColaborador(null); setEstado(null); };
+  // Se limpia TODO lo de la persona que se va, incluidas las sedes y el dato de
+  // si se le validaba la ubicación: en una tablet compartida, lo que quede vivo
+  // se lo aplica el siguiente.
+  const limpiarSesion = () => {
+    setToken(null); setColaborador(null); setEstado(null);
+    setSedes([]); setValidaUbicacion(null);
+  };
 
-  return { token, colaborador, sedes, estado, ingresar, ingresarRostro, cargarEstado, limpiarSesion };
+  return { token, colaborador, sedes, validaUbicacion, estado, ingresar, ingresarRostro, cargarEstado, limpiarSesion };
 }

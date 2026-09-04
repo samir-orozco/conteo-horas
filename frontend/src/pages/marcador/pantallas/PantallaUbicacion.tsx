@@ -7,11 +7,17 @@ type Props = {
   errorUbic: MensajeGeo | null;
   activarUbicacion: () => void;
   buscandoUbic: boolean;
+  // Seguir sin dar la ubicación. Este botón ES el mecanismo del "deja pasar":
+  // sin un control visible que continúe, la pantalla sigue siendo un muro por
+  // más que la condición de arriba haya cambiado.
+  onContinuar: () => void;
 };
 
-// Gate de ubicación: se pide al entrar (antes de la cámara/login). Si el GPS falla
-// o niegan el permiso, muestra la guía para resolverlo dentro de la misma pantalla.
-export default function PantallaUbicacion({ empresa, errorUbic, activarUbicacion, buscandoUbic }: Props) {
+// Se OFRECE la ubicación al entrar, antes de la cámara y del login. No se exige:
+// aquí todavía no se sabe quién va a marcar, y a quien trabaja fuera de la
+// empresa no se le mira la ubicación. Quien decide bloquear es el servidor,
+// después del login.
+export default function PantallaUbicacion({ empresa, errorUbic, activarUbicacion, buscandoUbic, onContinuar }: Props) {
   return (
     <div className="min-h-screen bg-ink flex items-center justify-center p-4">
       <div className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
@@ -26,10 +32,11 @@ export default function PantallaUbicacion({ empresa, errorUbic, activarUbicacion
           </>
         ) : (
           <>
-            <h1 className="text-xl font-bold text-white">Marca desde la empresa</h1>
+            <h1 className="text-xl font-bold text-white">Activa tu ubicación</h1>
             <p className="text-sm text-white/60 mt-2 mb-6 leading-relaxed">
-              {empresa} verifica tu <b className="text-white/90">ubicación</b> al marcar. Toca el botón y
-              <b className="text-white/90"> permite el acceso</b> cuando el navegador lo pregunte.
+              {empresa} usa tu <b className="text-white/90">ubicación</b> para registrar desde qué sede marcas.
+              Toca el botón y <b className="text-white/90">permite el acceso</b> cuando el navegador lo pregunte.
+              Si trabajas fuera de la empresa, puedes continuar sin ella.
             </p>
           </>
         )}
@@ -43,6 +50,10 @@ export default function PantallaUbicacion({ empresa, errorUbic, activarUbicacion
             Ya la activé en Ajustes · Recargar página
           </button>
         )}
+        <button onClick={onContinuar}
+          className="w-full mt-2 text-white/50 hover:text-white/80 text-sm font-medium py-1">
+          Continuar sin ubicación
+        </button>
       </div>
     </div>
   );

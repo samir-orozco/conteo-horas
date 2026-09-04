@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, instantesDeJornada } from './jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, instantesDeJornada, momentosDelDia } from './jornada';
 
 // El almuerzo no vive en un registro: vive en el HUECO entre dos. Un día con
 // almuerzo son dos tramos —08:00-12:00 y 13:00-17:00— y lo que hay en medio es
@@ -509,6 +509,38 @@ describe('marcacionQueCierra', () => {
   });
 });
 
+// La jornada puede estar cerrada POR EL SISTEMA aunque ninguna marcación tenga
+// hora de salida: cuando el auto-cierre no encuentra la franja del colaborador,
+// marca `salidaEstimada` y deja la hora en null a propósito, para que la ponga
+// el admin. Sin esto, la tabla de Registros pintaba esas filas como si nadie
+// las hubiera tocado y el chip "No marcó salida" no aparecía nunca.
+describe('laCerroElSistema', () => {
+  const m = (salida: Date | null, salidaEstimada = false, salidaAlmuerzo = false) =>
+    ({ entrada: bog(8), salida, salidaAlmuerzo, entradaEstimada: false, salidaEstimada });
+
+  it('una jornada que nadie tocó no la cerró el sistema', () => {
+    expect(laCerroElSistema([m(bog(17))])).toBe(false);
+  });
+
+  it('la reconoce cuando el sistema estimó la hora de salida', () => {
+    expect(laCerroElSistema([m(bog(16), true)])).toBe(true);
+  });
+
+  it('la reconoce cuando el sistema cerró SIN hora de salida', () => {
+    // El caso que se perdía: `salida` en null, pero marcada por el sistema.
+    expect(laCerroElSistema([m(null, true)])).toBe(true);
+  });
+
+  it('la reconoce aunque la marca esté en un tramo anterior', () => {
+    // Salió al descanso y no volvió a marcar: el tramo marcado es el primero.
+    expect(laCerroElSistema([m(bog(12), true, true), m(null)])).toBe(true);
+  });
+
+  it('un turno abierto de verdad sigue sin estar cerrado', () => {
+    expect(laCerroElSistema([m(null)])).toBe(false);
+  });
+});
+
 describe('resumirAlmuerzoDelDia — mientras está descansando', () => {
   const dia = () => ({
     fecha: bog(0), almuerzoMin: 60,
@@ -613,5 +645,106 @@ describe('minutosVentana', () => {
     // Volvió 15 tarde, pero se tomó 30 de más: salió 15 antes de que empezara.
     expect(r.minutosDeMas).toBe(15);
     expect(r.minutos! - r.minutosVentana!).toBe(30);
+  });
+});
+
+// Qué es cada marca DENTRO del día.
+//
+// Existe porque `salidaAlmuerzo` es un booleano suelto en el registro y cada
+// pantalla lo re-interpretaba por su cuenta —o se olvidaba—. El resultado fue
+// que el detalle de la jornada rotulaba la foto de la salida a almorzar como
+// "Salida", diciendo que la persona se había ido a su casa a las 14:04 cuando
+// volvió a las 14:50. Esa es la primera prueba de la lista.
+describe('momentosDelDia', () => {
+  const m = (
+    id: string,
+    entrada: Date | null,
+    salida: Date | null,
+    extra: { salidaAlmuerzo?: boolean } = {},
+  ) => ({
+    id, entrada, salida,
+    salidaAlmuerzo: extra.salidaAlmuerzo ?? false,
+    entradaEstimada: false,
+  });
+
+  it('un día de un solo tramo: entrada y salida, sin vueltas', () => {
+    const r = momentosDelDia([m('a', bog(8), bog(17))]);
+    expect(r.get('a')).toEqual({ entrada: 'ENTRADA', salida: 'SALIDA' });
+  });
+
+  it('EL BUG: la salida al descanso no es la salida del trabajo', () => {
+    // El día del reporte: entró 10:00, salió a almorzar 14:04, volvió 14:50 y
+    // todavía no ha cerrado. Antes esto rotulaba la foto de las 14:04 como
+    // "Salida" y escondía la de las 14:50.
+    const r = momentosDelDia([
+      m('a', bog(10), bog(14, 4), { salidaAlmuerzo: true }),
+      m('b', bog(14, 50), null),
+    ]);
+    expect(r.get('a')).toEqual({ entrada: 'ENTRADA', salida: 'SALIDA_ALMUERZO' });
+    expect(r.get('b')).toEqual({ entrada: 'REGRESO_ALMUERZO', salida: null });
+  });
+
+  it('el mismo día ya cerrado: la salida de verdad es la del segundo tramo', () => {
+    const r = momentosDelDia([
+      m('a', bog(10), bog(14, 4), { salidaAlmuerzo: true }),
+      m('b', bog(14, 50), bog(19)),
+    ]);
+    expect(r.get('a')!.salida).toBe('SALIDA_ALMUERZO');
+    expect(r.get('b')).toEqual({ entrada: 'REGRESO_ALMUERZO', salida: 'SALIDA' });
+  });
+
+  it('salió a almorzar y no volvió: sigue siendo descanso, no fin de jornada', () => {
+    // Aunque sea la última marca del día. Es justo lo que `marcacionQueCierra`
+    // ya decide para la columna de Salida; aquí no puede decir otra cosa.
+    const r = momentosDelDia([m('a', bog(8), bog(12), { salidaAlmuerzo: true })]);
+    expect(r.get('a')).toEqual({ entrada: 'ENTRADA', salida: 'SALIDA_ALMUERZO' });
+  });
+
+  it('LA TRAMPA: volver de noche a hacer extras abre una jornada nueva', () => {
+    // Si esto se resolviera con "la primera entrada del día es ENTRADA y las
+    // demás son regresos", la entrada de las 19:00 diría "Regreso del descanso"
+    // y el administrador leería un almuerzo de siete horas.
+    const r = momentosDelDia([
+      m('a', bog(8), bog(12)),
+      m('b', bog(19), bog(22)),
+    ]);
+    expect(r.get('a')).toEqual({ entrada: 'ENTRADA', salida: 'SALIDA' });
+    expect(r.get('b')).toEqual({ entrada: 'ENTRADA', salida: 'SALIDA' });
+  });
+
+  it('almuerzo y además extras de noche: tres marcas, tres papeles distintos', () => {
+    const r = momentosDelDia([
+      m('a', bog(8), bog(12), { salidaAlmuerzo: true }),
+      m('b', bog(13), bog(17)),
+      m('c', bog(19), bog(22)),
+    ]);
+    expect(r.get('a')).toEqual({ entrada: 'ENTRADA', salida: 'SALIDA_ALMUERZO' });
+    expect(r.get('b')).toEqual({ entrada: 'REGRESO_ALMUERZO', salida: 'SALIDA' });
+    expect(r.get('c')).toEqual({ entrada: 'ENTRADA', salida: 'SALIDA' });
+  });
+
+  it('el orden en que vengan de la base no cambia el resultado', () => {
+    // `partirDiaEnJornadas` ordena antes de agrupar porque la base no garantiza
+    // orden; esta función depende de lo mismo y no puede confiar en el llamador.
+    const r = momentosDelDia([
+      m('b', bog(14, 50), bog(19)),
+      m('a', bog(10), bog(14, 4), { salidaAlmuerzo: true }),
+    ]);
+    expect(r.get('a')!.entrada).toBe('ENTRADA');
+    expect(r.get('b')!.entrada).toBe('REGRESO_ALMUERZO');
+  });
+
+  it('una marcación cargada a mano sin hora de entrada no inventa un momento', () => {
+    const r = momentosDelDia([m('a', null, bog(17))]);
+    expect(r.get('a')).toEqual({ entrada: null, salida: 'SALIDA' });
+  });
+
+  it('un turno abierto no tiene salida que rotular', () => {
+    const r = momentosDelDia([m('a', bog(8), null)]);
+    expect(r.get('a')).toEqual({ entrada: 'ENTRADA', salida: null });
+  });
+
+  it('un día sin marcaciones devuelve un mapa vacío', () => {
+    expect(momentosDelDia([]).size).toBe(0);
   });
 });

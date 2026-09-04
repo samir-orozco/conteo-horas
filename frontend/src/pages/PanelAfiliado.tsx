@@ -4,6 +4,8 @@ import { Copy, Check, Wallet, Users, LogOut, Link2, BadgePercent, ArrowUpRight, 
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import logoCompleto from '../assets/logo-completo.svg';
+import VistaDeAdjunto from '../components/VistaDeAdjunto';
+import { tipoDeDataUri } from '../lib/archivos';
 
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 const METODO_LABEL: Record<string, string> = { NEQUI: 'Nequi', BANCOLOMBIA: 'Bancolombia', DAVIPLATA: 'Daviplata', OTRO: '' };
@@ -339,7 +341,9 @@ export default function PanelAfiliado() {
       {comprobante && (
         <div className="fixed inset-0 !mt-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setComprobante(null)}>
           <div className="max-w-lg w-full" onClick={e => e.stopPropagation()}>
-            <img src={comprobante} alt="Comprobante de pago" className="w-full rounded-xl shadow-2xl bg-white" />
+            <div className="bg-white rounded-xl shadow-2xl p-2 flex flex-col">
+              <VistaDeAdjunto data={comprobante} tipo={tipoDeDataUri(comprobante)} nombre="Comprobante de pago" />
+            </div>
             <button onClick={() => setComprobante(null)} className="mt-3 mx-auto block text-white text-sm font-medium">Cerrar</button>
           </div>
         </div>

@@ -151,7 +151,30 @@ body {
 .hp-reveal { opacity: 0; }
 .hp-reveal.hp-in { animation: hp-rise 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
 
+/* Sacudida del modal cuando se intenta crear y algo está mal.
+   Apenas un pestañeo: dice "espera" y se quita. Un zarandeo largo se lee como
+   que algo se rompió, cuando lo único que pasa es que falta corregir un dato.
+
+   Va en un envoltorio propio, NUNCA en el mismo elemento que hp-pop: la
+   animación es una sola propiedad, así que al terminar la sacudida el
+   animation-name volvía a hp-pop y el modal se veía abrir otra vez. */
+@keyframes hp-sacudida {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+.hp-sacudida { animation: hp-sacudida 0.16s ease-in-out 2; }
+
 @media (prefers-reduced-motion: reduce) {
-  .hp-float, .hp-float-slow, .hp-spin-slow, .hp-ripple, .hp-scan-line { animation: none; }
+  .hp-float, .hp-float-slow, .hp-spin-slow, .hp-ripple, .hp-scan-line, .hp-sacudida { animation: none; }
   .hp-reveal { opacity: 1; }
 }
+
+/* Tira de tabs que se desplaza a lo ancho.
+   Sin esto, la barra de desplazamiento del navegador se dibuja justo encima
+   del subrayado del tab activo: en móvil quedan tres líneas horizontales
+   apiladas y no se distingue cuál está abierto. Se oculta la barra, no el
+   desplazamiento: se sigue pudiendo arrastrar, y el tab activo se trae solo
+   a la vista. */
+.hp-tabs-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+.hp-tabs-scroll::-webkit-scrollbar { display: none; }
