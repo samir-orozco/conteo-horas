@@ -6,6 +6,10 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
 import { formatearMiles, parsearMiles } from '../../lib/dinero';
 import { copiarTexto } from '../../lib/clipboard';
+import { procesarEvidencia } from '../../lib/evidencia';
+import { claseDeArchivo, rotuloDeArchivo, ACEPTA_COMPROBANTE } from '../../lib/archivos';
+import IconoDeAdjunto from '../../components/IconoDeAdjunto';
+import { mensajeDeError } from '../../lib/errores';
 
 const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -34,6 +38,7 @@ export default function AdminEmpresas() {
   const [toast, setToast] = useState<string | null>(null);
   const [modal, setModal] = useState(false);
   const [error, setError] = useState('');
+  const [errorPago, setErrorPago] = useState('');
   const [form, setForm] = useState({
     nombre: '', nit: '', email: '', telefono: '',
     adminNombre: '', adminEmail: '', adminPassword: '',
@@ -44,7 +49,7 @@ export default function AdminEmpresas() {
   const [cambiandoIlimitado, setCambiandoIlimitado] = useState<EmpresaRow | null>(null);
   const [pagando, setPagando] = useState<EmpresaRow | null>(null);
   const [cobro, setCobro] = useState<Cobro | null>(null);
-  const [formPago, setFormPago] = useState({ monto: 0, metodo: 'MANUAL', nota: '', comprobanteBase64: '' });
+  const [formPago, setFormPago] = useState({ monto: 0, metodo: 'MANUAL', nota: '', comprobanteBase64: '', comprobanteTipo: '' });
   const [guardandoPago, setGuardandoPago] = useState(false);
   // Ampliar prueba
   const [ampliando, setAmpliando] = useState<EmpresaRow | null>(null);
@@ -87,24 +92,39 @@ export default function AdminEmpresas() {
   const abrirPago = async (emp: EmpresaRow) => {
     setPagando(emp);
     setCobro(null);
-    setFormPago({ monto: 0, metodo: 'MANUAL', nota: '', comprobanteBase64: '' });
+    setFormPago({ monto: 0, metodo: 'MANUAL', nota: '', comprobanteBase64: '', comprobanteTipo: '' });
     const r = await api.get(`/admin/empresas/${emp.id}/cobro`);
     setCobro(r.data);
     setFormPago(p => ({ ...p, monto: r.data.monto > 0 ? r.data.monto : r.data.tarifaMesCompleto }));
   };
 
-  const adjuntarFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Pasa por el mismo camino que el resto de los adjuntos del producto en vez
+  // de un readAsDataURL crudo: así se recorta, se convierte a WebP y se
+  // rechaza aquí lo que el backend rechazaría después.
+  const adjuntarFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setFormPago(p => ({ ...p, comprobanteBase64: String(reader.result) }));
-    reader.readAsDataURL(file);
+    try {
+      const ev = await procesarEvidencia(file);
+      // procesarEvidencia es la funcion compartida con la evidencia de las
+      // novedades y acepta Word; un comprobante de pago no. Sin esto el
+      // navegador lo aceptaba y el servidor devolvia 400.
+      if (claseDeArchivo(ev.tipo) === 'word') {
+        throw new Error('El comprobante tiene que ser una foto o un PDF, no un documento de Word.');
+      }
+      setErrorPago('');
+      setFormPago(p => ({ ...p, comprobanteBase64: ev.data, comprobanteTipo: ev.tipo }));
+    } catch (err) {
+      setErrorPago(mensajeDeError(err, 'No pudimos usar ese archivo.'));
+    }
   };
 
   const registrarPago = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pagando) return;
     setGuardandoPago(true);
+    setErrorPago('');
     try {
       await api.post(`/admin/empresas/${pagando.id}/pagos`, {
         monto: formPago.monto,
@@ -115,6 +135,8 @@ export default function AdminEmpresas() {
       setPagando(null);
       setToast('Pago registrado con éxito');
       cargar();
+    } catch (err) {
+      setErrorPago(mensajeDeError(err, 'No pudimos registrar el pago.'));
     } finally {
       setGuardandoPago(false);
     }
@@ -324,19 +346,27 @@ export default function AdminEmpresas() {
                 <label className="block text-xs font-medium text-muted mb-1">Comprobante (opcional)</label>
                 {formPago.comprobanteBase64 ? (
                   <div className="relative">
-                    <img src={formPago.comprobanteBase64} alt="comprobante" className="w-full max-h-44 object-contain rounded-xl border border-gray-200 bg-gray-50" />
-                    <button type="button" onClick={() => setFormPago(p => ({ ...p, comprobanteBase64: '' }))}
+                    {claseDeArchivo(formPago.comprobanteTipo) === 'imagen' ? (
+                      <img src={formPago.comprobanteBase64} alt="comprobante" className="w-full max-h-44 object-contain rounded-xl border border-gray-200 bg-gray-50" />
+                    ) : (
+                      <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-4 text-sm text-ink">
+                        <IconoDeAdjunto tipo={formPago.comprobanteTipo} size={18} />
+                        Comprobante en {rotuloDeArchivo(formPago.comprobanteTipo)}
+                      </div>
+                    )}
+                    <button type="button" onClick={() => setFormPago(p => ({ ...p, comprobanteBase64: '', comprobanteTipo: '' }))}
                       className="absolute top-2 right-2 bg-white border border-gray-200 rounded-lg p-1.5 text-red-500 hover:bg-red-50">
                       <Trash2 size={14} />
                     </button>
                   </div>
                 ) : (
                   <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-xl py-6 text-sm text-muted cursor-pointer hover:border-primary hover:text-ink">
-                    <ImagePlus size={18} /> Adjuntar foto del comprobante
-                    <input type="file" accept="image/*" className="hidden" onChange={adjuntarFoto} />
+                    <ImagePlus size={18} /> Adjuntar comprobante (foto o PDF)
+                    <input type="file" accept={ACEPTA_COMPROBANTE} className="hidden" onChange={adjuntarFoto} />
                   </label>
                 )}
               </div>
+              {errorPago && <p className="text-xs text-red-600">{errorPago}</p>}
               <button type="submit" disabled={guardandoPago || !formPago.monto}
                 className="w-full bg-primary hover:bg-primary-dark text-ink font-bold py-2.5 rounded-xl disabled:opacity-60">
                 {guardandoPago ? 'Registrando...' : `Registrar pago de ${cop(formPago.monto)}`}

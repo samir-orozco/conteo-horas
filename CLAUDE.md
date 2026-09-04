@@ -100,6 +100,12 @@ Son las que ya nos han mordido. No son teoría.
 - **Antes de copiar a una rama de artefactos, verificar la ruta destino** con
   `git show --stat`. Un diff con decenas de "añadidos" y ningún "renombrado"
   significa que se copió al lugar equivocado.
+- **La dependencia `xlsx` apunta a `cdn.sheetjs.com`, no a npm, y eso es
+  correcto.** SheetJS dejó de publicar en npm y la última versión de allí
+  (0.18.5) tiene dos avisos sin parche posible. `npm audit fix` no la arregla y
+  devolverla a `^0.18.5` los reabre. Está explicado en
+  `formatoImportacion.ts` y en `exportar.ts`, que son sus dos únicos usos.
+
 - **Los cambios de esquema se hablan antes.** Las migraciones de Prisma están
   desfasadas del schema real (se evolucionó con `db push`), así que
   `prisma migrate deploy` no reproduce el estado de producción.

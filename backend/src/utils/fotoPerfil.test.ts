@@ -1,17 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import { fotoPerfilValida, fotoParaEnrolar, miniValida, MAX_FOTO, MAX_MINI } from './fotoPerfil';
 
-const jpeg = (relleno = 100) => 'data:image/jpeg;base64,' + 'A'.repeat(relleno);
+// Los fixtures traen la firma de bytes de verdad de cada formato, porque ahora
+// se comprueba. Antes eran 'A'.repeat(n), que no es una foto de nada: pasaban
+// solo porque se le creía a la etiqueta.
+const JPEG = '/9j/';          // FF D8 FF
+const PNG = 'iVBORw0KGg';     // 89 50 4E 47 0D 0A 1A 0A
+const WEBP = 'UklGR';         // RIFF
+
+const jpeg = (relleno = 100) => 'data:image/jpeg;base64,' + JPEG + 'A'.repeat(relleno);
 
 describe('la foto de perfil que se acepta', () => {
   it('acepta los formatos que produce una cámara o un teléfono', () => {
-    expect(fotoPerfilValida('data:image/jpeg;base64,AAAA')).toBe(true);
-    expect(fotoPerfilValida('data:image/png;base64,AAAA')).toBe(true);
-    expect(fotoPerfilValida('data:image/webp;base64,AAAA')).toBe(true);
+    expect(fotoPerfilValida('data:image/jpeg;base64,' + JPEG + 'AAAA')).toBe(true);
+    expect(fotoPerfilValida('data:image/png;base64,' + PNG + 'AAAA')).toBe(true);
+    expect(fotoPerfilValida('data:image/webp;base64,' + WEBP + 'AAAA')).toBe(true);
   });
 
   it('rechaza un PDF: esto es un avatar, no un adjunto', () => {
-    expect(fotoPerfilValida('data:application/pdf;base64,AAAA')).toBe(false);
+    expect(fotoPerfilValida('data:application/pdf;base64,JVBERi')).toBe(false);
+  });
+
+  it('rechaza una foto que miente sobre lo que es', () => {
+    // La etiqueta la escribe quien sube. Antes bastaba con poner image/jpeg
+    // delante de cualquier cosa. Es la misma comprobación que ya hacen los
+    // documentos, y la mitad del encargo que faltaba: "donde se suban fotos,
+    // que solo sea JPG o PNG".
+    expect(fotoPerfilValida('data:image/jpeg;base64,PGh0bWw+')).toBe(false);   // <html>
+    expect(fotoPerfilValida('data:image/png;base64,PHN2Zw==')).toBe(false);    // <svg
+    expect(fotoPerfilValida('data:image/jpeg;base64,TVqQAAM')).toBe(false);    // un .exe
+    expect(fotoPerfilValida('data:image/png;base64,' + JPEG + 'AAA')).toBe(false); // un JPEG rotulado PNG
   });
 
   it('rechaza un SVG, que puede traer scripts dentro', () => {
@@ -53,8 +71,8 @@ describe('la foto de perfil que se acepta', () => {
 });
 
 describe('qué foto deja el enrolamiento facial', () => {
-  const nueva = 'data:image/jpeg;base64,NUEVA';
-  const yaTiene = 'data:image/jpeg;base64,ELEGIDA';
+  const nueva = 'data:image/jpeg;base64,' + JPEG + 'NUEVA';
+  const yaTiene = 'data:image/jpeg;base64,' + JPEG + 'ELEGIDA';
 
   it('sin foto previa, guarda la primera toma del escaneo', () => {
     expect(fotoParaEnrolar(null, nueva)).toBe(nueva);
@@ -82,7 +100,7 @@ describe('qué foto deja el enrolamiento facial', () => {
 });
 
 describe('la miniatura que viaja en las listas', () => {
-  const jpg = (n: number) => 'data:image/jpeg;base64,' + 'A'.repeat(n);
+  const jpg = (n: number) => 'data:image/jpeg;base64,' + JPEG + 'A'.repeat(n);
 
   it('acepta lo que produce recortar a 64 píxeles', () => {
     // Un JPEG de 64px al 70% son un par de kilobytes.

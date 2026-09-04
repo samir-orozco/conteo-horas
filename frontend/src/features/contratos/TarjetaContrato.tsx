@@ -2,9 +2,11 @@ import { format, differenceInCalendarDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   Trash2, AlertTriangle, Info, Check, Plus,
-  FileText, Image as ImageIcon, CalendarClock,
+  CalendarClock,
 } from 'lucide-react';
 import { TIPO_LABEL, ALERTA, type Contrato } from './tipos';
+import IconoDeAdjunto from '../../components/IconoDeAdjunto';
+import { claseDeArchivo } from '../../lib/archivos';
 
 const dLarga = (s: string | null) => s ? format(new Date(s), "d MMM yyyy", { locale: es }) : '—';
 const dCorta = (s: string | null) => s ? format(new Date(s), 'dd/MM/yy') : '—';
@@ -38,13 +40,13 @@ const TONOS = {
 function FichaDocumento({ tipo, nombre, respaldo, onAbrir }: {
   tipo: string; nombre: string | null; respaldo: string; onAbrir: () => void;
 }) {
-  const esPdf = tipo === 'application/pdf';
+  const clase = claseDeArchivo(tipo);
   return (
     <button type="button" onClick={onAbrir} title={nombre ?? respaldo}
       className="inline-flex items-center gap-1.5 max-w-full pl-1 pr-2.5 py-1 rounded-lg border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 transition-colors">
       <span className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${
-        esPdf ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-        {esPdf ? <FileText size={12} /> : <ImageIcon size={12} />}
+        clase === 'pdf' ? 'bg-red-50' : clase === 'imagen' ? 'bg-primary/15' : 'bg-blue-50'}`}>
+        <IconoDeAdjunto tipo={tipo} size={12} />
       </span>
       <span className="text-[11px] font-medium text-ink truncate">{nombre || respaldo}</span>
     </button>

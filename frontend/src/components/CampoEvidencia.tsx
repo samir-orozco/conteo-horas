@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
-import { UploadCloud, FileText, ImageIcon, X, Loader2 } from 'lucide-react';
+import { UploadCloud, X, Loader2 } from 'lucide-react';
 import { procesarEvidencia, type Evidencia } from '../lib/evidencia';
+import IconoDeAdjunto from './IconoDeAdjunto';
+import { claseDeArchivo, rotuloDeArchivo, ACEPTA_DOCUMENTO } from '../lib/archivos';
 
 // Resultado que el componente reporta al padre:
 //  - { tipo: 'nuevo', evidencia }  → el usuario adjuntó un archivo
@@ -52,17 +54,19 @@ export default function CampoEvidencia({ existente, onCambio }: Props) {
 
   // Vista previa de un archivo recién adjuntado
   if (nuevo) {
-    const esPdf = nuevo.tipo === 'application/pdf';
+    // Solo una foto se puede previsualizar. Un PDF y un Word no, y antes el
+    // `else` metía cualquier cosa que no fuera PDF en un <img>.
+    const esFoto = claseDeArchivo(nuevo.tipo) === 'imagen';
     return (
       <div className="flex items-center gap-3 border border-gray-200 rounded-xl p-3 bg-gray-50">
-        {esPdf ? (
-          <div className="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center shrink-0"><FileText size={22} className="text-red-500" /></div>
-        ) : (
+        {esFoto ? (
           <img src={nuevo.data} alt="Evidencia" className="w-14 h-14 rounded-lg object-cover shrink-0" />
+        ) : (
+          <div className="w-14 h-14 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0"><IconoDeAdjunto tipo={nuevo.tipo} size={22} /></div>
         )}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-ink truncate">{nuevo.nombre}</p>
-          <p className="text-xs text-muted">{esPdf ? 'PDF' : 'Imagen'} · listo para guardar</p>
+          <p className="text-xs text-muted">{rotuloDeArchivo(nuevo.tipo)} · listo para guardar</p>
         </div>
         <button type="button" onClick={limpiar} className="p-1.5 text-gray-400 hover:bg-gray-200 rounded-lg"><X size={16} /></button>
       </div>
@@ -71,20 +75,27 @@ export default function CampoEvidencia({ existente, onCambio }: Props) {
 
   // Chip de la evidencia ya guardada (modo edición)
   if (tieneExistente) {
-    const esPdf = existente!.tipo === 'application/pdf';
     return (
-      <div className="flex items-center gap-3 border border-gray-200 rounded-xl p-3 bg-gray-50">
-        <div className="w-11 h-11 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
-          {esPdf ? <FileText size={18} className="text-red-500" /> : <ImageIcon size={18} className="text-primary-dark" />}
+      <div>
+        <div className="flex items-center gap-3 border border-gray-200 rounded-xl p-3 bg-gray-50">
+          <div className="w-11 h-11 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
+            <IconoDeAdjunto tipo={existente!.tipo} size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-ink truncate">{existente!.nombre || rotuloDeArchivo(existente!.tipo)}</p>
+            <p className="text-xs text-muted">Evidencia adjunta</p>
+          </div>
+          <button type="button" onClick={() => inputRef.current?.click()} className="text-xs font-semibold text-primary-dark hover:underline px-1">Cambiar</button>
+          <button type="button" onClick={limpiar} className="p-1.5 text-gray-400 hover:bg-gray-200 rounded-lg"><X size={16} /></button>
+          <input ref={inputRef} type="file" accept={ACEPTA_DOCUMENTO} className="hidden"
+            onChange={e => tomarArchivo(e.target.files?.[0])} />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-ink truncate">{existente!.nombre || (esPdf ? 'Documento.pdf' : 'Imagen')}</p>
-          <p className="text-xs text-muted">Evidencia adjunta</p>
-        </div>
-        <button type="button" onClick={() => inputRef.current?.click()} className="text-xs font-semibold text-primary-dark hover:underline px-1">Cambiar</button>
-        <button type="button" onClick={limpiar} className="p-1.5 text-gray-400 hover:bg-gray-200 rounded-lg"><X size={16} /></button>
-        <input ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden"
-          onChange={e => tomarArchivo(e.target.files?.[0])} />
+        {/* Esta rama no pintaba ni el error ni el "Procesando...". Pulsar
+            "Cambiar" sobre una evidencia ya guardada y elegir algo que no se
+            acepta no mostraba absolutamente nada: el archivo se rechazaba en
+            silencio y el chip viejo se quedaba ahí. */}
+        {cargando && <p className="text-xs text-muted mt-1.5">Procesando...</p>}
+        {error && <p className="text-xs text-red-600 mt-1.5">{error}</p>}
       </div>
     );
   }
@@ -106,11 +117,11 @@ export default function CampoEvidencia({ existente, onCambio }: Props) {
           <>
             <div className="w-11 h-11 rounded-full bg-primary/15 flex items-center justify-center"><UploadCloud size={20} className="text-primary-dark" /></div>
             <span className="text-sm font-medium text-ink">Arrastra o haz clic para adjuntar</span>
-            <span className="text-xs text-muted">Imagen o PDF (incapacidad, permiso, etc.)</span>
+            <span className="text-xs text-muted">Foto, PDF o Word (incapacidad, permiso, etc.)</span>
           </>
         )}
       </button>
-      <input ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden"
+      <input ref={inputRef} type="file" accept={ACEPTA_DOCUMENTO} className="hidden"
         onChange={e => tomarArchivo(e.target.files?.[0])} />
       {error && <p className="text-xs text-red-600 mt-1.5">{error}</p>}
     </div>

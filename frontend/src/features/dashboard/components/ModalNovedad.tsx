@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { X, FileText, Image as ImageIcon, ArrowUpRight } from 'lucide-react';
+import { X, ArrowUpRight } from 'lucide-react';
 import ModalShell from './ModalShell';
 import VisorEvidencia from './VisorEvidencia';
 import { getEvidencia } from '../api';
 import { TIPO_PERMISO_LABEL } from '../../../constants/permisos';
 import type { Novedad, Evidencia } from '../types';
+import IconoDeAdjunto from '../../../components/IconoDeAdjunto';
 
 // Detalle de una novedad del día, con visor de evidencia si la tiene.
 export default function ModalNovedad({ novedad, onClose }: { novedad: Novedad; onClose: () => void }) {
@@ -54,7 +55,7 @@ export default function ModalNovedad({ novedad, onClose }: { novedad: Novedad; o
               <p className="text-xs text-muted mb-1">Evidencia</p>
               <button onClick={verEvidencia} disabled={cargando}
                 className="flex items-center gap-2 text-sm font-medium text-primary-dark border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 disabled:opacity-60">
-                {novedad.evidenciaTipo === 'application/pdf' ? <FileText size={16} className="text-red-500" /> : <ImageIcon size={16} />}
+                <IconoDeAdjunto tipo={novedad.evidenciaTipo} />
                 {cargando ? 'Abriendo...' : (novedad.evidenciaNombre || 'Ver evidencia')}
               </button>
             </div>

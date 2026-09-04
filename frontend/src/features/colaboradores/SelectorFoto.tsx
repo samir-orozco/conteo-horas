@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Camera, Trash2, UserRound } from 'lucide-react';
 import { aFotoDePerfil, type DosFotos } from './foto';
+import { ACEPTA_FOTO, destinoDeArchivo } from '../../lib/archivos';
 
 // Foto de perfil al crear o editar un colaborador.
 //
@@ -26,6 +27,14 @@ export default function SelectorFoto({
 
   const elegir = async (f: File | undefined) => {
     if (!f) return;
+    // La misma guarda que CabeceraFicha. Los dos controles escriben la MISMA
+    // columna (colaborador.foto), así que sin esto el SVG se rechazaba en la
+    // ficha y entraba por el alta.
+    if (destinoDeArchivo(f.type) !== 'convertir') {
+      onError('Eso no es una foto. Sube una imagen desde tu celular o computador.');
+      if (archivo.current) archivo.current.value = '';
+      return;
+    }
     setProcesando(true);
     try {
       onCambio(await aFotoDePerfil(f));
@@ -68,12 +77,12 @@ export default function SelectorFoto({
             </button>
           )}
         </div>
-        <p className="text-[11px] text-muted">JPG, PNG o WEBP. Se recorta sola.</p>
+        <p className="text-[11px] text-muted">Cualquier foto. Se recorta y se optimiza sola.</p>
       </div>
 
       {/* `sr-only` y no `hidden`: un input oculto del todo no se puede enfocar
           ni disparar por teclado desde el botón. */}
-      <input ref={archivo} type="file" accept="image/jpeg,image/png,image/webp"
+      <input ref={archivo} type="file" accept={ACEPTA_FOTO}
         className="sr-only" aria-label="Foto del colaborador"
         onChange={e => elegir(e.target.files?.[0])} />
     </div>
