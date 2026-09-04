@@ -5,7 +5,7 @@ import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import {
   Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
-  ScanFace, Check, Trash2, ShieldCheck, FileText, Image as ImageIcon, Lock, Undo2,
+  ScanFace, Check, Trash2, ShieldCheck, Lock, Undo2,
 } from 'lucide-react';
 import api from '../lib/api';
 import { resumenFranjas, type Franja } from './Colaboradores';
@@ -31,6 +31,7 @@ import HistorialVinculacion, { type Evento as EventoVinculacion } from '../featu
 import TabsFicha from '../features/colaboradores/TabsFicha';
 import { useTabFicha } from '../features/colaboradores/useTabFicha';
 import { useMiPlan } from '../lib/plan';
+import IconoDeAdjunto from '../components/IconoDeAdjunto';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
 type Colaborador = {
@@ -813,7 +814,7 @@ export default function ColaboradorDetalle() {
                   <p className="text-xs text-muted mb-1">Evidencia</p>
                   <button onClick={() => verEvidencia(verNovedad.id)} disabled={cargandoEvidencia}
                     className="flex items-center gap-2 text-sm font-medium text-primary-dark border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-50 disabled:opacity-60">
-                    {verNovedad.evidenciaTipo === 'application/pdf' ? <FileText size={16} className="text-red-500" /> : <ImageIcon size={16} />}
+                    <IconoDeAdjunto tipo={verNovedad.evidenciaTipo} />
                     {cargandoEvidencia ? 'Abriendo...' : (verNovedad.evidenciaNombre || 'Ver evidencia')}
                   </button>
                 </div>

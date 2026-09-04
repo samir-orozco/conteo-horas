@@ -1,4 +1,6 @@
 import { X, Download } from 'lucide-react';
+import VistaDeAdjunto from './VistaDeAdjunto';
+import { nombreParaDescargar } from '../lib/archivos';
 
 export type DocumentoVisto = { data: string; tipo?: string | null; nombre?: string | null };
 
@@ -16,18 +18,13 @@ export default function VisorDocumento({ doc, onCerrar }: { doc: DocumentoVisto;
         <div className="flex items-center justify-between mb-3 px-1">
           <p className="text-sm font-semibold text-ink truncate">{doc.nombre || 'Documento'}</p>
           <div className="flex items-center gap-1">
-            <a href={doc.data} download={doc.nombre || 'documento'} title="Descargar"
+            <a href={doc.data} download={nombreParaDescargar(doc.nombre, doc.tipo ?? '')} title="Descargar"
               className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg"><Download size={18} /></a>
             <button onClick={onCerrar} title="Cerrar"
               className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"><X size={18} /></button>
           </div>
         </div>
-        {doc.tipo === 'application/pdf' ? (
-          <iframe src={doc.data} title={doc.nombre || 'Documento'}
-            className="w-full flex-1 min-h-[60vh] rounded-lg border border-gray-200" />
-        ) : (
-          <img src={doc.data} alt={doc.nombre || 'Documento'} className="w-full object-contain rounded-lg max-h-[75vh]" />
-        )}
+        <VistaDeAdjunto data={doc.data} tipo={doc.tipo} nombre={doc.nombre} />
       </div>
     </div>
   );

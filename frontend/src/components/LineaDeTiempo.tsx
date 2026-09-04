@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { FileText, Image as ImageIcon, ChevronDown, type LucideIcon } from 'lucide-react';
+import { ChevronDown, type LucideIcon } from 'lucide-react';
+import IconoDeAdjunto from './IconoDeAdjunto';
+import { rotuloDeArchivo } from '../lib/archivos';
 
 export type TonoHito = 'rojo' | 'verde' | 'azul' | 'ambar' | 'gris';
 
@@ -63,7 +65,6 @@ export default function LineaDeTiempo({ hitos, visibles = VISIBLES, sustantivo }
         {alaVista.map((h, i) => {
           const Icono = h.icono;
           const esUltimo = i === alaVista.length - 1;
-          const esPdf = h.adjunto?.tipo === 'application/pdf';
           // Sin acción no se envuelve en un botón: prometer un clic que no hace
           // nada es peor que no ofrecerlo.
           const Envoltura = h.onAbrir ? 'button' : 'div';
@@ -106,15 +107,14 @@ export default function LineaDeTiempo({ hitos, visibles = VISIBLES, sustantivo }
                     <button
                       onClick={h.adjunto.onAbrir}
                       className="flex items-center gap-2.5 max-w-full text-left rounded-lg px-1.5 py-1 hover:bg-white transition-colors">
-                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        esPdf ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
-                        {esPdf ? <FileText size={16} /> : <ImageIcon size={16} />}
+                      <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-gray-100">
+                        <IconoDeAdjunto tipo={h.adjunto.tipo} />
                       </span>
                       <span className="min-w-0">
                         <span className="block text-xs font-semibold text-ink truncate">
                           {h.adjunto.nombre || 'Adjunto'}
                         </span>
-                        <span className="block text-[11px] text-muted">{esPdf ? 'PDF' : 'Imagen'}</span>
+                        <span className="block text-[11px] text-muted">{rotuloDeArchivo(h.adjunto.tipo)}</span>
                       </span>
                     </button>
                   </div>

@@ -7,6 +7,8 @@ import api from '../../lib/api';
 import Toast from '../../components/Toast';
 import { copiarTexto } from '../../lib/clipboard';
 import { descargarReciboPDF } from '../../lib/recibo';
+import VistaDeAdjunto from '../../components/VistaDeAdjunto';
+import { tipoDeDataUri } from '../../lib/archivos';
 
 const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -355,7 +357,9 @@ export default function AdminEmpresaDetalle() {
       {/* Visor de comprobante */}
       {comprobante && (
         <div className="fixed inset-0 !mt-0 bg-black/60 z-50 flex items-center justify-center p-6" onClick={() => setComprobante(null)}>
-          <img src={comprobante} alt="comprobante" className="max-w-full max-h-full rounded-xl bg-white p-2" />
+          <div className="max-w-2xl w-full max-h-full overflow-auto rounded-xl bg-white p-2 flex flex-col" onClick={e => e.stopPropagation()}>
+            <VistaDeAdjunto data={comprobante} tipo={tipoDeDataUri(comprobante)} nombre="Comprobante" />
+          </div>
         </div>
       )}
 

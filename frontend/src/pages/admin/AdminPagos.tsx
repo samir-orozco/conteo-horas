@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { X, FileDown, Paperclip, Receipt } from 'lucide-react';
 import api from '../../lib/api';
 import { descargarReciboPDF, type PagoRecibo } from '../../lib/recibo';
+import VistaDeAdjunto from '../../components/VistaDeAdjunto';
+import { tipoDeDataUri } from '../../lib/archivos';
 
 const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -127,7 +129,9 @@ export default function AdminPagos() {
               {detalle.comprobanteBase64 && (
                 <div className="mb-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Comprobante adjunto</p>
-                  <img src={detalle.comprobanteBase64} alt="comprobante" className="w-full max-h-64 object-contain rounded-xl border border-gray-200 bg-gray-50" />
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-1 flex flex-col max-h-64 overflow-auto">
+                    <VistaDeAdjunto data={detalle.comprobanteBase64} tipo={tipoDeDataUri(detalle.comprobanteBase64)} nombre="Comprobante" />
+                  </div>
                 </div>
               )}
 

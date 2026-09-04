@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { Plus, X, Pencil, Link2, Copy, Check, Send, Users, Wallet, Handshake, Mail, Banknote, Upload, Trash2 } from 'lucide-react';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { procesarEvidencia } from '../../lib/evidencia';
+import { ACEPTA_COMPROBANTE } from '../../lib/archivos';
+import { mensajeDeError } from '../../lib/errores';
 
 type AfiliadoRow = {
   id: string; nombre: string; codigo: string; porcentaje: number; duracionMeses: number | null;
@@ -59,24 +62,34 @@ export default function AdminAfiliados() {
   const [compRetiro, setCompRetiro] = useState('');
   const [motivoRechazo, setMotivoRechazo] = useState('');
   const [guardandoRetiro, setGuardandoRetiro] = useState(false);
+  const [errorRetiro, setErrorRetiro] = useState('');
 
   const cargar = () => api.get('/admin/afiliados').then(r => { setAfiliados(r.data); setCargando(false); });
   const cargarPendientes = () => api.get('/admin/afiliados/retiros/pendientes').then(r => setPendientes(r.data));
   useEffect(() => { cargar(); cargarPendientes(); }, []);
 
-  const adjuntarComprobante = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Por el mismo camino que el resto de los adjuntos, en vez de un
+  // readAsDataURL crudo: recorta, convierte a WebP y rechaza aquí lo que el
+  // backend rechazaría después.
+  const adjuntarComprobante = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setCompRetiro(String(reader.result));
-    reader.readAsDataURL(file);
+    try {
+      const ev = await procesarEvidencia(file);
+      setErrorRetiro('');
+      setCompRetiro(ev.data);
+    } catch (err) {
+      setErrorRetiro(mensajeDeError(err, 'No pudimos usar ese archivo.'));
+    }
   };
 
-  const abrirProcesar = (r: RetiroPendiente) => { setProcesando(r); setCompRetiro(''); setMotivoRechazo(''); };
+  const abrirProcesar = (r: RetiroPendiente) => { setProcesando(r); setCompRetiro(''); setMotivoRechazo(''); setErrorRetiro(''); };
 
   const procesarRetiro = async (estado: 'PAGADO' | 'RECHAZADO') => {
     if (!procesando) return;
     setGuardandoRetiro(true);
+    setErrorRetiro('');
     try {
       await api.put(`/admin/afiliados/retiros/${procesando.id}`, {
         estado,
@@ -86,6 +99,10 @@ export default function AdminAfiliados() {
       setProcesando(null);
       avisar(estado === 'PAGADO' ? 'Retiro marcado como pagado' : 'Retiro rechazado');
       cargarPendientes(); cargar();
+    } catch (err) {
+      // Sin este catch, el 400 que ahora puede devolver la ruta dejaría el
+      // modal quieto y sin un solo mensaje.
+      setErrorRetiro(mensajeDeError(err, 'No pudimos procesar el retiro.'));
     } finally { setGuardandoRetiro(false); }
   };
 
@@ -536,13 +553,14 @@ export default function AdminAfiliados() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-muted mb-1">Comprobante de pago (imagen)</label>
+                <label className="block text-xs font-medium text-muted mb-1">Comprobante de pago (foto o PDF)</label>
                 <label className="flex items-center gap-2 border border-dashed border-gray-300 rounded-lg px-3 py-2.5 text-sm text-muted cursor-pointer hover:border-primary">
                   <Upload size={15} /> {compRetiro ? 'Comprobante cargado ✓' : 'Subir comprobante'}
-                  <input type="file" accept="image/*" onChange={adjuntarComprobante} className="hidden" />
+                  <input type="file" accept={ACEPTA_COMPROBANTE} onChange={adjuntarComprobante} className="hidden" />
                 </label>
               </div>
 
+              {errorRetiro && <p className="text-xs text-red-600">{errorRetiro}</p>}
               <button onClick={() => procesarRetiro('PAGADO')} disabled={guardandoRetiro}
                 className="w-full bg-primary hover:bg-primary-dark text-ink font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 disabled:opacity-60">
                 <Check size={16} /> Marcar como pagado

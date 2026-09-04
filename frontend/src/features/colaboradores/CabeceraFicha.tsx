@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { ArrowLeft, Edit2, Briefcase, IdCard, CalendarDays, Banknote, Camera, Upload, Trash2, MapPinned } from 'lucide-react';
 import { mesYAnio } from '../../lib/fechas';
 import { ETIQUETA_MODALIDAD, normalizarModalidad } from './modalidad';
+import { destinoDeArchivo, ACEPTA_FOTO } from '../../lib/archivos';
 
 export type PersonaCabecera = {
   nombre: string;
@@ -18,9 +19,7 @@ export type PersonaCabecera = {
 
 const cop = (n: number) => '$' + n.toLocaleString('es-CO');
 
-// Los mismos tres formatos que acepta el servidor (utils/fotoPerfil.ts). Se
-// comprueba aquí también para no hacerle subir un archivo que va a rebotar.
-const FORMATOS = ['image/jpeg', 'image/png', 'image/webp'];
+
 
 // La portada. Rayas diagonales en la paleta de la marca, hechas con gradientes
 // para no cargar una imagen que nadie va a mirar dos veces.
@@ -59,8 +58,12 @@ export default function CabeceraFicha({
     const archivo = e.target.files?.[0];
     e.target.value = ''; // para poder volver a elegir el mismo archivo
     if (!archivo) return;
-    if (!FORMATOS.includes(archivo.type)) {
-      setError('La foto debe ser JPG, PNG o WEBP.');
+    // Cualquier foto que el navegador sepa decodificar entra: el canvas la
+    // convierte a WebP antes de guardarla. Antes había aquí una lista de tres
+    // formatos, y un HEIC de iPhone rebotaba sin que la persona pudiera hacer
+    // nada al respecto.
+    if (destinoDeArchivo(archivo.type) !== 'convertir') {
+      setError('Eso no es una foto. Sube una imagen desde tu celular o computador.');
       return;
     }
     setError('');
@@ -147,7 +150,7 @@ export default function CabeceraFicha({
                 <label className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm text-ink hover:bg-gray-50 cursor-pointer">
                   <Upload size={15} className="text-muted shrink-0" />
                   <span>Subir una foto</span>
-                  <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp"
+                  <input ref={inputRef} type="file" accept={ACEPTA_FOTO}
                     onChange={elegir} className="sr-only" />
                 </label>
                 {persona.foto && (

@@ -1,3 +1,5 @@
+import { codificarPreferirWebp } from '../../lib/imagenes';
+
 // Lado máximo de la foto de perfil ya guardada.
 //
 // Se ve en un círculo de 96 píxeles, así que 512 alcanza de sobra incluso en
@@ -25,6 +27,15 @@ export function dimensionesDeFoto(ancho: number, alto: number, max = LADO_MAX) {
 }
 
 // Dibuja la imagen ya cargada al tamaño pedido y la devuelve como data URL.
+//
+// Sale en WebP, con caída a JPEG si el navegador no sabe codificarlo. La
+// decisión de cuál de los dos salió vive en lib/imagenes.ts y no aquí, porque
+// el canvas no se puede probar en jsdom: dejarla en esta línea haría que el
+// cambio entero fuera invisible para la suite.
+//
+// Redibujar también desinfecta: lo que se guarda son los píxeles dibujados, no
+// los bytes que llegaron, así que lo que viniera en los metadatos EXIF no
+// sobrevive.
 const recortar = (img: HTMLImageElement, lado: number, calidad: number) => {
   const { ancho, alto } = dimensionesDeFoto(img.naturalWidth, img.naturalHeight, lado);
   const canvas = document.createElement('canvas');
@@ -33,7 +44,9 @@ const recortar = (img: HTMLImageElement, lado: number, calidad: number) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('No pudimos procesar la imagen.');
   ctx.drawImage(img, 0, 0, ancho, alto);
-  return canvas.toDataURL('image/jpeg', calidad);
+  const salida = codificarPreferirWebp((tipo, q) => canvas.toDataURL(tipo, q), calidad);
+  if (!salida) throw new Error('No pudimos procesar la imagen.');
+  return salida.data;
 };
 
 const cargar = (src: string, alTerminar: () => void): Promise<HTMLImageElement> =>

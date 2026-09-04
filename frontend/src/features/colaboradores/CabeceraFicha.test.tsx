@@ -102,14 +102,51 @@ describe('la foto, desde el propio círculo', () => {
     expect(onArchivoFoto).toHaveBeenCalledWith(expect.any(File));
   });
 
-  it('un PDF no pasa, y se dice por qué antes de subir nada', async () => {
+  it('un PDF no pasa', async () => {
+    // Ya ni siquiera llega al manejador: el `accept` del input lo descarta un
+    // paso antes, así que no hay mensaje que mostrar. Lo que se comprueba aquí
+    // es la garantía que importa, que es que no se sube. La guarda en código,
+    // que es la que de verdad protege (el accept se salta eligiendo "todos los
+    // archivos", y arrastrar y soltar ni lo mira), la ejercita el caso del SVG.
     const onArchivoFoto = vi.fn();
     montar({}, { onArchivoFoto });
     await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));
     await userEvent.upload(screen.getByLabelText(/Subir una foto/i),
       new File(['x'], 'contrato.pdf', { type: 'application/pdf' }));
     expect(onArchivoFoto).not.toHaveBeenCalled();
-    expect(screen.getByText(/JPG, PNG o WEBP/i)).toBeInTheDocument();
+  });
+
+  it('el SVG sí llega a la guarda, y ahí se rechaza con un mensaje', async () => {
+    // Un SVG pasa el filtro de `image/*`, así que este es el caso que prueba
+    // que la comprobación en código existe y dice algo.
+    const onArchivoFoto = vi.fn();
+    montar({}, { onArchivoFoto });
+    await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));
+    await userEvent.upload(screen.getByLabelText(/Subir una foto/i),
+      new File(['<svg/>'], 'logo.svg', { type: 'image/svg+xml' }));
+    expect(screen.getByText(/no es una foto/i)).toBeInTheDocument();
+  });
+
+  it('la foto de un iPhone SÍ pasa, aunque venga en HEIC', async () => {
+    // Antes había aquí una lista de tres formatos y un HEIC rebotaba con "La
+    // foto debe ser JPG, PNG o WEBP", sin que la persona pudiera hacer nada.
+    // Ahora entra y el canvas la convierte a WebP, que es lo que se pidió.
+    const onArchivoFoto = vi.fn();
+    montar({}, { onArchivoFoto });
+    await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));
+    await userEvent.upload(screen.getByLabelText(/Subir una foto/i),
+      new File(['x'], 'IMG_0421.HEIC', { type: 'image/heic' }));
+    expect(onArchivoFoto).toHaveBeenCalledWith(expect.any(File));
+  });
+
+  it('un SVG no pasa aunque el navegador lo llame imagen', async () => {
+    // Es la única imagen que se rechaza: es un documento y puede traer scripts.
+    const onArchivoFoto = vi.fn();
+    montar({}, { onArchivoFoto });
+    await userEvent.click(screen.getByRole('button', { name: /foto de Julián Restrepo/i }));
+    await userEvent.upload(screen.getByLabelText(/Subir una foto/i),
+      new File(['<svg/>'], 'logo.svg', { type: 'image/svg+xml' }));
+    expect(onArchivoFoto).not.toHaveBeenCalled();
   });
 
   it('quitar la foto avisa a quien manda', async () => {
