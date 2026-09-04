@@ -65,6 +65,13 @@ Sube el contenido de `frontend/dist/` a **`~/horapro.co/`** (el docroot real del
 > Los bundles nuevos llevan hash distinto, así que conviven con los viejos sin
 > pisarse. Ocupa unos megas por despliegue; se limpia a mano cada varios meses
 > mirando qué hash referencia el `index.html` actual.
+>
+> **Corrección del 4 de septiembre de 2026:** de esos tres, `faceapi` NO es carga
+> diferida. Medido sobre el build: `face-api.js` se importa de forma estática en
+> `CamaraRostro.tsx`, `camaraRostro/rostroCliente.ts` y `lib/faceapi.ts`, así que
+> queda dentro del chunk principal, que pesa 1,8 MB (507 KB con gzip) y lo
+> descarga cualquiera que abra la página pública, use o no el kiosco. Los que sí
+> se cargan aparte son `xlsx` y `html2canvas`.
 
 Crea `~/horapro.co/.htaccess` para que React Router maneje las rutas:
 ```apache

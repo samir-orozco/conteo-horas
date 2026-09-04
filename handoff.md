@@ -273,6 +273,71 @@ números malos. Cada uno con su comprobación antes de tocarlo.
   pero son los más expuestos: si le cambian el horario, esos días se mueven
   enteros. Vale la pena averiguar por qué faltan.
 
+### face-api.js: la vulnerabilidad que se atiende cuando se toque el kiosco
+
+**Decisión tomada el 4 de septiembre de 2026: NO se arregla sola, se arregla
+junto con las mejoras del reconocimiento facial que ya están pensadas.** Se anota
+aquí con todo lo medido para que ese día no haya que volver a investigarlo.
+
+Son las 3 únicas vulnerabilidades que quedan en el frontend después del barrido
+de hoy (antes eran 13):
+
+| paquete | severidad | de dónde viene |
+|---|---|---|
+| `node-fetch` | **alta** | `face-api.js` → `@tensorflow/tfjs-core` → `node-fetch` |
+| `@tensorflow/tfjs-core` | baja | la misma cadena |
+| `face-api.js` | baja | directa |
+
+**Por qué NO se aplicó `npm audit fix`:** el arreglo que ofrece npm es
+`face-api.js@0.20.0`, o sea **BAJAR** desde la 0.22.2 que hay instalada. Cambiar
+el reconocimiento facial del kiosco por un aviso de `node-fetch` sería cambiar un
+riesgo teórico por uno real y visible.
+
+**Cuánto riesgo real hay hoy, para dimensionarlo:** `node-fetch` es el cliente
+HTTP que TensorFlow usa para descargar modelos **en Node**. En el navegador, que
+es donde corre el kiosco, esa ruta no se ejecuta: los pesos se sirven desde
+`~/horapro.co/models/`. El aviso es real pero el proyecto no lo alcanza. Aun así
+no conviene dejarlo: cuenta como alta en cualquier revisión y tapa avisos nuevos.
+
+**Qué mirar el día que se toque, en este orden:**
+
+1. Si `face-api.js` sigue sin publicar (su última versión es de hace años),
+   evaluar el reemplazo en vez del parche. Candidatas a medir: `@vladmandic/face-api`
+   (mantenido, API compatible, TensorFlow moderno) y MediaPipe Face Detection.
+   La comprobación que decide: los descriptores de 128 dimensiones que ya están
+   guardados en `Colaborador.rostroDescriptor` **tienen que seguir casando**, o
+   habría que reenrolar a todo el mundo. Eso es lo caro, no la biblioteca.
+2. `frontend/src/components/camaraRostro/rostroCliente.ts` produce el JPEG que
+   valida `backend/src/routes/worker.ts:72-81`. Ese contrato está documentado en
+   el código: si se cambia el pipeline, se cambian los dos lados a la vez.
+3. Correr `npm audit` después y comprobar que el frontend queda en 0.
+
+**Y de paso hay 507 KB que ganar, que probablemente valgan más que el aviso.**
+Medido sobre el build de hoy: `face-api.js` se importa de forma ESTÁTICA en
+`CamaraRostro.tsx`, `camaraRostro/rostroCliente.ts` y `lib/faceapi.ts`, así que
+va dentro del chunk principal. Resultado: 1,8 MB sin comprimir, 507 KB con gzip,
+que descarga **cualquiera que abra horapro.co**, incluido quien solo viene a leer
+el blog y nunca va a marcar con la cara. Pasarlo a `await import('face-api.js')`
+en los tres sitios es el cambio de más impacto de toda esta lista, y no depende
+de resolver la vulnerabilidad.
+(`DESPLIEGUE.md` decía que faceapi ya era carga diferida. No lo era; se corrigió
+el mismo día.)
+
+**Lo que NO hay que temer, comprobado y no supuesto:** el `node-fetch` vulnerable
+no se despliega. Se buscó dentro del chunk que sí contiene face-api y aparece
+CERO veces: Vite descarta la rama de Node al empaquetar, porque los modelos se
+sirven como archivos estáticos desde `~/horapro.co/models/`. O sea que el aviso
+es real en el árbol de dependencias y no alcanzable en el navegador. Eso es lo
+que permite aplazarlo sin que sea una deuda peligrosa, pero no lo borra: cuenta
+como alta en cualquier revisión y tapa avisos nuevos.
+
+**Comprobación antes de tocar nada:**
+```
+cd frontend && npm audit --json | python3 -c "import json,sys; d=json.load(sys.stdin)['vulnerabilities']; [print(k, v['severity']) for k,v in d.items()]"
+```
+
+---
+
 **De la lista de tareas, sin empezar:** novedades de parte del día. `horaInicio`
 y `horaFin` ya existen en el modelo `Permiso` y el detalle las muestra, pero nada
 las usa para liquidar.
