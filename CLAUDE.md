@@ -334,3 +334,85 @@ el código nuevo que cae en esa zona. El protocolo:
 
 Ejemplo vivo: `backend/prisma/diagnostico-autocierre.ts`, que es de solo lectura
 y dice, turno por turno, qué haría el barrido y por qué.
+
+---
+
+## 9. Reglas que salieron de la revisión de archivos (4 de septiembre de 2026)
+
+Las seis salen del mismo trabajo, y tres de ellas de defectos en **las pruebas
+que se acababan de escribir**, encontrados por una revisión adversarial del
+propio cambio. Ese es el dato incómodo: la suite estuvo verde todo el tiempo.
+
+### 9.1 Una prueba nueva o modificada no vale hasta que se la ve roja
+
+La sección 2 lo pide en el paso RED y aun así se coló tres veces, porque solo se
+aplicó a funciones nuevas y no a pruebas que se estaban cambiando. El gesto que
+las habría cazado a las tres cuesta treinta segundos:
+
+```
+# romper a propósito lo que la prueba dice proteger
+sed -i '' "s/blankrows: false, raw: true/raw: true/" src/features/colaboradores/formatoImportacion.ts
+npx vitest run <la prueba>     # TIENE que ponerse roja
+git checkout -- <el archivo>
+```
+
+Las tres que pasaron sin comprobar nada:
+
+- Una fila de cadenas vacías **no es** una fila en blanco para Excel, así que el
+  fixture nunca tuvo el hueco que la prueba decía comprobar.
+- `userEvent.upload` **respeta el `accept` del input**, así que el archivo no
+  llegaba al manejador y la aserción se cumplía sola. Para ejercitar la guarda
+  hay que disparar el `change` a mano con `fireEvent`.
+- Una prueba de fechas que pasaba por dos errores que se cancelaban.
+
+### 9.2 Un fixture que no es un ejemplo de verdad no prueba nada de lo que dice
+
+`'A'.repeat(100)` pasaba como foto mientras solo se miraba la etiqueta. El día
+que la validación miró los bytes, esas pruebas no significaban nada y hubo que
+reescribirlas. Lo mismo con el importador: hasta que no hubo binarios de Excel
+reales, `leerHoja` no tenía red y una migración de biblioteca habría ido a ciegas.
+
+Si el fixture se puede escribir a mano, probablemente está probando nuestro
+código y no la costura que importa.
+
+### 9.3 Al extraer una regla compartida se migran TODAS las copias en el mismo commit
+
+`documentos.ts` se extrajo en su día y la copia dentro de `permisos.ts` se quedó,
+con su propio regex y su propio tope. Eso es **peor** que no haber extraído nada:
+parecía una sola regla y eran dos, y la que quedó atrás gobierna el camino más
+usado del producto.
+
+Antes de dar por extraída una regla: `grep` del patrón, no del nombre de la
+función. La copia vieja no importa nada, por eso no aparece buscando el import.
+
+### 9.4 Un `? :` sobre un conjunto abierto es un defecto esperando al tercer caso
+
+`tipo === 'application/pdf' ? PDF : imagen` funcionó mientras hubo dos formatos.
+Ese `else` es una suposición invisible («todo lo que no es PDF es una imagen»),
+estaba escrita nueve veces, y reventó entera al llegar Word.
+
+Cuando la pregunta es «de qué tipo es esto», la respuesta va en una función con
+un caso por valor y un `default` explícito, aunque hoy solo haya dos.
+
+### 9.5 `npm ci` cuando el disco y el lockfile no coinciden
+
+`npm install`, e incluso un `npm install paquete@version` explícito, respondían
+«up to date» con una versión distinta en disco de la que declaraba el lockfile.
+Cualquier prueba o build hecho así se midió contra otra cosa. Se comprueba con:
+
+```
+node -e "console.log(require('./node_modules/<paquete>/package.json').version)"
+```
+
+y se arregla solo con `npm ci`, que borra `node_modules` y reinstala desde el lock.
+
+### 9.6 Una fecha que viene de Excel se lee por el reloj de pared, no en UTC
+
+SheetJS construye el `Date` para que sus **partes locales** coincidan con lo que
+Excel muestra. Por eso `normalizarFecha` usa `getFullYear/getMonth/getDate` y no
+las partes UTC, y por eso una prueba que compare con `toISOString()` pasa en
+Bogotá y falla en Madrid.
+
+Y al generar un fixture con fecha, medianoche **local** (`new Date(2026, 0, 15)`)
+y no `Date.UTC`: con `Date.UTC` el archivo queda con el día anterior y además
+depende de la zona de la máquina que lo generó.
