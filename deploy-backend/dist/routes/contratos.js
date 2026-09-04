@@ -38,17 +38,20 @@ function limpiar(data, esNuevo) {
         out.estado = data.estado;
     if (data.observacion !== undefined)
         out.observacion = data.observacion || null;
-    if (data.documento === null) {
+    const cambio = (0, documentos_1.cambioDeDocumento)(data.documento, data.documentoNombre);
+    if (cambio.accion === 'rechazar')
+        return { ok: false, motivo: cambio.motivo };
+    if (cambio.accion === 'quitar') {
         out.documento = null;
         out.documentoTipo = null;
         out.documentoNombre = null;
     }
-    else if ((0, documentos_1.documentoValido)(data.documento)) {
-        out.documento = data.documento;
-        out.documentoTipo = data.documento.slice(5, data.documento.indexOf(';'));
-        out.documentoNombre = typeof data.documentoNombre === 'string' ? data.documentoNombre.slice(0, 120) : null;
+    else if (cambio.accion === 'guardar') {
+        out.documento = cambio.documento;
+        out.documentoTipo = cambio.tipo;
+        out.documentoNombre = cambio.nombre;
     }
-    return out;
+    return { ok: true, datos: out };
 }
 // El listado NO trae el documento (base64 pesado): solo si existe y cómo se
 // llama. El archivo se pide aparte, cuando alguien lo abre.
@@ -132,7 +135,10 @@ async function contratoRoutes(app) {
         });
         if (!col)
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
-        const datos = limpiar(body, true);
+        const limpio = limpiar(body, true);
+        if (!limpio.ok)
+            return reply.status(400).send({ error: limpio.motivo });
+        const datos = limpio.datos;
         if (!datos.tipo)
             return reply.status(400).send({ error: 'Falta el tipo de contrato.' });
         if (!datos.fechaInicio)
@@ -165,7 +171,10 @@ async function contratoRoutes(app) {
         });
         if (!existe)
             return reply.status(404).send({ error: 'Contrato no encontrado' });
-        const datos = limpiar(request.body, false);
+        const limpio = limpiar(request.body, false);
+        if (!limpio.ok)
+            return reply.status(400).send({ error: limpio.motivo });
+        const datos = limpio.datos;
         if (datos.estado === 'VIGENTE') {
             await prisma_1.prisma.contrato.updateMany({
                 where: { colaboradorId: existe.colaboradorId, estado: 'VIGENTE', id: { not: id } },
@@ -220,10 +229,13 @@ async function contratoRoutes(app) {
         if (!body.desde || !body.hasta)
             return reply.status(400).send({ error: 'La prórroga necesita fecha de inicio y de fin.' });
         const datos = { contratoId: id, desde: fechaBogota(body.desde), hasta: fechaBogota(body.hasta) };
-        if ((0, documentos_1.documentoValido)(body.documento)) {
-            datos.documento = body.documento;
-            datos.documentoTipo = body.documento.slice(5, body.documento.indexOf(';'));
-            datos.documentoNombre = typeof body.documentoNombre === 'string' ? body.documentoNombre.slice(0, 120) : null;
+        const adjunto = (0, documentos_1.cambioDeDocumento)(body.documento, body.documentoNombre);
+        if (adjunto.accion === 'rechazar')
+            return reply.status(400).send({ error: adjunto.motivo });
+        if (adjunto.accion === 'guardar') {
+            datos.documento = adjunto.documento;
+            datos.documentoTipo = adjunto.tipo;
+            datos.documentoNombre = adjunto.nombre;
         }
         // Se registra aunque el motor la marque como irregular: la pantalla avisa
         // fuerte, pero no bloquea. Hay excepciones y casos que el sistema no conoce,

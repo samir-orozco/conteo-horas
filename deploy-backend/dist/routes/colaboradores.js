@@ -422,6 +422,15 @@ async function colaboradorRoutes(app) {
                 fechaMinima: desde.toISOString().slice(0, 10),
             });
         }
+        // El soporte se comprueba ANTES de escribir nada. Lo que sigue son tres
+        // escrituras seguidas sin transacción (el colaborador, el evento y el
+        // contrato), así que rechazar a mitad de camino dejaría a la persona
+        // retirada y sin la constancia de por qué. Y `registrarEvento` descarta en
+        // silencio lo que no pasa, con lo cual el retiro quedaba hecho y la carta
+        // de renuncia no se guardaba en ninguna parte.
+        const soporte = (0, documentos_1.cambioDeDocumento)(documento, documentoNombre);
+        if (soporte.accion === 'rechazar')
+            return reply.status(400).send({ error: soporte.motivo });
         const colaborador = await prisma_1.prisma.colaborador.update({
             where: { id },
             data: {

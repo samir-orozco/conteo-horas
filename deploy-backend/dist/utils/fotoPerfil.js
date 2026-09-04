@@ -1,14 +1,15 @@
 "use strict";
-// Validación de la foto de perfil del colaborador.
-//
-// Va aparte de `documentos.ts` porque las reglas son distintas y más estrictas:
-// un contrato puede ser un PDF de 3 MB, un avatar no. Mezclarlas significaría
-// que subir el tope de los contratos afloja también el de las fotos.
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MAX_MINI = exports.MAX_FOTO = void 0;
 exports.fotoPerfilValida = fotoPerfilValida;
 exports.fotoParaEnrolar = fotoParaEnrolar;
 exports.miniValida = miniValida;
+const documentos_1 = require("./documentos");
+// Validación de la foto de perfil del colaborador.
+//
+// Va aparte de `documentos.ts` porque las reglas son distintas y más estrictas:
+// un contrato puede ser un PDF de 3 MB, un avatar no. Mezclarlas significaría
+// que subir el tope de los contratos afloja también el de las fotos.
 // Tope del data URI ya en base64. Base64 infla un 33%, así que esto son unos
 // 500 KB de imagen real: de sobra para un círculo de 96 píxeles, y muy por
 // encima de los ~20 KB que produce el escaneo facial.
@@ -18,9 +19,15 @@ exports.MAX_FOTO = 700000;
 // SVG queda fuera a propósito, aunque sea una imagen: es un documento que puede
 // traer scripts, y servido desde el propio origen del sitio esos scripts corren
 // con sus permisos.
-const PATRON = /^data:image\/(jpeg|png|webp);base64,.+/;
+//
+// Se comprueba la FIRMA DE BYTES y no solo la etiqueta, con la misma función
+// que los documentos. La etiqueta la escribe quien sube: sin esto bastaba con
+// poner "image/jpeg" delante de cualquier cosa. Y se reusa en vez de copiarse
+// para no repetir lo que pasó con permisos.ts, que tenía su propia copia del
+// regex y se quedó atrás el día que se agregó un formato.
+const FORMATOS_DE_FOTO = new Set(['image/jpeg', 'image/png', 'image/webp']);
 function fotoPerfilValida(v) {
-    return typeof v === 'string' && PATRON.test(v) && v.length < exports.MAX_FOTO;
+    return typeof v === 'string' && v.length < exports.MAX_FOTO && (0, documentos_1.firmaCoincide)(v, FORMATOS_DE_FOTO);
 }
 // Qué foto debe quedar después de un enrolamiento facial, o null si ninguna.
 //

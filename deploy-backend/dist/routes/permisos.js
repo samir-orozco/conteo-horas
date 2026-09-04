@@ -4,12 +4,17 @@ exports.default = permisoRoutes;
 const index_1 = require("../index");
 const capacidades_1 = require("../utils/capacidades");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
-// Evidencia: imagen o PDF en base64 data URI, con tope de tamaño (~4 MB de texto).
-const MAX_EVIDENCIA = 4200000;
-function evidenciaValida(v) {
-    return typeof v === 'string' && /^data:(image\/(jpeg|png|webp)|application\/pdf);base64,/.test(v) && v.length < MAX_EVIDENCIA;
-}
-// Campos que la empresa puede enviar (evita pasar basura a Prisma)
+// La validación de la evidencia vivía aquí, duplicada: una copia del regex y
+// del tope que nunca se migró el día que se extrajo `documentos.ts`. Eso hacía
+// que agregar un formato en un sitio no lo agregara en el otro, que es
+// exactamente lo que el comentario de cabecera de documentos.ts dice que se
+// quiso evitar. Ahora las dos usan la misma función.
+const documentos_1 = require("../utils/documentos");
+// Campos que la empresa puede enviar (evita pasar basura a Prisma).
+//
+// Devuelve el motivo en vez de los datos cuando la evidencia no se acepta: la
+// ruta lo convierte en un 400. Antes se descartaba sin decir nada y la novedad
+// se guardaba sin el adjunto que la persona creía haber subido.
 function limpiarPermiso(data, esNuevo) {
     const out = {};
     if (esNuevo)
@@ -24,18 +29,20 @@ function limpiarPermiso(data, esNuevo) {
         out.fechaFin = data.fechaFin;
     if (data.aprobado !== undefined)
         out.aprobado = data.aprobado;
-    // Evidencia: null = quitar; string válido = guardar; undefined = no tocar
-    if (data.evidencia === null) {
+    const cambio = (0, documentos_1.cambioDeDocumento)(data.evidencia, data.evidenciaNombre);
+    if (cambio.accion === 'rechazar')
+        return { ok: false, motivo: cambio.motivo };
+    if (cambio.accion === 'quitar') {
         out.evidencia = null;
         out.evidenciaTipo = null;
         out.evidenciaNombre = null;
     }
-    else if (evidenciaValida(data.evidencia)) {
-        out.evidencia = data.evidencia;
-        out.evidenciaTipo = data.evidencia.slice(5, data.evidencia.indexOf(';'));
-        out.evidenciaNombre = typeof data.evidenciaNombre === 'string' ? data.evidenciaNombre.slice(0, 120) : null;
+    else if (cambio.accion === 'guardar') {
+        out.evidencia = cambio.documento;
+        out.evidenciaTipo = cambio.tipo;
+        out.evidenciaNombre = cambio.nombre;
     }
-    return out;
+    return { ok: true, datos: out };
 }
 // El listado NO trae la evidencia (base64 pesado); solo el tipo/nombre para saber que existe.
 const SELECT_LISTA = {
@@ -81,12 +88,15 @@ async function permisoRoutes(app) {
         });
         if (!col)
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
-        if (evidenciaValida(data.evidencia)) {
+        if ((0, documentos_1.documentoValido)(data.evidencia)) {
             const cap = await (0, capacidades_1.capacidadesEmpresa)(request.empresaId);
             if (!cap.features.evidencia)
                 return reply.status(403).send({ error: 'Adjuntar evidencia está disponible en el plan Profesional.', codigo: 'FUNCION_PLAN', funcion: 'evidencia' });
         }
-        const permiso = await index_1.prisma.permiso.create({ data: limpiarPermiso(data, true) });
+        const limpio = limpiarPermiso(data, true);
+        if (!limpio.ok)
+            return reply.status(400).send({ error: limpio.motivo });
+        const permiso = await index_1.prisma.permiso.create({ data: limpio.datos });
         return reply.status(201).send(permiso);
     });
     app.put('/:id', auth, async (request, reply) => {
@@ -97,7 +107,10 @@ async function permisoRoutes(app) {
         if (!existente)
             return reply.status(404).send({ error: 'Permiso no encontrado' });
         const data = request.body;
-        return index_1.prisma.permiso.update({ where: { id }, data: limpiarPermiso(data, false) });
+        const limpio = limpiarPermiso(data, false);
+        if (!limpio.ok)
+            return reply.status(400).send({ error: limpio.motivo });
+        return index_1.prisma.permiso.update({ where: { id }, data: limpio.datos });
     });
     app.delete('/:id', auth, async (request, reply) => {
         const { id } = request.params;

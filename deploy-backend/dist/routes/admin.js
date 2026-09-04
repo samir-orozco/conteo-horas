@@ -8,6 +8,7 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const index_1 = require("../index");
 const suscripcion_1 = require("../utils/suscripcion");
 const planes_1 = require("../utils/planes");
+const comprobantes_1 = require("../utils/comprobantes");
 const DIA_MS = 24 * 60 * 60 * 1000;
 async function adminRoutes(app) {
     const auth = { preHandler: [app.requireSuperAdmin] };
@@ -315,6 +316,12 @@ async function adminRoutes(app) {
     app.post('/empresas/:id/pagos', auth, async (request, reply) => {
         const { id } = request.params;
         const { monto, metodo, wompiTransaccionId, nota, comprobanteBase64 } = request.body;
+        // El comprobante se comprueba antes de tocar la suscripción. Es la única
+        // columna de archivo que no se validaba, y el archivo lo termina viendo el
+        // admin de la empresa, no solo quien lo sube.
+        const soporte = (0, comprobantes_1.comprobanteAGuardar)(comprobanteBase64, null);
+        if (!soporte.ok)
+            return reply.status(400).send({ error: soporte.motivo });
         const susc = await index_1.prisma.suscripcion.findUnique({ where: { empresaId: id } });
         if (!susc)
             return reply.status(404).send({ error: 'La empresa no tiene suscripción' });
@@ -326,7 +333,7 @@ async function adminRoutes(app) {
             metodo: metodo ?? 'MANUAL',
             wompiTransaccionId,
             nota,
-            comprobanteBase64,
+            comprobanteBase64: soporte.comprobante ?? undefined,
             registradoPor: payload?.email,
         });
         return reply.status(201).send({ ...pago, comprobanteBase64: undefined });
