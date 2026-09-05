@@ -273,6 +273,61 @@ números malos. Cada uno con su comprobación antes de tocarlo.
   pero son los más expuestos: si le cambian el horario, esos días se mueven
   enteros. Vale la pena averiguar por qué faltan.
 
+### Las 4 vulnerabilidades del backend: diagnosticadas, sin aplicar
+
+**Estado al 4 de septiembre de 2026: el código está desplegado y verificado; esto
+quedó pendiente y NO es urgente.** Son avisos de dependencias en un servidor cuyo
+`node_modules` funciona, no un agujero abierto. Se intentó aplicar en el
+despliegue de ese día y se paró a propósito.
+
+Lo que se quiere: subir `fastify` 5.8.5 a 5.12.3, `find-my-way` 9.6.0 a 9.9.0,
+`fast-uri` 3.1.2 a 3.1.7 y `brace-expansion` 5.0.6 a 5.0.9. Ninguna cambia de
+major y ninguna toca `package.json`: las versiones parcheadas viven solo en el
+lockfile, así que el artefacto (que lleva únicamente el `dist`) no las arrastra.
+
+**POR QUÉ FALLA, ya diagnosticado con el log en la mano.** `npm install` en el
+servidor muere con:
+
+    npm error Cannot read properties of null (reading 'edgesOut')
+
+El mensaje no dice nada, pero el log sí. Las tres líneas anteriores al error:
+
+    idealTree:node_modules/vitest
+    silly fetch manifest vitest@4.1.11
+    silly fetch manifest @vitest/coverage-v8@4.1.11
+       at #loadPeerSet (build-ideal-tree.js:1289)
+
+Es el npm 10.9.8 del servidor atragantándose con el grafo de dependencias PEER de
+**vitest**, que es una herramienta de pruebas que el servidor no debería tener
+instalada. `--omit=dev` NO lo arregla: npm construye el árbol ideal completo
+desde el `package.json` y solo después omite las de desarrollo, así que la
+resolución que revienta ocurre igual.
+
+**Dos hipótesis que se descartaron por el camino, para no repetirlas:**
+- No es el archivo oculto `node_modules/.package-lock.json`.
+- No es el campo `libc` de npm 11, aunque ESE sí era un problema real y ya está
+  arreglado en el repo (ver CLAUDE.md 9.7). Arreglarlo no hizo que el install
+  pasara: eran dos cosas distintas y solo una era la causa.
+
+**LA SALIDA, para el día que se retome.** El servidor no tiene por qué resolver
+devDependencies. Lo que hay que hacer es darle un `package.json` de producción,
+sin el bloque `devDependencies`, generado al compilar el artefacto. Con eso el
+árbol ideal no incluye vitest, `npm install` no tiene qué romper, y de paso el
+servidor deja de cargar typescript, nodemon y vitest que hoy tiene instalados y
+no usa nunca (el despliegue sube el `dist` ya compilado).
+
+Alternativas peores, por si acaso: subir el npm del servidor (es hosting
+compartido, no conviene) o bajar vitest de versión (castigar el desarrollo por un
+problema del servidor).
+
+**Estado real en el que quedó el servidor:** `node_modules` intacto y la app
+funcionando (comprobado con `/api/health`). El `package.json` y el
+`package-lock.json` de `~/horapro-co-api` quedaron sobrescritos con los del
+repo, que es una situación coherente y no estorba: solo se consultan al
+instalar. Las versiones que corren siguen siendo las de antes.
+
+---
+
 ### face-api.js: la vulnerabilidad que se atiende cuando se toque el kiosco
 
 **Decisión tomada el 4 de septiembre de 2026: NO se arregla sola, se arregla
