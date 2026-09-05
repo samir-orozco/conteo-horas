@@ -416,3 +416,47 @@ Bogotá y falla en Madrid.
 Y al generar un fixture con fecha, medianoche **local** (`new Date(2026, 0, 15)`)
 y no `Date.UTC`: con `Date.UTC` el archivo queda con el día anterior y además
 depende de la zona de la máquina que lo generó.
+
+### 9.7 El lockfile lo tiene que entender el npm DEL SERVIDOR, no el de aquí
+
+El servidor corre **npm 10.9.8** y esta máquina **npm 11**. npm 11 escribe en el
+lockfile un campo `libc` que npm 10 no entiende, y al instalar con ese lockfile
+el servidor revienta con un error que no dice nada de la causa:
+
+```
+npm error Cannot read properties of null (reading 'edgesOut')
+```
+
+Pasó en el despliegue del 4 de septiembre de 2026, en producción, después de que
+el `cp` ya hubiera sobrescrito el lockfile del servidor. La app no se cayó
+(`node_modules` quedó intacto), pero el lockfile bueno se perdió.
+
+**Antes de mandar un `package-lock.json` al servidor, adaptarlo a su npm.** Y
+hacerlo dándole el lockfile ADEMÁS del package.json, no solo el package.json:
+
+```
+mkdir -p /tmp/lock10 && cp backend/package.json backend/package-lock.json /tmp/lock10/
+cd /tmp/lock10 && npx --yes npm@10.9.8 install --package-lock-only
+```
+
+La diferencia entre las dos formas no es menor y hay que verla:
+
+| se le pasa | resultado |
+|---|---|
+| solo `package.json` | resuelve DESDE CERO: movió 46 paquetes, con `fastify-plugin` de 5 a **6** |
+| `package.json` + el lockfile | solo lo reescribe en su formato: **0 versiones cambian** |
+
+Comprobarlo siempre, comparando versión por versión antes de commitear:
+
+```
+python3 -c "
+import json,subprocess
+a=json.loads(subprocess.run(['git','show','HEAD:backend/package-lock.json'],capture_output=True,text=True).stdout)['packages']
+b=json.load(open('backend/package-lock.json'))['packages']
+print('cambian de versión:', len([p for p in set(a)&set(b) if a[p].get('version')!=b[p].get('version')]))
+"
+```
+
+Y ojo con el orden de los comandos del despliegue: `cp ... && npm install` deja
+el archivo copiado aunque el install falle. Si el `cp` pisa algo del servidor,
+hay que tener con qué reponerlo ANTES de correrlo.
