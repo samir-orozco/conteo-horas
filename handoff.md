@@ -273,6 +273,74 @@ números malos. Cada uno con su comprobación antes de tocarlo.
   pero son los más expuestos: si le cambian el horario, esos días se mueven
   enteros. Vale la pena averiguar por qué faltan.
 
+### WhatsApp muestra "One moment, please..." al compartir el link
+
+**Reportado el 5 de septiembre de 2026 con captura.** Al pegar
+`https://horapro.co/#precios` en WhatsApp, la vista previa no muestra el título
+ni la descripción del sitio: muestra **"One moment, please..."** y `horapro.co`.
+
+**Por qué importa comercialmente y no es cosmético:** el canal principal del
+producto es WhatsApp (la propia landing dice "soporte por WhatsApp"). Cada link
+que se comparta a un prospecto llega con esa tarjeta en vez del titular y la
+promesa. Es la primera impresión, y hoy dice algo que parece un error del sitio.
+
+**Qué es esa página.** Es el interstitial de protección de bots del hosting
+(Banahosting). Trae `<title>One moment, please...</title>` y un
+`setTimeout(() => window.location.reload(), 5000)`: espera cinco segundos y
+recarga. Un navegador humano pasa sin enterarse; un rastreador que solo pide el
+HTML una vez se queda con esa página y la usa como vista previa.
+
+---
+
+**ANTES DE TOCAR NADA, LEER ESTO.** El 3 de septiembre se diagnosticó esta misma
+página como "el hosting bloquea a los rastreadores", se redactó un ticket y se
+envió a Banahosting. **No pudieron reproducirlo, y tenían razón**: el desafío lo
+había disparado la propia sesión con unas quince peticiones `curl` seguidas.
+Está en la memoria del proyecto como `horapro-nada-a-terceros-sin-verificar`.
+
+La diferencia esta vez es que la evidencia NO viene de nuestra actividad: es una
+captura de WhatsApp haciendo la petición. Eso hace el reporte creíble, pero **no
+convierte la hipótesis en causa**. Sigue sin saberse si le pasa a toda petición
+de rastreador, solo a algunas, o solo cuando la IP viene de cierto rango.
+
+**Nada se le manda al hosting hasta haber reproducido el problema
+deliberadamente, desde un estado limpio y descartando que la causa seamos
+nosotros.**
+
+---
+
+**Cómo diagnosticarlo cuando se retome, en este orden:**
+
+1. **El fragmento `#precios` es irrelevante.** No viaja al servidor: los
+   fragmentos son del lado del cliente. No perder tiempo ahí.
+2. **Una sola petición, con el User-Agent real del rastreador de WhatsApp**, y
+   comparar con una con User-Agent de navegador. Si el interstitial sale solo con
+   el UA de bot, la causa es la regla de protección y no el ritmo de peticiones.
+   Esperar entre intentos: el objetivo es medir el comportamiento del servidor,
+   no volver a disparar la protección como la vez pasada.
+3. **Probar con otras herramientas que consultan como bot**, para tener más de
+   una fuente: el depurador de enlaces de Facebook (que usa el mismo rastreador
+   que WhatsApp), o pedir la página desde otra red.
+4. **Mirar primero lo que se puede tocar sin ticket:** en cPanel suele haber
+   ajustes de seguridad (ImunifyAV / protección de bots) donde se puede permitir
+   rastreadores conocidos. Si el arreglo está ahí, no hace falta involucrar a
+   nadie.
+5. Solo si queda demostrado que es una regla del hosting que no se puede tocar
+   desde cPanel, escribir el ticket, y escribirlo con la reproducción incluida.
+
+**Trampa al verificar el arreglo:** WhatsApp guarda en caché la vista previa de
+cada URL. Después de corregirlo, el mismo link va a seguir mostrando la tarjeta
+vieja durante un tiempo. Para comprobar de verdad hay que usar una URL que
+WhatsApp no haya visto todavía (por ejemplo agregándole un parámetro
+`?v=2`), o esperar a que su caché expire.
+
+**Dato a favor de que sí hay algo que arreglar:** el mismo interstitial apareció
+en dos días distintos y en dos contextos distintos (curl desde consola y el
+rastreador de WhatsApp). Que la primera vez la causa fuera nuestra no significa
+que esta también lo sea.
+
+---
+
 ### Las 4 vulnerabilidades del backend: diagnosticadas, sin aplicar
 
 **Estado al 4 de septiembre de 2026: el código está desplegado y verificado; esto
