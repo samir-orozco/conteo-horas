@@ -1,6 +1,6 @@
 # Política de Tratamiento de Datos Personales
 
-**HoraPro** · Versión 1.0
+**HoraPro** · Versión 1.0 · Vigencia: 7 de septiembre de 2026
 
 ## 1. Quiénes somos
 
@@ -171,7 +171,7 @@ Atiende las peticiones, consultas y reclamos el propio responsable, Samir Orozco
 
 Si cambiamos algo sustancial, en especial las finalidades del tratamiento, se lo informaremos antes de aplicarlo, por correo o dentro del producto, y publicaremos la nueva versión con su fecha en esta misma dirección.
 
-Esta política rige desde el 1 de agosto de 2026. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.
+Esta política rige desde el 7 de septiembre de 2026. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.
 
 **Registro Nacional de Bases de Datos.** La obligación de inscribir las bases de datos ante la Superintendencia de Industria y Comercio recae sobre sociedades y entidades sin ánimo de lucro que superan el umbral de activos fijado por la norma, y sobre entidades públicas. Las personas naturales están exceptuadas, y por eso HoraPro no está inscrito en ese registro. Esto no lo exime de ninguna de las demás obligaciones de la Ley 1581, que se cumplen en los términos de esta política.
 
@@ -258,9 +258,13 @@ biométrico de un exempleado, y qué hay que borrar en ese momento?**
 **g) Menores de edad.** El producto admite contratos de aprendizaje, y un
 aprendiz puede ser menor. **¿Hay algún requisito adicional?**
 
-**h) La fecha de vigencia.** El documento dice que rige desde el 1 de agosto de
-2026, por decisión del titular del negocio. **Se publica después de esa fecha.**
-Conviene que la revisión confirme que esa datación es correcta, o la ajuste.
+**h) La fecha de vigencia.** El documento rige desde la fecha en que de verdad se
+publique, no antes. Se consideró fecharlo hacia atrás y se descartó: durante ese
+período el sitio afirmaba en su FAQ que se pedía la autorización biométrica en
+pantalla, cosa que no era cierta, así que una fecha anterior habría declarado que
+todo esto ya regía justo cuando había una afirmación falsa publicada. Esa
+afirmación ya se corrigió. Se menciona por transparencia, no porque quede nada
+pendiente.
 
 ## 4. Lo que el documento deliberadamente NO promete
 

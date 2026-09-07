@@ -725,7 +725,7 @@ export function paginaLegal(doc) {
       </aside>
       <article class="art">
         ${aviso}
-        ${doc.secciones.map(x => `<h2 id="${x.id}">${esc(x.titulo)}</h2>\n${x.html}`).join('\n')}
+        ${doc.secciones.map(x => `<h2 id="${x.id}">${esc(x.titulo)}</h2>\n${typeof x.html === 'function' ? x.html(doc) : x.html}`).join('\n')}
       </article>
     </div>
   </main>`;

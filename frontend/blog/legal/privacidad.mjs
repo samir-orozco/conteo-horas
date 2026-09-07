@@ -34,9 +34,14 @@ export const PRIVACIDAD = {
   descripcion: 'Qué datos personales trata HoraPro, para qué, con quién los comparte, cuánto los conserva y cómo ejercer sus derechos. Ley 1581 de 2012.',
   version: '1.0',
 
-  // Mientras esto sea true, la página no se indexa ni se enlaza desde el pie.
-  // Se pone en false cuando estén los datos del responsable y la revisión legal.
+  // Estas dos se cambian JUNTAS, el día que se publique. Separarlas es la forma
+  // de que una se quede atrás: la fecha de vigencia solo es honesta si es el día
+  // en que el documento de verdad quedó publicado.
+  //
+  // `borrador: true` mantiene la página con noindex, fuera del sitemap y sin
+  // enlazar desde el pie.
   borrador: true,
+  fechaVigencia: '7 de septiembre de 2026',
 
   // Lo que falta y quién lo tiene que aportar. Se pinta en la propia página
   // mientras `borrador` sea true, para que sea imposible publicarla a medias.
@@ -194,8 +199,8 @@ export const PRIVACIDAD = {
     {
       id: 'cambios',
       titulo: '12. Cambios y vigencia',
-      html: `<p>Si cambiamos algo sustancial, en especial las finalidades del tratamiento, se lo informaremos antes de aplicarlo, por correo o dentro del producto, y publicaremos la nueva versión con su fecha en esta misma dirección.</p>
-<p>Esta política rige desde el 1 de agosto de 2026. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.</p>
+      html: doc => `<p>Si cambiamos algo sustancial, en especial las finalidades del tratamiento, se lo informaremos antes de aplicarlo, por correo o dentro del producto, y publicaremos la nueva versión con su fecha en esta misma dirección.</p>
+<p>Esta política rige desde el ${doc.fechaVigencia}. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.</p>
 <p><b>Registro Nacional de Bases de Datos.</b> La obligación de inscribir las bases de datos ante la Superintendencia de Industria y Comercio recae sobre sociedades y entidades sin ánimo de lucro que superan el umbral de activos fijado por la norma, y sobre entidades públicas. Las personas naturales están exceptuadas, y por eso HoraPro no está inscrito en ese registro. Esto no lo exime de ninguna de las demás obligaciones de la Ley 1581, que se cumplen en los términos de esta política.</p>`,
     },
   ],
