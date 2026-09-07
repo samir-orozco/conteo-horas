@@ -273,6 +273,72 @@ números malos. Cada uno con su comprobación antes de tocarlo.
   pero son los más expuestos: si le cambian el horario, esos días se mueven
   enteros. Vale la pena averiguar por qué faltan.
 
+### Antes de tocar lo biométrico: lo que hay que arreglar primero
+
+**Anotado el 6 de septiembre de 2026, a peticion del dueno.** El trabajo de
+deteccion de vida y consentimiento vive en la rama
+`mejoras/rostro-vida-y-consentimiento`, y NO debe avanzar hasta resolver lo de
+abajo, porque construir encima empeora la exposicion en vez de reducirla.
+
+El detonante: el dueno reporto que un trabajador marcaba mostrando la foto de un
+companero en el celular, y que **pasaba siempre**. Al estudiarlo aparecio que ese
+no es el agujero mas ancho, y que hay un problema legal mayor detras.
+
+**1. La puerta de la cedula esta abierta POR DEFECTO.** `kioscoConfig.ts:19`
+hace `cfg?.valor !== '0'`, asi que toda empresa que nunca toco ese ajuste la
+tiene activa. `POST /worker/login` (worker.ts:246) autentica **con la cedula
+sola**, sin PIN ni nada, y el kiosco ofrece ese boton a los 8 segundos
+(`SEG_FALLBACK_CEDULA`). Cualquier prueba de vida que se despliegue sin cerrar
+esto no elimina el fraude: lo muda al camino mas comodo.
+
+**2. No se puede medir el problema.** `Registro` no guarda por que metodo se
+marco, y `Marcador.tsx:272` guarda la misma `fotoEntrada` por los dos caminos.
+Hoy es imposible responder "cuantas marcaciones del mes pasado entraron sin
+camara". Es lo primero que hay que hacer, porque cuesta cero riesgo y decide
+todo lo demas.
+
+**3. EL CONSENTIMIENTO BIOMETRICO NO SE GUARDA.** El checkbox de la Ley 1581 que
+existe en `ColaboradorDetalle.tsx:535` es decorativo: `capturarRostro`
+(ColaboradorDetalle.tsx:239-247) manda `{ descriptores, foto, fotoMini }` y nada
+mas. El comentario de `schema.prisma:210` afirma que `rostroEnroladoEn` es "la
+evidencia del consentimiento" y NO LO ES. Hoy HoraPro no puede demostrar que
+ningun trabajador autorizo el tratamiento de su dato biometrico.
+
+**4. El vector facial se guarda sin cifrar.** `rostroDescriptor` es una columna
+`Json` en texto plano. La normativa que reviso el dueno exige "almacenamiento
+cifrado del vector facial (no de la foto abierta)". Ademas
+`Registro.fotoEntrada`/`fotoSalida` guardan la foto abierta de cada marcacion.
+Es la brecha mas grande de las cuatro y merece consulta con un abogado antes de
+seguir construyendo encima. Las sanciones de la SIC llegan a 2.000 SMMLV.
+
+**5. `PUT /colaboradores/:id` deja escribir el biometrico a mano.** Hallazgo
+lateral y preexistente: `colaboradores.ts:370-385` hace spread ciego del cuerpo
+hacia `prisma.colaborador.update`, y `normalizar` (colaboradores.ts:155-161) no
+filtra campos. O sea que hoy se puede escribir `rostroDescriptor` y
+`rostroEnroladoEn` por esa ruta. Hay que blindarla con una lista de campos no
+editables.
+
+**6. Falta la politica de privacidad publicada.** En curso al momento de
+escribir esto: pagina estatica enlazada desde el pie del inicio.
+
+**7. El RNBD.** Registro Nacional de Bases de Datos ante la SIC. Es tramite, no
+codigo, pero conviene saber si aplica segun los umbrales vigentes.
+
+**LO QUE SI ESTA BIEN, comprobado y no supuesto:** la retencion de 2 meses de las
+fotos de marcacion es REAL. `limpiarFotosAntiguas` (index.ts:169) borra las fotos
+de registros de mas de 60 dias, corre al arrancar y cada 24 horas, y su `catch`
+deja huella distinguible del camino normal. La politica puede afirmarlo.
+Dos matices menores: solo escribe en el log CUANDO borra algo, asi que si dejara
+de funcionar nadie se enteraria (regla 8.3.2); y filtra por `creadoEn` sobre
+`registros`, la tabla que mas crece, sin que nadie haya visto su `EXPLAIN`
+(regla 8.4).
+
+**Orden propuesto:** politica de privacidad, luego telemetria (punto 2), luego
+consentimiento (punto 3), y solo despues la deteccion de vida. El cifrado (punto
+4) va en paralelo y depende de la respuesta del abogado.
+
+---
+
 ### WhatsApp muestra "One moment, please..." al compartir el link
 
 **Reportado el 5 de septiembre de 2026 con captura.** Al pegar
