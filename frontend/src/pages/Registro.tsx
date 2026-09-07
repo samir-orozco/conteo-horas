@@ -123,7 +123,7 @@ export default function Registro() {
               className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold py-3 rounded-xl disabled:opacity-60">
               {loading ? 'Creando cuenta...' : <>Empezar prueba gratis <ArrowRight size={17} /></>}
             </button>
-            <p className="text-xs text-muted text-center">Al crear la cuenta aceptas los términos de HoraPro. No se cobra durante la prueba.</p>
+            <p className="text-xs text-muted text-center">No se cobra durante la prueba.</p>
           </form>
 
           <CreditoKrumlab className="mt-10 text-center" />

@@ -314,7 +314,7 @@ function avatar() {
 // `estilos` y `script` son opcionales: los usan las calculadoras, que necesitan
 // CSS y una pizca de JavaScript propios. Los artículos no los pasan, así que no
 // cargan ni un byte de más.
-function documento({ titulo, descripcion, ruta, jsonLd, cuerpo, imagen, estilos, script }) {
+function documento({ titulo, descripcion, ruta, jsonLd, cuerpo, imagen, estilos, script, robots }) {
   const url = `${SITIO.url}${ruta}`;
   const og = imagen ? `${SITIO.url}${imagen}` : `${SITIO.url}/og-image.png`;
   return `<!doctype html>
@@ -325,7 +325,7 @@ function documento({ titulo, descripcion, ruta, jsonLd, cuerpo, imagen, estilos,
 <title>${esc(titulo)}</title>
 <meta name="description" content="${esc(descripcion)}" />
 <link rel="canonical" href="${url}" />
-<meta name="robots" content="index, follow, max-image-preview:large" />
+<meta name="robots" content="${robots || 'index, follow, max-image-preview:large'}" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <meta name="theme-color" content="#FFD85E" />
 <meta property="og:type" content="${ruta === '/blog/' ? 'website' : 'article'}" />
@@ -686,5 +686,72 @@ export function paginaArticulo(a, todos) {
   return documento({
     titulo: a.tituloSeo, descripcion: a.descripcion,
     ruta: `/blog/${a.slug}/`, imagen: a.imagen, jsonLd, cuerpo,
+  });
+}
+
+// Una página legal: un documento largo, con índice lateral y sin adornos.
+//
+// Va aparte de `paginaArticulo` a propósito. Un artículo del blog es contenido
+// de mercadeo y lleva remate, compartir y artículos relacionados; una política
+// de tratamiento de datos es un documento que alguien viene a leer porque lo
+// necesita, y meterle una llamada a la acción al lado sería de mal gusto y de
+// mal criterio.
+//
+// Mientras `doc.borrador` sea true sale con `noindex` y pinta arriba la lista de
+// lo que falta. Es a propósito: un documento legal a medias, indexado, es peor
+// que no tenerlo, porque queda publicado como declaración.
+export function paginaLegal(doc) {
+  const aviso = doc.borrador ? `<div class="aviso-borrador">
+    <p><b>Borrador. No publicado.</b> Este documento describe con precisión lo que el software hace hoy, pero le falta información que solo puede aportar el responsable, y tiene que revisarlo un abogado antes de publicarse.</p>
+    <ul>${doc.pendientes.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
+  </div>` : '';
+
+  const cuerpo = `<div class="art-cab"><div class="env">
+    <nav class="migas" aria-label="Ruta">
+      <a href="/">Inicio</a><span class="sep">&rsaquo;</span><span class="pastilla">Legal</span>
+    </nav>
+    <div style="max-width:820px">
+      <h1>${esc(doc.h1)}</h1>
+      <p style="font-size:17px;color:#4a4a4a;margin:0">Versión ${esc(doc.version)}. Ley 1581 de 2012 y Decreto 1377 de 2013.</p>
+    </div>
+  </div></div>
+
+  <main class="env">
+    <div class="cuerpo-rej">
+      <aside class="lateral">
+        <div class="indice"><h4>En esta página</h4><ol>
+          ${doc.secciones.map(x => `<li><a href="#${x.id}">${esc(x.titulo)}</a></li>`).join('')}
+        </ol></div>
+      </aside>
+      <article class="art">
+        ${aviso}
+        ${doc.secciones.map(x => `<h2 id="${x.id}">${esc(x.titulo)}</h2>\n${x.html}`).join('\n')}
+      </article>
+    </div>
+  </main>`;
+
+  return documento({
+    titulo: doc.titulo,
+    descripcion: doc.descripcion,
+    ruta: doc.ruta,
+    robots: doc.borrador ? 'noindex, nofollow' : undefined,
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: doc.h1,
+      description: doc.descripcion,
+      url: `${SITIO.url}${doc.ruta}`,
+      inLanguage: 'es-CO',
+    },
+    estilos: `
+.aviso-borrador{background:#FFF4D6;border:1px solid #F0C64A;border-radius:12px;padding:16px 18px;margin:0 0 28px}
+.aviso-borrador p{margin:0 0 8px}
+.aviso-borrador ul{margin:0;padding-left:20px;font-size:14px;color:#5a4a1a}
+.pend{background:#FFE9A8;padding:1px 6px;border-radius:5px;font-weight:700;color:#7a5c00}
+.tabla-legal{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px}
+.tabla-legal th,.tabla-legal td{border:1px solid #e6e6e6;padding:10px 12px;text-align:left;vertical-align:top}
+.tabla-legal th{background:#fafafa;font-weight:700}
+`,
+    cuerpo,
   });
 }

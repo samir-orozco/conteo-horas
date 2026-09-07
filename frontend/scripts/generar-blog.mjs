@@ -13,10 +13,11 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ARTICULOS, SITIO } from '../blog/articulos/index.mjs';
-import { paginaIndice, paginaArticulo, paginaCalculadora, paginaCalculadorasIndice } from '../blog/plantilla.mjs';
+import { paginaIndice, paginaArticulo, paginaCalculadora, paginaCalculadorasIndice, paginaLegal} from '../blog/plantilla.mjs';
 import calculadoraHorasExtra from '../blog/calculadoras/horas-extra.mjs';
 import calculadoraJornada42 from '../blog/calculadoras/jornada-42-horas.mjs';
 import calculadoraLiquidacion from '../blog/calculadoras/liquidacion.mjs';
+import { PRIVACIDAD } from '../blog/legal/privacidad.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(raiz, 'dist');
@@ -82,5 +83,10 @@ ${urls.map(u => `  <url>
   </url>`).join('\n')}
 </urlset>
 `;
+// La política de privacidad. Mientras sea borrador se escribe igual (para poder
+// verla en local) pero NO entra al sitemap y sale con noindex: un documento
+// legal a medias, indexado, es peor que no tenerlo.
+await escribir(`${PRIVACIDAD.ruta.replace(/^\/|\/$/g, '')}/index.html`, paginaLegal(PRIVACIDAD));
+
 await escribir('sitemap.xml', sitemap);
 console.log(`\n${ARTICULOS.length} artículos y ${CALCULADORAS.length} calculadoras publicadas.\n`);
