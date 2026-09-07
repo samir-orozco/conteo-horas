@@ -9,6 +9,12 @@
 // que solo puede aportar el dueño del negocio. Mientras existan, la página sale
 // con `noindex` y no se enlaza desde el pie, para que no se publique a medias.
 //
+// DOS COSAS QUE EL TEXTO YA AFIRMA Y QUE HAY QUE DEJAR CIERTAS ANTES DE PUBLICAR:
+//   1. La copia de seguridad semanal que sobreescribe la anterior. El dueño se
+//      comprometió a configurarla; mientras no exista, esa fila de la tabla de
+//      conservación es una promesa y no una descripción.
+//   2. La casilla privacidad@horapro.co, que es el canal formal declarado.
+//
 // ANTES DE PUBLICARLA TIENE QUE REVISARLA UN ABOGADO. Este archivo describe con
 // precisión lo que el software hace; no sustituye el concepto jurídico sobre si
 // eso basta.
@@ -36,7 +42,7 @@ export const PRIVACIDAD = {
   // mientras `borrador` sea true, para que sea imposible publicarla a medias.
   pendientes: [
     'Crear de verdad la casilla privacidad@horapro.co y que alguien la lea: los plazos de 10 y 15 días hábiles corren desde que llega el mensaje.',
-    'Preguntarle a Banahosting cada cuánto hace copias de seguridad y cuánto las conserva, y cuánto guarda los registros del servidor.',
+    'DEJAR CONFIGURADA DE VERDAD la copia semanal que sobreescribe la anterior, ANTES de publicar. Hoy la política ya lo afirma.',
     'Revisión de un abogado antes de publicar.',
   ],
 
@@ -119,8 +125,8 @@ export const PRIVACIDAD = {
 <tr><td>Ficha del trabajador, contratos, novedades y sus soportes</td><td>Mientras dure la relación de la empresa con HoraPro y mientras la empresa deba conservarlos por sus obligaciones laborales, contables y legales. El retiro de un trabajador lo marca como inactivo y <b>no elimina su información</b>.</td></tr>
 <tr><td>Descriptor facial y foto de perfil</td><td>Hasta que la empresa los elimine desde la ficha del trabajador. No hay borrado automático.</td></tr>
 <tr><td>Datos de la cuenta, suscripción, pagos y comprobantes</td><td>Mientras dure la relación comercial y después, mientras sean necesarios para obligaciones contables, tributarias y legales.</td></tr>
-<tr><td>Registros técnicos del servidor</td><td>Los conserva nuestro proveedor de hosting según su propia configuración. <b class="pend">PENDIENTE</b>: confirmar el plazo con Banahosting y declararlo aquí.</td></tr>
-<tr><td>Copias de seguridad</td><td>Nuestro proveedor de hosting realiza copias de la base de datos. Un dato eliminado puede seguir existiendo en una copia hasta que esta se sobrescriba. <b class="pend">PENDIENTE</b>: confirmar frecuencia y duración con Banahosting.</td></tr>
+<tr><td>Registros técnicos del servidor</td><td>Los genera y los conserva nuestro proveedor de hosting conforme a su propia configuración, sobre la que no tenemos control. No los usamos para perfilar a nadie: su única finalidad es diagnosticar fallas y detectar abusos.</td></tr>
+<tr><td>Copias de seguridad</td><td>Se hace una copia semanal de la base de datos, y cada copia nueva reemplaza a la anterior. Eso significa que un dato eliminado puede seguir existiendo en la copia vigente <b>hasta siete días</b> después de haberlo borrado, y desaparece cuando esa copia se sobrescribe.</td></tr>
 </tbody>
 </table>`,
     },
@@ -189,7 +195,7 @@ export const PRIVACIDAD = {
       id: 'cambios',
       titulo: '12. Cambios y vigencia',
       html: `<p>Si cambiamos algo sustancial, en especial las finalidades del tratamiento, se lo informaremos antes de aplicarlo, por correo o dentro del producto, y publicaremos la nueva versión con su fecha en esta misma dirección.</p>
-<p>Esta política rige desde el <b class="pend">PENDIENTE: fecha de publicación</b>. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.</p>
+<p>Esta política rige desde el 1 de agosto de 2026. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.</p>
 <p><b>Registro Nacional de Bases de Datos.</b> La obligación de inscribir las bases de datos ante la Superintendencia de Industria y Comercio recae sobre sociedades y entidades sin ánimo de lucro que superan el umbral de activos fijado por la norma, y sobre entidades públicas. Las personas naturales están exceptuadas, y por eso HoraPro no está inscrito en ese registro. Esto no lo exime de ninguna de las demás obligaciones de la Ley 1581, que se cumplen en los términos de esta política.</p>`,
     },
   ],
