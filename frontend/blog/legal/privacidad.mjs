@@ -27,12 +27,10 @@ export const PRIVACIDAD = {
   // Lo que falta y quién lo tiene que aportar. Se pinta en la propia página
   // mientras `borrador` sea true, para que sea imposible publicarla a medias.
   pendientes: [
-    'Razón social, NIT, domicilio y teléfono de la sociedad que opera HoraPro',
-    'Correo de habeas data (hoy el único del sistema es no-responder@, que no recibe)',
-    'Área o persona designada para atender consultas y reclamos',
-    'Nombre y país del proveedor de hosting, para declarar la transferencia internacional',
-    'Si la sociedad supera 100.000 UVT en activos y debe inscribirse en el RNBD',
-    'Política de rotación de los logs del servidor y de las copias de seguridad del hosting',
+    'DIRECCIÓN FÍSICA del responsable. El Decreto 1377 la exige y es lo único que impide publicar.',
+    'Crear de verdad la casilla privacidad@horapro.co y que alguien la lea: los plazos de 10 y 15 días hábiles corren desde que llega el mensaje.',
+    'Preguntarle a Banahosting cada cuánto hace copias de seguridad y cuánto las conserva, y cuánto guarda los registros del servidor.',
+    'Revisión de un abogado antes de publicar.',
   ],
 
   secciones: [
@@ -41,11 +39,10 @@ export const PRIVACIDAD = {
       titulo: '1. Quiénes somos',
       html: `<p>HoraPro es un software de control de horas y liquidación de nómina para empresas colombianas, operado por:</p>
 <ul>
-  <li>Razón social: <b class="pend">PENDIENTE</b>. El crédito "Desarrollado por Krumlab" que aparece en el sitio es una atribución de autoría, no la identificación del responsable del tratamiento.</li>
-  <li>NIT: <b class="pend">PENDIENTE</b></li>
-  <li>Domicilio y dirección física: <b class="pend">PENDIENTE</b></li>
-  <li>Correo para asuntos de datos personales: <b class="pend">PENDIENTE</b></li>
-  <li>Teléfono: <b class="pend">PENDIENTE</b></li>
+  <li>Responsable del tratamiento: <b>Samir Orozco</b>, persona natural. El crédito "Desarrollado por Krumlab" que aparece en el sitio es una atribución de autoría, no la identificación del responsable.</li>
+  <li>Dirección: <b class="pend">PENDIENTE</b></li>
+  <li>Correo para asuntos de datos personales: <a href="mailto:privacidad@horapro.co">privacidad@horapro.co</a></li>
+  <li>WhatsApp: <a href="https://wa.me/573166435723">+57 316 643 5723</a></li>
   <li>Sitio web: <a href="https://horapro.co">https://horapro.co</a></li>
 </ul>
 <p>Este documento explica qué datos personales tratamos, para qué, con quién los compartimos, cuánto tiempo los guardamos y cómo puede usted ejercer sus derechos. Está escrito para que lo entienda cualquier persona.</p>`,
@@ -115,8 +112,8 @@ export const PRIVACIDAD = {
 <tr><td>Ficha del trabajador, contratos, novedades y sus soportes</td><td>Mientras dure la relación de la empresa con HoraPro y mientras la empresa deba conservarlos por sus obligaciones laborales, contables y legales. El retiro de un trabajador lo marca como inactivo y <b>no elimina su información</b>.</td></tr>
 <tr><td>Descriptor facial y foto de perfil</td><td>Hasta que la empresa los elimine desde la ficha del trabajador. No hay borrado automático.</td></tr>
 <tr><td>Datos de la cuenta, suscripción, pagos y comprobantes</td><td>Mientras dure la relación comercial y después, mientras sean necesarios para obligaciones contables, tributarias y legales.</td></tr>
-<tr><td>Registros técnicos del servidor</td><td><b class="pend">PENDIENTE</b>: definir la rotación con el proveedor de hosting.</td></tr>
-<tr><td>Copias de seguridad</td><td><b class="pend">PENDIENTE</b>: confirmar frecuencia y duración con el proveedor. Un dato eliminado de la base puede seguir existiendo en una copia.</td></tr>
+<tr><td>Registros técnicos del servidor</td><td>Los conserva nuestro proveedor de hosting según su propia configuración. <b class="pend">PENDIENTE</b>: confirmar el plazo con Banahosting y declararlo aquí.</td></tr>
+<tr><td>Copias de seguridad</td><td>Nuestro proveedor de hosting realiza copias de la base de datos. Un dato eliminado puede seguir existiendo en una copia hasta que esta se sobrescriba. <b class="pend">PENDIENTE</b>: confirmar frecuencia y duración con Banahosting.</td></tr>
 </tbody>
 </table>`,
     },
@@ -128,7 +125,8 @@ export const PRIVACIDAD = {
 <p><b>Servidor de correo.</b> Enviamos correos transaccionales, como el código de verificación, el restablecimiento de contraseña y la invitación a afiliados, a través del servidor de correo de nuestro proveedor de hosting. Nunca enviamos por correo datos de trabajadores, ni novedades, ni soportes médicos.</p>
 <p><b>Telegram, opcional y desactivado por defecto.</b> Si la empresa lo configura, HoraPro envía a un chat o grupo de Telegram un aviso de llegada tarde que contiene <b>el nombre y apellido del trabajador, la hora de llegada y los minutos de retraso</b>. Esa información sale de nuestros servidores hacia Telegram, que la conserva bajo sus propias condiciones y fuera de nuestro control. Si la empresa configura un grupo, todos sus miembros ven el aviso. Activarlo es decisión de la empresa empleadora, y es ella quien debe contar con la autorización de sus trabajadores.</p>
 <p><b>YouTube.</b> El video de presentación de nuestra página de inicio se reproduce desde YouTube. Su navegador se conecta a servidores de Google, que reciben su dirección IP y los datos de su navegador y pueden instalar cookies propias.</p>
-<p><b>Proveedor de infraestructura.</b> Toda la información se almacena en el servidor y la base de datos de nuestro proveedor de hosting. <b class="pend">PENDIENTE</b>: nombre y país del proveedor y del centro de datos. Si la infraestructura está fuera de Colombia, esta política debe declarar una transferencia internacional de datos e indicar su fundamento.</p>`,
+<p><b>Proveedor de infraestructura, con transferencia internacional.</b> Toda la información se almacena en los servidores de <b>Banahosting</b>, cuya infraestructura está ubicada en <b>Estados Unidos</b>. Eso significa que sus datos personales salen de Colombia.</p>
+<p>Esa transferencia está permitida: mediante la Circular Externa 5 del 10 de agosto de 2017, la Superintendencia de Industria y Comercio declaró a Estados Unidos como país con un nivel adecuado de protección de datos personales, de modo que la transferencia no requiere autorización especial. Aun así se lo informamos, porque usted tiene derecho a saber dónde están sus datos.</p>`,
     },
     {
       id: 'cookies',
@@ -174,8 +172,9 @@ export const PRIVACIDAD = {
       id: 'ejercer',
       titulo: '11. Cómo ejercer sus derechos y en cuánto le respondemos',
       html: `<p><b>Si usted es trabajador de una empresa que usa HoraPro:</b> diríjase primero a su empleador, que es el responsable de esos datos. Si no obtiene respuesta, escríbanos y lo canalizamos.</p>
-<p><b>Si usted es cliente, afiliado o visitante:</b> escriba a <b class="pend">PENDIENTE: correo de habeas data</b> con su nombre, un dato de contacto, la descripción de lo que solicita y los documentos que quiera aportar.</p>
-<p>Área responsable de atender peticiones, consultas y reclamos: <b class="pend">PENDIENTE</b>.</p>
+<p><b>Si usted es cliente, afiliado o visitante:</b> escriba a <a href="mailto:privacidad@horapro.co">privacidad@horapro.co</a> con su nombre, un dato de contacto, la descripción de lo que solicita y los documentos que quiera aportar.</p>
+<p>También puede escribirnos por <a href="https://wa.me/573166435723?text=Hola%2C%20necesito%20ayuda%20con%20el%20manejo%20de%20mis%20datos%20personales%20en%20HoraPro.">WhatsApp al +57 316 643 5723</a>. Le pedimos usar el correo para las solicitudes formales, porque de esa forma queda constancia de la fecha en que llegó su petición y de la respuesta, que es lo que fija los plazos de abajo.</p>
+<p>Atiende las peticiones, consultas y reclamos el propio responsable, Samir Orozco.</p>
 <p><b>Consultas:</b> máximo 10 días hábiles. Si no alcanzamos, se lo informamos con los motivos y la nueva fecha, que no superará los 5 días hábiles siguientes al vencimiento del primer plazo.</p>
 <p><b>Reclamos:</b> máximo 15 días hábiles contados desde el día siguiente a su recepción. Si no alcanzamos, se lo informamos con los motivos y la nueva fecha, que no superará los 8 días hábiles siguientes. Si el reclamo llega incompleto, se lo pediremos completar dentro de los 5 días siguientes; si pasan dos meses sin que lo complete, se entenderá desistido. Mientras el reclamo está en trámite, la base de datos lleva esa anotación.</p>`,
     },
@@ -184,7 +183,7 @@ export const PRIVACIDAD = {
       titulo: '12. Cambios y vigencia',
       html: `<p>Si cambiamos algo sustancial, en especial las finalidades del tratamiento, se lo informaremos antes de aplicarlo, por correo o dentro del producto, y publicaremos la nueva versión con su fecha en esta misma dirección.</p>
 <p>Esta política rige desde el <b class="pend">PENDIENTE: fecha de publicación</b>. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.</p>
-<p>Registro Nacional de Bases de Datos: <b class="pend">PENDIENTE</b>. La obligación de inscripción aplica a sociedades que superen el umbral de activos vigente; hay que confirmarlo con el contador. Si no aplica, esta línea se elimina.</p>`,
+<p><b>Registro Nacional de Bases de Datos.</b> La obligación de inscribir las bases de datos ante la Superintendencia de Industria y Comercio recae sobre sociedades y entidades sin ánimo de lucro que superan el umbral de activos fijado por la norma, y sobre entidades públicas. Las personas naturales están exceptuadas, y por eso HoraPro no está inscrito en ese registro. Esto no lo exime de ninguna de las demás obligaciones de la Ley 1581, que se cumplen en los términos de esta política.</p>`,
     },
   ],
 };
