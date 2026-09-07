@@ -35,7 +35,6 @@ export const PRIVACIDAD = {
   // Lo que falta y quién lo tiene que aportar. Se pinta en la propia página
   // mientras `borrador` sea true, para que sea imposible publicarla a medias.
   pendientes: [
-    'La CIUDAD de la dirección. Sin ella el dato del Decreto 1377 queda incompleto.',
     'Crear de verdad la casilla privacidad@horapro.co y que alguien la lea: los plazos de 10 y 15 días hábiles corren desde que llega el mensaje.',
     'Preguntarle a Banahosting cada cuánto hace copias de seguridad y cuánto las conserva, y cuánto guarda los registros del servidor.',
     'Revisión de un abogado antes de publicar.',
@@ -48,7 +47,7 @@ export const PRIVACIDAD = {
       html: `<p>HoraPro es un software de control de horas y liquidación de nómina para empresas colombianas, operado por:</p>
 <ul>
   <li>Responsable del tratamiento: <b>Samir Orozco</b>, persona natural. El crédito "Desarrollado por Krumlab" que aparece en el sitio es una atribución de autoría, no la identificación del responsable.</li>
-  <li>Dirección: Cra 1 # 9 - 10, <b class="pend">PENDIENTE: ciudad</b></li>
+  <li>Dirección: Cra 1 # 9 - 10, La Unión, Antioquia, Colombia</li>
   <li>Correo para asuntos de datos personales: <a href="mailto:privacidad@horapro.co">privacidad@horapro.co</a></li>
   <li>WhatsApp: <a href="https://wa.me/573166435723">+57 316 643 5723</a></li>
   <li>Sitio web: <a href="https://horapro.co">https://horapro.co</a></li>
