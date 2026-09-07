@@ -12,6 +12,14 @@
 // ANTES DE PUBLICARLA TIENE QUE REVISARLA UN ABOGADO. Este archivo describe con
 // precisión lo que el software hace; no sustituye el concepto jurídico sobre si
 // eso basta.
+//
+// EL RESPONSABLE ES HOY UNA PERSONA NATURAL, y es provisional: cuando se
+// constituya la sociedad hay que cambiar tres cosas y todas viven aquí.
+//   1. La sección 1 (quiénes somos): razón social y NIT en vez del nombre.
+//   2. La sección 12: la exención del RNBD deja de aplicar. Una sociedad se
+//      inscribe si supera el umbral de activos, así que hay que volver a mirarlo.
+//   3. Subir `version` y la fecha de vigencia, porque cambia el responsable y
+//      eso es un cambio sustancial que hay que informar (sección 12).
 
 export const PRIVACIDAD = {
   ruta: '/legal/privacidad/',
@@ -27,7 +35,7 @@ export const PRIVACIDAD = {
   // Lo que falta y quién lo tiene que aportar. Se pinta en la propia página
   // mientras `borrador` sea true, para que sea imposible publicarla a medias.
   pendientes: [
-    'DIRECCIÓN FÍSICA del responsable. El Decreto 1377 la exige y es lo único que impide publicar.',
+    'La CIUDAD de la dirección. Sin ella el dato del Decreto 1377 queda incompleto.',
     'Crear de verdad la casilla privacidad@horapro.co y que alguien la lea: los plazos de 10 y 15 días hábiles corren desde que llega el mensaje.',
     'Preguntarle a Banahosting cada cuánto hace copias de seguridad y cuánto las conserva, y cuánto guarda los registros del servidor.',
     'Revisión de un abogado antes de publicar.',
@@ -40,7 +48,7 @@ export const PRIVACIDAD = {
       html: `<p>HoraPro es un software de control de horas y liquidación de nómina para empresas colombianas, operado por:</p>
 <ul>
   <li>Responsable del tratamiento: <b>Samir Orozco</b>, persona natural. El crédito "Desarrollado por Krumlab" que aparece en el sitio es una atribución de autoría, no la identificación del responsable.</li>
-  <li>Dirección: <b class="pend">PENDIENTE</b></li>
+  <li>Dirección: Cra 1 # 9 - 10, <b class="pend">PENDIENTE: ciudad</b></li>
   <li>Correo para asuntos de datos personales: <a href="mailto:privacidad@horapro.co">privacidad@horapro.co</a></li>
   <li>WhatsApp: <a href="https://wa.me/573166435723">+57 316 643 5723</a></li>
   <li>Sitio web: <a href="https://horapro.co">https://horapro.co</a></li>
