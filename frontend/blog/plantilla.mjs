@@ -751,6 +751,12 @@ export function paginaLegal(doc) {
 .tabla-legal{width:100%;border-collapse:collapse;margin:16px 0;font-size:15px}
 .tabla-legal th,.tabla-legal td{border:1px solid #e6e6e6;padding:10px 12px;text-align:left;vertical-align:top}
 .tabla-legal th{background:#fafafa;font-weight:700}
+.ficha-responsable{border:1px solid #e6e6e6;border-radius:12px;padding:4px 18px;margin:16px 0;background:#fafafa}
+.ficha-responsable summary{cursor:pointer;font-weight:600;padding:12px 0;list-style:none}
+.ficha-responsable summary::-webkit-details-marker{display:none}
+.ficha-responsable summary::before{content:'▸ ';color:#8a8a8a}
+.ficha-responsable[open] summary::before{content:'▾ '}
+.ficha-responsable ul{margin:4px 0 12px}
 `,
     cuerpo,
   });

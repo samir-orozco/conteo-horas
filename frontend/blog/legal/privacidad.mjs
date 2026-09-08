@@ -55,15 +55,9 @@ export const PRIVACIDAD = {
     {
       id: 'quienes',
       titulo: '1. Quiénes somos',
-      html: `<p>HoraPro es un software de control de horas y liquidación de nómina para empresas colombianas, operado por:</p>
-<ul>
-  <li>Responsable del tratamiento: <b>Samir Orozco</b>, persona natural. El crédito "Desarrollado por Krumlab" que aparece en el sitio es una atribución de autoría, no la identificación del responsable.</li>
-  <li>Dirección: Cra 1 # 9 - 10, La Unión, Antioquia, Colombia</li>
-  <li>Correo para asuntos de datos personales: <a href="mailto:privacidad@horapro.co">privacidad@horapro.co</a></li>
-  <li>WhatsApp: <a href="https://wa.me/573166435723">+57 316 643 5723</a></li>
-  <li>Sitio web: <a href="https://horapro.co">https://horapro.co</a></li>
-</ul>
-<p>Este documento explica qué datos personales tratamos, para qué, con quién los compartimos, cuánto tiempo los guardamos y cómo puede usted ejercer sus derechos. Está escrito para que lo entienda cualquier persona.</p>`,
+      html: `<p>HoraPro es un software de control de horas y liquidación de nómina para empresas colombianas, disponible en <a href="https://horapro.co">horapro.co</a>.</p>
+<p>Este documento explica qué datos personales tratamos, para qué, con quién los compartimos, cuánto tiempo los guardamos y cómo puede usted ejercer sus derechos. Está escrito para que lo entienda cualquier persona.</p>
+<p>Para cualquier asunto relacionado con sus datos personales puede escribirnos a <a href="mailto:privacidad@horapro.co">privacidad@horapro.co</a>. La identificación completa del responsable del tratamiento está al final de este documento.</p>`,
     },
     {
       id: 'dos-papeles',
@@ -98,7 +92,9 @@ export const PRIVACIDAD = {
 <p><b>Novedades y ausencias:</b> tipo de novedad (incapacidad de EPS o de ARL, licencias, calamidad, cita médica), su descripción y el documento que se adjunte como soporte.</p>
 <p><b>Foto de perfil</b> y <b>datos biométricos</b>, que se explican en el punto 5.</p>
 <p><b>Ubicación al marcar.</b> Cuando la empresa activa la geocerca, el dispositivo envía la ubicación en el momento de marcar. <b>Esa coordenada no se guarda.</b> Se usa en el instante para decidir si la marca cae dentro del sitio de trabajo y se descarta. De esa decisión solo queda registrada la sede. HoraPro no almacena el recorrido ni la ubicación de ningún trabajador.</p>
-<p><b>Quién ve estos datos.</b> Los usuarios de la propia empresa con rol de administrador o de supervisor. HoraPro, como proveedor, no dispone de ninguna pantalla ni función que le permita ver los nombres, las cédulas, los salarios, las fotos, los datos biométricos ni las novedades de los trabajadores de sus clientes: nuestro panel interno solo muestra conteos, facturación y comprobantes de pago. Lo que sí existe, y lo decimos porque es la verdad, es el acceso técnico de administración a la base de datos por parte del personal que opera la infraestructura.</p>`,
+<p><b>Quién ve estos datos.</b> Los usuarios de la propia empresa con rol de administrador o de supervisor.</p>
+<p>HoraPro, como proveedor, no dispone de ninguna pantalla ni función que le permita ver los nombres, las cédulas, los salarios, las fotos, los datos biométricos ni las novedades de los trabajadores de sus clientes. Nuestro panel interno solo muestra conteos, facturación y comprobantes de pago.</p>
+<p>Como en cualquier servicio de software, el personal técnico que opera y mantiene la infraestructura cuenta con acceso administrativo a la base de datos. Ese acceso se usa exclusivamente para operar el servicio, hacer copias de seguridad y resolver fallas, y está sujeto a los deberes de confidencialidad de esta política.</p>`,
     },
     {
       id: 'sensibles',
@@ -109,7 +105,9 @@ export const PRIVACIDAD = {
 <p>Cuando la empresa registra el rostro de un trabajador, el navegador calcula un descriptor matemático, una lista de 128 números por cada toma, y ese descriptor se guarda asociado a la persona. También se guarda la fecha del registro. La primera toma se conserva como foto de perfil solo si la ficha no tenía una.</p>
 <p>El cálculo se hace en el propio navegador y con modelos servidos desde nuestro dominio. Ese dato no se envía a ningún proveedor externo de reconocimiento facial.</p>
 <p>Cada vez que alguien marca entrada o salida en el kiosco se guarda además <b>una fotografía del rostro</b> como evidencia de la marcación.</p>
-<p><b>Sobre la autorización.</b> Autorizar el tratamiento de un dato sensible es facultativo: ninguna persona está obligada a hacerlo, y ninguna actividad puede condicionarse a entregarlo. En HoraPro <b>la autorización del trabajador la debe obtener y conservar la empresa empleadora</b>, que es el responsable de ese dato. El panel muestra al administrador un texto de autorización antes del primer registro facial, pero <b>HoraPro no conserva hoy prueba de esa autorización</b>: la prueba la tiene que guardar la empresa.</p>
+<p><b>Sobre la autorización.</b> Autorizar el tratamiento de un dato sensible es facultativo: ninguna persona está obligada a hacerlo, y ninguna actividad puede condicionarse a entregarlo.</p>
+<p><b>La autorización del trabajador la obtiene y la conserva la empresa empleadora</b>, que es el responsable de ese dato y quien mantiene la relación laboral. HoraPro actúa como encargado y no almacena esa constancia. Antes de permitir el primer registro facial, el panel le recuerda al administrador de la empresa que debe contar con la autorización del titular.</p>
+<p>Si usted quiere saber qué autorizó, o revocarla, la puerta es su empleador. En el punto 11 le explicamos cómo proceder si no obtiene respuesta.</p>
 <p><b>Sobre la alternativa.</b> El kiosco permite marcar con cédula sin usar el rostro. La configuración le permite a la empresa desactivar esa opción y dejar el rostro como única vía. Recomendamos expresamente <b>no</b> hacerlo, porque condicionar la marcación de asistencia a entregar un dato biométrico es contrario a la ley.</p>
 <p><b>Revocación.</b> La empresa puede eliminar en cualquier momento el registro facial de una persona desde su ficha. Al hacerlo se borra el descriptor y la fecha de registro. La foto de perfil se elimina por separado.</p>
 
@@ -192,7 +190,7 @@ export const PRIVACIDAD = {
       html: `<p><b>Si usted es trabajador de una empresa que usa HoraPro:</b> diríjase primero a su empleador, que es el responsable de esos datos. Si no obtiene respuesta, escríbanos y lo canalizamos.</p>
 <p><b>Si usted es cliente, afiliado o visitante:</b> escriba a <a href="mailto:privacidad@horapro.co">privacidad@horapro.co</a> con su nombre, un dato de contacto, la descripción de lo que solicita y los documentos que quiera aportar.</p>
 <p>También puede escribirnos por <a href="https://wa.me/573166435723?text=Hola%2C%20necesito%20ayuda%20con%20el%20manejo%20de%20mis%20datos%20personales%20en%20HoraPro.">WhatsApp al +57 316 643 5723</a>. Le pedimos usar el correo para las solicitudes formales, porque de esa forma queda constancia de la fecha en que llegó su petición y de la respuesta, que es lo que fija los plazos de abajo.</p>
-<p>Atiende las peticiones, consultas y reclamos el propio responsable, Samir Orozco.</p>
+<p>Atiende las peticiones, consultas y reclamos el área de atención al cliente de HoraPro.</p>
 <p><b>Consultas:</b> máximo 10 días hábiles. Si no alcanzamos, se lo informamos con los motivos y la nueva fecha, que no superará los 5 días hábiles siguientes al vencimiento del primer plazo.</p>
 <p><b>Reclamos:</b> máximo 15 días hábiles contados desde el día siguiente a su recepción. Si no alcanzamos, se lo informamos con los motivos y la nueva fecha, que no superará los 8 días hábiles siguientes. Si el reclamo llega incompleto, se lo pediremos completar dentro de los 5 días siguientes; si pasan dos meses sin que lo complete, se entenderá desistido. Mientras el reclamo está en trámite, la base de datos lleva esa anotación.</p>`,
     },
@@ -202,6 +200,23 @@ export const PRIVACIDAD = {
       html: doc => `<p>Si cambiamos algo sustancial, en especial las finalidades del tratamiento, se lo informaremos antes de aplicarlo, por correo o dentro del producto, y publicaremos la nueva versión con su fecha en esta misma dirección.</p>
 <p>Esta política rige desde el ${doc.fechaVigencia}. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.</p>
 <p><b>Registro Nacional de Bases de Datos.</b> La obligación de inscribir las bases de datos ante la Superintendencia de Industria y Comercio recae sobre sociedades y entidades sin ánimo de lucro que superan el umbral de activos fijado por la norma, y sobre entidades públicas. Las personas naturales están exceptuadas, y por eso HoraPro no está inscrito en ese registro. Esto no lo exime de ninguna de las demás obligaciones de la Ley 1581, que se cumplen en los términos de esta política.</p>`,
+    },
+    {
+      id: 'identificacion',
+      titulo: '13. Identificación del responsable',
+      html: `<p>La ley exige que esta política identifique a quien responde por el tratamiento de sus datos. Esa información está aquí y puede consultarla cuando quiera.</p>
+<details class="ficha-responsable">
+  <summary>Ver los datos del responsable del tratamiento</summary>
+  <ul>
+    <li><b>Responsable:</b> Samir Orozco, persona natural.</li>
+    <li><b>Dirección:</b> Cra 1 # 9 - 10, La Unión, Antioquia, Colombia.</li>
+    <li><b>Correo:</b> <a href="mailto:privacidad@horapro.co">privacidad@horapro.co</a></li>
+    <li><b>WhatsApp:</b> <a href="https://wa.me/573166435723">+57 316 643 5723</a></li>
+    <li><b>Sitio web:</b> <a href="https://horapro.co">https://horapro.co</a></li>
+  </ul>
+  <p>El crédito "Desarrollado por Krumlab" que aparece en el sitio es una atribución de autoría, no la identificación del responsable del tratamiento.</p>
+</details>
+<p>Para ejercer sus derechos no necesita estos datos: basta con escribir a <a href="mailto:privacidad@horapro.co">privacidad@horapro.co</a>, como se explica en el punto 11.</p>`,
     },
   ],
 };
