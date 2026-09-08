@@ -1,4 +1,5 @@
 import { AUTOR, SITIO } from './articulos/index.mjs';
+import { PRIVACIDAD } from './legal/privacidad.mjs';
 
 const esc = (s = '') => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -292,9 +293,12 @@ function cabecera() {
 
 function pie() {
   const anio = new Date().getUTCFullYear();
+  // El enlace a la política sale solo cuando deja de ser borrador. Un documento
+  // legal a medias, enlazado desde todas las páginas, es peor que no tenerlo.
+  const privacidad = PRIVACIDAD.borrador ? '' : ` · <a href="${PRIVACIDAD.ruta}">Privacidad</a>`;
   return `<footer class="pie"><div class="env">
     <span>© ${anio} HoraPro · Un producto de Krumlab</span>
-    <span><a href="/">Inicio</a> · <a href="/#precios">Precios</a> · <a href="/calculadoras/">Calculadoras</a> · <a href="/blog/">Blog</a></span>
+    <span><a href="/">Inicio</a> · <a href="/#precios">Precios</a> · <a href="/calculadoras/">Calculadoras</a> · <a href="/blog/">Blog</a>${privacidad}</span>
   </div></footer>`;
 }
 
@@ -757,6 +761,15 @@ export function paginaLegal(doc) {
 .ficha-responsable summary::before{content:'▸ ';color:#8a8a8a}
 .ficha-responsable[open] summary::before{content:'▾ '}
 .ficha-responsable ul{margin:4px 0 12px}
+/* Al imprimir o guardar en PDF, los bloques plegados se abren. Sin esto, quien
+   archive el documento se lleva el anexo entero en blanco, que es justo la parte
+   que un abogado o un auditor van a querer sobre papel. */
+@media print{
+  .ficha-responsable{background:none;border:1px solid #ddd;page-break-inside:avoid}
+  .ficha-responsable summary{list-style:none}
+  .ficha-responsable summary::before{content:''}
+  .ficha-responsable:not([open])>*:not(summary){display:revert !important}
+}
 `,
     cuerpo,
   });

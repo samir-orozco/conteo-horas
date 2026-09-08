@@ -72,6 +72,10 @@ const urls = [
   // cuando cambia la ley, y son páginas de intención de búsqueda muy alta.
   ...CALCULADORAS.map(c => ({ loc: c.ruta, prioridad: '0.9', frec: 'monthly', lastmod: c.actualizado })),
   ...ARTICULOS.map(a => ({ loc: `/blog/${a.slug}/`, prioridad: '0.8', frec: 'monthly', lastmod: a.actualizado })),
+  // La política entra al sitemap solo cuando deja de ser borrador. Mientras lo
+  // sea sale con noindex, y anunciar en el sitemap una página que pide no ser
+  // indexada es contradecirse delante del rastreador.
+  ...(PRIVACIDAD.borrador ? [] : [{ loc: PRIVACIDAD.ruta, prioridad: '0.3', frec: 'yearly' }]),
 ];
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

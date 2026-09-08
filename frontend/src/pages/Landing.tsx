@@ -8,6 +8,7 @@ import {
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
 import CreditoKrumlab from '../components/CreditoKrumlab';
+import { POLITICA_PRIVACIDAD } from '../lib/legal';
 import VideoVSL from '../components/VideoVSL';
 import BotonWhatsApp from '../components/BotonWhatsApp';
 import api from '../lib/api';
@@ -377,8 +378,14 @@ export default function Landing() {
             <p className="text-xs text-muted">© {new Date().getFullYear()} HoraPro · Control de horas para Colombia</p>
             <CreditoKrumlab className="mt-0.5" />
           </div>
-          <div className="flex gap-4 text-sm">
+          <div className="flex flex-wrap justify-center gap-4 text-sm">
             <a href="/blog/" className="text-muted hover:text-ink">Blog</a>
+            {/* Aparece sola el día que la política deje de ser borrador. El
+                interruptor vive en blog/legal/privacidad.mjs y `legal.test.ts`
+                impide que las dos copias se separen. */}
+            {POLITICA_PRIVACIDAD.publicada && (
+              <a href={POLITICA_PRIVACIDAD.ruta} className="text-muted hover:text-ink">Privacidad</a>
+            )}
             {usuario ? (
               <Link to={panelUrl} className="font-semibold text-ink">Ir a mi panel</Link>
             ) : (
