@@ -58,14 +58,21 @@ producción todavía no corre**. Los dos tocan dinero:
 
 | rama | commit | qué es |
 |---|---|---|
-| `master` | `c8d570e` | producción + los dos arreglos sin desplegar |
-| `develop` | `c8d570e` | integración, alineada |
-| `frontend-build` | `49cf253` | **desplegado** |
-| `backend-build` | `04787ce` | compilado y subido, **sin desplegar** |
-| `prisma-build` | `ae68fdd` | sin cambios: el esquema no se tocó en todo el lote |
+| `master` | `b3bb445` | producción del backend; **no tiene todavía lo legal** |
+| `develop` | `9235d4e` | integración, atrasada respecto de master |
+| `mejoras/rostro-vida-y-consentimiento` | `a81f505` | 11 commits, **todos de la política de privacidad**. Lo biométrico no ha empezado |
+| `frontend-build` | `a3d411c` | **desplegado y verificado el 9 de septiembre de 2026** |
+| `backend-build` | `9b38f87` | desplegado (la validación de Word y WebP corre en producción) |
+| `prisma-build` | `ae68fdd` | sin cambios: el esquema no se tocó |
 
-Las cinco alineadas con `origin`. Se borraron `mejoras/reportes-y-sedes` y
-`mejoras/jornada-una-fila`, fundidas en `master` antes de borrarlas.
+Todas alineadas con `origin`.
+
+**Ojo con `master`:** la rama de la política está desplegada y verificada en
+producción, pero todavía no se fundió en `master`. Según la sección 3 del
+CLAUDE.md, ese es justo el momento en que `master` debe avanzar. Está pendiente
+de aprobación del dueño.
+
+**Ojo con `develop`:** quedó atrás de `master`. Hay que alinearla.
 
 ### Archivos sueltos en la raíz (no versionados, no míos)
 
@@ -190,8 +197,19 @@ Lo que salió mal, para no repetirlo:
 
 ## Next step
 
-**Desplegar `backend-build` (`04787ce`).** Solo backend; el frontend ya está al
-día y no cambia.
+> **Lo que decía antes esta sección quedó viejo y se corrigió el 9 de septiembre
+> de 2026.** Decía «desplegar `backend-build` (`04787ce`)», pero `04787ce` y
+> `f4816d3` son commits de la rama de ARTEFACTOS, no de la fuente: su código
+> fuente ya está en `master` y en producción. `backend-build` avanzó desde
+> entonces hasta `9b38f87`, que es lo que corre hoy. La prueba de que está
+> desplegado es que el 8 de septiembre se subió un `.docx` en producción, y esa
+> validación es de backend. Los comandos de abajo se dejan porque la mecánica
+> sigue siendo la buena para el próximo despliegue de backend.
+
+**Lo que sigue de verdad:** fundir la política en `master` y alinear `develop`.
+Después, los prerrequisitos biométricos de la sección de más abajo.
+
+<details><summary>Mecánica del despliegue de backend, para la próxima vez</summary>
 
 [EN EL SERVIDOR]
 
@@ -225,6 +243,53 @@ cd ~/horapro-repo && git checkout -f backend-build && git reset --hard e4371b4 &
 ```
 
 Y Restart otra vez.
+
+</details>
+
+---
+
+## La política de privacidad está publicada
+
+**9 de septiembre de 2026, versión 1.0.** Vive en
+`frontend/blog/legal/privacidad.mjs` y se publica en
+<https://horapro.co/legal/privacidad/>. Verificado en producción: 15 secciones,
+`index, follow`, sin el aviso de borrador, en el sitemap, y enlazada desde el pie
+de la landing y el de todas las páginas estáticas.
+
+El interruptor es `borrador` en ese archivo, y `src/lib/legal.ts` lleva una copia
+de dos datos suyos para no arrastrar los 35 kB del documento al bundle de React
+por un enlace de dos palabras. `src/lib/legal.test.ts` se pone rojo si las dos
+copias se separan: sin esa prueba, publicar dejaría el pie sin el enlace y nadie
+se enteraría, porque no se rompe nada, simplemente no aparece.
+
+### Lo que el documento promete y ningún software cumple
+
+Son obligaciones vivas de una persona, no del producto. Si no se cumplen, el
+incumplimiento no es del software sino de la propia política, que es peor, porque
+la política está escrita y publicada.
+
+1. **Leer `privacidad@horapro.co` a diario.** Desde que llega el mensaje corren
+   los plazos del punto 12: 2 días hábiles para trasladar un reclamo sobre datos
+   de los que HoraPro no es responsable, 10 para una consulta y 15 para un
+   reclamo. El de 2 días es el que muerde: un mensaje que llega el viernes vence
+   el martes.
+2. **Llevar el registro interno de solicitudes**, por fuera del producto, donde
+   el punto 12.3 dice que queda la constancia del reclamo en trámite. Una carpeta
+   o una hoja de cálculo basta. El sistema no tiene dónde escribir esa anotación
+   y el documento no dice que lo tenga.
+
+### Deuda que la política deja anotada
+
+- **El artículo 18 literal g) de la Ley 1581 le exige al encargado registrar la
+  leyenda «reclamo en trámite» EN LA BASE DE DATOS.** Hoy no existe: `grep -rn
+  reclamo backend/src backend/prisma/schema.prisma` no devuelve nada. La política
+  describe el registro interno en su lugar, que es lo honesto, pero la deuda
+  técnica queda.
+- **El alcance real de la revisión jurídica** está anotado en la cabecera de
+  `privacidad.mjs`: el abogado aprobó el texto del commit `08beabb` y encargó los
+  siete ajustes, pero dos correcciones que aparecieron al redactarlos no las
+  revisó una por una. Son la de transmisión contra transferencia (sección 8) y la
+  del reclamo en trámite (sección 12).
 
 ---
 
