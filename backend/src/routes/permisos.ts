@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { CLAVE_PERMISOS_REMUNERADOS, parsearPoliticaPermisos, esPermisoRemunerado } from '../utils/saldoTiempo';
 

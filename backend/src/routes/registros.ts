@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar, regenerarDiasDeColaborador } from '../utils/materializarDias';

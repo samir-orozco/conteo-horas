@@ -1,4 +1,4 @@
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { capacidadesDe, obtenerPlanes, type Capacidades, type FeatureKey } from './planes';
 
 // Capacidades efectivas de una empresa (plan + overrides + acceso ilimitado).

@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { estadoEfectivo, sincronizarEstado, DIAS_PRUEBA, obtenerPrecios } from '../utils/suscripcion';
 import { obtenerPlanes, PLAN_IDS } from '../utils/planes';
 import { enviarCorreo, plantillaCorreo, correoConfigurado } from '../utils/correo';

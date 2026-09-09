@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { jornadaVigente } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { regenerarDiasDeHorario, regenerarDiasDeVarios } from '../utils/materializarDias';

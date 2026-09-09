@@ -1,4 +1,4 @@
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 
 // Lectura de los flags del kiosco (Configuración → Marcación) y validación de
 // dispositivos autorizados. Antes vivían dentro de routes/worker.ts.

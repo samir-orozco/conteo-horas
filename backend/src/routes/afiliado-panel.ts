@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { calcularBilletera, limpiarPago } from '../utils/afiliados';
 
 // Panel propio del afiliado (prefijo /api/afiliado, guard requireAfiliado).

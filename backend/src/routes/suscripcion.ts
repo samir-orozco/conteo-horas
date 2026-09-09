@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
-import { prisma, JwtPayload } from '../index';
+import { prisma } from '../prisma';
+import type { JwtPayload } from '../index';
 import {
   estadoEfectivo, diasDeMora, sincronizarEstado, aplicarPagoAprobado,
   obtenerPrecios, calcularCobro, prorrateo,

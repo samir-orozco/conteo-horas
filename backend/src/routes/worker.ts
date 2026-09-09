@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma, ModalidadTrabajo } from '@prisma/client';
 import crypto from 'crypto';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { esDescriptorValido, mejorCoincidencia } from '../utils/rostro';
 import { enviarTelegram } from '../utils/telegram';
 import { notificar } from '../utils/notificaciones';

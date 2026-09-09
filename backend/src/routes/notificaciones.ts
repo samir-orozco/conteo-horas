@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 
 // Campana del menú del admin: lista de avisos internos + estado leído/no leído.
 export default async function notificacionRoutes(app: FastifyInstance) {

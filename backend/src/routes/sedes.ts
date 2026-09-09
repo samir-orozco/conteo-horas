@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { capacidadesEmpresa } from '../utils/capacidades';
 
 // Sedes de la empresa: cada local con su propia geocerca.

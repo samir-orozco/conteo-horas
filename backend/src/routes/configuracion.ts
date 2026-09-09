@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
 import { enviarTelegram, telegramConfigurado } from '../utils/telegram';
 import { capacidadesEmpresa } from '../utils/capacidades';

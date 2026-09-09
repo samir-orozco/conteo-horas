@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { aplicarPagoAprobado } from '../utils/suscripcion';
 import { empresaIdDeReferencia, WOMPI_EVENTS_SECRET } from '../utils/wompi';
 

@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { festivosDelAnio } from '../utils/festivosColombia';
 
 export default async function festivoRoutes(app: FastifyInstance) {

@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { enviarCorreo, plantillaCorreo, correoConfigurado } from '../utils/correo';
 import { calcularBilletera, limpiarPago } from '../utils/afiliados';
 import { comprobanteAGuardar } from '../utils/comprobantes';

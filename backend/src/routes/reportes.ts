@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { toZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear } from 'date-fns';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo, descontarAlmuerzoOrdinarias } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
 import { calcularTardanzas, franjaDelDia, DIAS_SEMANA, HorarioConFranjas, construirExtraConfig } from '../utils/tardanzas';
