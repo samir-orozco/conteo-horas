@@ -1,6 +1,6 @@
 # Política de Tratamiento de Datos Personales
 
-**HoraPro** · Versión 1.0 · Vigencia: 7 de septiembre de 2026
+**HoraPro** · Versión 1.0 · Vigencia: 9 de septiembre de 2026
 
 ## 1. Quiénes somos
 
@@ -292,7 +292,7 @@ La razón de esa regla es que quien tiene los datos debe tener la oportunidad de
 
 **El número de versión.** Cada versión que publiquemos de este documento, sustancial o no el cambio, sube el número que aparece al comienzo de la página, debajo del título. Corregir una redacción, reordenar el texto o cambiar un canal de atención no son cambios sustanciales: suben la versión y se publican aquí, pero no llevan aviso previo. Cambiar quién es el responsable, o los datos con los que se le identifica en el punto 14, sí lo es, y lleva el aviso de los 15 días.
 
-Esta política rige desde el 7 de septiembre de 2026. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.
+Esta política rige desde el 9 de septiembre de 2026. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.
 
 **Registro Nacional de Bases de Datos.** La obligación de inscribir las bases de datos ante la Superintendencia de Industria y Comercio recae sobre sociedades y entidades sin ánimo de lucro que superan el umbral de activos fijado por la norma, y sobre entidades públicas. Las personas naturales están exceptuadas, y por eso HoraPro no está inscrito en ese registro. Esto no lo exime de ninguna de las demás obligaciones de la Ley 1581, que se cumplen en los términos de esta política.
 

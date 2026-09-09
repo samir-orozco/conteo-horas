@@ -40,7 +40,11 @@
 //      reclamo en trámite. El producto no lo hace: `grep -rn reclamo backend/src
 //      backend/prisma/schema.prisma` no devuelve nada. Era una promesa incumplida
 //      dentro del documento que prohíbe hacer promesas incumplidas.
-// Las dos hay que mostrárselas antes de publicar.
+// El 9 de septiembre de 2026 el dueño dio el documento por aprobado y final con
+// esas dos correcciones incluidas, y se publicó ese mismo día como versión 1.0.
+// Quedan anotadas aquí porque el abogado no las revisó una por una: si alguna
+// vez hay que defender este texto, conviene saber cuál fue el alcance real de la
+// revisión jurídica.
 
 export const PRIVACIDAD = {
   ruta: '/legal/privacidad/',
@@ -49,23 +53,37 @@ export const PRIVACIDAD = {
   descripcion: 'Qué datos personales trata HoraPro, para qué, con quién los comparte, cuánto los conserva y cómo ejercer sus derechos. Ley 1581 de 2012.',
   version: '1.0',
 
-  // Estas dos se cambian JUNTAS, el día que se publique. Separarlas es la forma
-  // de que una se quede atrás: la fecha de vigencia solo es honesta si es el día
-  // en que el documento de verdad quedó publicado.
+  // Estas dos se cambian JUNTAS. Separarlas es la forma de que una se quede
+  // atrás: la fecha de vigencia solo es honesta si es el día en que el documento
+  // de verdad quedó publicado.
   //
-  // `borrador: true` mantiene la página con noindex, fuera del sitemap y sin
-  // enlazar desde el pie.
-  borrador: true,
-  fechaVigencia: '7 de septiembre de 2026',
+  // `borrador: false` la saca del noindex, la mete al sitemap y hace aparecer el
+  // enlace en los dos pies de página. `src/lib/legal.ts` lleva una copia de este
+  // interruptor y `legal.test.ts` se pone rojo si las dos se separan.
+  //
+  // PUBLICADA el 9 de septiembre de 2026, versión 1.0.
+  borrador: false,
+  fechaVigencia: '9 de septiembre de 2026',
 
-  // Lo que falta y quién lo tiene que aportar. Se pinta en la propia página
-  // mientras `borrador` sea true, para que sea imposible publicarla a medias.
-  pendientes: [
-    'Crear de verdad la casilla privacidad@horapro.co y que alguien la lea a diario: desde que llega el mensaje corren los plazos de 2, 10 y 15 días hábiles. El de 2 días es el del traslado del punto 12, y un mensaje que llega el viernes vence el martes.',
-    'Abrir el registro interno de solicitudes de datos personales, por fuera del producto, que es donde el punto 12 dice que queda la constancia del reclamo en trámite. Hoy no existe ningún campo del sistema donde quepa esa anotación.',
-    'DEJAR CONFIGURADA DE VERDAD la copia semanal que sobreescribe la anterior, ANTES de publicar. Hoy la política ya lo afirma.',
-    'Mostrarle al abogado las dos correcciones a) y b) de la cabecera: son sobre el texto que él ya había aprobado y no estaban entre los siete ajustes que encargó.',
-  ],
+  // Lo que faltaba antes de publicar. Vacío porque ya no queda nada: la casilla
+  // privacidad@horapro.co existe, la copia semanal quedó configurada y el
+  // abogado dio el documento por aprobado y final.
+  //
+  // Este array se pinta en la propia página mientras `borrador` sea true. Si
+  // algún día vuelve a haber algo pendiente, se llena y se vuelve a poner en
+  // borrador: publicar a medias es lo que esto existe para impedir.
+  //
+  // LO QUE SIGUE SIENDO UNA OBLIGACIÓN VIVA, aunque no bloquee la publicación,
+  // porque el documento ya lo promete y no lo hace ningún software:
+  //   1. Alguien tiene que leer privacidad@horapro.co a diario. Desde que llega
+  //      el mensaje corren los plazos de 2, 10 y 15 días hábiles del punto 12.
+  //      El de 2 días es el del traslado, y un mensaje que llega el viernes
+  //      vence el martes.
+  //   2. El registro interno de solicitudes, por fuera del producto, que es
+  //      donde el punto 12.3 dice que queda la constancia del reclamo en
+  //      trámite. Una carpeta o una hoja de cálculo basta: el sistema no tiene
+  //      dónde escribir esa anotación y el documento no dice que lo tenga.
+  pendientes: [],
 
   secciones: [
     {

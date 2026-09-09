@@ -14,5 +14,5 @@
 // `publicada` a true aquí. La prueba obliga a hacer las dos cosas.
 export const POLITICA_PRIVACIDAD = {
   ruta: '/legal/privacidad/',
-  publicada: false,
+  publicada: true,
 };
