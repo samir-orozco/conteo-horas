@@ -6,6 +6,7 @@ import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar, regenerarDiasDeColaborador } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
+import { eventosDeRevision, type FilaDeRevision } from '../utils/revisionMarcaciones';
 import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
 } from '../utils/saldoTiempo';
@@ -33,6 +34,75 @@ function camposRegistro(body: any, esNuevo: boolean) {
   // salida al descanso, y la tabla decía "Sin regreso" sobre un día completo.
   if (typeof body.salidaAlmuerzo === 'boolean') out.salidaAlmuerzo = body.salidaAlmuerzo;
   return out;
+}
+
+
+// Tope de la ventana de revisión. Revisar caras de a una es trabajo humano: una
+// semana de una empresa mediana ya son cientos de fotos y nadie las termina.
+export const MAX_DIAS_REVISION = 7;
+// Tope de filas que se traen. Con `truncado` la pantalla lo dice en vez de mentir
+// por omisión, que es lo que hace un corte silencioso.
+export const MAX_FILAS_REVISION = 600;
+
+// SE EXPORTA para que `prisma/verificar-revision-marcaciones.ts` corra ESTA
+// función y no una copia. Una copia se separa del original sin que nadie lo note,
+// y entonces el script verifica algo que ya no es lo que corre en producción.
+export async function consultarRevision(empresaId: string, diasPedidos?: string, sedeId?: string) {
+  const pedidos = Number.parseInt(diasPedidos ?? '', 10);
+  const dias = Number.isFinite(pedidos) ? Math.min(Math.max(pedidos, 1), MAX_DIAS_REVISION) : 1;
+
+  const { inicioDia, finDia } = rangoDiaBogota(new Date());
+  const desde = new Date(inicioDia.getTime() - (dias - 1) * 24 * 60 * 60 * 1000);
+
+  const colaboradores = await prisma.colaborador.findMany({
+    where: { empresaId },
+    select: { id: true, nombre: true, apellido: true, cargo: true },
+  });
+  const colIds = colaboradores.map(c => c.id);
+  // Una empresa sin colaboradores da un `IN ()` que MySQL no sabe planear.
+  if (colIds.length === 0) return { desde, hasta: finDia, dias, truncado: false, eventos: [], personas: [] };
+
+  const filas = await prisma.registro.findMany({
+    where: {
+      colaboradorId: { in: colIds },
+      fecha: { gte: desde, lt: finDia },
+      ...(sedeId ? { sedeId } : {}),
+    },
+    // `select` explícito: sin él vienen también `fotoEntrada` y `fotoSalida`, que
+    // son LongText base64. Mismo motivo que `reportes.ts:199`.
+    select: {
+      id: true, colaboradorId: true, sedeId: true,
+      entrada: true, salida: true,
+      entradaEstimada: true, salidaEstimada: true,
+      metodoEntrada: true, metodoSalida: true,
+      distanciaEntrada: true, distanciaSalida: true,
+      fotoEntrada: true, fotoSalida: true,
+    },
+    // El tope se aplica ANTES de armar los eventos, o sea por fila y no por
+    // evento. Se pide una de más para saber si hubo corte.
+    take: MAX_FILAS_REVISION + 1,
+    orderBy: { fecha: 'desc' },
+  });
+
+  const truncado = filas.length > MAX_FILAS_REVISION;
+  // Las fotos se vuelven booleano AQUÍ y el original se descarta: de esta línea
+  // en adelante no hay ninguna imagen camino al navegador.
+  const paraRevisar: FilaDeRevision[] = filas.slice(0, MAX_FILAS_REVISION).map(f => ({
+    id: f.id, colaboradorId: f.colaboradorId, sedeId: f.sedeId,
+    entrada: f.entrada, salida: f.salida,
+    entradaEstimada: f.entradaEstimada, salidaEstimada: f.salidaEstimada,
+    metodoEntrada: f.metodoEntrada, metodoSalida: f.metodoSalida,
+    distanciaEntrada: f.distanciaEntrada, distanciaSalida: f.distanciaSalida,
+    tieneFotoEntrada: !!f.fotoEntrada, tieneFotoSalida: !!f.fotoSalida,
+  }));
+
+  return {
+    desde, hasta: finDia, dias, truncado,
+    eventos: eventosDeRevision(paraRevisar),
+    // Los nombres viajan aparte y no repetidos en cada evento: alguien con ocho
+    // marcaciones en la ventana no tiene por qué mandar su nombre ocho veces.
+    personas: colaboradores.filter(c => paraRevisar.some(f => f.colaboradorId === c.id)),
+  };
 }
 
 export default async function registroRoutes(app: FastifyInstance) {
@@ -529,6 +599,35 @@ export default async function registroRoutes(app: FastifyInstance) {
     // "la foto existió y ya se borró": el dato es el mismo `null` en los dos
     // casos y solo la edad del día los separa.
     return { fecha: inicioDia, fotos };
+  });
+
+  // Las marcaciones de la empresa en una ventana, PARA REVISARLAS UNA POR UNA.
+  //
+  // Existe porque alguien reportó que se marca mostrando la foto de un compañero
+  // en la pantalla de un celular. Eso no lo detecta ningún dato: lo detecta el
+  // ojo de una persona viendo el brillo de la pantalla, el filo del bisel o la
+  // mano que lo sostiene. Esta ruta solo pone las caras delante, rápido.
+  //
+  // AQUÍ NO VIAJA NINGUNA FOTO, Y ES DELIBERADO. Dos razones que apuntan al mismo
+  // sitio. La primera es de peso: una foto mide unos 15 KB de base64 medidos, así
+  // que 50 marcaciones serían 0,7 MB por carga y no hay compresión montada.
+  // La segunda es que la política de privacidad publicada afirma que «los datos
+  // biométricos [...] no se exponen en los listados del sistema y solo se
+  // entregan a solicitud expresa de un usuario autorizado». La lista lleva
+  // `tieneFoto`, un booleano; la imagen se pide una a una por `/:id/fotos`, que
+  // ya existe y ya comprueba la empresa. Es el mismo patrón deliberado de
+  // `reportes.ts:199` y `dashboard.ts:78`.
+  //
+  // TAMPOCO VIAJA LA DISTANCIA CRUDA del reconocimiento, por lo mismo: es el
+  // resultado de un cotejo biométrico. Viaja la señal, no el número.
+  //
+  // LA VENTANA ES OBLIGATORIA y tiene tope. No por rendimiento (el índice
+  // `(colaboradorId, fecha)` resuelve eso: medido sobre un millón de filas,
+  // 1.320 ms sin él y 11 ms con él), sino porque revisar caras de a una es un
+  // trabajo humano y una ventana sin fondo es una lista que nadie termina.
+  app.get('/revision', auth, async (request) => {
+    const q = (request.query ?? {}) as { dias?: string; sedeId?: string };
+    return consultarRevision(request.empresaId!, q.dias, q.sedeId);
   });
 
   // Fotos de verificación facial de un registro (se conservan 2 meses)
