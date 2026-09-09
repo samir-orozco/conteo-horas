@@ -479,6 +479,22 @@ quedó pendiente y NO es urgente.** Son avisos de dependencias en un servidor cu
 `node_modules` funciona, no un agujero abierto. Se intentó aplicar en el
 despliegue de ese día y se paró a propósito.
 
+**Actualización del 9 de septiembre de 2026.** Al revisar el árbol de producción
+apareció un aviso que no estaba en la lista y que pesa más que los cuatro: cuatro
+advisories de severidad alta sobre **nodemailer <= 9.1.0**, que es el paquete con
+el que salen todos los correos transaccionales del producto. Se subió a **9.1.1**
+en el lockfile, y npm elevó el rango de `^9.0.3` a `^9.1.1`, con lo que una
+instalación limpia ya no puede resolver hacia atrás. Solo se movió ese paquete:
+cero añadidos, cero quitados. Suite en verde y `tsc` limpio con la versión nueva.
+
+Y un hallazgo que cambia la urgencia de la lista original: **los tres primeros ya
+estaban parcheados en el lockfile del repo** (fastify 5.12.3, find-my-way 9.9.0,
+fast-uri 3.1.7). Nunca fue un problema de versión: era que el servidor no podía
+instalarlas. El cuarto, `brace-expansion`, ni siquiera existe en el árbol de
+producción, era transitiva de desarrollo.
+
+La lista original decía:
+
 Lo que se quiere: subir `fastify` 5.8.5 a 5.12.3, `find-my-way` 9.6.0 a 9.9.0,
 `fast-uri` 3.1.2 a 3.1.7 y `brace-expansion` 5.0.6 a 5.0.9. Ninguna cambia de
 major y ninguna toca `package.json`: las versiones parcheadas viven solo en el
@@ -508,12 +524,27 @@ resolución que revienta ocurre igual.
   arreglado en el repo (ver CLAUDE.md 9.7). Arreglarlo no hizo que el install
   pasara: eran dos cosas distintas y solo una era la causa.
 
-**LA SALIDA, para el día que se retome.** El servidor no tiene por qué resolver
-devDependencies. Lo que hay que hacer es darle un `package.json` de producción,
-sin el bloque `devDependencies`, generado al compilar el artefacto. Con eso el
-árbol ideal no incluye vitest, `npm install` no tiene qué romper, y de paso el
-servidor deja de cargar typescript, nodemon y vitest que hoy tiene instalados y
-no usa nunca (el despliegue sube el `dist` ya compilado).
+**LA SALIDA, ya construida el 9 de septiembre de 2026.** El servidor no tiene por
+qué resolver devDependencies. `backend/scripts/generar-paquete-produccion.mjs`
+escribe un `package.json` sin ese bloque, con solo el script `start` (los demás
+necesitan herramientas que ya no van a estar, así que dejarlos escritos sería
+ofrecer comandos que fallan). La decisión vive en la función pura
+`paqueteDeProduccion`, probada en `src/utils/paqueteProduccion.test.ts` con seis
+casos, dos de ellos vistos rojos por mutación.
+
+Medido, no supuesto: **223 paquetes en el árbol completo contra 88 en el de
+producción.** Instalación limpia con npm 10.9.8, la versión exacta del servidor:
+`added 87 packages, found 0 vulnerabilities`, salida 0.
+
+**LO QUE ESTA SOLUCIÓN NO PRUEBA, y hay que decirlo antes de cantar victoria.**
+No se pudo reproducir el error del servidor en la máquina de desarrollo: con
+npm 10.9.8 y el `package.json` COMPLETO, el install también termina bien (198
+paquetes, salida 0). O sea que la causa lleva algo del estado del servidor que
+aquí no existe: el `node_modules` que ya estaba, el lockfile a medio sobrescribir
+después del `cp`, o el límite de memoria del hosting compartido. **La única
+prueba de que la cura funciona es correr el install allá.** Lo que sí está
+demostrado es que al servidor deja de llegarle nada de desarrollo, que es lo que
+señalaba el log.
 
 Alternativas peores, por si acaso: subir el npm del servidor (es hosting
 compartido, no conviene) o bajar vitest de versión (castigar el desarrollo por un
