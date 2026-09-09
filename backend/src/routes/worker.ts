@@ -3,6 +3,7 @@ import { Prisma, ModalidadTrabajo } from '@prisma/client';
 import crypto from 'crypto';
 import { prisma } from '../prisma';
 import { esDescriptorValido, mejorCoincidencia } from '../utils/rostro';
+import { camposDeAutenticacion } from '../utils/metodoMarcacion';
 import { enviarTelegram } from '../utils/telegram';
 import { notificar } from '../utils/notificaciones';
 import { rangoDiaBogota } from '../utils/fechas';
@@ -265,8 +266,12 @@ export default async function workerRoutes(app: FastifyInstance) {
     });
     if (!col) return reply.code(401).send({ error: 'Cédula no registrada en esta empresa' });
 
+    // `metodo` viaja DENTRO del token firmado y no en la respuesta: es la única
+    // forma de que la marcación registre con qué se autenticó de verdad. Si el
+    // kiosco lo declarara en el cuerpo de `/marcar`, cualquiera lo cambiaría
+    // desde el inspector y la medición diría lo contrario de la realidad.
     const token = app.jwt.sign(
-      { id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId },
+      { id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId, metodo: 'CEDULA' },
       { expiresIn: '12h' }
     );
     // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
@@ -309,8 +314,12 @@ export default async function workerRoutes(app: FastifyInstance) {
     if (!match) return reply.code(401).send({ error: 'Rostro no reconocido. Intenta de nuevo o marca con tu cédula.' });
 
     const col = match.colaborador;
+    // La distancia del match la calculaba `mejorCoincidencia` y se tiraba. Ahora
+    // viaja en el token y queda en la marcación: una distancia repetida al
+    // milímetro entre marcaciones es la huella de un descriptor copiado y
+    // reenviado, cosa que no ocurre en capturas vivas.
     const token = app.jwt.sign(
-      { id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId },
+      { id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId, metodo: 'ROSTRO', distancia: match.distancia },
       { expiresIn: '12h' }
     );
     // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
@@ -419,7 +428,7 @@ export default async function workerRoutes(app: FastifyInstance) {
   // Registrar entrada o salida. Si el login fue con rostro, llega la foto de
   // verificación (se conserva 2 meses y luego se borra automáticamente).
   app.post('/marcar', { preHandler: [app.authenticate] }, async (request, reply) => {
-    const payload = (request as any).user as { id: string; rol: string; empresaId: string };
+    const payload = (request as any).user as { id: string; rol: string; empresaId: string; metodo?: unknown; distancia?: unknown };
     if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
 
     // Evita marcas dobles concurrentes del mismo colaborador (reintento/doble tap).
@@ -565,6 +574,7 @@ export default async function workerRoutes(app: FastifyInstance) {
             salidaEstimada: false,
             ...(esAlmuerzo ? { salidaAlmuerzo: true } : {}),
             ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
+            ...camposDeAutenticacion(payload, 'salida'),
           },
         });
 
@@ -637,6 +647,7 @@ export default async function workerRoutes(app: FastifyInstance) {
             // los reportes tiene que reflejar la realidad.
             ...(sedeDeLaMarca ? { sedeId: sedeDeLaMarca } : {}),
             ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
+            ...camposDeAutenticacion(payload, 'entrada'),
           },
         });
 

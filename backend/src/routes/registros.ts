@@ -558,7 +558,9 @@ export default async function registroRoutes(app: FastifyInstance) {
     if (existente) return reply.status(400).send({ error: 'Ya tiene una entrada activa hoy' });
 
     const registro = await prisma.registro.create({
-      data: { colaboradorId, fecha: ahora, entrada: ahora, tipo: 'NORMAL' },
+      // La escribió el admin, no el kiosco. Sin esto quedaría en null y se
+      // confundiría con una marcación anterior a que se midiera el método.
+      data: { colaboradorId, fecha: ahora, entrada: ahora, tipo: 'NORMAL', metodoEntrada: 'MANUAL' },
     });
     await asegurarDiaSinFallar(colaboradorId, registro.fecha, app.log);
     return reply.status(201).send(registro);
@@ -580,7 +582,7 @@ export default async function registroRoutes(app: FastifyInstance) {
     });
     if (!registro) return reply.status(400).send({ error: 'No hay entrada activa hoy' });
 
-    return prisma.registro.update({ where: { id: registro.id }, data: { salida: ahora } });
+    return prisma.registro.update({ where: { id: registro.id }, data: { salida: ahora, metodoSalida: 'MANUAL' } });
   });
 
   // Registro manual (admin)
@@ -593,7 +595,16 @@ export default async function registroRoutes(app: FastifyInstance) {
     const motivo = await motivoParaRechazar(datos.colaboradorId, datos.fecha, datos.entrada ?? null, datos.salida ?? null);
     if (motivo) return reply.status(400).send(motivo);
 
-    const registro = await prisma.registro.create({ data: datos as any });
+    const registro = await prisma.registro.create({
+      data: {
+        ...datos,
+        // Solo se marca el momento que de verdad trae hora: un registro manual
+        // puede traer solo entrada, y poner MANUAL en una salida vacía diría que
+        // alguien la escribió cuando no existe.
+        ...(datos.entrada ? { metodoEntrada: 'MANUAL' } : {}),
+        ...(datos.salida ? { metodoSalida: 'MANUAL' } : {}),
+      } as any,
+    });
     // Un día con marcación es un día que va a salir en un reporte. Si llega ahí
     // sin fila, lo resuelve el horario vigente y vuelve a ser reescribible. Esto
     // pasa sobre todo al cargar días PASADOS a mano, que es como se corrige.
@@ -768,7 +779,10 @@ export default async function registroRoutes(app: FastifyInstance) {
       if (nuevos[1]) {
         const datos = { ...comunes, entrada: nuevos[1].entrada, salida: nuevos[1].salida, salidaAlmuerzo: false };
         if (segunda) await tx.registro.update({ where: { id: segunda.id }, data: datos });
-        else await tx.registro.create({ data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any } });
+        // Fila nueva nacida de una edición del admin. La de arriba se ACTUALIZA y
+        // conserva su método original a propósito: esa marcación sí ocurrió en el
+        // kiosco, y el cambio queda registrado en `RegistroCambio` y `editadoPor`.
+        else await tx.registro.create({ data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any, metodoEntrada: 'MANUAL', metodoSalida: 'MANUAL' } });
       } else if (segunda) {
         // Se quitó el descanso: la marcación del regreso ya no representa nada.
         await tx.registro.delete({ where: { id: segunda.id } });
