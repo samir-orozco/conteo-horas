@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Clock, Users, Calendar, Settings, BarChart2, FileBarChart2, Bell, LogOut, Menu, X, HelpCircle, PlayCircle, Sparkles,
   Building2, CreditCard, LayoutDashboard, AlertTriangle, Home, Handshake,
+  ScanFace,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +29,7 @@ const navEmpresa: NavSection[] = [
       { to: '/app/kiosco', label: 'Marcador', icon: Clock },
       { to: '/app/colaboradores', label: 'Colaboradores', icon: Users },
       { to: '/app/registros', label: 'Registros', icon: BarChart2 },
+      { to: '/app/revision', label: 'Revisión', icon: ScanFace },
     ],
   },
   {

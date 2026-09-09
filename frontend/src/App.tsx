@@ -15,6 +15,7 @@ import MarcadorLink from './pages/MarcadorLink';
 import Colaboradores from './pages/Colaboradores';
 import ColaboradorDetalle from './pages/ColaboradorDetalle';
 import Registros from './pages/Registros';
+import RevisionMarcaciones from './pages/RevisionMarcaciones';
 import Festivos from './pages/Festivos';
 import Reportes from './pages/Reportes';
 import ReporteExtras from './pages/ReporteExtras';
@@ -99,6 +100,7 @@ export default function App() {
             <Route path="colaboradores" element={<Colaboradores />} />
             <Route path="colaboradores/:id" element={<ColaboradorDetalle />} />
             <Route path="registros" element={<Registros />} />
+            <Route path="revision" element={<RevisionMarcaciones />} />
             <Route path="festivos" element={<Festivos />} />
             <Route path="reportes" element={<Reportes />} />
             <Route path="reportes/extras" element={<ReporteExtras />} />
