@@ -138,13 +138,14 @@ Orden propuesto. Cada paso da valor por sí solo. **El paso 1 ya está hecho.**
 
 1. ~~**Vitest en el backend**, con pruebas sobre las funciones puras de
    `src/utils/`~~ — hecho: 12 archivos, 234 casos, `npm test`.
-2. **Linter en el backend** (el frontend ya tiene ESLint).
+2. ~~**Linter en el backend**~~ — hecho el 9 de septiembre de 2026: ESLint con
+   la misma configuración del frontend, `npm run lint`. Ver la sección 10.
 3. **Cobertura**, y recién ahí exigir el >80% de la sección 2.
 4. **Pruebas de integración** de las rutas de reportes, con base de datos de
    prueba.
 5. **Mutación** (Stryker), al final y solo sobre el motor de horas.
 
-Mientras falten los pasos 2 a 5, la sección 2 rige solo donde hay pruebas, y la
+Mientras falten los pasos 4 y 5, la sección 2 rige solo donde hay pruebas, y la
 sección 5 cubre el resto.
 
 ---
@@ -158,7 +159,7 @@ el 26 de agosto de 2026. El estado real ahora:
 |---|---|---|
 | Pruebas | Vitest, `npm test` | Vitest + Testing Library, `npm test` |
 | Tipos | `npx tsc --noEmit` | `npx tsc -b` (más estricto) |
-| Linter | **sigue sin haber** | ESLint, `npm run lint` |
+| Linter | ESLint, `npm run lint` | ESLint, `npm run lint` |
 | Cobertura | `npm run test:cobertura` | `npm run test:cobertura` |
 | Mutación | sigue sin haber | sigue sin haber |
 
@@ -202,7 +203,7 @@ occidente de Colombia. El formateo compartido vive en `src/lib/fechas.ts`.
 ### Lo que sigue pendiente
 
 1. ~~Vitest en el backend~~ — hecho.
-2. **Linter en el backend.** Sigue siendo el hueco más grande.
+2. ~~Linter en el backend~~ — hecho. Ver la sección 10.
 3. ~~Cobertura~~ — hecha en los dos lados.
 4. **Pruebas de integración de las rutas**, con base de datos de prueba.
 5. **Mutación** (Stryker), al final y solo sobre el motor de horas.
@@ -460,3 +461,63 @@ print('cambian de versión:', len([p for p in set(a)&set(b) if a[p].get('version
 Y ojo con el orden de los comandos del despliegue: `cp ... && npm install` deja
 el archivo copiado aunque el install falle. Si el `cp` pisa algo del servidor,
 hay que tener con qué reponerlo ANTES de correrlo.
+
+---
+
+## 10. El linter del backend, y por qué sale en verde con 185 avisos
+
+**Montado el 9 de septiembre de 2026.** Era el punto 2 de la lista de pendientes
+desde agosto. `npm run lint` en `backend/`, con la misma configuración que el
+frontend salvo dos diferencias que vienen del entorno: los globales son los de
+Node y no hay plugins de React.
+
+**El archivo es `eslint.config.mjs` y no `.js`.** El backend no tiene
+`"type": "module"` en su `package.json`, así que un `.js` se carga como CommonJS
+y la config revienta con «Cannot use import statement outside a module». Poner el
+`type` para arreglarlo rompería el backend entero.
+
+### La decisión que hay que entender antes de tocarla
+
+La primera pasada encontró **193 problemas**: 185 `no-explicit-any` y 8 variables
+sin usar. Poner las 193 en error habría dejado `npm run lint` en rojo desde el
+primer día, y **un linter que siempre sale rojo es un linter que todo el mundo
+aprende a ignorar**, con lo que deja de servir para lo único que importa: ser
+puerta del código nuevo.
+
+Lo que se hizo:
+
+- **`no-unused-vars` se queda en error**, con `ignoreRestSiblings` y el patrón
+  `^_`, porque el descarte por desestructuración (`const { empresaId: _ignorar,
+  ...rest } = body`) es deliberado en las rutas. Con eso las 8 se resolvieron
+  sin tocar código, salvo dos que eran reales: un import muerto en una prueba y
+  un `FastifyRequest` en `src/types/fastify.d.ts` al que la propia declaración
+  del módulo le hacía sombra. Este último se comprobó quitándolo y viendo `tsc`
+  limpio, no leyéndolo.
+- **`args: 'none'`**, porque los manejadores de Fastify llevan la firma
+  `(request, reply)` la usen o no, y marcar un `reply` sin usar no encuentra
+  defectos: solo obliga a renombrar parámetros.
+- **`no-explicit-any` en aviso**, con el número **congelado en el script**:
+  `eslint . --max-warnings 185`.
+
+### El tope de 185 es una puerta, no un adorno
+
+Ese número es lo que impide que la deuda crezca. Comprobado, no supuesto:
+agregando un solo `any` nuevo, `npm run lint` **sale con código 1**. Es decir,
+un aviso funciona aquí igual de duro que un error, pero sin teñir de rojo lo que
+ya estaba.
+
+**Para bajarlo: se quitan `any`, se cuenta otra vez y se baja el número. Nunca al
+revés.** Subir el tope para que pase un cambio es desarmar la única pieza que
+sostiene esto.
+
+De los 185, **184 son de código commiteado y 1 viene de trabajo en curso** en
+`routes/admin.ts` el día que se congeló. Por eso el tope es 185 y no 184: la
+regla es «ni uno más que hoy», no castigar lo que está a medias.
+
+### El frontend tiene el problema contrario, y sigue sin resolver
+
+`frontend` sale con **66 errores preexistentes**, o sea que su `npm run lint`
+lleva tiempo en rojo permanente y ya no gobierna nada: la sección 2 dice
+«compruébalo contra `HEAD` antes de dar por tuyo uno que ya estaba», que es
+exactamente lo que se hace cuando un linter dejó de ser puerta. Aplicarle el
+mismo trinquete de arriba lo devolvería a la utilidad, y está sin hacer.

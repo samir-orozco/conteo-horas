@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcularTardanzas, franjaDelDia, minutosDe, construirExtraConfig, DIAS_SEMANA, salidaAntesDeHora } from './tardanzas';
+import { calcularTardanzas, franjaDelDia, minutosDe, construirExtraConfig, salidaAntesDeHora } from './tardanzas';
 import { calcularDiasEsperados } from './diasEsperados';
 import { rangoReporte } from './fechas';
 
