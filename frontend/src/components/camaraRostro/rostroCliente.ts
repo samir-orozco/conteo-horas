@@ -29,13 +29,41 @@ export const MS_MIN_CUADRO = 120;
 // invertidos, cambia este valor a -1 (es lo único que hay que tocar).
 export const SIGNO_DERECHA = 1;
 
-// Giro de cabeza (yaw): posición de la nariz relativa a los ojos.
+// Giro de cabeza (yaw): dónde cae la nariz a lo largo de la línea de los ojos.
 // ~0 de frente; el signo indica el lado del giro.
+//
+// SE PROYECTA SOBRE LA LÍNEA DE LOS OJOS, NO SE MIRA SOLO LA X. La versión
+// anterior calculaba (nariz.x - ojoIzq.x) / (ojoDer.x - ojoIzq.x) - 0.5, que
+// mezcla el giro con la INCLINACIÓN de la cara dentro del plano de la imagen.
+// Con proporciones de cara promedio la contaminación es exacta y grande:
+//
+//     versión vieja(inclinación θ, sin nada de giro) = -(30/63) · tan θ
+//
+// El umbral de `poseCumple` es 0.13, o sea que 15.27 grados de INCLINACIÓN ya
+// contaban como giro cumplido. De ahí salían dos daños distintos:
+//
+//   1. En el enrolamiento, quien inclinaba la cabeza en vez de girarla pasaba el
+//      paso "derecha" con una toma casi frontal. Tres frontales en lugar de un
+//      frontal y dos perfiles dejan al descriptor sin cobertura angular, y sin
+//      cobertura angular el cotejo 1:N confunde a personas parecidas.
+//   2. Y al revés: quien mira de frente con la cabeza inclinada 12 grados daba
+//      0.101 y NO pasaba el paso "mira de frente", que exige menos de 0.1. Un
+//      falso rechazo, con gente honesta, todos los días.
+//
+// Además fue lo que permitió pasar el reto de giro con una foto en la pantalla
+// de un celular: basta torcer el aparato. Ver rostroCliente.test.ts.
+//
+// Para una cara SIN inclinar las dos fórmulas dan exactamente lo mismo, así que
+// esto no mueve el comportamiento de nadie que ya estuviera derecho.
 export function desviacionYaw(landmarks: faceapi.FaceLandmarks68): number {
   const nariz = landmarks.getNose()[3];
   const ojoIzq = landmarks.getLeftEye()[0];
   const ojoDer = landmarks.getRightEye()[3];
-  return (nariz.x - ojoIzq.x) / (ojoDer.x - ojoIzq.x) - 0.5;
+  const ex = ojoDer.x - ojoIzq.x;
+  const ey = ojoDer.y - ojoIzq.y;
+  const largo2 = ex * ex + ey * ey;
+  if (largo2 === 0) return 0;
+  return ((nariz.x - ojoIzq.x) * ex + (nariz.y - ojoIzq.y) * ey) / largo2 - 0.5;
 }
 
 // Promedio elemento a elemento de varios descriptores de 128 floats: reduce el
