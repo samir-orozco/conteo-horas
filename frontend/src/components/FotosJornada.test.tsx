@@ -78,11 +78,17 @@ describe('las fotos de verificación facial del día', () => {
     expect(within(t2).queryByText('Abrió y cerró en sedes distintas')).toBeNull();
   });
 
-  it('sin sede conocida no inventa una', async () => {
-    responder([foto({ momento: 'SALIDA', jornada: 0, sede: null })]);
+  it('una salida sin sede no hereda la de la entrada de su turno', async () => {
+    // La entrada del mismo turno SÍ trae sede: es la única de la que se podría
+    // heredar. Sin ella en el fixture, no inventar nada sale gratis.
+    responder([
+      foto({ momento: 'ENTRADA', jornada: 0, sede: POBLADO }),
+      foto({ momento: 'SALIDA', hora: bog(17, 0), jornada: 0, sede: null }),
+    ]);
     render(<FotosJornada registroId="r1" />);
     expect(await screen.findByAltText('Foto de salida')).toBeTruthy();
-    expect(screen.queryByText('El Poblado')).toBeNull();
+    expect(screen.getByAltText('Foto de entrada en El Poblado')).toBeTruthy();
+    expect(screen.getAllByText('El Poblado')).toHaveLength(1);
   });
 
   it('con un backend que todavía no manda el turno, cae a la lista de antes', async () => {
