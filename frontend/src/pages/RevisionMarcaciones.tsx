@@ -609,8 +609,16 @@ export default function RevisionMarcaciones() {
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-white px-4 py-2.5 text-[11.5px] text-muted">
                 <span className="font-semibold text-ink/75">Qué delata una foto de pantalla:</span>
                 <span className="inline-flex items-center gap-1.5"><Frame size={13} className="text-gray-400" /> el filo de un marco</span>
-                <span className="inline-flex items-center gap-1.5"><Sun size={13} className="text-gray-400" /> un brillo de pantalla</span>
                 <span className="inline-flex items-center gap-1.5"><Hand size={13} className="text-gray-400" /> una mano sosteniéndola</span>
+                {/* Decía «un brillo de pantalla» y se quitó porque NO SIRVE: sobre
+                    46 fotogramas del kiosco, la proporción de píxeles quemados dio
+                    un AUC de 0,548, o sea casi tirar una moneda. Enseñarle al
+                    revisor a buscar eso le gasta la atención en una señal que no
+                    distingue nada.
+                    En su lugar va lo que sí apareció en la foto de producción del
+                    10 de septiembre: quien sostiene el teléfono sale TAMBIÉN en el
+                    cuadro, así que hay dos caras. */}
+                <span className="inline-flex items-center gap-1.5"><ScanFace size={13} className="text-gray-400" /> otra cara en el cuadro</span>
               </div>
             </div>
 
