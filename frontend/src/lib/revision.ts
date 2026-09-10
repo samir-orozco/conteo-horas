@@ -71,3 +71,31 @@ export const ROTULO_MOMENTO: Record<MomentoMarcado, string> = {
   entrada: 'Entrada',
   salida: 'Salida',
 };
+
+// LA FRANJA DEL DÍA a la que pertenece una hora, en horario de Bogotá.
+//
+// La lista se lee como una línea de tiempo, y con la ventana en un día un rótulo
+// de fecha repetiría lo que ya dice el filtro. Las franjas sí separan: mientras
+// se recorre la mañana, el rótulo queda clavado arriba y siempre se sabe en qué
+// momento del día se está.
+//
+export type Franja = 'MADRUGADA' | 'MANANA' | 'MEDIODIA' | 'TARDE' | 'NOCHE';
+
+// Los cortes son los del habla, no los del reloj de 6 en 6: nadie llama "tarde"
+// a las 12:30 ni "mañana" a las 5. Van en orden creciente y sin huecos, que es
+// lo que impide que la lista muestre "Mañana" dos veces separadas por "Tarde".
+export function franjaDeLaHora(hora: number): Franja {
+  if (hora < 6) return 'MADRUGADA';
+  if (hora < 12) return 'MANANA';
+  if (hora < 14) return 'MEDIODIA';
+  if (hora < 19) return 'TARDE';
+  return 'NOCHE';
+}
+
+export const ROTULO_FRANJA: Record<Franja, string> = {
+  MADRUGADA: 'Madrugada',
+  MANANA: 'Mañana',
+  MEDIODIA: 'Mediodía',
+  TARDE: 'Tarde',
+  NOCHE: 'Noche',
+};

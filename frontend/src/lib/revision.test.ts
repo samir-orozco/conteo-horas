@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { motivoSinFoto, type EventoDeRevision } from './revision';
+import { motivoSinFoto, franjaDeLaHora, type EventoDeRevision, type Franja } from './revision';
 
 // POR QUÉ ESTA MARCACIÓN NO TIENE FOTO.
 //
@@ -58,5 +58,36 @@ describe('por qué falta la foto de una marcación', () => {
     expect(motivoSinFoto(ev({ metodo: 'ROSTRO' }), false)).toBe('NO_SE_SABE');
     // Salvo que el día ya haya expirado: entonces sí hubo foto y se borró.
     expect(motivoSinFoto(ev({ metodo: 'ROSTRO' }), true)).toBe('YA_SE_BORRO');
+  });
+});
+
+describe('en qué franja del día cae una marcación', () => {
+  it('reparte las 24 horas sin huecos ni solapes', () => {
+    // La prueba que de verdad importa: que TODA hora tenga exactamente una
+    // franja. Un hueco dejaría marcaciones sin agrupar y un solape las pondría
+    // dos veces en la lista.
+    const franjas = Array.from({ length: 24 }, (_, h) => franjaDeLaHora(h));
+    expect(franjas).toHaveLength(24);
+    expect(franjas.every(f => f !== undefined)).toBe(true);
+    // Y que se usen las cinco: si una no aparece nunca, sobra.
+    expect(new Set(franjas).size).toBe(5);
+  });
+
+  it('las franjas van en orden y no se repiten a lo largo del día', () => {
+    // Recorriendo de 0 a 23 la franja solo puede cambiar hacia adelante. Si
+    // volviera a una anterior, la lista mostraría "Mañana" dos veces separadas
+    // por "Tarde", que es peor que no agrupar.
+    const orden: Franja[] = ['MADRUGADA', 'MANANA', 'MEDIODIA', 'TARDE', 'NOCHE'];
+    const vistas = Array.from({ length: 24 }, (_, h) => franjaDeLaHora(h))
+      .filter((f, i, a) => i === 0 || f !== a[i - 1]);
+    expect(vistas).toEqual(orden);
+  });
+
+  it('las horas de referencia caen donde una persona diría', () => {
+    expect(franjaDeLaHora(3)).toBe('MADRUGADA');
+    expect(franjaDeLaHora(8)).toBe('MANANA');
+    expect(franjaDeLaHora(12)).toBe('MEDIODIA');
+    expect(franjaDeLaHora(16)).toBe('TARDE');
+    expect(franjaDeLaHora(22)).toBe('NOCHE');
   });
 });

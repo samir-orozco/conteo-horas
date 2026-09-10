@@ -110,6 +110,19 @@ describe('revisión de marcaciones', () => {
     expect(get.mock.calls.filter(c => String(c[0]).endsWith('/fotos'))).toHaveLength(0);
   });
 
+  it('si la FOTO no carga lo dice, en vez de quedarse en «Cargando» para siempre', async () => {
+    // El defecto: el `.catch` guardaba { clave, url: null }, y el render exigía
+    // `url` para pintar la imagen, así que caía en la rama de «Cargando foto...»
+    // y se quedaba ahí. Quien revisa se queda esperando algo que ya falló.
+    get.mockImplementation((url: string) => {
+      if (url === '/registros/revision') return Promise.resolve({ data: respuesta([evento()]) });
+      return Promise.reject(new Error('la foto no cargó'));
+    });
+    render(<RevisionMarcaciones />);
+    expect(await screen.findByText(/no pudimos cargar esta foto/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText(/cargando foto/i)).not.toBeInTheDocument());
+  });
+
   it('si la petición falla lo dice y no se cae', async () => {
     get.mockImplementation(() => Promise.reject(new Error('caída')));
     render(<RevisionMarcaciones />);
