@@ -37,12 +37,50 @@
 -- El orden de las columnas no es decorativo: la igualdad (`colaboradorId`)
 -- primero y el rango (`fecha`) ultimo. Invertirlo no sirve para nada.
 
+-- ===================================================================
+-- PASO 0. MIRAR ANTES DE TOCAR. Se corre SOLO, se lee, y despues se decide.
+-- ===================================================================
+-- HAY CLIENTES MARCANDO AHORA MISMO. Un ALTER sobre `registros` la bloquea
+-- mientras dura, y `registros` es la tabla que mas crece del producto. Con
+-- miles de filas es instantaneo; con millones no, y durante ese rato el kiosco
+-- devolveria error a quien intente marcar.
+--
+-- Referencia medida en local: 1.000.000 de filas tardan del orden de segundos
+-- en crear este indice. Por debajo de ~100.000 no hay de que preocuparse.
+
+SELECT COUNT(*) AS filas_en_registros FROM `registros`;
+SELECT VERSION() AS motor;
+
+-- Y que no exista ya, por si este SQL se corre dos veces:
+SHOW INDEX FROM `registros` WHERE Key_name = 'registros_colaboradorId_fecha_idx';
+SHOW COLUMNS FROM `registros` WHERE Field = 'metodoEntrada';
+
+-- ===================================================================
+-- PASO 1. EL CAMBIO. Se corre despues de leer el paso 0.
+-- ===================================================================
+-- `ALGORITHM=INPLACE, LOCK=NONE` NO ES DECORACION: es lo que permite que la
+-- gente SIGA MARCANDO mientras el indice se construye. Y si este servidor no
+-- puede hacerlo asi, el comando FALLA con un error en vez de bloquear la tabla
+-- en silencio, que es exactamente lo que se quiere: enterarse antes, no despues.
+--
+-- Si falla por eso, la salida es correrlo en una ventana de madrugada quitando
+-- las dos clausulas, no ignorarlo.
+--
+-- SOBRE LOS DATOS QUE YA EXISTEN: las cuatro columnas nacen NULL y ninguna fila
+-- se reescribe. Ese NULL significa «no se sabe» en todo el codigo que las lee, y
+-- asi tiene que quedarse: rellenarlo por descarte falsearia el numero que estas
+-- columnas existen para medir. No hace falta ningun backfill.
+--
+-- Y EL BACKEND VIEJO SIGUE FUNCIONANDO con estas columnas puestas: no las
+-- conoce y no las escribe. Por eso este SQL va PRIMERO y sin prisa por el resto.
+
 ALTER TABLE `registros`
   ADD COLUMN `metodoEntrada`    ENUM('ROSTRO','CEDULA','MANUAL') NULL,
   ADD COLUMN `metodoSalida`     ENUM('ROSTRO','CEDULA','MANUAL') NULL,
   ADD COLUMN `distanciaEntrada` DOUBLE NULL,
   ADD COLUMN `distanciaSalida`  DOUBLE NULL,
-  ADD INDEX `registros_colaboradorId_fecha_idx` (`colaboradorId`, `fecha`);
+  ADD INDEX `registros_colaboradorId_fecha_idx` (`colaboradorId`, `fecha`),
+  ALGORITHM=INPLACE, LOCK=NONE;
 
 -- Comprobacion 1: las cuatro columnas, todas con Null = YES.
 SHOW COLUMNS FROM `registros` WHERE Field IN
@@ -52,9 +90,7 @@ SHOW COLUMNS FROM `registros` WHERE Field IN
 -- (Seq_in_index 1 = colaboradorId, 2 = fecha).
 SHOW INDEX FROM `registros` WHERE Key_name = 'registros_colaboradorId_fecha_idx';
 
--- Comprobacion 3: que motor es este de verdad. El playbook dice que Banahosting
--- sirve MariaDB aunque la llamen MySQL, y MariaDB tiene otro optimizador y otro
--- formato de EXPLAIN. Las mediciones de arriba son de MySQL 9.7: si esto
--- responde MariaDB, el ALTER es igual de valido (es aditivo y no depende del
--- optimizador), pero el plan de la consulta hay que volver a mirarlo alla.
-SELECT VERSION() AS motor;
+-- Comprobacion 3: cuantas filas quedaron con las columnas nuevas. Tiene que dar
+-- CERO: son aditivas y nadie las ha escrito todavia. El primer valor aparece
+-- cuando alguien marque despues de desplegar el backend.
+SELECT COUNT(*) AS con_metodo FROM `registros` WHERE `metodoEntrada` IS NOT NULL;
