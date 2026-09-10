@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, X, Wallet, Power, Link as LinkIcon, Infinity as InfinityIcon, ImagePlus, Trash2, ChevronDown, CalendarClock, Tag, MoreVertical } from 'lucide-react';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import EliminarEmpresaDialog, { type ResumenEliminacion } from '../../components/EliminarEmpresaDialog';
 import Toast from '../../components/Toast';
 import { formatearMiles, parsearMiles } from '../../lib/dinero';
 import { copiarTexto } from '../../lib/clipboard';
@@ -59,6 +60,11 @@ export default function AdminEmpresas() {
   const [preciando, setPreciando] = useState<EmpresaRow | null>(null);
   const [formPrecio, setFormPrecio] = useState({ modo: 'GLOBAL', precioFijo: 0, precioTramo1: 0, limiteTramo1: 0, precioTramo2: 0 });
   const [guardandoPrecio, setGuardandoPrecio] = useState(false);
+  // Eliminar empresa (irreversible)
+  const [eliminando, setEliminando] = useState<EmpresaRow | null>(null);
+  const [resumenEliminar, setResumenEliminar] = useState<ResumenEliminacion | null>(null);
+  const [borrando, setBorrando] = useState(false);
+  const [errorEliminar, setErrorEliminar] = useState('');
   // Menú "más opciones" por fila (posición fija calculada desde el botón)
   const [menu, setMenu] = useState<{ emp: EmpresaRow; x: number; y: number } | null>(null);
 
@@ -96,6 +102,36 @@ export default function AdminEmpresas() {
     const r = await api.get(`/admin/empresas/${emp.id}/cobro`);
     setCobro(r.data);
     setFormPago(p => ({ ...p, monto: r.data.monto > 0 ? r.data.monto : r.data.tarifaMesCompleto }));
+  };
+
+  // El modal abre en blanco y pide el resumen: cuánto se pierde y si algo lo
+  // bloquea. Hasta que llegue no ofrece el botón de borrar.
+  const abrirEliminar = async (emp: EmpresaRow) => {
+    setEliminando(emp);
+    setResumenEliminar(null);
+    setErrorEliminar('');
+    try {
+      const r = await api.get(`/admin/empresas/${emp.id}/eliminacion`);
+      setResumenEliminar(r.data);
+    } catch (err) {
+      setErrorEliminar(mensajeDeError(err, 'No pudimos calcular qué se eliminaría.'));
+    }
+  };
+
+  const confirmarEliminar = async (confirmacion: string) => {
+    if (!eliminando) return;
+    setBorrando(true);
+    setErrorEliminar('');
+    try {
+      await api.post(`/admin/empresas/${eliminando.id}/eliminar`, { confirmacion });
+      setToast(`Empresa "${eliminando.nombre}" eliminada`);
+      setEliminando(null);
+      cargar();
+    } catch (err) {
+      setErrorEliminar(mensajeDeError(err, 'No se pudo eliminar la empresa.'));
+    } finally {
+      setBorrando(false);
+    }
   };
 
   // Pasa por el mismo camino que el resto de los adjuntos del producto en vez
@@ -415,8 +451,26 @@ export default function AdminEmpresas() {
               className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-left hover:bg-gray-50 ${menu.emp.activa ? 'text-red-600' : 'text-green-700'}`}>
               <Power size={15} /> {menu.emp.activa ? 'Desactivar empresa' : 'Activar empresa'}
             </button>
+            {/* Aparte del resto y de último: es lo único que no se puede deshacer. */}
+            <div className="border-t border-gray-100 my-1" />
+            <button onClick={() => accionMenu(() => abrirEliminar(menu.emp))}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left hover:bg-red-50 text-red-600">
+              <Trash2 size={15} /> Eliminar empresa
+            </button>
           </div>
         </>
+      )}
+
+      {/* Eliminar empresa: irreversible, se confirma escribiendo el NIT */}
+      {eliminando && (
+        <EliminarEmpresaDialog
+          nombre={eliminando.nombre}
+          resumen={resumenEliminar}
+          eliminando={borrando}
+          error={errorEliminar}
+          onEliminar={confirmarEliminar}
+          onCancelar={() => { setEliminando(null); setErrorEliminar(''); }}
+        />
       )}
 
       {/* Modal ampliar prueba */}

@@ -7,8 +7,14 @@ import {
 } from '../utils/suscripcion';
 import { capacidadesDe, esPlan, FEATURES, PLAN_IDS, obtenerPlanes, combinarPlanes } from '../utils/planes';
 import { comprobanteAGuardar } from '../utils/comprobantes';
+import { decidirEliminacion, bloqueoDeEliminacion } from '../utils/eliminarEmpresa';
+import { borrarEmpresaEnCascada } from '../utils/borrarEmpresaEnCascada';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
+
+// Rechazo que nace DENTRO de la transacción de borrado, para poder responder
+// 409 en vez de un 500. Al lanzarla, Prisma revierte todo lo ya borrado.
+class BloqueoDeDinero extends Error {}
 
 export default async function adminRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireSuperAdmin] };
@@ -204,6 +210,104 @@ export default async function adminRoutes(app: FastifyInstance) {
     if (!existente) return reply.status(404).send({ error: 'Empresa no encontrada' });
     await prisma.empresa.update({ where: { id }, data: { nombre, nit, email, telefono, activa, exentaPago } });
     return empresaConEstado(id);
+  });
+
+  // ===== Eliminar empresa (irreversible) =====
+  //
+  // Se lleva por delante colaboradores, marcaciones, contratos e historia de
+  // vinculación de gente real, en veinte tablas. La DECISIÓN de si procede vive
+  // en utils/eliminarEmpresa.ts y está cubierta por pruebas; lo de aquí es la
+  // plomería, verificada a mano contra datos reales (CLAUDE.md 8.6) con
+  // prisma/verificar-eliminar-empresa.ts.
+
+  // Qué se llevaría por delante y si algo lo impide, para el modal.
+  async function resumenEliminacion(id: string) {
+    const empresa = await prisma.empresa.findUnique({
+      where: { id },
+      select: { id: true, nombre: true, nit: true },
+    });
+    if (!empresa) return null;
+    const [colaboradores, registros, pagosAprobados, comisiones] = await Promise.all([
+      prisma.colaborador.count({ where: { empresaId: id } }),
+      prisma.registro.count({ where: { colaborador: { empresaId: id } } }),
+      prisma.pago.count({ where: { estado: 'APROBADO', suscripcion: { empresaId: id } } }),
+      prisma.comision.count({ where: { empresaId: id } }),
+    ]);
+    return {
+      ...empresa,
+      colaboradores,
+      registros,
+      pagosAprobados,
+      comisiones,
+      bloqueo: bloqueoDeEliminacion({ nit: empresa.nit, pagosAprobados, comisiones }),
+    };
+  }
+
+  app.get('/empresas/:id/eliminacion', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const resumen = await resumenEliminacion(id);
+    if (!resumen) return reply.status(404).send({ error: 'Empresa no encontrada' });
+    return resumen;
+  });
+
+  // POST y no DELETE porque lleva cuerpo (el NIT escrito a mano). Un DELETE con
+  // cuerpo funciona en Fastify, pero no siempre sobrevive al proxy del hosting,
+  // y eso no es algo que uno quiera descubrir en producción.
+  app.post('/empresas/:id/eliminar', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { confirmacion } = request.body as { confirmacion?: string };
+
+    const resumen = await resumenEliminacion(id);
+    if (!resumen) return reply.status(404).send({ error: 'Empresa no encontrada' });
+
+    const veredicto = decidirEliminacion(
+      { nit: resumen.nit, pagosAprobados: resumen.pagosAprobados, comisiones: resumen.comisiones },
+      confirmacion ?? '',
+    );
+    if (!veredicto.permitido) {
+      // 400 si solo falta escribir bien el NIT (lo corrige el usuario);
+      // 409 si es el estado de la empresa el que lo impide.
+      const status = veredicto.motivo === 'CONFIRMACION' ? 400 : 409;
+      return reply.status(status).send({ error: veredicto.mensaje, motivo: veredicto.motivo });
+    }
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        // El dinero se vuelve a mirar DENTRO de la transacción: entre la
+        // consulta de arriba y este punto pudo entrar la confirmación de un
+        // pago de Wompi, y ese es justo el caso que no puede pasar.
+        const [pagosAprobados, comisiones] = await Promise.all([
+          tx.pago.count({ where: { estado: 'APROBADO', suscripcion: { empresaId: id } } }),
+          tx.comision.count({ where: { empresaId: id } }),
+        ]);
+        const otraVez = decidirEliminacion({ nit: resumen.nit, pagosAprobados, comisiones }, resumen.nit);
+        if (!otraVez.permitido) throw new BloqueoDeDinero(otraVez.mensaje);
+
+        await borrarEmpresaEnCascada(tx, id);
+      }, {
+        // Una empresa con historial largo borra decenas de miles de filas y no
+        // cabe en los 5 segundos que Prisma da por defecto.
+        timeout: 60_000,
+      });
+    } catch (e) {
+      if (e instanceof BloqueoDeDinero) {
+        return reply.status(409).send({ error: e.message, motivo: 'PAGOS' });
+      }
+      throw e;
+    }
+
+    // Queda huella siempre: es irreversible y no hay forma de reconstruir qué
+    // había. Sin esto, la única señal de que una empresa existió es que ya no está.
+    app.log.warn({
+      empresaId: id,
+      nit: resumen.nit,
+      nombre: resumen.nombre,
+      colaboradores: resumen.colaboradores,
+      registros: resumen.registros,
+      porEmail: (request.user as any)?.email,
+    }, 'Empresa eliminada por el super admin');
+
+    return reply.status(204).send();
   });
 
   // Ampliar / fijar el fin de la prueba gratuita. Si la empresa estaba en mora o
