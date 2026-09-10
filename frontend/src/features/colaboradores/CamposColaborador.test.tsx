@@ -127,6 +127,12 @@ describe('CamposColaborador', () => {
       expect(onCambio).toHaveBeenCalledWith({ puedeCerrarEnOtraSede: true });
     });
 
+    it('apagarlo avisa el valor nuevo: así se le quita el permiso a quien lo tenía', async () => {
+      const onCambio = conDosSedes({ sedeIds: ['s1', 's2'], puedeCerrarEnOtraSede: true });
+      await userEvent.setup().click(permiso()!);
+      expect(onCambio).toHaveBeenCalledWith({ puedeCerrarEnOtraSede: false });
+    });
+
     it('la ayuda de las sedes deja de prometer «la misma donde lo abrió» cuando hay permiso', () => {
       conDosSedes({ sedeIds: ['s1', 's2'], puedeCerrarEnOtraSede: true });
       expect(screen.getByText(/cerrar el turno en una distinta de la que lo abrió/i)).toBeInTheDocument();
