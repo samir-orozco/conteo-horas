@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizarModalidad, decidirUbicacionDeMarca } from './modalidad';
+import { normalizarModalidad, decidirUbicacionDeMarca, puedeCerrarAqui, normalizarPermisoOtraSede } from './modalidad';
 
 // Quién puede marcar desde dónde. Es la regla que antes era de la EMPRESA (si
 // había geocerca, aplicaba a todos por igual) y ahora es de la PERSONA.
@@ -152,3 +152,75 @@ describe('decidirUbicacionDeMarca · REMOTO (no se le mira la ubicación)', () =
     expect(d).toEqual({ accion: 'PASA', sedeId: null });
   });
 });
+
+// ¿SE PUEDE CERRAR EL TURNO EN LA SEDE DONDE SE ESTÁ MARCANDO?
+//
+// Es la condición que vivía suelta en /marcar (worker.ts), sin una sola prueba:
+// el único script que la tocaba creaba una empresa con UNA sede y un híbrido que
+// entraba desde lejos, así que habría seguido en verde aunque la guarda se
+// borrara. Sale a una función pura para poder verla fallar.
+//
+// Los ids son los de las sedes de arriba: s1 El Poblado, s2 Laureles.
+describe('puedeCerrarAqui', () => {
+  const cierre = (extra: Partial<Parameters<typeof puedeCerrarAqui>[0]>) => ({
+    modalidad: 'PRESENCIAL' as const,
+    puedeCerrarEnOtraSede: false,
+    sedeDelTurno: 's1' as string | null,
+    sedeDeLaMarca: 's1' as string | null,
+    ...extra,
+  });
+
+  it('PRESENCIAL cierra donde abrió: pasa', () => {
+    expect(puedeCerrarAqui(cierre({}))).toBe(true);
+  });
+
+  it('PRESENCIAL SIN el permiso cierra en otra sede: no pasa, que es la regla de siempre', () => {
+    expect(puedeCerrarAqui(cierre({ sedeDeLaMarca: 's2' }))).toBe(false);
+  });
+
+  it('PRESENCIAL CON el permiso cierra en otra sede: pasa', () => {
+    expect(puedeCerrarAqui(cierre({ sedeDeLaMarca: 's2', puedeCerrarEnOtraSede: true }))).toBe(true);
+  });
+
+  it('HIBRIDO cierra en otra sede sin el permiso: la regla ya no le aplicaba', () => {
+    expect(puedeCerrarAqui(cierre({ modalidad: 'HIBRIDO', sedeDeLaMarca: 's2' }))).toBe(true);
+  });
+
+  it('REMOTO nunca se bloquea', () => {
+    expect(puedeCerrarAqui(cierre({ modalidad: 'REMOTO', sedeDeLaMarca: 's2' }))).toBe(true);
+  });
+
+  it('un turno abierto SIN sede se deja cerrar donde sea: si no, quedaría atrapado', () => {
+    // Son los turnos abiertos antes de que existieran las sedes.
+    expect(puedeCerrarAqui(cierre({ sedeDelTurno: null, sedeDeLaMarca: 's2' }))).toBe(true);
+  });
+
+  it('una marca SIN sede tampoco se bloquea', () => {
+    // Le pasa al presencial cuyas sedes no tienen coordenadas: la geocerca cae a
+    // la de la empresa y la marca no identifica ninguna sede.
+    expect(puedeCerrarAqui(cierre({ sedeDeLaMarca: null }))).toBe(true);
+  });
+});
+
+describe('normalizarPermisoOtraSede', () => {
+  it('acepta true y false tal cual', () => {
+    expect(normalizarPermisoOtraSede(true)).toBe(true);
+    expect(normalizarPermisoOtraSede(false)).toBe(false);
+  });
+
+  it('ausente es «no se tocó», y NO false', () => {
+    // Si ausente fuera false, un formulario que no manda el campo (porque la
+    // lista no lo trajo) le quitaría el permiso a un supervisor en silencio
+    // al corregirle el cargo.
+    expect(normalizarPermisoOtraSede(undefined)).toBeUndefined();
+  });
+
+  it('lo que no es un booleano lo rechaza, no lo adivina', () => {
+    // POST y PUT de colaboradores pasan el cuerpo a Prisma sin lista blanca: un
+    // "true" en texto llegaría crudo y saldría como un 500 sin explicación.
+    for (const v of ['true', 'false', 1, 0, null, 'si', {}]) {
+      expect(normalizarPermisoOtraSede(v)).toBeNull();
+    }
+  });
+});
+

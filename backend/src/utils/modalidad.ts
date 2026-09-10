@@ -102,3 +102,49 @@ export function decidirUbicacionDeMarca(ctx: ContextoMarca): DecisionUbicacion {
 
   return PASA_SIN_SEDE;
 }
+
+// ===== ¿Se puede cerrar el turno en la sede donde se está marcando? =====
+//
+// Es la condición que vivía suelta en /marcar, sin una sola prueba. Bloquea solo
+// cuando se cumplen TODAS a la vez: es PRESENCIAL, no tiene el permiso, el turno
+// abierto tiene sede, la marca identifica una sede, y son distintas.
+//
+// Cada «pasa» tiene su razón, y ninguna es nueva salvo la del permiso:
+//   - HIBRIDO y REMOTO: la regla ya no les aplicaba.
+//   - turno abierto sin sede: son los de antes de que existieran las sedes, y
+//     bloquearlos los dejaría atrapados sin poder cerrarse desde ningún lado.
+//   - marca sin sede: el presencial cuyas sedes no tienen coordenadas, al que la
+//     geocerca de la empresa deja pasar sin identificar ninguna sede.
+//   - el permiso: el supervisor que recorre varias sedes en el mismo turno.
+//
+// Lo que esta función NO decide es DESDE DÓNDE se puede marcar: eso lo resolvió
+// antes `decidirUbicacionDeMarca`, así que con el permiso la salida igual tiene
+// que caer dentro de una de sus sedes.
+export type ContextoCierre = {
+  modalidad: Modalidad;
+  puedeCerrarEnOtraSede: boolean;
+  sedeDelTurno: string | null;
+  sedeDeLaMarca: string | null;
+};
+
+export function puedeCerrarAqui(ctx: ContextoCierre): boolean {
+  if (ctx.modalidad !== 'PRESENCIAL') return true;
+  if (ctx.puedeCerrarEnOtraSede) return true;
+  if (!ctx.sedeDelTurno || !ctx.sedeDeLaMarca) return true;
+  return ctx.sedeDelTurno === ctx.sedeDeLaMarca;
+}
+
+// Lo que llega del cuerpo al crear o editar un colaborador.
+//
+// AUSENTE devuelve undefined, que Prisma lee como «no tocar». Si ausente fuera
+// false, un formulario que no manda el campo le quitaría el permiso a un
+// supervisor en silencio al corregirle cualquier otro dato.
+//
+// Y lo que no es un booleano devuelve null, para responder 400: POST y PUT pasan
+// el cuerpo a Prisma sin lista blanca, así que un "true" en texto llegaría crudo
+// y saldría como un 500 sin explicación.
+export function normalizarPermisoOtraSede(v: unknown): boolean | null | undefined {
+  if (v === undefined) return undefined;
+  return typeof v === 'boolean' ? v : null;
+}
+

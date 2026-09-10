@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, instantesDeJornada, momentosDelDia } from './jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion } from './jornada';
 
 // El almuerzo no vive en un registro: vive en el HUECO entre dos. Un día con
 // almuerzo son dos tramos —08:00-12:00 y 13:00-17:00— y lo que hay en medio es
@@ -746,5 +746,89 @@ describe('momentosDelDia', () => {
 
   it('un día sin marcaciones devuelve un mapa vacío', () => {
     expect(momentosDelDia([]).size).toBe(0);
+  });
+});
+
+// A QUÉ TURNO PERTENECE CADA MARCACIÓN.
+//
+// Lo necesita la pantalla de fotos del día: con varios ingresos, la grilla plana
+// no dejaba ver qué salida cerraba qué entrada. Va en una función APARTE y no
+// como un campo nuevo de `momentosDelDia`, porque las pruebas de arriba comparan
+// ese objeto entero con `toEqual` y un campo más las rompería todas sin que nada
+// hubiera cambiado de verdad.
+//
+// El riesgo de tener dos funciones es que digan cosas distintas del mismo día.
+// La última prueba lo cierra: una ENTRADA abre turno nuevo, siempre.
+describe('jornadaDeCadaMarcacion', () => {
+  const m = (
+    id: string,
+    entrada: Date | null,
+    salida: Date | null,
+    extra: { salidaAlmuerzo?: boolean } = {},
+  ) => ({
+    id, entrada, salida,
+    salidaAlmuerzo: extra.salidaAlmuerzo ?? false,
+    entradaEstimada: false,
+  });
+
+  it('un día de un solo tramo es el turno 0', () => {
+    const r = jornadaDeCadaMarcacion([m('a', bog(8), bog(17))]);
+    expect(r.get('a')).toBe(0);
+  });
+
+  it('volver del descanso es el MISMO turno', () => {
+    const r = jornadaDeCadaMarcacion([
+      m('a', bog(8), bog(12), { salidaAlmuerzo: true }),
+      m('b', bog(13), bog(17)),
+    ]);
+    expect([r.get('a'), r.get('b')]).toEqual([0, 0]);
+  });
+
+  it('volver de noche a hacer extras abre OTRO turno', () => {
+    const r = jornadaDeCadaMarcacion([
+      m('a', bog(8), bog(12)),
+      m('b', bog(19), bog(22)),
+    ]);
+    expect([r.get('a'), r.get('b')]).toEqual([0, 1]);
+  });
+
+  it('almuerzo y además extras de noche: dos turnos, el primero partido', () => {
+    const r = jornadaDeCadaMarcacion([
+      m('a', bog(8), bog(12), { salidaAlmuerzo: true }),
+      m('b', bog(13), bog(17)),
+      m('c', bog(19), bog(22)),
+    ]);
+    expect([r.get('a'), r.get('b'), r.get('c')]).toEqual([0, 0, 1]);
+  });
+
+  it('no depende del orden en que lleguen las marcaciones', () => {
+    const r = jornadaDeCadaMarcacion([
+      m('c', bog(19), bog(22)),
+      m('a', bog(8), bog(12), { salidaAlmuerzo: true }),
+      m('b', bog(13), bog(17)),
+    ]);
+    expect([r.get('a'), r.get('b'), r.get('c')]).toEqual([0, 0, 1]);
+  });
+
+  it('dice lo mismo que momentosDelDia: una ENTRADA abre turno nuevo, siempre', () => {
+    const dias = [
+      [m('a', bog(8), bog(17))],
+      [m('a', bog(10), bog(14, 4), { salidaAlmuerzo: true }), m('b', bog(14, 50), null)],
+      [m('a', bog(8), bog(12)), m('b', bog(19), bog(22))],
+      [m('a', bog(8), bog(12), { salidaAlmuerzo: true }), m('b', bog(13), bog(17)), m('c', bog(19), bog(22))],
+      [m('a', bog(7, 48), bog(8, 32)), m('b', bog(8, 32), bog(9, 6)), m('c', bog(9, 7), bog(9, 7))],
+    ];
+    for (const dia of dias) {
+      const turnos = jornadaDeCadaMarcacion(dia);
+      const momentos = momentosDelDia(dia);
+      const vistos = new Set<number>();
+      const enOrden = [...dia].sort((x, y) => x.entrada!.getTime() - y.entrada!.getTime());
+      for (const r of enOrden) {
+        const t = turnos.get(r.id)!;
+        const abreTurno = !vistos.has(t);
+        vistos.add(t);
+        expect(momentos.get(r.id)!.entrada === 'ENTRADA').toBe(abreTurno);
+      }
+    }
   });
 });

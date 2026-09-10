@@ -5,7 +5,7 @@ import { calcularValorHora } from '../utils/horasColombiana';
 import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
-import { normalizarModalidad } from '../utils/modalidad';
+import { normalizarModalidad, normalizarPermisoOtraSede } from '../utils/modalidad';
 import { fotoPerfilValida, fotoParaEnrolar, miniValida } from '../utils/fotoPerfil';
 import { resumenDeContrato } from '../utils/estadoContratoResumen';
 import { validarImportacion, COLUMNAS_FORMATO } from '../utils/importarColaboradores';
@@ -157,6 +157,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       data.fechaNacimiento = data.fechaNacimiento ? new Date(`${data.fechaNacimiento}T12:00:00Z`) : null;
     }
     if ('modalidad' in data) data.modalidad = normalizarModalidad(data.modalidad);
+    if ('puedeCerrarEnOtraSede' in data) data.puedeCerrarEnOtraSede = normalizarPermisoOtraSede(data.puedeCerrarEnOtraSede);
     return data;
   }
 
@@ -164,6 +165,11 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   // así que un valor que no se reconoce no puede pasar de largo: sin esto llega
   // crudo al enum de MySQL y sale como un 500 sin explicación.
   const modalidadInvalida = (data: any) => 'modalidad' in data && data.modalidad === null;
+
+  // Mismo motivo que la modalidad: este permiso decide si /marcar deja cerrar un
+  // turno en otra sede, y sin esta guarda un valor que no es booleano llega crudo
+  // a Prisma y sale como un 500.
+  const permisoOtraSedeInvalido = (data: Record<string, unknown>) => 'puedeCerrarEnOtraSede' in data && data.puedeCerrarEnOtraSede === null;
 
   // La foto viaja como data URL dentro del cuerpo, y tanto POST como PUT hacen
   // spread de lo que llega: sin esta guarda, una foto de celular sin recortar
@@ -303,6 +309,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (modalidadInvalida(data)) {
       return reply.status(400).send({ error: 'Modalidad de trabajo no válida' });
     }
+    if (permisoOtraSedeInvalido(data)) {
+      return reply.status(400).send({ error: 'El permiso de cerrar en otra sede tiene que ser sí o no' });
+    }
     const malaFoto = fotoInvalida(data);
     if (malaFoto) return reply.status(400).send({ error: malaFoto });
 
@@ -378,6 +387,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     }
     if (modalidadInvalida(data)) {
       return reply.status(400).send({ error: 'Modalidad de trabajo no válida' });
+    }
+    if (permisoOtraSedeInvalido(data)) {
+      return reply.status(400).send({ error: 'El permiso de cerrar en otra sede tiene que ser sí o no' });
     }
     const malaFoto = fotoInvalida(data);
     if (malaFoto) return reply.status(400).send({ error: malaFoto });

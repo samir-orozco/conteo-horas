@@ -11,10 +11,7 @@ import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
 } from '../utils/saldoTiempo';
 import { diferenciasDeRegistro, type EstadoRegistro } from '../utils/cambiosRegistro';
-import {
-  resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca,
-  marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, momentosDelDia,
-} from '../utils/jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -184,7 +181,13 @@ export default async function registroRoutes(app: FastifyInstance) {
     }
     const registros = await prisma.registro.findMany({
       where,
-      include: { colaborador: { include: { horario: { include: { franjas: true } } } } },
+      include: {
+        colaborador: { include: { horario: { include: { franjas: true } } } },
+        // Con el nombre: la tabla pinta dónde se abrió y dónde se cerró cada
+        // jornada, y pedir los nombres aparte sería otra consulta por carga.
+        sede: { select: { id: true, nombre: true } },
+        sedeSalida: { select: { id: true, nombre: true } },
+      },
       orderBy: { fecha: 'desc' },
     });
 
@@ -342,6 +345,11 @@ export default async function registroRoutes(app: FastifyInstance) {
           tipo: primera.tipo,
           observacion: primera.observacion,
           sedeId: primera.sedeId,
+          // Dónde se abrió y dónde se cerró la JORNADA: la sede de la primera
+          // marcación y la de salida de la que la cierra. Si todavía nadie la
+          // cierra, no hay sede de cierre que decir.
+          sede: primera.sede ?? null,
+          sedeSalida: cierra?.sedeSalida ?? null,
           minutosTarde,
           // Lo que ese bloque de trabajo contó, con el almuerzo ya descontado.
           // Antes la columna restaba salida menos entrada de un tramo suelto, así
@@ -407,7 +415,8 @@ export default async function registroRoutes(app: FastifyInstance) {
         tipo: true, observacion: true, salidaEstimada: true, salidaAlmuerzo: true,
         entradaEstimada: true, creadoEn: true, editadoPor: true, editadoEn: true,
         fotoEntrada: false, fotoSalida: false,
-        sede: { select: { nombre: true, activa: true } },
+        sede: { select: { id: true, nombre: true, activa: true } },
+        sedeSalida: { select: { id: true, nombre: true, activa: true } },
         colaborador: {
           select: {
             nombre: true, apellido: true, cargo: true, empresaId: true,
@@ -573,24 +582,33 @@ export default async function registroRoutes(app: FastifyInstance) {
       select: {
         id: true, entrada: true, salida: true, salidaAlmuerzo: true,
         entradaEstimada: true, salidaEstimada: true, fotoEntrada: true, fotoSalida: true,
+        sede: { select: { id: true, nombre: true } },
+        sedeSalida: { select: { id: true, nombre: true } },
       },
     });
 
     const momentos = momentosDelDia(delDia);
+    // A qué turno pertenece cada foto, para que la pantalla ponga un título por
+    // turno. Sale de la misma agrupación que `momentos`: no pueden discrepar.
+    const turnos = jornadaDeCadaMarcacion(delDia);
     const fotos: {
       registroId: string; momento: string; hora: Date | null; foto: string | null; estimada: boolean;
+      jornada: number; sede: { id: string; nombre: string } | null;
     }[] = [];
     for (const m of delDia) {
       const papel = momentos.get(m.id);
+      const jornada = turnos.get(m.id) ?? 0;
       // Viajan TODOS los momentos del día, con o sin foto. Que a una marca le
       // falte la foto es información, no un hueco: significa que se marcó con
       // cédula o que alguien la cargó a mano, y quien está auditando el día
       // necesita verlo. Las marcas sin hora no tienen momento y no aparecen.
       if (papel?.entrada) {
-        fotos.push({ registroId: m.id, momento: papel.entrada, hora: m.entrada, foto: m.fotoEntrada, estimada: m.entradaEstimada });
+        fotos.push({ registroId: m.id, momento: papel.entrada, hora: m.entrada, foto: m.fotoEntrada, estimada: m.entradaEstimada, jornada, sede: m.sede ?? null });
       }
       if (papel?.salida) {
-        fotos.push({ registroId: m.id, momento: papel.salida, hora: m.salida, foto: m.fotoSalida, estimada: m.salidaEstimada });
+        // La sede de la SALIDA es la suya. Null si no se sabe: nunca la de la
+        // entrada, que afirmaría un lugar que nadie registró.
+        fotos.push({ registroId: m.id, momento: papel.salida, hora: m.salida, foto: m.fotoSalida, estimada: m.salidaEstimada, jornada, sede: m.sedeSalida ?? null });
       }
     }
     // En orden cronológico: es como ocurrió el día y como se va a leer.

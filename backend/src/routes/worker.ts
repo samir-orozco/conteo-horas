@@ -8,7 +8,7 @@ import { enviarTelegram } from '../utils/telegram';
 import { notificar } from '../utils/notificaciones';
 import { rangoDiaBogota } from '../utils/fechas';
 import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes, exigeRetoDePose } from '../utils/kioscoConfig';
-import { decidirUbicacionDeMarca, MODALIDAD_POR_DEFECTO } from '../utils/modalidad';
+import { decidirUbicacionDeMarca, MODALIDAD_POR_DEFECTO, puedeCerrarAqui } from '../utils/modalidad';
 import { VENTANA_TURNO_MS } from '../utils/cierreTurnos';
 import { puedeSalirAAlmorzar, dentroDeLaVentana } from '../utils/almuerzo';
 import { salidaAntesDeHora } from '../utils/tardanzas';
@@ -549,13 +549,30 @@ export default async function workerRoutes(app: FastifyInstance) {
         // Solo aplica a PRESENCIAL. A un HIBRIDO esta regla lo bloquearía justo a
         // la hora de irse —abrió en El Poblado y cierra desde la casa— y quedaría
         // con el turno atrapado sin poder cerrarlo desde ningún lado, que es
-        // exactamente lo que la modalidad viene a evitar. Lo que se pierde es
-        // fidelidad, no dinero: el registro sigue diciendo dónde se ABRIÓ, porque
-        // la actualización de la salida nunca escribe `sedeId`.
-        if (modalidad === 'PRESENCIAL' && abierto.sedeId && sedeDeLaMarca && abierto.sedeId !== sedeDeLaMarca) {
+        // exactamente lo que la modalidad viene a evitar.
+        //
+        // Tampoco aplica a quien tiene `puedeCerrarEnOtraSede`: el supervisor que
+        // recorre varias sedes en el mismo turno. Aun con el permiso, la salida
+        // tiene que marcarse DENTRO de una de sus sedes, porque la geocerca ya se
+        // decidió más arriba. La decisión vive en `puedeCerrarAqui`
+        // (utils/modalidad.ts), con sus pruebas.
+        //
+        // Lo que antes se perdía ya no: la salida guarda dónde se cerró en
+        // `sedeSalidaId`, así que un turno que cruza sedes se ve entero.
+        const cierraAqui = puedeCerrarAqui({
+          modalidad,
+          // `=== true` y no un truthy: si el colaborador no apareció, falla
+          // cerrado, que es la regla de siempre.
+          puedeCerrarEnOtraSede: col?.puedeCerrarEnOtraSede === true,
+          sedeDelTurno: abierto.sedeId,
+          sedeDeLaMarca,
+        });
+        if (!cierraAqui) {
           const sedeEntrada = sedesDelTrabajador.find(s => s.id === abierto.sedeId);
+          // El mensaje dice QUÉ HACER y no solo qué pasó: quien lo lee está
+          // frente al kiosco con el turno abierto y sin forma de cerrarlo.
           return reply.code(403).send({
-            error: `Abriste el turno en ${sedeEntrada?.nombre ?? 'otra sede'}. La salida debe marcarse en la misma sede.`,
+            error: `Abriste el turno en ${sedeEntrada?.nombre ?? 'otra sede'}. Marca la salida allí, o pide a tu administrador que te permita cerrar en otra sede.`,
             codigo: 'SEDE_DISTINTA',
           });
         }
@@ -599,6 +616,11 @@ export default async function workerRoutes(app: FastifyInstance) {
             // este turno" se quedaba pegado sobre una salida real.
             salidaEstimada: false,
             ...(esAlmuerzo ? { salidaAlmuerzo: true } : {}),
+            // Dónde se CERRÓ, con la misma regla que la entrada: donde ocurrió la
+            // marca. Se escribe para todos, también para un híbrido, que así
+            // recupera la fidelidad que antes perdía. Sin sede identificada no se
+            // escribe nada: null es «no se sabe», nunca la sede de la entrada.
+            ...(sedeDeLaMarca ? { sedeSalidaId: sedeDeLaMarca } : {}),
             ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
             ...camposDeAutenticacion(payload, 'salida'),
           },

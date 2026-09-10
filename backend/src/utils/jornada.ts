@@ -321,6 +321,22 @@ export function momentosDelDia<T extends RegistroDeDia & { id: string }>(
   return momentos;
 }
 
+// A qué turno del día pertenece cada marcación, contando desde 0.
+//
+// Lo usa la pantalla de fotos del día para poner un título encima de cada
+// turno. Se arma con la MISMA agrupación que `momentosDelDia` y no con una regla
+// propia: si las dos agruparan distinto, la foto del regreso del descanso podría
+// caer bajo el título de un turno nuevo. Hay una prueba que las amarra.
+export function jornadaDeCadaMarcacion<T extends RegistroDeDia & { id: string }>(
+  registros: T[],
+): Map<string, number> {
+  const turnos = new Map<string, number>();
+  agruparEnJornadas(enOrdenDeEntrada(registros)).forEach((jornada, i) => {
+    for (const m of jornada) turnos.set(m.id, i);
+  });
+  return turnos;
+}
+
 export function partirDiaEnJornadas<T extends RegistroDeDia>(
   registros: T[],
   dia: DiaParaAlmuerzo & DiaParaAjuste,

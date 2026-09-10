@@ -223,6 +223,19 @@ model Colaborador {
   // `select` explícito olvida pedirlo (un undefined ahí bloquearía a un remoto
   // en silencio, tratándolo como presencial).
   modalidad        ModalidadTrabajo    @default(PRESENCIAL)
+  // PUEDE CERRAR UN TURNO EN UNA SEDE DISTINTA DE LA QUE LO ABRIÓ.
+  //
+  // Existe por los supervisores que recorren varias sedes en el mismo turno.
+  // Solo cambia algo para PRESENCIAL: a un HIBRIDO la regla de misma sede ya no
+  // le aplica, y a un REMOTO no se le mira la ubicación. Aun con el permiso, la
+  // salida tiene que marcarse DENTRO de una de sus sedes asignadas.
+  //
+  // Vive aquí y no en ColaboradorSede porque esa tabla se borra y se vuelve a
+  // crear en cada guardado del formulario: el permiso se perdería en la
+  // siguiente edición. No admite null por la misma razón que `modalidad`: false
+  // es la regla de siempre, y con el DEFAULT todos los que ya existen quedan
+  // exactamente como estaban.
+  puedeCerrarEnOtraSede Boolean       @default(false)
   activo           Boolean             @default(true)
   // Retiro: cuándo salió y por qué. Antes solo quedaba `activo: false`, así que
   // se perdía la fecha, y esa fecha es justo la que se necesita para liquidar,
@@ -270,7 +283,10 @@ model Sede {
   actualizadoEn DateTime @updatedAt
 
   colaboradores ColaboradorSede[]
-  registros     Registro[]
+  // Dos relaciones con Registro, y Prisma exige nombrarlas cuando van al mismo
+  // modelo: la sede donde se ABRIÓ el turno y la sede donde se CERRÓ.
+  registros         Registro[] @relation("SedeDeEntrada")
+  registrosCerrados Registro[] @relation("SedeDeSalida")
 
   @@index([empresaId])
   @@map("sedes")
@@ -339,7 +355,16 @@ model Registro {
   // colaborador: el filtro por sede de los reportes tiene que decir dónde marcó
   // de verdad, no dónde debería. Null en todo lo anterior a la función.
   sedeId          String?
-  sede            Sede?            @relation(fields: [sedeId], references: [id])
+  sede            Sede?            @relation("SedeDeEntrada", fields: [sedeId], references: [id])
+  // Sede donde se CERRÓ el turno, con la misma regla: donde ocurrió la marca de
+  // salida. Null en todo lo anterior a esta columna y en las salidas sin sede
+  // (remoto, híbrido fuera de sus sedes, auto-cierre, carga manual).
+  //
+  // Null significa NO SE SABE. Nunca se rellena con la sede de la entrada: eso
+  // afirmaría un lugar que nadie registró, y el día que alguien pregunte dónde
+  // cerró ese turno, el dato inventado no se distinguiría del real.
+  sedeSalidaId    String?
+  sedeSalida      Sede?            @relation("SedeDeSalida", fields: [sedeSalidaId], references: [id])
   fecha           DateTime
   entrada         DateTime?
   salida          DateTime?
