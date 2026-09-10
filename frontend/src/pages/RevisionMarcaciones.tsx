@@ -3,11 +3,12 @@ import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import {
   ScanFace, ImageOff, AlertTriangle, ChevronLeft, ChevronRight, Info,
-  CalendarOff, Sunrise, Sun, Sunset, Moon, Frame, Hand,
+  CalendarOff, Sunrise, Sun, Sunset, Moon, Frame, Hand, Check,
 } from 'lucide-react';
 import api from '../lib/api';
 import { fotosExpiradas } from '../lib/retencionFotos';
 import { pistaDePantalla, pistaDeUrl, UMBRAL_PISTA, type Pista } from '../lib/pistaPantalla';
+import { leerMemoria, recordar } from '../lib/memoriaPistas';
 import {
   motivoSinFoto, franjaDeLaHora, TEXTO_SIN_FOTO, ROTULO_METODO, ROTULO_MOMENTO, ROTULO_FRANJA,
   type EventoDeRevision, type RespuestaRevision, type Franja,
@@ -61,12 +62,13 @@ import {
 // lado invita a comparar identidades, que siempre va a dar "sí es él", en vez de
 // mirar si eso es una pantalla.
 
+// Se guarda la MEDICIÓN por marcación, no un sí o un no: el «hay que mirar esta»
+// se decide al pintar, contra el umbral vigente. Así, si el umbral cambia, lo ya
+// revisado se reclasifica solo en vez de quedar mintiendo con el criterio viejo.
 type Avance = {
   para: RespuestaRevision | null;
   corriendo: boolean; hechas: number; total: number; sinLeer: number;
-  conAparato: Set<string>; analizadas: Set<string>;
 };
-const VACIO: ReadonlySet<string> = new Set();
 
 const TZ = 'America/Bogota';
 const enBogota = (iso: string) => toZonedTime(new Date(iso), TZ);
@@ -166,6 +168,9 @@ export default function RevisionMarcaciones() {
   // efecto que resetee tres estados: derivarlo en el render evita el parpadeo de
   // marcas viejas sobre una lista nueva, y evita el render de más.
   const [avance, setAvance] = useState<Avance | null>(null);
+  // Lo ya medido, sembrado desde el navegador al abrir: si se revisó ayer, la
+  // etiqueta sigue puesta después de recargar sin volver a pedir las fotos.
+  const [medidas, setMedidas] = useState<Map<string, number>>(() => leerMemoria());
   const abortarBarrido = useRef(false);
   const filaActiva = useRef<HTMLLIElement>(null);
 
@@ -236,12 +241,9 @@ export default function RevisionMarcaciones() {
     const candidatos = eventos.filter(e => e.tieneFoto);
     if (!candidatos.length) return;
     abortarBarrido.current = false;
-    const base: Avance = {
-      para: datos, corriendo: true, hechas: 0, total: candidatos.length, sinLeer: 0,
-      conAparato: new Set(), analizadas: new Set(),
-    };
-    setAvance(base);
+    setAvance({ para: datos, corriendo: true, hechas: 0, total: candidatos.length, sinLeer: 0 });
     const cache = new Map<string, { fotoEntrada: string | null; fotoSalida: string | null }>();
+    const nuevas = new Map<string, number>();
     for (let i = 0; i < candidatos.length; i++) {
       if (abortarBarrido.current) break;
       const ev = candidatos[i];
@@ -257,25 +259,34 @@ export default function RevisionMarcaciones() {
       } catch {
         leida = null;
       }
-      // NO SE CUENTA COMO REVISADA SI NO SE PUDO LEER. Un fallo silencioso aquí
-      // es peor que no hacer nada: el resumen diría «40 revisadas» y el
-      // supervisor dejaría de mirar justo las que en realidad nadie miró.
-      setAvance(a => {
-        if (!a || a.para !== datos) return a;
-        const conAparato = leida?.hay ? new Set(a.conAparato).add(ev.clave) : a.conAparato;
-        const analizadas = leida ? new Set(a.analizadas).add(ev.clave) : a.analizadas;
-        return { ...a, hechas: i + 1, sinLeer: a.sinLeer + (leida ? 0 : 1), conAparato, analizadas };
-      });
+      // NO SE ANOTA SI NO SE PUDO LEER. Un fallo silencioso aquí es peor que no
+      // hacer nada: el resumen diría «40 revisadas» y el supervisor dejaría de
+      // mirar justo las que en realidad nadie miró.
+      if (leida) {
+        nuevas.set(ev.clave, leida.paralelas);
+        setMedidas(m => new Map(m).set(ev.clave, leida!.paralelas));
+      }
+      setAvance(a => (a && a.para === datos
+        ? { ...a, hechas: i + 1, sinLeer: a.sinLeer + (leida ? 0 : 1) }
+        : a));
     }
+    // Se escribe UNA vez al final y no por foto: escribir en localStorage dentro
+    // del bucle serializa el mapa entero en cada vuelta.
+    recordar(nuevas);
     setAvance(a => (a && a.para === datos ? { ...a, corriendo: false } : a));
   }, [eventos, datos]);
 
   useEffect(() => () => { abortarBarrido.current = true; }, []);
 
-  // Solo vale lo medido sobre ESTA respuesta.
+  // El PROGRESO solo vale para la respuesta que se está mirando; las MEDIDAS, en
+  // cambio, valen siempre: están indexadas por marcación y sobreviven al cambio
+  // de rango y a la recarga.
   const barrido = avance && avance.para === datos ? avance : null;
-  const conAparato = barrido?.conAparato ?? VACIO;
-  const analizadas = barrido?.analizadas ?? VACIO;
+  const revisada = (clave: string) => medidas.has(clave);
+  const conAparato = (clave: string) => (medidas.get(clave) ?? 0) > UMBRAL_PISTA;
+  const yaRevisadas = eventos.filter(e => revisada(e.clave)).length;
+  const yaMarcadas = eventos.filter(e => conAparato(e.clave)).length;
+  const conFoto = eventos.filter(e => e.tieneFoto).length;
 
   const nombreDe = (colaboradorId: string) => {
     const p = datos?.personas.find(x => x.id === colaboradorId);
@@ -367,30 +378,46 @@ export default function RevisionMarcaciones() {
                 del estado. Y el resumen dice cuántas NO se pudieron leer, porque
                 un «listo» que esconde quince fallos hace que el supervisor deje
                 de mirar justo las que nadie miró. */}
-            <div className="border-b border-gray-100 px-3 py-2.5">
-              {!barrido ? (
-                <button onClick={() => void barrerElDia()}
-                  className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-[12px] font-semibold text-ink/75 hover:bg-gray-200">
-                  <Frame size={13} /> Buscar aparatos en estas fotos
-                </button>
-              ) : barrido.corriendo ? (
-                <div className="flex items-center justify-between gap-2 text-[12px] text-muted">
-                  <span>Mirando fotos… {barrido.hechas} de {barrido.total}</span>
-                  <button onClick={() => { abortarBarrido.current = true; }}
-                    className="font-semibold text-ink/60 hover:text-ink">Parar</button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-2 text-[12px]">
-                  <span className={conAparato.size ? 'font-semibold text-amber-700' : 'text-muted'}>
-                    {conAparato.size
-                      ? `${conAparato.size} con bordes rectos, de ${analizadas.size} revisadas`
-                      : `Ninguna con bordes rectos, de ${analizadas.size} revisadas`}
-                    {barrido.sinLeer > 0 && ` · ${barrido.sinLeer} no se pudieron leer`}
-                  </span>
+            <div className="border-b border-gray-100">
+              <div className="px-3 py-2.5">
+                {barrido?.corriendo ? (
+                  <div className="flex items-center justify-between gap-2 text-[12px] text-muted">
+                    <span className="tabular-nums">Mirando fotos… {barrido.hechas} de {barrido.total}</span>
+                    <button onClick={() => { abortarBarrido.current = true; }}
+                      className="font-semibold text-ink/60 hover:text-ink">Parar</button>
+                  </div>
+                ) : yaRevisadas > 0 || barrido ? (
+                  <div className="flex items-center justify-between gap-2 text-[12px]">
+                    <span className={yaMarcadas ? 'font-semibold text-amber-700' : 'text-muted'}>
+                      {yaRevisadas === 0
+                        ? 'No se pudo leer ninguna foto'
+                        : yaMarcadas
+                          ? `${yaMarcadas} con bordes rectos, de ${yaRevisadas} revisadas`
+                          : `Ninguna con bordes rectos, de ${yaRevisadas} revisadas`}
+                      {!!barrido?.sinLeer && ` · ${barrido.sinLeer} no se pudieron leer`}
+                    </span>
+                    <button onClick={() => void barrerElDia()}
+                      className="shrink-0 font-semibold text-ink/60 hover:text-ink">
+                      {yaRevisadas < conFoto ? `Ver las ${conFoto - yaRevisadas} que faltan` : 'Repetir'}
+                    </button>
+                  </div>
+                ) : (
                   <button onClick={() => void barrerElDia()}
-                    className="font-semibold text-ink/60 hover:text-ink">Repetir</button>
-                </div>
-              )}
+                    className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-[12px] font-semibold text-ink/75 hover:bg-gray-200">
+                    <Frame size={13} /> Buscar aparatos en estas fotos
+                  </button>
+                )}
+              </div>
+              {/* La barra vive fuera del bloque de texto para que al aparecer no
+                  empuje la lista hacia abajo: ocupa su alto siempre, y solo se
+                  pinta el relleno. Una lista que salta mientras se trabaja es
+                  justo lo que hace perder el sitio. */}
+              <div className="h-[3px] bg-gray-100">
+                {barrido?.corriendo && (
+                  <div className="h-full bg-amber-400 transition-[width] duration-200 ease-out"
+                    style={{ width: `${Math.round((barrido.hechas / Math.max(1, barrido.total)) * 100)}%` }} />
+                )}
+              </div>
             </div>
             <ol className="max-h-[45vh] xl:max-h-[calc(100dvh-14rem)] overflow-y-auto">
               {eventos.map((ev, i) => {
@@ -446,10 +473,17 @@ export default function RevisionMarcaciones() {
                             fila tuviera las dos, manda el hecho. */}
                         {ev.distanciaRepetida ? (
                           <span className="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 text-red-700">Repetida</span>
-                        ) : conAparato.has(ev.clave) ? (
+                        ) : conAparato(ev.clave) ? (
                           <span className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-400/90 text-amber-950">
                             <Frame size={11} strokeWidth={2.5} /> Revisar
                           </span>
+                        ) : revisada(ev.clave) ? (
+                          /* «Ya la miré y estaba limpia» TIENE que verse distinto
+                             de «nadie la ha mirado». Si las dos se vieran igual,
+                             después de un barrido a medias se confiaría en filas
+                             que en realidad nunca se revisaron. */
+                          <Check size={13} strokeWidth={3} aria-label="Ya revisada, sin bordes rectos"
+                            className="shrink-0 text-gray-300" />
                         ) : ev.laPusoElSistema ? (
                           <span className="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700">Automática</span>
                         ) : null}

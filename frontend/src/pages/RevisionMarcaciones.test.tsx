@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RevisionMarcaciones from './RevisionMarcaciones';
 
@@ -62,6 +62,9 @@ function montarCon(eventos: ReturnType<typeof evento>[]) {
 }
 
 beforeEach(() => {
+  // La memoria de lo revisado vive en localStorage. Sin esto, una prueba deja
+  // marcas puestas y la siguiente pasa (o falla) por lo que hizo la anterior.
+  localStorage.clear();
   get.mockReset();
   mirar.mockReset(); mirar.mockResolvedValue(SIN_PISTA);
   mirarUrl.mockReset(); mirarUrl.mockResolvedValue(SIN_PISTA);
@@ -277,8 +280,11 @@ describe('el barrido del día', () => {
     mirarUrl.mockResolvedValue(null);
     montarCon([evento({ clave: 'r1:entrada', registroId: 'r1' })]);
     await pedirBarrido();
-    expect(await screen.findByText(/de 0 revisadas/i)).toBeTruthy();
+    // Y sobre todo: NO puede volver a salir el botón como si no hubiera pasado
+    // nada. Quien lo oprimió tiene que enterarse de que fallo todo.
+    expect(await screen.findByText(/No se pudo leer ninguna foto/i)).toBeTruthy();
     expect(screen.getByText(/1 no se pudieron leer/i)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Buscar aparatos/i })).toBeNull();
   });
 
   it('«Repetida» le gana a «Revisar»: un hecho manda sobre una sospecha', async () => {
@@ -290,20 +296,58 @@ describe('el barrido del día', () => {
     expect(screen.queryByText(/^Revisar$/)).toBeNull();
   });
 
-  it('al cambiar de rango, lo medido antes NO se queda pegado a la lista nueva', async () => {
-    // El avance lleva adentro a qué respuesta pertenece, y eso se comprueba en el
-    // render. Sin esa comprobación, las marcas del día de ayer se pintarían sobre
-    // las marcaciones de otro rango, señalando a la persona equivocada.
+  it('«ya revisada y limpia» se ve distinto de «nadie la ha mirado»', async () => {
+    // Si las dos se vieran igual, después de parar un barrido a medias se
+    // confiaría en filas que en realidad nunca se revisaron. Es el mismo error
+    // que un resumen que esconde los fallos, pero fila por fila.
+    mirarUrl.mockImplementation((url: string) => Promise.resolve(url === FOTO ? SIN_PISTA : null));
+    get.mockImplementation((url: string) => {
+      if (url === '/registros/revision') return Promise.resolve({ data: respuesta([
+        evento({ clave: 'r1:entrada', registroId: 'r1' }),
+        evento({ clave: 'r2:entrada', registroId: 'r2', colaboradorId: 'c2' }),
+      ]) });
+      if (url === '/registros/r1/fotos') return Promise.resolve({ data: { fotoEntrada: FOTO, fotoSalida: null } });
+      if (url === '/registros/r2/fotos') return Promise.resolve({ data: { fotoEntrada: 'data:image/jpeg;base64,rota', fotoSalida: null } });
+      return Promise.reject(new Error('url inesperada: ' + url));
+    });
+    render(<RevisionMarcaciones />);
+    await pedirBarrido();
+    await screen.findByText(/de 1 revisadas/i);
+    // La que se pudo leer queda marcada como vista; la que no, sin nada.
+    expect(screen.getAllByLabelText(/Ya revisada, sin bordes rectos/i)).toHaveLength(1);
+  });
+
+  it('lo medido pertenece a la MARCACIÓN, así que sobrevive al cambio de rango', async () => {
+    // Antes esta prueba exigía lo contrario, y estaba mal: una medición no
+    // caduca porque el revisor mire siete días en vez de uno. Lo que sí es del
+    // barrido, y por eso se recalcula, es el contador de progreso.
     mirarUrl.mockResolvedValue(CON_PISTA);
     montarCon([evento({ clave: 'r1:entrada', registroId: 'r1' })]);
     const u = userEvent.setup();
     await u.click(await screen.findByRole('button', { name: /Buscar aparatos/i }));
     await screen.findByText(/1 con bordes rectos/i);
-    expect(screen.getAllByText(/^Revisar$/)).toHaveLength(1);
 
     await u.click(screen.getByRole('button', { name: '7 días' }));
-    await waitFor(() => expect(screen.queryByText(/con bordes rectos/i)).toBeNull());
-    expect(screen.queryByText(/^Revisar$/)).toBeNull();
-    expect(screen.getByRole('button', { name: /Buscar aparatos/i })).toBeTruthy();
+    await screen.findByText('1 / 1');
+    expect(screen.getAllByText(/^Revisar$/)).toHaveLength(1);
+  });
+
+  it('lo medido sobrevive a recargar la pantalla, sin volver a pedir las fotos', async () => {
+    // Es lo que se pidió: dar el botón una vez y que la etiqueta quede.
+    mirarUrl.mockResolvedValue(CON_PISTA);
+    montarCon([evento({ clave: 'r1:entrada', registroId: 'r1' })]);
+    await pedirBarrido();
+    await screen.findByText(/1 con bordes rectos/i);
+
+    cleanup();
+    mirarUrl.mockClear();
+    const pedidosAntes = get.mock.calls.filter(c => String(c[0]).endsWith('/fotos')).length;
+    montarCon([evento({ clave: 'r1:entrada', registroId: 'r1' })]);
+    expect(await screen.findByText(/1 con bordes rectos/i)).toBeTruthy();
+    expect(screen.getAllByText(/^Revisar$/)).toHaveLength(1);
+    // Y la clave: la marca está SIN haber vuelto a mirar ninguna foto.
+    expect(mirarUrl).not.toHaveBeenCalled();
+    const pedidosDespues = get.mock.calls.filter(c => String(c[0]).endsWith('/fotos')).length;
+    expect(pedidosDespues - pedidosAntes).toBeLessThanOrEqual(1); // solo la que se está mirando
   });
 });
