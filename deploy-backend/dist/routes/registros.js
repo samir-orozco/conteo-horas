@@ -1,13 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.MAX_FILAS_REVISION = exports.MAX_DIAS_REVISION = void 0;
+exports.consultarRevision = consultarRevision;
 exports.default = registroRoutes;
 const date_fns_1 = require("date-fns");
 const date_fns_tz_1 = require("date-fns-tz");
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const tardanzas_1 = require("../utils/tardanzas");
 const diasEsperados_1 = require("../utils/diasEsperados");
 const materializarDias_1 = require("../utils/materializarDias");
 const fechas_1 = require("../utils/fechas");
+const revisionMarcaciones_1 = require("../utils/revisionMarcaciones");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
 const cambiosRegistro_1 = require("../utils/cambiosRegistro");
 const jornada_1 = require("../utils/jornada");
@@ -36,6 +39,68 @@ function camposRegistro(body, esNuevo) {
         out.salidaAlmuerzo = body.salidaAlmuerzo;
     return out;
 }
+// Tope de la ventana de revisión. Revisar caras de a una es trabajo humano: una
+// semana de una empresa mediana ya son cientos de fotos y nadie las termina.
+exports.MAX_DIAS_REVISION = 7;
+// Tope de filas que se traen. Con `truncado` la pantalla lo dice en vez de mentir
+// por omisión, que es lo que hace un corte silencioso.
+exports.MAX_FILAS_REVISION = 600;
+// SE EXPORTA para que `prisma/verificar-revision-marcaciones.ts` corra ESTA
+// función y no una copia. Una copia se separa del original sin que nadie lo note,
+// y entonces el script verifica algo que ya no es lo que corre en producción.
+async function consultarRevision(empresaId, diasPedidos, sedeId) {
+    const pedidos = Number.parseInt(diasPedidos ?? '', 10);
+    const dias = Number.isFinite(pedidos) ? Math.min(Math.max(pedidos, 1), exports.MAX_DIAS_REVISION) : 1;
+    const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(new Date());
+    const desde = new Date(inicioDia.getTime() - (dias - 1) * 24 * 60 * 60 * 1000);
+    const colaboradores = await prisma_1.prisma.colaborador.findMany({
+        where: { empresaId },
+        select: { id: true, nombre: true, apellido: true, cargo: true },
+    });
+    const colIds = colaboradores.map(c => c.id);
+    // Una empresa sin colaboradores da un `IN ()` que MySQL no sabe planear.
+    if (colIds.length === 0)
+        return { desde, hasta: finDia, dias, truncado: false, eventos: [], personas: [] };
+    const filas = await prisma_1.prisma.registro.findMany({
+        where: {
+            colaboradorId: { in: colIds },
+            fecha: { gte: desde, lt: finDia },
+            ...(sedeId ? { sedeId } : {}),
+        },
+        // `select` explícito: sin él vienen también `fotoEntrada` y `fotoSalida`, que
+        // son LongText base64. Mismo motivo que `reportes.ts:199`.
+        select: {
+            id: true, colaboradorId: true, sedeId: true,
+            entrada: true, salida: true,
+            entradaEstimada: true, salidaEstimada: true,
+            metodoEntrada: true, metodoSalida: true,
+            distanciaEntrada: true, distanciaSalida: true,
+            fotoEntrada: true, fotoSalida: true,
+        },
+        // El tope se aplica ANTES de armar los eventos, o sea por fila y no por
+        // evento. Se pide una de más para saber si hubo corte.
+        take: exports.MAX_FILAS_REVISION + 1,
+        orderBy: { fecha: 'desc' },
+    });
+    const truncado = filas.length > exports.MAX_FILAS_REVISION;
+    // Las fotos se vuelven booleano AQUÍ y el original se descarta: de esta línea
+    // en adelante no hay ninguna imagen camino al navegador.
+    const paraRevisar = filas.slice(0, exports.MAX_FILAS_REVISION).map(f => ({
+        id: f.id, colaboradorId: f.colaboradorId, sedeId: f.sedeId,
+        entrada: f.entrada, salida: f.salida,
+        entradaEstimada: f.entradaEstimada, salidaEstimada: f.salidaEstimada,
+        metodoEntrada: f.metodoEntrada, metodoSalida: f.metodoSalida,
+        distanciaEntrada: f.distanciaEntrada, distanciaSalida: f.distanciaSalida,
+        tieneFotoEntrada: !!f.fotoEntrada, tieneFotoSalida: !!f.fotoSalida,
+    }));
+    return {
+        desde, hasta: finDia, dias, truncado,
+        eventos: (0, revisionMarcaciones_1.eventosDeRevision)(paraRevisar),
+        // Los nombres viajan aparte y no repetidos en cada evento: alguien con ocho
+        // marcaciones en la ventana no tiene por qué mandar su nombre ocho veces.
+        personas: colaboradores.filter(c => paraRevisar.some(f => f.colaboradorId === c.id)),
+    };
+}
 async function registroRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     // Deja constancia de qué cambió al editar una marcación.
@@ -47,7 +112,7 @@ async function registroRoutes(app) {
         const difs = (0, cambiosRegistro_1.diferenciasDeRegistro)(antes, cambios);
         if (!difs.length)
             return;
-        await index_1.prisma.registroCambio.createMany({
+        await prisma_1.prisma.registroCambio.createMany({
             data: difs.map(d => ({
                 registroId, campo: d.campo, antes: d.antes, despues: d.despues,
                 usuarioId: usuarioId ?? null, usuarioNombre: usuarioNombre ?? null,
@@ -66,7 +131,7 @@ async function registroRoutes(app) {
             return { error: 'La salida tiene que ser posterior a la entrada. Si el turno cruza la medianoche, la salida es del día siguiente.' };
         }
         const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(fecha);
-        const otros = await index_1.prisma.registro.findMany({
+        const otros = await prisma_1.prisma.registro.findMany({
             where: {
                 colaboradorId,
                 fecha: { gte: inicioDia, lt: finDia },
@@ -90,7 +155,7 @@ async function registroRoutes(app) {
     }
     // Verifica que el colaborador pertenezca a la empresa del token
     async function colaboradorDeEmpresa(colaboradorId, empresaId) {
-        return index_1.prisma.colaborador.findFirst({ where: { id: colaboradorId, empresaId } });
+        return prisma_1.prisma.colaborador.findFirst({ where: { id: colaboradorId, empresaId } });
     }
     app.get('/', auth, async (request) => {
         const { colaboradorId, desde, hasta } = request.query;
@@ -106,7 +171,7 @@ async function registroRoutes(app) {
             if (hasta)
                 where.fecha.lt = new Date(new Date(hasta).getTime() + 24 * 60 * 60 * 1000);
         }
-        const registros = await index_1.prisma.registro.findMany({
+        const registros = await prisma_1.prisma.registro.findMany({
             where,
             include: { colaborador: { include: { horario: { include: { franjas: true } } } } },
             orderBy: { fecha: 'desc' },
@@ -133,7 +198,7 @@ async function registroRoutes(app) {
             const fechas = registros.map(r => r.fecha.getTime());
             const desdeDia = (0, fechas_1.rangoDiaBogota)(new Date(Math.min(...fechas))).inicioDia;
             const hastaDia = (0, fechas_1.rangoDiaBogota)(new Date(Math.max(...fechas))).finDia;
-            const materializados = await index_1.prisma.diaEsperado.findMany({
+            const materializados = await prisma_1.prisma.diaEsperado.findMany({
                 where: {
                     colaboradorId: { in: [...new Set(registros.map(r => r.colaboradorId))] },
                     fecha: { gte: desdeDia, lt: hastaDia },
@@ -170,7 +235,7 @@ async function registroRoutes(app) {
             const desdeDia = (0, fechas_1.rangoDiaBogota)(new Date(Math.min(...fechas))).inicioDia;
             const hastaDia = (0, fechas_1.rangoDiaBogota)(new Date(Math.max(...fechas))).finDia;
             const [permisos, politicaCruda] = await Promise.all([
-                index_1.prisma.permiso.findMany({
+                prisma_1.prisma.permiso.findMany({
                     where: {
                         colaboradorId: { in: [...new Set(registros.map(r => r.colaboradorId))] },
                         fechaInicio: { lt: hastaDia },
@@ -179,7 +244,7 @@ async function registroRoutes(app) {
                     select: { id: true, colaboradorId: true, tipo: true, aprobado: true, fechaInicio: true, fechaFin: true, registroId: true },
                     orderBy: { creadoEn: 'asc' },
                 }),
-                index_1.prisma.configuracion.findUnique({
+                prisma_1.prisma.configuracion.findUnique({
                     where: { empresaId_clave: { empresaId: request.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } },
                     select: { valor: true },
                 }),
@@ -314,7 +379,7 @@ async function registroRoutes(app) {
         const { id } = request.params;
         // `select` explícito: las fotos son LongText de hasta 300 KB cada una y este
         // endpoint se repide al cambiar de tramo y después de cada guardado.
-        const registro = await index_1.prisma.registro.findFirst({
+        const registro = await prisma_1.prisma.registro.findFirst({
             where: { id, colaborador: { empresaId: request.empresaId } },
             select: {
                 id: true, colaboradorId: true, fecha: true, entrada: true, salida: true,
@@ -334,7 +399,7 @@ async function registroRoutes(app) {
             return reply.status(404).send({ error: 'Registro no encontrado' });
         const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(registro.fecha);
         const [delDia, congelado, festivo, novedad, conFotoEntrada, conFotoSalida, ligadas] = await Promise.all([
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
                 orderBy: { entrada: 'asc' },
                 select: {
@@ -342,17 +407,17 @@ async function registroRoutes(app) {
                     entradaEstimada: true, salidaEstimada: true,
                 },
             }),
-            index_1.prisma.diaEsperado.findFirst({
+            prisma_1.prisma.diaEsperado.findFirst({
                 where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
             }),
-            index_1.prisma.diaFestivo.findFirst({
+            prisma_1.prisma.diaFestivo.findFirst({
                 where: {
                     fecha: { gte: inicioDia, lt: finDia },
                     OR: [{ empresaId: null }, { empresaId: registro.colaborador.empresaId }],
                 },
                 select: { nombre: true },
             }),
-            index_1.prisma.permiso.findFirst({
+            prisma_1.prisma.permiso.findFirst({
                 where: {
                     colaboradorId: registro.colaboradorId,
                     fechaInicio: { lt: finDia },
@@ -366,18 +431,18 @@ async function registroRoutes(app) {
             // `select` de las columnas: son LongText de hasta 300 KB y aquí solo hace
             // falta saber si existen. Antes se traía el par entero del registro
             // abierto —600 KB por la red— para calcular dos booleanos.
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia }, fotoEntrada: { not: null } },
                 select: { id: true },
             }),
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia }, fotoSalida: { not: null } },
                 select: { id: true },
             }),
             // Qué marcaciones del día arrastran una novedad si se borran. La de una
             // salida temprana es parte de su marcación y se va con ella; el diálogo de
             // borrado tiene que decirlo antes, no después.
-            index_1.prisma.permiso.findMany({
+            prisma_1.prisma.permiso.findMany({
                 where: { colaboradorId: registro.colaboradorId, registroId: { not: null }, fechaInicio: { lt: finDia }, fechaFin: { gte: inicioDia } },
                 select: { registroId: true },
             }),
@@ -423,7 +488,7 @@ async function registroRoutes(app) {
         // administrador lo vea al elegir el tipo, en vez de tener que ir a mirarlo.
         let novedadRemunerada = null;
         if (novedad) {
-            const politica = await index_1.prisma.configuracion.findUnique({
+            const politica = await prisma_1.prisma.configuracion.findUnique({
                 where: { empresaId_clave: { empresaId: registro.colaborador.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } },
                 select: { valor: true },
             });
@@ -466,14 +531,14 @@ async function registroRoutes(app) {
     // el rótulo se decide aquí, con `momentosDelDia`, y todas muestran lo mismo.
     app.get('/:id/jornada/fotos', auth, async (request, reply) => {
         const { id } = request.params;
-        const registro = await index_1.prisma.registro.findFirst({
+        const registro = await prisma_1.prisma.registro.findFirst({
             where: { id, colaborador: { empresaId: request.empresaId } },
             select: { colaboradorId: true, fecha: true },
         });
         if (!registro)
             return reply.status(404).send({ error: 'Registro no encontrado' });
         const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(registro.fecha);
-        const delDia = await index_1.prisma.registro.findMany({
+        const delDia = await prisma_1.prisma.registro.findMany({
             where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
             orderBy: { entrada: 'asc' },
             select: {
@@ -503,10 +568,38 @@ async function registroRoutes(app) {
         // casos y solo la edad del día los separa.
         return { fecha: inicioDia, fotos };
     });
+    // Las marcaciones de la empresa en una ventana, PARA REVISARLAS UNA POR UNA.
+    //
+    // Existe porque alguien reportó que se marca mostrando la foto de un compañero
+    // en la pantalla de un celular. Eso no lo detecta ningún dato: lo detecta el
+    // ojo de una persona viendo el brillo de la pantalla, el filo del bisel o la
+    // mano que lo sostiene. Esta ruta solo pone las caras delante, rápido.
+    //
+    // AQUÍ NO VIAJA NINGUNA FOTO, Y ES DELIBERADO. Dos razones que apuntan al mismo
+    // sitio. La primera es de peso: una foto mide unos 15 KB de base64 medidos, así
+    // que 50 marcaciones serían 0,7 MB por carga y no hay compresión montada.
+    // La segunda es que la política de privacidad publicada afirma que «los datos
+    // biométricos [...] no se exponen en los listados del sistema y solo se
+    // entregan a solicitud expresa de un usuario autorizado». La lista lleva
+    // `tieneFoto`, un booleano; la imagen se pide una a una por `/:id/fotos`, que
+    // ya existe y ya comprueba la empresa. Es el mismo patrón deliberado de
+    // `reportes.ts:199` y `dashboard.ts:78`.
+    //
+    // TAMPOCO VIAJA LA DISTANCIA CRUDA del reconocimiento, por lo mismo: es el
+    // resultado de un cotejo biométrico. Viaja la señal, no el número.
+    //
+    // LA VENTANA ES OBLIGATORIA y tiene tope. No por rendimiento (el índice
+    // `(colaboradorId, fecha)` resuelve eso: medido sobre un millón de filas,
+    // 1.320 ms sin él y 11 ms con él), sino porque revisar caras de a una es un
+    // trabajo humano y una ventana sin fondo es una lista que nadie termina.
+    app.get('/revision', auth, async (request) => {
+        const q = (request.query ?? {});
+        return consultarRevision(request.empresaId, q.dias, q.sedeId);
+    });
     // Fotos de verificación facial de un registro (se conservan 2 meses)
     app.get('/:id/fotos', auth, async (request, reply) => {
         const { id } = request.params;
-        const registro = await index_1.prisma.registro.findFirst({
+        const registro = await prisma_1.prisma.registro.findFirst({
             where: { id, colaborador: { empresaId: request.empresaId } },
             select: { fotoEntrada: true, fotoSalida: true },
         });
@@ -523,13 +616,15 @@ async function registroRoutes(app) {
         const ahora = new Date();
         const fechaBogota = (0, date_fns_tz_1.toZonedTime)(ahora, TZ);
         fechaBogota.setHours(0, 0, 0, 0);
-        const existente = await index_1.prisma.registro.findFirst({
+        const existente = await prisma_1.prisma.registro.findFirst({
             where: { colaboradorId, fecha: { gte: fechaBogota, lt: new Date(fechaBogota.getTime() + 86400000) }, salida: null },
         });
         if (existente)
             return reply.status(400).send({ error: 'Ya tiene una entrada activa hoy' });
-        const registro = await index_1.prisma.registro.create({
-            data: { colaboradorId, fecha: ahora, entrada: ahora, tipo: 'NORMAL' },
+        const registro = await prisma_1.prisma.registro.create({
+            // La escribió el admin, no el kiosco. Sin esto quedaría en null y se
+            // confundiría con una marcación anterior a que se midiera el método.
+            data: { colaboradorId, fecha: ahora, entrada: ahora, tipo: 'NORMAL', metodoEntrada: 'MANUAL' },
         });
         await (0, materializarDias_1.asegurarDiaSinFallar)(colaboradorId, registro.fecha, app.log);
         return reply.status(201).send(registro);
@@ -543,13 +638,13 @@ async function registroRoutes(app) {
         const ahora = new Date();
         const fechaBogota = (0, date_fns_tz_1.toZonedTime)(ahora, TZ);
         fechaBogota.setHours(0, 0, 0, 0);
-        const registro = await index_1.prisma.registro.findFirst({
+        const registro = await prisma_1.prisma.registro.findFirst({
             where: { colaboradorId, fecha: { gte: fechaBogota, lt: new Date(fechaBogota.getTime() + 86400000) }, salida: null },
             orderBy: { entrada: 'desc' },
         });
         if (!registro)
             return reply.status(400).send({ error: 'No hay entrada activa hoy' });
-        return index_1.prisma.registro.update({ where: { id: registro.id }, data: { salida: ahora } });
+        return prisma_1.prisma.registro.update({ where: { id: registro.id }, data: { salida: ahora, metodoSalida: 'MANUAL' } });
     });
     // Registro manual (admin)
     app.post('/', auth, async (request, reply) => {
@@ -561,7 +656,16 @@ async function registroRoutes(app) {
         const motivo = await motivoParaRechazar(datos.colaboradorId, datos.fecha, datos.entrada ?? null, datos.salida ?? null);
         if (motivo)
             return reply.status(400).send(motivo);
-        const registro = await index_1.prisma.registro.create({ data: datos });
+        const registro = await prisma_1.prisma.registro.create({
+            data: {
+                ...datos,
+                // Solo se marca el momento que de verdad trae hora: un registro manual
+                // puede traer solo entrada, y poner MANUAL en una salida vacía diría que
+                // alguien la escribió cuando no existe.
+                ...(datos.entrada ? { metodoEntrada: 'MANUAL' } : {}),
+                ...(datos.salida ? { metodoSalida: 'MANUAL' } : {}),
+            },
+        });
         // Un día con marcación es un día que va a salir en un reporte. Si llega ahí
         // sin fila, lo resuelve el horario vigente y vuelve a ser reescribible. Esto
         // pasa sobre todo al cargar días PASADOS a mano, que es como se corrige.
@@ -572,7 +676,7 @@ async function registroRoutes(app) {
     app.put('/:id', auth, async (request, reply) => {
         const { id } = request.params;
         const payload = request.user;
-        const existente = await index_1.prisma.registro.findFirst({
+        const existente = await prisma_1.prisma.registro.findFirst({
             where: { id, colaborador: { empresaId: request.empresaId } },
         });
         if (!existente)
@@ -591,7 +695,7 @@ async function registroRoutes(app) {
         // Se anota ANTES del update: después, `existente` ya no sería el estado viejo.
         await anotarCambios(id, existente, cambios, request.usuarioId, request.usuarioNombre)
             .catch(err => request.log.error(err, 'No se pudo anotar el cambio del registro'));
-        const actualizado = await index_1.prisma.registro.update({
+        const actualizado = await prisma_1.prisma.registro.update({
             where: { id },
             data: { ...cambios, editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
         });
@@ -616,7 +720,7 @@ async function registroRoutes(app) {
         const { id } = request.params;
         const payload = request.user;
         const b = request.body;
-        const primera = await index_1.prisma.registro.findFirst({
+        const primera = await prisma_1.prisma.registro.findFirst({
             where: { id, colaborador: { empresaId: request.empresaId } },
         });
         if (!primera)
@@ -638,7 +742,7 @@ async function registroRoutes(app) {
         // Las marcaciones que HOY componen esta jornada, para saber a cuáles escribir.
         // Van por el día de ORIGEN, que es donde la marcación vive ahora mismo.
         const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(primera.fecha);
-        const delDiaOrigen = await index_1.prisma.registro.findMany({
+        const delDiaOrigen = await prisma_1.prisma.registro.findMany({
             where: { colaboradorId: primera.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
             orderBy: { entrada: 'asc' },
         });
@@ -673,7 +777,7 @@ async function registroRoutes(app) {
         // Las marcaciones de esta jornada se excluyen: se están reescribiendo enteras.
         const idsPropios = [...new Set(esta.map(m => m.id))];
         const destino = (0, fechas_1.rangoDiaBogota)(fechaBase);
-        const ajenos = await index_1.prisma.registro.findMany({
+        const ajenos = await prisma_1.prisma.registro.findMany({
             where: {
                 colaboradorId,
                 fecha: { gte: destino.inicioDia, lt: destino.finDia },
@@ -713,7 +817,7 @@ async function registroRoutes(app) {
             tipo: comunes.tipo, observacion: comunes.observacion, fecha: comunes.fecha,
         };
         const antesPrimera = { ...esta[0] };
-        await index_1.prisma.$transaction(async (tx) => {
+        await prisma_1.prisma.$transaction(async (tx) => {
             await tx.registro.update({
                 where: { id: esta[0].id },
                 data: { ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida },
@@ -723,8 +827,11 @@ async function registroRoutes(app) {
                 const datos = { ...comunes, entrada: nuevos[1].entrada, salida: nuevos[1].salida, salidaAlmuerzo: false };
                 if (segunda)
                     await tx.registro.update({ where: { id: segunda.id }, data: datos });
+                // Fila nueva nacida de una edición del admin. La de arriba se ACTUALIZA y
+                // conserva su método original a propósito: esa marcación sí ocurrió en el
+                // kiosco, y el cambio queda registrado en `RegistroCambio` y `editadoPor`.
                 else
-                    await tx.registro.create({ data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) } });
+                    await tx.registro.create({ data: { ...datos, tipo: (b.tipo ?? esta[0].tipo), metodoEntrada: 'MANUAL', metodoSalida: 'MANUAL' } });
             }
             else if (segunda) {
                 // Se quitó el descanso: la marcación del regreso ya no representa nada.
@@ -742,12 +849,12 @@ async function registroRoutes(app) {
     // de filas y esto solo se mira cuando alguien abre UNA para revisarla.
     app.get('/:id/cambios', auth, async (request, reply) => {
         const { id } = request.params;
-        const existe = await index_1.prisma.registro.findFirst({
+        const existe = await prisma_1.prisma.registro.findFirst({
             where: { id, colaborador: { empresaId: request.empresaId } }, select: { id: true },
         });
         if (!existe)
             return reply.status(404).send({ error: 'Registro no encontrado' });
-        return index_1.prisma.registroCambio.findMany({
+        return prisma_1.prisma.registroCambio.findMany({
             where: { registroId: id },
             select: { id: true, campo: true, antes: true, despues: true, usuarioNombre: true, creadoEn: true },
             orderBy: { creadoEn: 'desc' },
@@ -755,12 +862,12 @@ async function registroRoutes(app) {
     });
     app.delete('/:id', auth, async (request, reply) => {
         const { id } = request.params;
-        const existente = await index_1.prisma.registro.findFirst({
+        const existente = await prisma_1.prisma.registro.findFirst({
             where: { id, colaborador: { empresaId: request.empresaId } },
         });
         if (!existente)
             return reply.status(404).send({ error: 'Registro no encontrado' });
-        const borrado = await index_1.prisma.registro.delete({ where: { id } });
+        const borrado = await prisma_1.prisma.registro.delete({ where: { id } });
         // Un cambio de horario se aplica desde HOY solo a quien todavía no ha
         // marcado; a quien ya empezó su día se le deja para mañana. Esa decisión se
         // tomaba al guardar el horario y no se volvía a mirar: si después se borran

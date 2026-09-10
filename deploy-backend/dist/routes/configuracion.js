@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = configuracionRoutes;
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const vigencias_1 = require("../utils/vigencias");
 const telegram_1 = require("../utils/telegram");
 const capacidades_1 = require("../utils/capacidades");
@@ -16,7 +16,7 @@ async function configuracionRoutes(app) {
         const { chatId } = (request.body ?? {});
         let destino = (chatId || '').trim();
         if (!destino) {
-            const cfg = await index_1.prisma.configuracion.findUnique({
+            const cfg = await prisma_1.prisma.configuracion.findUnique({
                 where: { empresaId_clave: { empresaId: request.empresaId, clave: 'TELEGRAM_CHAT_ID' } },
             });
             destino = cfg?.valor || '';
@@ -29,14 +29,14 @@ async function configuracionRoutes(app) {
         return { ok: true };
     });
     app.get('/', auth, async (request) => {
-        const items = await index_1.prisma.configuracion.findMany({ where: { empresaId: request.empresaId } });
+        const items = await prisma_1.prisma.configuracion.findMany({ where: { empresaId: request.empresaId } });
         return items.reduce((acc, item) => { acc[item.clave] = item.valor; return acc; }, {});
     });
     // Política de permisos remunerados, ya resuelta. El frontend NO debe repetir
     // la clasificación ni el default: los recibe de aquí, que es la misma fuente
     // que usa el cálculo del saldo.
     app.get('/permisos-remunerados', auth, async (request) => {
-        const cfg = await index_1.prisma.configuracion.findUnique({
+        const cfg = await prisma_1.prisma.configuracion.findUnique({
             where: { empresaId_clave: { empresaId: request.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } },
         });
         const politica = (0, saldoTiempo_1.parsearPoliticaPermisos)(cfg?.valor);
@@ -80,7 +80,7 @@ async function configuracionRoutes(app) {
             }
             data[saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS] = (0, saldoTiempo_1.normalizarPoliticaPermisos)(pedidos).join(',');
         }
-        await Promise.all(Object.entries(data).map(([clave, valor]) => index_1.prisma.configuracion.upsert({
+        await Promise.all(Object.entries(data).map(([clave, valor]) => prisma_1.prisma.configuracion.upsert({
             where: { empresaId_clave: { empresaId, clave } },
             update: { valor },
             create: { empresaId, clave, valor },
@@ -89,7 +89,7 @@ async function configuracionRoutes(app) {
     });
     // Datos de la empresa (los ve cualquiera de la empresa, solo ADMIN los edita)
     app.get('/empresa', auth, async (request) => {
-        return index_1.prisma.empresa.findUnique({
+        return prisma_1.prisma.empresa.findUnique({
             where: { id: request.empresaId },
             select: { nombre: true, nit: true, email: true, telefono: true },
         });
@@ -101,10 +101,10 @@ async function configuracionRoutes(app) {
         const { nombre, nit, telefono } = request.body;
         if (!nombre || !nit)
             return reply.status(400).send({ error: 'Nombre y NIT son obligatorios' });
-        const conflicto = await index_1.prisma.empresa.findFirst({ where: { nit, NOT: { id: request.empresaId } } });
+        const conflicto = await prisma_1.prisma.empresa.findFirst({ where: { nit, NOT: { id: request.empresaId } } });
         if (conflicto)
             return reply.status(409).send({ error: 'Ya hay otra empresa registrada con ese NIT' });
-        return index_1.prisma.empresa.update({
+        return prisma_1.prisma.empresa.update({
             where: { id: request.empresaId },
             data: { nombre, nit, telefono },
             select: { nombre: true, nit: true, email: true, telefono: true },
@@ -115,8 +115,8 @@ async function configuracionRoutes(app) {
         const { fecha } = request.query;
         const ref = fecha ? new Date(fecha) : new Date();
         const [jornadas, tipos] = await Promise.all([
-            index_1.prisma.jornadaVigencia.findMany({ orderBy: { vigenteDesde: 'asc' } }),
-            index_1.prisma.tipoHora.findMany({ orderBy: [{ codigo: 'asc' }, { vigenteDesde: 'asc' }] }),
+            prisma_1.prisma.jornadaVigencia.findMany({ orderBy: { vigenteDesde: 'asc' } }),
+            prisma_1.prisma.tipoHora.findMany({ orderBy: [{ codigo: 'asc' }, { vigenteDesde: 'asc' }] }),
         ]);
         const jornada = (0, vigencias_1.jornadaVigente)(ref, jornadas);
         return {
@@ -129,23 +129,23 @@ async function configuracionRoutes(app) {
     });
     // Compat: lista de tipos de hora vigentes hoy
     app.get('/tipos-hora', auth, async () => {
-        const tipos = await index_1.prisma.tipoHora.findMany({ orderBy: { codigo: 'asc' } });
+        const tipos = await prisma_1.prisma.tipoHora.findMany({ orderBy: { codigo: 'asc' } });
         return (0, vigencias_1.tiposVigentes)(new Date(), tipos);
     });
     // Token del link único del kiosco de marcación de la empresa
     app.get('/marcador-link', auth, async (request) => {
-        const empresa = await index_1.prisma.empresa.findUnique({
+        const empresa = await prisma_1.prisma.empresa.findUnique({
             where: { id: request.empresaId },
             select: { marcadorToken: true, nombre: true },
         });
-        const soloDispositivos = await index_1.prisma.configuracion.findUnique({
+        const soloDispositivos = await prisma_1.prisma.configuracion.findUnique({
             where: { empresaId_clave: { empresaId: request.empresaId, clave: 'KIOSCO_SOLO_DISPOSITIVOS' } },
         });
         return { ...empresa, soloDispositivos: soloDispositivos?.valor === '1' };
     });
     // ===== Dispositivos autorizados del kiosco =====
     app.get('/dispositivos', auth, async (request) => {
-        return index_1.prisma.dispositivoKiosco.findMany({
+        return prisma_1.prisma.dispositivoKiosco.findMany({
             where: { empresaId: request.empresaId },
             orderBy: { creadoEn: 'asc' },
         });
@@ -154,14 +154,14 @@ async function configuracionRoutes(app) {
     app.post('/dispositivos/codigo', auth, async (request, reply) => {
         const cap = await (0, capacidades_1.capacidadesEmpresa)(request.empresaId);
         if (!cap.features.multiDispositivo) {
-            const yaVinculados = await index_1.prisma.dispositivoKiosco.count({ where: { empresaId: request.empresaId } });
+            const yaVinculados = await prisma_1.prisma.dispositivoKiosco.count({ where: { empresaId: request.empresaId } });
             if (yaVinculados >= 1) {
                 return reply.status(403).send({ error: 'Tu plan permite un solo dispositivo de kiosco. Elimina el actual o sube de plan para vincular más.', codigo: 'FUNCION_PLAN', funcion: 'multiDispositivo' });
             }
         }
         const codigo = String(Math.floor(100000 + Math.random() * 900000));
         const valor = JSON.stringify({ codigo, expira: Date.now() + 10 * 60 * 1000 });
-        await index_1.prisma.configuracion.upsert({
+        await prisma_1.prisma.configuracion.upsert({
             where: { empresaId_clave: { empresaId: request.empresaId, clave: 'CODIGO_KIOSCO' } },
             update: { valor },
             create: { empresaId: request.empresaId, clave: 'CODIGO_KIOSCO', valor },
@@ -175,17 +175,17 @@ async function configuracionRoutes(app) {
         const limpio = (nombre || '').trim();
         if (!limpio)
             return reply.status(400).send({ error: 'El nombre no puede estar vacío' });
-        const disp = await index_1.prisma.dispositivoKiosco.findFirst({ where: { id, empresaId: request.empresaId } });
+        const disp = await prisma_1.prisma.dispositivoKiosco.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!disp)
             return reply.status(404).send({ error: 'Dispositivo no encontrado' });
-        return index_1.prisma.dispositivoKiosco.update({ where: { id }, data: { nombre: limpio.slice(0, 60) } });
+        return prisma_1.prisma.dispositivoKiosco.update({ where: { id }, data: { nombre: limpio.slice(0, 60) } });
     });
     app.delete('/dispositivos/:id', auth, async (request, reply) => {
         const { id } = request.params;
-        const disp = await index_1.prisma.dispositivoKiosco.findFirst({ where: { id, empresaId: request.empresaId } });
+        const disp = await prisma_1.prisma.dispositivoKiosco.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!disp)
             return reply.status(404).send({ error: 'Dispositivo no encontrado' });
-        await index_1.prisma.dispositivoKiosco.delete({ where: { id } });
+        await prisma_1.prisma.dispositivoKiosco.delete({ where: { id } });
         return { ok: true };
     });
 }

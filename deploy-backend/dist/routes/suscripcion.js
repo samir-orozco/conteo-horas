@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = suscripcionRoutes;
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const suscripcion_1 = require("../utils/suscripcion");
 const wompi_1 = require("../utils/wompi");
 const capacidades_1 = require("../utils/capacidades");
@@ -31,8 +31,8 @@ async function suscripcionRoutes(app) {
             return;
         const [cap, colaboradores, planesMap] = await Promise.all([
             (0, capacidades_1.capacidadesEmpresa)(empresaId),
-            index_1.prisma.colaborador.count({ where: { empresaId, activo: true } }),
-            (0, planes_1.obtenerPlanes)(index_1.prisma),
+            prisma_1.prisma.colaborador.count({ where: { empresaId, activo: true } }),
+            (0, planes_1.obtenerPlanes)(prisma_1.prisma),
         ]);
         return {
             ...cap,
@@ -51,7 +51,7 @@ async function suscripcionRoutes(app) {
         const { plan } = (request.body ?? {});
         if (!(0, planes_1.esPlan)(plan))
             return reply.status(400).send({ error: 'Plan inválido' });
-        const empresa = await index_1.prisma.empresa.findUnique({ where: { id: empresaId }, include: { suscripcion: true } });
+        const empresa = await prisma_1.prisma.empresa.findUnique({ where: { id: empresaId }, include: { suscripcion: true } });
         if (!empresa?.suscripcion)
             return reply.status(404).send({ error: 'Sin suscripción' });
         if (empresa.exentaPago)
@@ -59,21 +59,21 @@ async function suscripcionRoutes(app) {
         const susc = empresa.suscripcion;
         if (susc.plan === plan)
             return reply.status(400).send({ error: 'Ya tienes ese plan' });
-        const planes = await (0, planes_1.obtenerPlanes)(index_1.prisma);
+        const planes = await (0, planes_1.obtenerPlanes)(prisma_1.prisma);
         const ahora = new Date();
         const alDia = !!susc.pagadoHasta && susc.pagadoHasta > ahora;
         const precioActual = (0, planes_1.precioMensualDe)(susc, false, planes);
         const precioNuevo = planes[plan].precioMensual;
         // Cambio directo (sin cobro): en prueba, bajando de plan, o si Wompi no está configurado
         if (!alDia || precioNuevo <= precioActual || !(0, wompi_1.wompiConfigurado)()) {
-            await index_1.prisma.suscripcion.update({ where: { empresaId }, data: { plan } });
+            await prisma_1.prisma.suscripcion.update({ where: { empresaId }, data: { plan } });
             return { cambiado: true };
         }
         // Sube de plan estando al día → diferencia prorrateada
         const { factor, diasRestantes, diasMes } = (0, suscripcion_1.prorrateo)(ahora);
         const diferencia = Math.max(0, Math.round((precioNuevo - precioActual) * factor));
         if (diferencia <= 0) {
-            await index_1.prisma.suscripcion.update({ where: { empresaId }, data: { plan } });
+            await prisma_1.prisma.suscripcion.update({ where: { empresaId }, data: { plan } });
             return { cambiado: true };
         }
         const reference = (0, wompi_1.referenciaUpgrade)(empresaId, plan, susc.pagadoHasta);
@@ -92,16 +92,16 @@ async function suscripcionRoutes(app) {
         const empresaId = await empresaDelToken(request, reply);
         if (!empresaId)
             return;
-        const susc = await index_1.prisma.suscripcion.findUnique({
+        const susc = await prisma_1.prisma.suscripcion.findUnique({
             where: { empresaId },
             include: { pagos: { orderBy: { creadoEn: 'desc' }, take: 12 } },
         });
         if (!susc)
             return reply.status(404).send({ error: 'Sin suscripción' });
-        const sync = await (0, suscripcion_1.sincronizarEstado)(index_1.prisma, susc);
-        const precios = await (0, suscripcion_1.obtenerPrecios)(index_1.prisma);
-        const cobro = await (0, suscripcion_1.calcularCobro)(index_1.prisma, empresaId, precios);
-        const empresa = await index_1.prisma.empresa.findUnique({ where: { id: empresaId } });
+        const sync = await (0, suscripcion_1.sincronizarEstado)(prisma_1.prisma, susc);
+        const precios = await (0, suscripcion_1.obtenerPrecios)(prisma_1.prisma);
+        const cobro = await (0, suscripcion_1.calcularCobro)(prisma_1.prisma, empresaId, precios);
+        const empresa = await prisma_1.prisma.empresa.findUnique({ where: { id: empresaId } });
         const exenta = Boolean(empresa?.exentaPago);
         // El checkout solo existe si hay algo por pagar hoy
         let checkout = null;
@@ -151,7 +151,7 @@ async function suscripcionRoutes(app) {
         if (tx.status !== 'APPROVED') {
             return { estado: tx.status, mensaje: 'El pago no fue aprobado' };
         }
-        const pago = await (0, suscripcion_1.aplicarPagoAprobado)(index_1.prisma, empresaId, {
+        const pago = await (0, suscripcion_1.aplicarPagoAprobado)(prisma_1.prisma, empresaId, {
             monto: tx.amount_in_cents / 100,
             metodo: 'LINK_WOMPI',
             wompiTransaccionId: tx.id,
@@ -159,7 +159,7 @@ async function suscripcionRoutes(app) {
         // Si era un pago de cambio de plan, aplica el plan destino
         const planUpg = (0, wompi_1.planDeReferencia)(tx.reference);
         if (planUpg && (0, planes_1.esPlan)(planUpg)) {
-            await index_1.prisma.suscripcion.update({ where: { empresaId }, data: { plan: planUpg } });
+            await prisma_1.prisma.suscripcion.update({ where: { empresaId }, data: { plan: planUpg } });
         }
         return { estado: 'APPROVED', pago };
     });
@@ -172,7 +172,7 @@ async function suscripcionRoutes(app) {
         if (!wompi_1.WOMPI_PRIVATE_KEY) {
             return reply.status(503).send({ error: 'Configura WOMPI_PRIVATE_KEY para verificar pagos por referencia' });
         }
-        const susc = await index_1.prisma.suscripcion.findUnique({ where: { empresaId } });
+        const susc = await prisma_1.prisma.suscripcion.findUnique({ where: { empresaId } });
         if (!susc)
             return reply.status(404).send({ error: 'Sin suscripción' });
         const reference = (0, wompi_1.referenciaPago)(empresaId, susc.pagadoHasta ?? susc.finPrueba);
@@ -180,7 +180,7 @@ async function suscripcionRoutes(app) {
         const aprobada = txs.find(t => t.status === 'APPROVED');
         if (!aprobada)
             return { estado: 'SIN_PAGO', mensaje: 'No encontramos un pago aprobado con la referencia actual' };
-        const pago = await (0, suscripcion_1.aplicarPagoAprobado)(index_1.prisma, empresaId, {
+        const pago = await (0, suscripcion_1.aplicarPagoAprobado)(prisma_1.prisma, empresaId, {
             monto: aprobada.amount_in_cents / 100,
             metodo: 'LINK_WOMPI',
             wompiTransaccionId: aprobada.id,

@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = reporteRoutes;
 const date_fns_tz_1 = require("date-fns-tz");
 const date_fns_1 = require("date-fns");
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const horasColombiana_1 = require("../utils/horasColombiana");
 const vigencias_1 = require("../utils/vigencias");
 const tardanzas_1 = require("../utils/tardanzas");
@@ -161,7 +161,7 @@ async function reporteRoutes(app) {
         const { colaboradorId, desde, hasta } = request.query;
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
         const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosRango, diasMaterializados] = await Promise.all([
-            index_1.prisma.colaborador.findFirst({
+            prisma_1.prisma.colaborador.findFirst({
                 where: { id: colaboradorId, empresaId: request.empresaId },
                 include: { horario: { include: { franjas: true } } },
             }),
@@ -169,27 +169,27 @@ async function reporteRoutes(app) {
             // que son base64 de cientos de KB cada una. Un mes de marcaciones se
             // convertía en decenas de MB cargados en memoria para no usarlos. Las
             // fotos se piden aparte, una a una, con `GET /registros/:id/fotos`.
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } },
                 select: { id: true, fecha: true, entrada: true, salida: true },
                 orderBy: { fecha: 'asc' },
             }),
-            index_1.prisma.diaFestivo.findMany({
+            prisma_1.prisma.diaFestivo.findMany({
                 where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] },
             }),
-            index_1.prisma.tipoHora.findMany(),
-            index_1.prisma.jornadaVigencia.findMany(),
-            index_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
-            index_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } } }),
+            prisma_1.prisma.tipoHora.findMany(),
+            prisma_1.prisma.jornadaVigencia.findMany(),
+            prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
+            prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } } }),
             // Solo los permisos que tocan el rango: un permiso que terminó antes de
             // `desde` o empieza después del corte no afecta este período.
-            index_1.prisma.permiso.findMany({
+            prisma_1.prisma.permiso.findMany({
                 where: { colaboradorId, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
                 select: { fechaInicio: true, fechaFin: true, tipo: true },
             }),
             // Lo que el horario exigía ESE día, congelado cuando se materializó. Es lo
             // que impide que editar un horario hoy mueva la liquidación de julio.
-            index_1.prisma.diaEsperado.findMany({
+            prisma_1.prisma.diaEsperado.findMany({
                 where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
                 select: {
                     fecha: true, programado: true, horaEntrada: true, horaSalida: true,
@@ -251,7 +251,7 @@ async function reporteRoutes(app) {
         // salario y vive en /liquidacion, donde el salario está a la vista. Dejarlo
         // fuera evita además traer los permisos de toda la empresa en cada consulta.
         const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, diasTodosEsp] = await Promise.all([
-            index_1.prisma.colaborador.findMany({
+            prisma_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
                 include: { horario: { include: { franjas: true } } },
                 orderBy: { nombre: 'asc' },
@@ -259,7 +259,7 @@ async function reporteRoutes(app) {
             // Igual que en /liquidacion, pero aquí pesa más: son los registros de
             // TODA la empresa. Sin el select, las fotos de un mes entero viajaban a
             // memoria en cada carga del reporte.
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 // El filtro por sede va sobre DÓNDE se marcó (`Registro.sedeId`), no
                 // sobre la sede asignada al colaborador: quien rota entre locales
                 // aparece en el reporte del local donde realmente trabajó ese día.
@@ -270,15 +270,15 @@ async function reporteRoutes(app) {
                 select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true },
                 orderBy: { fecha: 'asc' },
             }),
-            index_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
-            index_1.prisma.tipoHora.findMany(),
-            index_1.prisma.jornadaVigencia.findMany(),
-            index_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
+            prisma_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
+            prisma_1.prisma.tipoHora.findMany(),
+            prisma_1.prisma.jornadaVigencia.findMany(),
+            prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
             // Los días de toda la empresa en una consulta. Hacen falta para aplicar la
             // tolerancia de jornada igual que en /liquidacion: si esta vista no la
             // aplicara, el resumen y el desglose del mismo colaborador darían cifras
             // distintas, que es la peor forma de perder la confianza en un reporte.
-            index_1.prisma.diaEsperado.findMany({
+            prisma_1.prisma.diaEsperado.findMany({
                 where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
                 select: {
                     colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
@@ -310,7 +310,7 @@ async function reporteRoutes(app) {
     // Llegadas tarde de un colaborador según su horario asignado
     app.get('/tardanzas', auth, async (request, reply) => {
         const { colaboradorId, desde, hasta } = request.query;
-        const colaborador = await index_1.prisma.colaborador.findFirst({
+        const colaborador = await prisma_1.prisma.colaborador.findFirst({
             where: { id: colaboradorId, empresaId: request.empresaId },
             include: { horario: { include: { franjas: true } } },
         });
@@ -321,15 +321,15 @@ async function reporteRoutes(app) {
         }
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
         const [registros, festivos, permisos, jornadas, diasMaterializados] = await Promise.all([
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
             }),
-            index_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
-            index_1.prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
-            index_1.prisma.jornadaVigencia.findMany(),
+            prisma_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
+            prisma_1.prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
+            prisma_1.prisma.jornadaVigencia.findMany(),
             // La hora exigida y la tolerancia de cada día, congeladas. Sin esto,
             // adelantar la entrada del horario llenaba de tardanzas los meses cerrados.
-            index_1.prisma.diaEsperado.findMany({
+            prisma_1.prisma.diaEsperado.findMany({
                 where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
                 select: {
                     fecha: true, programado: true, horaEntrada: true, horaSalida: true,
@@ -358,26 +358,26 @@ async function reporteRoutes(app) {
         const empresaId = request.empresaId;
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
         const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas, diasTodos] = await Promise.all([
-            index_1.prisma.colaborador.findMany({
+            prisma_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
                 include: { horario: { include: { franjas: true } } },
                 orderBy: { nombre: 'asc' },
             }),
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 where: {
                     colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo },
                     ...(sedeId ? { sedeId } : {}),
                 },
             }),
-            index_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
-            index_1.prisma.permiso.findMany({
+            prisma_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
+            prisma_1.prisma.permiso.findMany({
                 where: { colaborador: { empresaId }, aprobado: true },
                 select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true },
             }),
-            index_1.prisma.jornadaVigencia.findMany(),
+            prisma_1.prisma.jornadaVigencia.findMany(),
             // Los días de TODA la empresa en una sola consulta; se agrupan abajo. Uno
             // por colaborador serían N consultas para pintar una tabla.
-            index_1.prisma.diaEsperado.findMany({
+            prisma_1.prisma.diaEsperado.findMany({
                 where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
                 select: {
                     colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
@@ -411,7 +411,7 @@ async function reporteRoutes(app) {
     app.get('/asistencia', auth, async (request) => {
         const { desde, hasta } = request.query;
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
-        return index_1.prisma.registro.findMany({
+        return prisma_1.prisma.registro.findMany({
             where: {
                 colaborador: { empresaId: request.empresaId },
                 fecha: { gte: desdeF, lt: finExclusivo },

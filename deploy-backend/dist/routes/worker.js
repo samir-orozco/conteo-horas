@@ -6,8 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = workerRoutes;
 const client_1 = require("@prisma/client");
 const crypto_1 = __importDefault(require("crypto"));
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const rostro_1 = require("../utils/rostro");
+const metodoMarcacion_1 = require("../utils/metodoMarcacion");
 const telegram_1 = require("../utils/telegram");
 const notificaciones_1 = require("../utils/notificaciones");
 const fechas_1 = require("../utils/fechas");
@@ -45,7 +46,7 @@ async function enroladosDeEmpresa(empresaId) {
     const hit = cacheRostros.get(empresaId);
     if (hit && Date.now() - hit.ts < CACHE_ROSTROS_MS)
         return hit.enrolados;
-    const enrolados = await index_1.prisma.colaborador.findMany({
+    const enrolados = await prisma_1.prisma.colaborador.findMany({
         where: { empresaId, activo: true, rostroDescriptor: { not: client_1.Prisma.DbNull } },
         select: { id: true, nombre: true, apellido: true, cargo: true, cedula: true, empresaId: true, modalidad: true, rostroDescriptor: true },
     });
@@ -95,13 +96,13 @@ async function almuerzoDelTurno(colaboradorId, fechaAncla) {
     const [dia, marcados] = await Promise.all([
         // Por rango y no por clave exacta: MySQL puede devolver la fecha con
         // milisegundos y una fila así quedaría huérfana sin que nadie se entere.
-        index_1.prisma.diaEsperado.findFirst({
+        prisma_1.prisma.diaEsperado.findFirst({
             where: { colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
             // `fecha` hace falta para saber si la persona está DENTRO de la ventana
             // ahora mismo: la de un turno nocturno cae en la madrugada siguiente.
             select: { fecha: true, almuerzoInicio: true, almuerzoFin: true },
         }),
-        index_1.prisma.registro.count({
+        prisma_1.prisma.registro.count({
             where: { colaboradorId, salidaAlmuerzo: true, salida: { gte: new Date(Date.now() - cierreTurnos_1.VENTANA_TURNO_MS) } },
         }),
     ]);
@@ -121,7 +122,7 @@ async function almuerzoDelTurno(colaboradorId, fechaAncla) {
 // que el vínculo tiene que ser explícito.
 async function crearNovedad(colaboradorId, tipo, descripcion, registroId) {
     const { inicioDia } = (0, fechas_1.rangoDiaBogota)();
-    const permiso = await index_1.prisma.permiso.create({
+    const permiso = await prisma_1.prisma.permiso.create({
         data: {
             colaboradorId,
             tipo: tipo,
@@ -132,7 +133,7 @@ async function crearNovedad(colaboradorId, tipo, descripcion, registroId) {
             ...(registroId ? { registroId } : {}),
         },
     });
-    const quien = await index_1.prisma.colaborador.findUnique({
+    const quien = await prisma_1.prisma.colaborador.findUnique({
         where: { id: colaboradorId },
         select: { nombre: true, apellido: true, empresaId: true },
     });
@@ -148,7 +149,7 @@ async function crearNovedad(colaboradorId, tipo, descripcion, registroId) {
 }
 // Alerta de llegada tarde por Telegram (si la empresa lo activó). No bloquea la marca.
 async function alertarTardanzaTelegram(empresaId, nombre, ahoraBog, minutosTarde) {
-    const cfgs = await index_1.prisma.configuracion.findMany({
+    const cfgs = await prisma_1.prisma.configuracion.findMany({
         where: { empresaId, clave: { in: ['TELEGRAM_ALERTAS_TARDE', 'TELEGRAM_CHAT_ID'] } },
     });
     const map = Object.fromEntries(cfgs.map(c => [c.clave, c.valor]));
@@ -199,13 +200,17 @@ async function workerRoutes(app) {
     // Info del kiosco a partir del token del link único de la empresa
     app.get('/kiosco/:token', async (request, reply) => {
         const { token } = request.params;
-        const empresa = await index_1.prisma.empresa.findUnique({ where: { marcadorToken: token } });
+        const empresa = await prisma_1.prisma.empresa.findUnique({ where: { marcadorToken: token } });
         if (!empresa || !empresa.activa)
             return reply.code(404).send({ error: 'Link de marcación inválido' });
         return {
             empresa: empresa.nombre,
             requiereDispositivo: await (0, kioscoConfig_1.exigeDispositivo)(empresa.id),
             permiteCedula: await (0, kioscoConfig_1.permiteCedula)(empresa.id),
+            // Si el ingreso facial pide girar la cabeza antes de capturar. Apagado por
+            // defecto: un reto que falle deja a la gente sin marcar, así que se
+            // enciende por empresa y se puede apagar sin desplegar.
+            exigeReto: await (0, kioscoConfig_1.exigeRetoDePose)(empresa.id),
             // El kiosco pide el GPS si lo exige la geocerca de la empresa O si hay
             // alguna sede con ubicación: con sedes, quién marca dónde solo se sabe
             // por coordenadas, así que hay que pedirlas antes de saber quién es.
@@ -215,18 +220,18 @@ async function workerRoutes(app) {
     // Vincula este dispositivo al kiosco con el código de 6 dígitos que genera el admin
     app.post('/vincular', { ...rlPublico, schema: vincularSchema }, async (request, reply) => {
         const { marcadorToken, codigo } = request.body;
-        const empresa = await index_1.prisma.empresa.findUnique({ where: { marcadorToken } });
+        const empresa = await prisma_1.prisma.empresa.findUnique({ where: { marcadorToken } });
         if (!empresa || !empresa.activa)
             return reply.code(404).send({ error: 'Link de marcación inválido' });
-        const cfg = await index_1.prisma.configuracion.findUnique({
+        const cfg = await prisma_1.prisma.configuracion.findUnique({
             where: { empresaId_clave: { empresaId: empresa.id, clave: 'CODIGO_KIOSCO' } },
         });
         const guardado = cfg ? JSON.parse(cfg.valor) : null;
         if (!guardado || guardado.codigo !== codigo || Date.now() > guardado.expira) {
             return reply.code(401).send({ error: 'Código inválido o vencido. Genera uno nuevo en el panel.' });
         }
-        const cantidad = await index_1.prisma.dispositivoKiosco.count({ where: { empresaId: empresa.id } });
-        const dispositivo = await index_1.prisma.dispositivoKiosco.create({
+        const cantidad = await prisma_1.prisma.dispositivoKiosco.count({ where: { empresaId: empresa.id } });
+        const dispositivo = await prisma_1.prisma.dispositivoKiosco.create({
             data: {
                 empresaId: empresa.id,
                 nombre: `Dispositivo ${cantidad + 1}`,
@@ -234,13 +239,13 @@ async function workerRoutes(app) {
             },
         });
         // El código es de un solo uso
-        await index_1.prisma.configuracion.delete({ where: { id: cfg.id } });
+        await prisma_1.prisma.configuracion.delete({ where: { id: cfg.id } });
         return { deviceToken: dispositivo.token, nombre: dispositivo.nombre };
     });
     // Login del kiosco con cédula, amarrado al link único de la empresa
     app.post('/login', { ...rlPublico, schema: loginSchema }, async (request, reply) => {
         const { cedula, marcadorToken, deviceToken } = request.body;
-        const empresa = await index_1.prisma.empresa.findUnique({ where: { marcadorToken } });
+        const empresa = await prisma_1.prisma.empresa.findUnique({ where: { marcadorToken } });
         if (!empresa || !empresa.activa)
             return reply.code(404).send({ error: 'Link de marcación inválido' });
         if (!(await (0, kioscoConfig_1.permiteCedula)(empresa.id))) {
@@ -252,15 +257,19 @@ async function workerRoutes(app) {
                 return reply.code(401).send({ error: 'Este dispositivo no está autorizado para marcar', codigo: 'DISPOSITIVO_REQUERIDO' });
             }
         }
-        const col = await index_1.prisma.colaborador.findFirst({
+        const col = await prisma_1.prisma.colaborador.findFirst({
             where: { cedula, activo: true, empresaId: empresa.id },
         });
         if (!col)
             return reply.code(401).send({ error: 'Cédula no registrada en esta empresa' });
-        const token = app.jwt.sign({ id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId }, { expiresIn: '12h' });
+        // `metodo` viaja DENTRO del token firmado y no en la respuesta: es la única
+        // forma de que la marcación registre con qué se autenticó de verdad. Si el
+        // kiosco lo declarara en el cuerpo de `/marcar`, cualquiera lo cambiaría
+        // desde el inspector y la medición diría lo contrario de la realidad.
+        const token = app.jwt.sign({ id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId, metodo: 'CEDULA' }, { expiresIn: '12h' });
         // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
         // toca marcar a esta persona, junto al nombre.
-        const sedesDelCol = await index_1.prisma.colaboradorSede.findMany({
+        const sedesDelCol = await prisma_1.prisma.colaboradorSede.findMany({
             where: { colaboradorId: col.id, sede: { activa: true } },
             select: { sede: { select: { id: true, nombre: true } } },
             orderBy: { sede: { nombre: 'asc' } },
@@ -282,7 +291,7 @@ async function workerRoutes(app) {
         const { descriptor, marcadorToken, deviceToken } = request.body;
         if (!(0, rostro_1.esDescriptorValido)(descriptor))
             return reply.code(400).send({ error: 'Rostro no capturado correctamente' });
-        const empresa = await index_1.prisma.empresa.findUnique({ where: { marcadorToken } });
+        const empresa = await prisma_1.prisma.empresa.findUnique({ where: { marcadorToken } });
         if (!empresa || !empresa.activa)
             return reply.code(404).send({ error: 'Link de marcación inválido' });
         if (await (0, kioscoConfig_1.exigeDispositivo)(empresa.id)) {
@@ -294,10 +303,14 @@ async function workerRoutes(app) {
         if (!match)
             return reply.code(401).send({ error: 'Rostro no reconocido. Intenta de nuevo o marca con tu cédula.' });
         const col = match.colaborador;
-        const token = app.jwt.sign({ id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId }, { expiresIn: '12h' });
+        // La distancia del match la calculaba `mejorCoincidencia` y se tiraba. Ahora
+        // viaja en el token y queda en la marcación: una distancia repetida al
+        // milímetro entre marcaciones es la huella de un descriptor copiado y
+        // reenviado, cosa que no ocurre en capturas vivas.
+        const token = app.jwt.sign({ id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId, metodo: 'ROSTRO', distancia: match.distancia }, { expiresIn: '12h' });
         // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
         // toca marcar a esta persona, junto al nombre.
-        const sedesDelCol = await index_1.prisma.colaboradorSede.findMany({
+        const sedesDelCol = await prisma_1.prisma.colaboradorSede.findMany({
             where: { colaboradorId: col.id, sede: { activa: true } },
             select: { sede: { select: { id: true, nombre: true } } },
             orderBy: { sede: { nombre: 'asc' } },
@@ -317,7 +330,7 @@ async function workerRoutes(app) {
             return { error: 'No autorizado' };
         const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)();
         const [abierto, cerradoHoy, ultimoCerrado] = await Promise.all([
-            index_1.prisma.registro.findFirst({
+            prisma_1.prisma.registro.findFirst({
                 where: {
                     colaboradorId: payload.id,
                     entrada: { gte: new Date(Date.now() - cierreTurnos_1.VENTANA_TURNO_MS) },
@@ -329,7 +342,7 @@ async function workerRoutes(app) {
             // Último turno YA COMPLETO de hoy (entrada + salida). El kiosco lo usa para
             // mostrar el resumen del día y para confirmar antes de abrir un turno nuevo
             // (evita la entrada duplicada de quien cree que no le quedó la salida).
-            index_1.prisma.registro.findFirst({
+            prisma_1.prisma.registro.findFirst({
                 where: {
                     colaboradorId: payload.id,
                     fecha: { gte: inicioDia, lt: finDia },
@@ -341,7 +354,7 @@ async function workerRoutes(app) {
             }),
             // Último turno cerrado del TURNO en curso (no del día calendario): si fue
             // una salida a almorzar, la persona está en su almuerzo ahora mismo.
-            index_1.prisma.registro.findFirst({
+            prisma_1.prisma.registro.findFirst({
                 where: {
                     colaboradorId: payload.id,
                     salida: { not: null, gte: new Date(Date.now() - cierreTurnos_1.VENTANA_TURNO_MS) },
@@ -358,7 +371,7 @@ async function workerRoutes(app) {
         // regreso de un almuerzo de las 12:00 perdería la tarde entera.
         let regresoSugerido = null;
         if (enAlmuerzo && ultimoCerrado?.salida) {
-            const diaDelAlmuerzo = await index_1.prisma.diaEsperado.findFirst({
+            const diaDelAlmuerzo = await prisma_1.prisma.diaEsperado.findFirst({
                 where: {
                     colaboradorId: payload.id,
                     fecha: { gte: (0, fechas_1.rangoDiaBogota)(ultimoCerrado.salida).inicioDia, lt: (0, fechas_1.rangoDiaBogota)(ultimoCerrado.salida).finDia },
@@ -417,7 +430,7 @@ async function workerRoutes(app) {
             // El colaborador se lee ANTES de decidir sobre la ubicación, y ese orden
             // es el cambio: la geocerca dejó de ser una regla de la empresa para ser
             // una de la persona, así que hay que saber quién es antes de aplicarla.
-            const col = await index_1.prisma.colaborador.findUnique({
+            const col = await prisma_1.prisma.colaborador.findUnique({
                 where: { id: payload.id },
                 include: { horario: { include: { franjas: true } } },
             });
@@ -458,7 +471,7 @@ async function workerRoutes(app) {
             // Turno abierto en curso: se busca por ventana (no por día calendario), para
             // que un turno que cruzó medianoche encuentre su entrada y registre salida en
             // vez de crear una entrada nueva.
-            const abierto = await index_1.prisma.registro.findFirst({
+            const abierto = await prisma_1.prisma.registro.findFirst({
                 where: {
                     colaboradorId: payload.id,
                     entrada: { gte: new Date(ahora.getTime() - cierreTurnos_1.VENTANA_TURNO_MS) },
@@ -467,7 +480,7 @@ async function workerRoutes(app) {
                 orderBy: { creadoEn: 'desc' },
             });
             // Festivo legal (global) o propio de la empresa del colaborador
-            const festHoy = await index_1.prisma.diaFestivo.findFirst({
+            const festHoy = await prisma_1.prisma.diaFestivo.findFirst({
                 where: {
                     fecha: { gte: inicioDia, lt: finDia },
                     OR: [{ empresaId: null }, { empresaId: col?.empresaId }],
@@ -523,7 +536,7 @@ async function workerRoutes(app) {
                         error: 'Te vas antes de que termine tu jornada. Cuéntanos por qué.',
                     });
                 }
-                const updated = await index_1.prisma.registro.update({
+                const updated = await prisma_1.prisma.registro.update({
                     where: { id: abierto.id },
                     data: {
                         salida: ahora,
@@ -533,6 +546,7 @@ async function workerRoutes(app) {
                         salidaEstimada: false,
                         ...(esAlmuerzo ? { salidaAlmuerzo: true } : {}),
                         ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
+                        ...(0, metodoMarcacion_1.camposDeAutenticacion)(payload, 'salida'),
                     },
                 });
                 // La novedad viaja con la marca, no en una llamada aparte: si esa segunda
@@ -545,7 +559,7 @@ async function workerRoutes(app) {
             }
             else {
                 // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
-                const entradasPrevias = await index_1.prisma.registro.count({
+                const entradasPrevias = await prisma_1.prisma.registro.count({
                     where: { colaboradorId: payload.id, fecha: { gte: inicioDia, lt: finDia }, entrada: { not: null } },
                 });
                 // Volver del almuerzo es la MISMA jornada, así que el tramo pertenece al
@@ -554,7 +568,7 @@ async function workerRoutes(app) {
                 // el regreso quedaba anclado al día siguiente, la jornada se partía en
                 // dos días y el reporte contaba media noche en cada uno. En el turno de
                 // día `fecha` es la misma y esto no cambia nada.
-                const volviendoDeAlmorzar = await index_1.prisma.registro.findFirst({
+                const volviendoDeAlmorzar = await prisma_1.prisma.registro.findFirst({
                     where: {
                         colaboradorId: payload.id,
                         salidaAlmuerzo: true,
@@ -573,7 +587,7 @@ async function workerRoutes(app) {
                 let esRegresoEstimado = false;
                 if (regresoPedido && volviendoDeAlmorzar?.salida) {
                     const rango = (0, fechas_1.rangoDiaBogota)(volviendoDeAlmorzar.fecha);
-                    const diaAlm = await index_1.prisma.diaEsperado.findFirst({
+                    const diaAlm = await prisma_1.prisma.diaEsperado.findFirst({
                         where: { colaboradorId: payload.id, fecha: { gte: rango.inicioDia, lt: rango.finDia } },
                         select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true },
                     });
@@ -590,7 +604,7 @@ async function workerRoutes(app) {
                         esRegresoEstimado = true;
                     }
                 }
-                const nuevo = await index_1.prisma.registro.create({
+                const nuevo = await prisma_1.prisma.registro.create({
                     data: {
                         colaboradorId: payload.id,
                         fecha: volviendoDeAlmorzar?.fecha ?? inicioDia,
@@ -601,6 +615,7 @@ async function workerRoutes(app) {
                         // los reportes tiene que reflejar la realidad.
                         ...(sedeDeLaMarca ? { sedeId: sedeDeLaMarca } : {}),
                         ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
+                        ...(0, metodoMarcacion_1.camposDeAutenticacion)(payload, 'entrada'),
                     },
                 });
                 // Un día con marcación es un día que va a salir en un reporte. Si llega

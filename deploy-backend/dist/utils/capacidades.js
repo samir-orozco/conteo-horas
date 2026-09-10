@@ -2,13 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.capacidadesEmpresa = capacidadesEmpresa;
 exports.tieneFuncion = tieneFuncion;
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const planes_1 = require("./planes");
 // Capacidades efectivas de una empresa (plan + overrides + acceso ilimitado).
 async function capacidadesEmpresa(empresaId) {
     const [empresa, planes] = await Promise.all([
-        index_1.prisma.empresa.findUnique({ where: { id: empresaId }, include: { suscripcion: true } }),
-        (0, planes_1.obtenerPlanes)(index_1.prisma),
+        prisma_1.prisma.empresa.findUnique({ where: { id: empresaId }, include: { suscripcion: true } }),
+        (0, planes_1.obtenerPlanes)(prisma_1.prisma),
     ]);
     return (0, planes_1.capacidadesDe)(empresa?.suscripcion, empresa?.exentaPago ?? false, planes);
 }

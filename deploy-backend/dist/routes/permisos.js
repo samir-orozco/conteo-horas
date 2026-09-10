@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = permisoRoutes;
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const capacidades_1 = require("../utils/capacidades");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
 // La validación de la evidencia vivía aquí, duplicada: una copia del regex y
@@ -59,8 +59,8 @@ async function permisoRoutes(app) {
         if (colaboradorId)
             where.colaboradorId = colaboradorId;
         const [permisos, cfg] = await Promise.all([
-            index_1.prisma.permiso.findMany({ where, select: SELECT_LISTA, orderBy: { fechaInicio: 'desc' } }),
-            index_1.prisma.configuracion.findUnique({
+            prisma_1.prisma.permiso.findMany({ where, select: SELECT_LISTA, orderBy: { fechaInicio: 'desc' } }),
+            prisma_1.prisma.configuracion.findUnique({
                 where: { empresaId_clave: { empresaId: request.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } },
             }),
         ]);
@@ -73,7 +73,7 @@ async function permisoRoutes(app) {
     // Evidencia de una novedad (se pide aparte para no cargarla en cada listado)
     app.get('/:id/evidencia', auth, async (request, reply) => {
         const { id } = request.params;
-        const permiso = await index_1.prisma.permiso.findFirst({
+        const permiso = await prisma_1.prisma.permiso.findFirst({
             where: { id, colaborador: { empresaId: request.empresaId } },
             select: { evidencia: true, evidenciaTipo: true, evidenciaNombre: true },
         });
@@ -83,7 +83,7 @@ async function permisoRoutes(app) {
     });
     app.post('/', auth, async (request, reply) => {
         const data = request.body;
-        const col = await index_1.prisma.colaborador.findFirst({
+        const col = await prisma_1.prisma.colaborador.findFirst({
             where: { id: data.colaboradorId, empresaId: request.empresaId },
         });
         if (!col)
@@ -96,12 +96,12 @@ async function permisoRoutes(app) {
         const limpio = limpiarPermiso(data, true);
         if (!limpio.ok)
             return reply.status(400).send({ error: limpio.motivo });
-        const permiso = await index_1.prisma.permiso.create({ data: limpio.datos });
+        const permiso = await prisma_1.prisma.permiso.create({ data: limpio.datos });
         return reply.status(201).send(permiso);
     });
     app.put('/:id', auth, async (request, reply) => {
         const { id } = request.params;
-        const existente = await index_1.prisma.permiso.findFirst({
+        const existente = await prisma_1.prisma.permiso.findFirst({
             where: { id, colaborador: { empresaId: request.empresaId } },
         });
         if (!existente)
@@ -110,15 +110,15 @@ async function permisoRoutes(app) {
         const limpio = limpiarPermiso(data, false);
         if (!limpio.ok)
             return reply.status(400).send({ error: limpio.motivo });
-        return index_1.prisma.permiso.update({ where: { id }, data: limpio.datos });
+        return prisma_1.prisma.permiso.update({ where: { id }, data: limpio.datos });
     });
     app.delete('/:id', auth, async (request, reply) => {
         const { id } = request.params;
-        const existente = await index_1.prisma.permiso.findFirst({
+        const existente = await prisma_1.prisma.permiso.findFirst({
             where: { id, colaborador: { empresaId: request.empresaId } },
         });
         if (!existente)
             return reply.status(404).send({ error: 'Permiso no encontrado' });
-        return index_1.prisma.permiso.delete({ where: { id } });
+        return prisma_1.prisma.permiso.delete({ where: { id } });
     });
 }

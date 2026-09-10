@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = notificacionRoutes;
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 // Campana del menú del admin: lista de avisos internos + estado leído/no leído.
 async function notificacionRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
@@ -9,12 +9,12 @@ async function notificacionRoutes(app) {
     app.get('/', auth, async (request) => {
         const empresaId = request.empresaId;
         const [items, noLeidas] = await Promise.all([
-            index_1.prisma.notificacion.findMany({
+            prisma_1.prisma.notificacion.findMany({
                 where: { empresaId },
                 orderBy: { creadoEn: 'desc' },
                 take: 40,
             }),
-            index_1.prisma.notificacion.count({ where: { empresaId, leida: false } }),
+            prisma_1.prisma.notificacion.count({ where: { empresaId, leida: false } }),
         ]);
         return { items, noLeidas };
     });
@@ -22,7 +22,7 @@ async function notificacionRoutes(app) {
     app.post('/:id/leer', auth, async (request) => {
         const empresaId = request.empresaId;
         const { id } = request.params;
-        await index_1.prisma.notificacion.updateMany({
+        await prisma_1.prisma.notificacion.updateMany({
             where: { id, empresaId },
             data: { leida: true, leidaEn: new Date() },
         });
@@ -31,7 +31,7 @@ async function notificacionRoutes(app) {
     // Marcar todas como leídas
     app.post('/leer-todas', auth, async (request) => {
         const empresaId = request.empresaId;
-        const { count } = await index_1.prisma.notificacion.updateMany({
+        const { count } = await prisma_1.prisma.notificacion.updateMany({
             where: { empresaId, leida: false },
             data: { leida: true, leidaEn: new Date() },
         });

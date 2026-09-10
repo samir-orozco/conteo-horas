@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = afiliadoAdminRoutes;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = __importDefault(require("crypto"));
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const correo_1 = require("../utils/correo");
 const afiliados_1 = require("../utils/afiliados");
 const comprobantes_1 = require("../utils/comprobantes");
@@ -28,7 +28,7 @@ async function codigoUnico(nombre) {
     const base = slugNombre(nombre);
     for (let i = 0; i < 12; i++) {
         const codigo = `${base}${String(crypto_1.default.randomInt(0, 10000)).padStart(4, '0')}`;
-        if (!(await index_1.prisma.afiliado.findUnique({ where: { codigo } })))
+        if (!(await prisma_1.prisma.afiliado.findUnique({ where: { codigo } })))
             return codigo;
     }
     return `AFIL${crypto_1.default.randomBytes(5).toString('hex').toUpperCase()}`;
@@ -65,7 +65,7 @@ async function afiliadoAdminRoutes(app) {
     const auth = { preHandler: [app.requireSuperAdmin] };
     // Lista de afiliados con su cuenta y # de referidos
     app.get('/', auth, async () => {
-        const afiliados = await index_1.prisma.afiliado.findMany({
+        const afiliados = await prisma_1.prisma.afiliado.findMany({
             orderBy: { creadoEn: 'desc' },
             include: {
                 usuarios: { select: { email: true, activo: true, resetToken: true } },
@@ -94,7 +94,7 @@ async function afiliadoAdminRoutes(app) {
             return reply.status(400).send({ error: errComercial });
         const nombreRef = b.nombre?.trim() || 'Registro pendiente';
         const codigo = await codigoUnico(b.nombre?.trim() || 'AFIL');
-        const afiliado = await index_1.prisma.afiliado.create({
+        const afiliado = await prisma_1.prisma.afiliado.create({
             data: { nombre: nombreRef, codigo, porcentaje: b.porcentaje, duracionMeses: b.duracionMeses ?? null },
         });
         const token = app.jwt.sign({ afiliadoId: afiliado.id, t: 'reg' }, { expiresIn: '30d' });
@@ -103,7 +103,7 @@ async function afiliadoAdminRoutes(app) {
     // Detalle: datos + referidos + billetera
     app.get('/:id', auth, async (request, reply) => {
         const { id } = request.params;
-        const a = await index_1.prisma.afiliado.findUnique({
+        const a = await prisma_1.prisma.afiliado.findUnique({
             where: { id },
             include: {
                 usuarios: { select: { email: true, activo: true, resetToken: true } },
@@ -133,7 +133,7 @@ async function afiliadoAdminRoutes(app) {
     });
     // Solicitudes de retiro pendientes (para pagar), con los datos de pago del afiliado
     app.get('/retiros/pendientes', auth, async () => {
-        return index_1.prisma.solicitudRetiro.findMany({
+        return prisma_1.prisma.solicitudRetiro.findMany({
             where: { estado: { in: ['SOLICITADO', 'APROBADO'] } },
             orderBy: { solicitadoEn: 'asc' },
             include: {
@@ -150,7 +150,7 @@ async function afiliadoAdminRoutes(app) {
         if (!['APROBADO', 'PAGADO', 'RECHAZADO'].includes(estado)) {
             return reply.status(400).send({ error: 'Estado inválido' });
         }
-        const retiro = await index_1.prisma.solicitudRetiro.findUnique({ where: { id: retiroId } });
+        const retiro = await prisma_1.prisma.solicitudRetiro.findUnique({ where: { id: retiroId } });
         if (!retiro)
             return reply.status(404).send({ error: 'Solicitud no encontrada' });
         if (retiro.estado === 'PAGADO' || retiro.estado === 'RECHAZADO') {
@@ -165,7 +165,7 @@ async function afiliadoAdminRoutes(app) {
         if (!soporte.ok)
             return reply.status(400).send({ error: soporte.motivo });
         const email = request.user?.email ?? null;
-        const actualizado = await index_1.prisma.solicitudRetiro.update({
+        const actualizado = await prisma_1.prisma.solicitudRetiro.update({
             where: { id: retiroId },
             data: {
                 estado,
@@ -187,14 +187,14 @@ async function afiliadoAdminRoutes(app) {
         const errComercial = validarComercial(b);
         if (errComercial)
             return reply.status(400).send({ error: errComercial });
-        if (await index_1.prisma.usuario.findUnique({ where: { email } })) {
+        if (await prisma_1.prisma.usuario.findUnique({ where: { email } })) {
             return reply.status(409).send({ error: 'Ya existe una cuenta con ese correo' });
         }
         const codigo = await codigoUnico(nombre);
         const token = crypto_1.default.randomBytes(32).toString('hex');
         const placeholder = await bcryptjs_1.default.hash(crypto_1.default.randomBytes(16).toString('hex'), 10);
         const pago = (0, afiliados_1.limpiarPago)(b);
-        const afiliado = await index_1.prisma.$transaction(async (tx) => {
+        const afiliado = await prisma_1.prisma.$transaction(async (tx) => {
             const af = await tx.afiliado.create({
                 data: {
                     nombre, codigo, porcentaje: b.porcentaje, duracionMeses: b.duracionMeses ?? null,
@@ -223,11 +223,11 @@ async function afiliadoAdminRoutes(app) {
         const errComercial = validarComercial(b);
         if (errComercial)
             return reply.status(400).send({ error: errComercial });
-        const existe = await index_1.prisma.afiliado.findUnique({ where: { id } });
+        const existe = await prisma_1.prisma.afiliado.findUnique({ where: { id } });
         if (!existe)
             return reply.status(404).send({ error: 'Afiliado no encontrado' });
         const pago = (0, afiliados_1.limpiarPago)(b);
-        await index_1.prisma.afiliado.update({
+        await prisma_1.prisma.afiliado.update({
             where: { id },
             data: {
                 nombre: b.nombre?.trim() || existe.nombre,
@@ -238,7 +238,7 @@ async function afiliadoAdminRoutes(app) {
         });
         // Refleja activo/inactivo también en la cuenta de acceso
         if (typeof b.activo === 'boolean') {
-            await index_1.prisma.usuario.updateMany({ where: { afiliadoId: id }, data: { activo: b.activo } });
+            await prisma_1.prisma.usuario.updateMany({ where: { afiliadoId: id }, data: { activo: b.activo } });
         }
         return { id };
     });
@@ -248,18 +248,18 @@ async function afiliadoAdminRoutes(app) {
         const { activo } = request.body;
         if (typeof activo !== 'boolean')
             return reply.status(400).send({ error: 'Estado inválido' });
-        if (!(await index_1.prisma.afiliado.findUnique({ where: { id } }))) {
+        if (!(await prisma_1.prisma.afiliado.findUnique({ where: { id } }))) {
             return reply.status(404).send({ error: 'Afiliado no encontrado' });
         }
-        await index_1.prisma.afiliado.update({ where: { id }, data: { activo } });
-        await index_1.prisma.usuario.updateMany({ where: { afiliadoId: id }, data: { activo } });
+        await prisma_1.prisma.afiliado.update({ where: { id }, data: { activo } });
+        await prisma_1.prisma.usuario.updateMany({ where: { afiliadoId: id }, data: { activo } });
         return { id, activo };
     });
     // Eliminar: solo si nunca tuvo actividad real (sin referidos, comisiones ni
     // retiros). Si ya la tuvo, se pierde el historial de pagos — mejor desactivar.
     app.delete('/:id', auth, async (request, reply) => {
         const { id } = request.params;
-        const a = await index_1.prisma.afiliado.findUnique({
+        const a = await prisma_1.prisma.afiliado.findUnique({
             where: { id },
             include: { _count: { select: { empresas: true, comisiones: true, retiros: true } } },
         });
@@ -268,9 +268,9 @@ async function afiliadoAdminRoutes(app) {
         if (a._count.empresas > 0 || a._count.comisiones > 0 || a._count.retiros > 0) {
             return reply.status(409).send({ error: 'No se puede eliminar: tiene referidos, comisiones o retiros asociados. Desactívalo en su lugar.' });
         }
-        await index_1.prisma.$transaction([
-            index_1.prisma.usuario.deleteMany({ where: { afiliadoId: id } }),
-            index_1.prisma.afiliado.delete({ where: { id } }),
+        await prisma_1.prisma.$transaction([
+            prisma_1.prisma.usuario.deleteMany({ where: { afiliadoId: id } }),
+            prisma_1.prisma.afiliado.delete({ where: { id } }),
         ]);
         return reply.status(204).send();
     });
@@ -278,13 +278,13 @@ async function afiliadoAdminRoutes(app) {
     app.post('/:id/reinvitar', auth, async (request, reply) => {
         const { id } = request.params;
         const [usuario, afiliado] = await Promise.all([
-            index_1.prisma.usuario.findFirst({ where: { afiliadoId: id } }),
-            index_1.prisma.afiliado.findUnique({ where: { id } }),
+            prisma_1.prisma.usuario.findFirst({ where: { afiliadoId: id } }),
+            prisma_1.prisma.afiliado.findUnique({ where: { id } }),
         ]);
         if (!usuario || !afiliado)
             return reply.status(404).send({ error: 'Afiliado no encontrado' });
         const token = crypto_1.default.randomBytes(32).toString('hex');
-        await index_1.prisma.usuario.update({
+        await prisma_1.prisma.usuario.update({
             where: { id: usuario.id },
             data: { resetToken: token, resetExpira: new Date(Date.now() + HORAS_INVITACION * 60 * 60 * 1000) },
         });

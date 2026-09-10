@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = afiliadoPanelRoutes;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const afiliados_1 = require("../utils/afiliados");
 // Panel propio del afiliado (prefijo /api/afiliado, guard requireAfiliado).
 // Solo lectura: ve sus referidos, su link y su billetera. Los retiros (egreso)
@@ -14,7 +14,7 @@ async function afiliadoPanelRoutes(app) {
     const auth = { preHandler: [app.requireAfiliado] };
     app.get('/', auth, async (request, reply) => {
         const afiliadoId = request.afiliadoId;
-        const a = await index_1.prisma.afiliado.findUnique({
+        const a = await prisma_1.prisma.afiliado.findUnique({
             where: { id: afiliadoId },
             include: {
                 usuarios: { select: { email: true } },
@@ -47,7 +47,7 @@ async function afiliadoPanelRoutes(app) {
     app.post('/retiros', auth, async (request, reply) => {
         const afiliadoId = request.afiliadoId;
         const { monto } = request.body;
-        const a = await index_1.prisma.afiliado.findUnique({
+        const a = await prisma_1.prisma.afiliado.findUnique({
             where: { id: afiliadoId },
             include: { comisiones: true, retiros: true },
         });
@@ -59,7 +59,7 @@ async function afiliadoPanelRoutes(app) {
             return reply.status(400).send({ error: 'Ingresa un monto válido' });
         if (m > disponible)
             return reply.status(400).send({ error: 'El monto supera tu saldo disponible' });
-        const retiro = await index_1.prisma.solicitudRetiro.create({ data: { afiliadoId, monto: m, estado: 'SOLICITADO' } });
+        const retiro = await prisma_1.prisma.solicitudRetiro.create({ data: { afiliadoId, monto: m, estado: 'SOLICITADO' } });
         return reply.status(201).send(retiro);
     });
     // El afiliado edita su propio perfil: nombre, teléfono, datos de pago y
@@ -72,7 +72,7 @@ async function afiliadoPanelRoutes(app) {
             return reply.status(400).send({ error: 'El nombre es obligatorio' });
         // Cambio de contraseña (opcional)
         if (b.passwordNueva) {
-            const usuario = await index_1.prisma.usuario.findFirst({ where: { afiliadoId } });
+            const usuario = await prisma_1.prisma.usuario.findFirst({ where: { afiliadoId } });
             if (!usuario)
                 return reply.status(404).send({ error: 'Cuenta no encontrada' });
             if (!b.passwordActual || !(await bcryptjs_1.default.compare(b.passwordActual, usuario.password))) {
@@ -80,11 +80,11 @@ async function afiliadoPanelRoutes(app) {
             }
             if (String(b.passwordNueva).length < 6)
                 return reply.status(400).send({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
-            await index_1.prisma.usuario.update({ where: { id: usuario.id }, data: { password: await bcryptjs_1.default.hash(b.passwordNueva, 10) } });
+            await prisma_1.prisma.usuario.update({ where: { id: usuario.id }, data: { password: await bcryptjs_1.default.hash(b.passwordNueva, 10) } });
         }
         const pago = (0, afiliados_1.limpiarPago)(b);
-        await index_1.prisma.afiliado.update({ where: { id: afiliadoId }, data: { nombre, telefono: b.telefono?.trim() || null, ...pago } });
-        await index_1.prisma.usuario.updateMany({ where: { afiliadoId }, data: { nombre } });
+        await prisma_1.prisma.afiliado.update({ where: { id: afiliadoId }, data: { nombre, telefono: b.telefono?.trim() || null, ...pago } });
+        await prisma_1.prisma.usuario.updateMany({ where: { afiliadoId }, data: { nombre } });
         return { ok: true };
     });
 }

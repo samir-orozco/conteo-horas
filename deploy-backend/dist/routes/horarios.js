@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = horarioRoutes;
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const vigencias_1 = require("../utils/vigencias");
 const capacidades_1 = require("../utils/capacidades");
 const materializarDias_1 = require("../utils/materializarDias");
@@ -86,7 +86,7 @@ const mapFranja = (f) => {
 async function horarioRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     app.get('/', auth, async (request) => {
-        return index_1.prisma.horario.findMany({
+        return prisma_1.prisma.horario.findMany({
             where: { empresaId: request.empresaId, activo: true },
             include: {
                 franjas: true,
@@ -97,7 +97,7 @@ async function horarioRoutes(app) {
     });
     // Norma de jornada máxima semanal vigente hoy (Ley 2101), para la etiqueta de cumplimiento
     app.get('/norma', auth, async () => {
-        const jornadas = await index_1.prisma.jornadaVigencia.findMany();
+        const jornadas = await prisma_1.prisma.jornadaVigencia.findMany();
         return { horasSemanales: (0, vigencias_1.jornadaVigente)(new Date(), jornadas) };
     });
     app.post('/', auth, async (request, reply) => {
@@ -116,12 +116,12 @@ async function horarioRoutes(app) {
         // Gating: varios horarios requieren plan Profesional o superior
         const cap = await (0, capacidades_1.capacidadesEmpresa)(request.empresaId);
         if (!cap.features.multiHorario) {
-            const existentes = await index_1.prisma.horario.count({ where: { empresaId: request.empresaId } });
+            const existentes = await prisma_1.prisma.horario.count({ where: { empresaId: request.empresaId } });
             if (existentes >= 1) {
                 return reply.status(403).send({ error: 'Tu plan permite un solo horario. Sube de plan para crear más.', codigo: 'FUNCION_PLAN', funcion: 'multiHorario' });
             }
         }
-        const horario = await index_1.prisma.horario.create({
+        const horario = await prisma_1.prisma.horario.create({
             data: {
                 empresaId: request.empresaId,
                 nombre,
@@ -137,7 +137,7 @@ async function horarioRoutes(app) {
     });
     app.put('/:id', auth, async (request, reply) => {
         const { id } = request.params;
-        const existente = await index_1.prisma.horario.findFirst({ where: { id, empresaId: request.empresaId } });
+        const existente = await prisma_1.prisma.horario.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'Horario no encontrado' });
         const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, franjas } = request.body;
@@ -151,7 +151,7 @@ async function horarioRoutes(app) {
             });
         }
         // Las franjas se reemplazan completas: es la forma simple y sin ambigüedad
-        const actualizado = await index_1.prisma.horario.update({
+        const actualizado = await prisma_1.prisma.horario.update({
             where: { id },
             data: {
                 nombre,
@@ -191,18 +191,18 @@ async function horarioRoutes(app) {
     // Desactiva el horario y lo desasigna de los colaboradores
     app.delete('/:id', auth, async (request, reply) => {
         const { id } = request.params;
-        const existente = await index_1.prisma.horario.findFirst({ where: { id, empresaId: request.empresaId } });
+        const existente = await prisma_1.prisma.horario.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'Horario no encontrado' });
         // Hay que quedarse con ellos ANTES de desasignarlos: después de la
         // transacción ya no hay forma de saber a quiénes afectaba este horario.
-        const afectados = await index_1.prisma.colaborador.findMany({
+        const afectados = await prisma_1.prisma.colaborador.findMany({
             where: { horarioId: id, activo: true },
             select: { id: true, nombre: true, apellido: true },
         });
-        await index_1.prisma.$transaction([
-            index_1.prisma.colaborador.updateMany({ where: { horarioId: id }, data: { horarioId: null } }),
-            index_1.prisma.horario.update({ where: { id }, data: { activo: false } }),
+        await prisma_1.prisma.$transaction([
+            prisma_1.prisma.colaborador.updateMany({ where: { horarioId: id }, data: { horarioId: null } }),
+            prisma_1.prisma.horario.update({ where: { id }, data: { activo: false } }),
         ]);
         // Sin esto quedaban hasta 60 días por delante exigiendo un horario que ya no
         // existe, y el kiosco seguía pidiendo su almuerzo.

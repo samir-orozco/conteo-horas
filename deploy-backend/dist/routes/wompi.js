@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = wompiRoutes;
 const crypto_1 = __importDefault(require("crypto"));
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const suscripcion_1 = require("../utils/suscripcion");
 const wompi_1 = require("../utils/wompi");
 // Webhook de eventos Wompi (transaction.updated).
@@ -29,7 +29,7 @@ async function wompiRoutes(app) {
         if (body?.event === 'transaction.updated' && tx?.status === 'APPROVED' && tx?.reference) {
             const empresaId = (0, wompi_1.empresaIdDeReferencia)(tx.reference);
             if (empresaId) {
-                await (0, suscripcion_1.aplicarPagoAprobado)(index_1.prisma, empresaId, {
+                await (0, suscripcion_1.aplicarPagoAprobado)(prisma_1.prisma, empresaId, {
                     monto: tx.amount_in_cents / 100,
                     metodo: 'LINK_WOMPI',
                     wompiTransaccionId: tx.id,

@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = authRoutes;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = __importDefault(require("crypto"));
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const suscripcion_1 = require("../utils/suscripcion");
 const planes_1 = require("../utils/planes");
 const correo_1 = require("../utils/correo");
@@ -36,7 +36,7 @@ async function enviarCorreoCodigo(email, nombre, codigo) {
 async function authRoutes(app) {
     // Precios públicos para la landing (se leen de la config del super admin)
     app.get('/precios', async () => {
-        const [p, planesMap] = await Promise.all([(0, suscripcion_1.obtenerPrecios)(index_1.prisma), (0, planes_1.obtenerPlanes)(index_1.prisma)]);
+        const [p, planesMap] = await Promise.all([(0, suscripcion_1.obtenerPrecios)(prisma_1.prisma), (0, planes_1.obtenerPlanes)(prisma_1.prisma)]);
         return { ...p, diasPrueba: suscripcion_1.DIAS_PRUEBA, planes: planes_1.PLAN_IDS.map(id => planesMap[id]) };
     });
     // Registro self-service: crea empresa + 7 días de prueba + usuario admin,
@@ -50,8 +50,8 @@ async function authRoutes(app) {
             return reply.status(400).send({ error: 'La contraseña debe tener al menos 6 caracteres' });
         }
         const [emailExiste, nitExiste] = await Promise.all([
-            index_1.prisma.usuario.findUnique({ where: { email } }),
-            index_1.prisma.empresa.findUnique({ where: { nit } }),
+            prisma_1.prisma.usuario.findUnique({ where: { email } }),
+            prisma_1.prisma.empresa.findUnique({ where: { nit } }),
         ]);
         if (emailExiste)
             return reply.status(409).send({ error: 'Ya existe una cuenta con ese correo' });
@@ -64,9 +64,9 @@ async function authRoutes(app) {
         // Atribución al afiliado: si llegó un código de referido válido y activo, se
         // asocia la empresa a ese afiliado. Un código inválido no bloquea el registro.
         const afiliado = ref
-            ? await index_1.prisma.afiliado.findFirst({ where: { codigo: String(ref).trim().toUpperCase(), activo: true }, select: { id: true } })
+            ? await prisma_1.prisma.afiliado.findFirst({ where: { codigo: String(ref).trim().toUpperCase(), activo: true }, select: { id: true } })
             : null;
-        const nuevo = await index_1.prisma.$transaction(async (tx) => {
+        const nuevo = await prisma_1.prisma.$transaction(async (tx) => {
             const emp = await tx.empresa.create({
                 data: {
                     nombre: empresa, nit, email, telefono,
@@ -115,7 +115,7 @@ async function authRoutes(app) {
         }
         if (payload?.t !== 'reg' || !payload.afiliadoId)
             return reply.status(400).send({ error: 'Invitación inválida' });
-        const afiliado = await index_1.prisma.afiliado.findUnique({
+        const afiliado = await prisma_1.prisma.afiliado.findUnique({
             where: { id: payload.afiliadoId },
             include: { usuarios: { select: { id: true } } },
         });
@@ -145,7 +145,7 @@ async function authRoutes(app) {
         }
         if (payload?.t !== 'reg' || !payload.afiliadoId)
             return reply.status(400).send({ error: 'Invitación inválida' });
-        const afiliado = await index_1.prisma.afiliado.findUnique({
+        const afiliado = await prisma_1.prisma.afiliado.findUnique({
             where: { id: payload.afiliadoId },
             include: { usuarios: { select: { id: true } } },
         });
@@ -160,12 +160,12 @@ async function authRoutes(app) {
             return reply.status(400).send({ error: 'Faltan datos obligatorios' });
         if (password.length < 6)
             return reply.status(400).send({ error: 'La contraseña debe tener al menos 6 caracteres' });
-        if (await index_1.prisma.usuario.findUnique({ where: { email } })) {
+        if (await prisma_1.prisma.usuario.findUnique({ where: { email } })) {
             return reply.status(409).send({ error: 'Ya existe una cuenta con ese correo' });
         }
         const hash = await bcryptjs_1.default.hash(password, 10);
         const pago = (0, afiliados_1.limpiarPago)(b);
-        const usuario = await index_1.prisma.$transaction(async (tx) => {
+        const usuario = await prisma_1.prisma.$transaction(async (tx) => {
             await tx.afiliado.update({
                 where: { id: afiliado.id },
                 data: { nombre, telefono: b.telefono?.trim() || null, ...pago },
@@ -188,7 +188,7 @@ async function authRoutes(app) {
         const { codigo } = request.body;
         if (!codigo)
             return reply.status(400).send({ error: 'Falta el código' });
-        const usuario = await index_1.prisma.usuario.findUnique({ where: { id: payload.id } });
+        const usuario = await prisma_1.prisma.usuario.findUnique({ where: { id: payload.id } });
         if (!usuario)
             return reply.status(404).send({ error: 'Usuario no encontrado' });
         if (usuario.emailVerificado)
@@ -199,7 +199,7 @@ async function authRoutes(app) {
         if (usuario.verificacionCodigo !== codigo) {
             return reply.status(400).send({ error: 'El código no es correcto' });
         }
-        await index_1.prisma.usuario.update({
+        await prisma_1.prisma.usuario.update({
             where: { id: usuario.id },
             data: { emailVerificado: true, verificacionCodigo: null, verificacionExpira: null },
         });
@@ -208,18 +208,18 @@ async function authRoutes(app) {
     // Reenvía el código de verificación al usuario logueado
     app.post('/reenviar-verificacion', { preHandler: [app.authenticate], config: limite(3) }, async (request, reply) => {
         const payload = request.user;
-        const usuario = await index_1.prisma.usuario.findUnique({ where: { id: payload.id } });
+        const usuario = await prisma_1.prisma.usuario.findUnique({ where: { id: payload.id } });
         if (!usuario)
             return reply.status(404).send({ error: 'Usuario no encontrado' });
         if (usuario.emailVerificado)
             return { ok: true, yaVerificado: true };
         if (!correo_1.correoConfigurado) {
             // Sin SMTP no podemos enviar: verificamos directo para no dejarlo atrapado
-            await index_1.prisma.usuario.update({ where: { id: usuario.id }, data: { emailVerificado: true, verificacionCodigo: null, verificacionExpira: null } });
+            await prisma_1.prisma.usuario.update({ where: { id: usuario.id }, data: { emailVerificado: true, verificacionCodigo: null, verificacionExpira: null } });
             return { ok: true, yaVerificado: true };
         }
         const codigo = generarCodigo();
-        await index_1.prisma.usuario.update({
+        await prisma_1.prisma.usuario.update({
             where: { id: usuario.id },
             data: { verificacionCodigo: codigo, verificacionExpira: new Date(Date.now() + MIN_VERIFICACION * 60 * 1000) },
         });
@@ -228,7 +228,7 @@ async function authRoutes(app) {
     });
     app.post('/login', { config: limite(10) }, async (request, reply) => {
         const { email, password } = request.body;
-        const usuario = await index_1.prisma.usuario.findUnique({
+        const usuario = await prisma_1.prisma.usuario.findUnique({
             where: { email },
             include: { empresa: { include: { suscripcion: true } } },
         });
@@ -245,7 +245,7 @@ async function authRoutes(app) {
             estadoSuscripcion = 'ILIMITADA';
         }
         else if (usuario.empresa?.suscripcion) {
-            const sync = await (0, suscripcion_1.sincronizarEstado)(index_1.prisma, usuario.empresa.suscripcion);
+            const sync = await (0, suscripcion_1.sincronizarEstado)(prisma_1.prisma, usuario.empresa.suscripcion);
             estadoSuscripcion = (0, suscripcion_1.estadoEfectivo)(sync);
         }
         const token = app.jwt.sign({
@@ -273,7 +273,7 @@ async function authRoutes(app) {
     });
     app.get('/me', { preHandler: [app.authenticate] }, async (request) => {
         const payload = request.user;
-        const usuario = await index_1.prisma.usuario.findUnique({
+        const usuario = await prisma_1.prisma.usuario.findUnique({
             where: { id: payload.id },
             select: {
                 id: true, email: true, nombre: true, rol: true, empresaId: true, afiliadoId: true, emailVerificado: true,
@@ -302,10 +302,10 @@ async function authRoutes(app) {
     // Siempre responde ok (no revela si el correo existe o no).
     app.post('/olvide-password', { config: limite(3) }, async (request) => {
         const { email } = request.body;
-        const usuario = email ? await index_1.prisma.usuario.findUnique({ where: { email } }) : null;
+        const usuario = email ? await prisma_1.prisma.usuario.findUnique({ where: { email } }) : null;
         if (usuario && usuario.activo) {
             const token = crypto_1.default.randomBytes(32).toString('hex');
-            await index_1.prisma.usuario.update({
+            await prisma_1.prisma.usuario.update({
                 where: { id: usuario.id },
                 data: { resetToken: token, resetExpira: new Date(Date.now() + 30 * 60 * 1000) },
             });
@@ -331,11 +331,11 @@ async function authRoutes(app) {
             return reply.status(400).send({ error: 'Datos incompletos' });
         if (password.length < 6)
             return reply.status(400).send({ error: 'La contraseña debe tener al menos 6 caracteres' });
-        const usuario = await index_1.prisma.usuario.findUnique({ where: { resetToken: token } });
+        const usuario = await prisma_1.prisma.usuario.findUnique({ where: { resetToken: token } });
         if (!usuario || !usuario.resetExpira || usuario.resetExpira < new Date()) {
             return reply.status(400).send({ error: 'El link ya venció o no es válido. Solicita uno nuevo.' });
         }
-        await index_1.prisma.usuario.update({
+        await prisma_1.prisma.usuario.update({
             where: { id: usuario.id },
             data: { password: await bcryptjs_1.default.hash(password, 10), resetToken: null, resetExpira: null },
         });
@@ -345,14 +345,14 @@ async function authRoutes(app) {
     app.put('/me', { preHandler: [app.authenticate] }, async (request, reply) => {
         const payload = request.user;
         const { nombre, email, passwordActual, passwordNueva } = request.body;
-        const usuario = await index_1.prisma.usuario.findUnique({ where: { id: payload.id } });
+        const usuario = await prisma_1.prisma.usuario.findUnique({ where: { id: payload.id } });
         if (!usuario)
             return reply.status(404).send({ error: 'Usuario no encontrado' });
         const data = {};
         if (nombre)
             data.nombre = nombre;
         if (email && email !== usuario.email) {
-            const existe = await index_1.prisma.usuario.findUnique({ where: { email } });
+            const existe = await prisma_1.prisma.usuario.findUnique({ where: { email } });
             if (existe)
                 return reply.status(409).send({ error: 'Ya existe una cuenta con ese correo' });
             data.email = email;
@@ -366,7 +366,7 @@ async function authRoutes(app) {
                 return reply.status(400).send({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
             data.password = await bcryptjs_1.default.hash(passwordNueva, 10);
         }
-        const actualizado = await index_1.prisma.usuario.update({
+        const actualizado = await prisma_1.prisma.usuario.update({
             where: { id: payload.id },
             data,
             select: { id: true, email: true, nombre: true, rol: true },
@@ -375,7 +375,7 @@ async function authRoutes(app) {
     });
     // Usuarios internos de la empresa (solo ADMIN gestiona)
     app.get('/usuarios', { preHandler: [app.requireEmpresa] }, async (request) => {
-        return index_1.prisma.usuario.findMany({
+        return prisma_1.prisma.usuario.findMany({
             where: { empresaId: request.empresaId },
             select: { id: true, email: true, nombre: true, rol: true, activo: true, creadoEn: true },
             orderBy: { nombre: 'asc' },
@@ -389,7 +389,7 @@ async function authRoutes(app) {
         if (rol === 'SUPER_ADMIN')
             return reply.status(403).send({ error: 'Rol no permitido' });
         const hash = await bcryptjs_1.default.hash(password, 10);
-        const usuario = await index_1.prisma.usuario.create({
+        const usuario = await prisma_1.prisma.usuario.create({
             data: { email, password: hash, nombre, rol: rol ?? 'SUPERVISOR', empresaId: request.empresaId },
             select: { id: true, email: true, nombre: true, rol: true, activo: true },
         });
@@ -401,13 +401,13 @@ async function authRoutes(app) {
             return reply.status(403).send({ error: 'Solo el administrador edita usuarios' });
         const { id } = request.params;
         const { nombre, rol, activo, password } = request.body;
-        const existente = await index_1.prisma.usuario.findFirst({ where: { id, empresaId: request.empresaId } });
+        const existente = await prisma_1.prisma.usuario.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'Usuario no encontrado' });
         const data = { nombre, rol, activo };
         if (password)
             data.password = await bcryptjs_1.default.hash(password, 10);
-        return index_1.prisma.usuario.update({
+        return prisma_1.prisma.usuario.update({
             where: { id },
             data,
             select: { id: true, email: true, nombre: true, rol: true, activo: true },

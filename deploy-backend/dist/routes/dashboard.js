@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = dashboardRoutes;
 const date_fns_tz_1 = require("date-fns-tz");
 const date_fns_1 = require("date-fns");
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const horasColombiana_1 = require("../utils/horasColombiana");
 const vigencias_1 = require("../utils/vigencias");
 const tardanzas_1 = require("../utils/tardanzas");
@@ -47,7 +47,7 @@ async function dashboardRoutes(app) {
         const claveHoy = claveDia(ahora);
         const diaHoy = DIAS[ahoraBog.getDay()];
         const [colaboradores, festivos, jornadas, tiposHoraTodos, permisos] = await Promise.all([
-            index_1.prisma.colaborador.findMany({
+            prisma_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
                 select: {
                     id: true, nombre: true, apellido: true, cargo: true, fechaNacimiento: true,
@@ -57,10 +57,10 @@ async function dashboardRoutes(app) {
                 orderBy: { nombre: 'asc' },
             }),
             // Solo festivos relevantes: del mes en curso (para el cálculo) hasta +45 días (próximos).
-            index_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }], fecha: { gte: inicioSemanaMes, lte: en45 } } }),
-            index_1.prisma.jornadaVigencia.findMany(),
-            index_1.prisma.tipoHora.findMany(),
-            index_1.prisma.permiso.findMany({
+            prisma_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }], fecha: { gte: inicioSemanaMes, lte: en45 } } }),
+            prisma_1.prisma.jornadaVigencia.findMany(),
+            prisma_1.prisma.tipoHora.findMany(),
+            prisma_1.prisma.permiso.findMany({
                 where: { aprobado: true, colaborador: { empresaId }, fechaInicio: { lte: finDia }, fechaFin: { gte: inicioDia } },
                 select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
                     colaborador: { select: { nombre: true, apellido: true } } },
@@ -80,23 +80,23 @@ async function dashboardRoutes(app) {
             colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
         };
         const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto] = await Promise.all([
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia } },
                 select: SEL_REG,
                 orderBy: { entrada: 'asc' },
             }),
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: { in: colIds }, fecha: { lt: inicioDia }, entrada: { not: null }, salida: null },
                 select: { id: true, fecha: true, entrada: true, colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } } },
                 orderBy: { fecha: 'desc' },
             }),
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: { in: colIds }, fecha: { gte: inicioSemanaMes, lte: finDia }, salida: { not: null } },
                 select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true },
                 orderBy: { fecha: 'asc' },
             }),
             // IDs de las salidas de hoy que tienen foto de verificación (para el ícono de cámara)
-            index_1.prisma.registro.findMany({
+            prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia }, fotoSalida: { not: null } },
                 select: { id: true },
             }),
@@ -244,7 +244,7 @@ async function dashboardRoutes(app) {
         const horarioPorCol = new Map(colaboradores.map(c => [c.id, c.horario]));
         const diasConAlmuerzo = new Set();
         // Modo de horas extra (mismo criterio que el reporte de liquidación)
-        const cfgModo = await index_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } });
+        const cfgModo = await prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } });
         const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
         // Sin días congelados: el panel mira la semana en curso y se queda con el
         // respaldo por día de semana, que es como se ha comportado siempre. La

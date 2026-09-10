@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = sedeRoutes;
-const index_1 = require("../index");
+const prisma_1 = require("../prisma");
 const capacidades_1 = require("../utils/capacidades");
 // Coordenada válida o null. Una sede sin coordenadas no exige ubicación, que es
 // una configuración legítima (oficina sin GPS, o sede recién creada).
@@ -27,7 +27,7 @@ function camposSede(body) {
 async function sedeRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     app.get('/', auth, async (request) => {
-        return index_1.prisma.sede.findMany({
+        return prisma_1.prisma.sede.findMany({
             where: { empresaId: request.empresaId, activa: true },
             include: { _count: { select: { colaboradores: true } } },
             orderBy: { nombre: 'asc' },
@@ -38,7 +38,7 @@ async function sedeRoutes(app) {
         const nombre = body.nombre?.trim();
         if (!nombre)
             return reply.status(400).send({ error: 'El nombre de la sede es obligatorio' });
-        const existentes = await index_1.prisma.sede.count({ where: { empresaId: request.empresaId, activa: true } });
+        const existentes = await prisma_1.prisma.sede.count({ where: { empresaId: request.empresaId, activa: true } });
         if (existentes >= 1) {
             const cap = await (0, capacidades_1.capacidadesEmpresa)(request.empresaId);
             if (!cap.features.multiSede) {
@@ -48,21 +48,21 @@ async function sedeRoutes(app) {
                 });
             }
         }
-        const sede = await index_1.prisma.sede.create({
+        const sede = await prisma_1.prisma.sede.create({
             data: { empresaId: request.empresaId, nombre, ...camposSede(body) },
         });
         return reply.status(201).send(sede);
     });
     app.put('/:id', auth, async (request, reply) => {
         const { id } = request.params;
-        const existente = await index_1.prisma.sede.findFirst({ where: { id, empresaId: request.empresaId } });
+        const existente = await prisma_1.prisma.sede.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'Sede no encontrada' });
         const body = (request.body ?? {});
         const nombre = body.nombre?.trim();
         if (!nombre)
             return reply.status(400).send({ error: 'El nombre de la sede es obligatorio' });
-        return index_1.prisma.sede.update({ where: { id }, data: { nombre, ...camposSede(body) } });
+        return prisma_1.prisma.sede.update({ where: { id }, data: { nombre, ...camposSede(body) } });
     });
     // Se desactiva en vez de borrarse: los registros ya marcados apuntan a ella y
     // el reporte histórico tiene que poder seguir diciendo dónde ocurrió cada
@@ -70,12 +70,12 @@ async function sedeRoutes(app) {
     // donde ya no pueden marcar.
     app.delete('/:id', auth, async (request, reply) => {
         const { id } = request.params;
-        const existente = await index_1.prisma.sede.findFirst({ where: { id, empresaId: request.empresaId } });
+        const existente = await prisma_1.prisma.sede.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'Sede no encontrada' });
-        await index_1.prisma.$transaction([
-            index_1.prisma.colaboradorSede.deleteMany({ where: { sedeId: id } }),
-            index_1.prisma.sede.update({ where: { id }, data: { activa: false } }),
+        await prisma_1.prisma.$transaction([
+            prisma_1.prisma.colaboradorSede.deleteMany({ where: { sedeId: id } }),
+            prisma_1.prisma.sede.update({ where: { id }, data: { activa: false } }),
         ]);
         return { ok: true };
     });
