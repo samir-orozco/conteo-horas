@@ -299,15 +299,33 @@ async function workerRoutes(app) {
                 return reply.code(401).send({ error: 'Este dispositivo no está autorizado para marcar', codigo: 'DISPOSITIVO_REQUERIDO' });
             }
         }
-        const match = (0, rostro_1.mejorCoincidencia)(descriptor, await enroladosDeEmpresa(empresa.id));
-        if (!match)
+        const veredicto = (0, rostro_1.identificarRostro)(descriptor, await enroladosDeEmpresa(empresa.id));
+        // Se registra SIEMPRE, acepte o no. El margen es el dato que hoy no existe y
+        // que hace falta para fijar `MARGEN_AMBIGUO` con la distribución real en vez
+        // de con un juicio. Sin esto, afinar el umbral seguiría siendo adivinar.
+        app.log.info({
+            evento: 'login-rostro', empresaId: empresa.id, veredicto: veredicto.tipo,
+            distancia: veredicto.tipo === 'SIN_COINCIDENCIA' ? null : veredicto.distancia,
+            margen: veredicto.tipo === 'SIN_COINCIDENCIA' ? null : veredicto.margen,
+        }, 'reconocimiento facial');
+        if (veredicto.tipo === 'SIN_COINCIDENCIA') {
             return reply.code(401).send({ error: 'Rostro no reconocido. Intenta de nuevo o marca con tu cédula.' });
-        const col = match.colaborador;
+        }
+        // DOS PERSONAS DEMASIADO CERCA: se sabe que es alguien de las dos y no cuál.
+        // Antes se elegía a la más parecida y se seguía, que es exactamente cómo se
+        // le abonan las horas de una persona a otra. Un rechazo cuesta ocho segundos;
+        // una identificación falsa no se descubre hasta que alguien reclama su
+        // nómina. El mensaje NO dice que hubo dos parecidos: eso le contaría a quien
+        // marca algo sobre las caras de sus compañeros.
+        if (veredicto.tipo === 'AMBIGUA') {
+            return reply.code(401).send({ error: 'No pudimos confirmar quién eres. Acércate un poco más e intenta de nuevo, o marca con tu cédula.' });
+        }
+        const col = veredicto.colaborador;
         // La distancia del match la calculaba `mejorCoincidencia` y se tiraba. Ahora
         // viaja en el token y queda en la marcación: una distancia repetida al
         // milímetro entre marcaciones es la huella de un descriptor copiado y
         // reenviado, cosa que no ocurre en capturas vivas.
-        const token = app.jwt.sign({ id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId, metodo: 'ROSTRO', distancia: match.distancia }, { expiresIn: '12h' });
+        const token = app.jwt.sign({ id: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, rol: 'WORKER', empresaId: col.empresaId, metodo: 'ROSTRO', distancia: veredicto.distancia }, { expiresIn: '12h' });
         // Las sedes viajan con la sesión para que el kiosco pueda mostrar dónde le
         // toca marcar a esta persona, junto al nombre.
         const sedesDelCol = await prisma_1.prisma.colaboradorSede.findMany({
