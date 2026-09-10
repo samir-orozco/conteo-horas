@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RevisionMarcaciones from './RevisionMarcaciones';
 
@@ -14,6 +14,18 @@ import RevisionMarcaciones from './RevisionMarcaciones';
 // peticiones, y no solo a mirar lo que se ve.
 
 vi.mock('../lib/api', () => ({ default: { get: vi.fn() } }));
+
+// El detector de pantalla se simula: su aritmética ya está probada aparte con
+// imágenes de respuesta conocida (deteccionPantalla.test.ts), y jsdom no decodifica
+// JPEG. Lo que se prueba AQUÍ es la costura: que la pista se pinte cuando dispara,
+// que no se pinte cuando no, y que una pista que llega tarde no se pegue a la foto
+// equivocada al pasar de una marcación a la siguiente.
+vi.mock('../lib/pistaPantalla', () => ({
+  UMBRAL_PISTA: 0.7,
+  pistaDePantalla: vi.fn(),
+}));
+import { pistaDePantalla } from '../lib/pistaPantalla';
+const mirar = pistaDePantalla as unknown as ReturnType<typeof vi.fn>;
 import api from '../lib/api';
 const get = api.get as unknown as ReturnType<typeof vi.fn>;
 
@@ -35,6 +47,8 @@ const respuesta = (eventos: ReturnType<typeof evento>[]) => ({
 });
 
 const FOTO = 'data:image/jpeg;base64,zzz';
+const SIN_PISTA = { hay: false, paralelas: 0.3, rasgos: {} as never };
+const CON_PISTA = { hay: true, paralelas: 0.94, rasgos: {} as never };
 
 function montarCon(eventos: ReturnType<typeof evento>[]) {
   get.mockImplementation((url: string) => {
@@ -45,7 +59,7 @@ function montarCon(eventos: ReturnType<typeof evento>[]) {
   return render(<RevisionMarcaciones />);
 }
 
-beforeEach(() => { get.mockReset(); });
+beforeEach(() => { get.mockReset(); mirar.mockReset(); mirar.mockResolvedValue(SIN_PISTA); });
 
 describe('revisión de marcaciones', () => {
   it('LA GUARDA: solo pide la foto de la marcación que se está mirando', async () => {
@@ -127,5 +141,86 @@ describe('revisión de marcaciones', () => {
     get.mockImplementation(() => Promise.reject(new Error('caída')));
     render(<RevisionMarcaciones />);
     expect(await screen.findByText(/no pudimos cargar las marcaciones/i)).toBeInTheDocument();
+  });
+});
+
+
+describe('la pista de "esto podría ser una pantalla"', () => {
+  // jsdom NO carga imágenes `data:`, así que el `onLoad` del <img> jamás se
+  // dispara solo y el detector nunca se llamaría. Hay que dispararlo a mano.
+  // Es la regla 9.1: si no se comprueba, la prueba pasa sin ejercitar nada.
+  const cargarLaFoto = async () => {
+    const img = await screen.findByRole('img');
+    fireEvent.load(img);
+    return img;
+  };
+
+  it('no dice nada cuando el detector no dispara', async () => {
+    mirar.mockResolvedValue(SIN_PISTA);
+    montarCon([evento()]);
+    await cargarLaFoto();
+    await waitFor(() => expect(mirar).toHaveBeenCalled());
+    expect(screen.queryByText(/bordes rectos/i)).toBeNull();
+  });
+
+  it('avisa cuando dispara, y NO afirma que sea un fraude', async () => {
+    mirar.mockResolvedValue(CON_PISTA);
+    montarCon([evento()]);
+    await cargarLaFoto();
+    const aviso = await screen.findByText(/bordes rectos/i);
+    // El texto tiene que mandar a MIRAR, no dictar un veredicto. Si alguien lo
+    // cambia por "foto de pantalla detectada", esta prueba se cae, y debe.
+    expect(aviso.textContent).toMatch(/fíjate/i);
+    expect(aviso.textContent).not.toMatch(/fraude|falsa|suplant/i);
+  });
+
+  it('aguanta que el detector falle: no rompe la pantalla ni inventa una pista', async () => {
+    mirar.mockResolvedValue(null);
+    montarCon([evento()]);
+    const img = await cargarLaFoto();
+    await waitFor(() => expect(mirar).toHaveBeenCalled());
+    expect(screen.queryByText(/bordes rectos/i)).toBeNull();
+    expect(img).toHaveAttribute('src', FOTO);
+  });
+
+
+  it('y una pista tardía tampoco BORRA la de la foto que se está mirando', async () => {
+    // El otro orden de llegada, que la prueba de arriba no cubre: la respuesta
+    // de la foto ANTERIOR llega DESPUÉS de la actual. Sin la guarda del setter,
+    // la vieja pisa a la nueva y la marca desaparece de una foto que sí la tenía.
+    let resolverVieja: (v: unknown) => void = () => {};
+    mirar.mockReturnValueOnce(new Promise(r => { resolverVieja = r; }));
+    mirar.mockResolvedValue(CON_PISTA);
+    montarCon([
+      evento({ clave: 'r1:entrada', registroId: 'r1' }),
+      evento({ clave: 'r2:entrada', registroId: 'r2', colaboradorId: 'c2' }),
+    ]);
+    await cargarLaFoto();
+    await userEvent.setup().keyboard('{ArrowRight}');
+    await screen.findByText('2 / 2');
+    fireEvent.load(await screen.findByRole('img'));
+    await screen.findByText(/bordes rectos/i);       // la de la SEGUNDA ya está
+    resolverVieja(SIN_PISTA);                        // y ahora llega la primera
+    await new Promise(r => setTimeout(r, 20));
+    expect(screen.queryByText(/bordes rectos/i)).not.toBeNull();
+  });
+
+  it('una pista que llega tarde no se pega a la foto siguiente', async () => {
+    // El detector tarda; mientras tanto el revisor ya pasó a otra marcación.
+    // Si la respuesta vieja se pintara sobre la foto nueva, la pantalla estaría
+    // acusando a la persona equivocada, que es el peor error posible aquí.
+    let resolver: (v: unknown) => void = () => {};
+    mirar.mockReturnValueOnce(new Promise(r => { resolver = r; }));
+    mirar.mockResolvedValue(SIN_PISTA);
+    montarCon([
+      evento({ clave: 'r1:entrada', registroId: 'r1' }),
+      evento({ clave: 'r2:entrada', registroId: 'r2', colaboradorId: 'c2' }),
+    ]);
+    await cargarLaFoto();
+    await userEvent.setup().keyboard('{ArrowRight}');
+    await screen.findByText('2 / 2');
+    resolver(CON_PISTA);                       // llega la pista de la PRIMERA
+    await waitFor(() => expect(mirar).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/bordes rectos/i)).toBeNull();
   });
 });

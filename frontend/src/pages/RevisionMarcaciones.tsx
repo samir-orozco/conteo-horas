@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import { fotosExpiradas } from '../lib/retencionFotos';
+import { pistaDePantalla, UMBRAL_PISTA, type Pista } from '../lib/pistaPantalla';
 import {
   motivoSinFoto, franjaDeLaHora, TEXTO_SIN_FOTO, ROTULO_METODO, ROTULO_MOMENTO, ROTULO_FRANJA,
   type EventoDeRevision, type RespuestaRevision, type Franja,
@@ -34,9 +35,25 @@ import {
 // detalle. `ink` (#303030) es el gris de cabina de la propia paleta, mejor que
 // el negro puro, que exagera el contraste.
 //
-// POR QUÉ NO HAY ORDEN POR SOSPECHA. Medido: el fraude dio la MEJOR distancia
-// del día (0,2157 contra 0,28 y 0,41 de las legítimas), porque una foto es una
-// cara frontal, quieta y bien iluminada. Cualquier puntaje lo pondría de último.
+// POR QUÉ NO HAY ORDEN POR SOSPECHA.
+//
+// Lo que decía antes aquí era falso y hay que dejarlo escrito: comparaba la
+// distancia real de un fraude (0,2157) contra 0,28 y 0,41 «de las legítimas»,
+// que NO eran legítimas ni medidas, eran números escritos a mano en
+// `seed-revision.ts`. Estaba rotulado «Medido». No lo era.
+//
+// Lo medido de verdad, sobre producción el 10 de septiembre de 2026, con 13
+// marcaciones que ya traen distancia (2 de ellas los fraudes conocidos):
+//
+//   fraude 0,3947  ->  6 honestas por debajo, 5 por encima   (a mitad de la nube)
+//   fraude 0,4746  ->  las 11 honestas por debajo            (la más alta jamás vista)
+//
+// O sea que la creencia de que el fraude deja una distancia BAJA es falsa: uno
+// de los dos dio el valor más alto del histórico. Pero la conclusión no cambia,
+// y ahora se sostiene en datos: el otro fraude está en la mitad exacta, con seis
+// marcaciones honestas por encima. Un umbral que lo cace marca a esas seis.
+// Once honestas de dos días tampoco alcanzan para concluir más que eso; hay que
+// volver a correr `sql/distribucion-distancias.sql` cuando haya cientos.
 //
 // POR QUÉ NO SE MUESTRA LA FOTO DE LA FICHA AL LADO. Sería la tarea equivocada:
 // el reconocedor acertó contra el descriptor del compañero, así que la cara
@@ -121,6 +138,9 @@ export default function RevisionMarcaciones() {
   // ventana bajo el rótulo de otra.
   const [estado, setEstado] = useState<{ dias: number; intento: number; datos: RespuestaRevision | null } | null>(null);
   const [foto, setFoto] = useState<{ clave: string; url: string | null } | null>(null);
+  // La pista se recalcula por foto y NO se guarda en ninguna parte: nace y muere
+  // con la imagen que se está mirando.
+  const [pista, setPista] = useState<{ clave: string; r: Pista } | null>(null);
   const filaActiva = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -149,6 +169,7 @@ export default function RevisionMarcaciones() {
         if (!vivo) return;
         const d = r.data as { fotoEntrada: string | null; fotoSalida: string | null };
         setFoto({ clave: actual.clave, url: actual.momento === 'entrada' ? d.fotoEntrada : d.fotoSalida });
+        setPista(null);
       })
       .catch(() => { if (vivo) setFoto({ clave: actual.clave, url: null }); });
     return () => { vivo = false; };
@@ -373,6 +394,13 @@ export default function RevisionMarcaciones() {
                       src={foto.url}
                       alt={`Foto de ${ROTULO_MOMENTO[actual.momento].toLowerCase()} de ${nombreDe(actual.colaboradorId)}`}
                       className={`${anchoFoto} h-auto rounded-xl ring-1 ring-white/10 [transform:scaleX(-1)] [image-rendering:pixelated]`}
+                      onLoad={e => {
+                        const clave = actual.clave;
+                        void pistaDePantalla(e.currentTarget).then(r => {
+                          // Puede volver tarde: si ya se cambió de marcación, se descarta.
+                          setPista(p => (p && p.clave !== clave ? p : { clave, r }));
+                        });
+                      }}
                     />
                     {/* El sello dice qué se está mirando. Sin él, "se ve
                         cuadriculada" parece un defecto, cuando es lo contrario:
@@ -384,6 +412,22 @@ export default function RevisionMarcaciones() {
                       className="absolute right-3 top-3 rounded-lg bg-black/40 px-2.5 py-1.5 text-[11px] font-semibold text-white/70 backdrop-blur hover:bg-black/60">
                       {zoom === 2 ? 'Ver 1:1' : 'Ver 2×'}
                     </button>
+                    {/* LA PISTA. Dice MIRÁ ESTA, nunca "esto es fraude".
+                        La diferencia no es de estilo: quien decide sigue siendo
+                        el ojo que está viendo la foto, y esta marca solo le
+                        dirige la mirada al sitio. Por eso nombra lo que hay que
+                        buscar (un borde recto a los dos lados) en vez de dar un
+                        veredicto, y por eso es ámbar y no roja: rojo es el color
+                        de la señal de distancia repetida, que sí es un hecho
+                        duro y no una sospecha. */}
+                    {pista?.clave === actual.clave && pista.r?.hay && (
+                      <div
+                        title={`Rectas paralelas alrededor del rostro: ${pista.r.paralelas.toFixed(2)} (la marca aparece por encima de ${UMBRAL_PISTA})`}
+                        className="absolute left-3 top-3 flex items-center gap-1.5 rounded-lg bg-amber-400/90 px-2.5 py-1.5 text-[11px] font-semibold text-amber-950 backdrop-blur">
+                        <Frame size={13} strokeWidth={2.5} />
+                        Se ven bordes rectos a los lados. Fíjate si es un aparato.
+                      </div>
+                    )}
                   </>
                 ) : llegoLaFoto ? (
                   <div className="flex flex-col items-center gap-2 text-center">
