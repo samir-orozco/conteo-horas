@@ -58,14 +58,15 @@ producción todavía no corre**. Los dos tocan dinero:
 
 | rama | commit | qué es |
 |---|---|---|
-| `master` | `b3bb445` | producción del backend; **no tiene todavía lo legal** |
-| `develop` | `9235d4e` | integración, atrasada respecto de master |
-| `mejoras/rostro-vida-y-consentimiento` | `a81f505` | 11 commits, **todos de la política de privacidad**. Lo biométrico no ha empezado |
-| `frontend-build` | `a3d411c` | **desplegado y verificado el 9 de septiembre de 2026** |
-| `backend-build` | `9b38f87` | desplegado (la validación de Word y WebP corre en producción) |
-| `prisma-build` | `ae68fdd` | sin cambios: el esquema no se tocó |
+| `master` | `584cc0f` | la política publicada; **le falta todo el lote del 10 de septiembre** |
+| `develop` | `584cc0f` | igual que master |
+| `mejoras/rostro-vida-y-consentimiento` | `67d6fe6` | el lote biométrico entero, desplegado |
+| `frontend-build` | `dd9a3cd` | **desplegado el 10 de septiembre de 2026** |
+| `backend-build` | `25f6516` | **desplegado el 10 de septiembre de 2026** |
+| `prisma-build` | `e3aeb52` | **desplegado**, y se me olvidó en el primer intento: tumbó el kiosco |
 
-Todas alineadas con `origin`.
+Todas subidas a `origin`. **`master` y `develop` están atrás y hay que fundir el
+lote ahora que está desplegado y comprobado.**
 
 **Ojo con `master`:** la rama de la política está desplegada y verificada en
 producción, pero todavía no se fundió en `master`. Según la sección 3 del
@@ -192,6 +193,53 @@ Lo que salió mal, para no repetirlo:
 13. **El handoff anterior se sobrescribió sin leerlo primero.** No se perdió nada
     —era del 12 de agosto, sobre la materialización del `DiaEsperado`— y sigue
     recuperable con `git show 3c5521c:handoff.md`.
+
+---
+
+## El despliegue del 10 de septiembre, y cómo se cayó el kiosco
+
+**Qué quedó en producción:** las cuatro columnas de método y distancia en
+`registros` con su índice `(colaboradorId, fecha)`, la pantalla de Revisión de
+marcaciones, el reto de giro del kiosco (APAGADO por defecto), nodemailer 9.1.1 y
+el `package.json` de producción.
+
+**LO QUE SALIÓ MAL.** Se desplegó SQL, backend y frontend, y el kiosco dejó de
+marcar. Causa: el esquema cambió y **no se actualizó `prisma-build`**, así que el
+backend nuevo le pedía `metodoEntrada` a un cliente de Prisma que no la conocía.
+Comprobado en el servidor: `grep -c metodoEntrada .../.prisma/client/index.d.ts`
+respondía 0. Con el cliente nuevo responde 48 y el kiosco volvió a marcar.
+
+La regla que salió de ahí está en la sección 11 del CLAUDE.md, con su comando de
+decisión y su comprobación numérica. No se repite aquí para que haya un solo
+sitio donde vivir.
+
+**LO QUE SE EVITÓ POR POCO.** La primera compilación del backend salió del árbol
+de trabajo y barrió trabajo SIN COMMITEAR del dueño: la ruta de borrado en
+cascada de empresas sobre 20 tablas, con sus dos módulos y el diálogo del
+frontend. Se detectó con un `grep` sobre el artefacto antes de subirlo y se
+recompiló desde un `git worktree` limpio. Desde entonces, los tres artefactos se
+compilan así.
+
+**LO QUE QUEDÓ SIN EXPLICAR, y conviene no olvidarlo.** Durante la caída, el XHR
+de `POST /marcar` devolvió **403**, no 500. Un cliente de Prisma desactualizado da
+500. El 403 puede haber sido otra petición distinta que el panel no mostró, o
+**Imunify360**. No se reprodujo después del arreglo. Si vuelve a aparecer, el log
+del app root es lo primero que hay que mirar.
+
+**HALLAZGO SOBRE EL PROBLEMA DE WHATSAPP.** Al intentar comprobar una ruta con
+`curl` desde fuera, el servidor respondió:
+
+    403 {"message": "Access denied by Imunify360 bot-protection.
+         IPs used for automation should be whitelisted"}
+
+Eso **nombra el mecanismo** que produce el «One moment, please...» de la sección
+de más abajo: es Imunify360, y en cPanel suele tener ajustes donde se permiten
+rastreadores conocidos. AVISO IMPORTANTE, por la lección de
+`horapro-nada-a-terceros-sin-verificar`: esto demuestra que bloquea MI
+automatización, que es su trabajo. NO demuestra que bloquee al rastreador de
+WhatsApp; eso se probó el 9 de septiembre con el User-Agent real y pasó limpio
+(HTTP 200, con og:title y og:image correctos). Sigue sin haber nada que
+reportarle al hosting.
 
 ---
 

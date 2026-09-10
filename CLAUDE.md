@@ -521,3 +521,67 @@ lleva tiempo en rojo permanente y ya no gobierna nada: la sección 2 dice
 «compruébalo contra `HEAD` antes de dar por tuyo uno que ya estaba», que es
 exactamente lo que se hace cuando un linter dejó de ser puerta. Aplicarle el
 mismo trinquete de arriba lo devolvería a la utilidad, y está sin hacer.
+
+---
+
+## 11. Si el diff toca `schema.prisma`, `prisma-build` es obligatoria
+
+**Salió de tumbar el kiosco en producción el 10 de septiembre de 2026.**
+
+El cambio agregó cuatro columnas y un enum a `registros`. Se hizo el SQL, se
+desplegó el backend, se desplegó el frontend, y el kiosco dejó de marcar: el
+backend nuevo le pedía `metodoEntrada` a un **cliente de Prisma que no la
+conocía**, porque `prisma-build` nunca se actualizó.
+
+Lo incómodo del caso: el playbook ya lo decía con esas palabras («Solo si cambió
+`schema.prisma`: regenera el cliente local y actualiza `prisma-build`»), se citó
+en un comentario del propio código ese mismo día, y aun así se pasó por alto al
+desplegar. **Una instrucción que se lee no es una puerta.**
+
+### La regla
+
+Antes de desplegar, esto decide, no la memoria:
+
+```
+git diff --name-only <lo-que-esta-en-prod>..HEAD | grep -q 'schema.prisma'   && echo "OBLIGATORIO actualizar prisma-build" || echo "prisma-build no se toca"
+```
+
+Si dice OBLIGATORIO, el despliegue lleva **cuatro** ramas y no tres, y el orden es:
+
+1. El SQL en phpMyAdmin.
+2. **`prisma-build`**, con su comprobación.
+3. `backend-build`.
+4. `frontend-build`.
+
+`prisma-build` va ANTES que el backend: al revés hay una ventana en la que el
+código nuevo corre contra el cliente viejo, que es exactamente lo que pasó.
+
+### La comprobación, que es un número y no una impresión
+
+En el servidor, después de copiar el cliente:
+
+```
+grep -c "<un campo nuevo del esquema>" ~/horapro-co-api/node_modules/.prisma/client/index.d.ts
+```
+
+Cero significa que el cliente es el viejo y que el kiosco va a caerse. Se corre
+ANTES del restart, no después.
+
+### Y al armar el artefacto: `rsync` SIN `--delete`
+
+`deploy-prisma-client/` arrastra archivos huérfanos de versiones anteriores de
+Prisma (`client.js`, `query_compiler_fast_bg.*`, los loaders de wasm), que no
+existen en el cliente que se genera hoy. Con `--delete` se borran siete archivos
+de un artefacto de producción sin saber si el servidor los usa.
+
+**En un artefacto de producción, un archivo de más es inofensivo y uno de menos
+es fatal.** Además el servidor instala con `cp -R deploy-prisma-client/.`, que
+tampoco borra, así que los huérfanos ya estaban conviviendo sin molestar.
+
+### Corolario que vale para las tres ramas de build
+
+**Los artefactos se compilan desde un árbol limpio, nunca desde el de trabajo.**
+En este mismo despliegue, la primera compilación barrió trabajo SIN COMMITEAR del
+dueño (una ruta de borrado en cascada de empresas sobre 20 tablas) y lo habría
+mandado a producción. Se caza compilando en un `git worktree` sobre `HEAD` y
+comprobando el artefacto con un `grep` de algo que NO debería estar.
