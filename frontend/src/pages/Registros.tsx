@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Camera, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Eye, ArrowRight } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import MenuFiltros from '../components/MenuFiltros';
+import MenuAcciones from '../components/MenuAcciones';
+import { cruzoDeSede, cumpleSede, cumpleCruce, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
 import SelectorColaborador from '../components/SelectorColaborador';
-import FotosJornada from '../components/FotosJornada';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
 
 const TZ = 'America/Bogota';
@@ -30,6 +31,9 @@ type Marcacion = {
 type Registro = {
   id: string; colaboradorId: string; colaborador: Colaborador; fecha: string;
   entrada: string | null; salida: string | null; tipo: string; observacion: string | null;
+  // Dónde se abrió y dónde se cerró la jornada. Opcionales por la ventana del
+  // despliegue en la que el servidor todavía responde sin ellos.
+  sede?: SedeCorta | null; sedeSalida?: SedeCorta | null;
   // null = sin horario asignado o día que no aplica; 0 = a tiempo; >0 = minutos tarde
   minutosTarde: number | null;
   // Lo que contó esta jornada, con el almuerzo ya descontado.
@@ -146,6 +150,29 @@ function CeldaAlmuerzo({ r }: { r: Registro }) {
   return <span className="text-xs text-gray-500">No marcó</span>;
 }
 
+// Celda de sede. Fuera del componente a propósito: definida adentro, React la
+// trataría como un tipo nuevo en cada render.
+//
+// Una sola sede cuando abrió y cerró en la misma, o cuando la de cierre no se
+// sabe (todo lo anterior a que se guardara). La flecha solo cuando se conocen las
+// dos y son distintas: es lo que se quiere encontrar de un vistazo.
+function CeldaSede({ r }: { r: Registro }) {
+  if (cruzoDeSede(r)) {
+    return (
+      <span className="inline-flex items-center gap-1 whitespace-nowrap" title={`Abrió en ${r.sede!.nombre} y cerró en ${r.sedeSalida!.nombre}`}>
+        {r.sede!.nombre}
+        <ArrowRight size={12} className="text-amber-600" aria-hidden="true" />
+        <span className="font-semibold text-amber-700">{r.sedeSalida!.nombre}</span>
+      </span>
+    );
+  }
+  if (r.sede) return <span className="whitespace-nowrap">{r.sede.nombre}</span>;
+  // Abrió sin sede pero cerró en una: se dice dónde CERRÓ, no se deja creer que
+  // toda la jornada fue ahí.
+  if (r.sedeSalida) return <span className="whitespace-nowrap">Cerró en {r.sedeSalida.nombre}</span>;
+  return <span className="text-gray-300">-</span>;
+}
+
 export default function Registros() {
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
@@ -164,7 +191,6 @@ export default function Registros() {
   // La jornada que se está editando, para saber a qué endpoint escribir y con
   // cuántas marcaciones se está tratando.
   const [jornadaEditada, setJornadaEditada] = useState<Registro | null>(null);
-  const [fotosDe, setFotosDe] = useState<Registro | null>(null);
   // Qué marcaciones se van a borrar. Una jornada partida por el almuerzo son
   // dos, y borrar solo la primera dejaba la tarde suelta como una fila huérfana.
   const [porEliminar, setPorEliminar] = useState<{ ids: string[]; horas: string; novedades: number } | null>(null);
@@ -194,6 +220,9 @@ export default function Registros() {
   // exactamente la búsqueda de todo lo que hay que arreglar.
   const [filtroLlegada, setFiltroLlegada] = useState<string[]>([]);
   const [filtroSalida, setFiltroSalida] = useState<string[]>([]);
+  const [filtroSede, setFiltroSede] = useState<string[]>([]);
+  const [filtroCruce, setFiltroCruce] = useState<string[]>([]);
+  const [sedes, setSedes] = useState<SedeCorta[]>([]);
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(50);
 
@@ -231,6 +260,9 @@ export default function Registros() {
   };
 
   useEffect(() => { api.get('/colaboradores').then(r => setColaboradores(r.data)); }, []);
+  // Las sedes son para el filtro. Que fallen no puede tumbar la tabla: sin ellas
+  // el grupo «Sede» simplemente no se pinta.
+  useEffect(() => { api.get('/sedes').then(r => setSedes(r.data)).catch(() => setSedes([])); }, []);
   useEffect(() => { cargar(); }, [desde, hasta, filtroColaborador]);
 
   const hhmm = (s: string | null | undefined) =>
@@ -373,7 +405,7 @@ export default function Registros() {
     return filtroSalida.some(v =>
       v === 'ESTIMADA' ? !!r.salidaEstimada : !r.salida);
   };
-  const filtrados = registros.filter(r => cumpleLlegada(r) && cumpleSalida(r));
+  const filtrados = registros.filter(r => cumpleLlegada(r) && cumpleSalida(r) && cumpleSede(r, filtroSede) && cumpleCruce(r, filtroCruce));
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / porPagina));
   // Se acota al total por si la lista encogió con el filtro y la página actual
@@ -384,20 +416,18 @@ export default function Registros() {
 
   // El menú NO se cierra al elegir: con varias opciones a la vez, cerrarse en
   // cada clic haría imposible componer una búsqueda.
-  const hayFiltro = filtroLlegada.length + filtroSalida.length > 0;
+  const hayFiltro = filtroLlegada.length + filtroSalida.length + filtroSede.length + filtroCruce.length > 0;
 
   // La columna de Almuerzo aparece cuando ese día descuenta almuerzo, tenga o no
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
   // 60 min" sin decir de qué hora a qué hora: exigir la ventana escondería la
   // columna justo donde el descuento es invisible.
+  // La columna de sede solo aparece si alguna jornada del rango tiene sede: en
+  // una empresa de una sola oficina sería una columna vacía en cada fila.
+  const haySedes = registros.some(r => r.sede || r.sedeSalida);
   const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.minutosAlmuerzoAqui > 0));
 
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
-
-  // Las fotos de una jornada partida por el almuerzo viven en marcaciones
-  // distintas, y cuál es cuál depende de los tramos vecinos. Eso lo resuelve el
-  // backend y lo pide `FotosJornada`: aquí solo se dice de qué día se trata.
-  const verFotos = (r: Registro) => setFotosDe(r);
 
   return (
     <div className="p-6">
@@ -425,11 +455,18 @@ export default function Registros() {
               { valor: 'TARDE', texto: 'Tarde' }, { valor: 'A_TIEMPO', texto: 'A tiempo' }] },
             { clave: 'salida', titulo: 'Salida', opciones: [
               { valor: 'ESTIMADA', texto: 'No marcó salida' }, { valor: 'SIN_SALIDA', texto: 'Sin salida' }] },
+            // Un grupo sin opciones no se pinta, así que en una empresa sin sedes
+            // estos dos no aparecen, y con una sola no hay cruce que buscar.
+            { clave: 'sede', titulo: 'Sede', opciones: sedes.map(s => ({ valor: s.id, texto: s.nombre })) },
+            { clave: 'cruce', titulo: 'Apertura y cierre', opciones: sedes.length > 1
+              ? [{ valor: CRUCE_DISTINTAS, texto: 'En sedes distintas' }] : [] },
           ]}
-          seleccion={{ llegada: filtroLlegada, salida: filtroSalida }}
+          seleccion={{ llegada: filtroLlegada, salida: filtroSalida, sede: filtroSede, cruce: filtroCruce }}
           onCambiar={sel => {
             setFiltroLlegada(sel.llegada ?? []);
             setFiltroSalida(sel.salida ?? []);
+            setFiltroSede(sel.sede ?? []);
+            setFiltroCruce(sel.cruce ?? []);
             setPagina(1);
           }}
         />
@@ -447,6 +484,7 @@ export default function Registros() {
             <tr>
               <th className="px-4 py-3 text-left">Colaborador</th>
               <th className="px-4 py-3 text-left">Fecha</th>
+              {haySedes && <th className="px-4 py-3 text-left">Sede</th>}
               <th className="px-4 py-3 text-center">Entrada</th>
               <th className="px-4 py-3 text-center">Salida</th>
               {hayAlmuerzo && <th className="px-4 py-3 text-center">Descanso</th>}
@@ -461,6 +499,7 @@ export default function Registros() {
               <tr key={r.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setJornadaId(r.id)}>
                 <td className="px-4 py-3 font-medium text-gray-800">{r.colaborador.nombre} {r.colaborador.apellido}</td>
                 <td className="px-4 py-3 text-gray-600 capitalize">{format(toZonedTime(new Date(r.fecha), TZ), "d MMM yyyy", { locale: es })}</td>
+                {haySedes && <td className="px-4 py-3 text-gray-600"><CeldaSede r={r} /></td>}
                 <td className="px-4 py-3 text-center text-green-700 font-mono">{fmtHora(r.entrada)}</td>
                 <td className="px-4 py-3 text-center">
                   {r.salidaEstimada ? (
@@ -508,23 +547,30 @@ export default function Registros() {
                 <td className="px-4 py-3">
                   {/* Los botones tienen su propia acción: sin esto, tocarlos
                       dispararía además el modal de la fila. */}
-                  <div className="flex items-center justify-center gap-2" onClick={e => e.stopPropagation()}>
-                    {(r.tieneFotoEntrada || r.tieneFotoSalida) && (
-                      <button onClick={() => verFotos(r)} title="Ver fotos de verificación facial"
-                        className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"><Camera size={15} /></button>
-                    )}
-                    {/* Tocar la fila entera también abre el detalle, pero eso
-                        no se ve: sin un botón, quien no lo descubre por casualidad
-                        no sabe que existe. */}
-                    <button onClick={() => setJornadaId(r.id)} title="Ver el detalle de la jornada"
+                  <div className="flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
+                    {/* DOS ÍCONOS Y NO CUATRO.
+                        La cámara se fue porque abría un modal con las mismas
+                        fotos que el detalle ya trae en su sección de
+                        verificación facial: eran dos puertas al mismo cuarto.
+                        Editar y eliminar pasaron al menú de los tres puntos:
+                        borrar no debería estar a un clic accidental del ojo, que
+                        es el botón que más se toca.
+                        Tocar la fila entera también abre el detalle, pero eso no
+                        se ve: sin el ojo, quien no lo descubre por casualidad no
+                        sabe que existe. */}
+                    <button onClick={() => setJornadaId(r.id)} title="Ver el detalle de la jornada" aria-label="Ver el detalle de la jornada"
                       className="p-1.5 text-gray-500 hover:bg-gray-100 rounded"><Eye size={15} /></button>
-                    <button onClick={() => abrirJornada(r)} title="Editar la jornada"
-                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Edit2 size={15} /></button>
-                    <button onClick={() => setPorEliminar({
-                      ids: marcasDe(r).map(m => m.id),
-                      horas: marcasDe(r).map(m => `${fmtHora(m.entrada)}–${fmtHora(m.salida)}`).join(' y '),
-                      novedades: marcasDe(r).filter(m => m.tieneNovedadLigada).length,
-                    })} className="p-1.5 text-red-500 hover:bg-red-50 rounded"><Trash2 size={15} /></button>
+                    <MenuAcciones etiqueta="Más acciones de la jornada" acciones={[
+                      { clave: 'editar', texto: 'Editar', icono: <Edit2 size={15} className="text-gray-500" />, onElegir: () => abrirJornada(r) },
+                      {
+                        clave: 'eliminar', texto: 'Eliminar', peligro: true, icono: <Trash2 size={15} />,
+                        onElegir: () => setPorEliminar({
+                          ids: marcasDe(r).map(m => m.id),
+                          horas: marcasDe(r).map(m => `${fmtHora(m.entrada)}–${fmtHora(m.salida)}`).join(' y '),
+                          novedades: marcasDe(r).filter(m => m.tieneNovedadLigada).length,
+                        }),
+                      },
+                    ]} />
                   </div>
                 </td>
               </tr>
@@ -705,22 +751,6 @@ export default function Registros() {
                 <button type="submit" className="px-4 py-2 text-sm bg-blue-800 text-white rounded-lg hover:bg-blue-700">Guardar</button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Fotos de verificación facial del registro */}
-      {fotosDe && (
-        <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setFotosDe(null)}>
-          <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-1">
-              <h3 className="font-bold text-lg text-ink flex items-center gap-2"><Camera size={18} /> Verificación facial</h3>
-              <button onClick={() => setFotosDe(null)}><X size={20} className="text-gray-400" /></button>
-            </div>
-            <p className="text-sm text-muted mb-4">
-              {fotosDe.colaborador.nombre} {fotosDe.colaborador.apellido} · {format(toZonedTime(new Date(fotosDe.fecha), TZ), "d 'de' MMMM", { locale: es })}
-            </p>
-            <FotosJornada registroId={fotosDe.id} />
           </div>
         </div>
       )}

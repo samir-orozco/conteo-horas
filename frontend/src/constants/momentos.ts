@@ -31,4 +31,16 @@ export type FotoDeJornada = {
   // La hora la puso el auto-cierre, no la persona. La foto entonces no existe, y
   // el hueco necesita decir por qué.
   estimada: boolean;
+  // A qué turno del día pertenece, desde 0. Lo decide el backend con la misma
+  // regla que parte el día en la tabla: volver del descanso es el mismo turno;
+  // volver por la tarde a hacer extras es otro.
+  //
+  // OPCIONAL A PROPÓSITO. Un backend anterior a este cambio no lo manda, y
+  // entonces la pantalla cae a una sola lista sin títulos, que es como se veía
+  // antes. Agrupar a medias pondría fotos bajo el turno equivocado.
+  jornada?: number;
+  // Dónde se tomó. `null`: no se sabe, que es lo que pasa con toda salida de
+  // antes de que se guardara la sede de la salida. Nunca se rellena con la sede
+  // de la entrada: eso sería afirmar un lugar que nadie registró.
+  sede?: { id: string; nombre: string } | null;
 };

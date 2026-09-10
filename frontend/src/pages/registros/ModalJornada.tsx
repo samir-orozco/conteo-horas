@@ -21,7 +21,10 @@ export type Jornada = {
     tipo: string; observacion: string | null;
     salidaEstimada: boolean; salidaAlmuerzo: boolean; entradaEstimada: boolean;
     creadoEn: string; editadoPor: string | null; editadoEn: string | null;
-    sede: { nombre: string; activa: boolean } | null;
+    sede: { id?: string; nombre: string; activa: boolean } | null;
+    // Dónde se cerró. Opcional: durante el despliegue el servidor anterior no lo
+    // manda, y que falte un dato no puede tumbar el detalle.
+    sedeSalida?: { id?: string; nombre: string; activa: boolean } | null;
     tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
     // La novedad que nació de esta marcación se borra con ella. El diálogo de
     // confirmación lo dice antes, no después.
@@ -223,9 +226,18 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                 </Chip>
               )}
               {j.dia && !j.dia.programado && <Chip tono="bg-gray-100 text-gray-600">Día de descanso</Chip>}
+              {/* La sede: dónde se abrió, y dónde se cerró si fue en otra. Se
+                  compara por id, porque dos sedes pueden llamarse igual. Una
+                  salida sin sede registrada no dice nada: no es «cerró en otra
+                  parte», es «no se sabe». */}
               {r.sede && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1">
-                  <MapPin size={10} /> {r.sede.nombre}{!r.sede.activa && ' (desactivada)'}
+                  <MapPin size={10} /> {r.sedeSalida && r.sedeSalida.id !== r.sede.id ? 'Abrió en ' : ''}{r.sede.nombre}{!r.sede.activa && ' (desactivada)'}
+                </span>
+              )}
+              {r.sedeSalida && (!r.sede || r.sedeSalida.id !== r.sede.id) && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 inline-flex items-center gap-1">
+                  <MapPin size={10} /> Cerró en {r.sedeSalida.nombre}{!r.sedeSalida.activa && ' (desactivada)'}
                 </span>
               )}
               {r.salidaEstimada && (
