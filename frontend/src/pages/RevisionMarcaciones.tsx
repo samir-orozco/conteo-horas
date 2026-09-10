@@ -575,7 +575,7 @@ export default function RevisionMarcaciones() {
                         duro y no una sospecha. */}
                     {pista?.clave === actual.clave && pista.r?.hay && (
                       <div
-                        title={`Rectas paralelas alrededor del rostro: ${pista.r.paralelas.toFixed(2)} (la marca aparece por encima de ${UMBRAL_PISTA})`}
+                        title={`Rectas paralelas alrededor del rostro: ${pista.r.paralelas.toFixed(2)} (la marca aparece por encima de ${UMBRAL_PISTA}). Caras detectadas: ${pista.r.caras}.`}
                         className="absolute left-3 top-3 flex items-center gap-1.5 rounded-lg bg-amber-400/90 px-2.5 py-1.5 text-[11px] font-semibold text-amber-950 backdrop-blur">
                         <Frame size={13} strokeWidth={2.5} />
                         Se ven bordes rectos a los lados. Fíjate si es un aparato.

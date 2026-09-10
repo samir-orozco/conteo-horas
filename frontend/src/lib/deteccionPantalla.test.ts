@@ -150,3 +150,42 @@ describe('rasgosDe sobre escenas armadas', () => {
     }
   });
 });
+
+describe('la escena del ataque real: DOS caras, y solo una está dentro del aparato', () => {
+  // Reproduce lo que pasó en producción el 10 de septiembre de 2026: alguien
+  // sostiene el celular y SALE TAMBIÉN EN EL CUADRO. Hay dos caras, la de la
+  // pantalla y la suya, y la suya está más cerca y más nítida.
+  //
+  // Esto NO prueba que el arreglo cace más fraudes: prueba que la respuesta
+  // depende por completo de QUÉ cara se mide, que es la causa del fallo.
+  const CARA_EN_PANTALLA: Caja = { x: 95, y: 70, ancho: 70, alto: 84 };
+  const CARA_DEL_QUE_SOSTIENE: Caja = { x: 245, y: 130, ancho: 66, alto: 80 };
+
+  const escena = () => {
+    const d = lienzo(95);
+    rectangulo(d, { x: 70, y: 35, ancho: 120, alto: 155 }, 30, 8);   // el cuerpo del aparato
+    rectangulo(d, { x: 78, y: 45, ancho: 104, alto: 135 }, 205, 8);  // la pantalla encendida
+    rectangulo(d, CARA_EN_PANTALLA, 140, 8);                         // la cara que muestra
+    rectangulo(d, CARA_DEL_QUE_SOSTIENE, 145);                       // la cara de quien lo sostiene
+    ruido(d, 7, 23);
+    return d;
+  };
+
+  it('medir la cara EQUIVOCADA da limpio con el teléfono a la vista', () => {
+    const r = rasgosDe(escena(), ANCHO, ALTO, CARA_DEL_QUE_SOSTIENE);
+    expect(r.paralelas).toBeLessThan(0.7);   // por debajo del umbral: pasa como limpia
+  });
+
+  it('medir la cara de la PANTALLA lo delata', () => {
+    const r = rasgosDe(escena(), ANCHO, ALTO, CARA_EN_PANTALLA);
+    expect(r.paralelas).toBeGreaterThan(0.7);
+  });
+
+  it('y por eso se mide alrededor de TODAS y manda la peor', () => {
+    const d = escena();
+    const peor = [CARA_DEL_QUE_SOSTIENE, CARA_EN_PANTALLA]
+      .map(c => rasgosDe(d, ANCHO, ALTO, c))
+      .reduce((a, b) => (b.paralelas > a.paralelas ? b : a));
+    expect(peor.paralelas).toBeGreaterThan(0.7);
+  });
+});

@@ -10,7 +10,7 @@
 import type { Rasgos } from './deteccionPantalla';
 import { rasgosDe } from './deteccionPantalla';
 
-export type Pista = { hay: boolean; paralelas: number; rasgos: Rasgos } | null;
+export type Pista = { hay: boolean; paralelas: number; caras: number; rasgos: Rasgos } | null;
 
 // EL UMBRAL ES PROVISIONAL Y HAY QUE RECALIBRARLO. De dónde sale:
 //
@@ -54,10 +54,17 @@ export async function pistaDePantalla(img: HTMLImageElement): Promise<Pista> {
   try {
     if (!img.naturalWidth) return null;
     const faceapi = await modelos();
-    const det = await faceapi.detectSingleFace(
+    // TODAS las caras, no la mejor. `detectSingleFace` devuelve solo la de mayor
+    // puntaje, y en el ataque real eso es justo la equivocada: quien sostiene el
+    // celular sale TAMBIÉN en el cuadro, más cerca y más nítido que la cara de la
+    // pantalla. Con una sola cara se buscaba el bisel alrededor de la persona de
+    // verdad, pegada al borde del cuadro, donde no hay ninguno, y la foto salía
+    // «limpia» con el teléfono a la vista. Pasó en producción el 10 de septiembre
+    // de 2026 y es lo que hizo cambiar esto.
+    const dets = await faceapi.detectAllFaces(
       img, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.4 })
     );
-    if (!det) return null;
+    if (!dets.length) return null;
 
     const c = document.createElement('canvas');
     c.width = img.naturalWidth; c.height = img.naturalHeight;
@@ -65,9 +72,20 @@ export async function pistaDePantalla(img: HTMLImageElement): Promise<Pista> {
     if (!cx) return null;
     cx.drawImage(img, 0, 0);
     const d = cx.getImageData(0, 0, c.width, c.height);
-    const b = det.box;
-    const rasgos = rasgosDe(d.data, c.width, c.height, { x: b.x, y: b.y, ancho: b.width, alto: b.height });
-    return { hay: rasgos.paralelas > UMBRAL_PISTA, paralelas: rasgos.paralelas, rasgos };
+
+    // Se mide alrededor de CADA cara y manda la peor: basta con que una de ellas
+    // esté metida en un marco para que haya que mirar la foto.
+    let peor: Rasgos | null = null;
+    for (const det of dets) {
+      const b = det.box;
+      const r = rasgosDe(d.data, c.width, c.height, { x: b.x, y: b.y, ancho: b.width, alto: b.height });
+      if (!peor || r.paralelas > peor.paralelas) peor = r;
+    }
+    if (!peor) return null;
+    // El número de caras se reporta pero NO dispara por sí solo. En un kiosco con
+    // fila hay gente esperando detrás todo el tiempo, así que «hay dos caras»
+    // señalaría a media empresa.
+    return { hay: peor.paralelas > UMBRAL_PISTA, paralelas: peor.paralelas, caras: dets.length, rasgos: peor };
   } catch {
     return null;
   }

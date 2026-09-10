@@ -49,8 +49,8 @@ const respuesta = (eventos: ReturnType<typeof evento>[]) => ({
 });
 
 const FOTO = 'data:image/jpeg;base64,zzz';
-const SIN_PISTA = { hay: false, paralelas: 0.3, rasgos: {} as never };
-const CON_PISTA = { hay: true, paralelas: 0.94, rasgos: {} as never };
+const SIN_PISTA = { hay: false, paralelas: 0.3, caras: 1, rasgos: {} as never };
+const CON_PISTA = { hay: true, paralelas: 0.94, caras: 2, rasgos: {} as never };
 
 function montarCon(eventos: ReturnType<typeof evento>[]) {
   get.mockImplementation((url: string) => {
