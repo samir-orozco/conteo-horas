@@ -41,6 +41,19 @@ describe('las fotos de verificación facial del día', () => {
     for (const t of [t1, t2, t3]) expect(within(t).getAllByRole('img')).toHaveLength(2);
   });
 
+  it('un turno sin entrada no inventa la hora de inicio', async () => {
+    // Una marcación cargada a mano puede traer solo la salida: el formulario no
+    // exige entrada. Su única hora es la de salida, y no es un inicio.
+    responder([
+      foto({ registroId: 'a', momento: 'ENTRADA', hora: bog(8, 0), jornada: 0 }),
+      foto({ registroId: 'a', momento: 'SALIDA', hora: bog(10, 0), jornada: 0 }),
+      foto({ registroId: 'b', momento: 'SALIDA', hora: bog(12, 0), foto: null, jornada: 1 }),
+    ]);
+    render(<FotosJornada registroId="a" />);
+    expect(await screen.findByRole('region', { name: 'Turno 1 · 08:00 a 10:00' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Turno 2 · sin entrada, salida 12:00' })).toBeTruthy();
+  });
+
   it('con un solo turno no pone título: sería ruido', async () => {
     responder([
       foto({ momento: 'ENTRADA', jornada: 0 }),

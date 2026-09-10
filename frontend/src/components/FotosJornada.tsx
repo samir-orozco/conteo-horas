@@ -72,10 +72,15 @@ export default function FotosJornada({ registroId }: { registroId: string }) {
       ) : (
         <div className="space-y-5">
           {grupos.map((grupo, gi) => {
-            const inicio = hhmm(grupo[0]?.hora ?? null);
+            // El inicio es la hora de la ENTRADA, no la de la primera foto: una
+            // marcación cargada a mano puede traer solo la salida, y tomar esa hora
+            // como inicio pintaba «12:00 a 12:00», un turno de cero minutos.
+            const apertura = grupo.find(f => f.momento === 'ENTRADA');
+            const inicio = apertura ? hhmm(apertura.hora) : null;
             const cierre = [...grupo].reverse().find(f => f.momento === 'SALIDA');
             const fin = cierre ? hhmm(cierre.hora) : null;
-            const titulo = `Turno ${gi + 1}${inicio ? ` · ${inicio}${fin ? ` a ${fin}` : ''}` : ''}`;
+            const horas = inicio ? ` · ${inicio}${fin ? ` a ${fin}` : ''}` : fin ? ` · sin entrada, salida ${fin}` : '';
+            const titulo = `Turno ${gi + 1}${horas}`;
             const { distintas } = sedesDelTurno(grupo);
             const cabecera = (conTitulos || distintas) && (
               <div className="flex items-center gap-2 mb-2">
