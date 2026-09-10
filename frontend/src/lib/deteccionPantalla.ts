@@ -11,13 +11,16 @@
 //
 //   1. NUNCA rechaza ni bloquea nada. Corre al pintar la foto en Revisión, no al
 //      marcar. Un falso positivo no le impide a nadie registrar su entrada.
-//   2. NO se guarda. No hay columna, no hay veredicto persistido, no hay
-//      expediente. Si mañana el umbral resulta malo, se cambia el número y ya:
-//      no queda una etiqueta vieja acusando a alguien en la base de datos.
+//   2. NO va a la base de datos. No hay columna, no hay veredicto persistido,
+//      no hay expediente. Lo único que se conserva es la MEDICIÓN, en el
+//      navegador de quien revisa (`memoriaPistas.ts`), y el «hay que mirar esta»
+//      se vuelve a decidir al pintar contra el umbral vigente. Si mañana el
+//      umbral resulta malo, se cambia el número y lo ya revisado se reclasifica
+//      solo, en vez de quedar una etiqueta vieja acusando a alguien.
 //   3. NO reordena la cola. `revisionMarcaciones.ts` explica por qué el orden es
 //      cronológico y esa decisión sigue en pie: un orden falso hace que el
-//      supervisor deje de mirar lo de abajo. Esto pinta una marca al lado de la
-//      foto que ya está en pantalla, nada más.
+//      supervisor deje de mirar lo de abajo. Marca las filas que hay que abrir,
+//      cada una en su sitio, sin moverlas.
 //
 // LO QUE NO VE, dicho de una vez: una foto IMPRESA en papel mate no tiene brillo
 // de pantalla ni bisel, así que este detector no la ve. Tampoco ve una tablet a

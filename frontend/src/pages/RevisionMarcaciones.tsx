@@ -9,6 +9,8 @@ import api from '../lib/api';
 import { fotosExpiradas } from '../lib/retencionFotos';
 import { pistaDePantalla, pistaDeUrl, UMBRAL_PISTA, type Pista } from '../lib/pistaPantalla';
 import { leerMemoria, recordar } from '../lib/memoriaPistas';
+import { pedirFotos, fotoDelMomento, olvidarFotos } from '../lib/fotosRevision';
+import MiniaturaMarcacion from '../components/MiniaturaMarcacion';
 import {
   motivoSinFoto, franjaDeLaHora, TEXTO_SIN_FOTO, ROTULO_METODO, ROTULO_MOMENTO, ROTULO_FRANJA,
   type EventoDeRevision, type RespuestaRevision, type Franja,
@@ -153,15 +155,11 @@ export default function RevisionMarcaciones() {
 
   // EL BARRIDO DEL DÍA.
   //
-  // Por qué es un BOTÓN y no automático: la política de tratamiento publicada
-  // dice que los datos biométricos «no se exponen en los listados del sistema y
-  // solo se entregan A SOLICITUD EXPRESA de un usuario autorizado». Marcar la
-  // lista sola obliga a descargar todas las fotos al abrir la pantalla, y eso
-  // vuelve falsa esa frase. Un clic deliberado de quien revisa ES la solicitud
-  // expresa, así que por ahí sí se puede.
-  //
-  // Nada de esto se guarda: vive mientras la pantalla esté abierta y se borra al
-  // cambiar de rango.
+  // Sigue siendo un BOTÓN aunque las miniaturas ya traigan las fotos, y la razón
+  // cambió. Antes era la política de datos; ahora es el costo: el barrido corre
+  // face-api sobre cada foto, que en un computador viejo son varios segundos por
+  // día revisado, y no tiene sentido pagarlo cada vez que alguien abre la
+  // pantalla solo para mirar una marcación.
   //
   // El avance lleva ADENTRO a qué respuesta pertenece (`para`). Así, cuando
   // cambia el rango y llegan otros datos, lo medido deja de valer SOLO, sin un
@@ -189,17 +187,29 @@ export default function RevisionMarcaciones() {
   const eventos = useMemo(() => datos?.eventos ?? [], [datos]);
   const actual: EventoDeRevision | undefined = eventos[idx];
 
-  // La imagen se pide SOLO del evento que se está mirando, nunca en bloque. La
-  // política publicada afirma que los datos biométricos no se exponen en los
-  // listados, y hay una prueba que cuenta peticiones para que siga siendo cierto.
+  // LAS FOTOS YA NO SE PIDEN SOLO DE UNA EN UNA, Y ES UNA DECISIÓN DEL DUEÑO.
+  //
+  // La política publicada dice que los datos biométricos «no se exponen en los
+  // listados del sistema y solo se entregan a solicitud expresa de un usuario
+  // autorizado». Esta pantalla estaba construida para cumplir la frase al pie de
+  // la letra: una foto a la vez, y una prueba que contaba las peticiones.
+  //
+  // Se decidió el 10 de septiembre de 2026 poner miniaturas en la lista, con este
+  // razonamiento: a esta pantalla solo entra un administrador autenticado, y ese
+  // acceso ES la autorización. La advertencia que quedó dicha: la segunda mitad de
+  // la frase («a solicitud de un usuario autorizado») queda cubierta, pero la
+  // primera («no se exponen en los listados») es absoluta, y conviene que el
+  // abogado precise que habla de los listados generales y no de esta herramienta.
+  //
+  // Lo que se conservó del cuidado original: las miniaturas se piden al APARECER,
+  // no al abrir; hay un caché con tope; y todo se suelta al salir de la pantalla.
   useEffect(() => {
     if (!actual?.tieneFoto) return;
     let vivo = true;
-    api.get(`/registros/${actual.registroId}/fotos`)
-      .then(r => {
+    pedirFotos(actual.registroId)
+      .then(d => {
         if (!vivo) return;
-        const d = r.data as { fotoEntrada: string | null; fotoSalida: string | null };
-        setFoto({ clave: actual.clave, url: actual.momento === 'entrada' ? d.fotoEntrada : d.fotoSalida });
+        setFoto({ clave: actual.clave, url: fotoDelMomento(d, actual.momento) });
         setPista(null);
       })
       .catch(() => { if (vivo) setFoto({ clave: actual.clave, url: null }); });
@@ -233,28 +243,22 @@ export default function RevisionMarcaciones() {
   // hooks según el render y la pantalla revienta entera con «rendered more hooks
   // than during the previous render». Pasó al escribir esto.
 
-  // Se recorre marcación por marcación, con la respuesta de cada foto en memoria
-  // solo el instante que dura la medición. Las fotos de un mismo registro traen
-  // entrada y salida juntas, así que se guarda esa respuesta para no pedirla dos
-  // veces; ese caché muere con el barrido.
+  // Se recorre marcación por marcación. Las fotos salen del caché compartido con
+  // las miniaturas y el visor, así que las que ya se vieron en la lista NO se
+  // vuelven a descargar.
   const barrerElDia = useCallback(async () => {
     const candidatos = eventos.filter(e => e.tieneFoto);
     if (!candidatos.length) return;
     abortarBarrido.current = false;
     setAvance({ para: datos, corriendo: true, hechas: 0, total: candidatos.length, sinLeer: 0 });
-    const cache = new Map<string, { fotoEntrada: string | null; fotoSalida: string | null }>();
     const nuevas = new Map<string, number>();
     for (let i = 0; i < candidatos.length; i++) {
       if (abortarBarrido.current) break;
       const ev = candidatos[i];
       let leida: Pista = null;
       try {
-        let d = cache.get(ev.registroId);
-        if (!d) {
-          d = (await api.get(`/registros/${ev.registroId}/fotos`)).data;
-          cache.set(ev.registroId, d!);
-        }
-        const url = ev.momento === 'entrada' ? d!.fotoEntrada : d!.fotoSalida;
+        const d = await pedirFotos(ev.registroId);
+        const url = fotoDelMomento(d, ev.momento);
         leida = url ? await pistaDeUrl(url) : null;
       } catch {
         leida = null;
@@ -276,7 +280,9 @@ export default function RevisionMarcaciones() {
     setAvance(a => (a && a.para === datos ? { ...a, corriendo: false } : a));
   }, [eventos, datos]);
 
-  useEffect(() => () => { abortarBarrido.current = true; }, []);
+  // Al salir de la pantalla se sueltan todas las fotos: en un computador
+  // compartido, las caras no deben quedarse en la memoria de la pestaña.
+  useEffect(() => () => { abortarBarrido.current = true; olvidarFotos(); }, []);
 
   // El PROGRESO solo vale para la respuesta que se está mirando; las MEDIDAS, en
   // cambio, valen siempre: están indexadas por marcación y sobreviven al cambio
@@ -370,7 +376,7 @@ export default function RevisionMarcaciones() {
         </div>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)] xl:gap-6">
+      <div className="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[400px_minmax(0,1fr)] xl:gap-6">
         {/* ===== LA LÍNEA DEL DÍA ===== */}
         <div className="order-2 xl:order-1 xl:sticky xl:top-6 self-start w-full">
           <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -437,7 +443,7 @@ export default function RevisionMarcaciones() {
                     <button
                       onClick={() => setIdx(i)}
                       aria-current={activa ? 'true' : undefined}
-                      className={`w-full text-left grid grid-cols-[54px_14px_minmax(0,1fr)] items-center py-2 border-l-[3px] transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${
+                      className={`w-full text-left grid grid-cols-[54px_48px_minmax(0,1fr)] items-center py-2 border-l-[3px] transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${
                         activa ? 'border-primary-dark bg-primary/15' : 'border-transparent hover:bg-gray-50'}`}
                     >
                       <span className={`pl-2 text-[13px] tabular-nums font-semibold ${activa ? 'text-ink' : 'text-ink/60'}`}>
@@ -448,10 +454,15 @@ export default function RevisionMarcaciones() {
                           de tiempo sin agregar ni una fila. */}
                       <span className="relative h-full flex items-center justify-center">
                         <span className="absolute left-1/2 -translate-x-1/2 -top-3 -bottom-3 w-px bg-gray-200" />
-                        <span className={`relative h-2.5 w-2.5 rounded-full ${activa ? 'ring-4 ring-[#FFF9E7]' : 'ring-4 ring-white'} ${
-                          !ev.tieneFoto ? 'bg-white border-2 border-gray-300'
-                            : ev.momento === 'entrada' ? 'bg-ink'
-                            : 'bg-white border-2 border-ink/40'}`} />
+                        {/* Con foto, la cara ocupa el lugar del punto y hereda lo que
+                            el punto decía: aro oscuro = entrada, aro claro = salida.
+                            Sin foto se queda el punto hueco, que sigue diciendo
+                            «aquí no hay nada que ver». */}
+                        {ev.tieneFoto ? (
+                          <MiniaturaMarcacion registroId={ev.registroId} momento={ev.momento} activa={activa} />
+                        ) : (
+                          <span className={`relative h-2.5 w-2.5 rounded-full bg-white border-2 border-gray-300 ${activa ? 'ring-4 ring-[#FFF9E7]' : 'ring-4 ring-white'}`} />
+                        )}
                       </span>
                       <span className="min-w-0 pr-3 flex items-center gap-2">
                         <span className="min-w-0 flex-1">

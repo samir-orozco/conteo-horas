@@ -2,6 +2,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
+import { instalarObservadorFalso } from './intersection';
 
 // Cada prueba arranca con el DOM limpio. Sin esto, un componente montado en una
 // prueba sigue ahí en la siguiente y las consultas encuentran dos elementos.
@@ -45,3 +46,7 @@ if (typeof localStorage === 'undefined' || typeof localStorage.clear !== 'functi
     Object.defineProperty(donde, 'localStorage', { value: enMemoria, configurable: true, writable: true });
   }
 }
+
+// jsdom tampoco trae IntersectionObserver. El simulado no dispara solo: ver
+// `intersection.ts` para por qué.
+instalarObservadorFalso();

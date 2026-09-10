@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, cleanup, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RevisionMarcaciones from './RevisionMarcaciones';
+import { simularVisibles } from '../pruebas/intersection';
+import { olvidarFotos, registrosEnMemoria } from '../lib/fotosRevision';
 
 // LA PANTALLA DE REVISIÓN DE MARCACIONES.
 //
@@ -65,25 +67,49 @@ beforeEach(() => {
   // La memoria de lo revisado vive en localStorage. Sin esto, una prueba deja
   // marcas puestas y la siguiente pasa (o falla) por lo que hizo la anterior.
   localStorage.clear();
+  // El caché de fotos es de módulo: sin soltarlo, una prueba reutiliza las fotos
+  // que pidió la anterior y el conteo de peticiones deja de significar algo.
+  olvidarFotos();
   get.mockReset();
   mirar.mockReset(); mirar.mockResolvedValue(SIN_PISTA);
   mirarUrl.mockReset(); mirarUrl.mockResolvedValue(SIN_PISTA);
 });
 
 describe('revisión de marcaciones', () => {
-  it('LA GUARDA: solo pide la foto de la marcación que se está mirando', async () => {
-    // Tres marcaciones en la lista, UNA sola petición de foto. Si alguien
-    // cambiara la pantalla para precargarlas, esta prueba se pone roja y con
-    // ella se entera de que está contradiciendo la política publicada.
+  it('al abrir solo se pide la foto que se mira; las de la lista, al APARECER', async () => {
+    // Antes esta prueba se llamaba «LA GUARDA» y exigía UNA sola petición de foto,
+    // para cumplir al pie de la letra la frase de la política que dice que los
+    // datos biométricos no se exponen en los listados. El dueño decidió poner
+    // miniaturas (ver el comentario del visor en la pantalla), así que eso dejó de
+    // ser cierto, y se reescribe para fijar lo que SÍ se conserva.
+    //
+    // Y hay que dejar escrito por qué la versión vieja seguía en VERDE después del
+    // cambio: el IntersectionObserver simulado no dispara solo, así que en la
+    // prueba las miniaturas no pedían nada, aunque en el navegador sí. Pasaba por
+    // una razón que ya no era la suya.
     montarCon([
       evento({ clave: 'r1:entrada', registroId: 'r1' }),
       evento({ clave: 'r2:entrada', registroId: 'r2', colaboradorId: 'c2' }),
       evento({ clave: 'r3:entrada', registroId: 'r3' }),
     ]);
-    // El contador es único; el nombre aparece dos veces, en la lista y en la cabecera.
     await screen.findByText('1 / 3');
-    await waitFor(() => expect(get.mock.calls.filter(c => String(c[0]).endsWith('/fotos'))).toHaveLength(1));
-    expect(get.mock.calls.filter(c => String(c[0]).endsWith('/fotos'))[0][0]).toBe('/registros/r1/fotos');
+    const pedidas = () => get.mock.calls.filter(c => String(c[0]).endsWith('/fotos')).map(c => String(c[0]));
+    await waitFor(() => expect(pedidas()).toEqual(['/registros/r1/fotos']));
+
+    act(() => simularVisibles());
+    await waitFor(() => expect(new Set(pedidas())).toEqual(
+      new Set(['/registros/r1/fotos', '/registros/r2/fotos', '/registros/r3/fotos'])));
+    // Ninguna dos veces: la miniatura de r1 reutiliza lo que ya pidió el visor.
+    expect(pedidas()).toHaveLength(3);
+  });
+
+  it('al salir de la pantalla se sueltan todas las fotos de la memoria', async () => {
+    // En un computador compartido, las caras no deben quedarse en la pestaña
+    // después de que el administrador se fue a otra parte.
+    montarCon([evento({ clave: 'r1:entrada', registroId: 'r1' })]);
+    await waitFor(() => expect(registrosEnMemoria()).toBe(1));
+    cleanup();
+    expect(registrosEnMemoria()).toBe(0);
   });
 
   it('muestra la foto de quien se está mirando, y dice de quién es', async () => {
@@ -242,18 +268,25 @@ describe('el barrido del día', () => {
     return u;
   };
 
-  it('LA GUARDA SIGUE EN PIE: no mira una sola foto hasta que se le pide', async () => {
-    // La política publicada dice que los datos biométricos «no se exponen en los
-    // listados y solo se entregan a solicitud expresa de un usuario autorizado».
-    // Si alguien hiciera esto automático al abrir la pantalla, esa frase de un
-    // documento legal en línea dejaría de ser cierta, y esta prueba se cae.
+  it('el barrido NO corre el detector hasta que se le pide, aunque las fotos ya estén', async () => {
+    // Antes esta prueba invocaba la política de datos y contaba UNA sola foto.
+    // Las dos cosas quedaron viejas con las miniaturas: la política dejó de ser la
+    // razón del botón (ver el comentario del estado del barrido), y el conteo de
+    // una foto solo seguía siendo cierto porque el observador simulado no dispara.
+    //
+    // Lo que protege ahora es lo suyo: correr face-api sobre cada foto cuesta
+    // segundos en un computador viejo, y no debe pasar por abrir la pantalla.
+    // Por eso se simula que las miniaturas YA trajeron sus fotos: si el detector
+    // no corre ni así, es que de verdad espera al clic.
     montarCon([
       evento({ clave: 'r1:entrada', registroId: 'r1' }),
       evento({ clave: 'r2:entrada', registroId: 'r2', colaboradorId: 'c2' }),
       evento({ clave: 'r3:entrada', registroId: 'r3' }),
     ]);
     await screen.findByText('1 / 3');
-    await waitFor(() => expect(get.mock.calls.filter(c => String(c[0]).endsWith('/fotos'))).toHaveLength(1));
+    act(() => simularVisibles());
+    await waitFor(() => expect(get.mock.calls.filter(c => String(c[0]).endsWith('/fotos'))).toHaveLength(3));
+    await new Promise(r => setTimeout(r, 30));
     expect(mirarUrl).not.toHaveBeenCalled();
   });
 
