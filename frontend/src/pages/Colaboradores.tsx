@@ -33,7 +33,11 @@ type FormData = Omit<Colaborador, 'id' | 'activo'>;
 type Retirado = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
   salarioMensual: number; fechaRetiro: string | null; motivoRetiro: string | null };
 
-const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [], modalidad: 'PRESENCIAL', puedeCerrarEnOtraSede: false, foto: null, fotoMini: null };
+// Sin `puedeCerrarEnOtraSede`, a propósito. La columna nace en 0 y el interruptor
+// lee «no vino» como apagado, así que el alta queda igual. Mandarlo en cada alta
+// hacía fallar el alta contra un backend anterior, que es justo el que queda
+// corriendo si hay que devolver el despliegue.
+const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [], modalidad: 'PRESENCIAL', foto: null, fotoMini: null };
 
 // La fecha viene del backend como ISO; el input date necesita "YYYY-MM-DD"
 export const soloFecha = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 10) : '');
