@@ -360,13 +360,34 @@ model Registro {
   fotoEntrada     String?          @db.LongText
   cambios         RegistroCambio[]
   fotoSalida      String?          @db.LongText
+
+  // CON QUÉ SE AUTENTICÓ LA PERSONA. Sale del JWT firmado del login, nunca del
+  // cuerpo de la petición: si el kiosco pudiera declararlo, cualquiera pondría
+  // lo que quisiera desde el inspector y la medición diría lo contrario de la
+  // realidad.
+  //
+  // Null significa NO SE SABE, no «cédula». Lo es en todo lo anterior a esta
+  // función y en las sesiones abiertas antes de desplegarla, que duran 12 horas.
+  // Rellenar esos null por descarte falsearía justo el número que estas columnas
+  // existen para medir.
+  metodoEntrada MetodoMarcacion?
+  metodoSalida  MetodoMarcacion?
+
+  // Qué tan parecido dio el rostro (distancia euclídea contra el descriptor
+  // enrolado). Solo cuando el método fue ROSTRO; el servidor ya la calculaba y
+  // la tiraba. Sirve para dos cosas que el método solo no permite: una distancia
+  // repetida al milímetro entre marcaciones es la huella de un descriptor
+  // copiado y reenviado, cosa imposible en capturas vivas; y una foto de foto
+  // tiende a dar distancias más altas que un rostro presente.
+  distanciaEntrada Float?
+  distanciaSalida  Float?
   // Auditoría de correcciones manuales
-  editadoPor      String?
-  editadoEn       DateTime?
-  creadoEn        DateTime         @default(now())
+  editadoPor       String?
+  editadoEn        DateTime?
+  creadoEn         DateTime  @default(now())
   // Novedades que nacieron de ESTA marcación (salida temprana en el kiosco).
   // Se borran con ella: son parte de la marcación, no registros independientes.
-  novedades       Permiso[]
+  novedades        Permiso[]
 
   // El barrido de turnos olvidados corre cada hora sobre esta tabla, que es la
   // que más crece del producto. Sin este índice el plan es un `Table scan` sobre
@@ -374,6 +395,26 @@ model Registro {
   // rango último: es la única forma de que MySQL use las tres partes.
   // Ver `sql/indice-turnos-abiertos.sql` para las mediciones.
   @@index([salidaEstimada, salida, entrada])
+  // La pantalla de revisión pide "las marcaciones de esta empresa en esta
+  // ventana". El tenant cuelga de `colaboradores`, así que el filtro llega
+  // siempre como `colaboradorId IN (...)` y sin este índice el plan es un
+  // `Table scan` sobre toda la tabla, que es lo que prohíbe la sección 8.4.
+  //
+  // MEDIDO sobre un millón de filas, 2.000 colaboradores y una empresa de 500,
+  // ventana de 7 días con LIMIT 500:
+  //   sin índice -> Table scan, 1.000.000 filas leídas, 1.320 ms
+  //   con índice -> Index range scan,     2.401 filas leídas,    11 ms
+  // El `Sort` por hora sigue ahí, pero recibe las 2.401 filas de la ventana y no
+  // el millón: es un montón acotado que no cuesta nada.
+  //
+  // El orden importa y no es decorativo: la igualdad (`colaboradorId`) va
+  // primero y la columna de rango (`fecha`) última. Invertirlo no sirve.
+  //
+  // OJO al medirlo: contra la base de desarrollo NO se puede comprobar. Con las
+  // ~180 filas que tiene, MySQL elige `Table scan` antes y después de crear el
+  // índice, porque a ese tamaño de verdad es más barato. Hay que fabricar la
+  // escala con una tabla temporal, como se hizo aquí.
+  @@index([colaboradorId, fecha])
   @@map("registros")
 }
 
@@ -571,6 +612,22 @@ enum TipoRegistro {
   NORMAL
   PERMISO
   FESTIVO
+}
+
+// Cómo se identificó la persona en el kiosco. Los mismos dos valores están
+// escritos en `src/utils/metodoMarcacion.ts`, que es una función pura y por eso
+// no importa nada de Prisma. Si aquí se agrega un valor, hay que agregarlo allá.
+enum MetodoMarcacion {
+  ROSTRO
+  CEDULA
+  // La escribió un administrador desde el panel, no una persona en el kiosco.
+  // Sin este valor, una marcación cargada a mano quedaría en null y sería
+  // indistinguible de una del kiosco anterior a este cambio, con lo que el
+  // número que estas columnas existen para medir mezclaría dos cosas.
+  //
+  // MANUAL nunca puede venir de una sesión del kiosco: `metodoMarcacion.ts`
+  // solo acepta ROSTRO y CEDULA, así que un token que lo declarara se descarta.
+  MANUAL
 }
 
 enum TipoPermiso {

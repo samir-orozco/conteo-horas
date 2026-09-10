@@ -312,6 +312,10 @@ exports.Prisma.RegistroScalarFieldEnum = {
   entradaEstimada: 'entradaEstimada',
   fotoEntrada: 'fotoEntrada',
   fotoSalida: 'fotoSalida',
+  metodoEntrada: 'metodoEntrada',
+  metodoSalida: 'metodoSalida',
+  distanciaEntrada: 'distanciaEntrada',
+  distanciaSalida: 'distanciaSalida',
   editadoPor: 'editadoPor',
   editadoEn: 'editadoEn',
   creadoEn: 'creadoEn'
@@ -537,6 +541,12 @@ exports.TipoRegistro = exports.$Enums.TipoRegistro = {
   NORMAL: 'NORMAL',
   PERMISO: 'PERMISO',
   FESTIVO: 'FESTIVO'
+};
+
+exports.MetodoMarcacion = exports.$Enums.MetodoMarcacion = {
+  ROSTRO: 'ROSTRO',
+  CEDULA: 'CEDULA',
+  MANUAL: 'MANUAL'
 };
 
 exports.TipoPermiso = exports.$Enums.TipoPermiso = {

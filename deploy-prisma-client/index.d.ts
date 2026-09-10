@@ -207,6 +207,15 @@ export const TipoRegistro: {
 export type TipoRegistro = (typeof TipoRegistro)[keyof typeof TipoRegistro]
 
 
+export const MetodoMarcacion: {
+  ROSTRO: 'ROSTRO',
+  CEDULA: 'CEDULA',
+  MANUAL: 'MANUAL'
+};
+
+export type MetodoMarcacion = (typeof MetodoMarcacion)[keyof typeof MetodoMarcacion]
+
+
 export const TipoPermiso: {
   VACACIONES: 'VACACIONES',
   INCAPACIDAD_EPS: 'INCAPACIDAD_EPS',
@@ -321,6 +330,10 @@ export const MotivoRetiro: typeof $Enums.MotivoRetiro
 export type TipoRegistro = $Enums.TipoRegistro
 
 export const TipoRegistro: typeof $Enums.TipoRegistro
+
+export type MetodoMarcacion = $Enums.MetodoMarcacion
+
+export const MetodoMarcacion: typeof $Enums.MetodoMarcacion
 
 export type TipoPermiso = $Enums.TipoPermiso
 
@@ -16525,8 +16538,20 @@ export namespace Prisma {
 
   export type AggregateRegistro = {
     _count: RegistroCountAggregateOutputType | null
+    _avg: RegistroAvgAggregateOutputType | null
+    _sum: RegistroSumAggregateOutputType | null
     _min: RegistroMinAggregateOutputType | null
     _max: RegistroMaxAggregateOutputType | null
+  }
+
+  export type RegistroAvgAggregateOutputType = {
+    distanciaEntrada: number | null
+    distanciaSalida: number | null
+  }
+
+  export type RegistroSumAggregateOutputType = {
+    distanciaEntrada: number | null
+    distanciaSalida: number | null
   }
 
   export type RegistroMinAggregateOutputType = {
@@ -16543,6 +16568,10 @@ export namespace Prisma {
     entradaEstimada: boolean | null
     fotoEntrada: string | null
     fotoSalida: string | null
+    metodoEntrada: $Enums.MetodoMarcacion | null
+    metodoSalida: $Enums.MetodoMarcacion | null
+    distanciaEntrada: number | null
+    distanciaSalida: number | null
     editadoPor: string | null
     editadoEn: Date | null
     creadoEn: Date | null
@@ -16562,6 +16591,10 @@ export namespace Prisma {
     entradaEstimada: boolean | null
     fotoEntrada: string | null
     fotoSalida: string | null
+    metodoEntrada: $Enums.MetodoMarcacion | null
+    metodoSalida: $Enums.MetodoMarcacion | null
+    distanciaEntrada: number | null
+    distanciaSalida: number | null
     editadoPor: string | null
     editadoEn: Date | null
     creadoEn: Date | null
@@ -16581,12 +16614,26 @@ export namespace Prisma {
     entradaEstimada: number
     fotoEntrada: number
     fotoSalida: number
+    metodoEntrada: number
+    metodoSalida: number
+    distanciaEntrada: number
+    distanciaSalida: number
     editadoPor: number
     editadoEn: number
     creadoEn: number
     _all: number
   }
 
+
+  export type RegistroAvgAggregateInputType = {
+    distanciaEntrada?: true
+    distanciaSalida?: true
+  }
+
+  export type RegistroSumAggregateInputType = {
+    distanciaEntrada?: true
+    distanciaSalida?: true
+  }
 
   export type RegistroMinAggregateInputType = {
     id?: true
@@ -16602,6 +16649,10 @@ export namespace Prisma {
     entradaEstimada?: true
     fotoEntrada?: true
     fotoSalida?: true
+    metodoEntrada?: true
+    metodoSalida?: true
+    distanciaEntrada?: true
+    distanciaSalida?: true
     editadoPor?: true
     editadoEn?: true
     creadoEn?: true
@@ -16621,6 +16672,10 @@ export namespace Prisma {
     entradaEstimada?: true
     fotoEntrada?: true
     fotoSalida?: true
+    metodoEntrada?: true
+    metodoSalida?: true
+    distanciaEntrada?: true
+    distanciaSalida?: true
     editadoPor?: true
     editadoEn?: true
     creadoEn?: true
@@ -16640,6 +16695,10 @@ export namespace Prisma {
     entradaEstimada?: true
     fotoEntrada?: true
     fotoSalida?: true
+    metodoEntrada?: true
+    metodoSalida?: true
+    distanciaEntrada?: true
+    distanciaSalida?: true
     editadoPor?: true
     editadoEn?: true
     creadoEn?: true
@@ -16684,6 +16743,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: RegistroAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RegistroSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: RegistroMinAggregateInputType
@@ -16714,6 +16785,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: RegistroCountAggregateInputType | true
+    _avg?: RegistroAvgAggregateInputType
+    _sum?: RegistroSumAggregateInputType
     _min?: RegistroMinAggregateInputType
     _max?: RegistroMaxAggregateInputType
   }
@@ -16732,10 +16805,16 @@ export namespace Prisma {
     entradaEstimada: boolean
     fotoEntrada: string | null
     fotoSalida: string | null
+    metodoEntrada: $Enums.MetodoMarcacion | null
+    metodoSalida: $Enums.MetodoMarcacion | null
+    distanciaEntrada: number | null
+    distanciaSalida: number | null
     editadoPor: string | null
     editadoEn: Date | null
     creadoEn: Date
     _count: RegistroCountAggregateOutputType | null
+    _avg: RegistroAvgAggregateOutputType | null
+    _sum: RegistroSumAggregateOutputType | null
     _min: RegistroMinAggregateOutputType | null
     _max: RegistroMaxAggregateOutputType | null
   }
@@ -16768,6 +16847,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: boolean
     fotoSalida?: boolean
+    metodoEntrada?: boolean
+    metodoSalida?: boolean
+    distanciaEntrada?: boolean
+    distanciaSalida?: boolean
     editadoPor?: boolean
     editadoEn?: boolean
     creadoEn?: boolean
@@ -16793,6 +16876,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: boolean
     fotoSalida?: boolean
+    metodoEntrada?: boolean
+    metodoSalida?: boolean
+    distanciaEntrada?: boolean
+    distanciaSalida?: boolean
     editadoPor?: boolean
     editadoEn?: boolean
     creadoEn?: boolean
@@ -16828,6 +16915,10 @@ export namespace Prisma {
       entradaEstimada: boolean
       fotoEntrada: string | null
       fotoSalida: string | null
+      metodoEntrada: $Enums.MetodoMarcacion | null
+      metodoSalida: $Enums.MetodoMarcacion | null
+      distanciaEntrada: number | null
+      distanciaSalida: number | null
       editadoPor: string | null
       editadoEn: Date | null
       creadoEn: Date
@@ -17217,6 +17308,10 @@ export namespace Prisma {
     readonly entradaEstimada: FieldRef<"Registro", 'Boolean'>
     readonly fotoEntrada: FieldRef<"Registro", 'String'>
     readonly fotoSalida: FieldRef<"Registro", 'String'>
+    readonly metodoEntrada: FieldRef<"Registro", 'MetodoMarcacion'>
+    readonly metodoSalida: FieldRef<"Registro", 'MetodoMarcacion'>
+    readonly distanciaEntrada: FieldRef<"Registro", 'Float'>
+    readonly distanciaSalida: FieldRef<"Registro", 'Float'>
     readonly editadoPor: FieldRef<"Registro", 'String'>
     readonly editadoEn: FieldRef<"Registro", 'DateTime'>
     readonly creadoEn: FieldRef<"Registro", 'DateTime'>
@@ -29360,6 +29455,10 @@ export namespace Prisma {
     entradaEstimada: 'entradaEstimada',
     fotoEntrada: 'fotoEntrada',
     fotoSalida: 'fotoSalida',
+    metodoEntrada: 'metodoEntrada',
+    metodoSalida: 'metodoSalida',
+    distanciaEntrada: 'distanciaEntrada',
+    distanciaSalida: 'distanciaSalida',
     editadoPor: 'editadoPor',
     editadoEn: 'editadoEn',
     creadoEn: 'creadoEn'
@@ -29687,6 +29786,13 @@ export namespace Prisma {
    * Reference to a field of type 'TipoRegistro'
    */
   export type EnumTipoRegistroFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TipoRegistro'>
+    
+
+
+  /**
+   * Reference to a field of type 'MetodoMarcacion'
+   */
+  export type EnumMetodoMarcacionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MetodoMarcacion'>
     
 
 
@@ -30933,6 +31039,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableFilter<"Registro"> | string | null
     fotoSalida?: StringNullableFilter<"Registro"> | string | null
+    metodoEntrada?: EnumMetodoMarcacionNullableFilter<"Registro"> | $Enums.MetodoMarcacion | null
+    metodoSalida?: EnumMetodoMarcacionNullableFilter<"Registro"> | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: FloatNullableFilter<"Registro"> | number | null
+    distanciaSalida?: FloatNullableFilter<"Registro"> | number | null
     editadoPor?: StringNullableFilter<"Registro"> | string | null
     editadoEn?: DateTimeNullableFilter<"Registro"> | Date | string | null
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
@@ -30956,6 +31066,10 @@ export namespace Prisma {
     entradaEstimada?: SortOrder
     fotoEntrada?: SortOrderInput | SortOrder
     fotoSalida?: SortOrderInput | SortOrder
+    metodoEntrada?: SortOrderInput | SortOrder
+    metodoSalida?: SortOrderInput | SortOrder
+    distanciaEntrada?: SortOrderInput | SortOrder
+    distanciaSalida?: SortOrderInput | SortOrder
     editadoPor?: SortOrderInput | SortOrder
     editadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
@@ -30982,6 +31096,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableFilter<"Registro"> | string | null
     fotoSalida?: StringNullableFilter<"Registro"> | string | null
+    metodoEntrada?: EnumMetodoMarcacionNullableFilter<"Registro"> | $Enums.MetodoMarcacion | null
+    metodoSalida?: EnumMetodoMarcacionNullableFilter<"Registro"> | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: FloatNullableFilter<"Registro"> | number | null
+    distanciaSalida?: FloatNullableFilter<"Registro"> | number | null
     editadoPor?: StringNullableFilter<"Registro"> | string | null
     editadoEn?: DateTimeNullableFilter<"Registro"> | Date | string | null
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
@@ -31005,12 +31123,18 @@ export namespace Prisma {
     entradaEstimada?: SortOrder
     fotoEntrada?: SortOrderInput | SortOrder
     fotoSalida?: SortOrderInput | SortOrder
+    metodoEntrada?: SortOrderInput | SortOrder
+    metodoSalida?: SortOrderInput | SortOrder
+    distanciaEntrada?: SortOrderInput | SortOrder
+    distanciaSalida?: SortOrderInput | SortOrder
     editadoPor?: SortOrderInput | SortOrder
     editadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     _count?: RegistroCountOrderByAggregateInput
+    _avg?: RegistroAvgOrderByAggregateInput
     _max?: RegistroMaxOrderByAggregateInput
     _min?: RegistroMinOrderByAggregateInput
+    _sum?: RegistroSumOrderByAggregateInput
   }
 
   export type RegistroScalarWhereWithAggregatesInput = {
@@ -31030,6 +31154,10 @@ export namespace Prisma {
     entradaEstimada?: BoolWithAggregatesFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     fotoSalida?: StringNullableWithAggregatesFilter<"Registro"> | string | null
+    metodoEntrada?: EnumMetodoMarcacionNullableWithAggregatesFilter<"Registro"> | $Enums.MetodoMarcacion | null
+    metodoSalida?: EnumMetodoMarcacionNullableWithAggregatesFilter<"Registro"> | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: FloatNullableWithAggregatesFilter<"Registro"> | number | null
+    distanciaSalida?: FloatNullableWithAggregatesFilter<"Registro"> | number | null
     editadoPor?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     editadoEn?: DateTimeNullableWithAggregatesFilter<"Registro"> | Date | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Registro"> | Date | string
@@ -33352,6 +33480,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -33375,6 +33507,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -33394,6 +33530,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33417,6 +33557,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33438,6 +33582,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -33455,6 +33603,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33474,6 +33626,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -35866,6 +36022,13 @@ export namespace Prisma {
     not?: NestedEnumTipoRegistroFilter<$PrismaModel> | $Enums.TipoRegistro
   }
 
+  export type EnumMetodoMarcacionNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.MetodoMarcacion | EnumMetodoMarcacionFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MetodoMarcacion[] | null
+    notIn?: $Enums.MetodoMarcacion[] | null
+    not?: NestedEnumMetodoMarcacionNullableFilter<$PrismaModel> | $Enums.MetodoMarcacion | null
+  }
+
   export type SedeNullableRelationFilter = {
     is?: SedeWhereInput | null
     isNot?: SedeWhereInput | null
@@ -35895,9 +36058,18 @@ export namespace Prisma {
     entradaEstimada?: SortOrder
     fotoEntrada?: SortOrder
     fotoSalida?: SortOrder
+    metodoEntrada?: SortOrder
+    metodoSalida?: SortOrder
+    distanciaEntrada?: SortOrder
+    distanciaSalida?: SortOrder
     editadoPor?: SortOrder
     editadoEn?: SortOrder
     creadoEn?: SortOrder
+  }
+
+  export type RegistroAvgOrderByAggregateInput = {
+    distanciaEntrada?: SortOrder
+    distanciaSalida?: SortOrder
   }
 
   export type RegistroMaxOrderByAggregateInput = {
@@ -35914,6 +36086,10 @@ export namespace Prisma {
     entradaEstimada?: SortOrder
     fotoEntrada?: SortOrder
     fotoSalida?: SortOrder
+    metodoEntrada?: SortOrder
+    metodoSalida?: SortOrder
+    distanciaEntrada?: SortOrder
+    distanciaSalida?: SortOrder
     editadoPor?: SortOrder
     editadoEn?: SortOrder
     creadoEn?: SortOrder
@@ -35933,9 +36109,18 @@ export namespace Prisma {
     entradaEstimada?: SortOrder
     fotoEntrada?: SortOrder
     fotoSalida?: SortOrder
+    metodoEntrada?: SortOrder
+    metodoSalida?: SortOrder
+    distanciaEntrada?: SortOrder
+    distanciaSalida?: SortOrder
     editadoPor?: SortOrder
     editadoEn?: SortOrder
     creadoEn?: SortOrder
+  }
+
+  export type RegistroSumOrderByAggregateInput = {
+    distanciaEntrada?: SortOrder
+    distanciaSalida?: SortOrder
   }
 
   export type EnumTipoRegistroWithAggregatesFilter<$PrismaModel = never> = {
@@ -35946,6 +36131,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumTipoRegistroFilter<$PrismaModel>
     _max?: NestedEnumTipoRegistroFilter<$PrismaModel>
+  }
+
+  export type EnumMetodoMarcacionNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MetodoMarcacion | EnumMetodoMarcacionFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MetodoMarcacion[] | null
+    notIn?: $Enums.MetodoMarcacion[] | null
+    not?: NestedEnumMetodoMarcacionNullableWithAggregatesFilter<$PrismaModel> | $Enums.MetodoMarcacion | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumMetodoMarcacionNullableFilter<$PrismaModel>
+    _max?: NestedEnumMetodoMarcacionNullableFilter<$PrismaModel>
   }
 
   export type EnumTipoPermisoFilter<$PrismaModel = never> = {
@@ -37864,6 +38059,10 @@ export namespace Prisma {
     set?: $Enums.TipoRegistro
   }
 
+  export type NullableEnumMetodoMarcacionFieldUpdateOperationsInput = {
+    set?: $Enums.MetodoMarcacion | null
+  }
+
   export type ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput = {
     create?: XOR<ColaboradorCreateWithoutRegistrosInput, ColaboradorUncheckedCreateWithoutRegistrosInput>
     connectOrCreate?: ColaboradorCreateOrConnectWithoutRegistrosInput
@@ -38771,6 +38970,13 @@ export namespace Prisma {
     not?: NestedEnumTipoRegistroFilter<$PrismaModel> | $Enums.TipoRegistro
   }
 
+  export type NestedEnumMetodoMarcacionNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.MetodoMarcacion | EnumMetodoMarcacionFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MetodoMarcacion[] | null
+    notIn?: $Enums.MetodoMarcacion[] | null
+    not?: NestedEnumMetodoMarcacionNullableFilter<$PrismaModel> | $Enums.MetodoMarcacion | null
+  }
+
   export type NestedEnumTipoRegistroWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.TipoRegistro | EnumTipoRegistroFieldRefInput<$PrismaModel>
     in?: $Enums.TipoRegistro[]
@@ -38779,6 +38985,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumTipoRegistroFilter<$PrismaModel>
     _max?: NestedEnumTipoRegistroFilter<$PrismaModel>
+  }
+
+  export type NestedEnumMetodoMarcacionNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MetodoMarcacion | EnumMetodoMarcacionFieldRefInput<$PrismaModel> | null
+    in?: $Enums.MetodoMarcacion[] | null
+    notIn?: $Enums.MetodoMarcacion[] | null
+    not?: NestedEnumMetodoMarcacionNullableWithAggregatesFilter<$PrismaModel> | $Enums.MetodoMarcacion | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumMetodoMarcacionNullableFilter<$PrismaModel>
+    _max?: NestedEnumMetodoMarcacionNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumTipoPermisoFilter<$PrismaModel = never> = {
@@ -40642,6 +40858,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -40663,6 +40883,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -41001,6 +41225,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableFilter<"Registro"> | string | null
     fotoSalida?: StringNullableFilter<"Registro"> | string | null
+    metodoEntrada?: EnumMetodoMarcacionNullableFilter<"Registro"> | $Enums.MetodoMarcacion | null
+    metodoSalida?: EnumMetodoMarcacionNullableFilter<"Registro"> | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: FloatNullableFilter<"Registro"> | number | null
+    distanciaSalida?: FloatNullableFilter<"Registro"> | number | null
     editadoPor?: StringNullableFilter<"Registro"> | string | null
     editadoEn?: DateTimeNullableFilter<"Registro"> | Date | string | null
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
@@ -41262,6 +41490,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -41283,6 +41515,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -42140,6 +42376,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -42162,6 +42402,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -42267,6 +42511,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42289,6 +42537,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -43531,6 +43783,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -43553,6 +43809,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -43587,6 +43847,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -43609,6 +43873,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -44702,6 +44970,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -44788,6 +45060,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -44809,6 +45085,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -44829,6 +45109,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -45061,6 +45345,10 @@ export namespace Prisma {
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -45093,6 +45381,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -45114,6 +45406,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -45134,6 +45430,10 @@ export namespace Prisma {
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
