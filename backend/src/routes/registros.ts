@@ -11,7 +11,7 @@ import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
 } from '../utils/saldoTiempo';
 import { diferenciasDeRegistro, type EstadoRegistro } from '../utils/cambiosRegistro';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion } from '../utils/jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, sedesDeSalidaTrasEditar } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -436,6 +436,8 @@ export default async function registroRoutes(app: FastifyInstance) {
         select: {
           id: true, entrada: true, salida: true, salidaAlmuerzo: true,
           entradaEstimada: true, salidaEstimada: true,
+          sede: { select: { id: true, nombre: true, activa: true } },
+          sedeSalida: { select: { id: true, nombre: true, activa: true } },
         },
       }),
       prisma.diaEsperado.findFirst({
@@ -502,6 +504,12 @@ export default async function registroRoutes(app: FastifyInstance) {
     // rotulada "Salida".
     const momentos = momentosDelDia(delDia);
 
+    // Dónde se abrió y dónde se cerró la JORNADA de esta marcación, con la regla
+    // de la fila de la tabla. Los chips del detalle leen esto y no la sede de
+    // salida de la marcación suelta, que en una jornada con almuerzo es la del
+    // descanso.
+    const sedes = sedesDeLaJornada(delDia, registro.id);
+
     // La tardanza se mide solo en la primera entrada del día: volver del
     // almuerzo no es llegar tarde. Cuando no aplica se dice POR QUÉ, que un
     // guion mudo en una columna de asistencia solo genera dudas.
@@ -550,6 +558,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         tieneFotoSalida: tieneSalida.has(t.id),
         tieneNovedadLigada: conNovedadLigada.has(t.id),
       })),
+      sedes,
       almuerzo,
       minutosDelDia: minutosContadosDelDia(delDia, dia),
       minutosTarde,
@@ -760,7 +769,14 @@ export default async function registroRoutes(app: FastifyInstance) {
 
     const actualizado = await prisma.registro.update({
       where: { id },
-      data: { ...cambios, editadoPor: payload.email ?? payload.id, editadoEn: new Date() },
+      data: {
+        ...cambios,
+        // Sin salida no hay dónde se cerró. Un turno reabierto conservaba la sede
+        // de la salida borrada, y si después lo cerraba el sistema o alguien sin
+        // sede identificada, la fila decía «Cerró en» un sitio donde nadie marcó.
+        ...(cambios.salida === null ? { sedeSalidaId: null } : {}),
+        editadoPor: payload.email ?? payload.id, editadoEn: new Date(),
+      },
     });
     // Corregir un registro puede moverlo de día o de colaborador; el día nuevo
     // también necesita su fila. Nunca pisa la que ya exista, así que corregir
@@ -887,14 +903,20 @@ export default async function registroRoutes(app: FastifyInstance) {
     };
     const antesPrimera = { ...esta[0] } as any;
 
+    // Quitar o poner el descanso cambia QUÉ salida guarda cada fila, y la sede de
+    // esa salida tiene que ir con ella. Ver `sedesDeSalidaTrasEditar`.
+    const sedesSalida = sedesDeSalidaTrasEditar(esta, {
+      descansoSalida: !!t.descansoSalida, descansoRegreso: !!t.descansoRegreso, salida: !!t.salida,
+    });
+
     await prisma.$transaction(async (tx) => {
       await tx.registro.update({
         where: { id: esta[0].id },
-        data: { ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida },
+        data: { ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida, sedeSalidaId: sedesSalida.primera },
       });
       const segunda = esta[1];
       if (nuevos[1]) {
-        const datos = { ...comunes, entrada: nuevos[1].entrada, salida: nuevos[1].salida, salidaAlmuerzo: false };
+        const datos = { ...comunes, entrada: nuevos[1].entrada, salida: nuevos[1].salida, salidaAlmuerzo: false, sedeSalidaId: sedesSalida.segunda };
         if (segunda) await tx.registro.update({ where: { id: segunda.id }, data: datos });
         // Fila nueva nacida de una edición del admin. La de arriba se ACTUALIZA y
         // conserva su método original a propósito: esa marcación sí ocurrió en el

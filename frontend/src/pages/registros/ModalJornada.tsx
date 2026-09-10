@@ -14,6 +14,8 @@ import { type Momento } from '../../constants/momentos';
 
 const TZ = 'America/Bogota';
 
+export type SedeDelDetalle = { id?: string; nombre: string; activa: boolean };
+
 export type Jornada = {
   registro: {
     id: string; colaboradorId: string; fecha: string;
@@ -21,10 +23,10 @@ export type Jornada = {
     tipo: string; observacion: string | null;
     salidaEstimada: boolean; salidaAlmuerzo: boolean; entradaEstimada: boolean;
     creadoEn: string; editadoPor: string | null; editadoEn: string | null;
-    sede: { id?: string; nombre: string; activa: boolean } | null;
-    // Dónde se cerró. Opcional: durante el despliegue el servidor anterior no lo
-    // manda, y que falte un dato no puede tumbar el detalle.
-    sedeSalida?: { id?: string; nombre: string; activa: boolean } | null;
+    sede: SedeDelDetalle | null;
+    // Dónde se marcó la salida de ESTA marcación. No es dónde se cerró la
+    // jornada: en una con almuerzo es la salida al descanso. Para eso, `sedes`.
+    sedeSalida?: SedeDelDetalle | null;
     tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
     // La novedad que nació de esta marcación se borra con ella. El diálogo de
     // confirmación lo dice antes, no después.
@@ -47,6 +49,10 @@ export type Jornada = {
     tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
     tieneNovedadLigada?: boolean;
   }[];
+  // Dónde se abrió y dónde se cerró la JORNADA, con la regla de la fila de la
+  // tabla. Opcional: un servidor anterior no lo manda, y que falte un dato no
+  // puede tumbar el detalle.
+  sedes?: { abrio: SedeDelDetalle | null; cerro: SedeDelDetalle | null };
   almuerzo: {
     estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
     ventana: { inicio: string; fin: string } | null;
@@ -178,6 +184,11 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
   };
 
   const r = j?.registro;
+  // Las sedes de la JORNADA, no de esta marcación suelta: en una jornada con
+  // almuerzo, la salida de la primera marcación es la del descanso. Un servidor
+  // anterior no manda `sedes`, y entonces solo se sabe dónde abrió esta.
+  const abrio = j?.sedes ? j.sedes.abrio : r?.sede ?? null;
+  const cerro = j?.sedes ? j.sedes.cerro : null;
   const entrada = hhmm(r?.entrada ?? null);
   const a = j?.almuerzo;
 
@@ -226,18 +237,18 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                 </Chip>
               )}
               {j.dia && !j.dia.programado && <Chip tono="bg-gray-100 text-gray-600">Día de descanso</Chip>}
-              {/* La sede: dónde se abrió, y dónde se cerró si fue en otra. Se
-                  compara por id, porque dos sedes pueden llamarse igual. Una
-                  salida sin sede registrada no dice nada: no es «cerró en otra
-                  parte», es «no se sabe». */}
-              {r.sede && (
+              {/* La sede de la JORNADA: dónde se abrió, y dónde se cerró si fue
+                  en otra. Se compara por id, porque dos sedes pueden llamarse
+                  igual. Un cierre sin sede registrada no dice nada: no es «cerró
+                  en otra parte», es «no se sabe». */}
+              {abrio && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1">
-                  <MapPin size={10} /> {r.sedeSalida && r.sedeSalida.id !== r.sede.id ? 'Abrió en ' : ''}{r.sede.nombre}{!r.sede.activa && ' (desactivada)'}
+                  <MapPin size={10} /> {cerro && cerro.id !== abrio.id ? 'Abrió en ' : ''}{abrio.nombre}{!abrio.activa && ' (desactivada)'}
                 </span>
               )}
-              {r.sedeSalida && (!r.sede || r.sedeSalida.id !== r.sede.id) && (
+              {cerro && (!abrio || cerro.id !== abrio.id) && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 inline-flex items-center gap-1">
-                  <MapPin size={10} /> Cerró en {r.sedeSalida.nombre}{!r.sedeSalida.activa && ' (desactivada)'}
+                  <MapPin size={10} /> Cerró en {cerro.nombre}{!cerro.activa && ' (desactivada)'}
                 </span>
               )}
               {r.salidaEstimada && (

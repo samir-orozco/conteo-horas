@@ -618,9 +618,11 @@ export default async function workerRoutes(app: FastifyInstance) {
             ...(esAlmuerzo ? { salidaAlmuerzo: true } : {}),
             // Dónde se CERRÓ, con la misma regla que la entrada: donde ocurrió la
             // marca. Se escribe para todos, también para un híbrido, que así
-            // recupera la fidelidad que antes perdía. Sin sede identificada no se
-            // escribe nada: null es «no se sabe», nunca la sede de la entrada.
-            ...(sedeDeLaMarca ? { sedeSalidaId: sedeDeLaMarca } : {}),
+            // recupera la fidelidad que antes perdía. Sin sede identificada va
+            // null, que es «no se sabe», nunca la sede de la entrada. Y va SIEMPRE:
+            // saltarse el null dejaba viva la sede de una salida anterior en un
+            // turno que un administrador había reabierto.
+            sedeSalidaId: sedeDeLaMarca,
             ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
             ...camposDeAutenticacion(payload, 'salida'),
           },

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion } from './jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, sedesDeSalidaTrasEditar } from './jornada';
 
 // El almuerzo no vive en un registro: vive en el HUECO entre dos. Un día con
 // almuerzo son dos tramos —08:00-12:00 y 13:00-17:00— y lo que hay en medio es
@@ -830,5 +830,121 @@ describe('jornadaDeCadaMarcacion', () => {
         expect(momentos.get(r.id)!.entrada === 'ENTRADA').toBe(abreTurno);
       }
     }
+  });
+});
+
+describe('sedesDeLaJornada', () => {
+  const P = { id: 's1', nombre: 'El Poblado' };
+  const L = { id: 's2', nombre: 'Laureles' };
+  type S = typeof P;
+  const m = (id: string, entrada: Date | null, salida: Date | null, sede: S | null, sedeSalida: S | null,
+    extra: { salidaAlmuerzo?: boolean } = {}) => ({ ...reg(entrada, salida, extra), id, sede, sedeSalida });
+
+  it('la salida a almorzar en otra sede no es el cierre: cerró donde marcó la salida de verdad', () => {
+    const dia = [
+      m('a', bog(8), bog(12), P, L, { salidaAlmuerzo: true }),
+      m('b', bog(13), bog(17), L, P),
+    ];
+    // Se pregunte por la marcación que se pregunte, es la misma jornada.
+    expect(sedesDeLaJornada(dia, 'a')).toEqual({ abrio: P, cerro: P });
+    expect(sedesDeLaJornada(dia, 'b')).toEqual({ abrio: P, cerro: P });
+  });
+
+  it('volver del almuerzo en otra sede y cerrar allí sí es cruzar', () => {
+    const dia = [
+      m('a', bog(8), bog(12), P, P, { salidaAlmuerzo: true }),
+      m('b', bog(13), bog(17), L, L),
+    ];
+    expect(sedesDeLaJornada(dia, 'a')).toEqual({ abrio: P, cerro: L });
+  });
+
+  it('una jornada que sigue abierta no tiene sede de cierre', () => {
+    const dia = [
+      m('a', bog(8), bog(12), P, L, { salidaAlmuerzo: true }),
+      m('b', bog(13), null, L, null),
+    ];
+    expect(sedesDeLaJornada(dia, 'b')).toEqual({ abrio: P, cerro: null });
+  });
+
+  it('cada jornada del día responde por las suyas, lleguen en el orden que lleguen', () => {
+    // Desordenadas a propósito, con el regreso del almuerzo ANTES de su salida:
+    // sin ordenar por entrada, el regreso quedaría como una jornada suelta.
+    const dia = [
+      m('b', bog(13), bog(17), L, P),
+      m('c', bog(19), bog(21), L, L),
+      m('a', bog(8), bog(12), P, L, { salidaAlmuerzo: true }),
+    ];
+    expect(sedesDeLaJornada(dia, 'b')).toEqual({ abrio: P, cerro: P });
+    expect(sedesDeLaJornada(dia, 'c')).toEqual({ abrio: L, cerro: L });
+  });
+
+  it('salió a almorzar y no volvió: la salida al descanso tampoco es un cierre', () => {
+    expect(sedesDeLaJornada([m('a', bog(8), bog(12), P, L, { salidaAlmuerzo: true })], 'a'))
+      .toEqual({ abrio: P, cerro: null });
+  });
+
+  it('dice lo mismo que la fila de la tabla, marcación por marcación', () => {
+    // La fila toma la sede de la primera marcación de cada jornada y la de salida
+    // de `marcacionQueCierra` (routes/registros.ts). Si las dos agruparan
+    // distinto, el detalle volvería a contradecir a la tabla.
+    const horario = {
+      fecha: bog(0), programado: true, horaEntrada: '08:00', horaSalida: '17:00', toleranciaSalidaMin: 0,
+      ajustaEntrada: false, almuerzoMin: 60, almuerzoInicio: '12:00', almuerzoFin: '13:00',
+    };
+    const dia = [
+      m('d', bog(19), bog(21), L, L),
+      m('b', bog(13), bog(17), L, P),
+      m('a', bog(8), bog(12), P, L, { salidaAlmuerzo: true }),
+      m('e', null, bog(22), null, P),
+    ];
+    const jornadas = partirDiaEnJornadas(dia, horario);
+    expect(jornadas).toHaveLength(3);
+    for (const { marcaciones } of jornadas) {
+      const fila = { abrio: marcaciones[0].sede, cerro: marcacionQueCierra(marcaciones)?.sedeSalida ?? null };
+      for (const x of marcaciones) expect(sedesDeLaJornada(dia, x.id)).toEqual(fila);
+    }
+  });
+
+  it('una marcación que no está en el día no tiene sedes', () => {
+    expect(sedesDeLaJornada([m('a', bog(8), bog(17), P, P)], 'otra')).toEqual({ abrio: null, cerro: null });
+  });
+});
+
+describe('sedesDeSalidaTrasEditar', () => {
+  const m = (entrada: Date | null, salida: Date | null, sedeSalidaId: string | null,
+    extra: { salidaAlmuerzo?: boolean } = {}) => ({ ...reg(entrada, salida, extra), sedeSalidaId });
+  const conDescanso = [m(bog(8), bog(12), 'P', { salidaAlmuerzo: true }), m(bog(13), bog(17), 'L')];
+  const TODO = { descansoSalida: true, descansoRegreso: true, salida: true };
+
+  it('quitar el descanso: la que queda cierra, y cierra donde se cerró de verdad', () => {
+    expect(sedesDeSalidaTrasEditar(conDescanso, { descansoSalida: false, descansoRegreso: false, salida: true }))
+      .toEqual({ primera: 'L', segunda: null });
+  });
+
+  it('agregar un descanso: la salida pasa con su sede a la marcación nueva, y la del descanso no se sabe', () => {
+    expect(sedesDeSalidaTrasEditar([m(bog(8), bog(17), 'L')], TODO)).toEqual({ primera: null, segunda: 'L' });
+  });
+
+  it('mover horas sin tocar el descanso deja cada sede con su salida', () => {
+    expect(sedesDeSalidaTrasEditar(conDescanso, TODO)).toEqual({ primera: 'P', segunda: 'L' });
+  });
+
+  it('reabrir el turno borra la sede: no hay salida de la cual decir dónde fue', () => {
+    expect(sedesDeSalidaTrasEditar([m(bog(8), bog(17), 'L')], { descansoSalida: false, descansoRegreso: false, salida: false }))
+      .toEqual({ primera: null, segunda: null });
+  });
+
+  it('reabrir solo la tarde conserva la del descanso y borra la del cierre', () => {
+    expect(sedesDeSalidaTrasEditar(conDescanso, { descansoSalida: true, descansoRegreso: true, salida: false }))
+      .toEqual({ primera: 'P', segunda: null });
+  });
+
+  it('completar un descanso sin regreso no inventa dónde se cerró', () => {
+    const sinRegreso = [m(bog(8), bog(12), 'P', { salidaAlmuerzo: true })];
+    expect(sedesDeSalidaTrasEditar(sinRegreso, TODO)).toEqual({ primera: 'P', segunda: null });
+    // Ni convirtiendo esa salida al descanso en la salida del día: la hora la
+    // escribió el administrador, y nadie marcó una salida de la jornada.
+    expect(sedesDeSalidaTrasEditar(sinRegreso, { descansoSalida: false, descansoRegreso: false, salida: true }))
+      .toEqual({ primera: null, segunda: null });
   });
 });

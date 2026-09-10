@@ -337,6 +337,43 @@ export function jornadaDeCadaMarcacion<T extends RegistroDeDia & { id: string }>
   return turnos;
 }
 
+// Dónde se abrió y dónde se cerró la JORNADA que contiene a una marcación.
+//
+// El detalle se abre desde la fila con el id de UNA marcación y pintaba la sede
+// de salida de esa marcación suelta. En una jornada con almuerzo esa salida es la
+// del descanso: decía «Cerró en Laureles» de quien salió a almorzar allí y cerró
+// en El Poblado, contradiciendo a la tabla. Esta es la regla de la tabla (la sede
+// de la primera marcación y la de salida de `marcacionQueCierra`), sobre la misma
+// agrupación que `momentosDelDia`.
+export function sedesDeLaJornada<S>(
+  registros: (RegistroDeDia & { id: string; sede: S | null; sedeSalida: S | null })[],
+  id: string,
+): { abrio: S | null; cerro: S | null } {
+  const jornada = agruparEnJornadas(enOrdenDeEntrada(registros)).find(j => j.some(m => m.id === id));
+  if (!jornada) return { abrio: null, cerro: null };
+  return { abrio: jornada[0].sede, cerro: marcacionQueCierra(jornada)?.sedeSalida ?? null };
+}
+
+// Qué sede de salida le toca a cada marcación cuando el administrador reescribe
+// una jornada entera.
+//
+// `sedeSalidaId` dice dónde se marcó la salida que guarda esa fila, y quitar o
+// poner el descanso cambia CUÁL salida guarda cada una: al quitarlo, la primera
+// pasa a tener la salida del día y seguía diciendo la sede del almuerzo. La regla:
+// la fila que queda con la salida al descanso lleva la sede de la salida al
+// descanso de antes, la que queda con la salida del día lleva la del cierre de
+// antes, y una fila sin salida no lleva ninguna. Lo que antes no existía no se
+// inventa: queda en null, que es «no se sabe».
+export function sedesDeSalidaTrasEditar(
+  antes: (RegistroDeDia & { sedeSalidaId: string | null })[],
+  queda: { descansoSalida: boolean; descansoRegreso: boolean; salida: boolean },
+): { primera: string | null; segunda: string | null } {
+  const delDescanso = antes.find(m => m.salida && m.salidaAlmuerzo)?.sedeSalidaId ?? null;
+  const delCierre = marcacionQueCierra(antes)?.sedeSalidaId ?? null;
+  if (!queda.descansoSalida) return { primera: queda.salida ? delCierre : null, segunda: null };
+  return { primera: delDescanso, segunda: queda.descansoRegreso && queda.salida ? delCierre : null };
+}
+
 export function partirDiaEnJornadas<T extends RegistroDeDia>(
   registros: T[],
   dia: DiaParaAlmuerzo & DiaParaAjuste,
