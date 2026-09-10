@@ -19,6 +19,22 @@ export async function permiteCedula(empresaId: string): Promise<boolean> {
   return cfg?.valor !== '0';
 }
 
+// ¿El ingreso facial pide girar la cabeza antes de capturar?
+//
+// APAGADO POR DEFECTO, y eso es deliberado. Esta es la parte del producto que ya
+// rompió el ingreso del kiosco varias veces, y un reto que falle deja a la gente
+// sin poder marcar. Se enciende por empresa, se prueba con una, y solo después se
+// piensa en cambiar el defecto.
+//
+// Que sea configuración de servidor y no una constante del bundle es lo que
+// permite apagarlo desde el panel si empieza a fallar, sin esperar un despliegue.
+export async function exigeRetoDePose(empresaId: string): Promise<boolean> {
+  const cfg = await prisma.configuracion.findUnique({
+    where: { empresaId_clave: { empresaId, clave: 'KIOSCO_RETO_POSE' } },
+  });
+  return cfg?.valor === '1';
+}
+
 // Geocerco: la empresa puede exigir que la marca se haga dentro de un radio de su
 // ubicación (GPS del teléfono). Se guarda en Configuración → Marcación.
 export type GeoCfg = { lat: number; lng: number; radio: number };

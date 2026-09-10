@@ -27,6 +27,10 @@ export default function Marcador() {
 
   // Config del kiosco (viene de /worker/kiosco/:token)
   const [permiteCedula, setPermiteCedula] = useState(true);
+  // ¿El ingreso facial pide girar la cabeza? Lo decide el servidor por empresa.
+  // Por defecto NO, y se asume que no mientras la respuesta no diga lo contrario:
+  // un fallo cargando la configuración no puede dejar a nadie sin poder marcar.
+  const [exigeReto, setExigeReto] = useState(false);
   const [exigeUbicacion, setExigeUbicacion] = useState(false);
   // Ya vio la pantalla que ofrece activar la ubicación y decidió seguir sin
   // darla. No es lo mismo que negar el permiso del navegador: es no querer ni
@@ -103,6 +107,7 @@ export default function Marcador() {
       .then(info => {
         setEmpresa(info.empresa);
         setExigeUbicacion(info.exigeUbicacion === true);
+        setExigeReto(info.exigeReto === true);
         if (info.permiteCedula === false) {
           setPermiteCedula(false);
           setModoRostro(true); // solo rostro: entra directo a la cámara
@@ -264,7 +269,7 @@ export default function Marcador() {
   if (!sesion.token || !sesion.colaborador) {
     return (
       <PantallaLogin
-        empresa={empresa} permiteCedula={permiteCedula} modoRostro={modoRostro}
+        empresa={empresa} permiteCedula={permiteCedula} exigeReto={exigeReto} modoRostro={modoRostro}
         onModoCedula={() => { setModoRostro(false); setErrorLogin(''); }}
         onModoRostro={() => { setErrorLogin(''); setFotoRostro(null); setModoRostro(true); }}
         shake={shake} capturaKey={capturaKey}

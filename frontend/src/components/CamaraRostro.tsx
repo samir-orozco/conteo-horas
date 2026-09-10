@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 import { cargarModelosLigeros, cargarModeloRostro, modelosEnCache } from '../lib/faceapi';
-import { Camera, AlertTriangle, Check } from 'lucide-react';
+import { Camera, AlertTriangle, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import PreviewEnrolamiento from './camaraRostro/PreviewEnrolamiento';
 import {
   SEG_FALLBACK_CEDULA, opcionesDeteccion, opcionesCaptura, MS_QUIETO_ENROLAR, MS_QUIETO_LOGIN,
   MIN_MUESTRAS_POSE, MS_MIN_CUADRO, desviacionYaw, promediarDescriptores, capturarFoto,
   MSG_ENCUADRE, poseCumple, RESTRICCIONES_VIDEO, fijarZoomMinimo,
   esperarVideoEstable, crearEstabilizadorEncuadre,
-  type Modo, type Estado, type PasoEnrolar,
+  type Modo, type Estado, type PasoEnrolar, type TipoPose,
 } from './camaraRostro/rostroCliente';
+import { sortearLado, poseDelReto, flechaDelReto, MS_QUIETO_GIRO, type FaseDelReto } from './camaraRostro/reto';
 
 type Props = {
   // login: captura rápida quedándose quieto (sin gestos)
@@ -27,9 +28,14 @@ type Props = {
   // que toma la foto del momento y deja marcar digitando la cédula.
   permiteFallbackCedula?: boolean;
   onUsarCedula?: (foto: string) => void;
+  // Login: pedir un giro de cabeza antes de capturar. Lo decide el servidor por
+  // empresa y llega apagado por defecto: un reto que falle deja a la gente sin
+  // poder marcar, y esta es la parte del producto que ya rompió el ingreso
+  // varias veces.
+  exigeReto?: boolean;
 };
 
-export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapturado, onError, errorExterno, permiteFallbackCedula = false, onUsarCedula }: Props) {
+export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapturado, onError, errorExterno, permiteFallbackCedula = false, onUsarCedula, exigeReto = false }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [mostrarFallback, setMostrarFallback] = useState(false);
   const [estado, setEstado] = useState<Estado>('cargando');
@@ -37,6 +43,23 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
   const [encuadreOk, setEncuadreOk] = useState(false);
   const [pasoActual, setPasoActual] = useState(0);
   const [progreso, setProgreso] = useState(0); // 0..1 del "quédate quieto"
+  // EL RETO DE GIRO. Solo en login y solo si la empresa lo activó. El lado se
+  // sortea UNA vez por intento: si se resorteara en cada cuadro, la flecha
+  // parpadearía y sería imposible de seguir.
+  const retoActivo = modo === 'login' && exigeReto;
+  const [ladoReto, setLadoReto] = useState<TipoPose>(() => sortearLado(Math.random()));
+  const [faseReto, setFaseReto] = useState<FaseDelReto>('GIRAR');
+  const [retoOk, setRetoOk] = useState(false);
+  // El bucle lee el reto POR REFERENCIA, no por la clausura del efecto.
+  //
+  // `exigeReto` llega del servidor DESPUÉS de montar: la pantalla de login se
+  // pinta antes de que responda `/kiosco/:token`. Si el bucle lo capturara al
+  // arrancar, el reto no se activaría nunca en la primera carga. Y meterlo en
+  // las dependencias del efecto reiniciaría el video a mitad del encuadre, que
+  // en un teléfono lento se ve como un parpadeo feo justo cuando la persona ya
+  // se estaba acomodando.
+  const retoRef = useRef({ activo: retoActivo, lado: ladoReto });
+  useEffect(() => { retoRef.current = { activo: retoActivo, lado: ladoReto }; }, [retoActivo, ladoReto]);
   const [intento, setIntento] = useState(0);    // se incrementa al "Repetir"
   const [tomas, setTomas] = useState<string[]>([]); // fotos del preview (enrolar)
   const descsPreview = useRef<number[][]>([]);   // descriptores esperando aceptación
@@ -68,6 +91,13 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     let cuadroId: number | null = null;
     let cuadroTimeout: ReturnType<typeof setTimeout> | null = null;
     let erroresSeguidos = 0;
+    // Estado del reto DENTRO del bucle. Va en variables locales y no en React
+    // porque el bucle lee esto muchas veces por segundo y un `setState` por
+    // cuadro dispararía renders en cascada. Lo que sí va a React es solo lo que
+    // se pinta, a través de `setFaseReto` y `setRetoOk`, que cambian pocas veces.
+    let retoCumplido = false;
+    let holdReto: number | null = null;
+    const faseDelRetoRef = { current: 'GIRAR' as FaseDelReto };
 
     // Estado del flujo (fuera de React para no re-renderizar por cuadro)
     const descriptoresPorPose: number[][] = [];
@@ -180,8 +210,46 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
             setEncuadreOk(true);
 
             // ¿Se cumple la condición para (seguir) capturando?
+            const yaw = desviacionYaw(deteccion.landmarks);
             const paso = modo === 'enrolar' ? pasos[idxPaso] : null;
-            const condicionOk = paso ? poseCumple(paso.tipo, desviacionYaw(deteccion.landmarks)) : true;
+
+            // EL RETO DE GIRO, antes de todo lo demás. Una foto en la pantalla de
+            // un celular no puede girar la cabeza cuando se le pide y volver al
+            // frente. Comprobado el 9 de septiembre de 2026: una foto así se
+            // aceptó y dio la MEJOR distancia del día, porque una foto es una
+            // cara frontal, quieta y bien iluminada.
+            //
+            // No es un muro: inclinando el celular se falsea parte del giro. Por
+            // eso el lado se sortea. Y el servidor no puede comprobar nada de
+            // esto, porque el descriptor lo calcula el navegador.
+            if (retoRef.current.activo && !retoCumplido) {
+              const pedida = poseDelReto(faseDelRetoRef.current, retoRef.current.lado);
+              if (!poseCumple(pedida, yaw)) {
+                resetHold();
+                programarSiguiente();
+                return;
+              }
+              // Sostener el giro un instante evita que un temblor lo dé por
+              // hecho. Es corto a propósito: alargarlo es lo que convirtió el
+              // intento del parpadeo en algo que había que hacer "superfuerte".
+              if (holdReto === null) holdReto = performance.now();
+              if (performance.now() - holdReto < MS_QUIETO_GIRO) {
+                programarSiguiente();
+                return;
+              }
+              holdReto = null;
+              if (faseDelRetoRef.current === 'GIRAR') {
+                faseDelRetoRef.current = 'VOLVER';
+                setFaseReto('VOLVER');
+                programarSiguiente();
+                return;
+              }
+              // Volvió al frente: el reto queda cumplido y sigue la captura normal.
+              retoCumplido = true;
+              setRetoOk(true);
+            }
+
+            const condicionOk = paso ? poseCumple(paso.tipo, yaw) : true;
 
             if (!condicionOk) {
               // Rompió la pose: reinicia el conteo de "quieto"
@@ -298,6 +366,10 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     setEncuadreOk(false);
     setMensaje('Cargando cámara...');
     setEstado('cargando');
+    // Lado nuevo en cada intento: si se repitiera, se podría ensayar.
+    setLadoReto(sortearLado(Math.random()));
+    setFaseReto('GIRAR');
+    setRetoOk(false);
     setIntento(i => i + 1);
   };
 
@@ -349,6 +421,30 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
           </svg>
         )}
 
+        {/* EL RETO DE GIRO. Una flecha grande que late hacia el lado que toca, y
+            nada de palabras como "derecha": el preview está espejado y ahí es
+            donde se pierde la gente. La flecha no es ambigua, se sigue sin
+            pensar, y su lado sale de la misma constante que la detección, así
+            que no pueden contradecirse. */}
+        {retoActivo && !retoOk && estado === 'guiando' && encuadreOk && (
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            {faseReto === 'GIRAR' ? (
+              <div className={`absolute ${flechaDelReto(ladoReto) === 'izq' ? 'left-3' : 'right-3'} flex flex-col items-center gap-1`}>
+                <div className="hp-ripple absolute inset-0 rounded-full bg-primary/30" />
+                <div className="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                  {flechaDelReto(ladoReto) === 'izq'
+                    ? <ArrowLeft size={34} className="text-ink" strokeWidth={3} />
+                    : <ArrowRight size={34} className="text-ink" strokeWidth={3} />}
+                </div>
+              </div>
+            ) : (
+              <div className="relative w-16 h-16 rounded-full bg-green-400 flex items-center justify-center shadow-lg">
+                <Check size={34} className="text-white" strokeWidth={3} />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Línea de escaneo mientras lee el rostro (CSS puro; funciona en Android) */}
         {estado === 'guiando' && encuadreOk && (
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -381,6 +477,21 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
           </div>
         )}
       </div>
+
+      {/* La instrucción del reto, en grande y de una sola cosa a la vez. Pedir dos
+          cosas a la vez es lo que hizo fracasar el intento del parpadeo. */}
+      {retoActivo && !retoOk && estado === 'guiando' && encuadreOk && !hayError && (
+        <div className="w-full max-w-md rounded-xl bg-primary/20 px-4 py-3 text-center">
+          <p className="text-base font-bold text-ink">
+            {faseReto === 'GIRAR' ? 'Gire la cabeza hacia la flecha' : 'Ahora vuelva a mirar al frente'}
+          </p>
+          <p className="text-xs text-muted mt-0.5">
+            {faseReto === 'GIRAR'
+              ? 'Un giro suave, sin exagerar'
+              : 'Ya casi, no se mueva'}
+          </p>
+        </div>
+      )}
 
       {/* Progreso del enrolamiento: un chip por pose */}
       {modo === 'enrolar' && !hayError && (

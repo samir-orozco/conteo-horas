@@ -7,7 +7,7 @@ import { camposDeAutenticacion } from '../utils/metodoMarcacion';
 import { enviarTelegram } from '../utils/telegram';
 import { notificar } from '../utils/notificaciones';
 import { rangoDiaBogota } from '../utils/fechas';
-import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes } from '../utils/kioscoConfig';
+import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes, exigeRetoDePose } from '../utils/kioscoConfig';
 import { decidirUbicacionDeMarca, MODALIDAD_POR_DEFECTO } from '../utils/modalidad';
 import { VENTANA_TURNO_MS } from '../utils/cierreTurnos';
 import { puedeSalirAAlmorzar, dentroDeLaVentana } from '../utils/almuerzo';
@@ -209,6 +209,10 @@ export default async function workerRoutes(app: FastifyInstance) {
       empresa: empresa.nombre,
       requiereDispositivo: await exigeDispositivo(empresa.id),
       permiteCedula: await permiteCedula(empresa.id),
+      // Si el ingreso facial pide girar la cabeza antes de capturar. Apagado por
+      // defecto: un reto que falle deja a la gente sin marcar, así que se
+      // enciende por empresa y se puede apagar sin desplegar.
+      exigeReto: await exigeRetoDePose(empresa.id),
       // El kiosco pide el GPS si lo exige la geocerca de la empresa O si hay
       // alguna sede con ubicación: con sedes, quién marca dónde solo se sabe
       // por coordenadas, así que hay que pedirlas antes de saber quién es.

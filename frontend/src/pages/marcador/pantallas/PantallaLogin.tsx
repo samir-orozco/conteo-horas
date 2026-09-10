@@ -6,6 +6,7 @@ import { horaBog } from '../helpers';
 type Props = {
   empresa: string | null;
   permiteCedula: boolean;
+  exigeReto?: boolean;
   modoRostro: boolean;
   onModoCedula: () => void;
   onModoRostro: () => void;
@@ -54,7 +55,7 @@ export default function PantallaLogin(p: Props) {
 
         {p.modoRostro ? (
           <>
-            <CamaraRostro key={p.capturaKey} modo="login" onCapturado={(descs, foto) => p.loginConRostro(descs[0], foto)} errorExterno={p.errorLogin || null}
+            <CamaraRostro key={p.capturaKey} modo="login" onCapturado={(descs, foto) => p.loginConRostro(descs[0], foto)} errorExterno={p.errorLogin || null} exigeReto={p.exigeReto}
               permiteFallbackCedula={p.permiteCedula}
               onUsarCedula={p.onUsarCedula} />
             {p.errorLogin && (
