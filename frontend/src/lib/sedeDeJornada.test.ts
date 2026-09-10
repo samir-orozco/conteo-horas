@@ -69,7 +69,9 @@ describe('opcionesDeSede', () => {
     expect(opcionesDeSede([POBLADO], [{ sede: POBLADO, sedeSalida: POBLADO }])).toHaveLength(1);
   });
   it('van en orden alfabético, con las tildes en su sitio', () => {
-    expect(opcionesDeSede([LAURELES, POBLADO], [{ sede: BELEN }]).map(s => s.nombre))
-      .toEqual(['Belén', 'El Poblado', 'Laureles']);
+    // «Ágora» primero: comparando códigos, la Á va después de la Z.
+    const AGORA = { id: 's4', nombre: 'Ágora' };
+    expect(opcionesDeSede([LAURELES, POBLADO], [{ sede: BELEN }, { sedeSalida: AGORA }]).map(s => s.nombre))
+      .toEqual(['Ágora', 'Belén', 'El Poblado', 'Laureles']);
   });
 });
