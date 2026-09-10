@@ -72,3 +72,19 @@ export async function pistaDePantalla(img: HTMLImageElement): Promise<Pista> {
     return null;
   }
 }
+
+/**
+ * Lo mismo, partiendo de la URL en vez de un <img> ya pintado. Lo usa el barrido
+ * del día, que mira fotos que NO están en pantalla.
+ *
+ * La imagen se crea, se mide y se suelta: no se guarda en ningún lado y no queda
+ * en el DOM. Es la diferencia entre pedir una foto para mirarla y precargar el
+ * listado entero, que es lo que la política publicada dice que no se hace.
+ */
+export async function pistaDeUrl(url: string): Promise<Pista> {
+  const img = new Image();
+  img.src = url;
+  const cargo = await new Promise<boolean>(r => { img.onload = () => r(true); img.onerror = () => r(false); });
+  if (!cargo) return null;
+  return pistaDePantalla(img);
+}

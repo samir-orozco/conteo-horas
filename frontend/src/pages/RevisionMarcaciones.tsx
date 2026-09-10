@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/api';
 import { fotosExpiradas } from '../lib/retencionFotos';
-import { pistaDePantalla, UMBRAL_PISTA, type Pista } from '../lib/pistaPantalla';
+import { pistaDePantalla, pistaDeUrl, UMBRAL_PISTA, type Pista } from '../lib/pistaPantalla';
 import {
   motivoSinFoto, franjaDeLaHora, TEXTO_SIN_FOTO, ROTULO_METODO, ROTULO_MOMENTO, ROTULO_FRANJA,
   type EventoDeRevision, type RespuestaRevision, type Franja,
@@ -60,6 +60,13 @@ import {
 // capturada y la de la ficha COINCIDEN por construcción. Poner la referencia al
 // lado invita a comparar identidades, que siempre va a dar "sí es él", en vez de
 // mirar si eso es una pantalla.
+
+type Avance = {
+  para: RespuestaRevision | null;
+  corriendo: boolean; hechas: number; total: number; sinLeer: number;
+  conAparato: Set<string>; analizadas: Set<string>;
+};
+const VACIO: ReadonlySet<string> = new Set();
 
 const TZ = 'America/Bogota';
 const enBogota = (iso: string) => toZonedTime(new Date(iso), TZ);
@@ -141,6 +148,25 @@ export default function RevisionMarcaciones() {
   // La pista se recalcula por foto y NO se guarda en ninguna parte: nace y muere
   // con la imagen que se está mirando.
   const [pista, setPista] = useState<{ clave: string; r: Pista } | null>(null);
+
+  // EL BARRIDO DEL DÍA.
+  //
+  // Por qué es un BOTÓN y no automático: la política de tratamiento publicada
+  // dice que los datos biométricos «no se exponen en los listados del sistema y
+  // solo se entregan A SOLICITUD EXPRESA de un usuario autorizado». Marcar la
+  // lista sola obliga a descargar todas las fotos al abrir la pantalla, y eso
+  // vuelve falsa esa frase. Un clic deliberado de quien revisa ES la solicitud
+  // expresa, así que por ahí sí se puede.
+  //
+  // Nada de esto se guarda: vive mientras la pantalla esté abierta y se borra al
+  // cambiar de rango.
+  //
+  // El avance lleva ADENTRO a qué respuesta pertenece (`para`). Así, cuando
+  // cambia el rango y llegan otros datos, lo medido deja de valer SOLO, sin un
+  // efecto que resetee tres estados: derivarlo en el render evita el parpadeo de
+  // marcas viejas sobre una lista nueva, y evita el render de más.
+  const [avance, setAvance] = useState<Avance | null>(null);
+  const abortarBarrido = useRef(false);
   const filaActiva = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -196,6 +222,60 @@ export default function RevisionMarcaciones() {
   // Sin esto el teclado es una promesa rota a partir de la fila trece: la
   // selección se va de la vista y ya no se sabe dónde se está en el día.
   useEffect(() => { filaActiva.current?.scrollIntoView({ block: 'nearest' }); }, [idx]);
+
+  // OJO: TODO HOOK VA ARRIBA DE LOS `return` TEMPRANOS de más abajo (cargando,
+  // error, lista vacía). Puesto después, React cuenta un número distinto de
+  // hooks según el render y la pantalla revienta entera con «rendered more hooks
+  // than during the previous render». Pasó al escribir esto.
+
+  // Se recorre marcación por marcación, con la respuesta de cada foto en memoria
+  // solo el instante que dura la medición. Las fotos de un mismo registro traen
+  // entrada y salida juntas, así que se guarda esa respuesta para no pedirla dos
+  // veces; ese caché muere con el barrido.
+  const barrerElDia = useCallback(async () => {
+    const candidatos = eventos.filter(e => e.tieneFoto);
+    if (!candidatos.length) return;
+    abortarBarrido.current = false;
+    const base: Avance = {
+      para: datos, corriendo: true, hechas: 0, total: candidatos.length, sinLeer: 0,
+      conAparato: new Set(), analizadas: new Set(),
+    };
+    setAvance(base);
+    const cache = new Map<string, { fotoEntrada: string | null; fotoSalida: string | null }>();
+    for (let i = 0; i < candidatos.length; i++) {
+      if (abortarBarrido.current) break;
+      const ev = candidatos[i];
+      let leida: Pista = null;
+      try {
+        let d = cache.get(ev.registroId);
+        if (!d) {
+          d = (await api.get(`/registros/${ev.registroId}/fotos`)).data;
+          cache.set(ev.registroId, d!);
+        }
+        const url = ev.momento === 'entrada' ? d!.fotoEntrada : d!.fotoSalida;
+        leida = url ? await pistaDeUrl(url) : null;
+      } catch {
+        leida = null;
+      }
+      // NO SE CUENTA COMO REVISADA SI NO SE PUDO LEER. Un fallo silencioso aquí
+      // es peor que no hacer nada: el resumen diría «40 revisadas» y el
+      // supervisor dejaría de mirar justo las que en realidad nadie miró.
+      setAvance(a => {
+        if (!a || a.para !== datos) return a;
+        const conAparato = leida?.hay ? new Set(a.conAparato).add(ev.clave) : a.conAparato;
+        const analizadas = leida ? new Set(a.analizadas).add(ev.clave) : a.analizadas;
+        return { ...a, hechas: i + 1, sinLeer: a.sinLeer + (leida ? 0 : 1), conAparato, analizadas };
+      });
+    }
+    setAvance(a => (a && a.para === datos ? { ...a, corriendo: false } : a));
+  }, [eventos, datos]);
+
+  useEffect(() => () => { abortarBarrido.current = true; }, []);
+
+  // Solo vale lo medido sobre ESTA respuesta.
+  const barrido = avance && avance.para === datos ? avance : null;
+  const conAparato = barrido?.conAparato ?? VACIO;
+  const analizadas = barrido?.analizadas ?? VACIO;
 
   const nombreDe = (colaboradorId: string) => {
     const p = datos?.personas.find(x => x.id === colaboradorId);
@@ -268,6 +348,8 @@ export default function RevisionMarcaciones() {
   // columnas: por debajo el visor ocupa el ancho entero y 640 no cabe.
   const anchoFoto = zoom === 2 ? 'w-[320px] xl:w-[640px]' : 'w-[320px]';
 
+
+
   return (
     <Marco dias={dias} setDias={setDias} setIdx={setIdx} total={eventos.length} hayDatos={!!datos}>
       {datos?.truncado && (
@@ -281,6 +363,35 @@ export default function RevisionMarcaciones() {
         {/* ===== LA LÍNEA DEL DÍA ===== */}
         <div className="order-2 xl:order-1 xl:sticky xl:top-6 self-start w-full">
           <div className="bg-white rounded-xl shadow overflow-hidden">
+            {/* El barrido va DETRÁS de un clic, no automático: ver el comentario
+                del estado. Y el resumen dice cuántas NO se pudieron leer, porque
+                un «listo» que esconde quince fallos hace que el supervisor deje
+                de mirar justo las que nadie miró. */}
+            <div className="border-b border-gray-100 px-3 py-2.5">
+              {!barrido ? (
+                <button onClick={() => void barrerElDia()}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-3 py-2 text-[12px] font-semibold text-ink/75 hover:bg-gray-200">
+                  <Frame size={13} /> Buscar aparatos en estas fotos
+                </button>
+              ) : barrido.corriendo ? (
+                <div className="flex items-center justify-between gap-2 text-[12px] text-muted">
+                  <span>Mirando fotos… {barrido.hechas} de {barrido.total}</span>
+                  <button onClick={() => { abortarBarrido.current = true; }}
+                    className="font-semibold text-ink/60 hover:text-ink">Parar</button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2 text-[12px]">
+                  <span className={conAparato.size ? 'font-semibold text-amber-700' : 'text-muted'}>
+                    {conAparato.size
+                      ? `${conAparato.size} con bordes rectos, de ${analizadas.size} revisadas`
+                      : `Ninguna con bordes rectos, de ${analizadas.size} revisadas`}
+                    {barrido.sinLeer > 0 && ` · ${barrido.sinLeer} no se pudieron leer`}
+                  </span>
+                  <button onClick={() => void barrerElDia()}
+                    className="font-semibold text-ink/60 hover:text-ink">Repetir</button>
+                </div>
+              )}
+            </div>
             <ol className="max-h-[45vh] xl:max-h-[calc(100dvh-14rem)] overflow-y-auto">
               {eventos.map((ev, i) => {
                 const nuevoGrupo = i === 0 || grupoDe(ev, dias) !== grupoDe(eventos[i - 1], dias);
@@ -329,8 +440,16 @@ export default function RevisionMarcaciones() {
                             {ev.metodo !== 'ROSTRO' && ` · ${ROTULO_METODO[ev.metodo]}`}
                           </span>
                         </span>
+                        {/* «Repetida» va primero porque es un HECHO (dos
+                            marcaciones con la misma distancia hasta el último
+                            decimal), mientras «Revisar» es una sospecha. Si una
+                            fila tuviera las dos, manda el hecho. */}
                         {ev.distanciaRepetida ? (
                           <span className="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-50 text-red-700">Repetida</span>
+                        ) : conAparato.has(ev.clave) ? (
+                          <span className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-400/90 text-amber-950">
+                            <Frame size={11} strokeWidth={2.5} /> Revisar
+                          </span>
                         ) : ev.laPusoElSistema ? (
                           <span className="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700">Automática</span>
                         ) : null}

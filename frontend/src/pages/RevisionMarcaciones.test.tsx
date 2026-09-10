@@ -23,9 +23,11 @@ vi.mock('../lib/api', () => ({ default: { get: vi.fn() } }));
 vi.mock('../lib/pistaPantalla', () => ({
   UMBRAL_PISTA: 0.7,
   pistaDePantalla: vi.fn(),
+  pistaDeUrl: vi.fn(),
 }));
-import { pistaDePantalla } from '../lib/pistaPantalla';
+import { pistaDePantalla, pistaDeUrl } from '../lib/pistaPantalla';
 const mirar = pistaDePantalla as unknown as ReturnType<typeof vi.fn>;
+const mirarUrl = pistaDeUrl as unknown as ReturnType<typeof vi.fn>;
 import api from '../lib/api';
 const get = api.get as unknown as ReturnType<typeof vi.fn>;
 
@@ -59,7 +61,11 @@ function montarCon(eventos: ReturnType<typeof evento>[]) {
   return render(<RevisionMarcaciones />);
 }
 
-beforeEach(() => { get.mockReset(); mirar.mockReset(); mirar.mockResolvedValue(SIN_PISTA); });
+beforeEach(() => {
+  get.mockReset();
+  mirar.mockReset(); mirar.mockResolvedValue(SIN_PISTA);
+  mirarUrl.mockReset(); mirarUrl.mockResolvedValue(SIN_PISTA);
+});
 
 describe('revisión de marcaciones', () => {
   it('LA GUARDA: solo pide la foto de la marcación que se está mirando', async () => {
@@ -222,5 +228,82 @@ describe('la pista de "esto podría ser una pantalla"', () => {
     resolver(CON_PISTA);                       // llega la pista de la PRIMERA
     await waitFor(() => expect(mirar).toHaveBeenCalledTimes(1));
     expect(screen.queryByText(/bordes rectos/i)).toBeNull();
+  });
+});
+
+
+describe('el barrido del día', () => {
+  const pedirBarrido = async () => {
+    const u = userEvent.setup();
+    await u.click(await screen.findByRole('button', { name: /Buscar aparatos/i }));
+    return u;
+  };
+
+  it('LA GUARDA SIGUE EN PIE: no mira una sola foto hasta que se le pide', async () => {
+    // La política publicada dice que los datos biométricos «no se exponen en los
+    // listados y solo se entregan a solicitud expresa de un usuario autorizado».
+    // Si alguien hiciera esto automático al abrir la pantalla, esa frase de un
+    // documento legal en línea dejaría de ser cierta, y esta prueba se cae.
+    montarCon([
+      evento({ clave: 'r1:entrada', registroId: 'r1' }),
+      evento({ clave: 'r2:entrada', registroId: 'r2', colaboradorId: 'c2' }),
+      evento({ clave: 'r3:entrada', registroId: 'r3' }),
+    ]);
+    await screen.findByText('1 / 3');
+    await waitFor(() => expect(get.mock.calls.filter(c => String(c[0]).endsWith('/fotos'))).toHaveLength(1));
+    expect(mirarUrl).not.toHaveBeenCalled();
+  });
+
+  it('marca en la lista las que disparan, y solo esas', async () => {
+    mirarUrl.mockImplementation((url: string) => Promise.resolve(url === FOTO ? CON_PISTA : SIN_PISTA));
+    get.mockImplementation((url: string) => {
+      if (url === '/registros/revision') return Promise.resolve({ data: respuesta([
+        evento({ clave: 'r1:entrada', registroId: 'r1' }),
+        evento({ clave: 'r2:entrada', registroId: 'r2', colaboradorId: 'c2' }),
+      ]) });
+      if (url === '/registros/r1/fotos') return Promise.resolve({ data: { fotoEntrada: FOTO, fotoSalida: null } });
+      if (url === '/registros/r2/fotos') return Promise.resolve({ data: { fotoEntrada: 'data:image/jpeg;base64,otra', fotoSalida: null } });
+      return Promise.reject(new Error('url inesperada: ' + url));
+    });
+    render(<RevisionMarcaciones />);
+    await pedirBarrido();
+    expect(await screen.findByText(/1 con bordes rectos, de 2 revisadas/i)).toBeTruthy();
+    expect(screen.getAllByText(/^Revisar$/)).toHaveLength(1);
+  });
+
+  it('las que NO se pudieron leer se cuentan aparte y NO como revisadas', async () => {
+    // Un «listo» que esconde fallos es peor que no hacer nada: el supervisor
+    // dejaría de mirar justo las que nadie miró.
+    mirarUrl.mockResolvedValue(null);
+    montarCon([evento({ clave: 'r1:entrada', registroId: 'r1' })]);
+    await pedirBarrido();
+    expect(await screen.findByText(/de 0 revisadas/i)).toBeTruthy();
+    expect(screen.getByText(/1 no se pudieron leer/i)).toBeTruthy();
+  });
+
+  it('«Repetida» le gana a «Revisar»: un hecho manda sobre una sospecha', async () => {
+    mirarUrl.mockResolvedValue(CON_PISTA);
+    montarCon([evento({ clave: 'r1:entrada', registroId: 'r1', distanciaRepetida: true })]);
+    await pedirBarrido();
+    await screen.findByText(/1 con bordes rectos/i);
+    expect(screen.getByText('Repetida')).toBeTruthy();
+    expect(screen.queryByText(/^Revisar$/)).toBeNull();
+  });
+
+  it('al cambiar de rango, lo medido antes NO se queda pegado a la lista nueva', async () => {
+    // El avance lleva adentro a qué respuesta pertenece, y eso se comprueba en el
+    // render. Sin esa comprobación, las marcas del día de ayer se pintarían sobre
+    // las marcaciones de otro rango, señalando a la persona equivocada.
+    mirarUrl.mockResolvedValue(CON_PISTA);
+    montarCon([evento({ clave: 'r1:entrada', registroId: 'r1' })]);
+    const u = userEvent.setup();
+    await u.click(await screen.findByRole('button', { name: /Buscar aparatos/i }));
+    await screen.findByText(/1 con bordes rectos/i);
+    expect(screen.getAllByText(/^Revisar$/)).toHaveLength(1);
+
+    await u.click(screen.getByRole('button', { name: '7 días' }));
+    await waitFor(() => expect(screen.queryByText(/con bordes rectos/i)).toBeNull());
+    expect(screen.queryByText(/^Revisar$/)).toBeNull();
+    expect(screen.getByRole('button', { name: /Buscar aparatos/i })).toBeTruthy();
   });
 });
