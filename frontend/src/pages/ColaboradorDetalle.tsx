@@ -40,6 +40,7 @@ type Colaborador = {
   horarioId?: string | null; horario?: Horario | null; rostroEnroladoEn?: string | null; foto?: string | null;
   sedeIds?: string[];
   modalidad?: string;
+  puedeCerrarEnOtraSede?: boolean;
   creadoEn?: string;
   fechaRetiro?: string | null; motivoRetiro?: string | null;
 };
@@ -361,6 +362,10 @@ export default function ColaboradorDetalle() {
             salarioMensual: col.salarioMensual, horarioId: col.horarioId || '',
             sedeIds: col.sedeIds ?? [],
             modalidad: normalizarModalidad(col.modalidad),
+            // Tal cual, sin `?? false`: si la ficha no lo trajera, quedaría
+            // undefined, no viajaría en el PUT y el servidor no lo tocaría. Con un
+            // `?? false`, editar otro dato le quitaría el permiso a un supervisor.
+            puedeCerrarEnOtraSede: col.puedeCerrarEnOtraSede,
           });
           setModalEditar(true);
         }}

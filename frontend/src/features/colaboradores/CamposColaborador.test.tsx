@@ -85,4 +85,52 @@ describe('CamposColaborador', () => {
       expect(screen.queryByRole('group', { name: /sedes/i })).not.toBeInTheDocument();
     });
   });
+
+  describe('el permiso de cerrar el turno en otra sede', () => {
+    const dosSedes = [{ id: 's1', nombre: 'El Poblado' }, { id: 's2', nombre: 'Laureles' }];
+    const conDosSedes = (valores: Record<string, unknown>) => {
+      const onCambio = vi.fn();
+      render(
+        <CamposColaborador
+          valores={{ nombre: 'Ana', modalidad: 'PRESENCIAL', ...valores }}
+          onCambio={onCambio} horarios={horarios} sedes={dosSedes} resumenFranjas={() => ''}
+        />,
+      );
+      return onCambio;
+    };
+    const permiso = () => screen.queryByRole('switch', { name: /cerrar el turno en una sede distinta/i });
+
+    it('se ofrece a un presencial con dos o más sedes, apagado por defecto', () => {
+      conDosSedes({ sedeIds: ['s1', 's2'] });
+      expect(permiso()).toBeInTheDocument();
+      expect(permiso()).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('con una sola sede no se ofrece: no hay a dónde cruzar', () => {
+      conDosSedes({ sedeIds: ['s1'] });
+      expect(permiso()).not.toBeInTheDocument();
+    });
+
+    it('a un híbrido no se le ofrece: la regla de misma sede ya no le aplica', () => {
+      conDosSedes({ modalidad: 'HIBRIDO', sedeIds: ['s1', 's2'] });
+      expect(permiso()).not.toBeInTheDocument();
+    });
+
+    it('enseña el valor guardado', () => {
+      conDosSedes({ sedeIds: ['s1', 's2'], puedeCerrarEnOtraSede: true });
+      expect(permiso()).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('activarlo avisa el valor nuevo', async () => {
+      const onCambio = conDosSedes({ sedeIds: ['s1', 's2'] });
+      await userEvent.setup().click(permiso()!);
+      expect(onCambio).toHaveBeenCalledWith({ puedeCerrarEnOtraSede: true });
+    });
+
+    it('la ayuda de las sedes deja de prometer «la misma donde lo abrió» cuando hay permiso', () => {
+      conDosSedes({ sedeIds: ['s1', 's2'], puedeCerrarEnOtraSede: true });
+      expect(screen.getByText(/cerrar el turno en una distinta de la que lo abrió/i)).toBeInTheDocument();
+      expect(screen.queryByText(/debe cerrar el turno en la misma/i)).not.toBeInTheDocument();
+    });
+  });
 });

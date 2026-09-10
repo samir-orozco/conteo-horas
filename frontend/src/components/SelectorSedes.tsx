@@ -12,7 +12,7 @@ export type SedeOpcion = { id: string; nombre: string };
 // La selección es múltiple a propósito: quien rota entre locales abre y cierra
 // turno en cualquiera de los suyos.
 export default function SelectorSedes({
-  sedes, valor, onChange, modalidad = 'PRESENCIAL', sinRotulo = false,
+  sedes, valor, onChange, modalidad = 'PRESENCIAL', sinRotulo = false, puedeCerrarEnOtraSede = false,
 }: {
   sedes: SedeOpcion[];
   valor: string[];
@@ -23,6 +23,10 @@ export default function SelectorSedes({
   // Sin esto, la única frase de la pantalla que explica qué hace la geocerca
   // afirmaría lo contrario de lo que va a hacer el servidor.
   modalidad?: Modalidad;
+  // Cambia la promesa de la frase de ayuda de un presencial: con el permiso ya
+  // no «debe cerrar el turno en la misma donde lo abrió». Sin esto la única frase
+  // que explica la regla afirmaría lo contrario de lo que hace el servidor.
+  puedeCerrarEnOtraSede?: boolean;
 }) {
   // Sin sedes creadas no hay nada que elegir: se oculta en vez de mostrar un
   // campo vacío que solo genera dudas.
@@ -63,7 +67,11 @@ export default function SelectorSedes({
               : 'Podrá marcar desde donde sea. Si está en una de estas, queda registrado en cuál.')
           : (valor.length === 0
               ? 'Sin sedes: se le aplica la ubicación general de la empresa.'
-              : 'Podrá marcar en cualquiera de las seleccionadas, y debe cerrar el turno en la misma donde lo abrió.')}
+              // Con UNA sola sede no hay a dónde cruzar, así que el permiso no
+              // cambia nada y la frase es la de siempre.
+              : puedeCerrarEnOtraSede && valor.length >= 2
+                ? 'Podrá marcar en cualquiera de las seleccionadas, y cerrar el turno en una distinta de la que lo abrió.'
+                : 'Podrá marcar en cualquiera de las seleccionadas, y debe cerrar el turno en la misma donde lo abrió.')}
       </p>
     </div>
   );

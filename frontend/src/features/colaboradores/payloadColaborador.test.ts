@@ -69,3 +69,24 @@ describe('payloadColaborador', () => {
     });
   });
 });
+
+describe('el permiso de cerrar el turno en otra sede', () => {
+  // Lo que importa no es el objeto sino lo que VIAJA por la red: axios lo pasa por
+  // JSON.stringify, que se come las claves con undefined.
+  const viaja = (form: Record<string, unknown>) =>
+    JSON.parse(JSON.stringify(payloadColaborador(form, false))) as Record<string, unknown>;
+
+  it('si el formulario no lo trae, no viaja, y el servidor no lo toca', () => {
+    // La protección contra quitarle el permiso a un supervisor en silencio al
+    // corregirle otro dato desde un formulario que no lo cargó.
+    expect('puedeCerrarEnOtraSede' in viaja({ nombre: 'Ana', puedeCerrarEnOtraSede: undefined })).toBe(false);
+  });
+
+  it('false SÍ viaja: apagarlo a propósito tiene que llegar', () => {
+    expect(viaja({ nombre: 'Ana', puedeCerrarEnOtraSede: false }).puedeCerrarEnOtraSede).toBe(false);
+  });
+
+  it('true viaja', () => {
+    expect(viaja({ nombre: 'Ana', puedeCerrarEnOtraSede: true }).puedeCerrarEnOtraSede).toBe(true);
+  });
+});

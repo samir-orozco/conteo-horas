@@ -17,7 +17,7 @@ import CamposColaborador, { type ValoresColaborador } from '../features/colabora
 import { payloadColaborador } from '../features/colaboradores/payloadColaborador';
 import { ETIQUETA_MODALIDAD, TONO_MODALIDAD, normalizarModalidad } from '../features/colaboradores/modalidad';
 
-type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null; modalidad?: string; foto?: string | null };
+type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null; modalidad?: string; puedeCerrarEnOtraSede?: boolean; foto?: string | null };
 // Los colores del chip de contrato. Se quedan en la pantalla y no en la regla:
 // qué es urgente lo decide estadoContrato.ts, cómo se ve lo decide esto.
 const TONO_CHIP: Record<string, string> = {
@@ -33,7 +33,7 @@ type FormData = Omit<Colaborador, 'id' | 'activo'>;
 type Retirado = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
   salarioMensual: number; fechaRetiro: string | null; motivoRetiro: string | null };
 
-const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [], modalidad: 'PRESENCIAL', foto: null, fotoMini: null };
+const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [], modalidad: 'PRESENCIAL', puedeCerrarEnOtraSede: false, foto: null, fotoMini: null };
 
 // La fecha viene del backend como ISO; el input date necesita "YYYY-MM-DD"
 export const soloFecha = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 10) : '');
@@ -123,10 +123,14 @@ export default function Colaboradores() {
   }, []);
 
   const abrir = (col?: Colaborador) => {
+    // `puedeCerrarEnOtraSede` se copia TAL CUAL, sin `?? false`. Si la lista algún
+    // día deja de traerlo, queda undefined, no viaja en el PUT, y el servidor no
+    // lo toca. Con un `?? false`, corregirle el cargo a un supervisor le quitaría
+    // el permiso sin que nadie se enterara.
     setEditando(col || null);
     setErrorForm('');
     setFotoTocada(false);
-    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [], modalidad: normalizarModalidad(col.modalidad), foto: col.fotoMini ?? null, fotoMini: col.fotoMini ?? null } : EMPTY);
+    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [], modalidad: normalizarModalidad(col.modalidad), puedeCerrarEnOtraSede: col.puedeCerrarEnOtraSede, foto: col.fotoMini ?? null, fotoMini: col.fotoMini ?? null } : EMPTY);
     setModal(true);
   };
 

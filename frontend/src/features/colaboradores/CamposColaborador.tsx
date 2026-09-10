@@ -26,6 +26,10 @@ export type ValoresColaborador = {
   email?: string; telefono?: string; fechaNacimiento?: string;
   salarioMensual?: number; horarioId?: string | null;
   sedeIds?: string[]; modalidad?: string; foto?: string | null;
+  // Opcional y SIN valor por defecto a propósito: si el formulario lo inicializara
+  // en false cuando no llega, guardar cualquier otro dato le quitaría el permiso
+  // a un supervisor sin que nadie lo pidiera.
+  puedeCerrarEnOtraSede?: boolean;
 };
 
 const ENTRADA = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary';
@@ -135,10 +139,47 @@ export default function CamposColaborador({
           presencial tienen que seguir ahí. */}
       {sedes.length > 0 && modalidad !== 'REMOTO' && (
         <CampoFormulario rotulo="Sedes" grupo>
-          <SelectorSedes sinRotulo sedes={sedes} valor={valores.sedeIds ?? []} modalidad={modalidad}
-            onChange={ids => onCambio({ sedeIds: ids })} />
+          <div className="space-y-3">
+            <SelectorSedes sinRotulo sedes={sedes} valor={valores.sedeIds ?? []} modalidad={modalidad}
+              puedeCerrarEnOtraSede={valores.puedeCerrarEnOtraSede === true}
+              onChange={ids => onCambio({ sedeIds: ids })} />
+            {/* EL PERMISO DE CERRAR EN OTRA SEDE.
+                Solo para PRESENCIAL con dos o más sedes: a un híbrido la regla
+                de misma sede ya no le aplica, y con una sola sede no hay a dónde
+                cruzar. Si deja de cumplirse se esconde, pero el valor NO se
+                borra, igual que las sedes de un remoto: el día que vuelva a
+                cumplirse tiene que seguir ahí. */}
+            {modalidad === 'PRESENCIAL' && (valores.sedeIds?.length ?? 0) >= 2 && (
+              <PermisoOtraSede activo={valores.puedeCerrarEnOtraSede === true}
+                onCambio={v => onCambio({ puedeCerrarEnOtraSede: v })} />
+            )}
+          </div>
         </CampoFormulario>
       )}
     </div>
   );
 }
+
+// Fuera del componente a propósito: definido adentro, React lo trataría como un
+// tipo nuevo en cada render.
+function PermisoOtraSede({ activo, onCambio }: { activo: boolean; onCambio: (v: boolean) => void }) {
+  return (
+    <div className="flex items-start gap-3">
+      <button type="button" role="switch" aria-checked={activo}
+        aria-label="Puede cerrar el turno en una sede distinta de la que lo abrió"
+        onClick={() => onCambio(!activo)}
+        className={`relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+          activo ? 'bg-primary' : 'bg-gray-300'}`}>
+        <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+          activo ? 'translate-x-4' : ''}`} />
+      </button>
+      <div className="text-xs leading-snug">
+        <p className="font-semibold text-ink">Puede cerrar el turno en otra sede</p>
+        <p className="text-muted mt-0.5">
+          Para quien recorre varias sedes en el mismo turno, como un supervisor. La salida igual tiene que marcarse dentro de una de sus sedes.
+        </p>
+      </div>
+    </div>
+  );
+}
+
