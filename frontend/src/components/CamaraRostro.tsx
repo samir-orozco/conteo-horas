@@ -515,6 +515,22 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
         {errorExterno ?? mensaje}
       </p>
 
+      {/* AVISO DE QUE LA FOTO QUEDA GUARDADA.
+          No es decoración legal: es la única defensa que sirve contra un fraude
+          CON CÓMPLICE. Todo lo que se le pueda pedir a alguien que sepa o tenga
+          (un PIN, una clave, un segundo factor) el cómplice se lo presta con
+          gusto, porque quiere que lo marquen. Lo que no se puede delegar es
+          estar parado frente a la cámara: la foto graba la cara de quien oprime
+          el botón, y aquí se enteran los DOS de que eso queda.
+          Va fuera de todo condicional de estado a propósito. Si solo apareciera
+          cuando la cámara ya funciona, no lo vería justo quien está a punto de
+          irse por el camino de la cédula, que es el ataque más barato. */}
+      {modo === 'login' && (
+        <p className="text-[11px] text-center text-muted max-w-xs">
+          Cada marcación guarda una foto que tu empresa puede revisar.
+        </p>
+      )}
+
       {/* Aviso fijo mientras baja el modelo pesado. Va aquí y no dentro del bucle
           de cuadros porque allí solo aparecía cuando el encuadre ya estaba bien:
           quien se está acomodando —el que de verdad necesita saber que falta— no
