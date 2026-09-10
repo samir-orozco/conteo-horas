@@ -27,3 +27,24 @@ export function cumpleCruce(r: ConSedes, elegidas: string[]): boolean {
   if (!elegidas.includes(CRUCE_DISTINTAS)) return true;
   return cruzoDeSede(r);
 }
+
+export type OpcionSede = SedeCorta & { activa: boolean };
+
+/**
+ * Las sedes que ofrece el filtro: las activas, más las que aparecen en las filas.
+ *
+ * El servidor solo lista las activas, pero desactivar una sede no borra sus
+ * registros: el mes anterior sigue diciendo «Laureles» en la columna. Sin esto
+ * no había forma de aislar esas jornadas, y con una sola sede activa desaparecía
+ * también «En sedes distintas» aunque hubiera filas que cruzaron.
+ */
+export function opcionesDeSede(activas: SedeCorta[], filas: ConSedes[]): OpcionSede[] {
+  const porId = new Map<string, OpcionSede>();
+  for (const s of activas) porId.set(s.id, { id: s.id, nombre: s.nombre, activa: true });
+  for (const r of filas) {
+    for (const s of [r.sede, r.sedeSalida]) {
+      if (s && !porId.has(s.id)) porId.set(s.id, { id: s.id, nombre: s.nombre, activa: false });
+    }
+  }
+  return [...porId.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+}

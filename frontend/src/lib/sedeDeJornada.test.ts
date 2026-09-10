@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cruzoDeSede, cumpleSede, cumpleCruce, CRUCE_DISTINTAS } from './sedeDeJornada';
+import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, CRUCE_DISTINTAS } from './sedeDeJornada';
 
 const POBLADO = { id: 's1', nombre: 'El Poblado' };
 const LAURELES = { id: 's2', nombre: 'Laureles' };
@@ -44,5 +44,32 @@ describe('cumpleCruce', () => {
     expect(cumpleCruce({ sede: POBLADO, sedeSalida: LAURELES }, [CRUCE_DISTINTAS])).toBe(true);
     expect(cumpleCruce({ sede: POBLADO, sedeSalida: POBLADO }, [CRUCE_DISTINTAS])).toBe(false);
     expect(cumpleCruce({ sede: POBLADO }, [CRUCE_DISTINTAS])).toBe(false);
+  });
+});
+
+describe('opcionesDeSede', () => {
+  const BELEN = { id: 's3', nombre: 'Belén' };
+
+  it('sin filas, son las sedes activas', () => {
+    expect(opcionesDeSede([POBLADO, LAURELES], [])).toEqual([
+      { ...POBLADO, activa: true }, { ...LAURELES, activa: true },
+    ]);
+  });
+  it('una sede desactivada que aparece en las filas se sigue ofreciendo, marcada como tal', () => {
+    // El servidor solo lista las activas, pero los registros viejos conservan su
+    // sede: sin esto no habría forma de aislar las jornadas de una sede cerrada.
+    expect(opcionesDeSede([POBLADO], [{ sede: POBLADO, sedeSalida: LAURELES }])).toEqual([
+      { ...POBLADO, activa: true }, { ...LAURELES, activa: false },
+    ]);
+  });
+  it('también si solo aparece como sede de apertura', () => {
+    expect(opcionesDeSede([POBLADO], [{ sede: BELEN }]).map(s => s.id)).toEqual(['s3', 's1']);
+  });
+  it('no repite la que está activa y además en las filas', () => {
+    expect(opcionesDeSede([POBLADO], [{ sede: POBLADO, sedeSalida: POBLADO }])).toHaveLength(1);
+  });
+  it('van en orden alfabético, con las tildes en su sitio', () => {
+    expect(opcionesDeSede([LAURELES, POBLADO], [{ sede: BELEN }]).map(s => s.nombre))
+      .toEqual(['Belén', 'El Poblado', 'Laureles']);
   });
 });

@@ -9,7 +9,7 @@ import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import MenuFiltros from '../components/MenuFiltros';
 import MenuAcciones from '../components/MenuAcciones';
-import { cruzoDeSede, cumpleSede, cumpleCruce, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
+import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
 import SelectorColaborador from '../components/SelectorColaborador';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
 
@@ -425,6 +425,7 @@ export default function Registros() {
   // La columna de sede solo aparece si alguna jornada del rango tiene sede: en
   // una empresa de una sola oficina sería una columna vacía en cada fila.
   const haySedes = registros.some(r => r.sede || r.sedeSalida);
+  const opcionesSede = opcionesDeSede(sedes, registros);
   const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.minutosAlmuerzoAqui > 0));
 
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
@@ -457,8 +458,9 @@ export default function Registros() {
               { valor: 'ESTIMADA', texto: 'No marcó salida' }, { valor: 'SIN_SALIDA', texto: 'Sin salida' }] },
             // Un grupo sin opciones no se pinta, así que en una empresa sin sedes
             // estos dos no aparecen, y con una sola no hay cruce que buscar.
-            { clave: 'sede', titulo: 'Sede', opciones: sedes.map(s => ({ valor: s.id, texto: s.nombre })) },
-            { clave: 'cruce', titulo: 'Apertura y cierre', opciones: sedes.length > 1
+            { clave: 'sede', titulo: 'Sede', opciones: opcionesSede.map(s => ({
+              valor: s.id, texto: s.activa ? s.nombre : `${s.nombre} (desactivada)` })) },
+            { clave: 'cruce', titulo: 'Apertura y cierre', opciones: opcionesSede.length > 1
               ? [{ valor: CRUCE_DISTINTAS, texto: 'En sedes distintas' }] : [] },
           ]}
           seleccion={{ llegada: filtroLlegada, salida: filtroSalida, sede: filtroSede, cruce: filtroCruce }}
