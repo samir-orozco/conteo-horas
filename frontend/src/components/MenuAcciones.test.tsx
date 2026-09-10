@@ -78,4 +78,23 @@ describe('el menú de los tres puntos', () => {
     await userEvent.setup().click(boton);
     expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Editar' }));
   });
+  it('con el teclado, sacar el foco del menú lo cierra: no quedan dos abiertos a la vez', async () => {
+    const u = userEvent.setup();
+    render(
+      <>
+        <MenuAcciones etiqueta="Acciones de Ana" acciones={[{ clave: 'editar', texto: 'Editar', onElegir: vi.fn() }]} />
+        <MenuAcciones etiqueta="Acciones de Luis" acciones={[{ clave: 'editar', texto: 'Editar', onElegir: vi.fn() }]} />
+      </>,
+    );
+    await u.tab();                  // al botón de Ana
+    await u.keyboard('{Enter}');    // abre, y el foco pasa a su primera opción
+    expect(screen.getByRole('menu', { name: 'Acciones de Ana' })).toBeInTheDocument();
+    // El menú vive al final del body, así que Shift+Tab lleva al botón de Luis.
+    // Activar un botón con el teclado no produce mousedown: sin mirar el foco,
+    // nada cerraba el de Ana.
+    await u.tab({ shift: true });
+    expect(screen.queryByRole('menu', { name: 'Acciones de Ana' })).toBeNull();
+    await u.keyboard('{Enter}');
+    expect(screen.getAllByRole('menu')).toHaveLength(1);
+  });
 });

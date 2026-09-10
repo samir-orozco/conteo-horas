@@ -65,18 +65,23 @@ export default function MenuAcciones({ acciones, etiqueta = 'Más acciones' }: {
       setAbierto(false);
       boton.current?.focus();
     };
-    const alTocar = (e: MouseEvent) => {
+    // Fuera es fuera, llegue como llegue: con el mouse o con el teclado. Activar
+    // un botón con Enter no produce mousedown, así que mirando solo el mouse,
+    // abrir con el teclado el menú de otra fila dejaba los dos abiertos.
+    const siEsFuera = (e: Event) => {
       const t = e.target as Node;
       if (menu.current?.contains(t) || boton.current?.contains(t)) return;
       setAbierto(false);
     };
     document.addEventListener('keydown', alPulsar);
-    document.addEventListener('mousedown', alTocar);
+    document.addEventListener('mousedown', siEsFuera);
+    document.addEventListener('focusin', siEsFuera);
     window.addEventListener('scroll', cerrar, true);
     window.addEventListener('resize', cerrar);
     return () => {
       document.removeEventListener('keydown', alPulsar);
-      document.removeEventListener('mousedown', alTocar);
+      document.removeEventListener('mousedown', siEsFuera);
+      document.removeEventListener('focusin', siEsFuera);
       window.removeEventListener('scroll', cerrar, true);
       window.removeEventListener('resize', cerrar);
     };
