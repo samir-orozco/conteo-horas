@@ -514,6 +514,10 @@ De los 185, **184 son de código commiteado y 1 viene de trabajo en curso** en
 `routes/admin.ts` el día que se congeló. Por eso el tope es 185 y no 184: la
 regla es «ni uno más que hoy», no castigar lo que está a medias.
 
+**Bajó a 184 el 10 de septiembre de 2026.** Ese `any` de `routes/admin.ts` se
+quitó al integrar el borrado de empresas, y se bajó el número en el mismo commit,
+como dice la regla de abajo.
+
 ### El frontend tiene el problema contrario, y sigue sin resolver
 
 `frontend` sale con **66 errores preexistentes**, o sea que su `npm run lint`
