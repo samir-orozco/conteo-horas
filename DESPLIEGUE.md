@@ -19,6 +19,12 @@ Guía paso a paso. Sigue el orden.
    - Crea la base de datos (ej. `usuario_horapro`).
    - Crea un usuario con contraseña fuerte y asígnalo a la BD con **ALL PRIVILEGES**.
 2. Anota: nombre de BD, usuario, contraseña. El host es `localhost`.
+3. **`innodb_snapshot_isolation` tiene que seguir en 0.** Se comprobó en producción el
+   10 de septiembre de 2026 con `SELECT @@GLOBAL.innodb_snapshot_isolation;` (dio 0).
+   MariaDB lo enciende por defecto desde la 11.6.2, y con 1 una transacción que borra
+   puede abortar con el error 1020 si otra conexión escribe a la vez: se midió con el
+   borrado de empresas mientras el kiosco de otra empresa marcaba. Si el hosting
+   propone subir de versión, revisar este valor antes de aceptar.
 
 ## 3. Backend (API Node)
 

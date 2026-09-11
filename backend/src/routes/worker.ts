@@ -18,6 +18,10 @@ import { asegurarDiaSinFallar } from '../utils/materializarDias';
 const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
+// Un token de kiosco dura 12 horas y sigue siendo válido aunque la persona ya no
+// exista: pasa cuando el super admin elimina la empresa con una sesión abierta.
+const SESION_INVALIDA = 'Tu sesión ya no es válida. Vuelve a identificarte en el kiosco.';
+
 const TIPOS_NOVEDAD = new Set([
   'VACACIONES', 'INCAPACIDAD_EPS', 'INCAPACIDAD_ARL', 'LICENCIA_MATERNIDAD', 'LICENCIA_PATERNIDAD',
   'LICENCIA_LUTO', 'CALAMIDAD', 'MEDICO', 'PERSONAL', 'NO_REMUNERADO', 'OTRO',
@@ -483,9 +487,12 @@ export default async function workerRoutes(app: FastifyInstance) {
         where: { id: payload.id },
         include: { horario: { include: { franjas: true } } },
       });
-      // Si el colaborador no aparece, se trata como PRESENCIAL: ante la duda, la
-      // opción segura es la que valida, no la que deja pasar.
-      const modalidad = col?.modalidad ?? MODALIDAD_POR_DEFECTO;
+      // Si el colaborador no aparece, la sesión es de alguien que ya no existe (se
+      // eliminó su empresa con el kiosco abierto). Seguir de largo terminaba en un
+      // 500 contra la llave foránea al escribir la marca: se corta aquí, antes de
+      // escribir nada, con un mensaje que la persona entienda.
+      if (!col) return reply.code(401).send({ error: SESION_INVALIDA });
+      const modalidad = col.modalidad ?? MODALIDAD_POR_DEFECTO;
 
       // ===== Dónde está marcando =====
       //
@@ -774,6 +781,9 @@ export default async function workerRoutes(app: FastifyInstance) {
     if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
     const { tipo, descripcion } = (request.body ?? {}) as { tipo?: string; descripcion?: string };
     if (!tipo || !TIPOS_NOVEDAD.has(tipo)) return reply.code(400).send({ error: 'Motivo inválido' });
+    // Igual que al marcar: sin esto, crear la novedad reventaba contra la llave foránea.
+    const existe = await prisma.colaborador.findUnique({ where: { id: payload.id }, select: { id: true } });
+    if (!existe) return reply.code(401).send({ error: SESION_INVALIDA });
     const permiso = await crearNovedad(payload.id, tipo, descripcion ?? '');
     return reply.code(201).send({ ok: true, id: permiso.id });
   });

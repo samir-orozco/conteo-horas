@@ -29,7 +29,7 @@ import { cerrarTurnosOlvidados } from './utils/cierreTurnos';
 import { avisarContratosDeTodas } from './routes/contratos';
 import { avisarAlmuerzosSinRegreso } from './utils/cierreAlmuerzo';
 import { mantenerVentana } from './utils/materializarDias';
-import { estadoEfectivo, accesoPermitido } from './utils/suscripcion';
+import { decidirAccesoEmpresa } from './utils/accesoEmpresa';
 
 // Reexportado por compatibilidad: media base de código hace `import { prisma }
 // from '../index'`. El cliente ahora vive en `./prisma` (ver el porqué allí).
@@ -101,15 +101,8 @@ app.decorate('requireEmpresa', async (request: any, reply: any) => {
     prisma.empresa.findUnique({ where: { id: payload.empresaId } }),
     prisma.suscripcion.findUnique({ where: { empresaId: payload.empresaId } }),
   ]);
-  if (!empresa?.activa) {
-    return reply.status(403).send({ error: 'Empresa inactiva' });
-  }
-  if (!empresa.exentaPago && suscripcion && !accesoPermitido(estadoEfectivo(suscripcion))) {
-    return reply.status(402).send({
-      error: 'Suscripción suspendida por falta de pago. Contacta a HoraPro.',
-      codigo: 'SUSCRIPCION_SUSPENDIDA',
-    });
-  }
+  const negado = decidirAccesoEmpresa(empresa, suscripcion);
+  if (negado) return reply.status(negado.status).send(negado.cuerpo);
   request.empresaId = payload.empresaId;
   request.usuarioId = payload.id;
   request.usuarioNombre = payload.nombre;
