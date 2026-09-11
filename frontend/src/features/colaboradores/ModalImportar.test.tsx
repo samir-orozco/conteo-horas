@@ -104,6 +104,17 @@ describe('la tabla que queda después de subir', () => {
     expect(within(sel).getByRole('option', { name: /Sin horario/i })).toBeInTheDocument();
   });
 
+  it('sin sede elegida queda en la principal: la fila lo dice corto y arriba completo', async () => {
+    // En la columna de cada fila, «Principal (por defecto)» se cortaba (pedido del
+    // dueño, 11 de septiembre de 2026). En «Aplicar a todos» sí cabe entero.
+    montar();
+    await subir();
+    const deLaFila = within(screen.getByLabelText('Sede de la fila 1')).getByRole('option', { name: 'Principal' });
+    expect(deLaFila).toHaveAttribute('value', '');
+    const deTodos = within(screen.getByLabelText(/Sede para todos/i)).getByRole('option', { name: 'Principal (por defecto)' });
+    expect(deTodos).toHaveAttribute('value', '');
+  });
+
   it('el horario global se lo pone a todos de un golpe', async () => {
     montar();
     await subir();

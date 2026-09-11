@@ -379,8 +379,9 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
                               value={fila[CLAVE_SEDE] ?? ''}
                               onChange={e => cambiar(i, CLAVE_SEDE, e.target.value)}
                               className="w-full min-w-[9rem] border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                              {/* Sin elegir, el servidor la deja en la Sede principal. */}
-                              <option value="">Principal (por defecto)</option>
+                              {/* Sin elegir, el servidor la deja en la Sede principal. Corto a
+                                  propósito: en la columna, «Principal (por defecto)» se cortaba. */}
+                              <option value="">Principal</option>
                               {sedes.map(x => <option key={x.id} value={x.id}>{x.nombre}</option>)}
                             </select>
                           </td>
