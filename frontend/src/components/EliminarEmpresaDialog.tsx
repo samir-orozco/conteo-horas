@@ -44,7 +44,8 @@ export default function EliminarEmpresaDialog({
 
   // La misma comparación que hace el servidor, solo para habilitar el botón.
   // Si alguien la saltara desde la consola, la ruta rechaza igual.
-  const coincide = !!resumen && confirmacion.trim() === resumen.nit.trim();
+  const coincide = !!resumen && confirmacion.trim() !== '' && confirmacion.trim() === resumen.nit.trim();
+  const sinNit = !!resumen && resumen.nit.trim() === '';
 
   // Mientras borra no se puede cerrar: cerrar no detiene el borrado, y si
   // fallaba, el error se perdía o aparecía en el modal de otra empresa.
@@ -108,6 +109,12 @@ export default function EliminarEmpresaDialog({
             <p className="text-sm text-muted mt-4">
               Esta información no se puede recuperar. Si solo quieres quitarle el acceso, desactívala.
             </p>
+
+            {sinNit && (
+              <p className="text-sm text-red-600 mt-4">
+                Esta empresa no tiene NIT guardado. Ponle uno desde su ficha para poder eliminarla.
+              </p>
+            )}
 
             <label htmlFor="confirmar-nit" className="block text-sm text-ink mt-4">
               Para confirmar, escribe el NIT: <strong className="font-semibold">{resumen.nit}</strong>

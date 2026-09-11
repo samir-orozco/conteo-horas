@@ -20,6 +20,7 @@
 // empresas.
 //
 // Pase lo que pase, al final borra lo que creó.
+import { Prisma } from '@prisma/client';
 import { prisma } from '../src/prisma';
 import { borrarEmpresaEnCascada } from '../src/utils/borrarEmpresaEnCascada';
 
@@ -139,6 +140,7 @@ async function main() {
 
     const t0 = Date.now();
     const borrado = await prisma.$transaction(tx => borrarEmpresaEnCascada(tx, borrada.empresaId, { lote: 2 }), { timeout: 60_000 });
+    if (!borrado) throw new Error('la cascada no encontró la empresa recién creada');
     console.log(`Borrado ejecutado en ${Date.now() - t0} ms, en lotes de 2.\n`);
 
     const despuesB = await contar(borrada);
@@ -160,6 +162,50 @@ async function main() {
       prisma.diaFestivo.count({ where: { id: { in: testigo.filas.dias_festivos }, empresaId: testigo.empresaId } }),
     ]);
     console.log(`    ${marca(suyos[0] === 1 && suyos[1] === 1)} su usuario y su festivo siguen siendo de ella  (${suyos.join(', ')})`);
+
+    // ---------- Carrera: la empresa escribe mientras se la borra ----------
+    // Las lecturas de la cascada ven la foto del principio. Sin el candado sobre
+    // la empresa, un festivo creado a mitad no se veía, y la llave SET NULL lo
+    // dejaba sin empresa: un festivo para TODAS las empresas.
+    const carrera = await sembrar('carrera', afiliadoId);
+    empresas.push(carrera.empresaId);
+    let soltar!: () => void;
+    const suelta = new Promise<void>(r => { soltar = r; });
+    let avisar!: () => void;
+    const enPausa = new Promise<void>(r => { avisar = r; });
+    // Pausa la cascada en su primera lectura, que va justo después del candado.
+    const conPausa = (tx: Prisma.TransactionClient) => new Proxy(tx, {
+      get(objetivo, modelo, receptor) {
+        const valor = Reflect.get(objetivo, modelo, receptor);
+        if (modelo !== 'colaborador') return valor;
+        return new Proxy(valor as object, {
+          get(o, metodo, r) {
+            const f = Reflect.get(o, metodo, r);
+            if (metodo !== 'findMany' || typeof f !== 'function') return f;
+            return async (...args: unknown[]) => { avisar(); await suelta; return (f as (...a: unknown[]) => unknown).apply(o, args); };
+          },
+        });
+      },
+    });
+    const borrandoCarrera = prisma.$transaction(tx => borrarEmpresaEnCascada(conPausa(tx), carrera.empresaId), { timeout: 60_000 });
+    await enPausa;
+    const nombreFestivo = `Festivo ${SUFIJO}-creado-a-mitad`;
+    const insercion = prisma.diaFestivo
+      .create({ data: { empresaId: carrera.empresaId, fecha: new Date(Date.UTC(2099, 0, 2, 5)), nombre: nombreFestivo } })
+      .then(() => 'ENTRÓ', (e: { code?: string }) => `FALLÓ ${e.code ?? ''}`.trim());
+    const mientras = await Promise.race([insercion, new Promise<string>(r => setTimeout(() => r('ESPERANDO'), 1500))]);
+    soltar();
+    await borrandoCarrera;
+    const alFinal = await insercion;
+    const huerfanos = await prisma.diaFestivo.count({ where: { nombre: nombreFestivo } });
+    console.log('\n  Carrera: un festivo creado mientras se borra la empresa');
+    console.log(`    ${marca(mientras === 'ESPERANDO')} la inserción espera el candado de la empresa  (${mientras})`);
+    console.log(`    ${marca(alFinal.startsWith('FALLÓ'))} cuando el borrado termina, falla por la llave  (${alFinal})`);
+    console.log(`    ${marca(huerfanos === 0)} no queda ningún festivo sin empresa  (${huerfanos})`);
+
+    // Otra pestaña ya la borró: la cascada lo dice con null y no revienta.
+    const deNuevo = await prisma.$transaction(tx => borrarEmpresaEnCascada(tx, borrada.empresaId), { timeout: 60_000 });
+    console.log(`    ${marca(deNuevo === null)} borrar una empresa que ya no existe devuelve null  (${JSON.stringify(deNuevo)})`);
 
     const afiliadoVivo = await prisma.afiliado.count({ where: { id: afiliadoId } });
     console.log(`\n  ${marca(afiliadoVivo === 1)} el afiliado sobrevive al borrado de su referido  (${afiliadoVivo})`);

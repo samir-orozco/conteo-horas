@@ -38,7 +38,19 @@ export async function borrarEmpresaEnCascada(
   tx: Prisma.TransactionClient,
   empresaId: string,
   { lote = LOTE_BORRADO }: { lote?: number } = {},
-): Promise<BorradoPorTabla> {
+): Promise<BorradoPorTabla | null> {
+  // Lo primero es el candado sobre la fila de la empresa, ANTES de juntar ids.
+  // Las lecturas de abajo ven la foto del principio de la transacción: sin el
+  // candado, un festivo o un usuario que la empresa creara a mitad del borrado
+  // no se veía, y la llave SET NULL lo dejaba sin empresa, o sea un festivo
+  // para TODAS las empresas. Con el candado, toda inserción en una tabla hija
+  // espera y después falla por la llave. `registros` no tiene llave hacia
+  // `empresas`, así que el candado no se cruza con el kiosco de nadie.
+  //
+  // Si la empresa ya no está (otra pestaña la borró primero), devuelve null.
+  const existe = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM empresas WHERE id = ${empresaId} FOR UPDATE`;
+  if (existe.length === 0) return null;
+
   const borrado: BorradoPorTabla = {};
   const ids = (filas: { id: string }[]) => filas.map(f => f.id);
   const enLotes = async (tabla: string, lista: string[], borrar: (parte: string[]) => Promise<{ count: number }>) => {
@@ -47,8 +59,8 @@ export async function borrarEmpresaEnCascada(
     borrado[tabla] = (borrado[tabla] ?? 0) + n;
   };
   const deSuGente = { colaborador: { empresaId } };
-  // Las marcaciones de su gente, y también las que se hicieron en sus sedes.
-  const susRegistros = { OR: [deSuGente, { sede: { empresaId } }] };
+  const deSusSedes = { sede: { empresaId } };
+  const unicos = (...listas: { id: string }[][]) => [...new Set(listas.flat().map(f => f.id))];
 
   const colaboradores = ids(await tx.colaborador.findMany({ where: { empresaId }, select: { id: true } }));
   const sedes = ids(await tx.sede.findMany({ where: { empresaId }, select: { id: true } }));
@@ -62,12 +74,21 @@ export async function borrarEmpresaEnCascada(
     parte => tx.vinculacionEvento.deleteMany({ where: { id: { in: parte } } }));
   await enLotes('dias_esperados', ids(await tx.diaEsperado.findMany({ where: deSuGente, select: { id: true } })),
     parte => tx.diaEsperado.deleteMany({ where: { id: { in: parte } } }));
-  await enLotes('registro_cambios', ids(await tx.registroCambio.findMany({ where: { registro: susRegistros }, select: { id: true } })),
-    parte => tx.registroCambio.deleteMany({ where: { id: { in: parte } } }));
+  // Las marcaciones de su gente y las que se hicieron en sus sedes, en lecturas
+  // separadas. Con un OR, Prisma arma dos LEFT JOIN que el motor no puede usar
+  // desde ningún índice y recorre la tabla de todas las empresas: medido en la
+  // revisión, 3,2 s con un millón de marcaciones contra medio milisegundo
+  // partida.
+  await enLotes('registro_cambios', unicos(
+    await tx.registroCambio.findMany({ where: { registro: deSuGente }, select: { id: true } }),
+    await tx.registroCambio.findMany({ where: { registro: deSusSedes }, select: { id: true } }),
+  ), parte => tx.registroCambio.deleteMany({ where: { id: { in: parte } } }));
   await enLotes('permisos', ids(await tx.permiso.findMany({ where: deSuGente, select: { id: true } })),
     parte => tx.permiso.deleteMany({ where: { id: { in: parte } } }));
-  await enLotes('registros', ids(await tx.registro.findMany({ where: susRegistros, select: { id: true } })),
-    parte => tx.registro.deleteMany({ where: { id: { in: parte } } }));
+  await enLotes('registros', unicos(
+    await tx.registro.findMany({ where: deSuGente, select: { id: true } }),
+    await tx.registro.findMany({ where: deSusSedes, select: { id: true } }),
+  ), parte => tx.registro.deleteMany({ where: { id: { in: parte } } }));
   // Llave compuesta, sin id: se borra por colaborador y por sede, que son el
   // comienzo de su clave y de su índice.
   await enLotes('colaboradores_sedes', colaboradores, parte => tx.colaboradorSede.deleteMany({ where: { colaboradorId: { in: parte } } }));
@@ -96,10 +117,8 @@ export async function borrarEmpresaEnCascada(
   if (suscripcion) {
     await enLotes('pagos', ids(await tx.pago.findMany({ where: { suscripcionId: suscripcion.id }, select: { id: true } })),
       parte => tx.pago.deleteMany({ where: { id: { in: parte } } }));
-    await tx.suscripcion.delete({ where: { id: suscripcion.id } });
-    borrado.suscripciones = 1;
+    borrado.suscripciones = (await tx.suscripcion.deleteMany({ where: { id: suscripcion.id } })).count;
   }
-  await tx.empresa.delete({ where: { id: empresaId } });
-  borrado.empresas = 1;
+  borrado.empresas = (await tx.empresa.deleteMany({ where: { id: empresaId } })).count;
   return borrado;
 }

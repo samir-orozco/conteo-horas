@@ -12,7 +12,11 @@ import { Writable } from 'node:stream';
 // (8.6). Aquí se prueba lo que decide la ruta: qué responde, a quién deja pasar
 // y qué deja escrito.
 
-const { prisma, borrarEmpresaEnCascada, estado } = vi.hoisted(() => {
+const { prisma, borrarEmpresaEnCascada, estado, TX } = vi.hoisted(() => {
+  // La transacción que recibe la cascada. Identificable a propósito: si la ruta
+  // le pasara el cliente global, cada borrado iría en autocommit y un fallo a
+  // mitad dejaría la empresa borrada a medias.
+  const TX = { soyLaTransaccion: true };
   const estado = {
     empresa: null as null | { id: string; nombre: string; nit: string },
     usuario: null as null | { rol: string; activo: boolean },
@@ -30,13 +34,13 @@ const { prisma, borrarEmpresaEnCascada, estado } = vi.hoisted(() => {
     registro: { count: vi.fn(async () => estado.registros) },
     pago: { aggregate: vi.fn(async () => suma(estado.pagos)) },
     comision: { aggregate: vi.fn(async () => suma(estado.comisiones)) },
-    $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+    $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>, _opciones?: unknown) => {
       if (estado.transaccionFalla) throw estado.transaccionFalla;
-      return fn({});
+      return fn(TX);
     }),
   };
-  const borrarEmpresaEnCascada = vi.fn(async () => ({ registros: 4830 }));
-  return { prisma, borrarEmpresaEnCascada, estado };
+  const borrarEmpresaEnCascada = vi.fn(async (): Promise<Record<string, number> | null> => ({ registros: 4830 }));
+  return { prisma, borrarEmpresaEnCascada, estado, TX };
 });
 vi.mock('../prisma', () => ({ prisma }));
 vi.mock('../utils/borrarEmpresaEnCascada', () => ({ borrarEmpresaEnCascada }));
@@ -118,7 +122,10 @@ describe('el borrado', () => {
     const { app } = await montar();
     const r = await borrar(app, { confirmacion: NIT });
     expect(r.statusCode).toBe(204);
-    expect(borrarEmpresaEnCascada).toHaveBeenCalledWith(expect.anything(), 'emp1');
+    expect(borrarEmpresaEnCascada).toHaveBeenCalledWith(TX, 'emp1');
+    // La cuenta que se comprueba es la del token, no otra.
+    expect(prisma.usuario.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'sa1' } }));
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({ timeout: 60_000 }));
     await app.close();
   });
 
@@ -162,6 +169,18 @@ describe('el borrado', () => {
     await app.close();
   });
 
+  it('si la empresa ya no existe al empezar el borrado, responde 404 y no deja constancia', async () => {
+    // Dos pestañas confirman a la vez: la segunda llega cuando la primera ya
+    // borró. Antes respondía 500 diciendo «no se borró nada», o 204 duplicando
+    // la constancia con la plata. La cascada lo detecta al pedir el candado.
+    borrarEmpresaEnCascada.mockResolvedValueOnce(null);
+    const { app, lineas } = await montar();
+    const r = await borrar(app, { confirmacion: NIT });
+    expect(r.statusCode).toBe(404);
+    expect(lineas.some(l => l.level >= 40 && l.empresaId === 'emp1')).toBe(false);
+    await app.close();
+  });
+
   it('si la transacción falla responde 500 diciendo que no se borró nada, y deja el error en el log', async () => {
     estado.transaccionFalla = new Error('Lock wait timeout exceeded; try restarting transaction');
     const { app, lineas } = await montar();
@@ -181,6 +200,7 @@ describe('el borrado', () => {
       nit: NIT, nombre: 'Panadería El Trigo', colaboradores: 12, registros: 4830,
       pagosAprobados: 3, montoPagosAprobados: 899_700, comisiones: 2, montoComisiones: 59_980,
       porEmail: 'dueno@horapro.co',
+      filasBorradas: { registros: 4830 },
     });
     await app.close();
   });

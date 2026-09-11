@@ -292,6 +292,9 @@ export default async function adminRoutes(app: FastifyInstance) {
       return reply.status(500).send({ error: 'No se pudo eliminar la empresa y no se borró nada. Intenta de nuevo en un momento.' });
     }
 
+    // La empresa ya no estaba al pedir el candado: otra pestaña la borró primero.
+    if (!borrado) return reply.status(404).send({ error: 'Empresa no encontrada' });
+
     // Queda huella siempre: es irreversible y no hay forma de reconstruir qué
     // había. Lleva la plata porque el reporte de ingresos y la billetera del
     // afiliado cambian con este borrado, y esta línea es lo que explica por qué.

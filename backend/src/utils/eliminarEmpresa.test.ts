@@ -63,3 +63,14 @@ describe('lo que llega del cuerpo de la petición no es de fiar', () => {
     }
   });
 });
+
+describe('una empresa con el NIT en blanco', () => {
+  it('no se confirma sin escribir nada: un NIT en blanco no coincide con nada', () => {
+    // El registro deja pasar un NIT de puros espacios y el super admin puede
+    // crear empresas sin NIT. Sin esto, con el campo vacío la comparación daba
+    // igual y el borrado se confirmaba sin escribir nada.
+    expect(decidirEliminacion('', '')).toMatchObject({ permitido: false });
+    expect(decidirEliminacion('   ', '')).toMatchObject({ permitido: false });
+    expect(decidirEliminacion('   ', '   ')).toMatchObject({ permitido: false });
+  });
+});

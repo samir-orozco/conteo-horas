@@ -18,6 +18,9 @@ export function decidirEliminacion(nit: string, confirmacion: unknown): Veredict
   // Se compara el NIT tal como está guardado, sin interpretar guiones ni ceros:
   // el punto de escribirlo a mano es que no se pueda hacer de memoria. Lo único
   // que se perdona son los espacios de copiar y pegar.
-  if (confirmacion.trim() !== nit.trim()) return { permitido: false, mensaje: MENSAJE };
+  // Un NIT en blanco no coincide con nada: si no, con el campo vacío se confirmaba
+  // sin escribir nada.
+  const escrito = confirmacion.trim();
+  if (!escrito || escrito !== nit.trim()) return { permitido: false, mensaje: MENSAJE };
   return { permitido: true };
 }

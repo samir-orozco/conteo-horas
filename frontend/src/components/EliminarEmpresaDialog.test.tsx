@@ -137,6 +137,12 @@ describe('la confirmación escrita', () => {
     expect(botonEliminar()).toBeEnabled();
   });
 
+  it('con el NIT de la empresa en blanco, el botón no se habilita sin escribir nada, y dice por qué', () => {
+    render(<EliminarEmpresaDialog {...props} resumen={resumen({ nit: '   ' })} />);
+    expect(botonEliminar()).toBeDisabled();
+    expect(screen.getByText(/no tiene NIT/i)).toBeInTheDocument();
+  });
+
   it('el campo dice cuál es el NIT que hay que escribir', () => {
     render(<EliminarEmpresaDialog {...props} />);
     expect(screen.getByText(/901555777-3/)).toBeInTheDocument();
