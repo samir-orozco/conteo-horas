@@ -182,6 +182,139 @@ describe('calcularHorasEsperadas — permisos', () => {
   });
 });
 
+// La novedad que deja el kiosco cuando alguien se va antes de hora cubre solo el
+// final de su jornada. Mientras se leyó como de día completo, aprobarla borraba
+// el día entero de lo exigido, y las horas que sí trabajó quedaban a su favor
+// para tapar deudas de otros días del período.
+describe('calcularHorasEsperadas — novedades de parte del día', () => {
+  const parcial = (fecha: string, tipo: string, horaInicio: string | null, horaFin: string | null, fechaFin = fecha) => ({
+    fechaInicio: new Date(`${fecha}T05:00:00.000Z`),
+    fechaFin: new Date(`${fechaFin}T05:00:00.000Z`),
+    horaInicio, horaFin, tipo,
+  });
+  // 08:00–17:00 con una hora de almuerzo sin ventana: el día pide 480 min.
+  const oficina = horarioDe(TODOS, '08:00', '17:00', 60);
+  const noche = horarioDe(TODOS, '22:00', '06:00');
+  const paga = new Set(['MEDICO']);
+
+  it('irse a las 15:00 de una franja que acaba a las 17:00 excusa dos horas, no el día', () => {
+    const r = esperadas('2026-07-01', '2026-07-01', oficina, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '15:00', '17:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(120);
+    expect(r.minutosEsperados).toBe(360);
+  });
+
+  it('si no es remunerada, esas dos horas quedan como deuda y nada más', () => {
+    const r = esperadas('2026-07-01', '2026-07-01', oficina, {
+      permisos: [parcial('2026-07-01', 'NO_REMUNERADO', '15:00', '17:00')],
+    });
+    expect(r.minutosPermisoNoRemunerado).toBe(120);
+    expect(r.minutosEsperados).toBe(480);
+  });
+
+  it('con las horas vacías, como llegan de la base, sigue siendo de día completo', () => {
+    const r = esperadas('2026-07-01', '2026-07-01', oficina, {
+      permisos: [parcial('2026-07-01', 'MEDICO', null, null)], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(480);
+    expect(r.minutosEsperados).toBe(0);
+  });
+
+  it('solo excusa lo que cae dentro de la franja', () => {
+    const r = esperadas('2026-07-01', '2026-07-01', oficina, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '16:00', '20:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(60);
+  });
+
+  it('con ventana de almuerzo, irse antes de ella no regala esa hora', () => {
+    const conVentana = { ...oficina, almuerzoMin: 0, franjas: [{ ...oficina.franjas[0], almuerzoInicio: '12:00', almuerzoFin: '13:00' }] };
+    // 11:00–17:00 son 360 min, de los que 60 eran de almuerzo.
+    const r = esperadas('2026-07-01', '2026-07-01', conVentana, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '11:00', '17:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(300);
+    expect(r.minutosEsperados).toBe(180);
+  });
+
+  it('sin ventana de almuerzo no se le resta nada al tramo', () => {
+    // Sin ventana, lo trabajado descuenta la hora de almuerzo entera aunque se
+    // haya ido antes de almorzar. Restarla también aquí la cobraría dos veces:
+    // quien trabajó de 08:00 a 11:00 queda con 120 trabajados y 120 exigidos.
+    const r = esperadas('2026-07-01', '2026-07-01', oficina, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '11:00', '17:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(360);
+    expect(r.minutosEsperados).toBe(120);
+  });
+
+  it('turno nocturno: irse a las 23:30 de un 22:00–06:00 excusa hasta las 06:00', () => {
+    const r = esperadas('2026-07-01', '2026-07-01', noche, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '23:30', '06:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(390);
+  });
+
+  it('turno nocturno: irse a las 03:00 excusa de 03:00 a 06:00', () => {
+    const r = esperadas('2026-07-01', '2026-07-01', noche, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '03:00', '06:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(180);
+  });
+
+  it('en una novedad de varios días las horas no significan nada', () => {
+    const r = esperadas('2026-07-01', '2026-07-02', oficina, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '15:00', '17:00', '2026-07-02')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(960);
+    expect(r.minutosEsperados).toBe(0);
+  });
+
+  it('una novedad de día completo manda sobre una parcial del mismo día', () => {
+    // Se fue temprano sin goce de sueldo y después le reconocieron la incapacidad
+    // de todo el día. La salida temprana va primero a propósito: el orden en que
+    // lleguen no puede decidir, y si las dos se repartieran el día, la tarde
+    // quedaría como deuda.
+    const r = esperadas('2026-07-01', '2026-07-01', oficina, {
+      permisos: [parcial('2026-07-01', 'NO_REMUNERADO', '15:00', '17:00'), parcial('2026-07-01', 'INCAPACIDAD_EPS', null, null)],
+    });
+    expect(r.minutosPermisoRemunerado).toBe(480);
+    expect(r.minutosPermisoNoRemunerado).toBe(0);
+    expect(r.minutosEsperados).toBe(0);
+  });
+
+  it('dos salidas tempranas el mismo día no excusan más de lo que el día pedía', () => {
+    // Se fue a las 10:00, volvió, y se fue otra vez a las 15:00: las dos
+    // novedades llegan hasta las 17:00 y sumadas pasarían de la jornada.
+    const r = esperadas('2026-07-01', '2026-07-01', oficina, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '10:00', '17:00'), parcial('2026-07-01', 'MEDICO', '15:00', '17:00')],
+      politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(480);
+    expect(r.minutosEsperados).toBe(0);
+  });
+
+  it('nunca excusa más de lo que el tope semanal le dejaba al día', () => {
+    // Con un tope que a este día solo le deja una hora, la novedad de dos horas
+    // no puede dejar lo exigido en negativo.
+    const r = esperadas('2026-07-01', '2026-07-01', oficina, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '15:00', '17:00')], politica: paga, jornada: () => 1,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(60);
+    expect(r.minutosEsperados).toBe(0);
+  });
+
+  it('un día sin horas trata la novedad parcial como de día completo', () => {
+    const { desdeF, finExclusivo } = rangoReporte('2026-07-01', '2026-07-01');
+    const dias = calcularDiasEsperados(desdeF, finExclusivo, oficina).map(d => ({ ...d, horaEntrada: null, horaSalida: null }));
+    const r = esperadas('2026-07-01', '2026-07-01', null, {
+      dias, permisos: [parcial('2026-07-01', 'MEDICO', '15:00', '17:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(480);
+  });
+});
+
 describe('armarSaldo', () => {
   const base = { minutosEsperados: 480, minutosPermisoRemunerado: 0, minutosPermisoNoRemunerado: 0 };
 

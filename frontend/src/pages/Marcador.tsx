@@ -10,7 +10,8 @@ import PantallaVinculacion from './marcador/pantallas/PantallaVinculacion';
 import PantallaLinkInvalido from './marcador/pantallas/PantallaLinkInvalido';
 import PantallaUbicacion from './marcador/pantallas/PantallaUbicacion';
 import PantallaLogin from './marcador/pantallas/PantallaLogin';
-import PantallaSalidaTemprana from './marcador/pantallas/PantallaSalidaTemprana';
+import PantallaMotivo from './marcador/pantallas/PantallaMotivo';
+import { decidirTrasErrorDeMarca, type CasoMotivo } from './marcador/motivoDeMarca';
 import PantallaMarcar from './marcador/pantallas/PantallaMarcar';
 import RegresoOlvidado from './marcador/pantallas/RegresoOlvidado';
 import { decidirUbicacion } from './marcador/decisionUbicacion';
@@ -47,11 +48,10 @@ export default function Marcador() {
   const [shake, setShake] = useState(false);
   const [marcando, setMarcando] = useState(false);
 
-  // Salida temprana (se pide motivo antes de confirmar)
-  // El servidor pidió motivo y NO marcó nada. Aquí se guardan las opciones con
-  // las que hay que reintentar cuando la persona lo dé, o descartarlas si prefiere
-  // volver atrás.
-  const [salidaTemprana, setSalidaTemprana] = useState<null | OpcionesMarca>(null);
+  // Motivo de una salida temprana o de una llegada tarde. El servidor lo pidió y
+  // NO marcó nada: aquí se guardan el caso y las opciones con las que hay que
+  // reintentar cuando la persona lo dé, o descartarlas si prefiere volver atrás.
+  const [pideMotivo, setPideMotivo] = useState<null | { caso: CasoMotivo; opciones: OpcionesMarca }>(null);
   const [novedadTipo, setNovedadTipo] = useState('MEDICO');
   const [novedadDesc, setNovedadDesc] = useState('');
   const [enviandoNovedad, setEnviandoNovedad] = useState(false);
@@ -197,42 +197,37 @@ export default function Marcador() {
       });
       mostrarFlashOk(r.accion, r.hora, nombreColab, r.salidaAlmuerzo);
     } catch (err: any) {
-      // Se va antes de que termine su jornada: el servidor NO marcó nada y pide
-      // el motivo. Salir al descanso nunca llega aquí.
-      if (err.response?.status === 409 && err.response?.data?.codigo === 'REQUIERE_MOTIVO') {
-        // Si YA veníamos con motivo y el servidor lo vuelve a pedir, el problema
-        // no es que falte: es que no le sirvió. Reabrir la pantalla en silencio
-        // deja a la persona dando vueltas sin entender por qué, delante del
-        // kiosco y con la fila esperando. Se dice que falló y se sale.
-        if (opciones?.novedadTipo) {
-          mostrarFlashError('No pudimos registrar el motivo de tu salida. Avisa a tu supervisor.');
-          return;
-        }
+      // El servidor puede NO haber marcado por dos razones que no son fallos: se
+      // va antes de hora o llega tarde, y en los dos casos pide el motivo. Qué
+      // hacer con cada respuesta lo decide `decidirTrasErrorDeMarca`, con sus
+      // pruebas, incluido no reabrir la pantalla si el motivo ya no sirvió.
+      const decision = decidirTrasErrorDeMarca(err, !!opciones?.novedadTipo);
+      if (decision.accion === 'PEDIR_MOTIVO') {
         setNovedadTipo('MEDICO');
         setNovedadDesc('');
-        setSalidaTemprana(opciones ?? {});
+        setPideMotivo({ caso: decision.caso, opciones: opciones ?? {} });
         return;
       }
-      mostrarFlashError(err.response?.data?.error ?? 'No pudimos registrar tu marcación. Intenta de nuevo.');
+      mostrarFlashError(decision.mensaje);
     } finally {
       setMarcando(false);
     }
   };
 
-  // Con el motivo en la mano se reintenta la marca. La salida y la novedad se
+  // Con el motivo en la mano se reintenta la marca. La marca y la novedad se
   // guardan en la MISMA llamada: separadas, un fallo de la segunda dejaba la
-  // jornada cerrada y el motivo perdido.
-  const enviarNovedadTemprana = async () => {
-    if (!salidaTemprana) return;
-    const opciones = salidaTemprana;
+  // marca escrita y el motivo perdido.
+  const enviarMotivo = async () => {
+    if (!pideMotivo) return;
+    const { opciones } = pideMotivo;
     setEnviandoNovedad(true);
-    setSalidaTemprana(null);
+    setPideMotivo(null);
     await marcar({ ...opciones, novedadTipo, novedadDescripcion: novedadDesc });
     setEnviandoNovedad(false);
   };
 
   // Volver atrás: no hay nada que deshacer, porque no se marcó nada.
-  const cancelarSalidaTemprana = () => setSalidaTemprana(null);
+  const cancelarMotivo = () => setPideMotivo(null);
 
   // ===== Selección de pantalla (mismo orden que antes) =====
   if (flash) return <PantallaResultado flash={flash} cerrandoFlash={cerrandoFlash} />;
@@ -294,13 +289,14 @@ export default function Marcador() {
       />
     );
   }
-  if (salidaTemprana) {
+  if (pideMotivo) {
     return (
-      <PantallaSalidaTemprana
+      <PantallaMotivo
+        caso={pideMotivo.caso}
         novedadTipo={novedadTipo} setNovedadTipo={setNovedadTipo}
         novedadDesc={novedadDesc} setNovedadDesc={setNovedadDesc}
-        enviarNovedadTemprana={enviarNovedadTemprana} onVolver={cancelarSalidaTemprana}
-        enviandoNovedad={enviandoNovedad}
+        onConfirmar={enviarMotivo} onVolver={cancelarMotivo}
+        enviando={enviandoNovedad}
       />
     );
   }

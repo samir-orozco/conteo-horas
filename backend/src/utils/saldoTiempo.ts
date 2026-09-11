@@ -1,6 +1,6 @@
 import { toZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear } from 'date-fns';
-import { minutosDe } from './tardanzas';
+import { minutosDe, esDeParteDelDia, type NovedadParaDia } from './tardanzas';
 
 const TZ = 'America/Bogota';
 
@@ -85,7 +85,7 @@ export function duracionFranjaMin(horaEntrada: string, horaSalida: string): numb
   return fin > ini ? fin - ini : 24 * 60 - ini + fin;
 }
 
-export type PermisoRango = { fechaInicio: Date; fechaFin: Date; tipo: string };
+export type PermisoRango = NovedadParaDia & { tipo: string };
 
 // Lo que el horario del colaborador exigía UN día, ya congelado. Es la forma
 // mínima de una fila de `DiaEsperado`; se declara aquí, y no se importa de
@@ -94,7 +94,84 @@ export type DiaEsperadoParaSaldo = {
   fecha: Date; // medianoche de Bogotá
   programado: boolean; // false = ese día no se trabajaba
   minutosEsperados: number; // ya neto de almuerzo
+  // La franja y la ventana de almuerzo de ESE día: contra ellas se mide cuánto
+  // de la jornada cubre una novedad de parte del día.
+  horaEntrada: string | null;
+  horaSalida: string | null;
+  almuerzoInicio: string | null;
+  almuerzoFin: string | null;
 };
+
+type Tramo = [number, number];
+
+// [inicio, fin) en minutos desde la medianoche del día. Si cruza la medianoche,
+// el fin pasa de 1440 con la misma regla de `duracionFranjaMin`.
+function tramoDe(desde: string, hasta: string): Tramo {
+  const ini = minutosDe(desde);
+  return [ini, ini + duracionFranjaMin(desde, hasta)];
+}
+
+function cruce(a: Tramo, b: Tramo): Tramo | null {
+  const ini = Math.max(a[0], b[0]);
+  const fin = Math.min(a[1], b[1]);
+  return fin > ini ? [ini, fin] : null;
+}
+
+const largo = (t: Tramo | null) => (t ? t[1] - t[0] : 0);
+
+// El tramo tal cual y corrido un día. En un turno nocturno lo de después de la
+// medianoche cae en la madrugada siguiente: irse a las 03:00 de un 22:00–06:00
+// es [180, 360] contado desde su día, y [1620, 1800] contado desde la entrada.
+const enLosDosDias = (t: Tramo): Tramo[] => [t, [t[0] + 24 * 60, t[1] + 24 * 60]];
+
+// Minutos de la jornada que excusa una novedad de parte del día: los de su tramo
+// que caen dentro de la franja, menos los de la ventana de almuerzo, que tampoco
+// se trabajaban. `null` si el día no dice su franja: sin ella no hay contra qué
+// medir, y la novedad cubre el día entero como siempre.
+//
+// Sin ventana de almuerzo no se resta nada, a propósito: en ese caso lo
+// trabajado descuenta la hora entera aunque la persona se haya ido antes de
+// almorzar (`descontarAlmuerzo`), y restarla aquí también la cobraría dos veces.
+function minutosDeParteDelDia(dia: DiaEsperadoParaSaldo, p: PermisoRango): number | null {
+  if (!dia.horaEntrada || !dia.horaSalida) return null;
+  const franja = tramoDe(dia.horaEntrada, dia.horaSalida);
+  const almuerzo = dia.almuerzoInicio && dia.almuerzoFin ? tramoDe(dia.almuerzoInicio, dia.almuerzoFin) : null;
+  let minutos = 0;
+  for (const tramo of enLosDosDias(tramoDe(p.horaInicio!, p.horaFin!))) {
+    const cubierto = cruce(franja, tramo);
+    if (!cubierto) continue;
+    minutos += largo(cubierto);
+    for (const a of almuerzo ? enLosDosDias(almuerzo) : []) minutos -= largo(cruce(cubierto, a));
+  }
+  return minutos;
+}
+
+// Cuánto de UN día cubren sus novedades, separado en lo que se paga y lo que no.
+//
+// Una de día completo cubre el día entero y manda sobre las de parte del día,
+// como siempre. Si solo hay de parte del día, cada una cubre su tramo y entre
+// todas no pasan de lo que quedaba por exigir: dos salidas temprano el mismo día
+// llegan las dos hasta el fin de la franja, y sin ese tope se contaría dos veces.
+function minutosCubiertos(
+  dia: DiaEsperadoParaSaldo,
+  minutosDia: number,
+  novedades: { permiso: PermisoRango; remunerado: boolean }[],
+): { remunerado: number; noRemunerado: number } {
+  const cubren = novedades.map(n => ({
+    remunerado: n.remunerado,
+    minutos: esDeParteDelDia(n.permiso) ? minutosDeParteDelDia(dia, n.permiso) : null,
+  }));
+  const diaCompleto = cubren.find(c => c.minutos === null);
+  const cubierto = { remunerado: 0, noRemunerado: 0 };
+  let restante = minutosDia;
+  for (const c of diaCompleto ? [diaCompleto] : cubren) {
+    const minutos = Math.min(restante, c.minutos ?? minutosDia);
+    restante -= minutos;
+    if (c.remunerado) cubierto.remunerado += minutos;
+    else cubierto.noRemunerado += minutos;
+  }
+  return cubierto;
+}
 
 export type SaldoTiempo = {
   sinHorario: boolean;
@@ -122,9 +199,10 @@ export type SaldoTiempo = {
 //    horario de la empresa pide más que el tope, ese exceso el motor de horas lo
 //    clasifica como EXTRA (y se paga aparte), así que no puede seguir contando
 //    como "esperado" o el colaborador quedaría en deuda permanente.
-//  - Los permisos: los días cubiertos por uno REMUNERADO no se exigen, se pagan
-//    como si se hubieran trabajado. Los no remunerados sí quedan como deuda, que
-//    es justamente lo que se quiere medir.
+//  - Los permisos: lo cubierto por uno REMUNERADO no se exige, se paga como si se
+//    hubiera trabajado. Lo de los no remunerados sí queda como deuda, que es
+//    justamente lo que se quiere medir. Una novedad de parte del día cubre solo
+//    su tramo, no el día entero (ver `minutosCubiertos`).
 //
 // Un día sin fila no exige nada. Para que eso no se traduzca en deudas que
 // desaparecen mientras el backfill va a medias, quien llama completa el rango
@@ -145,6 +223,7 @@ export function calcularHorasEsperadas(
   const rangos = permisos.map(p => ({
     ini: claveDia(p.fechaInicio),
     fin: claveDia(p.fechaFin),
+    permiso: p,
     remunerado: esPermisoRemunerado(p.tipo, politica),
   }));
 
@@ -188,13 +267,12 @@ export function calcularHorasEsperadas(
     minutosDia = Math.max(0, Math.min(minutosDia, topeSemana - yaEnSemana));
     acumSemana.set(sk, yaEnSemana + minutosDia);
 
-    const cubre = rangos.find(r => r.ini <= clave && clave <= r.fin);
-    if (cubre) {
-      if (cubre.remunerado) minutosPermisoRemunerado += minutosDia;
-      else minutosPermisoNoRemunerado += minutosDia;
-    }
-    // Un permiso remunerado no se exige; uno no remunerado sí queda como deuda.
-    if (!cubre || !cubre.remunerado) minutosEsperados += minutosDia;
+    const cubierto = minutosCubiertos(dia, minutosDia, rangos.filter(r => r.ini <= clave && clave <= r.fin));
+    minutosPermisoRemunerado += cubierto.remunerado;
+    minutosPermisoNoRemunerado += cubierto.noRemunerado;
+    // Lo que cubre un permiso remunerado no se exige; lo de uno no remunerado sí
+    // queda como deuda.
+    minutosEsperados += minutosDia - cubierto.remunerado;
   }
 
   return { minutosEsperados, minutosPermisoRemunerado, minutosPermisoNoRemunerado };

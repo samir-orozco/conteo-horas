@@ -4,7 +4,7 @@ import { getISOWeek, getISOWeekYear, startOfISOWeek } from 'date-fns';
 import { prisma } from '../prisma';
 import { calcularHorasTrabajadas, descontarAlmuerzo } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes } from '../utils/vigencias';
-import { franjaDelDia, HorarioConFranjas, construirExtraConfig } from '../utils/tardanzas';
+import { franjaDelDia, HorarioConFranjas, construirExtraConfig, excusaLaTardanza } from '../utils/tardanzas';
 
 const TZ = 'America/Bogota';
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -65,7 +65,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       prisma.tipoHora.findMany(),
       prisma.permiso.findMany({
         where: { aprobado: true, colaborador: { empresaId }, fechaInicio: { lte: finDia }, fechaFin: { gte: inicioDia } },
-        select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
+        select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
           colaborador: { select: { nombre: true, apellido: true } } },
       }),
     ]);
@@ -199,8 +199,9 @@ export default async function dashboardRoutes(app: FastifyInstance) {
 
       const entrada = primeraEntradaHoy.get(c.id);
       if (entrada) {
-        // Llegó tarde: la tardanza solo aplica si no tiene novedad que justifique el día
-        if (novedadHoyTipo.has(c.id)) continue;
+        // Llegó tarde: la tardanza solo aplica si no tiene una novedad que la
+        // justifique, con la misma regla del reporte de tardanzas.
+        if (permisosHoy.some(p => p.colaboradorId === c.id && excusaLaTardanza(p, ahora, franjaHoy.horaEntrada))) continue;
         const z = toZonedTime(entrada, TZ);
         const llegadaMin = z.getHours() * 60 + z.getMinutes();
         const tarde = llegadaMin - (minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin);

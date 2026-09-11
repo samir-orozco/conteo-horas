@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcularTardanzas, franjaDelDia, minutosDe, construirExtraConfig, salidaAntesDeHora } from './tardanzas';
+import { calcularTardanzas, franjaDelDia, minutosDe, construirExtraConfig, salidaAntesDeHora, ventanaDeSalidaTemprana, ventanaDeLlegadaTarde, llegadaTarde } from './tardanzas';
 import { calcularDiasEsperados } from './diasEsperados';
 import { rangoReporte } from './fechas';
 
@@ -244,5 +244,112 @@ describe('salidaAntesDeHora', () => {
 
   it('turno nocturno: irse a las 22:00, recién entrado, sí es temprano', () => {
     expect(salidaAntesDeHora(bog(22), noche, 0)).toBe(true);
+  });
+});
+
+// Las novedades que deja el kiosco cubren solo un tramo del día: la de una salida
+// temprana, el final; la de una llegada tarde, el comienzo. Solo la segunda
+// justifica la tardanza, porque es la única que cubre la hora de entrada.
+describe('calcularTardanzas — novedades de parte del día', () => {
+  const lunes = bog('2026-07-06', 0);
+
+  it('irse temprano con motivo no borra la tardanza de la mañana', () => {
+    const salidaTemprana = { fechaInicio: lunes, fechaFin: lunes, horaInicio: '15:00', horaFin: '16:00' };
+    const r = tardanzas([reg('2026-07-06', 8, 25)], { permisos: [salidaTemprana] });
+    expect(r.diasTarde).toBe(1);
+    expect(r.detalle[0].minutosTarde).toBe(22);
+  });
+
+  it('con las horas vacías, como llegan de la base, sigue cubriendo el día entero', () => {
+    const diaCompleto = { fechaInicio: lunes, fechaFin: lunes, horaInicio: null, horaFin: null };
+    expect(tardanzas([reg('2026-07-06', 10)], { permisos: [diaCompleto] }).diasTarde).toBe(0);
+  });
+
+  it('en una novedad de varios días las horas no significan nada', () => {
+    const variosDias = { fechaInicio: lunes, fechaFin: bog('2026-07-07', 0), horaInicio: '15:00', horaFin: '16:00' };
+    expect(tardanzas([reg('2026-07-06', 10)], { permisos: [variosDias] }).diasTarde).toBe(0);
+  });
+
+  it('la novedad de una llegada tarde, aprobada, justifica la tardanza', () => {
+    // La que deja el kiosco: desde la entrada de su franja hasta que llegó.
+    const llegadaTarde = { fechaInicio: lunes, fechaFin: lunes, horaInicio: '08:00', horaFin: '08:25' };
+    expect(tardanzas([reg('2026-07-06', 8, 25)], { permisos: [llegadaTarde] }).diasTarde).toBe(0);
+  });
+
+  it('una novedad de parte del día que acaba justo a la hora de entrada no la justifica', () => {
+    const antes = { fechaInicio: lunes, fechaFin: lunes, horaInicio: '07:00', horaFin: '08:00' };
+    expect(tardanzas([reg('2026-07-06', 8, 25)], { permisos: [antes] }).diasTarde).toBe(1);
+  });
+
+  it('una novedad de otro día no justifica la tardanza de este', () => {
+    const martes = bog('2026-07-07', 0);
+    const deOtroDia = { fechaInicio: martes, fechaFin: martes, horaInicio: null, horaFin: null };
+    expect(tardanzas([reg('2026-07-06', 8, 25)], { permisos: [deOtroDia] }).diasTarde).toBe(1);
+  });
+});
+
+// Lo que queda escrito en la novedad cuando alguien se va antes de hora: el
+// tramo de la jornada que esa novedad excusa, y nada más.
+describe('ventanaDeSalidaTemprana', () => {
+  // Igual que arriba: `ahoraBog` es una fecha cuyos getters LOCALES dan la hora
+  // de pared de Bogotá.
+  const bog = (h: number, m = 0) => new Date(2026, 7, 5, h, m, 0);
+  const dia = { horaEntrada: '08:00', horaSalida: '17:00' };
+
+  it('va desde la hora en que se fue hasta el fin de su franja', () => {
+    expect(ventanaDeSalidaTemprana(bog(15), dia)).toEqual({ horaInicio: '15:00', horaFin: '17:00' });
+  });
+
+  it('escribe la hora con dos dígitos, igual que las franjas', () => {
+    expect(ventanaDeSalidaTemprana(bog(9, 5), dia).horaInicio).toBe('09:05');
+  });
+});
+
+// Y cuando llega tarde: desde la hora a la que tenía que entrar hasta la hora en
+// que llegó. Es el tramo que la novedad justifica si la aprueban.
+describe('ventanaDeLlegadaTarde', () => {
+  const bog = (h: number, m = 0) => new Date(2026, 7, 5, h, m, 0);
+
+  it('va desde la entrada de su franja hasta la hora en que llegó, con dos dígitos', () => {
+    expect(ventanaDeLlegadaTarde(bog(8, 5), { horaEntrada: '08:00' })).toEqual({ horaInicio: '08:00', horaFin: '08:05' });
+  });
+});
+
+// Cuándo el kiosco pregunta el motivo de una llegada tarde. Se decide ANTES de
+// escribir la entrada, así que solo puede mirar lo que ya existe.
+describe('llegadaTarde', () => {
+  // `ahoraBog`: hora de pared de Bogotá en los getters locales. El 6 de julio de
+  // 2026 es lunes y el 5 es domingo.
+  const lunes = (h: number, m = 0) => new Date(2026, 6, 6, h, m, 0);
+  const domingo = (h: number, m = 0) => new Date(2026, 6, 5, h, m, 0);
+  const ctx = { esPrimeraEntrada: true, vuelveDeAlmorzar: false, esFestivo: false, horario: HORARIO };
+
+  it('la primera entrada pasada la tolerancia llega tarde, con los minutos ya sin la tolerancia', () => {
+    const r = llegadaTarde(lunes(8, 25), ctx);
+    expect(r?.minutos).toBe(22);
+    expect(r?.franja.horaEntrada).toBe('08:00');
+  });
+
+  it('dentro de la tolerancia no es llegar tarde', () => {
+    expect(llegadaTarde(lunes(8, 3), ctx)).toBeNull();
+  });
+
+  it('una entrada que no es la primera del día no es llegar tarde', () => {
+    expect(llegadaTarde(lunes(14), { ...ctx, esPrimeraEntrada: false })).toBeNull();
+  });
+
+  it('volver del almuerzo no es llegar tarde, aunque sea la primera marca del día calendario', () => {
+    // El turno nocturno que almuerza pasada la medianoche: el regreso es la
+    // primera marca del día nuevo, y sin esta regla el kiosco le pediría motivo.
+    expect(llegadaTarde(lunes(8, 25), { ...ctx, vuelveDeAlmorzar: true })).toBeNull();
+  });
+
+  it('un festivo no tiene llegada tarde', () => {
+    expect(llegadaTarde(lunes(8, 25), { ...ctx, esFestivo: true })).toBeNull();
+  });
+
+  it('sin horario activo, o en un día sin franja, no hay llegada tarde', () => {
+    expect(llegadaTarde(lunes(8, 25), { ...ctx, horario: { ...HORARIO, activo: false } })).toBeNull();
+    expect(llegadaTarde(domingo(8, 25), ctx)).toBeNull();
   });
 });

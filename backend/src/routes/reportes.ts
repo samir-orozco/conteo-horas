@@ -214,9 +214,11 @@ export default async function reporteRoutes(app: FastifyInstance) {
       prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId!, clave: CLAVE_PERMISOS_REMUNERADOS } } }),
       // Solo los permisos que tocan el rango: un permiso que terminó antes de
       // `desde` o empieza después del corte no afecta este período.
+      // Con las horas: la novedad de una salida temprana solo excusa su tramo, y
+      // sin ellas el saldo la leería de día completo.
       prisma.permiso.findMany({
         where: { colaboradorId, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
-        select: { fechaInicio: true, fechaFin: true, tipo: true },
+        select: { fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true },
       }),
       // Lo que el horario exigía ESE día, congelado cuando se materializó. Es lo
       // que impide que editar un horario hoy mueva la liquidación de julio.
@@ -371,7 +373,8 @@ export default async function reporteRoutes(app: FastifyInstance) {
         where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
-      prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
+      // Con las horas: la novedad de una salida temprana no excusa la llegada de esa mañana.
+      prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
       prisma.jornadaVigencia.findMany(),
       // La hora exigida y la tolerancia de cada día, congeladas. Sin esto,
       // adelantar la entrada del horario llenaba de tardanzas los meses cerrados.
@@ -419,9 +422,10 @@ export default async function reporteRoutes(app: FastifyInstance) {
         },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
+      // Con las horas, igual que en /tardanzas: una salida temprana no excusa la llegada.
       prisma.permiso.findMany({
         where: { colaborador: { empresaId }, aprobado: true },
-        select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true },
+        select: { fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, aprobado: true, colaboradorId: true },
       }),
       prisma.jornadaVigencia.findMany(),
       // Los días de TODA la empresa en una sola consulta; se agrupan abajo. Uno

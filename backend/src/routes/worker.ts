@@ -11,12 +11,11 @@ import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sed
 import { decidirUbicacionDeMarca, MODALIDAD_POR_DEFECTO, puedeCerrarAqui } from '../utils/modalidad';
 import { VENTANA_TURNO_MS } from '../utils/cierreTurnos';
 import { puedeSalirAAlmorzar, dentroDeLaVentana } from '../utils/almuerzo';
-import { salidaAntesDeHora } from '../utils/tardanzas';
+import { salidaAntesDeHora, ventanaDeSalidaTemprana, ventanaDeLlegadaTarde, llegadaTarde } from '../utils/tardanzas';
 import { almuerzoSinRegreso } from '../utils/cierreAlmuerzo';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 
 const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
-const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
 
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
 const TIPOS_NOVEDAD = new Set([
@@ -121,7 +120,11 @@ async function almuerzoDelTurno(colaboradorId: string, fechaAncla: Date) {
 // No sirve identificarlas por colaborador y día: un día puede tener varias
 // novedades legítimas (cita médica en la mañana, una urgencia en la tarde), así
 // que el vínculo tiene que ser explícito.
-async function crearNovedad(colaboradorId: string, tipo: string, descripcion: string, registroId?: string) {
+//
+// `ventana` también viene de la salida temprana: el tramo que la novedad excusa,
+// desde que se fue hasta el fin de su franja. Sin ella la novedad queda de día
+// completo, y al aprobarla el saldo excusaba también las horas que sí trabajó.
+async function crearNovedad(colaboradorId: string, tipo: string, descripcion: string, registroId?: string, ventana?: { horaInicio: string; horaFin: string } | null) {
   const { inicioDia } = rangoDiaBogota();
   const permiso = await prisma.permiso.create({
     data: {
@@ -132,6 +135,7 @@ async function crearNovedad(colaboradorId: string, tipo: string, descripcion: st
       fechaFin: inicioDia,
       aprobado: false,
       ...(registroId ? { registroId } : {}),
+      ...(ventana ?? {}),
     },
   });
   const quien = await prisma.colaborador.findUnique({
@@ -539,6 +543,13 @@ export default async function workerRoutes(app: FastifyInstance) {
       });
       const tipo = festHoy ? 'FESTIVO' : 'NORMAL';
 
+      // El motivo que manda el kiosco cuando el servidor lo pidió: al salir antes
+      // de hora o al llegar tarde. Solo se aceptan los tipos conocidos.
+      const novedad = (request.body ?? {}) as { novedadTipo?: unknown; novedadDescripcion?: unknown };
+      const tipoNovedad = typeof novedad.novedadTipo === 'string' && TIPOS_NOVEDAD.has(novedad.novedadTipo)
+        ? novedad.novedadTipo : null;
+      const descripcionNovedad = typeof novedad.novedadDescripcion === 'string' ? novedad.novedadDescripcion : '';
+
       if (abierto) {
         // Entrada y salida en el MISMO sitio. Si abrió turno en El Poblado no
         // puede cerrarlo en Laureles: el turno pertenece a una sede, y permitir
@@ -583,11 +594,18 @@ export default async function workerRoutes(app: FastifyInstance) {
 
         // ¿Se va antes de que termine su franja? Se resuelve ANTES de escribir
         // nada. Irse a su descanso no es irse temprano: ahí no se pregunta.
+        //
+        // Si se va temprano, la novedad guarda qué tramo excusa: desde ahora hasta
+        // el fin de su franja. Sin eso quedaba de día completo, y al aprobarla el
+        // saldo excusaba también las horas que sí trabajó y la tardanza de la
+        // mañana desaparecía.
         let salidaTemprana = false;
+        let ventanaNovedad: { horaInicio: string; horaFin: string } | null = null;
         const horario = col?.horario;
         if (!esAlmuerzo && horario && horario.activo && !festHoy) {
           const franja = horario.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
           if (franja) salidaTemprana = salidaAntesDeHora(ahoraBog, franja, horario.toleranciaMin ?? 0);
+          if (franja && salidaTemprana) ventanaNovedad = ventanaDeSalidaTemprana(ahoraBog, franja);
         }
 
         // Sin motivo no se cierra la jornada.
@@ -597,9 +615,6 @@ export default async function workerRoutes(app: FastifyInstance) {
         // como la salida ya estaba escrita, quien se equivocaba de botón no tenía
         // forma de volver atrás. Ahora no se escribe nada hasta que haya motivo,
         // y por eso cancelar es posible: no hay nada que deshacer.
-        const novedad = (request.body ?? {}) as { novedadTipo?: unknown; novedadDescripcion?: unknown };
-        const tipoNovedad = typeof novedad.novedadTipo === 'string' && TIPOS_NOVEDAD.has(novedad.novedadTipo)
-          ? novedad.novedadTipo : null;
         if (salidaTemprana && !tipoNovedad) {
           return reply.code(409).send({
             codigo: 'REQUIERE_MOTIVO',
@@ -631,7 +646,7 @@ export default async function workerRoutes(app: FastifyInstance) {
         // La novedad viaja con la marca, no en una llamada aparte: si esa segunda
         // llamada fallaba, la salida quedaba registrada y el motivo se perdía.
         if (tipoNovedad) {
-          await crearNovedad(payload.id, tipoNovedad, typeof novedad.novedadDescripcion === 'string' ? novedad.novedadDescripcion : '', updated.id)
+          await crearNovedad(payload.id, tipoNovedad, descripcionNovedad, updated.id, ventanaNovedad)
             .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la salida temprana'));
         }
 
@@ -657,6 +672,24 @@ export default async function workerRoutes(app: FastifyInstance) {
           orderBy: { salida: 'desc' },
           select: { fecha: true, salida: true },
         });
+
+        // ¿Llega tarde a su primera entrada del día? Se resuelve ANTES de escribir
+        // nada, igual que la salida temprana: sin motivo no se marca la entrada.
+        // Volver del almuerzo no es llegar tarde, aunque en un turno nocturno sea
+        // la primera marca del día calendario.
+        // La decisión vive en `llegadaTarde` (utils/tardanzas.ts), con sus pruebas.
+        const tardanza = llegadaTarde(ahoraBog, {
+          esPrimeraEntrada: entradasPrevias === 0,
+          vuelveDeAlmorzar: !!volviendoDeAlmorzar,
+          esFestivo: !!festHoy,
+          horario: col?.horario,
+        });
+        if (tardanza && !tipoNovedad) {
+          return reply.code(409).send({
+            codigo: 'REQUIERE_MOTIVO_TARDANZA',
+            error: 'Llegaste tarde. Cuéntanos por qué.',
+          });
+        }
 
         // Regreso del almuerzo con hora corregida por la propia persona. Se
         // valida contra la ventana de SU día, no contra lo que mande el cliente:
@@ -707,24 +740,25 @@ export default async function workerRoutes(app: FastifyInstance) {
         // creación manual de registros ya lo hacía; el kiosco no.
         await asegurarDiaSinFallar(payload.id, nuevo.fecha, app.log);
 
-        // Alerta de llegada tarde por Telegram (primera entrada del día, día laboral)
-        const horarioE = col?.horario;
-        if (entradasPrevias === 0 && col && !festHoy && horarioE?.activo) {
-          const franja = horarioE.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
-          if (franja) {
-            const entradaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
-            const tarde = entradaMin - (minutosDe(franja.horaEntrada) + (horarioE.toleranciaMin ?? 0));
-            if (tarde > 0) {
-              alertarTardanzaTelegram(col.empresaId, `${col.nombre} ${col.apellido}`, ahoraBog, tarde).catch(() => {});
-              const tardeTxt = tarde >= 60 ? `${Math.floor(tarde / 60)}h ${tarde % 60}min` : `${tarde} min`;
-              notificar(col.empresaId, {
-                tipo: 'LLEGADA_TARDE',
-                titulo: `${col.nombre} ${col.apellido} llegó tarde`,
-                cuerpo: `Marcó entrada con ${tardeTxt} de retraso.`,
-                entidad: 'colaborador', entidadId: col.id,
-              });
-            }
-          }
+        // La novedad de la llegada tarde viaja con la marca, igual que la de la
+        // salida temprana: en una llamada aparte, un fallo dejaba la entrada
+        // escrita y el motivo perdido.
+        if (tardanza && tipoNovedad) {
+          await crearNovedad(payload.id, tipoNovedad, descripcionNovedad, nuevo.id, ventanaDeLlegadaTarde(ahoraBog, tardanza.franja))
+            .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la llegada tarde'));
+        }
+
+        // Alerta de llegada tarde por Telegram y en la campana.
+        if (tardanza && col) {
+          const tarde = tardanza.minutos;
+          alertarTardanzaTelegram(col.empresaId, `${col.nombre} ${col.apellido}`, ahoraBog, tarde).catch(() => {});
+          const tardeTxt = tarde >= 60 ? `${Math.floor(tarde / 60)}h ${tarde % 60}min` : `${tarde} min`;
+          notificar(col.empresaId, {
+            tipo: 'LLEGADA_TARDE',
+            titulo: `${col.nombre} ${col.apellido} llegó tarde`,
+            cuerpo: `Marcó entrada con ${tardeTxt} de retraso.`,
+            entidad: 'colaborador', entidadId: col.id,
+          });
         }
         return { accion: 'ENTRADA', registro: nuevo, hora: entradaReal, regresoEstimado: esRegresoEstimado };
       }

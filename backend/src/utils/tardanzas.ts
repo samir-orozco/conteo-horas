@@ -93,9 +93,36 @@ export function construirExtraConfig(
   return { modo: 'HORARIO', franjaPorFecha, franjaPorDia };
 }
 
+// Lo mínimo de una novedad para saber qué parte del calendario cubre.
+export type NovedadParaDia = { fechaInicio: Date; fechaFin: Date; horaInicio: string | null; horaFin: string | null };
+
+// ¿La novedad cubre solo un TRAMO de un día? Es la que deja el kiosco cuando
+// alguien se va antes de hora: guarda desde qué hora se fue y hasta cuándo iba
+// su franja. Sin horas —todas las que carga un administrador— o de varios días,
+// cubre días enteros como siempre: las horas de unas vacaciones no significan nada.
+export function esDeParteDelDia(p: NovedadParaDia): boolean {
+  return !!p.horaInicio && !!p.horaFin && claveDia(p.fechaInicio) === claveDia(p.fechaFin);
+}
+
+// ¿La novedad justifica llegar tarde ese día? Una de día completo que lo cubra,
+// sí. Una de parte del día, solo si cubre la hora de entrada: la de una llegada
+// tarde va desde esa hora hasta que la persona llegó. La de una salida temprana
+// empieza cuando se fue y no toca la mañana; mientras se leyó como de día
+// completo, aprobarla borraba la tardanza de ese día.
+//
+// La usan el reporte de tardanzas y el tablero del día: es la misma pregunta, y
+// si cada uno la contestara a su manera volverían a no coincidir.
+export function excusaLaTardanza(p: NovedadParaDia, dia: Date, horaEntrada: string): boolean {
+  const clave = claveDia(dia);
+  if (claveDia(p.fechaInicio) > clave || clave > claveDia(p.fechaFin)) return false;
+  if (!esDeParteDelDia(p)) return true;
+  const entrada = minutosDe(horaEntrada);
+  return minutosDe(p.horaInicio!) <= entrada && entrada < minutosDe(p.horaFin!);
+}
+
 // Llegadas tarde: primera entrada de cada día contra lo que el horario exigía
 // ESE día (`DiaEsperado`) más su tolerancia. No cuenta festivos, días fuera del
-// horario ni días cubiertos por novedades.
+// horario ni días justificados por una novedad (`excusaLaTardanza`).
 //
 // Lee los días materializados y no el horario vigente por la misma razón que el
 // saldo: adelantar la entrada de 08:00 a 07:00 llenaba de tardanzas los meses ya
@@ -108,7 +135,7 @@ export function calcularTardanzas(
   registros: Registro[],
   dias: DiaEsperadoParaTardanza[],
   festivos: DiaFestivo[],
-  permisos: { fechaInicio: Date; fechaFin: Date }[]
+  permisos: NovedadParaDia[]
 ): { detalle: Tardanza[]; totalMinutos: number; diasTarde: number; toleranciaMin: number } {
   const festSet = new Set(festivos.map(f => claveDia(f.fecha)));
   const porDia = new Map(dias.map(d => [claveDia(d.fecha), d]));
@@ -127,8 +154,8 @@ export function calcularTardanzas(
     const dia = porDia.get(clave);
     if (!dia || !dia.programado || !dia.horaEntrada) continue;
     if (festSet.has(clave)) continue;
-    const cubiertoPorNovedad = permisos.some(p => claveDia(p.fechaInicio) <= clave && clave <= claveDia(p.fechaFin));
-    if (cubiertoPorNovedad) continue;
+    const horaEntrada = dia.horaEntrada;
+    if (permisos.some(p => excusaLaTardanza(p, entrada, horaEntrada))) continue;
 
     const z = toZonedTime(entrada, TZ);
     const llegadaMin = z.getHours() * 60 + z.getMinutes();
@@ -188,4 +215,57 @@ export function salidaAntesDeHora(
   if (cruzaMedianoche && salidaMin < iniMin) salidaMin += 1440;
 
   return salidaMin < finMin - (toleranciaMin ?? 0);
+}
+
+// "HH:MM" de la hora de pared de Bogotá. Recibe `ahoraBog` igual que
+// `salidaAntesDeHora`, y por eso lee los getters locales: con `toISOString` la
+// hora saldría en UTC, cinco horas corrida.
+function horaDePared(ahoraBog: Date): string {
+  const hh = String(ahoraBog.getHours()).padStart(2, '0');
+  const mm = String(ahoraBog.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+// Qué tramo de la jornada excusa la novedad de una salida temprana: desde la hora
+// en que la persona se fue hasta el fin de su franja. Queda escrito en la novedad
+// para que el saldo descuente solo eso y la tardanza de la mañana siga en pie.
+export function ventanaDeSalidaTemprana(
+  ahoraBog: Date,
+  franja: { horaSalida: string },
+): { horaInicio: string; horaFin: string } {
+  return { horaInicio: horaDePared(ahoraBog), horaFin: franja.horaSalida };
+}
+
+// Y el de una llegada tarde: desde la hora a la que tenía que entrar hasta la hora
+// en que llegó. Si la aprueban justifica la tardanza (`excusaLaTardanza`), y el
+// saldo excusa esos minutos si el tipo se paga.
+export function ventanaDeLlegadaTarde(
+  ahoraBog: Date,
+  franja: { horaEntrada: string },
+): { horaInicio: string; horaFin: string } {
+  return { horaInicio: franja.horaEntrada, horaFin: horaDePared(ahoraBog) };
+}
+
+// ¿Llega tarde quien marca ESTA entrada? Devuelve su franja y los minutos, ya
+// descontada la tolerancia, o null si no aplica. Se decide ANTES de escribir la
+// entrada: el kiosco pide el motivo y no marca nada hasta tenerlo.
+//
+// Solo cuenta la primera entrada del día, en un día laboral de su horario. Volver
+// del almuerzo no es llegar tarde, aunque en un turno nocturno el regreso caiga
+// pasada la medianoche y sea la primera marca del día calendario.
+export function llegadaTarde<F extends { dias: unknown; horaEntrada: string }>(
+  ahoraBog: Date,
+  ctx: {
+    esPrimeraEntrada: boolean;
+    vuelveDeAlmorzar: boolean;
+    esFestivo: boolean;
+    horario: { activo: boolean; toleranciaMin: number; franjas: F[] } | null | undefined;
+  },
+): { franja: F; minutos: number } | null {
+  const { horario } = ctx;
+  if (!ctx.esPrimeraEntrada || ctx.vuelveDeAlmorzar || ctx.esFestivo || !horario?.activo) return null;
+  const franja = franjaDelDia(horario, DIAS_SEMANA[ahoraBog.getDay()]);
+  if (!franja) return null;
+  const minutos = ahoraBog.getHours() * 60 + ahoraBog.getMinutes() - (minutosDe(franja.horaEntrada) + horario.toleranciaMin);
+  return minutos > 0 ? { franja, minutos } : null;
 }
