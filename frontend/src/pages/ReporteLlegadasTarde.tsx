@@ -4,8 +4,14 @@ import SelectorColaborador from '../components/SelectorColaborador';
 import { format } from 'date-fns';
 import { Search, X, AlarmClock } from 'lucide-react';
 import api from '../lib/api';
+import SedesDeFila from '../components/SedesDeFila';
+import ResumenPorSede, { type ColumnaResumen, type Resumen } from '../components/ResumenPorSede';
+import type { SedeDeFila } from '../lib/sedesDeReporte';
 
-type Fila = { colaboradorId: string; nombre: string; apellido: string; sinHorario: boolean; diasTarde: number; totalMinutos: number; montoTardanzas: number };
+// `sedes` es opcional solo para no romper si esta pantalla llega antes que el
+// servidor que lo manda.
+type Fila = { colaboradorId: string; nombre: string; apellido: string; sinHorario: boolean; diasTarde: number; totalMinutos: number; montoTardanzas: number; sedes?: SedeDeFila[] };
+type ClaveTardanzas = 'diasTarde' | 'totalMinutos' | 'montoTardanzas';
 type DetalleTardanza = { fecha: string; horaEsperada: string; horaLlegada: string; minutosTarde: number };
 type Drill = {
   colaborador: { nombre: string; apellido: string };
@@ -20,6 +26,12 @@ type Drill = {
 const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}min` : `${m} min`);
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
+const COLUMNAS_RESUMEN: ColumnaResumen<ClaveTardanzas>[] = [
+  { titulo: 'Días tarde', valor: m => String(m.diasTarde), alinear: 'center' },
+  { titulo: 'Tiempo total', valor: m => fmtMin(m.totalMinutos) },
+  { titulo: 'Valor', valor: m => cop(m.montoTardanzas) },
+];
+
 export default function ReporteLlegadasTarde() {
   const [colaboradores, setColaboradores] = useState<{ id: string; nombre: string; apellido: string }[]>([]);
   const [colaboradorId, setColaboradorId] = useState(''); // '' = Todos
@@ -28,6 +40,8 @@ export default function ReporteLlegadasTarde() {
   const [desde, setDesde] = useState(format(new Date(), 'yyyy-MM-01'));
   const [hasta, setHasta] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [filas, setFilas] = useState<Fila[] | null>(null);
+  // El resumen por sede es de la empresa entera: el servidor lo arma sin filtro.
+  const [resumen, setResumen] = useState<Resumen<ClaveTardanzas> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,6 +57,7 @@ export default function ReporteLlegadasTarde() {
     try {
       const r = await api.get('/reportes/tardanzas-resumen', { params: { desde, hasta, ...(sedeId ? { sedeId } : {}) } });
       setFilas(r.data.colaboradores);
+      setResumen(r.data.resumen ?? null);
     } catch {
       setError('No pudimos calcular el reporte');
     } finally {
@@ -57,6 +72,10 @@ export default function ReporteLlegadasTarde() {
     if (!filas) return [];
     return colaboradorId ? filas.filter(f => f.colaboradorId === colaboradorId) : filas;
   }, [filas, colaboradorId]);
+
+  // La columna de sede y el resumen solo tienen sentido con más de una sede, igual
+  // que el filtro.
+  const variasSedes = sedes.length > 1;
 
   const abrirDrill = async (f: Fila) => {
     if (f.sinHorario) return; // sin horario no hay detalle que ver
@@ -115,6 +134,7 @@ export default function ReporteLlegadasTarde() {
               <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
                 <tr>
                   <th className="px-3 py-2 text-left">Colaborador</th>
+                  {variasSedes && <th className="px-3 py-2 text-left">Sede</th>}
                   <th className="px-3 py-2 text-center">Días tarde</th>
                   <th className="px-3 py-2 text-right">Tiempo total</th>
                   <th className="px-3 py-2 text-right">Valor</th>
@@ -125,6 +145,7 @@ export default function ReporteLlegadasTarde() {
                 {visibles.map(f => (
                   <tr key={f.colaboradorId} className={f.sinHorario ? '' : 'hover:bg-gray-50 cursor-pointer'} onClick={() => abrirDrill(f)}>
                     <td className="px-3 py-2.5 font-medium text-gray-800">{f.nombre} {f.apellido}</td>
+                    {variasSedes && <td className="px-3 py-2.5"><SedesDeFila sedes={f.sedes ?? []} /></td>}
                     {f.sinHorario ? (
                       <td colSpan={3} className="px-3 py-2.5 text-center text-xs text-muted">Sin horario asignado</td>
                     ) : (
@@ -145,6 +166,7 @@ export default function ReporteLlegadasTarde() {
               <tfoot>
                 <tr className="border-t-2 border-gray-200">
                   <td className="px-3 py-3 font-bold text-ink">Total {colaboradorId ? '' : `(${visibles.length} colaboradores)`}</td>
+                  {variasSedes && <td></td>}
                   <td className="px-3 py-3 text-center font-semibold text-gray-700">{visibles.reduce((s, f) => s + f.diasTarde, 0)}</td>
                   <td className="px-3 py-3 text-right font-bold text-ink">{fmtMin(visibles.reduce((s, f) => s + f.totalMinutos, 0))}</td>
                   <td className="px-3 py-3 text-right font-bold text-ink">{cop(visibles.reduce((s, f) => s + (f.montoTardanzas ?? 0), 0))}</td>
@@ -161,6 +183,7 @@ export default function ReporteLlegadasTarde() {
             minutos y los cruza con el tiempo que el colaborador haya repuesto.
           </p>
         )}
+        {variasSedes && resumen && <ResumenPorSede resumen={resumen} columnas={COLUMNAS_RESUMEN} />}
       </div>
 
       {/* Drill-down: desglose de un colaborador */}

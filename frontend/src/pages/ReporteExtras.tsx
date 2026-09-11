@@ -7,13 +7,20 @@ import { toZonedTime } from 'date-fns-tz';
 import { Search, X, Clock3, Camera, ArrowLeft } from 'lucide-react';
 import api from '../lib/api';
 import FotosJornada from '../components/FotosJornada';
+import SedesDeFila from '../components/SedesDeFila';
+import ResumenPorSede, { type ColumnaResumen, type Resumen } from '../components/ResumenPorSede';
+import type { SedeDeFila } from '../lib/sedesDeReporte';
 
 const TZ = 'America/Bogota';
 
 type Fila = {
   colaboradorId: string; nombre: string; apellido: string;
   totalRecargos: number; totalExtra: number; totalAdicional: number;
+  // Dónde trabajó en el período; con más de una sede es mixto. Opcional solo para
+  // no romper si esta pantalla llega antes que el servidor que lo manda.
+  sedes?: SedeDeFila[];
 };
+type ClaveExtras = 'totalRecargos' | 'totalExtra' | 'totalAdicional';
 type LineaLiquidacion = { codigo: string; nombre: string; horas: number; valorHora: number; recargo: number; esExtra: boolean; factorPagado: number; subtotal: number };
 type DetalleRegistro = { id: string; fecha: string; entrada: string; salida: string; filas: { codigo: string; nombre: string; horas: number; subtotal: number }[] };
 type Drill = {
@@ -36,6 +43,12 @@ const fmtMin = (m: number) => {
 };
 const fmtHora = (s: string) => format(toZonedTime(new Date(s), TZ), 'HH:mm');
 
+const COLUMNAS_RESUMEN: ColumnaResumen<ClaveExtras>[] = [
+  { titulo: 'Recargos', valor: m => fmt(m.totalRecargos) },
+  { titulo: 'Extras', valor: m => fmt(m.totalExtra) },
+  { titulo: 'Total a pagar', valor: m => fmt(m.totalAdicional) },
+];
+
 export default function ReporteExtras() {
   const [colaboradores, setColaboradores] = useState<{ id: string; nombre: string; apellido: string }[]>([]);
   const [colaboradorId, setColaboradorId] = useState(''); // '' = Todos
@@ -44,6 +57,8 @@ export default function ReporteExtras() {
   const [desde, setDesde] = useState(format(new Date(), 'yyyy-MM-01'));
   const [hasta, setHasta] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [filas, setFilas] = useState<Fila[] | null>(null);
+  // El resumen por sede es de la empresa entera: el servidor lo arma sin filtro.
+  const [resumen, setResumen] = useState<Resumen<ClaveExtras> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -69,6 +84,7 @@ export default function ReporteExtras() {
     try {
       const r = await api.get('/reportes/extras-resumen', { params: { desde, hasta, ...(sedeId ? { sedeId } : {}) } });
       setFilas(r.data.colaboradores);
+      setResumen(r.data.resumen ?? null);
     } catch {
       setError('No pudimos calcular el reporte');
     } finally {
@@ -90,6 +106,10 @@ export default function ReporteExtras() {
   // no remunerado es un descuento sobre el salario y vive en el reporte diario,
   // que es donde el salario está a la vista y la resta tiene sentido.
   const totalGeneral = visibles.reduce((s, f) => s + f.totalAdicional, 0);
+
+  // La columna de sede y el resumen solo tienen sentido con más de una sede, igual
+  // que el filtro.
+  const variasSedes = sedes.length > 1;
 
   const abrirDrill = async (f: Fila) => {
     setDrillLoading(true);
@@ -147,6 +167,7 @@ export default function ReporteExtras() {
               <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
                 <tr>
                   <th className="px-3 py-2 text-left">Colaborador</th>
+                  {variasSedes && <th className="px-3 py-2 text-left">Sede</th>}
                   <th className="px-3 py-2 text-right">Recargos</th>
                   <th className="px-3 py-2 text-right">Extras</th>
                   <th className="px-3 py-2 text-right">Total a pagar</th>
@@ -157,6 +178,7 @@ export default function ReporteExtras() {
                 {visibles.map(f => (
                   <tr key={f.colaboradorId} className="hover:bg-gray-50 cursor-pointer" onClick={() => abrirDrill(f)}>
                     <td className="px-3 py-2.5 font-medium text-gray-800">{f.nombre} {f.apellido}</td>
+                    {variasSedes && <td className="px-3 py-2.5"><SedesDeFila sedes={f.sedes ?? []} /></td>}
                     <td className="px-3 py-2.5 text-right text-gray-600">{fmt(f.totalRecargos)}</td>
                     <td className="px-3 py-2.5 text-right text-gray-600">{fmt(f.totalExtra)}</td>
                     <td className="px-3 py-2.5 text-right font-semibold text-ink">{fmt(f.totalAdicional)}</td>
@@ -167,6 +189,7 @@ export default function ReporteExtras() {
               <tfoot>
                 <tr className="border-t-2 border-gray-200">
                   <td className="px-3 py-3 font-bold text-ink">Total {colaboradorId ? '' : `(${visibles.length} colaboradores)`}</td>
+                  {variasSedes && <td></td>}
                   <td className="px-3 py-3 text-right font-semibold text-gray-700">{fmt(visibles.reduce((s, f) => s + f.totalRecargos, 0))}</td>
                   <td className="px-3 py-3 text-right font-semibold text-gray-700">{fmt(visibles.reduce((s, f) => s + f.totalExtra, 0))}</td>
                   <td className="px-3 py-3 text-right font-bold text-ink text-base">{fmt(totalGeneral)}</td>
@@ -176,6 +199,7 @@ export default function ReporteExtras() {
             </table>
           )}
         </div>
+        {variasSedes && resumen && <ResumenPorSede resumen={resumen} columnas={COLUMNAS_RESUMEN} />}
       </div>
 
       {/* Drill-down: desglose de un colaborador */}
