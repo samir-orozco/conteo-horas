@@ -9,6 +9,7 @@ export type Sede = {
   id: string; nombre: string; direccion: string | null;
   lat: number | null; lng: number | null; radio: number;
   _count?: { colaboradores: number };
+  principal?: boolean;
 };
 
 const VACIA = { nombre: '', direccion: '', lat: '', lng: '', radio: '150', exigeUbicacion: false };
@@ -23,12 +24,13 @@ export default function TabSedes() {
   const [error, setError] = useState('');
   const [ubicando, setUbicando] = useState(false);
   const [eliminando, setEliminando] = useState<Sede | null>(null);
+  const [aviso, setAviso] = useState('');
 
   const cargar = () => api.get('/sedes').then(r => setSedes(r.data));
   useEffect(() => { cargar(); }, []);
 
-  // La segunda sede en adelante exige plan Empresarial. La primera siempre se
-  // permite: es la que hereda la geocerca que la empresa ya tenía.
+  // La segunda sede en adelante exige plan Empresarial. La primera ya viene con la
+  // empresa (la Sede principal), así que en un plan de una sola sede se edita esa.
   const bloqueado = !!plan && !plan.features.multiSede && sedes.length >= 1;
 
   const abrir = (s?: Sede) => {
@@ -82,7 +84,13 @@ export default function TabSedes() {
 
   const eliminar = async () => {
     if (!eliminando) return;
-    await api.delete(`/sedes/${eliminando.id}`);
+    setAviso('');
+    try {
+      await api.delete(`/sedes/${eliminando.id}`);
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      setAviso(msg ?? 'No pudimos eliminar la sede');
+    }
     setEliminando(null);
     cargar();
   };
@@ -110,6 +118,8 @@ export default function TabSedes() {
           )}
         </div>
 
+        {aviso && <p className="text-sm text-red-600 mb-3">{aviso}</p>}
+
         {sedes.length === 0 ? (
           <p className="text-sm text-muted py-6 text-center">Todavía no hay sedes.</p>
         ) : (
@@ -117,7 +127,13 @@ export default function TabSedes() {
             {sedes.map(s => (
               <div key={s.id} className="border border-gray-200 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-medium text-ink">{s.nombre}</p>
+                  <p className="font-medium text-ink flex items-center gap-2">
+                    {s.nombre}
+                    {s.principal && (
+                      <span title="Quien trabaja presencial y no tiene otra sede elegida queda en esta"
+                        className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/25 text-ink">PRINCIPAL</span>
+                    )}
+                  </p>
                   {s.direccion && <p className="text-xs text-muted">{s.direccion}</p>}
                   <p className="text-xs text-muted mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                     {s.lat !== null && s.lng !== null ? (
@@ -130,11 +146,21 @@ export default function TabSedes() {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => abrir(s)} className="p-2 text-gray-400 hover:text-ink" title="Editar"><Pencil size={15} /></button>
-                  <button onClick={() => setEliminando(s)} className="p-2 text-gray-400 hover:text-red-500" title="Eliminar"><Trash2 size={15} /></button>
+                  {/* La única sede no se elimina: quien trabaja presencial siempre
+                      necesita una. El servidor tampoco lo permite. */}
+                  {sedes.length > 1 && (
+                    <button onClick={() => setEliminando(s)} className="p-2 text-gray-400 hover:text-red-500" title="Eliminar"><Trash2 size={15} /></button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
+        )}
+
+        {bloqueado && sedes.length === 1 && (
+          <p className="text-xs text-muted mt-3">
+            Tu plan incluye una sede. Para cambiarle el nombre o ponerle ubicación, edítala con el lápiz.
+          </p>
         )}
 
         <p className="text-[11px] text-muted mt-4 leading-relaxed">
@@ -244,7 +270,7 @@ export default function TabSedes() {
         <ConfirmDialog
           abierto
           titulo={`Eliminar ${eliminando.nombre}`}
-          subtitulo="Los colaboradores asignados quedarán sin esta sede. Las marcaciones que ya se hicieron ahí conservan su registro histórico."
+          subtitulo="Quien trabaja presencial y solo tenía esta sede pasa a la Sede principal. Las marcaciones que ya se hicieron ahí conservan su registro histórico."
           textoContinuar="Eliminar"
           peligro
           onContinuar={eliminar}

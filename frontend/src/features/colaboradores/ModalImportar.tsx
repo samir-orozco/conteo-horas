@@ -264,7 +264,7 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
                 <div className="flex items-center gap-4 flex-wrap">
                   {[
                     { clave: CLAVE_HORARIO, etiqueta: 'Horario para todos', vacio: 'Sin horario', opciones: horarios },
-                    ...(sedes.length ? [{ clave: CLAVE_SEDE, etiqueta: 'Sede para todos', vacio: 'Sin sede', opciones: sedes }] : []),
+                    ...(sedes.length ? [{ clave: CLAVE_SEDE, etiqueta: 'Sede para todos', vacio: 'Principal (por defecto)', opciones: sedes }] : []),
                   ].map(g => (
                     <label key={g.clave} className="flex items-center gap-2 text-sm">
                       <span className="text-muted">{g.etiqueta.replace(' para todos', '')}</span>
@@ -379,7 +379,8 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
                               value={fila[CLAVE_SEDE] ?? ''}
                               onChange={e => cambiar(i, CLAVE_SEDE, e.target.value)}
                               className="w-full min-w-[9rem] border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                              <option value="">Sin sede</option>
+                              {/* Sin elegir, el servidor la deja en la Sede principal. */}
+                              <option value="">Principal (por defecto)</option>
                               {sedes.map(x => <option key={x.id} value={x.id}>{x.nombre}</option>)}
                             </select>
                           </td>

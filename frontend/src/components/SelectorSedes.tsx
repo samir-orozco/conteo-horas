@@ -1,6 +1,8 @@
 import type { Modalidad } from '../features/colaboradores/modalidad';
+import { sedeImplicita } from '../features/colaboradores/sedesDelFormulario';
 
-export type SedeOpcion = { id: string; nombre: string };
+// `principal` viene de GET /sedes: la sede que recibe un presencial sin sede elegida.
+export type SedeOpcion = { id: string; nombre: string; principal?: boolean };
 
 // Selector múltiple de sedes donde un colaborador puede marcar.
 //
@@ -40,6 +42,10 @@ export default function SelectorSedes({
   const alternar = (id: string) =>
     onChange(valor.includes(id) ? valor.filter(x => x !== id) : [...valor, id]);
 
+  // A un presencial sin sedes elegidas el servidor le asigna la principal. Se
+  // muestra para que nadie crea que lo dejó sin sede, pero no se elige por él.
+  const implicita = sedeImplicita(modalidad, valor, sedes);
+
   return (
     <div>
       {!sinRotulo && (
@@ -51,11 +57,14 @@ export default function SelectorSedes({
         {sedes.map(s => {
           const activa = valor.includes(s.id);
           return (
-            <button key={s.id} type="button" onClick={() => alternar(s.id)}
+            <button key={s.id} type="button" onClick={() => alternar(s.id)} aria-pressed={activa}
               className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
-                activa ? 'bg-primary/25 border-primary text-ink' : 'bg-white border-gray-300 text-muted hover:border-gray-400'
+                activa ? 'bg-primary/25 border-primary text-ink'
+                  : s.id === implicita ? 'bg-white border-dashed border-primary text-ink'
+                    : 'bg-white border-gray-300 text-muted hover:border-gray-400'
               }`}>
               {s.nombre}
+              {s.id === implicita && <span className="font-normal opacity-70"> · por defecto</span>}
             </button>
           );
         })}
@@ -66,7 +75,7 @@ export default function SelectorSedes({
               ? 'Sin sedes: podrá marcar igual, pero no quedará registrado desde dónde.'
               : 'Podrá marcar desde donde sea. Si está en una de estas, queda registrado en cuál.')
           : (valor.length === 0
-              ? 'Sin sedes: se le aplica la ubicación general de la empresa.'
+              ? 'Sin elegir, queda en la Sede principal: quien trabaja presencial siempre tiene sede.'
               // Con UNA sola sede no hay a dónde cruzar, así que el permiso no
               // cambia nada y la frase es la de siempre.
               : puedeCerrarEnOtraSede && valor.length >= 2

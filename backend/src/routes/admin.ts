@@ -9,6 +9,7 @@ import { capacidadesDe, esPlan, FEATURES, PLAN_IDS, obtenerPlanes, combinarPlane
 import { comprobanteAGuardar } from '../utils/comprobantes';
 import { decidirEliminacion } from '../utils/eliminarEmpresa';
 import { borrarEmpresaEnCascada } from '../utils/borrarEmpresaEnCascada';
+import { crearSedePrincipal } from '../utils/sedesDeEmpresa';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
@@ -187,6 +188,8 @@ export default async function adminRoutes(app: FastifyInstance) {
         await tx.suscripcion.create({
           data: { empresaId: emp.id, estado: 'PRUEBA', finPrueba: new Date(Date.now() + DIAS_PRUEBA * DIA_MS) },
         });
+        // Quien trabaja presencial siempre tiene sede, así que la empresa nace con una.
+        await crearSedePrincipal(tx, emp.id);
         await tx.usuario.create({
           data: { email: admin.email, password: hash, nombre: admin.nombre, rol: 'ADMIN', empresaId: emp.id },
         });

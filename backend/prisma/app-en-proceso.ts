@@ -16,6 +16,10 @@ import workerRoutes from '../src/routes/worker';
 import reporteRoutes from '../src/routes/reportes';
 import permisoRoutes from '../src/routes/permisos';
 import dashboardRoutes from '../src/routes/dashboard';
+import colaboradorRoutes from '../src/routes/colaboradores';
+import registroRoutes from '../src/routes/registros';
+import sedeRoutes from '../src/routes/sedes';
+import adminRoutes from '../src/routes/admin';
 
 type Sesion = { id: string; rol: string; nombre?: string; empresaId?: string | null };
 
@@ -47,11 +51,26 @@ export async function montarApp() {
     request.usuarioId = sesion.id;
     request.usuarioNombre = sesion.nombre;
   });
+  app.decorate('requireSuperAdmin', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      reply.status(401).send({ error: 'No autorizado' });
+      return;
+    }
+    if ((request.user as Sesion).rol !== 'SUPER_ADMIN') {
+      reply.status(403).send({ error: 'Requiere super administrador' });
+    }
+  });
 
   await app.register(workerRoutes, { prefix: '/api/worker' });
   await app.register(reporteRoutes, { prefix: '/api/reportes' });
   await app.register(permisoRoutes, { prefix: '/api/permisos' });
   await app.register(dashboardRoutes, { prefix: '/api/dashboard' });
+  await app.register(colaboradorRoutes, { prefix: '/api/colaboradores' });
+  await app.register(registroRoutes, { prefix: '/api/registros' });
+  await app.register(sedeRoutes, { prefix: '/api/sedes' });
+  await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.ready();
 
   const tokenAdmin = (empresaId: string) =>

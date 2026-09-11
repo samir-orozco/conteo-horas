@@ -6,6 +6,7 @@ import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar, regenerarDiasDeColaborador } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
+import { sedeParaMarcaSinUbicacion } from '../utils/sedesDeEmpresa';
 import { eventosDeRevision, type FilaDeRevision } from '../utils/revisionMarcaciones';
 import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
@@ -683,10 +684,13 @@ export default async function registroRoutes(app: FastifyInstance) {
     });
     if (existente) return reply.status(400).send({ error: 'Ya tiene una entrada activa hoy' });
 
+    // La escribe el admin, así que no trae ubicación: un presencial queda en su
+    // sede o en la principal (utils/sedePrincipal.ts).
+    const sedeId = await sedeParaMarcaSinUbicacion(prisma, colaboradorId);
     const registro = await prisma.registro.create({
       // La escribió el admin, no el kiosco. Sin esto quedaría en null y se
       // confundiría con una marcación anterior a que se midiera el método.
-      data: { colaboradorId, fecha: ahora, entrada: ahora, tipo: 'NORMAL', metodoEntrada: 'MANUAL' },
+      data: { colaboradorId, fecha: ahora, entrada: ahora, tipo: 'NORMAL', metodoEntrada: 'MANUAL', sedeId },
     });
     await asegurarDiaSinFallar(colaboradorId, registro.fecha, app.log);
     return reply.status(201).send(registro);
@@ -721,9 +725,13 @@ export default async function registroRoutes(app: FastifyInstance) {
     const motivo = await motivoParaRechazar(datos.colaboradorId, datos.fecha, datos.entrada ?? null, datos.salida ?? null);
     if (motivo) return reply.status(400).send(motivo);
 
+    // Misma regla que la entrada manual: sin ubicación, un presencial queda en su
+    // sede. Un registro sin hora de entrada no es una marcación y no la lleva.
+    const sedeId = datos.entrada ? await sedeParaMarcaSinUbicacion(prisma, datos.colaboradorId) : null;
     const registro = await prisma.registro.create({
       data: {
         ...datos,
+        sedeId,
         // Solo se marca el momento que de verdad trae hora: un registro manual
         // puede traer solo entrada, y poner MANUAL en una salida vacía diría que
         // alguien la escribió cuando no existe.
@@ -767,10 +775,18 @@ export default async function registroRoutes(app: FastifyInstance) {
     await anotarCambios(id, existente as any, cambios, request.usuarioId, request.usuarioNombre)
       .catch(err => request.log.error(err, 'No se pudo anotar el cambio del registro'));
 
+    // Una fila que no era marcación y ahora recibe hora de entrada pasa a serlo:
+    // un presencial la tiene en su sede (utils/sedePrincipal.ts). Las que ya
+    // tenían entrada no se tocan: completar las viejas es otra decisión.
+    const sedeNueva = cambios.entrada && !existente.entrada && !existente.sedeId
+      ? await sedeParaMarcaSinUbicacion(prisma, cambios.colaboradorId ?? existente.colaboradorId)
+      : null;
+
     const actualizado = await prisma.registro.update({
       where: { id },
       data: {
         ...cambios,
+        ...(sedeNueva ? { sedeId: sedeNueva } : {}),
         // Sin salida no hay dónde se cerró. Un turno reabierto conservaba la sede
         // de la salida borrada, y si después lo cerraba el sistema o alguien sin
         // sede identificada, la fila decía «Cerró en» un sitio donde nadie marcó.
@@ -921,10 +937,24 @@ export default async function registroRoutes(app: FastifyInstance) {
       });
     }
 
+    // La tarde que nace de esta edición no pasó por el kiosco: un presencial la
+    // trabaja en la sede donde abrió la jornada, o en la suya (utils/sedePrincipal.ts).
+    // Y si la jornada nace de una fila que no tenía entrada, esa fila pasa a ser
+    // una marcación con la misma regla.
+    const sedeDeLaManana = !esta[0].entrada && !esta[0].sedeId
+      ? await sedeParaMarcaSinUbicacion(prisma, colaboradorId)
+      : null;
+    const sedeDeLaTarde = nuevos[1] && !esta[1]
+      ? await sedeParaMarcaSinUbicacion(prisma, colaboradorId, esta[0].sedeId ?? sedeDeLaManana)
+      : null;
+
     await prisma.$transaction(async (tx) => {
       await tx.registro.update({
         where: { id: esta[0].id },
-        data: { ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida, ...plan.primera },
+        data: {
+          ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida, ...plan.primera,
+          ...(sedeDeLaManana ? { sedeId: sedeDeLaManana } : {}),
+        },
       });
       const segunda = esta[1];
       let idSegunda = segunda?.id ?? null;
@@ -935,7 +965,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         // salida puede no ser nueva —al poner el descanso es la salida del día, que
         // sí se marcó en el kiosco— y por eso el método de salida viene del plan.
         else idSegunda = (await tx.registro.create({
-          data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any, metodoEntrada: 'MANUAL' },
+          data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any, metodoEntrada: 'MANUAL', sedeId: sedeDeLaTarde },
           select: { id: true },
         })).id;
       }

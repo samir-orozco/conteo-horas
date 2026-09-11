@@ -70,6 +70,21 @@ describe('CamposColaborador', () => {
       expect(screen.getByRole('group', { name: /sedes/i })).toBeInTheDocument();
     });
 
+    it('cambiar la modalidad no toca las sedes: la principal la pone el servidor, no el formulario', async () => {
+      // Revisión del 11 de septiembre de 2026: con la principal metida en el
+      // formulario, quien pasaba a remoto antes de guardar se la dejaba sin verla.
+      const onCambio = vi.fn();
+      render(
+        <CamposColaborador
+          valores={{ nombre: 'Ana', modalidad: 'PRESENCIAL', sedeIds: [] }}
+          onCambio={onCambio} horarios={horarios} resumenFranjas={() => ''}
+          sedes={[{ id: 's1', nombre: 'Sede principal', principal: true }]}
+        />,
+      );
+      await userEvent.click(screen.getByRole('radio', { name: /remoto/i }));
+      expect(onCambio).toHaveBeenLastCalledWith({ modalidad: 'REMOTO' });
+    });
+
     it('se esconden para un remoto: asignárselas no cambiaría nada', () => {
       montar({ modalidad: 'REMOTO' });
       expect(screen.queryByRole('group', { name: /sedes/i })).not.toBeInTheDocument();

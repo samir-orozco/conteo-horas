@@ -6,6 +6,7 @@ import { estadoEfectivo, sincronizarEstado, DIAS_PRUEBA, obtenerPrecios } from '
 import { obtenerPlanes, PLAN_IDS } from '../utils/planes';
 import { enviarCorreo, plantillaCorreo, correoConfigurado } from '../utils/correo';
 import { limpiarPago } from '../utils/afiliados';
+import { crearSedePrincipal } from '../utils/sedesDeEmpresa';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 // Vencimiento de la sesión del panel (el kiosco usa su propio token de 12h)
@@ -79,6 +80,8 @@ export default async function authRoutes(app: FastifyInstance) {
       await tx.suscripcion.create({
         data: { empresaId: emp.id, estado: 'PRUEBA', finPrueba: new Date(Date.now() + DIAS_PRUEBA * DIA_MS) },
       });
+      // Quien trabaja presencial siempre tiene sede, así que la empresa nace con una.
+      await crearSedePrincipal(tx, emp.id);
       const user = await tx.usuario.create({
         data: {
           email, password: hash, nombre, rol: 'ADMIN', empresaId: emp.id,

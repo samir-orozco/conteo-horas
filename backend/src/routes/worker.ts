@@ -8,7 +8,8 @@ import { enviarTelegram } from '../utils/telegram';
 import { notificar } from '../utils/notificaciones';
 import { rangoDiaBogota } from '../utils/fechas';
 import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes, exigeRetoDePose } from '../utils/kioscoConfig';
-import { decidirUbicacionDeMarca, MODALIDAD_POR_DEFECTO, puedeCerrarAqui } from '../utils/modalidad';
+import { decidirUbicacionDeMarca, MODALIDAD_POR_DEFECTO, puedeCerrarAqui, sedeQueAtaElCierre } from '../utils/modalidad';
+import { sedeParaMarcaSinUbicacion } from '../utils/sedesDeEmpresa';
 import { VENTANA_TURNO_MS } from '../utils/cierreTurnos';
 import { puedeSalirAAlmorzar, dentroDeLaVentana } from '../utils/almuerzo';
 import { salidaAntesDeHora, ventanaDeSalidaTemprana, ventanaDeLlegadaTarde, llegadaTarde } from '../utils/tardanzas';
@@ -582,7 +583,13 @@ export default async function workerRoutes(app: FastifyInstance) {
           // `=== true` y no un truthy: si el colaborador no apareció, falla
           // cerrado, que es la regla de siempre.
           puedeCerrarEnOtraSede: col?.puedeCerrarEnOtraSede === true,
-          sedeDelTurno: abierto.sedeId,
+          // Solo la sede que la ubicación pudo probar al abrir: la que se dedujo
+          // para un presencial no obliga a nadie a cerrar ahí.
+          sedeDelTurno: sedeQueAtaElCierre({
+            sedeDelTurno: abierto.sedeId,
+            metodoEntrada: abierto.metodoEntrada,
+            sedesConUbicacion: sedesDelTrabajador.map(s => s.id),
+          }),
           sedeDeLaMarca,
         });
         if (!cierraAqui) {
@@ -726,6 +733,13 @@ export default async function workerRoutes(app: FastifyInstance) {
           }
         }
 
+        // Un presencial siempre marca en una sede (decisión del dueño, 11 de
+        // septiembre de 2026). Si la ubicación no identificó ninguna porque sus
+        // sedes no tienen coordenadas, la entrada va a la suya o a la principal
+        // (utils/sedePrincipal.ts). La salida no: sin ubicación sigue siendo «no
+        // se sabe». Y al cerrar, una sede deducida no obliga a cerrar ahí (ver
+        // `sedeQueAtaElCierre`), para no frenar a nadie en el kiosco.
+        const sedeDeLaEntrada = sedeDeLaMarca ?? await sedeParaMarcaSinUbicacion(prisma, payload.id);
         const nuevo = await prisma.registro.create({
           data: {
             colaboradorId: payload.id,
@@ -734,8 +748,9 @@ export default async function workerRoutes(app: FastifyInstance) {
             ...(esRegresoEstimado ? { entradaEstimada: true } : {}),
             tipo: tipo as any,
             // Queda guardado DÓNDE marcó, no dónde debía: el filtro por sede de
-            // los reportes tiene que reflejar la realidad.
-            ...(sedeDeLaMarca ? { sedeId: sedeDeLaMarca } : {}),
+            // los reportes tiene que reflejar la realidad. Solo cuando la
+            // ubicación no lo dijo, un presencial queda en la suya.
+            ...(sedeDeLaEntrada ? { sedeId: sedeDeLaEntrada } : {}),
             ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
             ...camposDeAutenticacion(payload, 'entrada'),
           },

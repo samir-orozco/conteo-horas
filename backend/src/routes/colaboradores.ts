@@ -6,6 +6,7 @@ import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida } from '../utils/rostro';
 import { normalizarModalidad, normalizarPermisoOtraSede } from '../utils/modalidad';
+import { asegurarSedeDePresencial } from '../utils/sedesDeEmpresa';
 import { fotoPerfilValida, fotoParaEnrolar, miniValida } from '../utils/fotoPerfil';
 import { resumenDeContrato } from '../utils/estadoContratoResumen';
 import { validarImportacion, COLUMNAS_FORMATO } from '../utils/importarColaboradores';
@@ -136,7 +137,8 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   // Reemplaza las sedes donde este colaborador puede marcar. Se validan contra
   // la empresa del token: sin eso, un id de otra empresa colaría a alguien en
   // una sede ajena. `undefined` significa "no se tocó" y se distingue de `[]`,
-  // que sí quiere decir "quítale todas".
+  // que sí quiere decir "quítale todas". A un presencial, después de esto,
+  // `asegurarSedeDePresencial` le devuelve la principal: nunca queda sin sede.
   async function sincronizarSedes(colaboradorId: string, sedeIds: unknown, empresaId: string) {
     if (!Array.isArray(sedeIds)) return;
     const validas = await prisma.sede.findMany({
@@ -290,6 +292,10 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       }
     }
 
+    // La carga masiva no trae modalidad, así que todos entran presenciales: a
+    // quien no se le eligió sede le queda la principal.
+    await asegurarSedeDePresencial(prisma, request.empresaId!, creados.map(c => c.id));
+
     return { ...respuesta, creados: creados.length };
     } catch (err) {
       request.log.error({ err, filas: filas.length, soloValidar }, 'Falló la carga masiva de colaboradores');
@@ -363,6 +369,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
         fecha: medianocheBogota(hoyEnBogota()), usuarioId: request.usuarioId ?? null,
         nota: 'Reingresó al volver a registrar su cédula' });
       await sincronizarSedes(reactivado.id, sedeIds, request.empresaId!);
+      await asegurarSedeDePresencial(prisma, request.empresaId!, [reactivado.id]);
       return reply.status(200).send({ ...reactivado, reactivado: true });
     }
 
@@ -373,6 +380,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       fecha: medianocheBogota(hoyEnBogota()), usuarioId: request.usuarioId ?? null });
     await materializar(colaborador.id);
     await sincronizarSedes(colaborador.id, sedeIds, request.empresaId!);
+    await asegurarSedeDePresencial(prisma, request.empresaId!, [colaborador.id]);
     return reply.status(201).send(colaborador);
   });
 
@@ -395,6 +403,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (malaFoto) return reply.status(400).send({ error: malaFoto });
     const actualizado = await prisma.colaborador.update({ where: { id }, data });
     await sincronizarSedes(id, sedeIds, request.empresaId!);
+    // También si solo cambió la modalidad: un híbrido sin sedes que pasa a
+    // presencial recibe la principal.
+    await asegurarSedeDePresencial(prisma, request.empresaId!, [id]);
 
     // Cambiar a alguien de horario es la otra forma de reescribir el pasado:
     // `Colaborador.horarioId` tampoco tiene historial. Aplica desde HOY si su día
@@ -599,6 +610,8 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     });
     await registrarEvento({ colaboradorId: id, tipo: 'REINGRESO',
       fecha: medianocheBogota(hoyEnBogota()), usuarioId: request.usuarioId ?? null });
+    // Si su sede se desactivó mientras estuvo retirado, vuelve a la principal.
+    await asegurarSedeDePresencial(prisma, request.empresaId!, [id]);
     // Sus días esperados quedaron congelados con el horario del día que se fue.
     try {
       await regenerarDiasDeColaborador(id);

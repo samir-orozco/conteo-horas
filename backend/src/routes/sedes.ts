@@ -1,6 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../prisma';
 import { capacidadesEmpresa } from '../utils/capacidades';
+import { sedePrincipal } from '../utils/sedePrincipal';
+import { asegurarSedeDePresencial } from '../utils/sedesDeEmpresa';
 
 // Sedes de la empresa: cada local con su propia geocerca.
 //
@@ -44,12 +46,16 @@ function camposSede(body: SedeInput) {
 export default async function sedeRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
 
+  // `principal` le dice a la pantalla cuál es la Sede principal: la que reciben
+  // los presenciales a los que nadie les eligió sede (utils/sedePrincipal.ts).
   app.get('/', auth, async (request) => {
-    return prisma.sede.findMany({
+    const sedes = await prisma.sede.findMany({
       where: { empresaId: request.empresaId, activa: true },
       include: { _count: { select: { colaboradores: true } } },
       orderBy: { nombre: 'asc' },
     });
+    const principal = sedePrincipal(sedes);
+    return sedes.map(s => ({ ...s, principal: s.id === principal }));
   });
 
   app.post('/', auth, async (request, reply) => {
@@ -90,15 +96,38 @@ export default async function sedeRoutes(app: FastifyInstance) {
   // el reporte histórico tiene que poder seguir diciendo dónde ocurrió cada
   // marcación. Sí se sueltan los colaboradores, o quedarían asignados a una sede
   // donde ya no pueden marcar.
+  //
+  // Y como un presencial siempre tiene sede (11 de septiembre de 2026): la última
+  // sede activa no se desactiva, porque dejaría a todos sin ninguna, y quien
+  // trabaja presencial y se queda sin sede pasa a la principal en la misma
+  // transacción.
   app.delete('/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const existente = await prisma.sede.findFirst({ where: { id, empresaId: request.empresaId } });
-    if (!existente) return reply.status(404).send({ error: 'Sede no encontrada' });
+    const empresaId = request.empresaId!;
+    const resultado = await prisma.$transaction(async (tx) => {
+      // Candado sobre la empresa: dos pestañas desactivando a la vez las dos
+      // últimas sedes verían cada una que queda la otra, y la empresa terminaría
+      // sin ninguna.
+      await tx.$queryRaw`SELECT id FROM empresas WHERE id = ${empresaId} FOR UPDATE`;
+      const existente = await tx.sede.findFirst({ where: { id, empresaId }, select: { activa: true } });
+      if (!existente) return 'NO_EXISTE' as const;
+      const otras = await tx.sede.count({ where: { empresaId, activa: true, id: { not: id } } });
+      if (existente.activa && otras === 0) return 'ES_LA_ULTIMA' as const;
 
-    await prisma.$transaction([
-      prisma.colaboradorSede.deleteMany({ where: { sedeId: id } }),
-      prisma.sede.update({ where: { id }, data: { activa: false } }),
-    ]);
+      const asignados = await tx.colaboradorSede.findMany({ where: { sedeId: id }, select: { colaboradorId: true } });
+      await tx.colaboradorSede.deleteMany({ where: { sedeId: id } });
+      await tx.sede.update({ where: { id }, data: { activa: false } });
+      await asegurarSedeDePresencial(tx, empresaId, asignados.map(a => a.colaboradorId));
+      return 'DESACTIVADA' as const;
+    }, { timeout: 30_000 });
+
+    if (resultado === 'NO_EXISTE') return reply.status(404).send({ error: 'Sede no encontrada' });
+    if (resultado === 'ES_LA_ULTIMA') {
+      return reply.status(400).send({
+        error: 'Es la única sede de la empresa, y quien trabaja presencial siempre necesita una. Cámbiale el nombre o la ubicación en vez de eliminarla.',
+        codigo: 'ULTIMA_SEDE',
+      });
+    }
     return { ok: true };
   });
 }

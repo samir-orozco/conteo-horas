@@ -113,6 +113,8 @@ export function decidirUbicacionDeMarca(ctx: ContextoMarca): DecisionUbicacion {
 //   - HIBRIDO y REMOTO: la regla ya no les aplicaba.
 //   - turno abierto sin sede: son los de antes de que existieran las sedes, y
 //     bloquearlos los dejaría atrapados sin poder cerrarse desde ningún lado.
+//   - turno con una sede deducida y no probada por la ubicación: la ruta la
+//     convierte en «sin sede» antes de llamar, con `sedeQueAtaElCierre`.
 //   - marca sin sede: el presencial cuyas sedes no tienen coordenadas, al que la
 //     geocerca de la empresa deja pasar sin identificar ninguna sede.
 //   - el permiso: el supervisor que recorre varias sedes en el mismo turno.
@@ -132,6 +134,26 @@ export function puedeCerrarAqui(ctx: ContextoCierre): boolean {
   if (ctx.puedeCerrarEnOtraSede) return true;
   if (!ctx.sedeDelTurno || !ctx.sedeDeLaMarca) return true;
   return ctx.sedeDelTurno === ctx.sedeDeLaMarca;
+}
+
+// La sede del turno abierto que obliga a cerrarlo ahí: solo la que la ubicación
+// pudo probar al abrir, es decir, una entrada que marcó la persona en el kiosco
+// (ROSTRO o CEDULA) en una sede que tiene coordenadas.
+//
+// Desde el 11 de septiembre de 2026 un presencial siempre tiene sede, así que la
+// entrada que escribe un administrador, o la que se marca en una sede sin
+// coordenadas, guarda una sede DEDUCIDA (utils/sedePrincipal.ts). Tomarla como
+// probada frenaría en el kiosco a quien nunca marcó en ella, cuando antes esa
+// entrada iba sin sede y la salida pasaba. Una entrada sin método es de antes de
+// que se midiera, y no hay cómo saber de dónde salió su sede.
+export function sedeQueAtaElCierre(t: {
+  sedeDelTurno: string | null;
+  metodoEntrada: string | null;
+  sedesConUbicacion: string[];
+}): string | null {
+  if (!t.sedeDelTurno) return null;
+  if (t.metodoEntrada !== 'ROSTRO' && t.metodoEntrada !== 'CEDULA') return null;
+  return t.sedesConUbicacion.includes(t.sedeDelTurno) ? t.sedeDelTurno : null;
 }
 
 // Lo que llega del cuerpo al crear o editar un colaborador.
