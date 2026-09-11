@@ -11,7 +11,7 @@ import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
 } from '../utils/saldoTiempo';
 import { diferenciasDeRegistro, type EstadoRegistro } from '../utils/cambiosRegistro';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, sedesDeSalidaTrasEditar } from '../utils/jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, salidasTrasEditar } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -903,29 +903,50 @@ export default async function registroRoutes(app: FastifyInstance) {
     };
     const antesPrimera = { ...esta[0] } as any;
 
-    // Quitar o poner el descanso cambia QUÉ salida guarda cada fila, y la sede de
-    // esa salida tiene que ir con ella. Ver `sedesDeSalidaTrasEditar`.
-    const sedesSalida = sedesDeSalidaTrasEditar(esta, {
-      descansoSalida: !!t.descansoSalida, descansoRegreso: !!t.descansoRegreso, salida: !!t.salida,
-    });
+    // Quitar o poner el descanso cambia QUÉ salida guarda cada fila, y todo lo que
+    // dice cómo se marcó esa salida tiene que ir con ella. Ver `salidasTrasEditar`.
+    const plan = salidasTrasEditar(esta, t);
+
+    // Una foto del kiosco que no queda en ninguna fila se borra al guardar. Es
+    // evidencia de asistencia, así que no se borra sin que el administrador lo
+    // haya visto: la primera vez se devuelve la lista y el formulario pregunta.
+    // Va después de todas las validaciones, para no pedir una confirmación que
+    // luego termine en otro error.
+    if (plan.fotosQueSePierden.length > 0 && b.confirmarBorrarFotos !== true) {
+      const n = plan.fotosQueSePierden.length;
+      return reply.status(409).send({
+        error: `Guardar así borra ${n === 1 ? 'una foto' : `${n} fotos`} del kiosco que ya no pertenecen a ninguna marca de la jornada.`,
+        codigo: 'BORRA_FOTOS',
+        fotos: plan.fotosQueSePierden,
+      });
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.registro.update({
         where: { id: esta[0].id },
-        data: { ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida, sedeSalidaId: sedesSalida.primera },
+        data: { ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida, ...plan.primera },
       });
       const segunda = esta[1];
+      let idSegunda = segunda?.id ?? null;
       if (nuevos[1]) {
-        const datos = { ...comunes, entrada: nuevos[1].entrada, salida: nuevos[1].salida, salidaAlmuerzo: false, sedeSalidaId: sedesSalida.segunda };
+        const datos = { ...comunes, entrada: nuevos[1].entrada, salida: nuevos[1].salida, salidaAlmuerzo: false, ...plan.segunda };
         if (segunda) await tx.registro.update({ where: { id: segunda.id }, data: datos });
-        // Fila nueva nacida de una edición del admin. La de arriba se ACTUALIZA y
-        // conserva su método original a propósito: esa marcación sí ocurrió en el
-        // kiosco, y el cambio queda registrado en `RegistroCambio` y `editadoPor`.
-        else await tx.registro.create({ data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any, metodoEntrada: 'MANUAL', metodoSalida: 'MANUAL' } });
-      } else if (segunda) {
-        // Se quitó el descanso: la marcación del regreso ya no representa nada.
-        await tx.registro.delete({ where: { id: segunda.id } });
+        // Fila nueva nacida de una edición del admin: su entrada la escribió él. Su
+        // salida puede no ser nueva —al poner el descanso es la salida del día, que
+        // sí se marcó en el kiosco— y por eso el método de salida viene del plan.
+        else idSegunda = (await tx.registro.create({
+          data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any, metodoEntrada: 'MANUAL' },
+          select: { id: true },
+        })).id;
       }
+      // Las novedades se mueven ANTES de borrar: cuelgan de su marcación con ON
+      // DELETE CASCADE, y borrar la tarde se llevaba la de la salida temprana.
+      for (const n of plan.novedades) {
+        const hacia = n.hacia === 'primera' ? esta[0].id : idSegunda;
+        if (hacia) await tx.permiso.updateMany({ where: { registroId: n.desde }, data: { registroId: hacia } });
+      }
+      // Se quitó el descanso: la marcación del regreso ya no representa nada.
+      if (!nuevos[1] && segunda) await tx.registro.delete({ where: { id: segunda.id } });
     });
 
     await anotarCambios(esta[0].id, antesPrimera, cambiosPrimera, request.usuarioId, request.usuarioNombre)

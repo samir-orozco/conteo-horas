@@ -1,3 +1,4 @@
+import type { MetodoMarcacion } from '@prisma/client';
 import { minutosAlmuerzoADescontar, minutosEnVentana, type DiaParaAlmuerzo } from './almuerzo';
 import { ajustarAJornada, type DiaParaAjuste } from './ajusteJornada';
 import { minutosDe } from './tardanzas';
@@ -354,24 +355,139 @@ export function sedesDeLaJornada<S>(
   return { abrio: jornada[0].sede, cerro: marcacionQueCierra(jornada)?.sedeSalida ?? null };
 }
 
-// Qué sede de salida le toca a cada marcación cuando el administrador reescribe
-// una jornada entera.
+// Todo lo que dice CÓMO se marcó una salida. Es de la salida y no de la fila.
+export type DatosDeSalida = {
+  sedeSalidaId: string | null;
+  fotoSalida: string | null;
+  metodoSalida: MetodoMarcacion | null;
+  distanciaSalida: number | null;
+  salidaEstimada: boolean;
+};
+
+export type MarcacionEditable = RegistroDeDia & DatosDeSalida & { id: string; fotoEntrada: string | null };
+
+// Las horas que quedan después de la edición, ya resueltas por `instantesDeJornada`.
+export type HorasQueQuedan = { descansoSalida: Date | null; descansoRegreso: Date | null; salida: Date | null };
+
+export type FotoQueSePierde = { momento: Momento; hora: Date | null };
+
+export type Puesto = 'primera' | 'segunda';
+
+type Papel = 'DESCANSO' | 'CIERRE';
+// Una salida de la jornada editada: qué papel cumple, a qué hora quedó y de qué
+// marcación de antes hereda lo suyo. La posición en la lista es la fila.
+type Hueco<T> = { papel: Papel; hora: Date | null; fuente: T | null };
+
+const PUESTOS: Puesto[] = ['primera', 'segunda'];
+const SIN_SALIDA = { sedeSalidaId: null, fotoSalida: null, metodoSalida: null, distanciaSalida: null };
+
+const mismoMinuto = (a: Date, b: Date) => Math.floor(a.getTime() / MS_MIN) === Math.floor(b.getTime() / MS_MIN);
+
+// Qué salida guardaba cada marcación antes de editar. El cierre puede no tener
+// hora: un turno abierto, o uno que el barrido marcó sin poder ponerle hora,
+// sigue siendo el sitio de la salida del día.
+function salidasDeAntes<T extends MarcacionEditable>(antes: T[]): Record<Papel, T | null> {
+  const primera = antes[0];
+  const ultima = antes[antes.length - 1];
+  return {
+    DESCANSO: primera?.salida && primera.salidaAlmuerzo ? primera : null,
+    CIERRE: marcacionQueCierra(antes) ?? (ultima && !ultima.salida ? ultima : null),
+  };
+}
+
+function huecosQueQuedan<T>(queda: HorasQueQuedan, antes: Record<Papel, T | null>): Hueco<T>[] {
+  const hueco = (papel: Papel, hora: Date | null): Hueco<T> => ({ papel, hora, fuente: antes[papel] });
+  if (!queda.descansoSalida) return [hueco('CIERRE', queda.salida)];
+  if (!queda.descansoRegreso) return [hueco('DESCANSO', queda.descansoSalida)];
+  return [hueco('DESCANSO', queda.descansoSalida), hueco('CIERRE', queda.salida)];
+}
+
+// Una marca que cambió de papel sin cambiar de minuto es la MISMA marca: quien
+// oprimió «salir a descansar» cuando se iba. Se busca solo para el hueco que no
+// tiene de quién heredar una salida con hora, y entre las marcas que ningún otro
+// hueco se llevó. Al minuto, porque el formulario manda HH:mm y el kiosco guarda
+// segundos.
+function reconocerLaMismaMarca<T extends MarcacionEditable>(huecos: Hueco<T>[], antes: T[]): Hueco<T>[] {
+  const tomadas = new Set(huecos.map(h => h.fuente).filter(f => f?.salida));
+  return huecos.map(h => {
+    const hora = h.hora;
+    if (!hora || h.fuente?.salida) return h;
+    const misma = antes.find(m => m.salida && !tomadas.has(m) && mismoMinuto(m.salida, hora));
+    if (!misma) return h;
+    tomadas.add(misma);
+    return { ...h, fuente: misma };
+  });
+}
+
+function datosDelHueco<T extends MarcacionEditable>({ hora, fuente }: Hueco<T>): DatosDeSalida {
+  // La marca de estimada va con el sitio de la salida y no con la hora: reabrir
+  // un turno que cerró el sistema no puede dejarlo listo para que el barrido lo
+  // vuelva a cerrar, y ponerle hora a mano no borra que nadie la marcó.
+  const salidaEstimada = fuente?.salidaEstimada ?? false;
+  if (!hora) return { ...SIN_SALIDA, salidaEstimada };
+  if (!fuente?.salida) return { ...SIN_SALIDA, metodoSalida: 'MANUAL', salidaEstimada };
+  const { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida } = fuente;
+  return { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida, salidaEstimada };
+}
+
+// Las fotos que no quedan en ninguna fila: las de las salidas que nadie heredó
+// con hora, y la de la entrada de una fila que se borra.
+function fotosQueSePierden<T extends MarcacionEditable>(antes: T[], huecos: Hueco<T>[]): FotoQueSePierde[] {
+  const conservadas = new Set(huecos.filter(h => h.hora && h.fuente?.salida).map(h => h.fuente));
+  const fotos: FotoQueSePierde[] = [];
+  antes.forEach((m, i) => {
+    if (i >= huecos.length && m.fotoEntrada) fotos.push({ momento: 'REGRESO_ALMUERZO', hora: m.entrada });
+    if (m.fotoSalida && !conservadas.has(m)) {
+      fotos.push({ momento: m.salida && m.salidaAlmuerzo ? 'SALIDA_ALMUERZO' : 'SALIDA', hora: m.salida });
+    }
+  });
+  const orden = (f: FotoQueSePierde) => f.hora?.getTime() ?? Number.MAX_SAFE_INTEGER;
+  return fotos.sort((a, b) => orden(a) - orden(b));
+}
+
+// Lo que cuelga de una marcación (la novedad de una salida temprana) va a donde
+// fue su salida. Si su salida no quedó en ninguna parte se queda en su fila, y si
+// su fila se borra, a la primera, que nunca se borra.
+function novedadesQueSeMueven<T extends MarcacionEditable>(antes: T[], huecos: Hueco<T>[]): { desde: string; hacia: Puesto }[] {
+  return antes.flatMap((m, i) => {
+    const suHueco = huecos.findIndex(h => h.fuente === m);
+    const destino = suHueco >= 0 ? suHueco : i < huecos.length ? i : 0;
+    return destino === i ? [] : [{ desde: m.id, hacia: PUESTOS[destino] }];
+  });
+}
+
+// Qué le toca a cada fila cuando el administrador reescribe una jornada entera, y
+// qué se pierde en el camino.
 //
-// `sedeSalidaId` dice dónde se marcó la salida que guarda esa fila, y quitar o
-// poner el descanso cambia CUÁL salida guarda cada una: al quitarlo, la primera
-// pasa a tener la salida del día y seguía diciendo la sede del almuerzo. La regla:
-// la fila que queda con la salida al descanso lleva la sede de la salida al
-// descanso de antes, la que queda con la salida del día lleva la del cierre de
-// antes, y una fila sin salida no lleva ninguna. Lo que antes no existía no se
-// inventa: queda en null, que es «no se sabe».
-export function sedesDeSalidaTrasEditar(
-  antes: (RegistroDeDia & { sedeSalidaId: string | null })[],
-  queda: { descansoSalida: boolean; descansoRegreso: boolean; salida: boolean },
-): { primera: string | null; segunda: string | null } {
-  const delDescanso = antes.find(m => m.salida && m.salidaAlmuerzo)?.sedeSalidaId ?? null;
-  const delCierre = marcacionQueCierra(antes)?.sedeSalidaId ?? null;
-  if (!queda.descansoSalida) return { primera: queda.salida ? delCierre : null, segunda: null };
-  return { primera: delDescanso, segunda: queda.descansoRegreso && queda.salida ? delCierre : null };
+// Quitar o poner el descanso cambia CUÁL salida guarda cada fila. La sede, la
+// foto, el método, la distancia y la marca de estimada son de la salida, así que
+// viajan juntos. Antes solo viajaba la sede: al quitar el descanso, la fila que
+// quedaba decía «Salida 17:00» con la foto de la salida al descanso, y la foto
+// real de las 17:00 se borraba con la marcación de la tarde.
+//
+// La regla: la fila que queda con la salida al descanso hereda la salida al
+// descanso de antes, y la que queda con la salida del día hereda la del día. Lo
+// que antes no existía no se inventa: la escribió el administrador (MANUAL, sin
+// foto ni sede).
+//
+// `fotosQueSePierden` son las que no quedan en ninguna fila: la ruta no guarda
+// sin que el administrador lo confirme. `novedades` dice a qué fila se mueve lo
+// que cuelga de cada marcación, que si no se borraría en cascada con la tarde.
+//
+// Espera a lo sumo dos marcaciones y en orden, que es lo que la ruta acepta.
+export function salidasTrasEditar<T extends MarcacionEditable>(antes: T[], queda: HorasQueQuedan): {
+  primera: DatosDeSalida;
+  segunda: DatosDeSalida | null;
+  fotosQueSePierden: FotoQueSePierde[];
+  novedades: { desde: string; hacia: Puesto }[];
+} {
+  const huecos = reconocerLaMismaMarca(huecosQueQuedan(queda, salidasDeAntes(antes)), antes);
+  return {
+    primera: datosDelHueco(huecos[0]),
+    segunda: huecos[1] ? datosDelHueco(huecos[1]) : null,
+    fotosQueSePierden: fotosQueSePierden(antes, huecos),
+    novedades: novedadesQueSeMueven(antes, huecos),
+  };
 }
 
 export function partirDiaEnJornadas<T extends RegistroDeDia>(
