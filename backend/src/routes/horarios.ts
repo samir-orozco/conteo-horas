@@ -3,45 +3,10 @@ import { prisma } from '../prisma';
 import { jornadaVigente } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { regenerarDiasDeHorario, regenerarDiasDeVarios } from '../utils/materializarDias';
-
-type FranjaInput = { dias: string[]; horaEntrada: string; horaSalida: string; tieneAlmuerzo?: boolean; almuerzoInicio?: string; almuerzoFin?: string };
-
-// "HH:MM" o nada. Media ventana no define un almuerzo, así que o vienen las dos
-// horas o no viene ninguna: guardar una sola dejaría una configuración que no se
-// puede cumplir y que nadie sabría interpretar.
-const hora = (v: unknown): string | null => {
-  if (typeof v !== 'string' || !/^\d{2}:\d{2}$/.test(v)) return null;
-  const [h, m] = v.split(':').map(Number);
-  // "99:99" pasa la regex. Sin este rango, minutosDe daría 6039 y la ventana
-  // duraría días.
-  return h >= 0 && h <= 23 && m >= 0 && m <= 59 ? v : null;
-};
-
-const aMin = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
-const duracion = (desde: string, hasta: string) => {
-  let fin = aMin(hasta); const ini = aMin(desde);
-  if (fin <= ini) fin += 1440; // cruza medianoche
-  return fin - ini;
-};
-
-// La ventana tiene que caber DENTRO de la franja de ese día. Sin esta
-// comprobación, una ventana invertida por un dedazo ("de 13:00 a 12:00", o
-// "de 12 a 1" tecleado como 12:00-01:00) se guarda como un almuerzo de 23 horas:
-// la jornada esperada del día queda en 0, se descuentan horas que nadie tomó, y
-// como el día se congela al materializarse, corregir el horario después ya no
-// arregla lo que se guardó mal. Es exactamente el tipo de error que aquí sale
-// como un número plausible en una nómina.
-function ventanaValida(f: FranjaInput, ini: string, fin: string): boolean {
-  const jornada = duracion(f.horaEntrada, f.horaSalida);
-  const almuerzo = duracion(ini, fin);
-  if (almuerzo >= jornada) return false;
-  // Y tiene que caer dentro de la franja, no en mitad de la noche de una jornada diurna.
-  const desdeEntrada = (aMin(ini) - aMin(f.horaEntrada) + 1440) % 1440;
-  return desdeEntrada + almuerzo <= jornada;
-}
+import { FranjaConVentanas, franjasConVentanaImposible, franjaParaGuardar } from '../utils/ventanasDeHorario';
 
 // Cada franja: días válidos, horas HH:MM y al menos un día
-function validarFranjas(franjas: unknown): franjas is FranjaInput[] {
+function validarFranjas(franjas: unknown): franjas is FranjaConVentanas[] {
   if (!Array.isArray(franjas) || franjas.length === 0) return false;
   return franjas.every(f =>
     Array.isArray(f?.dias) && f.dias.length > 0 &&
@@ -49,41 +14,9 @@ function validarFranjas(franjas: unknown): franjas is FranjaInput[] {
   );
 }
 
-// Franjas cuya ventana de almuerzo no se puede cumplir. Se devuelven para que
-// la ruta responda 400 con un mensaje concreto en vez de guardar algo imposible.
-function franjasConVentanaImposible(franjas: FranjaInput[]): string[] {
-  const malas: string[] = [];
-  for (const f of franjas) {
-    // Vacío o ausente = sin ventana, que es una configuración legítima.
-    const escrito = (v: unknown) => typeof v === 'string' && v.trim() !== '';
-    const hayAlgo = escrito(f.almuerzoInicio) || escrito(f.almuerzoFin);
-    if (!hayAlgo) continue;
-
-    const ini = hora(f.almuerzoInicio);
-    const fin = hora(f.almuerzoFin);
-    // Escribió algo que no es una hora válida, o solo media ventana. Antes esto
-    // se descartaba en silencio: el admin creía haber configurado el almuerzo y
-    // el kiosco no le preguntaba nada a nadie.
-    if (!ini || !fin || ini === fin || !ventanaValida(f, ini, fin)) {
-      malas.push(`${f.horaEntrada}-${f.horaSalida} (almuerzo ${f.almuerzoInicio ?? '—'}-${f.almuerzoFin ?? '—'})`);
-    }
-  }
-  return malas;
-}
-
-const mapFranja = (f: FranjaInput) => {
-  const ini = hora(f.almuerzoInicio);
-  const fin = hora(f.almuerzoFin);
-  const completa = ini !== null && fin !== null && ini !== fin;
-  return {
-    dias: f.dias,
-    horaEntrada: f.horaEntrada,
-    horaSalida: f.horaSalida,
-    tieneAlmuerzo: f.tieneAlmuerzo !== false, // por defecto sí descuenta almuerzo
-    almuerzoInicio: completa ? ini : null,
-    almuerzoFin: completa ? fin : null,
-  };
-};
+const mensajeVentanasImposibles = (imposibles: string[]) =>
+  `El almuerzo o el descanso no caben dentro de la jornada: ${imposibles.join(', ')}. ` +
+  'Revisa que la hora de inicio sea anterior a la de fin y que las dos pausas no se crucen.';
 
 // Horarios de trabajo de la empresa (se asignan a cada colaborador). Un horario
 // agrupa varias franjas: ej. "Oficina" = L-V 08:00-17:00 + Sáb 08:00-12:00.
@@ -108,16 +41,14 @@ export default async function horarioRoutes(app: FastifyInstance) {
   });
 
   app.post('/', auth, async (request, reply) => {
-    const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, franjas } = request.body as any;
+    const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, fotoEnDescanso, franjas } = request.body as any;
     if (!nombre) return reply.status(400).send({ error: 'El nombre es obligatorio' });
     if (!validarFranjas(franjas)) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
     }
     const imposibles = franjasConVentanaImposible(franjas);
     if (imposibles.length > 0) {
-      return reply.status(400).send({
-        error: `El horario de almuerzo no cabe dentro de la jornada: ${imposibles.join(', ')}. Revisa que la hora de inicio sea anterior a la de fin.`,
-      });
+      return reply.status(400).send({ error: mensajeVentanasImposibles(imposibles) });
     }
     // Gating: varios horarios requieren plan Profesional o superior
     const cap = await capacidadesEmpresa(request.empresaId!);
@@ -135,7 +66,9 @@ export default async function horarioRoutes(app: FastifyInstance) {
         almuerzoMin: Math.max(0, Number(almuerzoMin) || 0),
         toleranciaSalidaMin: Math.max(0, Number(toleranciaSalidaMin) || 0),
         ajustaEntrada: ajustaEntrada === true,
-        franjas: { create: franjas.map(mapFranja) },
+        // Por defecto se guarda la foto, igual que en cualquier otra marcación.
+        fotoEnDescanso: fotoEnDescanso !== false,
+        franjas: { create: franjas.map(franjaParaGuardar) },
       },
       include: { franjas: true },
     });
@@ -146,15 +79,13 @@ export default async function horarioRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const existente = await prisma.horario.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'Horario no encontrado' });
-    const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, franjas } = request.body as any;
+    const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, fotoEnDescanso, franjas } = request.body as any;
     if (!validarFranjas(franjas)) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
     }
     const imposibles = franjasConVentanaImposible(franjas);
     if (imposibles.length > 0) {
-      return reply.status(400).send({
-        error: `El horario de almuerzo no cabe dentro de la jornada: ${imposibles.join(', ')}. Revisa que la hora de inicio sea anterior a la de fin.`,
-      });
+      return reply.status(400).send({ error: mensajeVentanasImposibles(imposibles) });
     }
     // Las franjas se reemplazan completas: es la forma simple y sin ambigüedad
     const actualizado = await prisma.horario.update({
@@ -165,9 +96,12 @@ export default async function horarioRoutes(app: FastifyInstance) {
         almuerzoMin: Math.max(0, Number(almuerzoMin) || 0),
         toleranciaSalidaMin: Math.max(0, Number(toleranciaSalidaMin) || 0),
         ajustaEntrada: ajustaEntrada === true,
+        // Solo si viene: una pantalla vieja que no lo manda no puede volver a
+        // encender la foto que el administrador apagó.
+        ...(typeof fotoEnDescanso === 'boolean' ? { fotoEnDescanso } : {}),
         franjas: {
           deleteMany: {},
-          create: franjas.map(mapFranja),
+          create: franjas.map(franjaParaGuardar),
         },
       },
       include: { franjas: true },

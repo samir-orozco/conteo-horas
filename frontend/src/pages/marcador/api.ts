@@ -9,8 +9,8 @@ const authHeader = (token: string) => ({ headers: { Authorization: `Bearer ${tok
 
 type InfoKiosco = { empresa: string; requiereDispositivo: boolean; permiteCedula: boolean; exigeUbicacion: boolean; exigeReto?: boolean };
 type SesionResp = { token: string; colaborador: Colaborador; sedes?: Sede[]; validaUbicacion?: boolean };
-type MarcaResp = { accion: 'ENTRADA' | 'SALIDA'; hora: string; salidaTemprana?: boolean; salidaAlmuerzo?: boolean; regresoEstimado?: boolean };
-export type OpcionesMarca = { almuerzo?: boolean; regresoA?: string; novedadTipo?: string; novedadDescripcion?: string };
+type MarcaResp = { accion: 'ENTRADA' | 'SALIDA'; hora: string; salidaTemprana?: boolean; salidaAlmuerzo?: boolean; salidaDescanso?: boolean; regresoEstimado?: boolean };
+export type OpcionesMarca = { almuerzo?: boolean; descanso?: boolean; regresoA?: string; novedadTipo?: string; novedadDescripcion?: string };
 
 export const infoKiosco = (marcadorToken: string) =>
   apiKiosco.get(`/worker/kiosco/${marcadorToken}`).then(r => r.data as InfoKiosco);
@@ -33,7 +33,7 @@ export const getEstado = (token: string) =>
 // motivo perdido. Faltaban en este tipo, así que el motivo que la persona escribía
 // se quedaba en el navegador y el servidor volvía a pedirlo para siempre.
 export const marcar = (token: string, body: {
-  foto?: string; lat?: number; lng?: number; almuerzo?: boolean; regresoA?: string;
+  foto?: string; lat?: number; lng?: number; almuerzo?: boolean; descanso?: boolean; regresoA?: string;
   novedadTipo?: string; novedadDescripcion?: string;
 }) =>
   apiKiosco.post('/worker/marcar', body, authHeader(token)).then(r => r.data as MarcaResp);

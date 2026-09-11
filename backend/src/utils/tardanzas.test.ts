@@ -322,7 +322,7 @@ describe('llegadaTarde', () => {
   // 2026 es lunes y el 5 es domingo.
   const lunes = (h: number, m = 0) => new Date(2026, 6, 6, h, m, 0);
   const domingo = (h: number, m = 0) => new Date(2026, 6, 5, h, m, 0);
-  const ctx = { esPrimeraEntrada: true, vuelveDeAlmorzar: false, esFestivo: false, horario: HORARIO };
+  const ctx = { esPrimeraEntrada: true, vuelveDeUnaPausa: false, esFestivo: false, horario: HORARIO };
 
   it('la primera entrada pasada la tolerancia llega tarde, con los minutos ya sin la tolerancia', () => {
     const r = llegadaTarde(lunes(8, 25), ctx);
@@ -338,10 +338,10 @@ describe('llegadaTarde', () => {
     expect(llegadaTarde(lunes(14), { ...ctx, esPrimeraEntrada: false })).toBeNull();
   });
 
-  it('volver del almuerzo no es llegar tarde, aunque sea la primera marca del día calendario', () => {
-    // El turno nocturno que almuerza pasada la medianoche: el regreso es la
-    // primera marca del día nuevo, y sin esta regla el kiosco le pediría motivo.
-    expect(llegadaTarde(lunes(8, 25), { ...ctx, vuelveDeAlmorzar: true })).toBeNull();
+  it('volver de una pausa —almuerzo o descanso— no es llegar tarde, aunque sea la primera marca del día calendario', () => {
+    // El turno nocturno que almuerza o descansa pasada la medianoche: el regreso
+    // es la primera marca del día nuevo, y sin esta regla el kiosco le pediría motivo.
+    expect(llegadaTarde(lunes(8, 25), { ...ctx, vuelveDeUnaPausa: true })).toBeNull();
   });
 
   it('un festivo no tiene llegada tarde', () => {

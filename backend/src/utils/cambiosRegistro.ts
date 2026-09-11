@@ -20,6 +20,7 @@ export type EstadoRegistro = {
   tipo: string;
   observacion: string | null;
   salidaAlmuerzo: boolean;
+  salidaDescanso: boolean;
 };
 
 export type Diferencia = { campo: string; antes: string; despues: string };
@@ -45,6 +46,7 @@ const CAMPOS: { clave: keyof EstadoRegistro; formato: (v: any) => string }[] = [
   { clave: 'tipo', formato: (v: string) => v ?? 'sin tipo' },
   { clave: 'observacion', formato: (v: string | null) => v || 'sin observación' },
   { clave: 'salidaAlmuerzo', formato: (v: boolean) => (v ? 'sí' : 'no') },
+  { clave: 'salidaDescanso', formato: (v: boolean) => (v ? 'sí' : 'no') },
 ];
 
 // Compara el estado guardado contra los campos que trae la edición.

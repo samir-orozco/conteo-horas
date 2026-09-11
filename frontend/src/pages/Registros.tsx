@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Eye, ArrowRight } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Coffee, Eye, ArrowRight, type LucideIcon } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
+import { HORAS_VACIAS, horasDeLaJornada, cuerpoDeLaJornada } from './registros/formJornada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import MenuFiltros from '../components/MenuFiltros';
 import MenuAcciones from '../components/MenuAcciones';
@@ -18,17 +19,17 @@ const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
 type Marcacion = {
   id: string; entrada: string | null; salida: string | null;
-  salidaAlmuerzo: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
+  salidaAlmuerzo: boolean; salidaDescanso?: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
   tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
   // La novedad que nació de esta marcación (salida temprana en el kiosco) se
   // borra con ella. El diálogo tiene que decirlo ANTES: si esa novedad ya
   // estaba aprobada, borrarla mueve la liquidación.
   tieneNovedadLigada?: boolean;
 };
-// Una fila de la tabla es una JORNADA, no una marcación. Marcar el almuerzo
-// parte el día en dos tramos; los dos son la misma jornada y bajan juntos en
-// `marcaciones`. Volver por la tarde a hacer horas extra sí abre otra jornada,
-// y esa llega como otra fila.
+// Una fila de la tabla es una JORNADA, no una marcación. Marcar una pausa
+// —almuerzo o descanso— parte el día en tramos; todos son la misma jornada y
+// bajan juntos en `marcaciones`. Volver por la tarde a hacer horas extra sí abre
+// otra jornada, y esa llega como otra fila.
 type Registro = {
   id: string; colaboradorId: string; colaborador: Colaborador; fecha: string;
   entrada: string | null; salida: string | null; tipo: string; observacion: string | null;
@@ -37,16 +38,19 @@ type Registro = {
   sede?: SedeCorta | null; sedeSalida?: SedeCorta | null;
   // null = sin horario asignado o día que no aplica; 0 = a tiempo; >0 = minutos tarde
   minutosTarde: number | null;
-  // Lo que contó esta jornada, con el almuerzo ya descontado.
+  // Lo que contó esta jornada, con sus pausas ya descontadas.
   minutosContados: number;
   // Lo que ESTA jornada pagó de almuerzo, que no siempre es el descuento del día.
   minutosAlmuerzoAqui: number;
+  // Lo mismo del descanso no remunerado. Opcional: un servidor anterior no lo manda.
+  minutosDescansoAqui?: number;
   tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
   // El sistema cerró el turno (la persona no marcó salida): la hora es estimada y hay que revisarla
   salidaEstimada?: boolean;
   salidaAlmuerzo?: boolean;
-  // Solo viene en la jornada que contiene el almuerzo; en las otras es null.
-  almuerzo: Almuerzo | null;
+  // Solo vienen en la jornada que contiene la pausa; en las otras son null.
+  almuerzo: ResumenDePausa | null;
+  descanso?: ResumenDePausa | null;
   // Opcional a propósito. Durante un despliegue hay una ventana en la que el
   // navegador ya tiene este bundle y el servidor todavía responde el anterior,
   // que no manda este campo. Que falte un dato no puede tumbar la pantalla, así
@@ -56,13 +60,13 @@ type Registro = {
   // política de la empresa, no de un campo guardado.
   novedad: { id: string; tipo: string; aprobado: boolean; remunerada: boolean } | null;
 };
-type Almuerzo = {
+type ResumenDePausa = {
   estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
   ventana: { inicio: string; fin: string } | null;
   salida: string | null;
   regreso: string | null;
   minutos: number | null;      // lo que se tomó de verdad
-  minutosVentana: number | null; // cuánto dura su descanso según el horario
+  minutosVentana: number | null; // cuánto dura la pausa según el horario
   minutosDescontados: number;  // lo que le cuesta al día
   regresoEstimado: boolean;
   seExcedio: boolean;
@@ -95,36 +99,36 @@ const enHoras = (min: number) => {
 // de reventar al primer clic.
 const marcasDe = (r: Registro): Marcacion[] => r.marcaciones ?? [{
   id: r.id, entrada: r.entrada, salida: r.salida,
-  salidaAlmuerzo: r.salidaAlmuerzo ?? false, entradaEstimada: false,
+  salidaAlmuerzo: r.salidaAlmuerzo ?? false, salidaDescanso: false, entradaEstimada: false,
   salidaEstimada: r.salidaEstimada ?? false,
   tieneFotoEntrada: r.tieneFotoEntrada, tieneFotoSalida: r.tieneFotoSalida,
   tieneNovedadLigada: false,
 }];
 
-// Celda de almuerzo. El almuerzo llega solo en la jornada que lo contiene, así
-// que aquí ya no hay que decidir en qué fila se pinta: si viene, es de esta.
-function CeldaAlmuerzo({ r }: { r: Registro }) {
-  const a = r.almuerzo;
+// Celda de una pausa —almuerzo o descanso—. La pausa llega solo en la jornada
+// que la contiene, así que aquí ya no hay que decidir en qué fila se pinta: si
+// viene, es de esta.
+function CeldaPausa({ p, minutosAqui, enCurso }: { p: ResumenDePausa | null | undefined; minutosAqui: number; enCurso: string }) {
   const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '';
 
-  if (!a || (a.estado === 'SIN_VENTANA' && r.minutosAlmuerzoAqui === 0)) {
+  if (!p || (p.estado === 'SIN_VENTANA' && minutosAqui === 0)) {
     return <span className="text-gray-300">—</span>;
   }
 
   // Una sola etiqueta por fila. El detalle —cuánto se descuenta, por qué, si el
   // regreso lo puso el sistema— vive en el modal, a un clic. En una tabla de
   // cuarenta personas, dos renglones por celda es ruido que nadie lee.
-  // Descansando ahora mismo. En ámbar y no en rojo: no hay nada que corregir,
+  // En su pausa ahora mismo. En ámbar y no en rojo: no hay nada que corregir,
   // solo está fuera. El rojo se guarda para cuando de verdad se le pasó la hora.
-  if (a.estado === 'EN_CURSO') {
+  if (p.estado === 'EN_CURSO') {
     return (
       <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 whitespace-nowrap">
-        En descanso · {hhmm(a.salida)}
+        {enCurso} · {hhmm(p.salida)}
       </span>
     );
   }
 
-  if (a.estado === 'ABIERTO') {
+  if (p.estado === 'ABIERTO') {
     return (
       <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 whitespace-nowrap">
         No volvió
@@ -132,21 +136,21 @@ function CeldaAlmuerzo({ r }: { r: Registro }) {
     );
   }
 
-  if (a.estado === 'MARCADO') {
+  if (p.estado === 'MARCADO') {
     return (
-      <span className={`font-mono text-xs whitespace-nowrap ${a.seExcedio ? 'text-amber-700 font-semibold' : 'text-gray-700'}`}>
-        {hhmm(a.salida)} → {hhmm(a.regreso)}
+      <span className={`font-mono text-xs whitespace-nowrap ${p.seExcedio ? 'text-amber-700 font-semibold' : 'text-gray-700'}`}>
+        {hhmm(p.salida)} → {hhmm(p.regreso)}
       </span>
     );
   }
 
-  if (a.estado === 'SIN_VENTANA') {
-    // Sin ventana pero con descuento: el caso de la mayoría. Ese descuento
-    // existe todos los días y hasta ahora no se veía en ninguna pantalla.
-    // Lo que pagó ESTA jornada, no lo que descontó el día: con dos jornadas y
-    // almuerzo fijo, decir "−1 h" sobre la fila que solo alcanzó a pagar media
-    // es una contradicción que se ve a simple vista.
-    return <span className="text-xs text-gray-600 whitespace-nowrap">−{enHoras(r.minutosAlmuerzoAqui)}</span>;
+  if (p.estado === 'SIN_VENTANA') {
+    // Sin ventana pero con descuento: el caso de la mayoría con el almuerzo.
+    // Ese descuento existe todos los días y hasta ahora no se veía en ninguna
+    // pantalla. Lo que pagó ESTA jornada, no lo que descontó el día: con dos
+    // jornadas y almuerzo fijo, decir "−1 h" sobre la fila que solo alcanzó a
+    // pagar media es una contradicción que se ve a simple vista.
+    return <span className="text-xs text-gray-600 whitespace-nowrap">−{enHoras(minutosAqui)}</span>;
   }
 
   // NO_MARCADO
@@ -176,6 +180,38 @@ function CeldaSede({ r }: { r: Registro }) {
   return <span className="text-gray-300">-</span>;
 }
 
+// Una pausa DENTRO de la jornada y no como otra salida. Es una pausa dentro del
+// turno: sirve para saber si se tomó a tiempo y en su medida, no para decir que
+// la persona se fue. Fuera del componente por la misma razón que `CeldaSede`:
+// definida adentro, cada tecla la volvería a montar y el campo perdería el foco.
+function BloqueDePausa({ titulo, Icono, salida, regreso, onSalida, onRegreso, nota }: {
+  titulo: string; Icono: LucideIcon; salida: string; regreso: string;
+  onSalida: (v: string) => void; onRegreso: (v: string) => void; nota: string;
+}) {
+  return (
+    <div className="border border-gray-200 rounded-xl p-3">
+      <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+        <Icono size={13} /> {titulo}
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Salió</label>
+          <input type="time" aria-label={`${titulo}: salió`} value={salida}
+            onChange={e => onSalida(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Regresó</label>
+          <input type="time" aria-label={`${titulo}: regresó`} value={regreso}
+            onChange={e => onRegreso(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+        </div>
+      </div>
+      <p className="text-[11px] text-gray-500 mt-2">{nota}</p>
+    </div>
+  );
+}
+
 export default function Registros() {
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
@@ -186,16 +222,15 @@ export default function Registros() {
   const [editando, setEditando] = useState<RegistroEditable | null>(null);
   // El formulario tiene la forma de la JORNADA, no la de una marcación suelta.
   // Editando marcaciones, la que abre el día mostraba como "Salida" la hora del
-  // descanso, y quien no había terminado su turno veía una salida que no marcó.
+  // almuerzo, y quien no había terminado su turno veía una salida que no marcó.
   const [form, setForm] = useState({
-    colaboradorId: '', fecha: '', entrada: '', salida: '',
-    descansoSalida: '', descansoRegreso: '', tipo: 'NORMAL', observacion: '',
+    colaboradorId: '', fecha: '', ...HORAS_VACIAS, tipo: 'NORMAL', observacion: '',
   });
   // La jornada que se está editando, para saber a qué endpoint escribir y con
   // cuántas marcaciones se está tratando.
   const [jornadaEditada, setJornadaEditada] = useState<Registro | null>(null);
-  // Qué marcaciones se van a borrar. Una jornada partida por el almuerzo son
-  // dos, y borrar solo la primera dejaba la tarde suelta como una fila huérfana.
+  // Qué marcaciones se van a borrar. Una jornada partida por sus pausas son
+  // varias, y borrar solo la primera dejaba la tarde suelta como una fila huérfana.
   const [porEliminar, setPorEliminar] = useState<{ ids: string[]; horas: string; novedades: number } | null>(null);
   // Detalle de una marcación. La fila de la tabla no se explica sola: el
   // almuerzo vive en el hueco entre dos filas y la tardanza solo se mide en la
@@ -239,7 +274,7 @@ export default function Registros() {
       .then(r => {
         if (!vigente) return;
         // Se aplanan las jornadas: el aviso es sobre MARCACIONES del día, y la
-        // que se está editando puede ser el regreso del descanso, que ya no
+        // que se está editando puede ser el regreso de una pausa, que ya no
         // tiene fila propia en la tabla.
         //
         // Se excluyen las PROPIAS. Editando una jornada entera, sus marcaciones
@@ -274,24 +309,19 @@ export default function Registros() {
   const hhmm = (s: string | null | undefined) =>
     s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '';
 
-  // Editar la JORNADA de una fila: entrada, descanso y salida juntos, que es
-  // como se lee la tabla y como la piensa quien la corrige.
+  // Editar la JORNADA de una fila: entrada, pausas y salida juntos, que es como
+  // se lee la tabla y como la piensa quien la corrige.
   const abrirJornada = (j: Registro) => {
     setErrorGuardar(null);
     setEditando(null);
     setJornadaEditada(j);
-    const marcas = marcasDe(j);
-    const abre = marcas[0];
-    const vuelve = marcas[1];
     setForm({
       colaboradorId: j.colaboradorId,
       fecha: format(toZonedTime(new Date(j.fecha), TZ), 'yyyy-MM-dd'),
-      entrada: hhmm(abre?.entrada),
-      // La salida de la JORNADA, que no es la del descanso: si salió a descansar
-      // y no ha vuelto, esto va vacío, porque no ha terminado de trabajar.
-      salida: hhmm(j.salida),
-      descansoSalida: abre?.salidaAlmuerzo ? hhmm(abre.salida) : '',
-      descansoRegreso: abre?.salidaAlmuerzo ? hhmm(vuelve?.entrada) : '',
+      // La salida es la de la JORNADA, que no es la de una pausa: si salió a
+      // almorzar y no ha vuelto, va vacía, porque no ha terminado de trabajar.
+      // Qué pausa es cuál lo decide `horasDeLaJornada`, con sus pruebas.
+      ...horasDeLaJornada(marcasDe(j), j.salida),
       tipo: j.tipo, observacion: j.observacion || '',
     });
     setModal(true);
@@ -305,13 +335,12 @@ export default function Registros() {
     setForm(reg ? {
       colaboradorId: reg.colaboradorId,
       fecha: format(toZonedTime(new Date(reg.fecha), TZ), 'yyyy-MM-dd'),
+      ...HORAS_VACIAS,
       entrada: hhmm(reg.entrada),
       salida: hhmm(reg.salida),
-      descansoSalida: '', descansoRegreso: '',
       tipo: reg.tipo, observacion: reg.observacion || '',
     } : {
-      colaboradorId: '', fecha: format(new Date(), 'yyyy-MM-dd'), entrada: '', salida: '',
-      descansoSalida: '', descansoRegreso: '', tipo: 'NORMAL', observacion: '',
+      colaboradorId: '', fecha: format(new Date(), 'yyyy-MM-dd'), ...HORAS_VACIAS, tipo: 'NORMAL', observacion: '',
     });
     setModal(true);
   };
@@ -327,20 +356,17 @@ export default function Registros() {
   // avanza es del día siguiente. Armarlas aquí sobre una sola fecha es lo que
   // guardaba turnos nocturnos con la salida antes de la entrada.
   //
-  // Si guardar dejaría fotos del kiosco sin marca a la cual pertenecer —las del
-  // descanso al quitarlo, la de la salida al reabrir—, el servidor no escribe nada
-  // y devuelve cuáles. Se le pregunta a quien edita, y solo si confirma se vuelve
-  // a mandar lo mismo diciéndolo.
+  // Si guardar dejaría fotos del kiosco sin marca a la cual pertenecer —las de
+  // una pausa al quitarla, la de la salida al reabrir—, el servidor no escribe
+  // nada y devuelve cuáles. Se le pregunta a quien edita, y solo si confirma se
+  // vuelve a mandar lo mismo diciéndolo.
   const enviarJornada = async (confirmarBorrarFotos = false) => {
     if (!jornadaEditada) return;
     try {
       await api.put(`/registros/jornada/${jornadaEditada.id}`, {
         colaboradorId: form.colaboradorId,
         fecha: form.fecha,
-        entrada: form.entrada,
-        salida: form.salida,
-        descansoSalida: form.descansoSalida,
-        descansoRegreso: form.descansoRegreso,
+        ...cuerpoDeLaJornada(form),
         tipo: form.tipo,
         observacion: form.observacion,
         ...(confirmarBorrarFotos ? { confirmarBorrarFotos: true } : {}),
@@ -365,7 +391,7 @@ export default function Registros() {
     await enviarJornada(true);
   };
 
-  const enviar = async (extra?: { salidaAlmuerzo: boolean }) => {
+  const enviar = async (extra?: { salidaAlmuerzo: boolean; salidaDescanso: boolean }) => {
     if (jornadaEditada) {
       await enviarJornada();
       return;
@@ -402,9 +428,9 @@ export default function Registros() {
     if (!c) return;
     setErrorGuardar(null);
     await api.delete(`/registros/${c.id}`);
-    // Deja de ser una salida al descanso: ya no hay regreso al que volver, y sin
+    // Deja de ser una salida a una pausa: ya no hay regreso al que volver, y sin
     // esto la columna diría "Sin regreso" sobre un día que quedó completo.
-    await enviar({ salidaAlmuerzo: false });
+    await enviar({ salidaAlmuerzo: false, salidaDescanso: false });
   };
 
   const confirmarEliminar = async () => {
@@ -448,11 +474,15 @@ export default function Registros() {
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
   // 60 min" sin decir de qué hora a qué hora: exigir la ventana escondería la
   // columna justo donde el descuento es invisible.
+  // La de Descanso, solo cuando alguna jornada del rango tiene uno: el descanso
+  // no remunerado siempre tiene horario, y en una empresa que no lo usa sería
+  // una columna vacía en cada fila.
   // La columna de sede solo aparece si alguna jornada del rango tiene sede: en
   // una empresa de una sola oficina sería una columna vacía en cada fila.
   const haySedes = registros.some(r => r.sede || r.sedeSalida);
   const opcionesSede = opcionesDeSede(sedes, registros);
   const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.minutosAlmuerzoAqui > 0));
+  const hayDescanso = registros.some(r => r.descanso && r.descanso.estado !== 'SIN_VENTANA');
 
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
 
@@ -515,7 +545,8 @@ export default function Registros() {
               {haySedes && <th className="px-4 py-3 text-left">Sede</th>}
               <th className="px-4 py-3 text-center">Entrada</th>
               <th className="px-4 py-3 text-center">Salida</th>
-              {hayAlmuerzo && <th className="px-4 py-3 text-center">Descanso</th>}
+              {hayAlmuerzo && <th className="px-4 py-3 text-center">Almuerzo</th>}
+              {hayDescanso && <th className="px-4 py-3 text-center">Descanso</th>}
               <th className="px-4 py-3 text-center">Llegada</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Duración</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Tipo</th>
@@ -540,7 +571,14 @@ export default function Registros() {
                   )}
                 </td>
                 {hayAlmuerzo && (
-                  <td className="px-4 py-3 text-center"><CeldaAlmuerzo r={r} /></td>
+                  <td className="px-4 py-3 text-center">
+                    <CeldaPausa p={r.almuerzo} minutosAqui={r.minutosAlmuerzoAqui} enCurso="Almorzando" />
+                  </td>
+                )}
+                {hayDescanso && (
+                  <td className="px-4 py-3 text-center">
+                    <CeldaPausa p={r.descanso} minutosAqui={r.minutosDescansoAqui ?? 0} enCurso="En descanso" />
+                  </td>
                 )}
                 <td className="px-4 py-3 text-center">
                   {r.minutosTarde === null ? (
@@ -656,7 +694,7 @@ export default function Registros() {
 
       {modal && (
         <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg">{jornadaEditada ? 'Editar jornada' : editando ? 'Editar marcación' : 'Nuevo registro'}</h3>
               <button onClick={() => setModal(false)}><X size={20} className="text-gray-400" /></button>
@@ -688,33 +726,22 @@ export default function Registros() {
                 </div>
               </div>
 
-              {/* El descanso, DENTRO de la jornada y no como otra salida. Es una
-                  pausa dentro del turno: sirve para saber si se tomó a tiempo y
-                  en su medida, no para decir que la persona se fue. */}
+              {/* Las pausas, DENTRO de la jornada y no como otras salidas. Con las
+                  dos marcadas son tres marcaciones, y se guardan en una sola fila
+                  de la tabla. */}
               {jornadaEditada && (
-                <div className="border border-gray-200 rounded-xl p-3">
-                  <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
-                    <UtensilsCrossed size={13} /> Descanso
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Salió</label>
-                      <input type="time" value={form.descansoSalida}
-                        onChange={e => setForm(p => ({ ...p, descansoSalida: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Regresó</label>
-                      <input type="time" value={form.descansoRegreso}
-                        onChange={e => setForm(p => ({ ...p, descansoRegreso: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-gray-500 mt-2">
-                    Vacío si ese día no marcó descanso. Si borras las dos horas, la jornada
-                    queda como una sola marcación.
-                  </p>
-                </div>
+                <>
+                  <BloqueDePausa titulo="Almuerzo" Icono={UtensilsCrossed}
+                    salida={form.almuerzoSalida} regreso={form.almuerzoRegreso}
+                    onSalida={v => setForm(p => ({ ...p, almuerzoSalida: v }))}
+                    onRegreso={v => setForm(p => ({ ...p, almuerzoRegreso: v }))}
+                    nota="Vacío si ese día no marcó almuerzo. Si borras las dos horas, la jornada queda sin almuerzo." />
+                  <BloqueDePausa titulo="Descanso no remunerado" Icono={Coffee}
+                    salida={form.descansoSalida} regreso={form.descansoRegreso}
+                    onSalida={v => setForm(p => ({ ...p, descansoSalida: v }))}
+                    onRegreso={v => setForm(p => ({ ...p, descansoRegreso: v }))}
+                    nota="Vacío si ese día no marcó descanso. No se paga: lo que caiga en su horario se descuenta." />
+                </>
               )}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
@@ -730,7 +757,7 @@ export default function Registros() {
               </div>
 
               {/* La tardanza se evalúa solo sobre la primera entrada del día (para
-                  que volver del descanso no cuente como llegar tarde). Si ya hay
+                  que volver de una pausa no cuente como llegar tarde). Si ya hay
                   una anterior, este registro no va a mostrar minutos tarde, y sin
                   avisarlo parece que el cálculo falló. */}
               {otrosDelDia.length > 0 && (
@@ -793,14 +820,15 @@ export default function Registros() {
           // debajo. Cerrarlo además evita que quede mostrando datos viejos.
           //
           // Y abre el editor de la JORNADA, no el de la marcación suelta: desde
-          // el detalle salía el formulario viejo, con la salida del descanso en
+          // el detalle salía el formulario viejo, con la salida del almuerzo en
           // la casilla de Salida — exactamente lo que se quitó de la tabla.
-          // Solo cae al editor por marcación cuando la jornada tiene más de dos,
-          // que es donde el guardado por jornada tampoco puede representarla.
+          // Solo cae al editor por marcación cuando la jornada tiene más de tres
+          // (entrada, descanso y almuerzo), que es donde el guardado por jornada
+          // tampoco puede representarla.
           onEditar={reg => {
             setJornadaId(null);
             const fila = registros.find(f => marcasDe(f).some(m => m.id === reg.id));
-            if (fila && marcasDe(fila).length <= 2) abrirJornada(fila);
+            if (fila && marcasDe(fila).length <= 3) abrirJornada(fila);
             else abrir(reg);
           }}
           // El detalle se cierra al eliminar: si no, queda encima mostrando una

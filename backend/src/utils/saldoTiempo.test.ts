@@ -238,6 +238,20 @@ describe('calcularHorasEsperadas — novedades de parte del día', () => {
     expect(r.minutosEsperados).toBe(180);
   });
 
+  it('tampoco regala el descanso no remunerado que caía dentro del tramo', () => {
+    const conDescanso = {
+      ...oficina, almuerzoMin: 0,
+      franjas: [{ ...oficina.franjas[0], almuerzoInicio: '12:00', almuerzoFin: '13:00', descansoInicio: '15:30', descansoFin: '15:45' }],
+    };
+    // Lo exigido: 9 h − 60 de almuerzo − 15 de descanso = 465. La novedad de
+    // 15:00 a 17:00 son 120 min, de los que 15 eran de descanso.
+    const r = esperadas('2026-07-01', '2026-07-01', conDescanso, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '15:00', '17:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(105);
+    expect(r.minutosEsperados).toBe(360);
+  });
+
   it('sin ventana de almuerzo no se le resta nada al tramo', () => {
     // Sin ventana, lo trabajado descuenta la hora de almuerzo entera aunque se
     // haya ido antes de almorzar. Restarla también aquí la cobraría dos veces:

@@ -9,7 +9,7 @@ import { TZ } from './fechas';
 // donde vive la regla (`salidasTrasEditar`).
 export type FotoPorBorrar = { momento: Momento; hora: string | null };
 
-// Con el mismo rótulo de la pantalla de fotos del día («Salida a descanso ·
+// Con el mismo rótulo de la pantalla de fotos del día («Salida a almorzar ·
 // 12:00»), para que quien confirma reconozca cuál es sin tener que traducir.
 const rotulo = (f: FotoPorBorrar) =>
   `${MOMENTO_LABEL[f.momento]} · ${f.hora ? format(toZonedTime(new Date(f.hora), TZ), 'HH:mm') : 'sin hora'}`;

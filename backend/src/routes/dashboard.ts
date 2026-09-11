@@ -80,8 +80,8 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     const SEL_REG = {
       id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, tipo: true,
       // Sin esto el dashboard no puede distinguir a quien se fue a su casa de
-      // quien salió a almorzar, y los pintaba a los dos como "salida de hoy".
-      salidaAlmuerzo: true,
+      // quien salió a una pausa, y los pintaba a los dos como "salida de hoy".
+      salidaAlmuerzo: true, salidaDescanso: true,
       colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
     };
     const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto] = await Promise.all([
@@ -126,12 +126,12 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       desde: r.entrada,
     }));
 
-    // ===== En descanso ahora (salió a almorzar y todavía no vuelve) =====
+    // ===== En una pausa ahora (salió a almorzar o a su descanso y no vuelve) =====
     //
     // Antes esta gente caía en "Salidas de hoy", en rojo, como quien se fue a su
-    // casa —y desaparecía del tablero mientras almorzaba—. Una salida al
-    // descanso no cierra la jornada: es la misma regla que `marcacionQueCierra`
-    // aplica en la columna de Salida, y el dashboard no puede contradecirla.
+    // casa —y desaparecía del tablero mientras almorzaba—. Una salida a una pausa
+    // no cierra la jornada: es la misma regla que `marcacionQueCierra` aplica en
+    // la columna de Salida, y el dashboard no puede contradecirla.
     const porColaborador = new Map<string, typeof registrosHoy>();
     for (const r of registrosHoy) {
       const lista = porColaborador.get(r.colaboradorId);
@@ -144,20 +144,23 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       // Si tiene un tramo abierto ya volvió: está en `enPlanta`, no aquí.
       if (enOrden.some(m => m.entrada && !m.salida)) continue;
       const ultima = [...enOrden].reverse().find(m => m.salida);
-      if (!ultima?.salidaAlmuerzo) continue;
+      if (!ultima || (!ultima.salidaAlmuerzo && !ultima.salidaDescanso)) continue;
       enDescanso.push({
         id: ultima.colaborador.id,
         nombre: `${ultima.colaborador.nombre} ${ultima.colaborador.apellido}`,
         cargo: ultima.colaborador.cargo,
+        // A cuál de las dos pausas salió: el tablero dice "almorzando" o "en su
+        // descanso", no una etiqueta que sirva para las dos.
+        pausa: ultima.salidaDescanso ? 'DESCANSO' : 'ALMUERZO',
         desde: ultima.salida,
       });
     }
 
     // ===== Salidas de hoy (colaboradores que marcaron salida) =====
-    // Sin el filtro del descanso, quien salió a almorzar aparecía aquí como que
-    // había terminado su jornada.
+    // Sin el filtro de las pausas, quien salió a almorzar o a su descanso
+    // aparecía aquí como que había terminado su jornada.
     const salidasRecientes = registrosHoy
-      .filter(r => r.salida && !r.salidaAlmuerzo)
+      .filter(r => r.salida && !r.salidaAlmuerzo && !r.salidaDescanso)
       .sort((a, b) => b.salida!.getTime() - a.salida!.getTime())
       .map(r => ({
         registroId: r.id,

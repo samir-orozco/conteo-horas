@@ -16,6 +16,8 @@ import workerRoutes from '../src/routes/worker';
 import reporteRoutes from '../src/routes/reportes';
 import permisoRoutes from '../src/routes/permisos';
 import dashboardRoutes from '../src/routes/dashboard';
+import horarioRoutes from '../src/routes/horarios';
+import registroRoutes from '../src/routes/registros';
 
 type Sesion = { id: string; rol: string; nombre?: string; empresaId?: string | null };
 
@@ -52,6 +54,8 @@ export async function montarApp() {
   await app.register(reporteRoutes, { prefix: '/api/reportes' });
   await app.register(permisoRoutes, { prefix: '/api/permisos' });
   await app.register(dashboardRoutes, { prefix: '/api/dashboard' });
+  await app.register(horarioRoutes, { prefix: '/api/horarios' });
+  await app.register(registroRoutes, { prefix: '/api/registros' });
   await app.ready();
 
   const tokenAdmin = (empresaId: string) =>

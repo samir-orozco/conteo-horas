@@ -8,7 +8,7 @@ import Registros from './Registros';
 
 // LA PANTALLA DE REGISTROS, SOLO EN LO QUE TOCA A GUARDAR UNA JORNADA.
 //
-// Quitar el descanso deja sin fila a las fotos de la salida al descanso y del
+// Quitar el almuerzo deja sin fila a las fotos de la salida a almorzar y del
 // regreso: esas marcas ya no existen. Son evidencia de asistencia, así que el
 // servidor no las borra sin confirmación y responde con la lista. Lo que se prueba
 // aquí es la costura: que esa respuesta se convierta en una pregunta con las
@@ -23,7 +23,7 @@ const marca = (id: string, entrada: string, salida: string, salidaAlmuerzo: bool
   tieneFotoEntrada: true, tieneFotoSalida: true, tieneNovedadLigada: false,
 });
 const COLABORADOR = { id: 'c1', nombre: 'Julián', apellido: 'Restrepo' };
-// Una jornada con descanso, las cuatro marcas con foto.
+// Una jornada con almuerzo, las cuatro marcas con foto.
 const JORNADA = {
   id: 'a', colaboradorId: 'c1', colaborador: COLABORADOR,
   fecha: bog(0), entrada: bog(8), salida: bog(17), tipo: 'NORMAL', observacion: null,
@@ -65,12 +65,27 @@ async function editarYGuardar() {
 // El recuadro de la pregunta: el título y sus dos botones viven juntos.
 const avisoEnPantalla = async () => (await screen.findByText(TITULO)).closest('div')!;
 
+describe('guardar una jornada', () => {
+  it('manda el almuerzo con su nombre, y nunca con las claves de antes que el servidor rechaza', async () => {
+    // Antes el almuerzo viajaba como `descansoSalida`/`descansoRegreso`. Ahora el
+    // descanso es otra pausa que no se paga, y el servidor rechaza esas claves
+    // para no guardar un almuerzo como descanso.
+    put.mockResolvedValueOnce({ data: { ok: true } });
+    await editarYGuardar();
+    await waitFor(() => expect(put).toHaveBeenCalledTimes(1));
+    const [, datos] = put.mock.calls[0];
+    expect(datos).toMatchObject({ entrada: '08:00', salida: '17:00', almuerzo: { salida: '12:00', regreso: '13:00' } });
+    expect(datos).not.toHaveProperty('descansoSalida');
+    expect(datos).not.toHaveProperty('descansoRegreso');
+  });
+});
+
 describe('guardar una jornada que deja fotos del kiosco sin marca', () => {
   it('pregunta antes de borrarlas, nombrando cada foto con su hora de Bogotá', async () => {
     put.mockRejectedValueOnce(PIDE_CONFIRMAR);
     await editarYGuardar();
     const aviso = await avisoEnPantalla();
-    expect(within(aviso).getByText(/Salida a descanso · 12:00 y Regreso del descanso · 13:00/)).toBeInTheDocument();
+    expect(within(aviso).getByText(/Salida a almorzar · 12:00 y Regreso del almuerzo · 13:00/)).toBeInTheDocument();
     expect(put).toHaveBeenCalledTimes(1);
     expect(put.mock.calls[0][1]).not.toHaveProperty('confirmarBorrarFotos');
   });

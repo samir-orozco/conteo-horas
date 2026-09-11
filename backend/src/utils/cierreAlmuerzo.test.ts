@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { almuerzoSinRegreso } from './cierreAlmuerzo';
+import { almuerzoSinRegreso, descansoSinRegreso } from './cierreAlmuerzo';
 
 // Quien sale a almorzar y no marca su regreso pierde la tarde entera: el sistema
 // no la cuenta ni la paga, y hoy nadie se entera hasta que el trabajador
@@ -58,5 +58,26 @@ describe('almuerzoSinRegreso', () => {
     const r = almuerzoSinRegreso(bog(6, 1, 0), d, bog(6, 4, 0));
     expect(r.finVentana).toEqual(bog(6, 1, 30));
     expect(r.vencido).toBe(true);
+  });
+});
+
+// El descanso no remunerado que nadie cerró es el mismo olvido, con la misma
+// gracia: lo único que cambia es contra qué ventana se mide.
+describe('descansoSinRegreso', () => {
+  const conDescanso = dia({ descansoInicio: '09:00', descansoFin: '09:15' });
+
+  it('se mide contra la ventana del descanso, no contra la del almuerzo', () => {
+    const r = descansoSinRegreso(bog(5, 9, 2), conDescanso, bog(5, 9, 30));
+    expect(r.finVentana).toEqual(bog(5, 9, 15));
+    expect(r.vencido).toBe(false);
+  });
+
+  it('una hora larga después del fin ya es un olvido', () => {
+    expect(descansoSinRegreso(bog(5, 9, 2), conDescanso, bog(5, 10, 20)).vencido).toBe(true);
+  });
+
+  it('sin ventana de descanso no hay nada que proponer', () => {
+    const r = descansoSinRegreso(bog(5, 9, 2), dia({ descansoInicio: null, descansoFin: null }), bog(5, 17, 0));
+    expect(r).toEqual({ vencido: false, finVentana: null });
   });
 });

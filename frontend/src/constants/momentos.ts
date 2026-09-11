@@ -5,21 +5,30 @@
 // arreglo: la otra mitad fue que dejaran de deducirlo cuatro pantallas por su
 // cuenta, que es como la foto de la salida a almorzar terminó diciendo "Salida".
 
-export type Momento = 'ENTRADA' | 'SALIDA_ALMUERZO' | 'REGRESO_ALMUERZO' | 'SALIDA';
+export type Momento =
+  | 'ENTRADA'
+  | 'SALIDA_ALMUERZO' | 'REGRESO_ALMUERZO'
+  | 'SALIDA_DESCANSO' | 'REGRESO_DESCANSO'
+  | 'SALIDA';
 
 export const MOMENTO_LABEL: Record<Momento, string> = {
   ENTRADA: 'Entrada',
-  SALIDA_ALMUERZO: 'Salida a descanso',
-  REGRESO_ALMUERZO: 'Regreso del descanso',
+  SALIDA_ALMUERZO: 'Salida a almorzar',
+  REGRESO_ALMUERZO: 'Regreso del almuerzo',
+  SALIDA_DESCANSO: 'Salida al descanso',
+  REGRESO_DESCANSO: 'Regreso del descanso',
   SALIDA: 'Salida',
 };
 
-// Las del descanso van en ámbar, como el chip de la lista de marcaciones: de un
-// vistazo se distingue la jornada del almuerzo sin tener que leer.
+// Las pausas van en color, como el chip de la lista de marcaciones: de un vistazo
+// se distingue la jornada de sus pausas sin tener que leer. El almuerzo en ámbar
+// y el descanso no remunerado en azul, para no confundir una con otra.
 export const MOMENTO_TONO: Record<Momento, string> = {
   ENTRADA: 'text-muted',
   SALIDA_ALMUERZO: 'text-amber-700',
   REGRESO_ALMUERZO: 'text-amber-700',
+  SALIDA_DESCANSO: 'text-sky-700',
+  REGRESO_DESCANSO: 'text-sky-700',
   SALIDA: 'text-muted',
 };
 
@@ -32,7 +41,7 @@ export type FotoDeJornada = {
   // el hueco necesita decir por qué.
   estimada: boolean;
   // A qué turno del día pertenece, desde 0. Lo decide el backend con la misma
-  // regla que parte el día en la tabla: volver del descanso es el mismo turno;
+  // regla que parte el día en la tabla: volver de una pausa es el mismo turno;
   // volver por la tarde a hacer extras es otro.
   //
   // OPCIONAL A PROPÓSITO. Un backend anterior a este cambio no lo manda, y

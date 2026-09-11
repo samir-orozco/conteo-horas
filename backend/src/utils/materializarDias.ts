@@ -63,6 +63,7 @@ export async function materializarColaborador(
         toleranciaMin: d.toleranciaMin, almuerzoMin: d.almuerzoMin,
         minutosEsperados: d.minutosEsperados, toleranciaSalidaMin: d.toleranciaSalidaMin,
         ajustaEntrada: d.ajustaEntrada, almuerzoInicio: d.almuerzoInicio, almuerzoFin: d.almuerzoFin,
+        descansoInicio: d.descansoInicio, descansoFin: d.descansoFin,
         // `origen` NO se toca al actualizar: es el único marcador que puede
         // proteger un día ajustado a mano, y reescribirlo a AUTO lo borraría.
         horarioId: colaborador.horarioId,
@@ -73,6 +74,7 @@ export async function materializarColaborador(
         toleranciaMin: d.toleranciaMin, almuerzoMin: d.almuerzoMin,
         minutosEsperados: d.minutosEsperados, toleranciaSalidaMin: d.toleranciaSalidaMin,
         ajustaEntrada: d.ajustaEntrada, almuerzoInicio: d.almuerzoInicio, almuerzoFin: d.almuerzoFin,
+        descansoInicio: d.descansoInicio, descansoFin: d.descansoFin,
         horarioId: colaborador.horarioId, origen: 'AUTO',
       },
     });

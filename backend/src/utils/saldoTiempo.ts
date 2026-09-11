@@ -93,13 +93,15 @@ export type PermisoRango = NovedadParaDia & { tipo: string };
 export type DiaEsperadoParaSaldo = {
   fecha: Date; // medianoche de Bogotá
   programado: boolean; // false = ese día no se trabajaba
-  minutosEsperados: number; // ya neto de almuerzo
-  // La franja y la ventana de almuerzo de ESE día: contra ellas se mide cuánto
-  // de la jornada cubre una novedad de parte del día.
+  minutosEsperados: number; // ya neto de almuerzo y de descanso
+  // La franja y las ventanas de pausa de ESE día: contra ellas se mide cuánto de
+  // la jornada cubre una novedad de parte del día.
   horaEntrada: string | null;
   horaSalida: string | null;
   almuerzoInicio: string | null;
   almuerzoFin: string | null;
+  descansoInicio: string | null;
+  descansoFin: string | null;
 };
 
 type Tramo = [number, number];
@@ -125,23 +127,25 @@ const largo = (t: Tramo | null) => (t ? t[1] - t[0] : 0);
 const enLosDosDias = (t: Tramo): Tramo[] => [t, [t[0] + 24 * 60, t[1] + 24 * 60]];
 
 // Minutos de la jornada que excusa una novedad de parte del día: los de su tramo
-// que caen dentro de la franja, menos los de la ventana de almuerzo, que tampoco
-// se trabajaban. `null` si el día no dice su franja: sin ella no hay contra qué
-// medir, y la novedad cubre el día entero como siempre.
+// que caen dentro de la franja, menos los de las ventanas de almuerzo y de
+// descanso, que tampoco se trabajaban. `null` si el día no dice su franja: sin
+// ella no hay contra qué medir, y la novedad cubre el día entero como siempre.
 //
-// Sin ventana de almuerzo no se resta nada, a propósito: en ese caso lo
+// Sin ventana de almuerzo no se resta nada por él, a propósito: en ese caso lo
 // trabajado descuenta la hora entera aunque la persona se haya ido antes de
 // almorzar (`descontarAlmuerzo`), y restarla aquí también la cobraría dos veces.
 function minutosDeParteDelDia(dia: DiaEsperadoParaSaldo, p: PermisoRango): number | null {
   if (!dia.horaEntrada || !dia.horaSalida) return null;
   const franja = tramoDe(dia.horaEntrada, dia.horaSalida);
-  const almuerzo = dia.almuerzoInicio && dia.almuerzoFin ? tramoDe(dia.almuerzoInicio, dia.almuerzoFin) : null;
+  const pausas: Tramo[] = [];
+  if (dia.almuerzoInicio && dia.almuerzoFin) pausas.push(tramoDe(dia.almuerzoInicio, dia.almuerzoFin));
+  if (dia.descansoInicio && dia.descansoFin) pausas.push(tramoDe(dia.descansoInicio, dia.descansoFin));
   let minutos = 0;
   for (const tramo of enLosDosDias(tramoDe(p.horaInicio!, p.horaFin!))) {
     const cubierto = cruce(franja, tramo);
     if (!cubierto) continue;
     minutos += largo(cubierto);
-    for (const a of almuerzo ? enLosDosDias(almuerzo) : []) minutos -= largo(cruce(cubierto, a));
+    for (const pausa of pausas) for (const a of enLosDosDias(pausa)) minutos -= largo(cruce(cubierto, a));
   }
   return minutos;
 }

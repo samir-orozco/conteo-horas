@@ -224,7 +224,7 @@ async function main() {
   const nov2 = await novedadDe(c2.id, a2.id);
   await pintar('antes', a2.id, { novedad: nov2.id });
   comprobar('poner: no se pierde ninguna foto, así que no pregunta', '200 sin preguntar', await guardar(a2.id,
-    { fecha: DIA, entrada: '08:00', descansoSalida: '12:00', descansoRegreso: '13:00', salida: '17:00', tipo: 'NORMAL' }));
+    { fecha: DIA, entrada: '08:00', almuerzo: { salida: '12:00', regreso: '13:00' }, salida: '17:00', tipo: 'NORMAL' }));
   const v2 = await pintar('después', a2.id, { novedad: nov2.id });
   const d2 = momento(v2, 'SALIDA_ALMUERZO');
   const s2 = momento(v2, 'SALIDA');
@@ -276,7 +276,7 @@ async function main() {
   await marcacion(c5.id, REGRESO, CIERRE);
   await pintar('antes', a5.id);
   comprobar('mover horas: no se pierde ninguna foto, así que no pregunta', '200 sin preguntar', await guardar(a5.id,
-    { fecha: DIA, entrada: '08:00', descansoSalida: '12:15', descansoRegreso: '13:15', salida: '17:15', tipo: 'NORMAL' }));
+    { fecha: DIA, entrada: '08:00', almuerzo: { salida: '12:15', regreso: '13:15' }, salida: '17:15', tipo: 'NORMAL' }));
   const v5 = await pintar('después', a5.id);
   comprobar('mover horas: la salida al descanso conserva su foto, su método y su sede', '12:15 DESCANSO_1200 ROSTRO 0.31 Laureles', describir(momento(v5, 'SALIDA_ALMUERZO')));
   comprobar('mover horas: la salida del día conserva su foto, su método y su sede', '17:15 CIERRE_1700 ROSTRO 0.42 El Poblado', describir(momento(v5, 'SALIDA')));

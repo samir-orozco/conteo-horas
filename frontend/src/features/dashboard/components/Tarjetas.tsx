@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   UserCheck, LogOut, AlarmClock, UserX, CalendarOff, CalendarDays, Cake, Camera, Paperclip,
-  UtensilsCrossed,
+  UtensilsCrossed, Coffee, type LucideIcon,
 } from 'lucide-react';
 import { TIPO_PERMISO_LABEL } from '../../../constants/permisos';
 import { fmtMin, fmtHora, haceCuanto, diasHasta, MESES } from '../helpers';
@@ -21,10 +21,17 @@ function Tarjeta({ icon, titulo, children }: { icon: ReactNode; titulo: string; 
 const Lista = ({ children }: { children: ReactNode }) => <div className="space-y-2 max-h-64 overflow-y-auto pr-1">{children}</div>;
 const Vacio = ({ children, verde }: { children: ReactNode; verde?: boolean }) => <p className={`text-sm ${verde ? 'text-green-700' : 'text-muted'}`}>{children}</p>;
 
-// Quien está almorzando sigue en su turno: la salida al descanso no lo cierra.
-// Antes caía en "Salidas de hoy" —en rojo, como quien se fue a su casa— y
-// desaparecía de aquí mientras tanto. Va en ámbar y no en verde porque no está
-// en su puesto, pero tampoco se ha ido.
+// Cómo se dice cada pausa. Sin `pausa` —un backend anterior— es el almuerzo,
+// que era la única que existía.
+const EN_LA_PAUSA: Record<'ALMUERZO' | 'DESCANSO', { texto: string; Icono: LucideIcon }> = {
+  ALMUERZO: { texto: 'En almuerzo', Icono: UtensilsCrossed },
+  DESCANSO: { texto: 'En descanso', Icono: Coffee },
+};
+
+// Quien está en una pausa —almorzando o en su descanso— sigue en su turno: la
+// salida a la pausa no lo cierra. Antes caía en "Salidas de hoy" —en rojo, como
+// quien se fue a su casa— y desaparecía de aquí mientras tanto. Va en ámbar y no
+// en verde porque no está en su puesto, pero tampoco se ha ido.
 export function EnPlantaCard({ items, enDescanso }: { items: Dash['enPlanta']; enDescanso: NonNullable<Dash['enDescanso']> }) {
   const vacio = items.length === 0 && enDescanso.length === 0;
   return (
@@ -41,16 +48,19 @@ export function EnPlantaCard({ items, enDescanso }: { items: Dash['enPlanta']; e
               <span className="text-xs text-green-700 font-medium">{haceCuanto(e.desde)}</span>
             </div>
           ))}
-          {enDescanso.map(e => (
-            <div key={e.id} className="flex items-center gap-3 bg-amber-50 rounded-xl px-3.5 py-2.5">
-              <UtensilsCrossed size={14} className="text-amber-600 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-ink truncate">{e.nombre}</p>
-                <p className="text-xs text-amber-700">En descanso · {fmtHora(e.desde)}</p>
+          {enDescanso.map(e => {
+            const { texto, Icono } = EN_LA_PAUSA[e.pausa ?? 'ALMUERZO'];
+            return (
+              <div key={e.id} className="flex items-center gap-3 bg-amber-50 rounded-xl px-3.5 py-2.5">
+                <Icono size={14} className="text-amber-600 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-ink truncate">{e.nombre}</p>
+                  <p className="text-xs text-amber-700">{texto} · {fmtHora(e.desde)}</p>
+                </div>
+                <span className="text-xs text-amber-700 font-medium">{haceCuanto(e.desde)}</span>
               </div>
-              <span className="text-xs text-amber-700 font-medium">{haceCuanto(e.desde)}</span>
-            </div>
-          ))}
+            );
+          })}
         </Lista>
       )}
     </Tarjeta>

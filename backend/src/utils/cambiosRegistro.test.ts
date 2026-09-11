@@ -11,6 +11,7 @@ const base: EstadoRegistro = {
   tipo: 'NORMAL',
   observacion: null,
   salidaAlmuerzo: false,
+  salidaDescanso: false,
 };
 
 describe('qué cambió en una marcación', () => {
@@ -71,6 +72,11 @@ describe('qué cambió en una marcación', () => {
   it('marcar que la salida era al almuerzo también queda registrado', () => {
     const d = diferenciasDeRegistro(base, { salidaAlmuerzo: true });
     expect(d).toEqual([{ campo: 'salidaAlmuerzo', antes: 'no', despues: 'sí' }]);
+  });
+
+  it('marcar que la salida era al descanso no remunerado también queda registrado', () => {
+    const d = diferenciasDeRegistro({ ...base, salidaDescanso: false }, { salidaDescanso: true });
+    expect(d).toEqual([{ campo: 'salidaDescanso', antes: 'no', despues: 'sí' }]);
   });
 
   it('un campo ausente del cambio no se toca aunque tenga valor', () => {

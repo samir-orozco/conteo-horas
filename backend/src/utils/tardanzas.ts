@@ -253,19 +253,20 @@ export function ventanaDeLlegadaTarde(
 // entrada: el kiosco pide el motivo y no marca nada hasta tenerlo.
 //
 // Solo cuenta la primera entrada del día, en un día laboral de su horario. Volver
-// del almuerzo no es llegar tarde, aunque en un turno nocturno el regreso caiga
-// pasada la medianoche y sea la primera marca del día calendario.
+// de una pausa —almuerzo o descanso— no es llegar tarde, aunque en un turno
+// nocturno el regreso caiga pasada la medianoche y sea la primera marca del día
+// calendario.
 export function llegadaTarde<F extends { dias: unknown; horaEntrada: string }>(
   ahoraBog: Date,
   ctx: {
     esPrimeraEntrada: boolean;
-    vuelveDeAlmorzar: boolean;
+    vuelveDeUnaPausa: boolean;
     esFestivo: boolean;
     horario: { activo: boolean; toleranciaMin: number; franjas: F[] } | null | undefined;
   },
 ): { franja: F; minutos: number } | null {
   const { horario } = ctx;
-  if (!ctx.esPrimeraEntrada || ctx.vuelveDeAlmorzar || ctx.esFestivo || !horario?.activo) return null;
+  if (!ctx.esPrimeraEntrada || ctx.vuelveDeUnaPausa || ctx.esFestivo || !horario?.activo) return null;
   const franja = franjaDelDia(horario, DIAS_SEMANA[ahoraBog.getDay()]);
   if (!franja) return null;
   const minutos = ahoraBog.getHours() * 60 + ahoraBog.getMinutes() - (minutosDe(franja.horaEntrada) + horario.toleranciaMin);

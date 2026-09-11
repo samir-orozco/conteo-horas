@@ -157,9 +157,9 @@ export default function Marcador() {
     }
   };
 
-  // Volvió del almuerzo pero se le pasó la hora: antes de abrir el turno se le
-  // pregunta a qué hora regresó. Si no, marcar a las 17:00 el regreso de un
-  // almuerzo de las 12:00 le borraría la tarde entera.
+  // Volvió de una pausa —almuerzo o descanso— pero se le pasó la hora: antes de
+  // abrir el turno se le pregunta a qué hora regresó. Si no, marcar a las 17:00
+  // el regreso de un almuerzo de las 12:00 le borraría la tarde entera.
   const [preguntandoRegreso, setPreguntandoRegreso] = useState(false);
 
   const marcar = async (opciones?: OpcionesMarca) => {
@@ -186,6 +186,7 @@ export default function Marcador() {
       const r = await apiMarcar(sesion.token, {
         foto: fotoRostro ?? undefined, ...ubic,
         ...(opciones?.almuerzo ? { almuerzo: true } : {}),
+        ...(opciones?.descanso ? { descanso: true } : {}),
         ...(opciones?.regresoA ? { regresoA: opciones.regresoA } : {}),
         // El motivo de la salida temprana. Sin esto, `enviarNovedadTemprana`
         // reintentaba la marca EXACTAMENTE igual que la primera vez: el servidor
@@ -195,7 +196,10 @@ export default function Marcador() {
         ...(opciones?.novedadTipo ? { novedadTipo: opciones.novedadTipo } : {}),
         ...(opciones?.novedadDescripcion ? { novedadDescripcion: opciones.novedadDescripcion } : {}),
       });
-      mostrarFlashOk(r.accion, r.hora, nombreColab, r.salidaAlmuerzo);
+      // La pausa la confirma el SERVIDOR, no el botón que se tocó: si la ventana
+      // ya no aplicaba, la marca quedó como salida normal y la pantalla lo dice.
+      mostrarFlashOk(r.accion, r.hora, nombreColab,
+        r.salidaAlmuerzo ? 'ALMUERZO' : r.salidaDescanso ? 'DESCANSO' : undefined);
     } catch (err: any) {
       // El servidor puede NO haber marcado por dos razones que no son fallos: se
       // va antes de hora o llega tarde, y en los dos casos pide el motivo. Qué
@@ -277,10 +281,17 @@ export default function Marcador() {
       />
     );
   }
-  if (preguntandoRegreso && sesion.estado?.salidaAlmuerzo && sesion.estado.regresoSugerido) {
+  // De qué pausa está volviendo, si salió a una. El servidor manda una sola.
+  const pausaSinVolver = sesion.estado?.enAlmuerzo && sesion.estado.salidaAlmuerzo
+    ? { pausa: 'ALMUERZO' as const, salida: sesion.estado.salidaAlmuerzo }
+    : sesion.estado?.enDescanso && sesion.estado.salidaDescanso
+      ? { pausa: 'DESCANSO' as const, salida: sesion.estado.salidaDescanso }
+      : null;
+  if (preguntandoRegreso && pausaSinVolver && sesion.estado?.regresoSugerido) {
     return (
       <RegresoOlvidado
-        salida={sesion.estado.salidaAlmuerzo}
+        pausa={pausaSinVolver.pausa}
+        salida={pausaSinVolver.salida}
         sugerido={sesion.estado.regresoSugerido}
         ahora={ahora}
         marcando={marcando}

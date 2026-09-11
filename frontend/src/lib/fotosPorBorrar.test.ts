@@ -13,8 +13,15 @@ describe('avisoDeFotosPorBorrar', () => {
       { momento: 'REGRESO_ALMUERZO', hora: bog(13, 5) },
     ])).toBe(
       'Estas 2 fotos del kiosco ya no pertenecen a ninguna marca de la jornada y se borran al guardar: '
-      + 'Salida a descanso · 12:00 y Regreso del descanso · 13:05. No se pueden recuperar.',
+      + 'Salida a almorzar · 12:00 y Regreso del almuerzo · 13:05. No se pueden recuperar.',
     );
+  });
+
+  it('las del descanso no remunerado se nombran distinto que las del almuerzo', () => {
+    expect(avisoDeFotosPorBorrar([
+      { momento: 'SALIDA_DESCANSO', hora: bog(9) },
+      { momento: 'REGRESO_DESCANSO', hora: bog(9, 15) },
+    ])).toContain('Salida al descanso · 09:00 y Regreso del descanso · 09:15.');
   });
 
   it('con una sola foto habla en singular', () => {
@@ -29,6 +36,6 @@ describe('avisoDeFotosPorBorrar', () => {
       { momento: 'REGRESO_ALMUERZO', hora: bog(13) },
       { momento: 'SALIDA', hora: bog(17) },
       { momento: 'SALIDA', hora: null },
-    ])).toContain('Regreso del descanso · 13:00, Salida · 17:00 y Salida · sin hora.');
+    ])).toContain('Regreso del almuerzo · 13:00, Salida · 17:00 y Salida · sin hora.');
   });
 });

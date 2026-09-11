@@ -12,7 +12,7 @@ import {
 } from '../utils/saldoTiempo';
 import { combinarDiasEsperados, type DiaEsperadoCalculado } from '../utils/diasEsperados';
 import { ajustarAJornada } from '../utils/ajusteJornada';
-import { minutosAlmuerzoADescontar } from '../utils/almuerzo';
+import { minutosAlmuerzoADescontar, minutosDescansoADescontar } from '../utils/almuerzo';
 import {
   lugaresDeTrabajo, apareceConFiltro, resumirPorSede, nombrarLugares, type Lugar, type SedeDelResumen,
 } from '../utils/sedesDeReporte';
@@ -94,10 +94,11 @@ function liquidarRegistros(
 ) {
   const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
 
-  // El almuerzo se resuelve por DÍA, no por registro: la regla nueva mira todos
-  // los tramos del día a la vez para saber cuánto de la ventana estuvo la
-  // persona marcada. Se precalcula aquí y luego se descuenta una sola vez.
+  // Las pausas se resuelven por DÍA, no por registro: la regla mira todos los
+  // tramos del día a la vez para saber cuánto de cada ventana estuvo la persona
+  // marcada. Se precalculan aquí y luego se descuentan una sola vez.
   const almuerzoPorDia = new Map<string, number>();
+  const descansoPorDia = new Map<string, number>();
   const tramosPorDia = new Map<string, { entrada: Date; salida: Date }[]>();
   for (const r of registros) {
     if (!r.entrada || !r.salida) continue;
@@ -116,6 +117,7 @@ function liquidarRegistros(
     const d = diaPorClave.get(k);
     if (!d) continue;
     almuerzoPorDia.set(k, minutosAlmuerzoADescontar(tramos, d));
+    descansoPorDia.set(k, minutosDescansoADescontar(tramos, d));
   }
   const porSemana = new Map<string, typeof registros>();
   for (const reg of registros) {
@@ -126,6 +128,7 @@ function liquidarRegistros(
 
   const acumulado: Record<string, { codigo: string; nombre: string; recargo: number; minutos: number }> = {};
   const diasConAlmuerzo = new Set<string>();
+  const diasConDescanso = new Set<string>();
   const detalleRegistros: DetalleRegistro[] = [];
 
   for (const [, regsDeUnaSemana] of porSemana) {
@@ -161,6 +164,17 @@ function liquidarRegistros(
           : descontarAlmuerzo(resultado, almuerzo);
         if (descontado > 0) {
           diasConAlmuerzo.add(claveDia);
+          ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
+        }
+      }
+      // El descanso no remunerado se descuenta como el almuerzo con ventana: de
+      // las horas ordinarias y una sola vez por día. Sin fila del día no hay
+      // descanso, porque nace con ventana y no tiene minutos fijos de respaldo.
+      const descanso = descansoPorDia.get(claveDia) ?? 0;
+      if (descanso > 0 && !diasConDescanso.has(claveDia)) {
+        const { descontado } = descontarAlmuerzoOrdinarias(resultado, descanso);
+        if (descontado > 0) {
+          diasConDescanso.add(claveDia);
           ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
         }
       }
@@ -249,6 +263,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
           fecha: true, programado: true, horaEntrada: true, horaSalida: true,
           toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
           toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+          descansoInicio: true, descansoFin: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -348,6 +363,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
           toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+          descansoInicio: true, descansoFin: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -411,6 +427,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
           fecha: true, programado: true, horaEntrada: true, horaSalida: true,
           toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
           toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+          descansoInicio: true, descansoFin: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -469,6 +486,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
           toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+          descansoInicio: true, descansoFin: true,
         },
         orderBy: { fecha: 'asc' },
       }),

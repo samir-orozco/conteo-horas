@@ -11,7 +11,7 @@ const POBLADO = { id: 's1', nombre: 'El Poblado', activa: true };
 const LAURELES = { id: 's2', nombre: 'Laureles', activa: true };
 
 // La PRIMERA marcación de una jornada con almuerzo, que es la que abre la fila de
-// la tabla: su salida es la del descanso, no la del día.
+// la tabla: su salida es la del almuerzo, no la del día.
 function jornada(p: { salidaAlDescansoEn: typeof POBLADO | null; sedes?: Jornada['sedes'] }): Jornada {
   return {
     registro: {

@@ -19,6 +19,7 @@ const NOMBRE_CAMPO: Record<string, string> = {
   tipo: 'el tipo',
   observacion: 'la observación',
   salidaAlmuerzo: 'la marca de salida al almuerzo',
+  salidaDescanso: 'la marca de salida al descanso',
 };
 
 

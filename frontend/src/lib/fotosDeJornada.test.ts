@@ -60,7 +60,7 @@ describe('sedesDelTurno', () => {
     expect(sedesDelTurno([f({ sede: POBLADO }), f({ momento: 'SALIDA' })]).distintas).toBe(false);
   });
 
-  it('la salida a descanso no es el cierre del turno', () => {
+  it('la salida a almorzar no es el cierre del turno', () => {
     const r = sedesDelTurno([
       f({ sede: POBLADO }),
       f({ momento: 'SALIDA_ALMUERZO', sede: LAURELES }),
