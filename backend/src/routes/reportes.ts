@@ -13,8 +13,29 @@ import {
 import { combinarDiasEsperados, type DiaEsperadoCalculado } from '../utils/diasEsperados';
 import { ajustarAJornada } from '../utils/ajusteJornada';
 import { minutosAlmuerzoADescontar } from '../utils/almuerzo';
+import {
+  lugaresDeTrabajo, apareceConFiltro, resumirPorSede, nombrarLugares, type Lugar, type SedeDelResumen,
+} from '../utils/sedesDeReporte';
 
 const TZ = 'America/Bogota';
+
+// Lo que devuelven los dos resúmenes que se filtran por sede. El filtro decide
+// QUIÉN aparece; el resumen se arma siempre con todas las filas, así que no cambia
+// según la sede que se mire. Las reglas viven en utils/sedesDeReporte.ts: esto
+// solo las junta, y cambia en cada fila los ids de sus lugares por sus nombres.
+function responderPorSede<K extends string, F extends { lugares: Lugar[] } & Record<K, number>>(
+  filas: F[],
+  claves: readonly K[],
+  sedes: SedeDelResumen[],
+  sedeId: string | undefined,
+) {
+  return {
+    colaboradores: filas
+      .filter(f => apareceConFiltro(f.lugares, sedeId))
+      .map(({ lugares, ...fila }) => ({ ...fila, sedes: nombrarLugares(lugares, sedes) })),
+    resumen: resumirPorSede(filas, claves, sedes),
+  };
+}
 
 function semanaKey(fecha: Date): string {
   const z = toZonedTime(fecha, TZ);
@@ -292,7 +313,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // no remunerado no se calcula aquí a propósito: es un descuento sobre el
     // salario y vive en /liquidacion, donde el salario está a la vista. Dejarlo
     // fuera evita además traer los permisos de toda la empresa en cada consulta.
-    const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, diasTodosEsp] = await Promise.all([
+    const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, diasTodosEsp, sedes] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
         include: { horario: { include: { franjas: true } } },
@@ -302,14 +323,13 @@ export default async function reporteRoutes(app: FastifyInstance) {
       // TODA la empresa. Sin el select, las fotos de un mes entero viajaban a
       // memoria en cada carga del reporte.
       prisma.registro.findMany({
-        // El filtro por sede va sobre DÓNDE se marcó (`Registro.sedeId`), no
-        // sobre la sede asignada al colaborador: quien rota entre locales
-        // aparece en el reporte del local donde realmente trabajó ese día.
-        where: {
-          colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null },
-          ...(sedeId ? { sedeId } : {}),
-        },
-        select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true },
+        // Sin filtro de sede, A PROPÓSITO: cada persona se liquida con todos sus
+        // turnos y la sede solo decide quién aparece (ver `responderPorSede`).
+        // Filtrando aquí, el tope semanal se medía sobre la parte de la semana
+        // que quedaba: quien repartió la semana entre dos sedes tenía $0 de
+        // extras en cada una.
+        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } },
+        select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, sedeId: true, sedeSalidaId: true },
         orderBy: { fecha: 'asc' },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
@@ -329,13 +349,16 @@ export default async function reporteRoutes(app: FastifyInstance) {
         },
         orderBy: { fecha: 'asc' },
       }),
+      // Todas las sedes, también las desactivadas: desactivar una sede no borra lo
+      // que se trabajó ahí, y el resumen tiene que poder nombrarla.
+      prisma.sede.findMany({ where: { empresaId }, select: { id: true, nombre: true, activa: true } }),
     ]);
 
     const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
     const festivosDates = festivos.map(f => new Date(f.fecha));
     const jornadaCierre = jornadaVigente(hastaF, jornadas);
     const horasMes = horasMesDeJornada(jornadaCierre);
-    const porColaborador = agrupar(registrosTodos as any);
+    const porColaborador = agrupar(registrosTodos);
     const porColDiasEsp = agrupar(diasTodosEsp);
 
     const resultado = colaboradores.map(col => {
@@ -347,10 +370,11 @@ export default async function reporteRoutes(app: FastifyInstance) {
       return {
         colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
         totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
+        lugares: lugaresDeTrabajo(registros),
       };
     });
 
-    return { desde, hasta, colaboradores: resultado };
+    return { desde, hasta, ...responderPorSede(resultado, ['totalRecargos', 'totalExtra', 'totalAdicional'] as const, sedes, sedeId) };
   });
 
   // Llegadas tarde de un colaborador según su horario asignado
@@ -406,17 +430,17 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const empresaId = request.empresaId!;
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
 
-    const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas, diasTodos] = await Promise.all([
+    const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas, diasTodos, sedes] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
         include: { horario: { include: { franjas: true } } },
         orderBy: { nombre: 'asc' },
       }),
+      // Sin filtro de sede, por lo mismo que en /extras-resumen: la primera entrada
+      // del día sale de TODOS los turnos. Filtrando aquí, quien entraba a tiempo en
+      // una sede y regresaba del almuerzo en otra aparecía tarde en la segunda.
       prisma.registro.findMany({
-        where: {
-          colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo },
-          ...(sedeId ? { sedeId } : {}),
-        },
+        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
       prisma.permiso.findMany({
@@ -435,17 +459,20 @@ export default async function reporteRoutes(app: FastifyInstance) {
         },
         orderBy: { fecha: 'asc' },
       }),
+      // Todas las sedes, también las desactivadas (ver /extras-resumen).
+      prisma.sede.findMany({ where: { empresaId }, select: { id: true, nombre: true, activa: true } }),
     ]);
 
-    const porColRegistros = agrupar(registrosTodos as any);
+    const porColRegistros = agrupar(registrosTodos);
     const porColPermisos = agrupar(permisosTodos as any);
     const porColDias = agrupar(diasTodos);
     // Mismo divisor para todos: la jornada vigente al cierre del período.
     const horasMes = horasMesDeJornada(jornadaVigente(new Date(hasta), jornadas));
 
     const resultado = colaboradores.map(col => {
+      const lugares = lugaresDeTrabajo(porColRegistros.get(col.id) ?? []);
       if (!col.horario || !col.horario.activo) {
-        return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: true, diasTarde: 0, totalMinutos: 0, montoTardanzas: 0 };
+        return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: true, diasTarde: 0, totalMinutos: 0, montoTardanzas: 0, lugares };
       }
       const r = calcularTardanzas(
         (porColRegistros.get(col.id) ?? []) as any,
@@ -460,10 +487,11 @@ export default async function reporteRoutes(app: FastifyInstance) {
         colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: false,
         diasTarde: r.diasTarde, totalMinutos: r.totalMinutos,
         montoTardanzas: parseFloat(monto.toFixed(2)),
+        lugares,
       };
     });
 
-    return { desde, hasta, colaboradores: resultado };
+    return { desde, hasta, ...responderPorSede(resultado, ['diasTarde', 'totalMinutos', 'montoTardanzas'] as const, sedes, sedeId) };
   });
 
   app.get('/asistencia', auth, async (request) => {
