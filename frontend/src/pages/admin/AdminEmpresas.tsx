@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, X, Wallet, Power, Link as LinkIcon, Infinity as InfinityIcon, ImagePlus, Trash2, ChevronDown, CalendarClock, Tag, MoreVertical } from 'lucide-react';
 import api from '../../lib/api';
@@ -65,6 +65,7 @@ export default function AdminEmpresas() {
   const [resumenEliminar, setResumenEliminar] = useState<ResumenEliminacion | null>(null);
   const [borrando, setBorrando] = useState(false);
   const [errorEliminar, setErrorEliminar] = useState('');
+  const pedidoEliminar = useRef<string | null>(null);
   // Menú "más opciones" por fila (posición fija calculada desde el botón)
   const [menu, setMenu] = useState<{ emp: EmpresaRow; x: number; y: number } | null>(null);
 
@@ -104,18 +105,32 @@ export default function AdminEmpresas() {
     setFormPago(p => ({ ...p, monto: r.data.monto > 0 ? r.data.monto : r.data.tarifaMesCompleto }));
   };
 
-  // El modal abre en blanco y pide el resumen: cuánto se pierde y si algo lo
-  // bloquea. Hasta que llegue no ofrece el botón de borrar.
+  // El modal abre en blanco y pide el resumen: cuánto se pierde, incluida la
+  // plata. Hasta que llegue no ofrece el botón de borrar.
+  //
+  // `pedidoEliminar` guarda de qué empresa se espera el resumen. Si el super
+  // admin cierra y abre otra antes de que llegue, la respuesta vieja se descarta:
+  // si no, el modal de la segunda mostraba el NIT, los conteos o el error de la
+  // primera.
   const abrirEliminar = async (emp: EmpresaRow) => {
+    pedidoEliminar.current = emp.id;
     setEliminando(emp);
     setResumenEliminar(null);
     setErrorEliminar('');
     try {
       const r = await api.get(`/admin/empresas/${emp.id}/eliminacion`);
+      if (pedidoEliminar.current !== emp.id) return;
       setResumenEliminar(r.data);
     } catch (err) {
+      if (pedidoEliminar.current !== emp.id) return;
       setErrorEliminar(mensajeDeError(err, 'No pudimos calcular qué se eliminaría.'));
     }
+  };
+
+  const cerrarEliminar = () => {
+    pedidoEliminar.current = null;
+    setEliminando(null);
+    setErrorEliminar('');
   };
 
   const confirmarEliminar = async (confirmacion: string) => {
@@ -125,10 +140,16 @@ export default function AdminEmpresas() {
     try {
       await api.post(`/admin/empresas/${eliminando.id}/eliminar`, { confirmacion });
       setToast(`Empresa "${eliminando.nombre}" eliminada`);
-      setEliminando(null);
+      cerrarEliminar();
       cargar();
     } catch (err) {
-      setErrorEliminar(mensajeDeError(err, 'No se pudo eliminar la empresa.'));
+      // Un 500 que no escribió la ruta llega como 'Internal Server Error', que no
+      // le dice nada a nadie. Lo que sí escribió la ruta se muestra tal cual.
+      const status = (err as { response?: { status?: number } }).response?.status ?? 0;
+      const mensaje = mensajeDeError(err, 'No se pudo eliminar la empresa.');
+      setErrorEliminar(status >= 500 && mensaje === 'Internal Server Error'
+        ? 'No se pudo eliminar la empresa. Intenta de nuevo en un momento.'
+        : mensaje);
     } finally {
       setBorrando(false);
     }
@@ -469,7 +490,7 @@ export default function AdminEmpresas() {
           eliminando={borrando}
           error={errorEliminar}
           onEliminar={confirmarEliminar}
-          onCancelar={() => { setEliminando(null); setErrorEliminar(''); }}
+          onCancelar={cerrarEliminar}
         />
       )}
 
