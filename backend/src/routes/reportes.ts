@@ -391,8 +391,11 @@ export default async function reporteRoutes(app: FastifyInstance) {
 
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
     const [registros, festivos, permisos, jornadas, diasMaterializados] = await Promise.all([
+      // Solo la entrada: es lo único que lee `calcularTardanzas`. Sin `select`
+      // venían también las fotos de cada marcación del período (ver /liquidacion).
       prisma.registro.findMany({
         where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: { entrada: true },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
       prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
@@ -439,8 +442,14 @@ export default async function reporteRoutes(app: FastifyInstance) {
       // Sin filtro de sede, por lo mismo que en /extras-resumen: la primera entrada
       // del día sale de TODOS los turnos. Filtrando aquí, quien entraba a tiempo en
       // una sede y regresaba del almuerzo en otra aparecía tarde en la segunda.
+      //
+      // `select` explícito por lo mismo que en /liquidacion: sin él venían también
+      // las fotos de cada marcación de la empresa entera. Aquí solo se usan la
+      // entrada (la tardanza), el colaborador (para agrupar) y las sedes (quién
+      // aparece con el filtro).
       prisma.registro.findMany({
         where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: { colaboradorId: true, entrada: true, sedeId: true, sedeSalidaId: true },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
       prisma.permiso.findMany({
@@ -475,7 +484,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: true, diasTarde: 0, totalMinutos: 0, montoTardanzas: 0, lugares };
       }
       const r = calcularTardanzas(
-        (porColRegistros.get(col.id) ?? []) as any,
+        porColRegistros.get(col.id) ?? [],
         combinarDiasEsperados(desdeF, finExclusivo, porColDias.get(col.id) ?? [], col.horario),
         festivos,
         (porColPermisos.get(col.id) ?? []) as any
@@ -492,18 +501,5 @@ export default async function reporteRoutes(app: FastifyInstance) {
     });
 
     return { desde, hasta, ...responderPorSede(resultado, ['diasTarde', 'totalMinutos', 'montoTardanzas'] as const, sedes, sedeId) };
-  });
-
-  app.get('/asistencia', auth, async (request) => {
-    const { desde, hasta } = request.query as any;
-    const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
-    return prisma.registro.findMany({
-      where: {
-        colaborador: { empresaId: request.empresaId },
-        fecha: { gte: desdeF, lt: finExclusivo },
-      },
-      include: { colaborador: true },
-      orderBy: { fecha: 'desc' },
-    });
   });
 }

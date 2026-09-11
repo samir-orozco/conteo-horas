@@ -105,7 +105,9 @@ export function construirExtraConfig(
 // Un día sin fila no se evalúa. Quien llama completa el rango con
 // `combinarDiasEsperados` para que eso no esconda tardanzas reales.
 export function calcularTardanzas(
-  registros: Registro[],
+  // Solo la entrada de cada registro: es lo único que se lee. Exigir el `Registro`
+  // entero obligaba a las rutas a traer también las fotos de cada marcación.
+  registros: Pick<Registro, 'entrada'>[],
   dias: DiaEsperadoParaTardanza[],
   festivos: DiaFestivo[],
   permisos: { fechaInicio: Date; fechaFin: Date }[]
