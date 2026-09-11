@@ -12,6 +12,7 @@ import MenuAcciones from '../components/MenuAcciones';
 import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
 import SelectorColaborador from '../components/SelectorColaborador';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
+import { avisoDeFotosPorBorrar, type FotoPorBorrar } from '../lib/fotosPorBorrar';
 
 const TZ = 'America/Bogota';
 type Colaborador = { id: string; nombre: string; apellido: string };
@@ -69,13 +70,15 @@ type Almuerzo = {
 };
 // Lo que devuelve el servidor cuando rechaza un guardado. `conflicto` solo viene
 // con el código de cruce, y trae la marcación que estorba para poder ofrecerse a
-// quitarla sin salir del formulario.
+// quitarla sin salir del formulario. `fotos` solo viene con el código de fotos
+// por borrar, y son las que se perderían si se confirma.
 type RespuestaDeError = {
   response?: {
     data?: {
       error?: string;
       codigo?: string;
       conflicto?: { id: string; entrada: string | null; salida: string | null };
+      fotos?: FotoPorBorrar[];
     };
   };
 };
@@ -211,6 +214,9 @@ export default function Registros() {
   const [errorGuardar, setErrorGuardar] = useState<
     { texto: string; conflicto?: { id: string; entrada: string | null; salida: string | null } } | null
   >(null);
+  // Las fotos del kiosco que se borrarían al guardar la jornada, cuando el
+  // servidor pide confirmarlo. Mientras esto está abierto no se ha escrito nada.
+  const [fotosPorBorrar, setFotosPorBorrar] = useState<FotoPorBorrar[] | null>(null);
 
   // Filtro de llegada y paginación. La página vuelve a 1 desde cada setter en
   // vez de con un efecto: así no hay un render intermedio mostrando la página 7
@@ -316,32 +322,52 @@ export default function Registros() {
     await enviar();
   };
 
-  const enviar = async (extra?: { salidaAlmuerzo: boolean }) => {
-    // Editando una jornada, las horas viajan como horas: quien decide en qué día
-    // cae cada una es el servidor, que es donde vive la regla de que lo que no
-    // avanza es del día siguiente. Armarlas aquí sobre una sola fecha es lo que
-    // guardaba turnos nocturnos con la salida antes de la entrada.
-    if (jornadaEditada) {
-      try {
-        await api.put(`/registros/jornada/${jornadaEditada.id}`, {
-          colaboradorId: form.colaboradorId,
-          fecha: form.fecha,
-          entrada: form.entrada,
-          salida: form.salida,
-          descansoSalida: form.descansoSalida,
-          descansoRegreso: form.descansoRegreso,
-          tipo: form.tipo,
-          observacion: form.observacion,
-        });
-        setModal(false);
-        cargar();
-      } catch (err) {
-        const d = (err as RespuestaDeError).response?.data;
-        setErrorGuardar({
-          texto: d?.error ?? 'No pudimos guardar la jornada.',
-          conflicto: d?.codigo === 'CRUCE_DE_MARCACIONES' ? d.conflicto : undefined,
-        });
+  // Editando una jornada, las horas viajan como horas: quien decide en qué día
+  // cae cada una es el servidor, que es donde vive la regla de que lo que no
+  // avanza es del día siguiente. Armarlas aquí sobre una sola fecha es lo que
+  // guardaba turnos nocturnos con la salida antes de la entrada.
+  //
+  // Si guardar dejaría fotos del kiosco sin marca a la cual pertenecer —las del
+  // descanso al quitarlo, la de la salida al reabrir—, el servidor no escribe nada
+  // y devuelve cuáles. Se le pregunta a quien edita, y solo si confirma se vuelve
+  // a mandar lo mismo diciéndolo.
+  const enviarJornada = async (confirmarBorrarFotos = false) => {
+    if (!jornadaEditada) return;
+    try {
+      await api.put(`/registros/jornada/${jornadaEditada.id}`, {
+        colaboradorId: form.colaboradorId,
+        fecha: form.fecha,
+        entrada: form.entrada,
+        salida: form.salida,
+        descansoSalida: form.descansoSalida,
+        descansoRegreso: form.descansoRegreso,
+        tipo: form.tipo,
+        observacion: form.observacion,
+        ...(confirmarBorrarFotos ? { confirmarBorrarFotos: true } : {}),
+      });
+      setModal(false);
+      cargar();
+    } catch (err) {
+      const d = (err as RespuestaDeError).response?.data;
+      if (d?.codigo === 'BORRA_FOTOS' && d.fotos?.length) {
+        setFotosPorBorrar(d.fotos);
+        return;
       }
+      setErrorGuardar({
+        texto: d?.error ?? 'No pudimos guardar la jornada.',
+        conflicto: d?.codigo === 'CRUCE_DE_MARCACIONES' ? d.conflicto : undefined,
+      });
+    }
+  };
+
+  const borrarFotosYGuardar = async () => {
+    setFotosPorBorrar(null);
+    await enviarJornada(true);
+  };
+
+  const enviar = async (extra?: { salidaAlmuerzo: boolean }) => {
+    if (jornadaEditada) {
+      await enviarJornada();
       return;
     }
 
@@ -802,6 +828,19 @@ export default function Registros() {
         peligro
         onContinuar={confirmarEliminar}
         onCancelar={() => setPorEliminar(null)}
+      />
+
+      {/* Guardar la jornada dejaría fotos del kiosco sin marca. Son evidencia de
+          asistencia: se dice cuáles antes de borrarlas, y cancelar vuelve al
+          formulario sin haber escrito nada. */}
+      <ConfirmDialog
+        abierto={fotosPorBorrar !== null}
+        titulo="¿Guardar y borrar fotos del kiosco?"
+        subtitulo={fotosPorBorrar ? avisoDeFotosPorBorrar(fotosPorBorrar) : undefined}
+        textoContinuar="Borrar fotos y guardar"
+        peligro
+        onContinuar={borrarFotosYGuardar}
+        onCancelar={() => setFotosPorBorrar(null)}
       />
     </div>
   );

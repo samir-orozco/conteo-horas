@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, sedesDeSalidaTrasEditar } from './jornada';
+import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, salidasTrasEditar } from './jornada';
 
 // El almuerzo no vive en un registro: vive en el HUECO entre dos. Un día con
 // almuerzo son dos tramos —08:00-12:00 y 13:00-17:00— y lo que hay en medio es
@@ -910,41 +910,193 @@ describe('sedesDeLaJornada', () => {
   });
 });
 
-describe('sedesDeSalidaTrasEditar', () => {
-  const m = (entrada: Date | null, salida: Date | null, sedeSalidaId: string | null,
-    extra: { salidaAlmuerzo?: boolean } = {}) => ({ ...reg(entrada, salida, extra), sedeSalidaId });
-  const conDescanso = [m(bog(8), bog(12), 'P', { salidaAlmuerzo: true }), m(bog(13), bog(17), 'L')];
-  const TODO = { descansoSalida: true, descansoRegreso: true, salida: true };
+describe('salidasTrasEditar', () => {
+  // Quitar o poner el descanso cambia CUÁL salida guarda cada fila. Todo lo que
+  // dice cómo se marcó esa salida es de la salida y no de la fila. Antes solo
+  // viajaba la sede: al quitar el descanso, la foto de la salida al descanso
+  // aparecía rotulada «Salida 17:00».
+  //
+  // Las fotos son etiquetas legibles: la función no mira los bytes, solo decide a
+  // qué fila va cada una.
+  type Opc = {
+    salidaAlmuerzo?: boolean; fotoEntrada?: string; sede?: string; foto?: string;
+    metodo?: 'ROSTRO' | 'CEDULA'; distancia?: number; estimada?: boolean;
+  };
+  const m = (id: string, entrada: Date | null, salida: Date | null, o: Opc = {}) => ({
+    ...reg(entrada, salida, { salidaAlmuerzo: o.salidaAlmuerzo }),
+    id,
+    fotoEntrada: o.fotoEntrada ?? null,
+    sedeSalidaId: o.sede ?? null,
+    fotoSalida: o.foto ?? null,
+    metodoSalida: o.metodo ?? null,
+    distanciaSalida: o.distancia ?? null,
+    salidaEstimada: o.estimada ?? false,
+  });
+  const horas = (descansoSalida: Date | null, descansoRegreso: Date | null, salida: Date | null) =>
+    ({ descansoSalida, descansoRegreso, salida });
 
-  it('quitar el descanso: la que queda cierra, y cierra donde se cerró de verdad', () => {
-    expect(sedesDeSalidaTrasEditar(conDescanso, { descansoSalida: false, descansoRegreso: false, salida: true }))
-      .toEqual({ primera: 'L', segunda: null });
+  // Un día con descanso: las cuatro marcas del kiosco, con rostro.
+  const conDescanso = [
+    m('a', bog(8), bog(12), { salidaAlmuerzo: true, fotoEntrada: 'F08', sede: 'L', foto: 'F12', metodo: 'ROSTRO', distancia: 0.31 }),
+    m('b', bog(13), bog(17), { fotoEntrada: 'F13', sede: 'P', foto: 'F17', metodo: 'ROSTRO', distancia: 0.42 }),
+  ];
+  const soloCierre = [m('a', bog(8), bog(17), { fotoEntrada: 'F08', sede: 'P', foto: 'F17', metodo: 'ROSTRO', distancia: 0.42 })];
+  const DEL_DESCANSO = { sedeSalidaId: 'L', fotoSalida: 'F12', metodoSalida: 'ROSTRO', distanciaSalida: 0.31, salidaEstimada: false };
+  const DEL_CIERRE = { sedeSalidaId: 'P', fotoSalida: 'F17', metodoSalida: 'ROSTRO', distanciaSalida: 0.42, salidaEstimada: false };
+  // La escribió el administrador: nadie la marcó en ningún kiosco.
+  const A_MANO = { sedeSalidaId: null, fotoSalida: null, metodoSalida: 'MANUAL', distanciaSalida: null, salidaEstimada: false };
+  const SIN_SALIDA = { sedeSalidaId: null, fotoSalida: null, metodoSalida: null, distanciaSalida: null, salidaEstimada: false };
+
+  describe('lo de cada salida va con ella', () => {
+    it('quitar el descanso: la que queda cierra con todo lo de la salida del día', () => {
+      const r = salidasTrasEditar(conDescanso, horas(null, null, bog(17)));
+      expect(r.primera).toEqual(DEL_CIERRE);
+      expect(r.segunda).toBeNull();
+    });
+
+    it('poner el descanso: la salida del día pasa entera a la marcación nueva, y la del descanso la escribió el administrador', () => {
+      const r = salidasTrasEditar(soloCierre, horas(bog(12), bog(13), bog(17)));
+      expect(r.primera).toEqual(A_MANO);
+      expect(r.segunda).toEqual(DEL_CIERRE);
+    });
+
+    it('mover las horas sin tocar el descanso deja cada salida con lo suyo', () => {
+      const r = salidasTrasEditar(conDescanso, horas(bog(12, 15), bog(13, 15), bog(17, 15)));
+      expect(r.primera).toEqual(DEL_DESCANSO);
+      expect(r.segunda).toEqual(DEL_CIERRE);
+    });
+
+    it('una salida que estimó el sistema sigue estimada y no se queda con la foto del descanso', () => {
+      const cerroElSistema = [conDescanso[0], m('b', bog(13), bog(18), { fotoEntrada: 'F13', estimada: true })];
+      expect(salidasTrasEditar(cerroElSistema, horas(null, null, bog(18))).primera)
+        .toEqual({ ...SIN_SALIDA, salidaEstimada: true });
+    });
+
+    it('completar un descanso sin regreso no inventa cómo se marcó la salida del día', () => {
+      const r = salidasTrasEditar([conDescanso[0]], horas(bog(12), bog(13), bog(17)));
+      expect(r.primera).toEqual(DEL_DESCANSO);
+      expect(r.segunda).toEqual(A_MANO);
+    });
+
+    it('escribirle la salida a un turno abierto: la escribió el administrador', () => {
+      expect(salidasTrasEditar([m('a', bog(8), null)], horas(null, null, bog(17))).primera).toEqual(A_MANO);
+    });
+
+    it('si el barrido lo marcó sin poder ponerle hora, sigue diciendo que nadie marcó esa salida', () => {
+      expect(salidasTrasEditar([m('a', bog(8), null, { estimada: true })], horas(null, null, bog(17))).primera)
+        .toEqual({ ...A_MANO, salidaEstimada: true });
+    });
   });
 
-  it('agregar un descanso: la salida pasa con su sede a la marcación nueva, y la del descanso no se sabe', () => {
-    expect(sedesDeSalidaTrasEditar([m(bog(8), bog(17), 'L')], TODO)).toEqual({ primera: null, segunda: 'L' });
+  describe('sin salida no queda nada de ella', () => {
+    it('reabrir el turno vacía sede, foto, método y distancia', () => {
+      expect(salidasTrasEditar(soloCierre, horas(null, null, null)).primera).toEqual(SIN_SALIDA);
+    });
+
+    it('reabrir un turno que cerró el sistema lo deja marcado, para que el barrido no lo vuelva a cerrar', () => {
+      expect(salidasTrasEditar([m('a', bog(8), bog(18), { estimada: true })], horas(null, null, null)).primera)
+        .toEqual({ ...SIN_SALIDA, salidaEstimada: true });
+    });
+
+    it('reabrir solo la tarde conserva la del descanso y vacía la del cierre', () => {
+      const r = salidasTrasEditar(conDescanso, horas(bog(12), bog(13), null));
+      expect(r.primera).toEqual(DEL_DESCANSO);
+      expect(r.segunda).toEqual(SIN_SALIDA);
+    });
   });
 
-  it('mover horas sin tocar el descanso deja cada sede con su salida', () => {
-    expect(sedesDeSalidaTrasEditar(conDescanso, TODO)).toEqual({ primera: 'P', segunda: 'L' });
+  describe('cambiar de papel sin cambiar de minuto es la misma marca', () => {
+    // Quien oprimió «salir a descansar» cuando se iba. El administrador corrige
+    // QUÉ fue esa marca, no cuándo ni dónde ocurrió.
+    it('un descanso sin regreso que pasa a ser la salida del día a la misma hora conserva lo suyo', () => {
+      // Con segundos: el kiosco los guarda y el formulario solo manda HH:mm.
+      const conSegundos = [m('a', bog(8), new Date(bog(12).getTime() + 37_000),
+        { salidaAlmuerzo: true, sede: 'L', foto: 'F12', metodo: 'ROSTRO', distancia: 0.31 })];
+      const r = salidasTrasEditar(conSegundos, horas(null, null, bog(12)));
+      expect(r.primera).toEqual(DEL_DESCANSO);
+      expect(r.fotosQueSePierden).toEqual([]);
+    });
+
+    it('a otra hora ya no es la misma marca: la salida la escribió el administrador', () => {
+      const r = salidasTrasEditar([conDescanso[0]], horas(null, null, bog(17)));
+      expect(r.primera).toEqual(A_MANO);
+      expect(r.fotosQueSePierden).toEqual([{ momento: 'SALIDA_ALMUERZO', hora: bog(12) }]);
+    });
+
+    it('una salida del día que pasa a ser descanso a la misma hora conserva lo suyo', () => {
+      expect(salidasTrasEditar(soloCierre, horas(bog(17), null, null)).primera).toEqual(DEL_CIERRE);
+    });
+
+    it('una misma marca no se hereda dos veces: un descanso que sale a la hora de la salida no copia su foto', () => {
+      const r = salidasTrasEditar(soloCierre, horas(bog(17), bog(18), bog(20)));
+      expect(r.primera).toEqual(A_MANO);
+      expect(r.segunda).toEqual(DEL_CIERRE);
+    });
   });
 
-  it('reabrir el turno borra la sede: no hay salida de la cual decir dónde fue', () => {
-    expect(sedesDeSalidaTrasEditar([m(bog(8), bog(17), 'L')], { descansoSalida: false, descansoRegreso: false, salida: false }))
-      .toEqual({ primera: null, segunda: null });
+  describe('fotosQueSePierden', () => {
+    it('quitar el descanso pierde las fotos del descanso y del regreso, no la de la salida del día', () => {
+      expect(salidasTrasEditar(conDescanso, horas(null, null, bog(17))).fotosQueSePierden).toEqual([
+        { momento: 'SALIDA_ALMUERZO', hora: bog(12) },
+        { momento: 'REGRESO_ALMUERZO', hora: bog(13) },
+      ]);
+    });
+
+    it('poner el descanso o mover las horas no pierde ninguna', () => {
+      expect(salidasTrasEditar(soloCierre, horas(bog(12), bog(13), bog(17))).fotosQueSePierden).toEqual([]);
+      expect(salidasTrasEditar(conDescanso, horas(bog(12, 15), bog(13, 15), bog(17, 15))).fotosQueSePierden).toEqual([]);
+    });
+
+    it('reabrir el turno pierde la foto de la salida', () => {
+      expect(salidasTrasEditar(soloCierre, horas(null, null, null)).fotosQueSePierden)
+        .toEqual([{ momento: 'SALIDA', hora: bog(17) }]);
+    });
+
+    it('una marca sin foto no se avisa: se marcó con cédula, o la foto ya se borró a los dos meses', () => {
+      const conCedula = [
+        m('a', bog(8), bog(12), { salidaAlmuerzo: true, metodo: 'CEDULA' }),
+        m('b', bog(13), bog(17), { metodo: 'CEDULA' }),
+      ];
+      expect(salidasTrasEditar(conCedula, horas(null, null, bog(17))).fotosQueSePierden).toEqual([]);
+    });
+
+    it('una foto que quedó escondida en un turno reabierto también se avisa, al final y sin hora', () => {
+      // Reabrir con PUT /:id vacía la hora de salida pero no toca la foto. Sin
+      // avisarla, reaparecería pegada a la hora que se escriba ahora.
+      const reabierto = [conDescanso[0], m('b', bog(13), null, { fotoEntrada: 'F13', foto: 'F17' })];
+      expect(salidasTrasEditar(reabierto, horas(null, null, bog(17))).fotosQueSePierden).toEqual([
+        { momento: 'SALIDA_ALMUERZO', hora: bog(12) },
+        { momento: 'REGRESO_ALMUERZO', hora: bog(13) },
+        { momento: 'SALIDA', hora: null },
+      ]);
+    });
   });
 
-  it('reabrir solo la tarde conserva la del descanso y borra la del cierre', () => {
-    expect(sedesDeSalidaTrasEditar(conDescanso, { descansoSalida: true, descansoRegreso: true, salida: false }))
-      .toEqual({ primera: 'P', segunda: null });
-  });
+  describe('novedades', () => {
+    // La novedad de una salida temprana cuelga de la marcación que cerró y se
+    // borra en cascada con ella. Sin moverla, quitar el descanso la borraba aunque
+    // ya estuviera aprobada, y eso mueve la liquidación.
+    it('quitar el descanso: lo que colgaba de la tarde pasa a la marcación que queda', () => {
+      expect(salidasTrasEditar(conDescanso, horas(null, null, bog(17))).novedades)
+        .toEqual([{ desde: 'b', hacia: 'primera' }]);
+    });
 
-  it('completar un descanso sin regreso no inventa dónde se cerró', () => {
-    const sinRegreso = [m(bog(8), bog(12), 'P', { salidaAlmuerzo: true })];
-    expect(sedesDeSalidaTrasEditar(sinRegreso, TODO)).toEqual({ primera: 'P', segunda: null });
-    // Ni convirtiendo esa salida al descanso en la salida del día: la hora la
-    // escribió el administrador, y nadie marcó una salida de la jornada.
-    expect(sedesDeSalidaTrasEditar(sinRegreso, { descansoSalida: false, descansoRegreso: false, salida: true }))
-      .toEqual({ primera: null, segunda: null });
+    it('poner el descanso: pasa a la marcación nueva, que es la que tiene la salida del día', () => {
+      expect(salidasTrasEditar(soloCierre, horas(bog(12), bog(13), bog(17))).novedades)
+        .toEqual([{ desde: 'a', hacia: 'segunda' }]);
+    });
+
+    it('mover las horas no mueve nada', () => {
+      expect(salidasTrasEditar(conDescanso, horas(bog(12, 15), bog(13, 15), bog(17, 15))).novedades).toEqual([]);
+    });
+
+    it('si la tarde se borra sin que su salida quede en ninguna parte, lo suyo va a la primera', () => {
+      const r = salidasTrasEditar(conDescanso, horas(bog(12), null, null));
+      expect(r.novedades).toEqual([{ desde: 'b', hacia: 'primera' }]);
+      expect(r.fotosQueSePierden).toEqual([
+        { momento: 'REGRESO_ALMUERZO', hora: bog(13) },
+        { momento: 'SALIDA', hora: bog(17) },
+      ]);
+    });
   });
 });
