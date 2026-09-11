@@ -514,9 +514,10 @@ De los 185, **184 son de código commiteado y 1 viene de trabajo en curso** en
 `routes/admin.ts` el día que se congeló. Por eso el tope es 185 y no 184: la
 regla es «ni uno más que hoy», no castigar lo que está a medias.
 
-**Bajó a 184 el 10 de septiembre de 2026.** Ese `any` de `routes/admin.ts` se
-quitó al integrar el borrado de empresas, y se bajó el número en el mismo commit,
-como dice la regla de abajo.
+**Bajó a 180 el 11 de septiembre de 2026.** Primero a 184, al quitar el `any` de
+`routes/admin.ts` con el borrado de empresas; después a 180, al juntar los reportes
+por sede, que quitaron otros. Se bajó en el mismo commit en que se contó, como
+dice la regla de abajo.
 
 ### El frontend tiene el problema contrario, y sigue sin resolver
 
