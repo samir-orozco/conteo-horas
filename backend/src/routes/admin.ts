@@ -1,20 +1,16 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
-import { prisma } from '../index';
+import { prisma } from '../prisma';
 import {
   calcularTarifaMensual, tarifaEmpresa, estadoEfectivo, diasDeMora, sincronizarEstado,
   obtenerPrecios, calcularCobro, aplicarPagoAprobado, DIAS_PRUEBA,
 } from '../utils/suscripcion';
 import { capacidadesDe, esPlan, FEATURES, PLAN_IDS, obtenerPlanes, combinarPlanes } from '../utils/planes';
 import { comprobanteAGuardar } from '../utils/comprobantes';
-import { decidirEliminacion, bloqueoDeEliminacion } from '../utils/eliminarEmpresa';
+import { decidirEliminacion } from '../utils/eliminarEmpresa';
 import { borrarEmpresaEnCascada } from '../utils/borrarEmpresaEnCascada';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
-
-// Rechazo que nace DENTRO de la transacción de borrado, para poder responder
-// 409 en vez de un 500. Al lanzarla, Prisma revierte todo lo ya borrado.
-class BloqueoDeDinero extends Error {}
 
 export default async function adminRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireSuperAdmin] };
@@ -214,32 +210,39 @@ export default async function adminRoutes(app: FastifyInstance) {
 
   // ===== Eliminar empresa (irreversible) =====
   //
-  // Se lleva por delante colaboradores, marcaciones, contratos e historia de
-  // vinculación de gente real, en veinte tablas. La DECISIÓN de si procede vive
-  // en utils/eliminarEmpresa.ts y está cubierta por pruebas; lo de aquí es la
-  // plomería, verificada a mano contra datos reales (CLAUDE.md 8.6) con
-  // prisma/verificar-eliminar-empresa.ts.
+  // Se lleva por delante colaboradores, marcaciones, contratos, pagos y
+  // comisiones, en veinte tablas. DECISIÓN DEL DUEÑO (10 de septiembre de 2026):
+  // cualquier empresa se puede borrar; el modal advierte qué se pierde, incluida
+  // la plata, y se confirma escribiendo el NIT. La decisión vive en
+  // utils/eliminarEmpresa.ts; la cascada en utils/borrarEmpresaEnCascada.ts,
+  // verificada contra MySQL con prisma/verificar-eliminar-empresa.ts (CLAUDE.md
+  // 8.6); y lo que responden estas dos rutas, en admin.eliminar.test.ts.
 
-  // Qué se llevaría por delante y si algo lo impide, para el modal.
+  // Qué se llevaría por delante, para el modal.
   async function resumenEliminacion(id: string) {
     const empresa = await prisma.empresa.findUnique({
       where: { id },
       select: { id: true, nombre: true, nit: true },
     });
     if (!empresa) return null;
-    const [colaboradores, registros, pagosAprobados, comisiones] = await Promise.all([
+    const [colaboradores, registros, pagos, comisiones] = await Promise.all([
       prisma.colaborador.count({ where: { empresaId: id } }),
       prisma.registro.count({ where: { colaborador: { empresaId: id } } }),
-      prisma.pago.count({ where: { estado: 'APROBADO', suscripcion: { empresaId: id } } }),
-      prisma.comision.count({ where: { empresaId: id } }),
+      // Solo los APROBADO: son los que suma /admin/ingresos.
+      prisma.pago.aggregate({
+        where: { estado: 'APROBADO', suscripcion: { empresaId: id } },
+        _count: { _all: true }, _sum: { monto: true },
+      }),
+      prisma.comision.aggregate({ where: { empresaId: id }, _count: { _all: true }, _sum: { monto: true } }),
     ]);
     return {
       ...empresa,
       colaboradores,
       registros,
-      pagosAprobados,
-      comisiones,
-      bloqueo: bloqueoDeEliminacion({ nit: empresa.nit, pagosAprobados, comisiones }),
+      pagosAprobados: pagos._count._all,
+      montoPagosAprobados: pagos._sum.monto ?? 0,
+      comisiones: comisiones._count._all,
+      montoComisiones: comisiones._sum.monto ?? 0,
     };
   }
 
@@ -255,56 +258,55 @@ export default async function adminRoutes(app: FastifyInstance) {
   // y eso no es algo que uno quiera descubrir en producción.
   app.post('/empresas/:id/eliminar', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { confirmacion } = request.body as { confirmacion?: string };
+    // El cuerpo lo arma quien llama, no la pantalla: puede no venir, o venir con
+    // cualquier cosa. Antes, sin cuerpo, la ruta respondía 500 al desestructurar.
+    const confirmacion = (request.body as { confirmacion?: unknown } | null | undefined)?.confirmacion;
+
+    // El token de super admin dura 7 días y requireSuperAdmin solo mira su firma.
+    // Para lo único que no tiene vuelta atrás se comprueba además que la cuenta
+    // siga existiendo, activa y con ese rol.
+    const quien = request.user as { id?: string; email?: string } | undefined;
+    const cuenta = quien?.id
+      ? await prisma.usuario.findUnique({ where: { id: quien.id }, select: { rol: true, activo: true } })
+      : null;
+    if (!cuenta || cuenta.rol !== 'SUPER_ADMIN' || !cuenta.activo) {
+      return reply.status(403).send({ error: 'Tu cuenta ya no puede eliminar empresas. Vuelve a iniciar sesión.' });
+    }
 
     const resumen = await resumenEliminacion(id);
     if (!resumen) return reply.status(404).send({ error: 'Empresa no encontrada' });
 
-    const veredicto = decidirEliminacion(
-      { nit: resumen.nit, pagosAprobados: resumen.pagosAprobados, comisiones: resumen.comisiones },
-      confirmacion ?? '',
-    );
-    if (!veredicto.permitido) {
-      // 400 si solo falta escribir bien el NIT (lo corrige el usuario);
-      // 409 si es el estado de la empresa el que lo impide.
-      const status = veredicto.motivo === 'CONFIRMACION' ? 400 : 409;
-      return reply.status(status).send({ error: veredicto.mensaje, motivo: veredicto.motivo });
-    }
+    const veredicto = decidirEliminacion(resumen.nit, confirmacion);
+    if (!veredicto.permitido) return reply.status(400).send({ error: veredicto.mensaje });
 
+    let borrado: Awaited<ReturnType<typeof borrarEmpresaEnCascada>>;
     try {
-      await prisma.$transaction(async (tx) => {
-        // El dinero se vuelve a mirar DENTRO de la transacción: entre la
-        // consulta de arriba y este punto pudo entrar la confirmación de un
-        // pago de Wompi, y ese es justo el caso que no puede pasar.
-        const [pagosAprobados, comisiones] = await Promise.all([
-          tx.pago.count({ where: { estado: 'APROBADO', suscripcion: { empresaId: id } } }),
-          tx.comision.count({ where: { empresaId: id } }),
-        ]);
-        const otraVez = decidirEliminacion({ nit: resumen.nit, pagosAprobados, comisiones }, resumen.nit);
-        if (!otraVez.permitido) throw new BloqueoDeDinero(otraVez.mensaje);
-
-        await borrarEmpresaEnCascada(tx, id);
-      }, {
-        // Una empresa con historial largo borra decenas de miles de filas y no
-        // cabe en los 5 segundos que Prisma da por defecto.
-        timeout: 60_000,
-      });
+      // Una empresa con historial largo borra decenas de miles de filas y no cabe
+      // en los 5 segundos que Prisma da por defecto. Medido el 10 de septiembre
+      // de 2026: 30.000 marcaciones se borran en 1 a 2 segundos.
+      borrado = await prisma.$transaction(tx => borrarEmpresaEnCascada(tx, id), { timeout: 60_000 });
     } catch (e) {
-      if (e instanceof BloqueoDeDinero) {
-        return reply.status(409).send({ error: e.message, motivo: 'PAGOS' });
-      }
-      throw e;
+      // La transacción se revierte entera: no se borró nada. Se dice así, en vez
+      // del 'Internal Server Error' que no le dice nada a nadie.
+      request.log.error({ err: e, empresaId: id, nit: resumen.nit }, 'Falló la eliminación de la empresa; la transacción se revirtió');
+      return reply.status(500).send({ error: 'No se pudo eliminar la empresa y no se borró nada. Intenta de nuevo en un momento.' });
     }
 
     // Queda huella siempre: es irreversible y no hay forma de reconstruir qué
-    // había. Sin esto, la única señal de que una empresa existió es que ya no está.
-    app.log.warn({
+    // había. Lleva la plata porque el reporte de ingresos y la billetera del
+    // afiliado cambian con este borrado, y esta línea es lo que explica por qué.
+    request.log.warn({
       empresaId: id,
       nit: resumen.nit,
       nombre: resumen.nombre,
       colaboradores: resumen.colaboradores,
       registros: resumen.registros,
-      porEmail: (request.user as any)?.email,
+      pagosAprobados: resumen.pagosAprobados,
+      montoPagosAprobados: resumen.montoPagosAprobados,
+      comisiones: resumen.comisiones,
+      montoComisiones: resumen.montoComisiones,
+      filasBorradas: borrado,
+      porEmail: quien?.email,
     }, 'Empresa eliminada por el super admin');
 
     return reply.status(204).send();

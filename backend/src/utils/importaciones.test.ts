@@ -28,11 +28,11 @@ import { join } from 'node:path';
 
 const RAIZ = join(__dirname, '..');
 
-// Trabajo del usuario sin commitear al 9 de septiembre de 2026: `admin.ts` se
-// dejó fuera para no mezclarlo con un cambio ajeno. Cuando ese trabajo entre,
-// se le aplica el mismo cambio y se borra esta línea. La excepción está aquí, a
-// la vista, y no escondida en un comentario.
-const EXCEPCIONES_PENDIENTES = ['routes/admin.ts'];
+// Hoy no queda ninguna. La última fue `routes/admin.ts`, que importaba de
+// '../index' mientras era trabajo sin commitear; se arregló el 10 de septiembre
+// de 2026, al integrar el borrado de empresas. Si alguna vez hace falta otra,
+// va aquí, a la vista, y no escondida en un comentario.
+const EXCEPCIONES_PENDIENTES: string[] = [];
 
 function archivosTs(dir: string, base = ''): string[] {
   return readdirSync(dir).flatMap(nombre => {
