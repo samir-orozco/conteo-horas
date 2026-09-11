@@ -4,9 +4,10 @@ import type { JwtPayload } from '../index';
 import {
   estadoEfectivo, diasDeMora, sincronizarEstado, aplicarPagoAprobado,
   obtenerPrecios, calcularCobro, prorrateo,
+ aplicarPlanDelPago,
 } from '../utils/suscripcion';
 import {
-  wompiConfigurado, referenciaPago, referenciaUpgrade, planDeReferencia, firmaIntegridad, empresaIdDeReferencia,
+  wompiConfigurado, referenciaPago, referenciaUpgrade, firmaIntegridad, empresaIdDeReferencia,
   consultarTransaccion, consultarPorReferencia, WOMPI_CHECKOUT_URL, WOMPI_PUBLIC_KEY, WOMPI_PRIVATE_KEY,
 } from '../utils/wompi';
 import { capacidadesEmpresa } from '../utils/capacidades';
@@ -166,11 +167,9 @@ export default async function suscripcionRoutes(app: FastifyInstance) {
       metodo: 'LINK_WOMPI',
       wompiTransaccionId: tx.id,
     });
-    // Si era un pago de cambio de plan, aplica el plan destino
-    const planUpg = planDeReferencia(tx.reference);
-    if (planUpg && esPlan(planUpg)) {
-      await prisma.suscripcion.update({ where: { empresaId }, data: { plan: planUpg } });
-    }
+    // Si era un pago de cambio de plan, aplica el plan destino. Es la misma regla
+    // que usa el webhook, en utils/suscripcion.ts.
+    if (pago) await aplicarPlanDelPago(prisma, empresaId, tx.reference);
     return { estado: 'APPROVED', pago };
   });
 

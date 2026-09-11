@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import crypto from 'crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
-import { aplicarPagoAprobado } from '../utils/suscripcion';
+import { aplicarPagoAprobado, aplicarPlanDelPago } from '../utils/suscripcion';
 import { empresaIdDeReferencia, WOMPI_EVENTS_SECRET } from '../utils/wompi';
 
 // Webhook de eventos Wompi (transaction.updated).
@@ -20,9 +20,20 @@ export default async function wompiRoutes(app: FastifyInstance) {
   app.post('/eventos', async (request, reply) => {
     const body = request.body as any;
 
-    // Verificación de firma (checksum) según docs de Wompi
-    if (WOMPI_EVENTS_SECRET && body?.signature?.checksum) {
-      const props: string[] = body.signature.properties ?? [];
+    // Verificación de firma (checksum) según docs de Wompi.
+    //
+    // La firma es lo único que distingue un aviso de Wompi de uno fabricado por
+    // cualquiera. Antes solo se comprobaba SI venía: un evento sin `signature` se
+    // aceptaba, y con la referencia de una empresa real registraba un pago
+    // APROBADO que nadie hizo. Wompi firma todos sus eventos, así que con el
+    // secreto puesto, un evento sin firma se rechaza.
+    if (!WOMPI_EVENTS_SECRET) {
+      request.log.warn('WOMPI_EVENTS_SECRET vacío: el evento de Wompi se aceptó sin verificar su firma');
+    } else {
+      if (typeof body?.signature?.checksum !== 'string') {
+        return reply.status(401).send({ error: 'Firma inválida' });
+      }
+      const props: string[] = Array.isArray(body.signature.properties) ? body.signature.properties : [];
       const concatenado =
         props.map((p: string) => p.split('.').reduce((o: any, k: string) => o?.[k], body.data)).join('') +
         body.timestamp +
@@ -58,7 +69,10 @@ export default async function wompiRoutes(app: FastifyInstance) {
             wompiTransaccionId: tx.id,
             referencia: tx.reference,
             montoCentavos: tx.amount_in_cents,
-          }, 'Pago de Wompi APROBADO de una empresa que ya no existe: hay que devolverlo desde el panel de Wompi');
+          }, 'Pago de Wompi APROBADO de una empresa que ya no existe: antes de devolverlo, cotejar en el panel de Wompi que la referencia y el monto de esta transacción son estos');
+        } else {
+          // Si era un pago de cambio de plan, aplica el plan destino, igual que /confirmar.
+          await aplicarPlanDelPago(prisma, empresaId, tx.reference);
         }
       }
     }
