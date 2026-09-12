@@ -13,7 +13,7 @@ vi.mock('../lib/api', () => ({ default: { get: vi.fn() } }));
 import api from '../lib/api';
 const get = api.get as unknown as ReturnType<typeof vi.fn>;
 
-type Sede = { id: string | null; nombre: string | null };
+type Sede = { id: string | null; nombre: string | null; porDefecto?: boolean };
 const LAURELES = { id: 'sede-a', nombre: 'Laureles' };
 const POBLADO = { id: 'sede-b', nombre: 'El Poblado' };
 
@@ -37,11 +37,11 @@ const RESPUESTA = {
   },
 };
 
-function montarCon(sedes: { id: string; nombre: string }[]) {
+function montarCon(sedes: { id: string; nombre: string }[], respuesta: unknown = RESPUESTA) {
   get.mockImplementation((url: string) => {
     if (url === '/colaboradores') return Promise.resolve({ data: [] });
     if (url === '/sedes') return Promise.resolve({ data: sedes });
-    if (url === '/reportes/tardanzas-resumen') return Promise.resolve({ data: RESPUESTA });
+    if (url === '/reportes/tardanzas-resumen') return Promise.resolve({ data: respuesta });
     return Promise.reject(new Error('url inesperada: ' + url));
   });
   return render(<ReporteLlegadasTarde />);
@@ -70,6 +70,19 @@ describe('ReporteLlegadasTarde con varias sedes', () => {
     expect(lineaDe(/Laureles/)).toEqual(['Laureles', '1', '22 min', '$ 3.667']);
     expect(lineaDe(/Mixtos/)).toEqual(['Mixtos', '0', '0 min', '$ 0']);
     expect(lineaDe(/Todas las sedes/)).toEqual(['Todas las sedes', '3', '1h 2min', '$ 10.333']);
+  });
+
+  it('a un presencial que marcó sin ubicación se le ve su sede con «por defecto», no «Sin sede»', async () => {
+    // Misma regla que en extras (12 de septiembre de 2026): el servidor la manda con
+    // `porDefecto`, y la fila tiene que decirlo.
+    montarCon([LAURELES, POBLADO], {
+      ...RESPUESTA,
+      colaboradores: [...RESPUESTA.colaboradores, fila('SinUbicacion', [{ ...LAURELES, porDefecto: true }], 15, 2_500)],
+    });
+    await screen.findByRole('region', { name: 'Resumen por sede' });
+    const sinUbicacion = screen.getByRole('row', { name: /SinUbicacion/ });
+    expect(sinUbicacion).toHaveTextContent('Laureles (por defecto)');
+    expect(sinUbicacion).not.toHaveTextContent('Sin sede');
   });
 
   it('con una sola sede no se muestran ni la columna de sede ni el resumen', async () => {

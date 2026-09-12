@@ -1,12 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { sedePrincipal, sedesParaGuardar, sedeDeMarcaSinUbicacion, type SedeParaElegir } from './sedePrincipal';
+import {
+  sedePrincipal, sedePorDefecto, lugaresDeEntrada,
+  type SedeParaElegir, type FilaConLugar, type LugarDeEntrada,
+} from './sedePrincipal';
 
-// DECISIÓN DEL DUEÑO (11 de septiembre de 2026): un trabajador PRESENCIAL siempre
-// tiene sede. «Sin sede» solo tiene sentido para híbridos y remotos. En producción
-// había 10 empresas sin ninguna sede, 33 presenciales activos sin sede y 499 de
-// 1.055 marcaciones de presenciales sin sede, porque nada lo aseguraba: ni al
-// crear la empresa, ni al crear al trabajador, ni el kiosco cuando las sedes no
-// tienen ubicación configurada.
+// DECISIÓN DEL DUEÑO (12 de septiembre de 2026), «mostrarla al leer» y «mostrar la
+// principal»: la sede que no probó la ubicación NO se guarda, y a un presencial sin
+// sede NO se le asigna la principal. Los reportes y la tabla de Registros le
+// muestran y le cuentan su sede, marcada «por defecto». «Sin sede» solo es legítimo
+// para un híbrido o un remoto.
+//
+// Reemplaza a la del 11 de septiembre, que guardaba la sede deducida en la misma
+// columna que la probada: tres rondas de revisión encontraron defectos siempre por
+// la misma causa, cada parte del sistema adivinando cuál de las dos era.
 
 const dia = (d: number) => new Date(Date.UTC(2026, 7, d, 17));
 const sede = (id: string, d: number, activa = true): SedeParaElegir => ({ id, activa, creadoEn: dia(d) });
@@ -14,6 +20,7 @@ const sede = (id: string, d: number, activa = true): SedeParaElegir => ({ id, ac
 const PRINCIPAL = sede('principal', 1);
 const NORTE = sede('norte', 10);
 const SUR = sede('sur', 20);
+const EMPRESA = [PRINCIPAL, NORTE, SUR];
 
 describe('cuál es la Sede principal de una empresa', () => {
   it('es la sede activa más antigua', () => {
@@ -35,75 +42,183 @@ describe('cuál es la Sede principal de una empresa', () => {
   });
 });
 
-describe('las sedes que quedan guardadas al crear o editar a alguien', () => {
-  it('un presencial sin sede queda en la principal', () => {
-    expect(sedesParaGuardar('PRESENCIAL', [], 'principal')).toEqual(['principal']);
+describe('la sede por defecto de una persona', () => {
+  it('con una sola sede, esa', () => {
+    expect(sedePorDefecto([SUR], EMPRESA)).toBe('sur');
   });
 
-  it('un presencial con sedes elegidas se queda con las suyas', () => {
-    expect(sedesParaGuardar('PRESENCIAL', ['norte', 'sur'], 'principal')).toEqual(['norte', 'sur']);
+  it('con varias, la más antigua de las suyas, aunque no sea la principal de la empresa', () => {
+    // Sin ubicación no se sabe en cuál de las suyas estaba, pero en la principal no trabaja.
+    expect(sedePorDefecto([SUR, NORTE], EMPRESA)).toBe('norte');
   });
 
-  it('un híbrido o un remoto sin sede siguen sin sede: ahí «Sin sede» es un dato', () => {
-    expect(sedesParaGuardar('HIBRIDO', [], 'principal')).toEqual([]);
-    expect(sedesParaGuardar('REMOTO', [], 'principal')).toEqual([]);
+  it('con varias y una es la principal, la principal, que es la más antigua de todas', () => {
+    expect(sedePorDefecto([SUR, PRINCIPAL], EMPRESA)).toBe('principal');
   });
 
-  it('si la empresa no tiene ninguna sede activa no hay a dónde asignarlo', () => {
-    expect(sedesParaGuardar('PRESENCIAL', [], null)).toEqual([]);
+  it('sus sedes desactivadas no cuentan', () => {
+    expect(sedePorDefecto([sede('cerrada', 2, false), SUR], EMPRESA)).toBe('sur');
+  });
+
+  it('sin ninguna sede, la Sede principal de la empresa', () => {
+    expect(sedePorDefecto([], EMPRESA)).toBe('principal');
+    expect(sedePorDefecto([sede('cerrada', 2, false)], EMPRESA)).toBe('principal');
+  });
+
+  it('si la empresa no tiene ninguna sede activa, no hay sede por defecto', () => {
+    expect(sedePorDefecto([], [])).toBeNull();
+    expect(sedePorDefecto([], [sede('cerrada', 1, false)])).toBeNull();
   });
 });
 
-describe('la sede de una marca cuando la ubicación no la identificó', () => {
-  const base = { modalidad: 'PRESENCIAL', sedeIdentificada: null, asignadas: [] as SedeParaElegir[], principal: 'principal' };
+// Las filas de `registros` de UNA persona. `fecha` va a medianoche de Bogotá, como
+// la guardan el kiosco y la carga manual, y las horas se dan en hora de Bogotá.
+const medianoche = (d: number) => new Date(Date.UTC(2026, 8, d, 5));
+const bog = (d: number, h: number, min = 0) => new Date(Date.UTC(2026, 8, d, h + 5, min));
+const marca = (d: number, h: number | null, sedeId: string | null = null, sedeSalidaId: string | null = null): FilaConLugar =>
+  ({ fecha: medianoche(d), entrada: h === null ? null : bog(d, h), sedeId, sedeSalidaId });
 
-  it('si la ubicación identificó una sede, manda esa, sea o no la principal', () => {
-    expect(sedeDeMarcaSinUbicacion({ ...base, sedeIdentificada: 'norte', asignadas: [PRINCIPAL, NORTE] })).toBe('norte');
+const presencial = (sedeDeLaPersona: string | null = 'principal') => ({ modalidad: 'PRESENCIAL', sedePorDefecto: sedeDeLaPersona });
+
+// «norte» es una sede probada; «norte (por defecto)», una atribuida.
+const leer = (l: LugarDeEntrada[]) => l.map(x => `${x.id ?? 'sin sede'}${x.porDefecto ? ' (por defecto)' : ''}`);
+const lugares = (filas: FilaConLugar[], persona: { modalidad: string; sedePorDefecto: string | null } = presencial()) =>
+  leer(lugaresDeEntrada(filas, persona));
+
+describe('dónde se abrió cada fila · una sede probada nunca se reemplaza', () => {
+  it('la entrada que marcó con ubicación queda donde marcó, aunque su sede por defecto sea otra', () => {
+    expect(lugares([marca(7, 8, 'norte')])).toEqual(['norte']);
   });
 
-  it('un presencial con una sola sede marca en esa', () => {
-    expect(sedeDeMarcaSinUbicacion({ ...base, asignadas: [NORTE] })).toBe('norte');
+  it('ni la sede de salida de la misma fila ni otra fila del día la cambian', () => {
+    expect(lugares([marca(7, 7, 'sur'), marca(7, 13, 'norte', 'sur')])).toEqual(['sur', 'norte']);
+  });
+});
+
+describe('dónde se abrió cada fila · c) sin ninguna pista, la sede por defecto de la persona', () => {
+  it('un presencial con una sola sede cuenta en esa', () => {
+    expect(lugares([marca(7, 8)], presencial(sedePorDefecto([SUR], EMPRESA)))).toEqual(['sur (por defecto)']);
   });
 
-  it('con varias sedes y una es la principal, marca en la principal', () => {
-    // Decisión del dueño: sin ubicación no se puede saber en cuál de las suyas está.
-    expect(sedeDeMarcaSinUbicacion({ ...base, asignadas: [NORTE, PRINCIPAL] })).toBe('principal');
+  it('con varias sedes, en la más antigua de las suyas', () => {
+    expect(lugares([marca(7, 8)], presencial(sedePorDefecto([SUR, NORTE], EMPRESA)))).toEqual(['norte (por defecto)']);
   });
 
-  it('con varias sedes y ninguna es la principal, marca en la más antigua de las suyas', () => {
-    // No en la principal de la empresa: ahí esta persona no trabaja.
-    expect(sedeDeMarcaSinUbicacion({ ...base, asignadas: [SUR, NORTE] })).toBe('norte');
+  it('sin ninguna sede asignada, en la principal de la empresa, sin que se le asigne', () => {
+    expect(lugares([marca(7, 8)], presencial(sedePorDefecto([], EMPRESA)))).toEqual(['principal (por defecto)']);
   });
 
-  it('las sedes desactivadas no cuentan', () => {
-    expect(sedeDeMarcaSinUbicacion({ ...base, asignadas: [sede('cerrada', 2, false), SUR] })).toBe('sur');
+  it('si la empresa no tiene sedes activas, sigue sin sede', () => {
+    expect(lugares([marca(7, 8)], presencial(sedePorDefecto([], [sede('cerrada', 1, false)])))).toEqual(['sin sede']);
+  });
+});
+
+describe('dónde se abrió cada fila · a) la sede de salida de la misma fila', () => {
+  it('una entrada sin sede con la salida probada en Sur cuenta en Sur', () => {
+    expect(lugares([marca(7, 8, null, 'sur')])).toEqual(['sur (por defecto)']);
   });
 
-  it('un presencial sin ninguna sede activa marca en la principal de la empresa', () => {
-    expect(sedeDeMarcaSinUbicacion({ ...base, asignadas: [] })).toBe('principal');
-    expect(sedeDeMarcaSinUbicacion({ ...base, asignadas: [sede('cerrada', 2, false)] })).toBe('principal');
+  it('aunque la empresa ya no tenga sedes activas: la salida sí se probó', () => {
+    expect(lugares([marca(7, 8, null, 'sur')], presencial(null))).toEqual(['sur (por defecto)']);
+  });
+});
+
+describe('dónde se abrió cada fila · b) otra fila del mismo día con sede probada', () => {
+  it('la mañana marcada en Sur y la tarde cargada a mano: la tarde cuenta en Sur', () => {
+    expect(lugares([marca(7, 8, 'sur', 'sur'), marca(7, 13)])).toEqual(['sur', 'sur (por defecto)']);
   });
 
-  it('si la empresa no tiene ninguna sede, la marca queda sin sede', () => {
-    expect(sedeDeMarcaSinUbicacion({ ...base, principal: null })).toBeNull();
+  it('también vale la sede de salida de la otra fila', () => {
+    expect(lugares([marca(7, 8, null, 'norte'), marca(7, 13)])).toEqual(['norte (por defecto)', 'norte (por defecto)']);
   });
 
-  it('un híbrido o un remoto que no estaba en ninguna sede siguen sin sede', () => {
-    expect(sedeDeMarcaSinUbicacion({ ...base, modalidad: 'HIBRIDO', asignadas: [NORTE] })).toBeNull();
-    expect(sedeDeMarcaSinUbicacion({ ...base, modalidad: 'REMOTO', asignadas: [NORTE] })).toBeNull();
+  it('de esa otra fila manda la sede de entrada sobre la de salida', () => {
+    expect(lugares([marca(7, 8, 'sur', 'norte'), marca(7, 13)])).toEqual(['sur', 'sur (por defecto)']);
   });
 
-  it('al completar una jornada a mano, el presencial sigue en la sede donde la abrió', () => {
-    // El administrador agrega el regreso del almuerzo: la tarde no pasó por el
-    // kiosco, pero la mañana sí, y dice dónde estaba.
-    expect(sedeDeMarcaSinUbicacion({ ...base, sedeDeLaJornada: 'sur', asignadas: [NORTE, SUR] })).toBe('sur');
+  it('con varias, la de la fila que entró más temprano, lleguen en el orden que lleguen', () => {
+    // La más temprana llega de segunda y, después, de primera: ni «la primera de la
+    // lista» ni «la última» pasan las dos.
+    expect(lugares([marca(7, 13, 'norte'), marca(7, 8, 'sur'), marca(7, 17)])).toEqual(['norte', 'sur', 'sur (por defecto)']);
+    expect(lugares([marca(7, 8, 'sur'), marca(7, 17), marca(7, 13, 'norte')])).toEqual(['sur', 'sur (por defecto)', 'norte']);
   });
 
-  it('a un híbrido no se le supone la sede de la mañana para la tarde', () => {
-    expect(sedeDeMarcaSinUbicacion({ ...base, modalidad: 'HIBRIDO', sedeDeLaJornada: 'norte', asignadas: [NORTE] })).toBeNull();
+  it('dos filas con la misma hora de entrada: decide el id de la sede, para que no dependa del orden', () => {
+    expect(lugares([marca(7, 8, 'sur'), marca(7, 8, 'norte'), marca(7, 13)])[2]).toBe('norte (por defecto)');
+    expect(lugares([marca(7, 8, 'norte'), marca(7, 8, 'sur'), marca(7, 13)])[2]).toBe('norte (por defecto)');
   });
 
-  it('un híbrido que sí estaba en una de sus sedes conserva esa', () => {
-    expect(sedeDeMarcaSinUbicacion({ ...base, modalidad: 'HIBRIDO', sedeIdentificada: 'norte', asignadas: [NORTE] })).toBe('norte');
+  it('una fila sin hora de entrada no da la pista, aunque conserve una sede', () => {
+    expect(lugares([marca(7, null, 'norte'), marca(7, 13)])).toEqual(['norte', 'principal (por defecto)']);
+  });
+});
+
+describe('dónde se abrió cada fila · dos días distintos', () => {
+  it('la sede probada de un día no se le supone al siguiente', () => {
+    expect(lugares([marca(7, 8, 'sur'), marca(8, 8)])).toEqual(['sur', 'principal (por defecto)']);
+  });
+
+  it('el día es el de Bogotá: una marca guardada con la hora real a las 8 p.m. le da la pista a otra del mismo día, aunque en UTC ya sea el siguiente', () => {
+    const conHoraReal = { fecha: bog(7, 20), entrada: bog(7, 20), sedeId: 'sur', sedeSalidaId: null };
+    expect(lugares([conHoraReal, marca(7, 21)])).toEqual(['sur', 'sur (por defecto)']);
+  });
+
+  it('y una de las 11:30 p.m. no se la da a una del día siguiente, aunque en UTC sean el mismo día', () => {
+    const conHoraReal = { fecha: bog(7, 23, 30), entrada: bog(7, 23, 30), sedeId: 'sur', sedeSalidaId: null };
+    expect(lugares([conHoraReal, marca(8, 8)])).toEqual(['sur', 'principal (por defecto)']);
+  });
+
+  // Revisión del 12 de septiembre de 2026: «el mismo día» de la regla b) es el de la
+  // FECHA de la fila, que es el de la jornada, y no el de su hora de entrada. En un
+  // turno de noche el regreso del almuerzo cae después de medianoche y conserva la
+  // fecha del día en que se entró.
+  it('el regreso del almuerzo de un turno de noche, pasada la medianoche y con la fecha del día en que entró, toma la sede de esa noche', () => {
+    const entraDeNoche = { fecha: medianoche(7), entrada: bog(7, 22), sedeId: 'norte', sedeSalidaId: null };
+    const regresaDelAlmuerzo = { fecha: medianoche(7), entrada: bog(8, 0, 30), sedeId: null, sedeSalidaId: null };
+    expect(lugares([entraDeNoche, regresaDelAlmuerzo])).toEqual(['norte', 'norte (por defecto)']);
+    expect(lugares([regresaDelAlmuerzo, entraDeNoche])).toEqual(['norte (por defecto)', 'norte']);
+  });
+
+  it('y al revés: si la ubicación la probó el regreso del almuerzo pasada la medianoche, la entrada sin sede de esa noche toma esa sede', () => {
+    const entraDeNoche = { fecha: medianoche(7), entrada: bog(7, 22), sedeId: null, sedeSalidaId: null };
+    const regresaDelAlmuerzo = { fecha: medianoche(7), entrada: bog(8, 0, 30), sedeId: 'norte', sedeSalidaId: null };
+    expect(lugares([entraDeNoche, regresaDelAlmuerzo])).toEqual(['norte (por defecto)', 'norte']);
+  });
+});
+
+describe('dónde se abrió cada fila · las reglas compitiendo', () => {
+  it('a) le gana a b): la salida de la misma fila pesa más que la mañana en otra sede', () => {
+    expect(lugares([marca(7, 8, 'norte'), marca(7, 13, null, 'sur')])).toEqual(['norte', 'sur (por defecto)']);
+  });
+
+  it('b) le gana a c): la mañana en Norte pesa más que su sede por defecto', () => {
+    expect(lugares([marca(7, 8, 'norte'), marca(7, 13)], presencial('sur'))).toEqual(['norte', 'norte (por defecto)']);
+  });
+
+  it('a) le gana a c)', () => {
+    expect(lugares([marca(7, 8, null, 'norte')], presencial('sur'))).toEqual(['norte (por defecto)']);
+  });
+});
+
+describe('dónde se abrió cada fila · híbrido y remoto', () => {
+  it.each(['HIBRIDO', 'REMOTO'])('a un %s no se le atribuye nada: su entrada sin sede sigue sin sede', modalidad => {
+    const persona = { modalidad, sedePorDefecto: 'principal' };
+    expect(lugares([marca(7, 7, 'norte'), marca(7, 13), marca(7, 17, null, 'sur')], persona)).toEqual(['norte', 'sin sede', 'sin sede']);
+  });
+});
+
+describe('dónde se abrió cada fila · lo que no es una marcación', () => {
+  it('una fila sin hora de entrada no recibe sede, ni siquiera la de su salida', () => {
+    expect(lugares([marca(7, null), marca(8, null, null, 'sur')])).toEqual(['sin sede', 'sin sede']);
+  });
+});
+
+describe('dónde se abrió cada fila · las marcas de antes de las sedes', () => {
+  it('una marca vieja, con entrada, sin sede y sin método, cuenta en la sede por defecto de HOY', () => {
+    // No se completan en la base. Se muestran con la sede de hoy, y si la persona
+    // cambia de sede pasan a contar en la nueva: la contra que aceptó el dueño.
+    const vieja = { fecha: new Date(Date.UTC(2026, 5, 15, 5)), entrada: new Date(Date.UTC(2026, 5, 15, 13)), sedeId: null, sedeSalidaId: null, metodoEntrada: null };
+    expect(lugares([vieja], presencial('norte'))).toEqual(['norte (por defecto)']);
+    expect(lugares([vieja], presencial('sur'))).toEqual(['sur (por defecto)']);
   });
 });

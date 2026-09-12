@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros } from './estadoContrato';
+import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros, sedesQueCuentan, sedesParaFiltrar } from './estadoContrato';
 
 describe('cómo se pinta el estado del contrato en la lista', () => {
   it('traduce cada estado que manda el servidor', () => {
@@ -67,7 +67,8 @@ describe('el filtro combinado de la lista', () => {
   });
 
   it('quien no tiene sede se puede buscar aparte', () => {
-    // Es justo a quien hay que asignarle una.
+    // Sin la lista de sedes de la empresa no se sabe cuál es la principal, así que no
+    // se le supone ninguna. Con ella, un presencial cuenta en la principal (abajo).
     expect(cumpleFiltros(persona({ sedeIds: [] }), { sede: ['SIN_SEDE'] })).toBe(true);
     expect(cumpleFiltros(persona({ sedeIds: ['s1'] }), { sede: ['SIN_SEDE'] })).toBe(false);
   });
@@ -91,5 +92,54 @@ describe('el filtro combinado de la lista', () => {
       expect(o.texto.length).toBeGreaterThan(0);
       expect(o.valor.length).toBeGreaterThan(0);
     }
+  });
+});
+
+// «MOSTRAR LA PRINCIPAL», decisión del dueño del 12 de septiembre de 2026: a un
+// presencial sin sedes asignadas no se le asigna la Sede principal; se le muestra y
+// se le cuenta. GET /sedes dice cuál es con la bandera `principal`. «Sin sede» queda
+// para un híbrido o un remoto sin sedes.
+describe('la sede con la que se ve y se filtra a cada persona', () => {
+  const SEDES = [
+    { id: 'norte', nombre: 'Norte' },
+    { id: 'principal', nombre: 'Sede principal', principal: true },
+  ];
+  const presencialSinSedes = { estadoContrato: 'VIGENTE', sedeIds: [], modalidad: 'PRESENCIAL' };
+
+  it('un presencial sin sedes cuenta en la principal, por defecto', () => {
+    expect(sedesQueCuentan(presencialSinSedes, SEDES)).toEqual({ ids: ['principal'], porDefecto: true });
+  });
+
+  it('un presencial con sedes cuenta en las suyas', () => {
+    expect(sedesQueCuentan({ sedeIds: ['norte'], modalidad: 'PRESENCIAL' }, SEDES)).toEqual({ ids: ['norte'], porDefecto: false });
+  });
+
+  it.each(['HIBRIDO', 'REMOTO'])('un %s sin sedes sigue sin sede', modalidad => {
+    expect(sedesQueCuentan({ sedeIds: [], modalidad }, SEDES)).toEqual({ ids: [], porDefecto: false });
+  });
+
+  it('el filtro de la principal trae al presencial sin sedes, y «Sin sede» no', () => {
+    expect(cumpleFiltros(presencialSinSedes, { sede: ['principal'] }, SEDES)).toBe(true);
+    expect(cumpleFiltros(presencialSinSedes, { sede: ['SIN_SEDE'] }, SEDES)).toBe(false);
+  });
+
+  it.each(['HIBRIDO', 'REMOTO'])('«Sin sede» trae a un %s sin sedes, y la principal no', modalidad => {
+    const persona = { estadoContrato: 'VIGENTE', sedeIds: [], modalidad };
+    expect(cumpleFiltros(persona, { sede: ['SIN_SEDE'] }, SEDES)).toBe(true);
+    expect(cumpleFiltros(persona, { sede: ['principal'] }, SEDES)).toBe(false);
+  });
+
+  it('la principal se ofrece en el filtro si algún presencial cuenta en ella, aunque nadie la tenga asignada', () => {
+    expect(sedesParaFiltrar([
+      presencialSinSedes,
+      { sedeIds: ['norte'], sedeNombres: ['Norte'], modalidad: 'PRESENCIAL' },
+    ], SEDES)).toEqual([{ valor: 'norte', texto: 'Norte' }, { valor: 'principal', texto: 'Sede principal' }]);
+  });
+
+  it('solo se ofrecen las sedes donde cuenta alguien: un remoto sin sedes no trae la principal', () => {
+    expect(sedesParaFiltrar([
+      { sedeIds: [], modalidad: 'REMOTO' },
+      { sedeIds: ['norte'], sedeNombres: ['Norte'], modalidad: 'HIBRIDO' },
+    ], SEDES)).toEqual([{ valor: 'norte', texto: 'Norte' }]);
   });
 });

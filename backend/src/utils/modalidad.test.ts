@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizarModalidad, decidirUbicacionDeMarca, puedeCerrarAqui, normalizarPermisoOtraSede, sedeQueAtaElCierre } from './modalidad';
+import { normalizarModalidad, decidirUbicacionDeMarca, puedeCerrarAqui, normalizarPermisoOtraSede } from './modalidad';
 
 // Quién puede marcar desde dónde. Es la regla que antes era de la EMPRESA (si
 // había geocerca, aplicaba a todos por igual) y ahora es de la PERSONA.
@@ -224,48 +224,3 @@ describe('normalizarPermisoOtraSede', () => {
   });
 });
 
-// Qué sede del turno abierto obliga a cerrarlo ahí. Salió de la revisión del 11 de
-// septiembre de 2026: desde que un presencial siempre tiene sede, una entrada que
-// escribe el administrador, o que se marca en una sede sin coordenadas, guarda una
-// sede DEDUCIDA (utils/sedePrincipal.ts). Si la regla de cerrar en la misma sede la
-// tomara como probada, el kiosco frenaría a quien nunca marcó en ella; antes esa
-// entrada iba sin sede y la salida pasaba.
-describe('sedeQueAtaElCierre', () => {
-  const CON_UBICACION = ['norte', 'sur'];
-
-  it('una entrada del kiosco en una sede con coordenadas ata el cierre a esa sede', () => {
-    expect(sedeQueAtaElCierre({ sedeDelTurno: 'norte', metodoEntrada: 'ROSTRO', sedesConUbicacion: CON_UBICACION })).toBe('norte');
-    expect(sedeQueAtaElCierre({ sedeDelTurno: 'norte', metodoEntrada: 'CEDULA', sedesConUbicacion: CON_UBICACION })).toBe('norte');
-  });
-
-  it('una entrada escrita por el administrador no ata: su sede es deducida', () => {
-    expect(sedeQueAtaElCierre({ sedeDelTurno: 'norte', metodoEntrada: 'MANUAL', sedesConUbicacion: CON_UBICACION })).toBeNull();
-  });
-
-  it('una entrada sin método conocido tampoco ata', () => {
-    expect(sedeQueAtaElCierre({ sedeDelTurno: 'norte', metodoEntrada: null, sedesConUbicacion: CON_UBICACION })).toBeNull();
-  });
-
-  it('una entrada del kiosco en una sede sin coordenadas no ata: la ubicación no pudo probarla', () => {
-    expect(sedeQueAtaElCierre({ sedeDelTurno: 'bodega', metodoEntrada: 'ROSTRO', sedesConUbicacion: CON_UBICACION })).toBeNull();
-  });
-
-  it('un turno sin sede no ata, como siempre', () => {
-    expect(sedeQueAtaElCierre({ sedeDelTurno: null, metodoEntrada: 'ROSTRO', sedesConUbicacion: CON_UBICACION })).toBeNull();
-  });
-
-  describe('junto con puedeCerrarAqui, el caso que encontró la revisión', () => {
-    const saleDesdeSur = (metodoEntrada: 'ROSTRO' | 'CEDULA' | 'MANUAL' | null) => puedeCerrarAqui({
-      modalidad: 'PRESENCIAL', puedeCerrarEnOtraSede: false, sedeDeLaMarca: 'sur',
-      sedeDelTurno: sedeQueAtaElCierre({ sedeDelTurno: 'norte', metodoEntrada, sedesConUbicacion: CON_UBICACION }),
-    });
-
-    it('el administrador le abrió el turno (quedó en Norte, deducida) y sale por Sur: el kiosco lo deja salir', () => {
-      expect(saleDesdeSur('MANUAL')).toBe(true);
-    });
-
-    it('control: si abrió él mismo en Norte y sale por Sur, la regla lo sigue frenando', () => {
-      expect(saleDesdeSur('ROSTRO')).toBe(false);
-    });
-  });
-});

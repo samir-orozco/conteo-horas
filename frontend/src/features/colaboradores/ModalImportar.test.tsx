@@ -104,7 +104,7 @@ describe('la tabla que queda después de subir', () => {
     expect(within(sel).getByRole('option', { name: /Sin horario/i })).toBeInTheDocument();
   });
 
-  it('sin sede elegida queda en la principal: la fila lo dice corto y arriba completo', async () => {
+  it('sin sede elegida cuenta en la principal: la fila lo dice corto y arriba completo', async () => {
     // En la columna de cada fila, «Principal (por defecto)» se cortaba (pedido del
     // dueño, 11 de septiembre de 2026). En «Aplicar a todos» sí cabe entero.
     montar();

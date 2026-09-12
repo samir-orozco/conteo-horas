@@ -6,6 +6,7 @@ import api from '../lib/api';
 import { fotosExpiradas, MESES_RETENCION_FOTOS } from '../lib/retencionFotos';
 import { MOMENTO_LABEL, MOMENTO_TONO, type FotoDeJornada } from '../constants/momentos';
 import { agruparPorJornada, sedesDelTurno } from '../lib/fotosDeJornada';
+import { nombreConDefecto } from '../lib/porDefecto';
 
 const TZ = 'America/Bogota';
 const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : null;
@@ -125,6 +126,9 @@ export default function FotosJornada({ registroId }: { registroId: string }) {
 // tipo nuevo en cada render y desmontaría todas las fotos cada vez.
 function TarjetaFoto({ f, expiradas }: { f: FotoDeJornada; expiradas: boolean }) {
   const lugar = f.sede?.nombre ?? null;
+  // Sin sede probada, la etiqueta dice la que se le atribuye, con «por defecto». El
+  // texto de la foto no: nadie probó que se tomara ahí (12 de septiembre de 2026).
+  const etiqueta = lugar ?? (f.sedeAtribuida ? nombreConDefecto(f.sedeAtribuida.nombre) : null);
   return (
     <div>
       <p className={`text-[10px] font-semibold uppercase mb-1.5 ${MOMENTO_TONO[f.momento]}`}>
@@ -155,11 +159,12 @@ function TarjetaFoto({ f, expiradas }: { f: FotoDeJornada; expiradas: boolean })
         )}
         {/* Dónde se tomó. Solo si se sabe: una salida de antes de que se
             guardara su sede no lleva etiqueta, en vez de heredar la de la
-            entrada y afirmar un lugar que nadie registró. */}
-        {lugar && (
+            entrada y afirmar un lugar que nadie registró. La sede atribuida a
+            una entrada sí va, pero dice «por defecto». */}
+        {etiqueta && (
           <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
             <MapPin size={10} className="shrink-0" aria-hidden="true" />
-            <span className="truncate">{lugar}</span>
+            <span className="truncate">{etiqueta}</span>
           </span>
         )}
       </div>

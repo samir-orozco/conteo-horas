@@ -11,6 +11,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import FotosJornada from '../../components/FotosJornada';
 import { TIPO_PERMISO_LABEL as TIPO_NOVEDAD } from '../../constants/permisos';
 import { type Momento } from '../../constants/momentos';
+import { nombreConDefecto } from '../../lib/porDefecto';
 
 const TZ = 'America/Bogota';
 
@@ -51,8 +52,10 @@ export type Jornada = {
   }[];
   // Dónde se abrió y dónde se cerró la JORNADA, con la regla de la fila de la
   // tabla. Opcional: un servidor anterior no lo manda, y que falte un dato no
-  // puede tumbar el detalle.
-  sedes?: { abrio: SedeDelDetalle | null; cerro: SedeDelDetalle | null };
+  // puede tumbar el detalle. `abrioAtribuida` es la sede que se le atribuye al leer
+  // a un presencial cuya jornada no abrió en una sede probada (decisión del dueño
+  // del 12 de septiembre de 2026).
+  sedes?: { abrio: SedeDelDetalle | null; cerro: SedeDelDetalle | null; abrioAtribuida?: SedeDelDetalle | null };
   almuerzo: {
     estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
     ventana: { inicio: string; fin: string } | null;
@@ -189,6 +192,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
   // anterior no manda `sedes`, y entonces solo se sabe dónde abrió esta.
   const abrio = j?.sedes ? j.sedes.abrio : r?.sede ?? null;
   const cerro = j?.sedes ? j.sedes.cerro : null;
+  const abrioAtribuida = j?.sedes?.abrioAtribuida ?? null;
   const entrada = hhmm(r?.entrada ?? null);
   const a = j?.almuerzo;
 
@@ -249,6 +253,15 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               {cerro && (!abrio || cerro.id !== abrio.id) && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 inline-flex items-center gap-1">
                   <MapPin size={10} /> Cerró en {cerro.nombre}{!cerro.activa && ' (desactivada)'}
+                </span>
+              )}
+              {/* Sin ninguna sede probada, la que se le atribuye al leer, con la
+                  etiqueta (decisión del dueño del 12 de septiembre de 2026). Con una
+                  probada no sale: «Abrió en» y «Cerró en» son solo de lo que probó
+                  la ubicación. */}
+              {!abrio && !cerro && abrioAtribuida && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1">
+                  <MapPin size={10} /> {nombreConDefecto(abrioAtribuida.nombre)}{!abrioAtribuida.activa && ' (desactivada)'}
                 </span>
               )}
               {r.salidaEstimada && (

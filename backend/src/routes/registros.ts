@@ -6,7 +6,8 @@ import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar, regenerarDiasDeColaborador } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
-import { sedeParaMarcaSinUbicacion } from '../utils/sedesDeEmpresa';
+import { lugaresDeEntrada, type FilaConLugar } from '../utils/sedePrincipal';
+import { sedesPorDefecto } from '../utils/sedesDeEmpresa';
 import { eventosDeRevision, type FilaDeRevision } from '../utils/revisionMarcaciones';
 import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
@@ -103,6 +104,39 @@ export async function consultarRevision(empresaId: string, diasPedidos?: string,
   };
 }
 
+// La sede que se le atribuye AL LEER a la entrada de cada fila de un presencial que
+// ninguna marca probó (decisión del dueño del 12 de septiembre de 2026; la regla,
+// con sus pruebas, en utils/sedePrincipal.ts). No se guarda: viaja aparte, en
+// `sedeAtribuida` con `porDefecto`, y `sede` y `sedeSalida` siguen diciendo solo lo
+// que probó la ubicación. Las filas van agrupadas por persona porque la pista puede
+// salir de otra fila suya del mismo día.
+type SedeAtribuida = { id: string; nombre: string; activa: boolean; porDefecto: true };
+type FilaParaAtribuir = FilaConLugar & { id: string; colaboradorId: string; modalidad: string };
+
+async function sedesAtribuidas(
+  empresaId: string, filas: FilaParaAtribuir[], colaboradorId?: string,
+): Promise<(registroId: string) => SedeAtribuida | null> {
+  const [defectoDe, sedes] = await Promise.all([
+    sedesPorDefecto(prisma, empresaId, colaboradorId),
+    prisma.sede.findMany({ where: { empresaId }, select: { id: true, nombre: true, activa: true } }),
+  ]);
+  const sedePorId = new Map(sedes.map(s => [s.id, s]));
+  const porPersona = new Map<string, FilaParaAtribuir[]>();
+  for (const f of filas) {
+    if (!porPersona.has(f.colaboradorId)) porPersona.set(f.colaboradorId, []);
+    porPersona.get(f.colaboradorId)!.push(f);
+  }
+  const atribuidas = new Map<string, SedeAtribuida>();
+  for (const [persona, suyas] of porPersona) {
+    const lugares = lugaresDeEntrada(suyas, { modalidad: suyas[0].modalidad, sedePorDefecto: defectoDe(persona) });
+    lugares.forEach((lugar, i) => {
+      const sede = lugar.porDefecto && lugar.id !== null ? sedePorId.get(lugar.id) : undefined;
+      if (sede) atribuidas.set(suyas[i].id, { ...sede, porDefecto: true });
+    });
+  }
+  return registroId => atribuidas.get(registroId) ?? null;
+}
+
 export default async function registroRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
 
@@ -191,6 +225,13 @@ export default async function registroRoutes(app: FastifyInstance) {
       },
       orderBy: { fecha: 'desc' },
     });
+
+    // Dónde abrió cada jornada de un presencial cuando la ubicación no lo probó, con
+    // TODAS sus filas del listado (ver `sedesAtribuidas`). Va en `sedeAtribuida`.
+    const sedeAtribuidaDe = await sedesAtribuidas(request.empresaId!, registros.map(r => ({
+      id: r.id, colaboradorId: r.colaboradorId, modalidad: r.colaborador.modalidad,
+      fecha: r.fecha, entrada: r.entrada, sedeId: r.sedeId, sedeSalidaId: r.sedeSalidaId,
+    })), typeof colaboradorId === 'string' ? colaboradorId : undefined);
 
     // La tardanza solo se evalúa en la PRIMERA entrada del día de cada colaborador
     // (un reingreso después del almuerzo no es una llegada tarde).
@@ -351,6 +392,10 @@ export default async function registroRoutes(app: FastifyInstance) {
           // cierra, no hay sede de cierre que decir.
           sede: primera.sede ?? null,
           sedeSalida: cierra?.sedeSalida ?? null,
+          // La sede que se le atribuye al leer a un presencial cuya jornada no abrió
+          // en una sede probada, con `porDefecto` para que la tabla lo diga. Null si
+          // `sede` la probó la ubicación, o para un híbrido o un remoto.
+          sedeAtribuida: sedeAtribuidaDe(primera.id),
           minutosTarde,
           // Lo que ese bloque de trabajo contó, con el almuerzo ya descontado.
           // Antes la columna restaba salida menos entrada de un tramo suelto, así
@@ -420,7 +465,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         sedeSalida: { select: { id: true, nombre: true, activa: true } },
         colaborador: {
           select: {
-            nombre: true, apellido: true, cargo: true, empresaId: true,
+            nombre: true, apellido: true, cargo: true, empresaId: true, modalidad: true,
             horario: { include: { franjas: true } },
           },
         },
@@ -510,6 +555,15 @@ export default async function registroRoutes(app: FastifyInstance) {
     // salida de la marcación suelta, que en una jornada con almuerzo es la del
     // descanso.
     const sedes = sedesDeLaJornada(delDia, registro.id);
+    // Y la sede atribuida al leer de cada tramo, con la regla de la tabla
+    // (`sedesAtribuidas`); todas las filas de `delDia` son de este día de Bogotá.
+    // `abrioAtribuida` es la del tramo que abre la jornada: la misma agrupación de
+    // `sedesDeLaJornada`, aplicada a esa sede.
+    const sedeAtribuidaDe = await sedesAtribuidas(request.empresaId!, delDia.map(t => ({
+      id: t.id, colaboradorId: registro.colaboradorId, modalidad: registro.colaborador.modalidad,
+      fecha: inicioDia, entrada: t.entrada, sedeId: t.sede?.id ?? null, sedeSalidaId: t.sedeSalida?.id ?? null,
+    })), registro.colaboradorId);
+    const abrioAtribuida = sedesDeLaJornada(delDia.map(t => ({ ...t, sede: sedeAtribuidaDe(t.id), sedeSalida: null })), registro.id).abrio;
 
     // La tardanza se mide solo en la primera entrada del día: volver del
     // almuerzo no es llegar tarde. Cuando no aplica se dice POR QUÉ, que un
@@ -544,6 +598,7 @@ export default async function registroRoutes(app: FastifyInstance) {
     return {
       registro: {
         ...datosRegistro,
+        sedeAtribuida: sedeAtribuidaDe(registro.id),
         tieneFotoEntrada: tieneEntrada.has(registro.id),
         tieneFotoSalida: tieneSalida.has(registro.id),
         tieneNovedadLigada: conNovedadLigada.has(registro.id),
@@ -553,13 +608,14 @@ export default async function registroRoutes(app: FastifyInstance) {
       dia: dia ? { ...dia, congelado: fueCongelado } : null,
       tramos: delDia.map(t => ({
         ...t,
+        sedeAtribuida: sedeAtribuidaDe(t.id),
         momentoEntrada: momentos.get(t.id)?.entrada ?? null,
         momentoSalida: momentos.get(t.id)?.salida ?? null,
         tieneFotoEntrada: tieneEntrada.has(t.id),
         tieneFotoSalida: tieneSalida.has(t.id),
         tieneNovedadLigada: conNovedadLigada.has(t.id),
       })),
-      sedes,
+      sedes: { ...sedes, abrioAtribuida },
       almuerzo,
       minutosDelDia: minutosContadosDelDia(delDia, dia),
       minutosTarde,
@@ -581,7 +637,7 @@ export default async function registroRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const registro = await prisma.registro.findFirst({
       where: { id, colaborador: { empresaId: request.empresaId } },
-      select: { colaboradorId: true, fecha: true },
+      select: { colaboradorId: true, fecha: true, colaborador: { select: { modalidad: true } } },
     });
     if (!registro) return reply.status(404).send({ error: 'Registro no encontrado' });
 
@@ -601,9 +657,15 @@ export default async function registroRoutes(app: FastifyInstance) {
     // A qué turno pertenece cada foto, para que la pantalla ponga un título por
     // turno. Sale de la misma agrupación que `momentos`: no pueden discrepar.
     const turnos = jornadaDeCadaMarcacion(delDia);
+    // La sede atribuida al leer a la ENTRADA de cada marca de un presencial, con la
+    // regla de la tabla (`sedesAtribuidas`). La de una salida nunca se atribuye.
+    const sedeAtribuidaDe = await sedesAtribuidas(request.empresaId!, delDia.map(m => ({
+      id: m.id, colaboradorId: registro.colaboradorId, modalidad: registro.colaborador.modalidad,
+      fecha: inicioDia, entrada: m.entrada, sedeId: m.sede?.id ?? null, sedeSalidaId: m.sedeSalida?.id ?? null,
+    })), registro.colaboradorId);
     const fotos: {
       registroId: string; momento: string; hora: Date | null; foto: string | null; estimada: boolean;
-      jornada: number; sede: { id: string; nombre: string } | null;
+      jornada: number; sede: { id: string; nombre: string } | null; sedeAtribuida: SedeAtribuida | null;
     }[] = [];
     for (const m of delDia) {
       const papel = momentos.get(m.id);
@@ -613,12 +675,12 @@ export default async function registroRoutes(app: FastifyInstance) {
       // cédula o que alguien la cargó a mano, y quien está auditando el día
       // necesita verlo. Las marcas sin hora no tienen momento y no aparecen.
       if (papel?.entrada) {
-        fotos.push({ registroId: m.id, momento: papel.entrada, hora: m.entrada, foto: m.fotoEntrada, estimada: m.entradaEstimada, jornada, sede: m.sede ?? null });
+        fotos.push({ registroId: m.id, momento: papel.entrada, hora: m.entrada, foto: m.fotoEntrada, estimada: m.entradaEstimada, jornada, sede: m.sede ?? null, sedeAtribuida: sedeAtribuidaDe(m.id) });
       }
       if (papel?.salida) {
         // La sede de la SALIDA es la suya. Null si no se sabe: nunca la de la
         // entrada, que afirmaría un lugar que nadie registró.
-        fotos.push({ registroId: m.id, momento: papel.salida, hora: m.salida, foto: m.fotoSalida, estimada: m.salidaEstimada, jornada, sede: m.sedeSalida ?? null });
+        fotos.push({ registroId: m.id, momento: papel.salida, hora: m.salida, foto: m.fotoSalida, estimada: m.salidaEstimada, jornada, sede: m.sedeSalida ?? null, sedeAtribuida: null });
       }
     }
     // En orden cronológico: es como ocurrió el día y como se va a leer.
@@ -684,13 +746,10 @@ export default async function registroRoutes(app: FastifyInstance) {
     });
     if (existente) return reply.status(400).send({ error: 'Ya tiene una entrada activa hoy' });
 
-    // La escribe el admin, así que no trae ubicación: un presencial queda en su
-    // sede o en la principal (utils/sedePrincipal.ts).
-    const sedeId = await sedeParaMarcaSinUbicacion(prisma, colaboradorId);
     const registro = await prisma.registro.create({
       // La escribió el admin, no el kiosco. Sin esto quedaría en null y se
       // confundiría con una marcación anterior a que se midiera el método.
-      data: { colaboradorId, fecha: ahora, entrada: ahora, tipo: 'NORMAL', metodoEntrada: 'MANUAL', sedeId },
+      data: { colaboradorId, fecha: ahora, entrada: ahora, tipo: 'NORMAL', metodoEntrada: 'MANUAL' },
     });
     await asegurarDiaSinFallar(colaboradorId, registro.fecha, app.log);
     return reply.status(201).send(registro);
@@ -725,13 +784,9 @@ export default async function registroRoutes(app: FastifyInstance) {
     const motivo = await motivoParaRechazar(datos.colaboradorId, datos.fecha, datos.entrada ?? null, datos.salida ?? null);
     if (motivo) return reply.status(400).send(motivo);
 
-    // Misma regla que la entrada manual: sin ubicación, un presencial queda en su
-    // sede. Un registro sin hora de entrada no es una marcación y no la lleva.
-    const sedeId = datos.entrada ? await sedeParaMarcaSinUbicacion(prisma, datos.colaboradorId) : null;
     const registro = await prisma.registro.create({
       data: {
         ...datos,
-        sedeId,
         // Solo se marca el momento que de verdad trae hora: un registro manual
         // puede traer solo entrada, y poner MANUAL en una salida vacía diría que
         // alguien la escribió cuando no existe.
@@ -775,18 +830,10 @@ export default async function registroRoutes(app: FastifyInstance) {
     await anotarCambios(id, existente as any, cambios, request.usuarioId, request.usuarioNombre)
       .catch(err => request.log.error(err, 'No se pudo anotar el cambio del registro'));
 
-    // Una fila que no era marcación y ahora recibe hora de entrada pasa a serlo:
-    // un presencial la tiene en su sede (utils/sedePrincipal.ts). Las que ya
-    // tenían entrada no se tocan: completar las viejas es otra decisión.
-    const sedeNueva = cambios.entrada && !existente.entrada && !existente.sedeId
-      ? await sedeParaMarcaSinUbicacion(prisma, cambios.colaboradorId ?? existente.colaboradorId)
-      : null;
-
     const actualizado = await prisma.registro.update({
       where: { id },
       data: {
         ...cambios,
-        ...(sedeNueva ? { sedeId: sedeNueva } : {}),
         // Sin salida no hay dónde se cerró. Un turno reabierto conservaba la sede
         // de la salida borrada, y si después lo cerraba el sistema o alguien sin
         // sede identificada, la fila decía «Cerró en» un sitio donde nadie marcó.
@@ -937,24 +984,10 @@ export default async function registroRoutes(app: FastifyInstance) {
       });
     }
 
-    // La tarde que nace de esta edición no pasó por el kiosco: un presencial la
-    // trabaja en la sede donde abrió la jornada, o en la suya (utils/sedePrincipal.ts).
-    // Y si la jornada nace de una fila que no tenía entrada, esa fila pasa a ser
-    // una marcación con la misma regla.
-    const sedeDeLaManana = !esta[0].entrada && !esta[0].sedeId
-      ? await sedeParaMarcaSinUbicacion(prisma, colaboradorId)
-      : null;
-    const sedeDeLaTarde = nuevos[1] && !esta[1]
-      ? await sedeParaMarcaSinUbicacion(prisma, colaboradorId, esta[0].sedeId ?? sedeDeLaManana)
-      : null;
-
     await prisma.$transaction(async (tx) => {
       await tx.registro.update({
         where: { id: esta[0].id },
-        data: {
-          ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida, ...plan.primera,
-          ...(sedeDeLaManana ? { sedeId: sedeDeLaManana } : {}),
-        },
+        data: { ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida, ...plan.primera },
       });
       const segunda = esta[1];
       let idSegunda = segunda?.id ?? null;
@@ -965,7 +998,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         // salida puede no ser nueva —al poner el descanso es la salida del día, que
         // sí se marcó en el kiosco— y por eso el método de salida viene del plan.
         else idSegunda = (await tx.registro.create({
-          data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any, metodoEntrada: 'MANUAL', sedeId: sedeDeLaTarde },
+          data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any, metodoEntrada: 'MANUAL' },
           select: { id: true },
         })).id;
       }

@@ -8,7 +8,9 @@ import ModalRetiro from '../features/colaboradores/ModalRetiro';
 import ModalReingreso from '../features/colaboradores/ModalReingreso';
 import ModalImportar from '../features/colaboradores/ModalImportar';
 import Toast from '../components/Toast';
-import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros, SIN_SEDE } from '../features/colaboradores/estadoContrato';
+import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros, sedesQueCuentan, sedesParaFiltrar, SIN_SEDE } from '../features/colaboradores/estadoContrato';
+import { nombreConDefecto } from '../lib/porDefecto';
+import type { SedeOpcion } from '../components/SelectorSedes';
 import MenuFiltros from '../components/MenuFiltros';
 import AvatarMini from '../components/AvatarMini';
 import { fechaCorta } from '../lib/fechas';
@@ -76,6 +78,21 @@ function enlaceMasCupo(nombre?: string, empresa?: string | null, nombrePlan?: st
   return `https://wa.me/${WPP_NUMERO}?text=${encodeURIComponent(texto)}`;
 }
 
+// La sede de una fila de la lista. Fuera del componente, como las celdas de Registros.
+//
+// «Mostrar la principal» (decisión del dueño del 12 de septiembre de 2026): un
+// presencial sin sedes se ve en la Sede principal, por defecto, y «Sin sede» queda
+// para un híbrido o un remoto. Un retirado lleva un guion, como Cargo cuando falta: la
+// lista de retirados no trae sus sedes ni su modalidad, y «Sin sede» afirmaría algo
+// que no se sabe.
+function TextoSede({ col, sedes }: { col: { activo: boolean; sedeIds?: string[]; sedeNombres?: string[]; modalidad?: string }; sedes: SedeOpcion[] }) {
+  if (!col.activo) return <span className="text-gray-400">-</span>;
+  const principal = sedes.find(s => s.principal);
+  if (sedesQueCuentan(col, sedes).porDefecto && principal) return <>{nombreConDefecto(principal.nombre)}</>;
+  if (col.sedeNombres?.length) return <>{col.sedeNombres.join(' · ')}</>;
+  return <span className="text-gray-400">Sin sede</span>;
+}
+
 export default function Colaboradores() {
   const navigate = useNavigate();
   const { plan, recargar: recargarPlan } = useMiPlan();
@@ -91,7 +108,9 @@ export default function Colaboradores() {
   const [pestana, setPestana] = useState<'todos' | 'activos' | 'retirados'>('activos');
   const [retirados, setRetirados] = useState<Retirado[]>([]);
   const [horarios, setHorarios] = useState<Horario[]>([]);
-  const [sedes, setSedes] = useState<{ id: string; nombre: string }[]>([]);
+  // Con la bandera `principal` de GET /sedes: dice en qué sede se ve y se filtra a
+  // un presencial sin sedes.
+  const [sedes, setSedes] = useState<SedeOpcion[]>([]);
   const [errorForm, setErrorForm] = useState('');
   const [guardando, setGuardando] = useState(false);
   // Si la foto se cambió en ESTA edición. Sin esto no se puede distinguir "no
@@ -184,13 +203,11 @@ export default function Colaboradores() {
 
   // El filtro de contrato solo aplica a quien sigue trabajando: el contrato de
   // un retirado ya no hay que renovarlo.
-  const visibles = filas.filter(f => !f.activo || cumpleFiltros(f, filtros));
+  const visibles = filas.filter(f => !f.activo || cumpleFiltros(f, filtros, sedes));
 
-  // Las sedes que de verdad existen entre los colaboradores. Ofrecer una sede
-  // que nadie tiene solo da resultados vacíos.
-  const sedesDelFiltro = [...new Map(
-    lista.flatMap(c => (c.sedeIds ?? []).map((id, i) => [id, (c.sedeNombres ?? [])[i] ?? 'Sede'] as const)),
-  )].map(([valor, texto]) => ({ valor, texto })).sort((a, b) => a.texto.localeCompare(b.texto));
+  // Las sedes donde de verdad cuenta alguien, con la principal si algún presencial
+  // sin sedes cuenta en ella (`sedesParaFiltrar`).
+  const sedesDelFiltro = sedesParaFiltrar(lista, sedes);
   const esEmpresarial = plan?.plan === 'EMPRESARIAL';
   const pct = limite ? Math.min(100, Math.round((usados / limite) * 100)) : 0;
 
@@ -347,11 +364,7 @@ export default function Colaboradores() {
                       en móvil igual que estas. Y aquí explica el hueco, porque
                       "Sin sede" en un remoto no es un dato que falte. */}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span>
-                      {col.sedeNombres?.length
-                        ? col.sedeNombres.join(' · ')
-                        : <span className="text-gray-400">Sin sede</span>}
-                    </span>
+                    <span><TextoSede col={col} sedes={sedes} /></span>
                     {col.activo && normalizarModalidad(col.modalidad) !== 'PRESENCIAL' && (
                       <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${TONO_CHIP[TONO_MODALIDAD[normalizarModalidad(col.modalidad)]]}`}>
                         {ETIQUETA_MODALIDAD[normalizarModalidad(col.modalidad)]}

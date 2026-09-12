@@ -17,9 +17,10 @@ vi.mock('../lib/api', () => ({ default: { get: vi.fn() } }));
 import api from '../lib/api';
 const get = api.get as unknown as ReturnType<typeof vi.fn>;
 
-type Sede = { id: string | null; nombre: string | null };
+type Sede = { id: string | null; nombre: string | null; porDefecto?: boolean };
 const LAURELES = { id: 'sede-a', nombre: 'Laureles' };
 const POBLADO = { id: 'sede-b', nombre: 'El Poblado' };
+const PRINCIPAL = { id: 'sede-p', nombre: 'Sede principal' };
 const SIN_SEDE: Sede = { id: null, nombre: null };
 
 const montos = (total: number) => ({ totalRecargos: 0, totalExtra: total, totalAdicional: total });
@@ -88,7 +89,29 @@ describe('ReporteExtras con varias sedes', () => {
     expect(lineaDe(/Todas las sedes/)).toEqual(['Todas las sedes', '$ 19.500', '$ 190.000', '$ 209.500']);
   });
 
-  it('lo que no tiene sede se lee «Sin sede», en la fila y en el resumen', async () => {
+  it('a un presencial que marcó sin ubicación se le ve su sede con «por defecto», también dentro de un mixto', async () => {
+    // Decisión del dueño del 12 de septiembre de 2026: la sede que ninguna marca
+    // probó se le atribuye al leer, y el servidor la manda con `porDefecto`. Un
+    // presencial ya no se ve «Sin sede».
+    montarCon([LAURELES, POBLADO, PRINCIPAL], {
+      ...RESPUESTA,
+      colaboradores: [
+        ...RESPUESTA.colaboradores,
+        fila('SinUbicacion', [{ ...PRINCIPAL, porDefecto: true }], 30_000),
+        fila('Mezcla', [{ ...POBLADO, porDefecto: true }, { ...LAURELES, porDefecto: false }], 10_000),
+      ],
+    });
+    await screen.findByRole('region', { name: 'Resumen por sede' });
+    const sinUbicacion = screen.getByRole('row', { name: /SinUbicacion/ });
+    expect(sinUbicacion).toHaveTextContent('Sede principal (por defecto)');
+    expect(sinUbicacion).not.toHaveTextContent('Sin sede');
+    const mezcla = screen.getByRole('row', { name: /Mezcla/ });
+    expect(mezcla).toHaveTextContent('Mixto');
+    expect(mezcla).toHaveTextContent('El Poblado (por defecto) · Laureles');
+  });
+
+  // «Sin sede» sigue siendo legítimo para un híbrido o un remoto.
+  it('lo que no tiene sede, como una remota, se lee «Sin sede», en la fila y en el resumen', async () => {
     montarCon([LAURELES, POBLADO], {
       ...RESPUESTA,
       colaboradores: [...RESPUESTA.colaboradores, fila('Remota', [SIN_SEDE], 50_000)],

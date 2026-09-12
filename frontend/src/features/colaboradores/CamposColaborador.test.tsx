@@ -70,7 +70,7 @@ describe('CamposColaborador', () => {
       expect(screen.getByRole('group', { name: /sedes/i })).toBeInTheDocument();
     });
 
-    it('cambiar la modalidad no toca las sedes: la principal la pone el servidor, no el formulario', async () => {
+    it('cambiar la modalidad no toca las sedes: la principal se muestra, no se mete en el formulario', async () => {
       // Revisión del 11 de septiembre de 2026: con la principal metida en el
       // formulario, quien pasaba a remoto antes de guardar se la dejaba sin verla.
       const onCambio = vi.fn();

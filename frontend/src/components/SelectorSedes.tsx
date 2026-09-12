@@ -1,7 +1,8 @@
 import type { Modalidad } from '../features/colaboradores/modalidad';
 import { sedeImplicita } from '../features/colaboradores/sedesDelFormulario';
 
-// `principal` viene de GET /sedes: la sede que recibe un presencial sin sede elegida.
+// `principal` viene de GET /sedes: la sede en la que cuenta un presencial sin sede
+// elegida, sin que se le asigne.
 export type SedeOpcion = { id: string; nombre: string; principal?: boolean };
 
 // Selector múltiple de sedes donde un colaborador puede marcar.
@@ -42,8 +43,9 @@ export default function SelectorSedes({
   const alternar = (id: string) =>
     onChange(valor.includes(id) ? valor.filter(x => x !== id) : [...valor, id]);
 
-  // A un presencial sin sedes elegidas el servidor le asigna la principal. Se
-  // muestra para que nadie crea que lo dejó sin sede, pero no se elige por él.
+  // A un presencial sin sedes elegidas se le cuenta en la principal al leer, sin
+  // asignársela («mostrar la principal», decisión del dueño del 12 de septiembre de
+  // 2026). Se muestra para que nadie crea que lo dejó sin sede, pero no se elige por él.
   const implicita = sedeImplicita(modalidad, valor, sedes);
 
   return (
@@ -75,7 +77,7 @@ export default function SelectorSedes({
               ? 'Sin sedes: podrá marcar igual, pero no quedará registrado desde dónde.'
               : 'Podrá marcar desde donde sea. Si está en una de estas, queda registrado en cuál.')
           : (valor.length === 0
-              ? 'Sin elegir, queda en la Sede principal: quien trabaja presencial siempre tiene sede.'
+              ? 'Sin elegir, cuenta en la Sede principal y se le aplica la ubicación general de la empresa.'
               // Con UNA sola sede no hay a dónde cruzar, así que el permiso no
               // cambia nada y la frase es la de siempre.
               : puedeCerrarEnOtraSede && valor.length >= 2

@@ -104,6 +104,19 @@ describe('las fotos de verificación facial del día', () => {
     expect(screen.getAllByText('El Poblado')).toHaveLength(1);
   });
 
+  it('una entrada sin sede probada lleva su sede por defecto, con esa etiqueta, sin afirmar dónde se tomó la foto', async () => {
+    // 12 de septiembre de 2026: la sede de un presencial que marcó sin ubicación se
+    // muestra al leer. En la etiqueta sí; en el texto de la foto no, porque nadie
+    // probó que se tomara ahí.
+    responder([
+      foto({ momento: 'ENTRADA', jornada: 0, sede: null, sedeAtribuida: { id: 's0', nombre: 'Sede principal', activa: true, porDefecto: true } }),
+      foto({ momento: 'SALIDA', hora: bog(17, 0), jornada: 0, sede: null }),
+    ]);
+    render(<FotosJornada registroId="r1" />);
+    expect(await screen.findByText('Sede principal (por defecto)')).toBeTruthy();
+    expect(screen.getByAltText('Foto de entrada')).toBeTruthy();
+  });
+
   it('con un backend que todavía no manda el turno, cae a la lista de antes', async () => {
     responder([
       foto({ registroId: 'a', momento: 'ENTRADA' }),

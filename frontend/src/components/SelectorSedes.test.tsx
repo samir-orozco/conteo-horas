@@ -3,9 +3,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SelectorSedes from './SelectorSedes';
 
-// Un presencial siempre tiene sede, y si nadie le elige una queda en la Sede
-// principal. El selector lo dice, pero sin elegirla por nadie: lo que se guarda es
-// solo lo que se tocó (revisión del 11 de septiembre de 2026).
+// Un presencial siempre tiene sede: si nadie le elige una, cuenta en la Sede
+// principal sin que se le asigne («mostrar la principal», decisión del dueño del 12
+// de septiembre de 2026). El selector lo dice, pero sin elegirla por nadie: lo que
+// se guarda es solo lo que se tocó (revisión del 11 de septiembre de 2026).
 
 const SEDES = [
   { id: 'norte', nombre: 'Norte' },
@@ -13,13 +14,13 @@ const SEDES = [
 ];
 
 describe('SelectorSedes', () => {
-  it('a un presencial sin sedes le muestra la principal como la que le queda, sin elegirla por él', () => {
+  it('a un presencial sin sedes le muestra la principal por defecto, sin elegirla por él, y dice que cuenta ahí', () => {
     const onChange = vi.fn();
     render(<SelectorSedes sedes={SEDES} valor={[]} onChange={onChange} modalidad="PRESENCIAL" />);
     const principal = screen.getByRole('button', { name: /Sede principal/ });
     expect(principal).toHaveTextContent(/por defecto/i);
     expect(principal).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByText(/queda en la Sede principal/i)).toBeInTheDocument();
+    expect(screen.getByText('Sin elegir, cuenta en la Sede principal y se le aplica la ubicación general de la empresa.')).toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -34,7 +35,7 @@ describe('SelectorSedes', () => {
     expect(screen.queryByText(/por defecto/i)).not.toBeInTheDocument();
   });
 
-  it('a un presencial se le puede quitar la última que eligió: vuelve a quedar en la principal', async () => {
+  it('a un presencial se le puede quitar la última que eligió: vuelve a contar en la principal', async () => {
     const onChange = vi.fn();
     render(<SelectorSedes sedes={SEDES} valor={['norte']} onChange={onChange} modalidad="PRESENCIAL" />);
     await userEvent.click(screen.getByRole('button', { name: /Norte/ }));

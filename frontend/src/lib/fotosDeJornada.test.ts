@@ -60,6 +60,17 @@ describe('sedesDelTurno', () => {
     expect(sedesDelTurno([f({ sede: POBLADO }), f({ momento: 'SALIDA' })]).distintas).toBe(false);
   });
 
+  it('la sede que se le atribuye a una entrada no es una apertura probada: no hay «sedes distintas»', () => {
+    // 12 de septiembre de 2026: el servidor manda `sedeAtribuida` en las entradas de
+    // un presencial sin ubicación. Solo sirve para mostrarla con «por defecto».
+    const r = sedesDelTurno([
+      f({ sede: null, sedeAtribuida: { ...POBLADO, activa: true, porDefecto: true } }),
+      f({ momento: 'SALIDA', sede: LAURELES }),
+    ]);
+    expect(r.abrio).toBeNull();
+    expect(r.distintas).toBe(false);
+  });
+
   it('la salida a descanso no es el cierre del turno', () => {
     const r = sedesDelTurno([
       f({ sede: POBLADO }),

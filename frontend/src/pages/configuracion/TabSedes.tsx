@@ -4,12 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { useMiPlan } from '../../lib/plan';
+import { avisoAlEliminarSede } from '../../lib/sedePrincipal';
 
 export type Sede = {
   id: string; nombre: string; direccion: string | null;
   lat: number | null; lng: number | null; radio: number;
   _count?: { colaboradores: number };
   principal?: boolean;
+  // Con la fecha se sabe qué sede queda como principal si se elimina la actual.
+  creadoEn: string;
 };
 
 const VACIA = { nombre: '', direccion: '', lat: '', lng: '', radio: '150', exigeUbicacion: false };
@@ -130,7 +133,7 @@ export default function TabSedes() {
                   <p className="font-medium text-ink flex items-center gap-2">
                     {s.nombre}
                     {s.principal && (
-                      <span title="Quien trabaja presencial y no tiene otra sede elegida queda en esta"
+                      <span title="Quien trabaja presencial y no tiene ninguna sede elegida se cuenta en esta"
                         className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/25 text-ink">PRINCIPAL</span>
                     )}
                   </p>
@@ -149,7 +152,7 @@ export default function TabSedes() {
                   {/* La única sede no se elimina: quien trabaja presencial siempre
                       necesita una. El servidor tampoco lo permite. */}
                   {sedes.length > 1 && (
-                    <button onClick={() => setEliminando(s)} className="p-2 text-gray-400 hover:text-red-500" title="Eliminar"><Trash2 size={15} /></button>
+                    <button onClick={() => setEliminando(s)} className="p-2 text-gray-400 hover:text-red-500" title="Eliminar" aria-label={`Eliminar ${s.nombre}`}><Trash2 size={15} /></button>
                   )}
                 </div>
               </div>
@@ -270,7 +273,11 @@ export default function TabSedes() {
         <ConfirmDialog
           abierto
           titulo={`Eliminar ${eliminando.nombre}`}
-          subtitulo="Quien trabaja presencial y solo tenía esta sede pasa a la Sede principal. Las marcaciones que ya se hicieron ahí conservan su registro histórico."
+          // A nadie se le asigna otra sede (decisión del dueño del 12 de septiembre de
+          // 2026). El aviso dice qué sigue contando en esta sede, lo que probó la
+          // ubicación, y qué pasa a contarse en otra, también en fechas pasadas, y si
+          // se elimina la principal, cuál toma su lugar.
+          subtitulo={avisoAlEliminarSede(sedes, eliminando)}
           textoContinuar="Eliminar"
           peligro
           onContinuar={eliminar}

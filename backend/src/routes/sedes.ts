@@ -2,7 +2,6 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../prisma';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { sedePrincipal } from '../utils/sedePrincipal';
-import { asegurarSedeDePresencial } from '../utils/sedesDeEmpresa';
 
 // Sedes de la empresa: cada local con su propia geocerca.
 //
@@ -12,9 +11,13 @@ import { asegurarSedeDePresencial } from '../utils/sedesDeEmpresa';
 // colaborador puede marcar en las que tenga asignadas.
 //
 // Gating: la SEGUNDA sede en adelante exige plan Empresarial (`multiSede`), el
-// mismo criterio con el que se gatean los horarios. La primera siempre se
-// permite porque es la que hereda la geocerca que la empresa ya tenía: cobrar
-// por conservar lo que ya funcionaba sería quitarles algo.
+// mismo criterio con el que se gatean los horarios. La primera no lo exige porque
+// todo plan incluye una sede. En la práctica este POST casi nunca crea la primera:
+// toda empresa nace con su «Sede principal», SIN ubicación (`crearSedePrincipal`,
+// al registrarse y cuando la crea el super admin), sql/sede-principal.sql crea la
+// que falta, también sin ubicación, en las empresas que no tenían ninguna activa,
+// y la última sede activa no se puede eliminar (ver DELETE). Una empresa de plan
+// de una sola sede le pone la ubicación editando esa (12 de septiembre de 2026).
 
 type SedeInput = {
   nombre?: string; direccion?: string | null;
@@ -46,8 +49,9 @@ function camposSede(body: SedeInput) {
 export default async function sedeRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
 
-  // `principal` le dice a la pantalla cuál es la Sede principal: la que reciben
-  // los presenciales a los que nadie les eligió sede (utils/sedePrincipal.ts).
+  // `principal` le dice a la pantalla cuál es la Sede principal: la que se le
+  // muestra y se le cuenta, por defecto y sin asignársela, a un presencial al que
+  // nadie le eligió sede (utils/sedePrincipal.ts, 12 de septiembre de 2026).
   app.get('/', auth, async (request) => {
     const sedes = await prisma.sede.findMany({
       where: { empresaId: request.empresaId, activa: true },
@@ -97,10 +101,11 @@ export default async function sedeRoutes(app: FastifyInstance) {
   // marcación. Sí se sueltan los colaboradores, o quedarían asignados a una sede
   // donde ya no pueden marcar.
   //
-  // Y como un presencial siempre tiene sede (11 de septiembre de 2026): la última
-  // sede activa no se desactiva, porque dejaría a todos sin ninguna, y quien
-  // trabaja presencial y se queda sin sede pasa a la principal en la misma
-  // transacción.
+  // Y la última sede activa no se desactiva (11 de septiembre de 2026): un
+  // presencial no debe verse «Sin sede» mientras la empresa tenga alguna, y sin
+  // ninguna no quedaría sede por defecto que mostrarle. A quien pierde su sede no
+  // se le asigna otra (decisión del dueño del 12 de septiembre de 2026): al leer se
+  // le muestra y se le cuenta la suya por defecto (utils/sedePrincipal.ts).
   app.delete('/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
     const empresaId = request.empresaId!;
@@ -114,10 +119,8 @@ export default async function sedeRoutes(app: FastifyInstance) {
       const otras = await tx.sede.count({ where: { empresaId, activa: true, id: { not: id } } });
       if (existente.activa && otras === 0) return 'ES_LA_ULTIMA' as const;
 
-      const asignados = await tx.colaboradorSede.findMany({ where: { sedeId: id }, select: { colaboradorId: true } });
       await tx.colaboradorSede.deleteMany({ where: { sedeId: id } });
       await tx.sede.update({ where: { id }, data: { activa: false } });
-      await asegurarSedeDePresencial(tx, empresaId, asignados.map(a => a.colaboradorId));
       return 'DESACTIVADA' as const;
     }, { timeout: 30_000 });
 

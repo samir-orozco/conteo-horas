@@ -9,7 +9,8 @@ import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import MenuFiltros from '../components/MenuFiltros';
 import MenuAcciones from '../components/MenuAcciones';
-import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
+import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
+import { nombreConDefecto } from '../lib/porDefecto';
 import SelectorColaborador from '../components/SelectorColaborador';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
 import { avisoDeFotosPorBorrar, type FotoPorBorrar } from '../lib/fotosPorBorrar';
@@ -35,6 +36,10 @@ type Registro = {
   // Dónde se abrió y dónde se cerró la jornada. Opcionales por la ventana del
   // despliegue en la que el servidor todavía responde sin ellos.
   sede?: SedeCorta | null; sedeSalida?: SedeCorta | null;
+  // La sede que el servidor le atribuye al leer a la jornada de un presencial que no
+  // abrió en una sede probada (decisión del dueño del 12 de septiembre de 2026).
+  // Opcional por la misma ventana del despliegue.
+  sedeAtribuida?: SedeCorta | null;
   // null = sin horario asignado o día que no aplica; 0 = a tiempo; >0 = minutos tarde
   minutosTarde: number | null;
   // Lo que contó esta jornada, con el almuerzo ya descontado.
@@ -173,6 +178,10 @@ function CeldaSede({ r }: { r: Registro }) {
   // Abrió sin sede pero cerró en una: se dice dónde CERRÓ, no se deja creer que
   // toda la jornada fue ahí.
   if (r.sedeSalida) return <span className="whitespace-nowrap">Cerró en {r.sedeSalida.nombre}</span>;
+  // Sin ninguna sede probada, la que se le atribuye, con la etiqueta: un presencial
+  // no se ve sin sede, pero tampoco se hace pasar por un lugar que probó la
+  // ubicación (decisión del dueño del 12 de septiembre de 2026).
+  if (r.sedeAtribuida) return <span className="whitespace-nowrap">{nombreConDefecto(r.sedeAtribuida.nombre)}</span>;
   return <span className="text-gray-300">-</span>;
 }
 
@@ -448,9 +457,11 @@ export default function Registros() {
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
   // 60 min" sin decir de qué hora a qué hora: exigir la ventana escondería la
   // columna justo donde el descuento es invisible.
-  // La columna de sede solo aparece si alguna jornada del rango tiene sede: en
-  // una empresa de una sola oficina sería una columna vacía en cada fila.
-  const haySedes = registros.some(r => r.sede || r.sedeSalida);
+  // La columna de sede aparece con más de una sede activa en la empresa, como en los
+  // reportes, o con alguna sede probada en las filas (`muestraColumnaSede`). En una
+  // empresa de una sola oficina sería una columna vacía, o la misma sede por
+  // defecto repetida, en cada fila.
+  const haySedes = muestraColumnaSede(registros, sedes);
   const opcionesSede = opcionesDeSede(sedes, registros);
   const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.minutosAlmuerzoAqui > 0));
 

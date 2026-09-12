@@ -10,7 +10,7 @@ describe('nombreDeLugar', () => {
     expect(nombreDeLugar({ id: 'sede-a', nombre: 'Laureles' })).toBe('Laureles');
   });
 
-  it('lo que no tiene sede se lee «Sin sede»', () => {
+  it('lo que no tiene sede se lee «Sin sede»: un híbrido o un remoto, o una empresa sin sedes', () => {
     expect(nombreDeLugar({ id: null, nombre: null })).toBe('Sin sede');
   });
 
@@ -29,9 +29,21 @@ describe('textoDeSedes', () => {
       .toEqual({ texto: 'El Poblado · Laureles', mixto: true });
   });
 
-  it('una sede más turnos sin sede también es mixto', () => {
+  it('un híbrido con una sede y turnos sin sede también es mixto', () => {
     expect(textoDeSedes([{ id: 'sede-a', nombre: 'Laureles' }, { id: null, nombre: null }]))
       .toEqual({ texto: 'Laureles · Sin sede', mixto: true });
+  });
+
+  // A un presencial, la sede que ninguna marca probó se la atribuye el servidor al
+  // leer y la manda con `porDefecto` (decisión del dueño del 12 de septiembre de 2026).
+  it('una sede que solo existe por atribución lleva «por defecto»', () => {
+    expect(textoDeSedes([{ id: 'sede-p', nombre: 'Sede principal', porDefecto: true }]))
+      .toEqual({ texto: 'Sede principal (por defecto)', mixto: false });
+  });
+
+  it('en un mixto, «por defecto» va pegado a la sede que ninguna marca probó y no a la otra', () => {
+    expect(textoDeSedes([{ id: 'sede-n', nombre: 'Norte', porDefecto: true }, { id: 'sede-s', nombre: 'Sur', porDefecto: false }]))
+      .toEqual({ texto: 'Norte (por defecto) · Sur', mixto: true });
   });
 
   it('quien no marcó en el período no tiene sede que mostrar', () => {

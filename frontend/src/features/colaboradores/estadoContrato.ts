@@ -1,3 +1,6 @@
+import { normalizarModalidad } from './modalidad';
+import { sedeImplicita, type SedeDelFormulario } from './sedesDelFormulario';
+
 export type Tono = 'rojo' | 'ambar' | 'verde' | 'gris';
 
 // Traducción de lo que manda el servidor (utils/estadoContratoResumen.ts).
@@ -43,14 +46,44 @@ export const OPCIONES_CONTRATO: { valor: string; texto: string }[] = [
   { valor: 'SIN_CONTRATO', texto: 'Sin contrato' },
 ];
 
-type Filtrable = { estadoContrato?: string | null; sedeIds?: string[] };
+type Filtrable = { estadoContrato?: string | null; sedeIds?: string[]; modalidad?: string };
+
+// Las sedes con las que se muestra y se filtra a alguien en la lista: las suyas, o a
+// un presencial sin ninguna, la Sede principal, por defecto («mostrar la principal»,
+// decisión del dueño del 12 de septiembre de 2026). No se le asigna: sigue marcando
+// desde donde marca hoy. Es la misma regla con la que el formulario la muestra
+// (`sedeImplicita`). Un híbrido o un remoto sin sedes sigue sin sede, y es a quien
+// encuentra la opción «Sin sede».
+export function sedesQueCuentan(persona: { sedeIds?: string[]; modalidad?: string }, sedes: SedeDelFormulario[]): { ids: string[]; porDefecto: boolean } {
+  const suyas = persona.sedeIds ?? [];
+  const principal = sedeImplicita(normalizarModalidad(persona.modalidad), suyas, sedes);
+  return principal ? { ids: [principal], porDefecto: true } : { ids: suyas, porDefecto: false };
+}
+
+// Las sedes que ofrece el filtro de la lista: donde cuenta alguien, porque ofrecer
+// una en la que nadie cuenta solo da resultados vacíos. La principal entra si algún
+// presencial sin sedes cuenta en ella, aunque nadie la tenga asignada.
+export function sedesParaFiltrar(
+  personas: (Filtrable & { sedeNombres?: string[] })[],
+  sedes: (SedeDelFormulario & { nombre: string })[],
+): { valor: string; texto: string }[] {
+  const nombres = new Map<string, string>();
+  for (const p of personas) {
+    const { ids, porDefecto } = sedesQueCuentan(p, sedes);
+    ids.forEach((id, i) => nombres.set(id, (porDefecto ? sedes.find(s => s.id === id)?.nombre : p.sedeNombres?.[i]) ?? 'Sede'));
+  }
+  return [...nombres].map(([valor, texto]) => ({ valor, texto })).sort((a, b) => a.texto.localeCompare(b.texto));
+}
 
 // ¿Esta persona pasa los filtros marcados?
 //
 // Dentro de un grupo es "o" (nadie tiene dos estados de contrato a la vez);
 // entre grupos es "y" ("por vencer" Y "de la sede norte"). Un grupo sin nada
 // marcado no filtra: marcar cero cosas no puede significar "ninguna".
-export function cumpleFiltros(persona: Filtrable, seleccion: Record<string, string[]>): boolean {
+//
+// `sedes` son las de GET /sedes, que dicen cuál es la principal. Sin ellas no se le
+// supone sede a nadie.
+export function cumpleFiltros(persona: Filtrable, seleccion: Record<string, string[]>, sedes: SedeDelFormulario[] = []): boolean {
   const contrato = seleccion.contrato ?? [];
   if (contrato.length) {
     const estado = persona.estadoContrato;
@@ -61,7 +94,7 @@ export function cumpleFiltros(persona: Filtrable, seleccion: Record<string, stri
 
   const sede = seleccion.sede ?? [];
   if (sede.length) {
-    const suyas = persona.sedeIds ?? [];
+    const suyas = sedesQueCuentan(persona, sedes).ids;
     const pasa = sede.some(v => (v === SIN_SEDE ? suyas.length === 0 : suyas.includes(v)));
     if (!pasa) return false;
   }

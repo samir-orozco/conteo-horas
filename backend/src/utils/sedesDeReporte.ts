@@ -1,3 +1,5 @@
+import { lugaresDeEntrada, type FilaConLugar, type PersonaParaAtribuir } from './sedePrincipal';
+
 // Dónde trabajó cada persona en un período, y el resumen por sede de los reportes
 // de extras y de llegadas tarde.
 //
@@ -19,22 +21,32 @@
 // Una sede, o null cuando el turno no guardó dónde se abrió: todo lo anterior a
 // las sedes, la carga manual, los remotos y los híbridos fuera de sus sedes.
 //
-// Null es un lugar más y NO se completa con la sede asignada a la persona. La
-// asignación es la de hoy: completar con ella movería los reportes viejos cada
-// vez que alguien cambia de sede, que es el mismo defecto que ya se corrigió con
-// los horarios.
+// Null es un lugar más para un híbrido o un remoto. A un PRESENCIAL se le atribuye
+// al leer la sede que ninguna marca probó (`lugaresConAtribucion`, con la regla en
+// utils/sedePrincipal.ts), sin guardarla: decisión del dueño del 12 de septiembre
+// de 2026. Antes no se completaba porque la asignación es la de hoy, y mueve los
+// reportes viejos cada vez que alguien cambia de sede; el dueño aceptó esa contra
+// para que un presencial no se vea «Sin sede».
 export type Lugar = string | null;
-export type TurnoConSede = { sedeId: string | null; sedeSalidaId: string | null };
+export type TurnoConSede = { entrada: Date | null; sedeId: string | null; sedeSalidaId: string | null };
 export type SedeDelResumen = { id: string; nombre: string; activa: boolean };
 export type LineaDeSede<K extends string> = { id: Lugar; nombre: string | null } & Record<K, number>;
 export type ResumenPorSede<K extends string> = { porSede: LineaDeSede<K>[]; mixtos: Record<K, number>; todas: Record<K, number> };
 
 // Los lugares donde trabajó alguien, sin repetir: primero las sedes, ordenadas por
 // id para que el resultado no dependa del orden de los turnos, y al final null.
+//
+// Una fila sin hora de entrada no es un lugar de trabajo (revisión del 11 de
+// septiembre de 2026): un permiso cargado sin horas no guarda sede, y sumaba «Sin
+// sede» a quien marcó todo el período en una sola, que salía mixto. Si la persona
+// no tiene NINGUNA fila con entrada en el período se usan todas, como antes, para
+// que nadie desaparezca del resumen. Eso queda para un híbrido o un remoto: a un
+// presencial en ese caso lo resuelve `lugaresConAtribucion` (12 de septiembre de 2026).
 export function lugaresDeTrabajo(turnos: TurnoConSede[]): Lugar[] {
+  const conEntrada = turnos.filter(t => t.entrada !== null);
   const sedes = new Set<string>();
   let sinSede = false;
-  for (const t of turnos) {
+  for (const t of conEntrada.length > 0 ? conEntrada : turnos) {
     if (t.sedeId === null) sinSede = true;
     else sedes.add(t.sedeId);
     // La sede de salida suma un lugar solo cuando se CONOCE: una salida sin sede
@@ -44,6 +56,31 @@ export function lugaresDeTrabajo(turnos: TurnoConSede[]): Lugar[] {
   }
   const orden: Lugar[] = [...sedes].sort();
   return sinSede ? [...orden, null] : orden;
+}
+
+// Los lugares de una persona con la sede que se le atribuye al leer, y cuáles de
+// ellos no probó ninguna marca (decisión del dueño, 12 de septiembre de 2026).
+//
+// Un lugar atribuido cuenta en la línea de su sede, no en una aparte, y hace mixto a
+// quien tenga más de una sede entre lo probado y lo atribuido. Va `porDefecto` solo
+// el lugar que no probó ninguna marca, ni de entrada ni de salida: quien marcó una
+// vez en Sur y el resto sin ubicación trabajó en Sur, y eso no es una suposición.
+//
+// Un presencial sin NINGUNA fila con hora de entrada en el período (por ejemplo, solo
+// un permiso cargado sin horas) no tiene marcación a la cual atribuirle la sede, y
+// salía «Sin sede» con su propia línea en el resumen. Cuenta en su sede por defecto,
+// aunque alguna de esas filas conserve una sede: sin hora de entrada no es una
+// marcación (revisión del 12 de septiembre de 2026). Sin sedes activas en la empresa
+// queda «Sin sede». Quien no tiene ninguna fila no marcó, y sigue sin lugares.
+export function lugaresConAtribucion(filas: FilaConLugar[], persona: PersonaParaAtribuir): { lugares: Lugar[]; porDefecto: string[] } {
+  if (persona.modalidad === 'PRESENCIAL' && filas.length > 0 && filas.every(f => f.entrada === null)) {
+    const id = persona.sedePorDefecto;
+    return id === null ? { lugares: [null], porDefecto: [] } : { lugares: [id], porDefecto: [id] };
+  }
+  const deEntrada = lugaresDeEntrada(filas, persona);
+  const lugares = lugaresDeTrabajo(filas.map((f, i) => ({ ...f, sedeId: deEntrada[i].id })));
+  const probados = new Set(lugaresDeTrabajo(filas));
+  return { lugares, porDefecto: lugares.filter((l): l is string => l !== null && !probados.has(l)) };
 }
 
 // Sin filtro aparece todo el mundo, igual que siempre. Con filtro, quien trabajó
@@ -105,13 +142,14 @@ export function resumirPorSede<K extends string>(
   return { porSede: enOrdenDeLectura(lineas), mixtos, todas };
 }
 
-export type LugarNombrado = { id: Lugar; nombre: string | null };
+export type LugarNombrado = { id: Lugar; nombre: string | null; porDefecto: boolean };
 
 // Los lugares de una fila, con nombre y en orden de lectura. «Sin sede» lo
-// escribe la pantalla: aquí es `id: null`.
-export function nombrarLugares(lugares: Lugar[], sedes: { id: string; nombre: string }[]): LugarNombrado[] {
+// escribe la pantalla: aquí es `id: null`. `porDefecto` le dice que escriba «por
+// defecto» junto a una sede que solo existe por atribución.
+export function nombrarLugares(lugares: Lugar[], sedes: { id: string; nombre: string }[], porDefecto: string[]): LugarNombrado[] {
   const nombreDe = buscadorDeNombres(sedes);
-  return enOrdenDeLectura(lugares.map(id => ({ id, nombre: nombreDe(id) })));
+  return enOrdenDeLectura(lugares.map(id => ({ id, nombre: nombreDe(id), porDefecto: id !== null && porDefecto.includes(id) })));
 }
 
 function buscadorDeNombres(sedes: { id: string; nombre: string }[]): (lugar: Lugar) => string | null {
