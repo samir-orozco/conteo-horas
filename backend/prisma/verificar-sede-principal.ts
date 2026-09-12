@@ -367,7 +367,7 @@ async function main() {
   comprobar('descanso · PUT /registros/jornada con las claves de antes: 400 FORMATO_VIEJO, y no toca la jornada',
     '400 FORMATO_VIEJO · 08:00 - sin sede/sin sede', `${vieja.estado} ${vieja.cuerpo?.codigo} · ${await filasDelEditado()}`);
   const nueva = await editarJornada({
-    entrada: '08:00', descanso: { salida: '09:00', regreso: '09:15' }, almuerzo: { salida: '12:00', regreso: '13:00' }, salida: '17:00',
+    entrada: '08:00', descansos: [{ salida: '09:00', regreso: '09:15' }], almuerzo: { salida: '12:00', regreso: '13:00' }, salida: '17:00',
   });
   comprobar('descanso · PUT /registros/jornada con el descanso y el almuerzo: 200, tres filas y ninguna sede escrita, ni de entrada ni de salida',
     '200 · 08:00 D sin sede/sin sede | 09:15 A sin sede/sin sede | 13:00 - sin sede/sin sede', `${nueva.estado} · ${await filasDelEditado()}`);

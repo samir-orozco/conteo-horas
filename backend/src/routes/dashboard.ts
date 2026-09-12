@@ -5,18 +5,11 @@ import { prisma } from '../prisma';
 import { calcularHorasTrabajadas, descontarAlmuerzo } from '../utils/horasColombiana';
 import { jornadaVigente, tiposVigentes } from '../utils/vigencias';
 import { franjaDelDia, HorarioConFranjas, construirExtraConfig, excusaLaTardanza } from '../utils/tardanzas';
+import { almuerzoDelRegistro, cobroDePausas } from '../utils/liquidarRegistros';
 
 const TZ = 'America/Bogota';
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
-
-// Minutos de almuerzo del registro: solo si la franja de ese día lo aplica.
-function almuerzoDelRegistro(horario: HorarioConFranjas | null | undefined, fecha: Date): number {
-  if (!horario || !horario.almuerzoMin) return 0;
-  const z = toZonedTime(fecha, TZ);
-  const franja = franjaDelDia(horario, DIAS[z.getDay()]);
-  return franja && franja.tieneAlmuerzo ? horario.almuerzoMin : 0;
-}
 
 function claveDia(d: Date): string {
   const z = toZonedTime(d, TZ);
@@ -248,11 +241,13 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     let minutosExtraMes = 0;
     let minutosTrabajadosSemana = 0;
     const claveSemanaActual = semanaKey(ahora);
-    // Horario de cada colaborador (para descontar almuerzo) + control 1 vez/día
+    // Horario de cada colaborador, para descontar el almuerzo. Lo que ya se cobró de cada
+    // día lo lleva `cobroDePausas`, la misma cuenta de la liquidación: la copia de aquí
+    // daba el día por cobrado con la primera fila que pagara algo (12 de septiembre de 2026).
     const horarioPorCol = new Map<string, HorarioConFranjas | null>(
       colaboradores.map(c => [c.id, (c as any).horario as HorarioConFranjas | null])
     );
-    const diasConAlmuerzo = new Set<string>();
+    const cobrarAlmuerzo = cobroDePausas();
 
     // Modo de horas extra (mismo criterio que el reporte de liquidación)
     const cfgModo = await prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } });
@@ -272,17 +267,10 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         const { resultado, minutosOrdinariosTrabajados } = calcularHorasTrabajadas(
           r.entrada, r.salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfigPorCol.get(r.colaboradorId)
         );
-        let ordDelRegistro = minutosOrdinariosTrabajados;
         const claveColDia = `${r.colaboradorId}|${claveDia(r.entrada)}`;
         const almuerzo = almuerzoDelRegistro(horarioPorCol.get(r.colaboradorId), r.entrada);
-        if (almuerzo > 0 && !diasConAlmuerzo.has(claveColDia)) {
-          const { descontado } = descontarAlmuerzo(resultado, almuerzo);
-          if (descontado > 0) {
-            diasConAlmuerzo.add(claveColDia);
-            ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
-          }
-        }
-        minutosOrdSemana += ordDelRegistro;
+        const almuerzoCobrado = cobrarAlmuerzo(claveColDia, almuerzo, m => descontarAlmuerzo(resultado, m));
+        minutosOrdSemana += Math.max(0, minutosOrdinariosTrabajados - almuerzoCobrado);
         for (const p of resultado) {
           if (CODIGOS_EXTRA.has(p.codigo)) minutosExtraMes += p.minutos;
           if (esSemanaActual) minutosTrabajadosSemana += p.minutos;

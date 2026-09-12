@@ -29,6 +29,17 @@ export function minutosDe(hhmm: string): number {
   return h * 60 + m;
 }
 
+// Duración de una franja o de una ventana en minutos, contemplando que cruce
+// medianoche. Vive aquí, junto a `minutosDe`, desde el 12 de septiembre de 2026:
+// estaba en saldoTiempo.ts y copiada en jornada.ts, y los descansos la necesitan
+// sin importar saldoTiempo, que ya importa de este módulo (CLAUDE.md §9.3).
+// saldoTiempo.ts la reexporta.
+export function duracionFranjaMin(horaEntrada: string, horaSalida: string): number {
+  const ini = minutosDe(horaEntrada);
+  const fin = minutosDe(horaSalida);
+  return fin > ini ? fin - ini : 24 * 60 - ini + fin;
+}
+
 // Franja del horario que aplica a un día de la semana (ej. "SABADO"), o null
 // si ese día no se trabaja. Con esto un horario cubre variaciones como
 // L-V 08:00-17:00 + Sáb 08:00-12:00.

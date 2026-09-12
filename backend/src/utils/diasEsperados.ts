@@ -1,6 +1,7 @@
 import { toZonedTime } from 'date-fns-tz';
 import { franjaDelDia, DIAS_SEMANA, HorarioConFranjas } from './tardanzas';
 import { duracionFranjaMin } from './saldoTiempo';
+import { leerDescansos, ventanasEnOrden, minutosDeLaUnion, escribirDescansos } from './descansos';
 
 const TZ = 'America/Bogota';
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
@@ -27,8 +28,9 @@ export type DiaEsperadoCalculado = {
   ajustaEntrada: boolean; // si esa tolerancia vale también para llegar temprano
   almuerzoInicio: string | null; // ventana de almuerzo de ESE día ("12:00")
   almuerzoFin: string | null;
-  descansoInicio: string | null; // ventana del descanso no remunerado de ESE día ("09:00")
-  descansoFin: string | null;
+  // Los descansos no remunerados de ESE día, congelados como texto con el formato de
+  // utils/descansos.ts. NULL = sin descansos (12 de septiembre de 2026).
+  descansos: string | null;
 };
 
 // Medianoche de Bogotá del día al que pertenece un instante.
@@ -77,8 +79,7 @@ export function calcularDiasEsperados(
         ajustaEntrada: horario?.ajustaEntrada ?? false,
         almuerzoInicio: null,
         almuerzoFin: null,
-        descansoInicio: null,
-        descansoFin: null,
+        descansos: null,
       });
     } else {
       // La ventana manda sobre los minutos sueltos: si el admin dijo "de 12:00 a
@@ -90,11 +91,13 @@ export function calcularDiasEsperados(
       const almuerzo = (franja as any).tieneAlmuerzo
         ? (conVentana ? duracionFranjaMin(ini!, fin!) : (horario!.almuerzoMin ?? 0))
         : 0;
-      // El descanso no remunerado: su ventana, si viene entera, se congela y sale
-      // de lo exigido. No depende de `tieneAlmuerzo` —el sábado corto sin almuerzo
-      // puede tener su descanso— ni tiene minutos fijos de respaldo.
-      const conDescanso = !!franja.descansoInicio && !!franja.descansoFin;
-      const descanso = conDescanso ? duracionFranjaMin(franja.descansoInicio!, franja.descansoFin!) : 0;
+      // Los descansos no remunerados: la lista se congela en el orden de la jornada
+      // y la UNIÓN de sus ventanas sale de lo exigido. No dependen de `tieneAlmuerzo`
+      // (el sábado corto sin almuerzo puede tener descansos) ni tienen minutos fijos
+      // de respaldo. Una lista rota en la franja no revienta: el día queda sin
+      // descansos, como `leerDescansos` promete (12 de septiembre de 2026).
+      const ventanas = ventanasEnOrden(franja.horaEntrada, leerDescansos(franja.descansos));
+      const descanso = minutosDeLaUnion(franja.horaEntrada, ventanas);
       const bruto = duracionFranjaMin((franja as any).horaEntrada, (franja as any).horaSalida);
       salida.push({
         fecha: cursor,
@@ -111,8 +114,7 @@ export function calcularDiasEsperados(
         // minutos que la ventana venía a reemplazar.
         almuerzoInicio: (franja as any).tieneAlmuerzo && conVentana ? ini : null,
         almuerzoFin: (franja as any).tieneAlmuerzo && conVentana ? fin : null,
-        descansoInicio: conDescanso ? franja.descansoInicio : null,
-        descansoFin: conDescanso ? franja.descansoFin : null,
+        descansos: escribirDescansos(ventanas),
       });
     }
 

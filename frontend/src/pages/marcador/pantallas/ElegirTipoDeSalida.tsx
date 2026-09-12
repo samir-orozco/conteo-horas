@@ -2,7 +2,8 @@ import { UtensilsCrossed, Coffee, LogOut } from 'lucide-react';
 
 type Ventana = { inicio: string; fin: string };
 type Props = {
-  // Cada pausa llega solo si hoy se puede tomar: con ventana y sin marcar todavía.
+  // Cada pausa llega solo si hoy se puede tomar: con ventana y sin marcar todavía. El
+  // descanso es el que toca a esta hora, que el servidor elige entre los pendientes.
   almuerzo: Ventana | null;
   descanso: Ventana | null;
   onAlmuerzo: () => void;
@@ -51,8 +52,11 @@ export default function ElegirTipoDeSalida({ almuerzo, descanso, onAlmuerzo, onD
             >
               <Coffee size={20} /> Salgo a mi descanso
             </button>
+            {/* A cuál descanso se anota lo decide el servidor por la hora (12 de septiembre
+                de 2026): fuera de su ventana puede ser el de la tarde. «Tu descanso va de
+                15:00 a 15:10» dicho a las 10:00 es falso; esto es lo que queda anotado. */}
             <p className="text-xs text-white/40 mt-2">
-              Tu descanso va de <b className="text-white/70">{descanso.inicio}</b> a <b className="text-white/70">{descanso.fin}</b>.
+              Se anota como tu descanso de <b className="text-white/70">{descanso.inicio}</b> a <b className="text-white/70">{descanso.fin}</b>.
               Vuelves y marcas tu regreso.
             </p>
           </>

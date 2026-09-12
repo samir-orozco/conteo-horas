@@ -25,9 +25,10 @@ import { minutosDe } from './tardanzas';
 // minutos fijos). Eso es lo que mantiene quietos los reportes ya emitidos: los
 // días materializados antes de esta función no tienen ventana.
 //
-// El DESCANSO NO REMUNERADO es una segunda pausa con la misma regla de fondo y su
-// propia ventana. Lo único que no hereda son los minutos fijos: nace con ventana,
-// así que sin ella no hay descanso y no se descuenta nada.
+// Los DESCANSOS NO REMUNERADOS usan la misma regla de fondo, cada uno con su
+// ventana, y viven en utils/descansos.ts desde el 12 de septiembre de 2026, cuando
+// el día pasó a tener varios. De aquí toman `solape`, `instantesDe`, `estaDentroDe`
+// y `finDeLaVentanaDe`, para no medir de otra manera.
 
 const MS_MIN = 60_000;
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
@@ -39,34 +40,28 @@ export type DiaParaAlmuerzo = {
   almuerzoFin: string | null; // "13:00"
 };
 
-export type DiaParaDescanso = {
-  fecha: Date; // medianoche de Bogotá
-  descansoInicio: string | null; // "09:00"
-  descansoFin: string | null; // "09:15"
-};
-
-// Una ventana del día, sea la del almuerzo o la del descanso. Cuánto se descuenta
+// Una ventana del día, sea la del almuerzo o la de un descanso. Cuánto se descuenta
 // por solape, si alguien está dentro y cuándo se acaba se responden igual para
-// las dos pausas; lo único que cambia es de qué campos sale la ventana.
+// todas las pausas; lo único que cambia es de dónde sale la ventana.
 export type VentanaDelDia = { fecha: Date; inicio: string | null; fin: string | null };
 
 export const ventanaDeAlmuerzo = (dia: Pick<DiaParaAlmuerzo, 'fecha' | 'almuerzoInicio' | 'almuerzoFin'>): VentanaDelDia =>
   ({ fecha: dia.fecha, inicio: dia.almuerzoInicio, fin: dia.almuerzoFin });
 
-export const ventanaDeDescanso = (dia: DiaParaDescanso): VentanaDelDia =>
-  ({ fecha: dia.fecha, inicio: dia.descansoInicio, fin: dia.descansoFin });
-
 export type TramoTrabajado = { entrada: Date; salida: Date };
 
-// Minutos en que dos intervalos se solapan.
-function solape(aIni: number, aFin: number, bIni: number, bFin: number): number {
+// Minutos en que dos intervalos se solapan. Se exporta desde el 12 de septiembre de
+// 2026 porque los descansos miden igual: una copia daría, tarde o temprano, otro
+// redondeo.
+export function solape(aIni: number, aFin: number, bIni: number, bFin: number): number {
   return Math.max(0, Math.min(aFin, bFin) - Math.max(aIni, bIni)) / MS_MIN;
 }
 
 // La ventana anclada a su día, en milisegundos. La que cruza medianoche —el turno
 // nocturno que almuerza o descansa en la madrugada— termina al día siguiente. Vive
-// en un solo sitio: estaba copiada en tres, y las tres tenían que coincidir.
-function instantesDe(v: VentanaDelDia): { inicio: number; fin: number } {
+// en un solo sitio: estaba copiada en tres, y las tres tenían que coincidir. Se
+// exporta para los descansos (utils/descansos.ts), por lo mismo.
+export function instantesDe(v: VentanaDelDia): { inicio: number; fin: number } {
   const inicio = v.fecha.getTime() + minutosDe(v.inicio!) * MS_MIN;
   let fin = v.fecha.getTime() + minutosDe(v.fin!) * MS_MIN;
   if (fin <= inicio) fin += UN_DIA_MS;
@@ -122,17 +117,10 @@ export function minutosAlmuerzoADescontar(
   return Math.round(minutosEnVentana(tramos, dia)!);
 }
 
-// Cuánto descanso no remunerado se le descuenta a alguien en un día: la regla del
-// almuerzo con ventana, redondeada igual. Sin ventana no hay descanso.
-export function minutosDescansoADescontar(tramos: TramoTrabajado[], dia: DiaParaDescanso): number {
-  if (tramos.length === 0) return 0;
-  return Math.round(minutosEnLaVentana(tramos, ventanaDeDescanso(dia)) ?? 0);
-}
-
 // ¿La persona está DENTRO de la ventana en este instante?
 //
-// No decide si puede marcar la pausa —eso es `puedeSalirAAlmorzar` o
-// `puedeSalirADescanso`, que a propósito no miran la hora— sino cómo se le
+// No decide si puede marcar la pausa —eso es `puedeSalirAAlmorzar`, que a
+// propósito no mira la hora, o `descansoQueToca`— sino cómo se le
 // ofrece. Estando dentro, el botón grande del kiosco lo dice de frente en vez de
 // esconderlo detrás de "Registrar Salida", que era algo que había que adivinar.
 //
@@ -154,10 +142,6 @@ export function dentroDeLaVentana(
   dia: Pick<DiaParaAlmuerzo, 'fecha' | 'almuerzoInicio' | 'almuerzoFin'>,
 ): boolean {
   return estaDentroDe(ahora, ventanaDeAlmuerzo(dia));
-}
-
-export function dentroDelDescanso(ahora: Date, dia: DiaParaDescanso): boolean {
-  return estaDentroDe(ahora, ventanaDeDescanso(dia));
 }
 
 // Instante en que se acaba la ventana de ESE turno.
@@ -193,11 +177,4 @@ export function puedeSalirAAlmorzar(
   yaAlmorzo: boolean,
 ): boolean {
   return puedeSalirA(dia && { inicio: dia.almuerzoInicio, fin: dia.almuerzoFin }, yaAlmorzo);
-}
-
-export function puedeSalirADescanso(
-  dia: { descansoInicio: string | null; descansoFin: string | null } | null,
-  yaDescanso: boolean,
-): boolean {
-  return puedeSalirA(dia && { inicio: dia.descansoInicio, fin: dia.descansoFin }, yaDescanso);
 }

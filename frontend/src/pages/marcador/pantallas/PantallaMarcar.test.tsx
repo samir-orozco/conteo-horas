@@ -132,4 +132,17 @@ describe('PantallaMarcar · las pausas', () => {
     expect(onRegresoOlvidado).toHaveBeenCalled();
     expect(marcar).not.toHaveBeenCalled();
   });
+
+  // Deshacer el despliegue de los descansos (12 de septiembre de 2026) deja pantallas
+  // nuevas contra un servidor anterior, que no manda nada del descanso. Ahí el kiosco
+  // tiene que seguir marcando: el botón se pinta y la salida va sin pausa.
+  it('un Estado sin los campos del descanso pinta el botón y marca sin pausa', () => {
+    const sinDescanso: Estado = {
+      dentroAhora: true, entradaAbierta: { entrada: '2026-09-01T13:00:00.000Z' }, turnoCerradoHoy: null,
+      almuerzo: null, enAlmuerzo: false, salidaAlmuerzo: null, regresoSugerido: null,
+    };
+    const { marcar } = montarCon(sinDescanso);
+    fireEvent.click(screen.getByRole('button', { name: /registrar salida/i }));
+    expect(marcar).toHaveBeenCalledWith();
+  });
 });

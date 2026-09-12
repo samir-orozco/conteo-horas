@@ -1,24 +1,19 @@
 import { FastifyInstance } from 'fastify';
-import { toZonedTime } from 'date-fns-tz';
-import { getISOWeek, getISOWeekYear } from 'date-fns';
 import { prisma } from '../prisma';
-import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo, descontarAlmuerzoOrdinarias } from '../utils/horasColombiana';
-import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
-import { calcularTardanzas, franjaDelDia, DIAS_SEMANA, HorarioConFranjas, construirExtraConfig } from '../utils/tardanzas';
+import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
+import { calcularTardanzas, HorarioConFranjas, construirExtraConfig } from '../utils/tardanzas';
 import { rangoReporte } from '../utils/fechas';
-import { calcularValorHora, CODIGOS_EXTRA } from '../utils/horasColombiana';
+import { calcularValorHora } from '../utils/horasColombiana';
 import {
   CLAVE_PERMISOS_REMUNERADOS, parsearPoliticaPermisos, calcularHorasEsperadas, armarSaldo,
 } from '../utils/saldoTiempo';
-import { combinarDiasEsperados, type DiaEsperadoCalculado } from '../utils/diasEsperados';
-import { ajustarAJornada } from '../utils/ajusteJornada';
-import { minutosAlmuerzoADescontar, minutosDescansoADescontar } from '../utils/almuerzo';
+import { combinarDiasEsperados } from '../utils/diasEsperados';
 import {
   lugaresConAtribucion, apareceConFiltro, resumirPorSede, nombrarLugares, type Lugar, type SedeDelResumen,
 } from '../utils/sedesDeReporte';
 import { sedesPorDefecto } from '../utils/sedesDeEmpresa';
+import { liquidarRegistros } from '../utils/liquidarRegistros';
 
-const TZ = 'America/Bogota';
 
 // Lo que devuelven los dos resúmenes que se filtran por sede. El filtro decide
 // QUIÉN aparece; el resumen se arma siempre con todas las filas, así que no cambia
@@ -40,25 +35,6 @@ function responderPorSede<K extends string, F extends { lugares: Lugar[]; porDef
       .map(({ lugares, porDefecto, ...fila }) => ({ ...fila, sedes: nombrarLugares(lugares, sedes, porDefecto) })),
     resumen: resumirPorSede(filas, claves, sedes),
   };
-}
-
-function semanaKey(fecha: Date): string {
-  const z = toZonedTime(fecha, TZ);
-  return `${getISOWeekYear(z)}-W${String(getISOWeek(z)).padStart(2,'0')}`;
-}
-
-function claveDiaBogota(d: Date): string {
-  const z = toZonedTime(d, TZ);
-  return `${z.getFullYear()}-${z.getMonth()}-${z.getDate()}`;
-}
-
-// Minutos de almuerzo a descontar de un registro: solo si el horario tiene
-// almuerzo y la franja de ESE día lo aplica (ej. el sábado corto no).
-function almuerzoDelRegistro(horario: HorarioConFranjas | null | undefined, fecha: Date): number {
-  if (!horario || !horario.almuerzoMin) return 0;
-  const z = toZonedTime(fecha, TZ);
-  const franja = franjaDelDia(horario, DIAS_SEMANA[z.getDay()]);
-  return franja && franja.tieneAlmuerzo ? horario.almuerzoMin : 0;
 }
 
 function agrupar<T extends { colaboradorId: string }>(filas: T[]): Map<string, T[]> {
@@ -88,160 +64,6 @@ function filasParaLugares(empresaId: string, desdeF: Date, finExclusivo: Date) {
     where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
     select: { colaboradorId: true, fecha: true, entrada: true, sedeId: true, sedeSalidaId: true },
   });
-}
-
-type DetalleRegistro = {
-  // El id viaja para que el desglose pueda pedir las fotos de verificación con
-  // `GET /registros/:id/fotos`. Sin él, el frontend tenía la fila pero no sabía
-  // a qué marcación pertenecía.
-  id: string;
-  fecha: Date; entrada: Date; salida: Date;
-  filas: { codigo: string; nombre: string; horas: number; subtotal: number }[];
-};
-
-// Núcleo del cálculo de liquidación de UN colaborador en un período: recorre sus
-// registros agrupados por semana ISO (el tope de 42h/sem se resetea cada semana),
-// aplica el motor de horas colombianas registro por registro, y opcionalmente
-// arma el desglose día a día (para el drill-down de "Extras y recargos").
-function liquidarRegistros(
-  registros: { id: string; fecha: Date; entrada: Date | null; salida: Date | null }[],
-  horario: HorarioConFranjas | null,
-  extraConfig: ReturnType<typeof construirExtraConfig>,
-  festivosDates: Date[],
-  tiposHoraTodos: any[],
-  jornadas: any[],
-  salarioMensual: number,
-  horasMes: number,
-  incluirDetalle: boolean,
-  // Días materializados del rango: de ahí sale la hora de salida programada para
-  // la tolerancia. Si no llegan, la tolerancia sencillamente no se aplica.
-  diasEsperados: DiaEsperadoCalculado[] = [],
-) {
-  const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
-
-  // Las pausas se resuelven por DÍA, no por registro: la regla mira todos los
-  // tramos del día a la vez para saber cuánto de cada ventana estuvo la persona
-  // marcada. Se precalculan aquí y luego se descuentan una sola vez.
-  const almuerzoPorDia = new Map<string, number>();
-  const descansoPorDia = new Map<string, number>();
-  const tramosPorDia = new Map<string, { entrada: Date; salida: Date }[]>();
-  for (const r of registros) {
-    if (!r.entrada || !r.salida) continue;
-    const k = claveDiaBogota(r.entrada);
-    if (!tramosPorDia.has(k)) tramosPorDia.set(k, []);
-    // Los tramos van YA AJUSTADOS por la tolerancia de salida, igual que los que
-    // entran al motor de horas más abajo. Con los crudos, el solape del almuerzo
-    // se mediría sobre minutos que la liquidación ya recortó: quien sale 12:10
-    // teniendo salida programada a las 12:00 y tolerancia de 15 pagaría 10
-    // minutos de almuerzo de un tiempo que no se le está contando.
-    const d = diaPorClave.get(k);
-    const t = d ? ajustarAJornada(r.entrada, r.salida, d) : { entrada: r.entrada, salida: r.salida };
-    tramosPorDia.get(k)!.push({ entrada: t.entrada, salida: t.salida });
-  }
-  for (const [k, tramos] of tramosPorDia) {
-    const d = diaPorClave.get(k);
-    if (!d) continue;
-    almuerzoPorDia.set(k, minutosAlmuerzoADescontar(tramos, d));
-    descansoPorDia.set(k, minutosDescansoADescontar(tramos, d));
-  }
-  const porSemana = new Map<string, typeof registros>();
-  for (const reg of registros) {
-    const key = semanaKey(reg.fecha);
-    if (!porSemana.has(key)) porSemana.set(key, []);
-    porSemana.get(key)!.push(reg);
-  }
-
-  const acumulado: Record<string, { codigo: string; nombre: string; recargo: number; minutos: number }> = {};
-  const diasConAlmuerzo = new Set<string>();
-  const diasConDescanso = new Set<string>();
-  const detalleRegistros: DetalleRegistro[] = [];
-
-  for (const [, regsDeUnaSemana] of porSemana) {
-    const jornadaSemanal = jornadaVigente(regsDeUnaSemana[0].fecha, jornadas);
-    let minutosOrdSemana = 0;
-    for (const registro of regsDeUnaSemana) {
-      if (!registro.entrada || !registro.salida) continue;
-      const claveDia = claveDiaBogota(registro.entrada);
-
-      // Tolerancia de jornada: los minutos sueltos que alguien trabaja fuera de
-      // su horario sin orden previa no se pagan como extra. Se aplica ANTES del
-      // motor de horas para que la clasificación (ordinaria/extra/nocturna) se
-      // haga sobre la jornada ya ajustada.
-      const diaDelRegistro = diaPorClave.get(claveDia);
-      const { entrada, salida } = diaDelRegistro
-        ? ajustarAJornada(registro.entrada, registro.salida, diaDelRegistro)
-        : { entrada: registro.entrada, salida: registro.salida };
-
-      const tiposDelDia = tiposVigentes(registro.fecha, tiposHoraTodos);
-      const { resultado, minutosOrdinariosTrabajados } = calcularHorasTrabajadas(
-        entrada, salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfig
-      );
-      let ordDelRegistro = minutosOrdinariosTrabajados;
-      // Sin fila del día no hay ventana ni almuerzo congelado: se cae al
-      // horario vigente, igual que antes de existir `DiaEsperado`.
-      const conVentana = !!diaDelRegistro?.almuerzoInicio && !!diaDelRegistro?.almuerzoFin;
-      const almuerzo = diaDelRegistro
-        ? (almuerzoPorDia.get(claveDia) ?? 0)
-        : almuerzoDelRegistro(horario, registro.entrada);
-      if (almuerzo > 0 && !diasConAlmuerzo.has(claveDia)) {
-        const { descontado } = conVentana
-          ? descontarAlmuerzoOrdinarias(resultado, almuerzo)
-          : descontarAlmuerzo(resultado, almuerzo);
-        if (descontado > 0) {
-          diasConAlmuerzo.add(claveDia);
-          ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
-        }
-      }
-      // El descanso no remunerado se descuenta como el almuerzo con ventana: de
-      // las horas ordinarias y una sola vez por día. Sin fila del día no hay
-      // descanso, porque nace con ventana y no tiene minutos fijos de respaldo.
-      const descanso = descansoPorDia.get(claveDia) ?? 0;
-      if (descanso > 0 && !diasConDescanso.has(claveDia)) {
-        const { descontado } = descontarAlmuerzoOrdinarias(resultado, descanso);
-        if (descontado > 0) {
-          diasConDescanso.add(claveDia);
-          ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
-        }
-      }
-      minutosOrdSemana += ordDelRegistro;
-
-      if (incluirDetalle) {
-        // Solo lo que genera pago adicional (excluye HOD, que ya está en el salario)
-        const filas = calcularLiquidacion(salarioMensual, horasMes, resultado)
-          .filter(l => l.codigo !== 'HOD' && l.horas > 0)
-          .map(l => ({ codigo: l.codigo, nombre: l.nombre, horas: l.horas, subtotal: l.subtotal }));
-        if (filas.length > 0) {
-          detalleRegistros.push({ id: registro.id, fecha: registro.fecha, entrada: registro.entrada, salida: registro.salida, filas });
-        }
-      }
-
-      for (const p of resultado) {
-        if (!acumulado[p.codigo]) acumulado[p.codigo] = { ...p };
-        else acumulado[p.codigo].minutos += p.minutos;
-      }
-    }
-  }
-
-  const horasPorTipo = Object.values(acumulado);
-  const liquidacion = calcularLiquidacion(salarioMensual, horasMes, horasPorTipo);
-  const totalAdicional = liquidacion.reduce((s, l) => s + l.subtotal, 0);
-  const totalRecargos = liquidacion.filter(l => !l.esExtra).reduce((s, l) => s + l.subtotal, 0);
-  const totalExtra = liquidacion.filter(l => l.esExtra).reduce((s, l) => s + l.subtotal, 0);
-
-  // Minutos ORDINARIOS del período (ya netos de almuerzo), para comparar contra
-  // las horas que el horario exigía. Se suman los códigos no extra del acumulado
-  // —no el contador semanal interno— porque ese excluye domingos y festivos, y
-  // aquí sí queremos contarlos: si alguien trabajó un domingo, ese tiempo lo
-  // trabajó. Las extra quedan fuera a propósito: se pagan aparte con su recargo.
-  //
-  // Se toman los MINUTOS crudos, no las horas de `liquidacion`: esas vienen
-  // redondeadas a 2 decimales y al multiplicarlas por 60 reaparecen colas de
-  // coma flotante (167.33h → 10039.8 min en vez de 10040).
-  const minutosOrdinarios = horasPorTipo
-    .filter(t => !CODIGOS_EXTRA.has(t.codigo))
-    .reduce((s, t) => s + t.minutos, 0);
-
-  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont: registros.length, detalleRegistros, minutosOrdinarios };
 }
 
 export default async function reporteRoutes(app: FastifyInstance) {
@@ -288,7 +110,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
           fecha: true, programado: true, horaEntrada: true, horaSalida: true,
           toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
           toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
-          descansoInicio: true, descansoFin: true,
+          descansos: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -388,7 +210,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
           toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
-          descansoInicio: true, descansoFin: true,
+          descansos: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -461,7 +283,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
           fecha: true, programado: true, horaEntrada: true, horaSalida: true,
           toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
           toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
-          descansoInicio: true, descansoFin: true,
+          descansos: true,
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -517,7 +339,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
           toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
-          descansoInicio: true, descansoFin: true,
+          descansos: true,
         },
         orderBy: { fecha: 'asc' },
       }),

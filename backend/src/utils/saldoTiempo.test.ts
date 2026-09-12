@@ -238,10 +238,40 @@ describe('calcularHorasEsperadas — novedades de parte del día', () => {
     expect(r.minutosEsperados).toBe(180);
   });
 
+  it('una novedad de 14:00 a 16:00 no regala los dos descansos de la tarde', () => {
+    // 07:00-16:00 con descansos de 14:30 a 14:40 y de 15:00 a 15:10 (12 de
+    // septiembre de 2026): de las dos horas de la novedad, 20 minutos no se trabajaban.
+    const conDos = {
+      ...oficina, almuerzoMin: 0,
+      franjas: [{
+        ...oficina.franjas[0], horaEntrada: '07:00', horaSalida: '16:00', almuerzoInicio: '12:00', almuerzoFin: '13:00',
+        descansos: JSON.stringify([{ inicio: '14:30', fin: '14:40' }, { inicio: '15:00', fin: '15:10' }]),
+      }],
+    };
+    const r = esperadas('2026-07-01', '2026-07-01', conDos, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '14:00', '16:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(100);
+    expect(r.minutosEsperados).toBe(540 - 60 - 20 - 100);
+  });
+
+  it('dos descansos congelados que se pisan no excusan dos veces la misma hora', () => {
+    // Guardados, dos descansos no pueden pisarse; congelados, nadie los vuelve a
+    // validar. 14:30-15:00 y 14:45-15:15 son 45 minutos, no 60.
+    const pisados = {
+      ...oficina, almuerzoMin: 0,
+      franjas: [{ ...oficina.franjas[0], descansos: JSON.stringify([{ inicio: '14:30', fin: '15:00' }, { inicio: '14:45', fin: '15:15' }]) }],
+    };
+    const r = esperadas('2026-07-01', '2026-07-01', pisados, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '14:00', '16:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(120 - 45);
+  });
+
   it('tampoco regala el descanso no remunerado que caía dentro del tramo', () => {
     const conDescanso = {
       ...oficina, almuerzoMin: 0,
-      franjas: [{ ...oficina.franjas[0], almuerzoInicio: '12:00', almuerzoFin: '13:00', descansoInicio: '15:30', descansoFin: '15:45' }],
+      franjas: [{ ...oficina.franjas[0], almuerzoInicio: '12:00', almuerzoFin: '13:00', descansos: '[{"inicio":"15:30","fin":"15:45"}]' }],
     };
     // Lo exigido: 9 h − 60 de almuerzo − 15 de descanso = 465. La novedad de
     // 15:00 a 17:00 son 120 min, de los que 15 eran de descanso.
@@ -275,6 +305,23 @@ describe('calcularHorasEsperadas — novedades de parte del día', () => {
       permisos: [parcial('2026-07-01', 'MEDICO', '03:00', '06:00')], politica: paga,
     });
     expect(r.minutosPermisoRemunerado).toBe(180);
+  });
+
+  it('turno nocturno con almuerzo y descanso de madrugada: la novedad de 00:30 a 04:00 excusa 165 minutos, sin regalar ninguna de las dos pausas', () => {
+    // 22:00-06:00 con almuerzo de 01:00 a 01:30 y descanso de 03:00 a 03:15. Las dos
+    // pausas caen en la madrugada del día SIGUIENTE al de la fila, así que solo las resta
+    // su segunda posición. De 00:30 a 04:00 son 210 minutos, de los que 30 eran de
+    // almuerzo y 15 de descanso. Sin la posición del día siguiente del almuerzo excusaría
+    // 195, y sin la de los descansos, 180 (12 de septiembre de 2026).
+    const conPausas = {
+      ...noche,
+      franjas: [{ ...noche.franjas[0], almuerzoInicio: '01:00', almuerzoFin: '01:30', descansos: '[{"inicio":"03:00","fin":"03:15"}]' }],
+    };
+    const r = esperadas('2026-07-01', '2026-07-01', conPausas, {
+      permisos: [parcial('2026-07-01', 'MEDICO', '00:30', '04:00')], politica: paga,
+    });
+    expect(r.minutosPermisoRemunerado).toBe(165);
+    expect(r.minutosEsperados).toBe(480 - 30 - 15 - 165);
   });
 
   it('en una novedad de varios días las horas no significan nada', () => {

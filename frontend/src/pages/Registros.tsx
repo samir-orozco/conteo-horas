@@ -5,8 +5,10 @@ import { es } from 'date-fns/locale';
 import { Plus, Edit2, Trash2, X, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Coffee, Eye, ArrowRight, type LucideIcon } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
-import ModalJornada, { type RegistroEditable } from './registros/ModalJornada';
-import { HORAS_VACIAS, horasDeLaJornada, cuerpoDeLaJornada } from './registros/formJornada';
+import ModalJornada, { type RegistroEditable, type ResumenDePausa } from './registros/ModalJornada';
+import { HORAS_VACIAS, horasDeLaJornada, cuerpoDeLaJornada, type PausaDelFormulario } from './registros/formJornada';
+import { etiquetaDeDescansos, detalleDeDescansos } from './registros/resumenDeDescansos';
+import { MAX_DESCANSOS_POR_FRANJA, MAX_MARCACIONES_POR_JORNADA } from '../lib/descansos';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import MenuFiltros from '../components/MenuFiltros';
 import MenuAcciones from '../components/MenuAcciones';
@@ -53,9 +55,12 @@ type Registro = {
   // El sistema cerró el turno (la persona no marcó salida): la hora es estimada y hay que revisarla
   salidaEstimada?: boolean;
   salidaAlmuerzo?: boolean;
-  // Solo vienen en la jornada que contiene la pausa; en las otras son null.
+  // Solo viene en la jornada que contiene el almuerzo; en las otras es null.
   almuerzo: ResumenDePausa | null;
-  descanso?: ResumenDePausa | null;
+  // Un resumen por cada descanso de ESTA jornada, en su orden (12 de septiembre de
+  // 2026). Lista vacía si el día no tiene descansos o si son de otra jornada.
+  // Opcional: un servidor anterior no la manda, y entonces no hay columna.
+  descansos?: ResumenDePausa[];
   // Opcional a propósito. Durante un despliegue hay una ventana en la que el
   // navegador ya tiene este bundle y el servidor todavía responde el anterior,
   // que no manda este campo. Que falte un dato no puede tumbar la pantalla, así
@@ -64,18 +69,6 @@ type Registro = {
   // La novedad que toca ese día, si la hay. `remunerada` sale del tipo más la
   // política de la empresa, no de un campo guardado.
   novedad: { id: string; tipo: string; aprobado: boolean; remunerada: boolean } | null;
-};
-type ResumenDePausa = {
-  estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
-  ventana: { inicio: string; fin: string } | null;
-  salida: string | null;
-  regreso: string | null;
-  minutos: number | null;      // lo que se tomó de verdad
-  minutosVentana: number | null; // cuánto dura la pausa según el horario
-  minutosDescontados: number;  // lo que le cuesta al día
-  regresoEstimado: boolean;
-  seExcedio: boolean;
-  minutosDeMas: number;
 };
 // Lo que devuelve el servidor cuando rechaza un guardado. `conflicto` solo viene
 // con el código de cruce, y trae la marcación que estorba para poder ofrecerse a
@@ -162,6 +155,37 @@ function CeldaPausa({ p, minutosAqui, enCurso }: { p: ResumenDePausa | null | un
   return <span className="text-xs text-gray-500">No marcó</span>;
 }
 
+// Celda de los descansos no remunerados de una jornada (12 de septiembre de 2026): hasta
+// tres, con una sola etiqueta. Qué se dice lo decide `etiquetaDeDescansos`, con sus
+// pruebas; con uno solo se pinta igual que antes. El detalle de cada uno va en el
+// `title` y en el modal.
+function CeldaDescansos({ descansos, minutosAqui }: { descansos: ResumenDePausa[] | undefined; minutosAqui: number }) {
+  const etiqueta = etiquetaDeDescansos(descansos);
+  const titulo = detalleDeDescansos(descansos);
+  switch (etiqueta.tipo) {
+    case 'UNO':
+    case 'EN_CURSO':
+    case 'NO_VOLVIO':
+      return <span title={titulo}><CeldaPausa p={etiqueta.pausa} minutosAqui={minutosAqui} enCurso="En descanso" /></span>;
+    case 'SIN_MARCAR':
+      return (
+        <span title={titulo} className="text-xs text-gray-500 whitespace-nowrap">
+          {`${etiqueta.faltan} de ${etiqueta.de} sin marcar`}
+        </span>
+      );
+    case 'MARCADOS':
+      // En ámbar si alguno se pasó, igual que un descanso único marcado.
+      return (
+        <span title={titulo} className={`text-xs whitespace-nowrap ${etiqueta.seExcedio ? 'text-amber-700 font-semibold' : 'text-gray-700'}`}>
+          {`${etiqueta.cuantos} · ${enHoras(etiqueta.minutos)}`}
+        </span>
+      );
+    case 'NINGUNO':
+    default:
+      return <CeldaPausa p={null} minutosAqui={0} enCurso="En descanso" />;
+  }
+}
+
 // Celda de sede. Fuera del componente a propósito: definida adentro, React la
 // trataría como un tipo nuevo en cada render.
 //
@@ -193,15 +217,26 @@ function CeldaSede({ r }: { r: Registro }) {
 // turno: sirve para saber si se tomó a tiempo y en su medida, no para decir que
 // la persona se fue. Fuera del componente por la misma razón que `CeldaSede`:
 // definida adentro, cada tecla la volvería a montar y el campo perdería el foco.
-function BloqueDePausa({ titulo, Icono, salida, regreso, onSalida, onRegreso, nota }: {
+function BloqueDePausa({ titulo, Icono, salida, regreso, onSalida, onRegreso, nota, onQuitar }: {
   titulo: string; Icono: LucideIcon; salida: string; regreso: string;
-  onSalida: (v: string) => void; onRegreso: (v: string) => void; nota: string;
+  onSalida: (v: string) => void; onRegreso: (v: string) => void; nota?: string;
+  // Solo los descansos se quitan con un botón, porque son una lista (12 de septiembre de
+  // 2026). El almuerzo se quita borrando sus dos horas, como siempre.
+  onQuitar?: () => void;
 }) {
   return (
     <div className="border border-gray-200 rounded-xl p-3">
-      <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
-        <Icono size={13} /> {titulo}
-      </p>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <p className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
+          <Icono size={13} /> {titulo}
+        </p>
+        {onQuitar && (
+          <button type="button" onClick={onQuitar} aria-label={`Quitar el ${titulo.toLowerCase()}`}
+            className="text-[11px] font-semibold text-red-500 hover:text-red-600 underline underline-offset-2">
+            Quitar
+          </button>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Salió</label>
@@ -216,7 +251,7 @@ function BloqueDePausa({ titulo, Icono, salida, regreso, onSalida, onRegreso, no
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
         </div>
       </div>
-      <p className="text-[11px] text-gray-500 mt-2">{nota}</p>
+      {nota && <p className="text-[11px] text-gray-500 mt-2">{nota}</p>}
     </div>
   );
 }
@@ -354,6 +389,10 @@ export default function Registros() {
     setModal(true);
   };
 
+  // Un descanso del editor de la jornada, por su posición en la lista.
+  const cambiarDescanso = (i: number, cambio: Partial<PausaDelFormulario>) =>
+    setForm(p => ({ ...p, descansos: p.descansos.map((d, j) => (j === i ? { ...d, ...cambio } : d)) }));
+
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorGuardar(null);
@@ -483,8 +522,8 @@ export default function Registros() {
   // ventana horaria. La mayoría de horarios hoy dicen "descontar almuerzo: sí,
   // 60 min" sin decir de qué hora a qué hora: exigir la ventana escondería la
   // columna justo donde el descuento es invisible.
-  // La de Descanso, solo cuando alguna jornada del rango tiene uno: el descanso
-  // no remunerado siempre tiene horario, y en una empresa que no lo usa sería
+  // La de Descansos, solo cuando alguna jornada del rango trae alguno: los descansos
+  // no remunerados siempre tienen horario, y en una empresa que no los usa sería
   // una columna vacía en cada fila.
   // La columna de sede aparece con más de una sede activa en la empresa, como en los
   // reportes, o con alguna sede probada en las filas (`muestraColumnaSede`). En una
@@ -493,7 +532,7 @@ export default function Registros() {
   const haySedes = muestraColumnaSede(registros, sedes);
   const opcionesSede = opcionesDeSede(sedes, registros);
   const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.minutosAlmuerzoAqui > 0));
-  const hayDescanso = registros.some(r => r.descanso && r.descanso.estado !== 'SIN_VENTANA');
+  const hayDescanso = registros.some(r => (r.descansos ?? []).length > 0);
 
   const fmtHora = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : '-';
 
@@ -557,7 +596,7 @@ export default function Registros() {
               <th className="px-4 py-3 text-center">Entrada</th>
               <th className="px-4 py-3 text-center">Salida</th>
               {hayAlmuerzo && <th className="px-4 py-3 text-center">Almuerzo</th>}
-              {hayDescanso && <th className="px-4 py-3 text-center">Descanso</th>}
+              {hayDescanso && <th className="px-4 py-3 text-center">Descansos</th>}
               <th className="px-4 py-3 text-center">Llegada</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Duración</th>
               <th className="px-4 py-3 text-center hidden md:table-cell">Tipo</th>
@@ -588,7 +627,7 @@ export default function Registros() {
                 )}
                 {hayDescanso && (
                   <td className="px-4 py-3 text-center">
-                    <CeldaPausa p={r.descanso} minutosAqui={r.minutosDescansoAqui ?? 0} enCurso="En descanso" />
+                    <CeldaDescansos descansos={r.descansos} minutosAqui={r.minutosDescansoAqui ?? 0} />
                   </td>
                 )}
                 <td className="px-4 py-3 text-center">
@@ -747,11 +786,28 @@ export default function Registros() {
                     onSalida={v => setForm(p => ({ ...p, almuerzoSalida: v }))}
                     onRegreso={v => setForm(p => ({ ...p, almuerzoRegreso: v }))}
                     nota="Vacío si ese día no marcó almuerzo. Si borras las dos horas, la jornada queda sin almuerzo." />
-                  <BloqueDePausa titulo="Descanso no remunerado" Icono={Coffee}
-                    salida={form.descansoSalida} regreso={form.descansoRegreso}
-                    onSalida={v => setForm(p => ({ ...p, descansoSalida: v }))}
-                    onRegreso={v => setForm(p => ({ ...p, descansoRegreso: v }))}
-                    nota="Vacío si ese día no marcó descanso. No se paga: lo que caiga en su horario se descuenta." />
+                  {/* Los descansos no remunerados, hasta tres, en el orden del formulario
+                      (12 de septiembre de 2026). Cada uno es una marcación más: con el
+                      almuerzo y los tres, la jornada son cinco. A cuál descanso del horario
+                      se anota cada uno lo decide el servidor por la hora. */}
+                  {form.descansos.map((d, i) => (
+                    <BloqueDePausa key={i} titulo={`Descanso ${i + 1}`} Icono={Coffee}
+                      salida={d.salida} regreso={d.regreso}
+                      onSalida={v => cambiarDescanso(i, { salida: v })}
+                      onRegreso={v => cambiarDescanso(i, { regreso: v })}
+                      onQuitar={() => setForm(p => ({ ...p, descansos: p.descansos.filter((_, j) => j !== i) }))} />
+                  ))}
+                  <div className="flex items-start justify-between gap-3">
+                    <button type="button"
+                      onClick={() => setForm(p => ({ ...p, descansos: [...p.descansos, { salida: '', regreso: '' }] }))}
+                      disabled={form.descansos.length >= MAX_DESCANSOS_POR_FRANJA}
+                      className="flex items-center gap-1 text-xs font-semibold text-blue-800 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed shrink-0">
+                      <Plus size={13} /> Agregar descanso
+                    </button>
+                    <p className="text-[11px] text-gray-500 text-right">
+                      No se pagan: lo que caiga en su horario se descuenta.
+                    </p>
+                  </div>
                 </>
               )}
               <div>
@@ -833,13 +889,13 @@ export default function Registros() {
           // Y abre el editor de la JORNADA, no el de la marcación suelta: desde
           // el detalle salía el formulario viejo, con la salida del almuerzo en
           // la casilla de Salida — exactamente lo que se quitó de la tabla.
-          // Solo cae al editor por marcación cuando la jornada tiene más de tres
-          // (entrada, descanso y almuerzo), que es donde el guardado por jornada
-          // tampoco puede representarla.
+          // Solo cae al editor por marcación cuando la jornada tiene más marcaciones de
+          // las que el guardado por jornada puede representar: cinco, la de la entrada
+          // y una por pausa, el almuerzo y hasta tres descansos (12 de septiembre de 2026).
           onEditar={reg => {
             setJornadaId(null);
             const fila = registros.find(f => marcasDe(f).some(m => m.id === reg.id));
-            if (fila && marcasDe(fila).length <= 3) abrirJornada(fila);
+            if (fila && marcasDe(fila).length <= MAX_MARCACIONES_POR_JORNADA) abrirJornada(fila);
             else abrir(reg);
           }}
           // El detalle se cierra al eliminar: si no, queda encima mostrando una

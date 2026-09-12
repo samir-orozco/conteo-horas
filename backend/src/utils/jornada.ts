@@ -1,11 +1,15 @@
 import type { MetodoMarcacion } from '@prisma/client';
 import {
-  minutosAlmuerzoADescontar, minutosDescansoADescontar, minutosEnLaVentana, finDeLaVentanaDe,
-  ventanaDeAlmuerzo, ventanaDeDescanso,
-  type DiaParaAlmuerzo, type DiaParaDescanso, type VentanaDelDia,
+  minutosAlmuerzoADescontar, minutosEnLaVentana, finDeLaVentanaDe, ventanaDeAlmuerzo,
+  type DiaParaAlmuerzo, type VentanaDelDia,
 } from './almuerzo';
 import { ajustarAJornada, type DiaParaAjuste } from './ajusteJornada';
-import { minutosDe } from './tardanzas';
+import { minutosDe, duracionFranjaMin } from './tardanzas';
+import {
+  minutosDesdeLaEntrada, minutosDescansoADescontar, minutosEnLasVentanas, leerDescansos, ventanasEnOrden,
+  ventanasDeLasSalidas, regresoEsperadoDelDescanso, claveDeVentana, emparejarSalidasDeDescanso,
+  MAX_DESCANSOS_POR_FRANJA, type DiaConDescansos,
+} from './descansos';
 
 // Qué pasó con una pausa de UN día: el almuerzo o el descanso no remunerado.
 //
@@ -35,6 +39,9 @@ export type RegistroDeDia = {
   // La salida fue al descanso no remunerado. Como la del almuerzo, no cierra la
   // jornada: la persona sigue en su turno.
   salidaDescanso: boolean;
+  // A cuál descanso salió ("09:00-09:15"), si el kiosco o el editor lo anotaron.
+  // Opcional: lo que no lo trae se asigna por la hora (12 de septiembre de 2026).
+  descansoVentana?: string | null;
   entradaEstimada: boolean;
 };
 
@@ -96,14 +103,6 @@ export type ResumenPausa = {
   minutosDeMas: number;
 };
 
-// Cuánto dura una ventana, en minutos. La que cruza la medianoche —un nocturno
-// que come a las 23:30— se mide sumándole el día.
-function duracionDe(v: VentanaDelDia): number {
-  const ini = minutosDe(v.inicio!);
-  const fin = minutosDe(v.fin!);
-  return fin > ini ? fin - ini : fin + 1440 - ini;
-}
-
 function resumirPausa(
   registros: RegistroDeDia[],
   pausa: PausaDeJornada,
@@ -116,7 +115,7 @@ function resumirPausa(
     estado: conVentana ? 'NO_MARCADO' : 'SIN_VENTANA',
     ventana: conVentana ? { inicio: ventana.inicio!, fin: ventana.fin! } : null,
     salida: null, regreso: null, minutos: null,
-    minutosVentana: conVentana ? duracionDe(ventana) : null,
+    minutosVentana: conVentana ? duracionFranjaMin(ventana.inicio!, ventana.fin!) : null,
     minutosDescontados, regresoEstimado: false, seExcedio: false, minutosDeMas: 0,
   };
   if (!conVentana) return base;
@@ -131,19 +130,34 @@ function resumirPausa(
   if (!salidaALaPausa) return base;
 
   const salida = salidaALaPausa.salida!;
+  return resumirSalida(base, enOrden, salida, finDeLaVentanaDe(salida, ventana), ahora);
+}
+
+// Lo que pasó con UNA salida a una pausa: si volvió, cuándo y cuánto se pasó; si no,
+// si todavía está en su pausa o ya se le olvidó. `regresoEsperado` es la hora a la
+// que le tocaba volver: el fin de la ventana del almuerzo, o la del descanso anotado
+// (`regresoEsperadoDelDescanso`). Null cuando la salida no tiene ventana: ahí no se
+// sabe cuánto se pasó, y no se inventa.
+function resumirSalida(
+  base: ResumenPausa,
+  enOrden: RegistroDeDia[],
+  salida: Date,
+  regresoEsperado: number | null,
+  ahora: Date,
+): ResumenPausa {
   const regresoReg = enOrden.find(r => r.entrada!.getTime() > salida.getTime());
   if (!regresoReg) {
     // Salió y todavía no vuelve. Mientras su ventana siga abierta —más una hora
     // de gracia— está EN SU PAUSA, que es lo normal y lo que se espera. Llamar
     // "sin regreso" a eso acusa a alguien de algo que no ha pasado, y lo pinta
     // en rojo mientras está comiendo.
-    const seLePaso = ahora.getTime() > finDeLaVentanaDe(salida, ventana) + GRACIA_MIN * MS_MIN;
+    const seLePaso = ahora.getTime() > (regresoEsperado ?? salida.getTime()) + GRACIA_MIN * MS_MIN;
     return { ...base, estado: seLePaso ? 'ABIERTO' : 'EN_CURSO', salida };
   }
 
   const regreso = regresoReg.entrada!;
   const minutos = Math.round((regreso.getTime() - salida.getTime()) / MS_MIN);
-  const minutosDeMas = Math.max(0, Math.round((regreso.getTime() - finDeLaVentanaDe(salida, ventana)) / MS_MIN));
+  const minutosDeMas = regresoEsperado === null ? 0 : Math.max(0, Math.round((regreso.getTime() - regresoEsperado) / MS_MIN));
 
   return {
     ...base,
@@ -174,13 +188,60 @@ export function resumirAlmuerzoDelDia(
   return resumirPausa(registros, 'ALMUERZO', ventanaDeAlmuerzo(dia), minutosDescontados, ahora);
 }
 
-export function resumirDescansoDelDia(
+// Qué pasó con cada DESCANSO del día (12 de septiembre de 2026): un resumen por
+// ventana, en el orden de la jornada, y uno más por cada salida al descanso que no
+// tuvo ventana donde anotarse (ventana null).
+//
+// A cuál ventana pertenece cada salida lo decide la misma asignación del kiosco
+// (`ventanasDeLasSalidas`): la guardada en la marcación si sigue en el día, y si no,
+// la que tocaba a esa hora. Así la tabla y el kiosco cuentan la misma historia.
+//
+// `minutosDescontados` de cada ventana es lo que cayó dentro de ella y no de las
+// anteriores, redondeado sobre el acumulado: los resúmenes SUMAN el descuento del
+// día, que se redondea una sola vez.
+type ResumenConSuSalida<T> = { resumen: ResumenPausa; marcacion: T | null };
+
+function resumenesDeDescanso<T extends RegistroDeDia>(registros: T[], dia: DiaConDescansos, ahora: Date): ResumenConSuSalida<T>[] {
+  const ventanas = ventanasEnOrden(dia.horaEntrada, leerDescansos(dia.descansos));
+  const enOrden = [...registros]
+    .filter(r => r.entrada)
+    .sort((a, b) => a.entrada!.getTime() - b.entrada!.getTime());
+  const salidas = enOrden.filter(r => pausaDeLaSalida(r) === 'DESCANSO');
+  const asignadas = ventanasDeLasSalidas(dia, salidas.map(r => ({ salida: r.salida!, descansoVentana: r.descansoVentana ?? null })));
+
+  const tramos = tramosCerrados(registros);
+  const acumulado = (k: number) => (tramos.length === 0 ? 0 : Math.round(minutosEnLasVentanas(tramos, dia.fecha, ventanas.slice(0, k))));
+  const vacio: ResumenPausa = {
+    estado: 'NO_MARCADO', ventana: null, salida: null, regreso: null, minutos: null,
+    minutosVentana: null, minutosDescontados: 0, regresoEstimado: false, seExcedio: false, minutosDeMas: 0,
+  };
+
+  const resumenes: ResumenConSuSalida<T>[] = ventanas.map((v, k) => {
+    const base: ResumenPausa = {
+      ...vacio,
+      ventana: { inicio: v.inicio, fin: v.fin },
+      minutosVentana: duracionFranjaMin(v.inicio, v.fin),
+      minutosDescontados: acumulado(k + 1) - acumulado(k),
+    };
+    const i = asignadas.findIndex(a => a !== null && claveDeVentana(a) === claveDeVentana(v));
+    if (i < 0) return { resumen: base, marcacion: null };
+    const salida = salidas[i].salida!;
+    const esperado = regresoEsperadoDelDescanso(salida, dia.fecha, v).getTime();
+    return { resumen: resumirSalida(base, enOrden, salida, esperado, ahora), marcacion: salidas[i] };
+  });
+  salidas.forEach((m, i) => {
+    if (asignadas[i]) return;
+    resumenes.push({ resumen: resumirSalida(vacio, enOrden, m.salida!, null, ahora), marcacion: m });
+  });
+  return resumenes;
+}
+
+export function resumirDescansosDelDia(
   registros: RegistroDeDia[],
-  dia: DiaParaDescanso,
+  dia: DiaConDescansos,
   ahora: Date = new Date(),
-): ResumenPausa {
-  const minutosDescontados = minutosDescansoADescontar(tramosCerrados(registros), dia);
-  return resumirPausa(registros, 'DESCANSO', ventanaDeDescanso(dia), minutosDescontados, ahora);
+): ResumenPausa[] {
+  return resumenesDeDescanso(registros, dia, ahora).map(r => r.resumen);
 }
 
 // ¿Este tramo pisa a alguno de los otros del mismo día?
@@ -212,7 +273,7 @@ export function tramoQueChoca<T extends { entrada: Date | null; salida: Date | n
 // nueve horas antes de su entrada: el formulario solo conoce una fecha, y colgar
 // de ella las horas a ciegas era el origen de los tramos invertidos.
 //
-// Con dos pausas, primero hay que saber en qué orden ocurrieron, y ese orden se
+// Con varias pausas, primero hay que saber en qué orden ocurrieron, y ese orden se
 // mide DESDE LA ENTRADA: en un turno nocturno el descanso de las 22:00 va antes
 // que el almuerzo de la 01:00, aunque la hora suelta diga lo contrario.
 //
@@ -221,9 +282,44 @@ export function tramoQueChoca<T extends { entrada: Date | null; salida: Date | n
 export type HorasDeJornada = {
   entrada: string;
   almuerzo?: { salida: string; regreso?: string };
-  descanso?: { salida: string; regreso?: string };
+  // Hasta tres descansos, en cualquier orden: se ordenan desde la entrada. Era uno
+  // solo, `descanso`, hasta el 12 de septiembre de 2026.
+  descansos?: { salida: string; regreso?: string }[];
   salida?: string;
 };
+
+// Una pausa como llega del editor: a qué hora salió y, si ya volvió, a qué hora
+// regresó. Lo que no es texto no es una hora. Vivía suelta en la ruta.
+export function leerPausaDelCuerpo(p: unknown): { salida?: string; regreso?: string } {
+  const o = (p && typeof p === 'object' ? p : {}) as { salida?: unknown; regreso?: unknown };
+  return {
+    salida: typeof o.salida === 'string' && o.salida ? o.salida : undefined,
+    regreso: typeof o.regreso === 'string' && o.regreso ? o.regreso : undefined,
+  };
+}
+
+// Los descansos que manda el editor en `descansos` (12 de septiembre de 2026). Lo que
+// no es una lista es «sin descansos», y una fila vacía se ignora: el formulario deja
+// filas sin llenar. Un regreso sin su salida, o más descansos de los que caben en una
+// franja, se rechazan diciendo qué pasa, antes de tocar la base.
+//
+// «Descanso N» es la POSICIÓN en que llegó la fila, contando las vacías: el editor manda
+// todas sus filas y la pantalla las numera así. Contado después de quitar las vacías, el
+// mensaje nombraba otra fila (12 de septiembre de 2026).
+export function leerDescansosDelCuerpo(valor: unknown):
+  { descansos: { salida: string; regreso?: string }[] } | { error: string; codigo?: string } {
+  const filas = (Array.isArray(valor) ? valor : [])
+    .map((p, i) => ({ ...leerPausaDelCuerpo(p), n: i + 1 }))
+    .filter(p => p.salida || p.regreso);
+  const sinSalida = filas.find(p => !p.salida);
+  if (sinSalida) {
+    return { error: `Para registrar el regreso del descanso ${sinSalida.n} hace falta la hora en que salió.` };
+  }
+  if (filas.length > MAX_DESCANSOS_POR_FRANJA) {
+    return { error: `Una jornada puede tener hasta ${MAX_DESCANSOS_POR_FRANJA} descansos.`, codigo: 'DEMASIADOS_DESCANSOS' };
+  }
+  return { descansos: filas.map(p => ({ salida: p.salida as string, regreso: p.regreso })) };
+}
 
 export type InstantesDeJornada = {
   entrada: Date;
@@ -250,10 +346,10 @@ export function instantesDeJornada(
     return new Date(t);
   };
 
-  const desdeLaEntrada = (hhmm: string) => (minutosDe(hhmm) - minutosDe(horas.entrada) + 1440) % 1440;
+  const desdeLaEntrada = (hhmm: string) => minutosDesdeLaEntrada(horas.entrada, hhmm);
   const pedidas: { tipo: PausaDeJornada; horas: { salida: string; regreso?: string } }[] = [];
   if (horas.almuerzo?.salida) pedidas.push({ tipo: 'ALMUERZO', horas: horas.almuerzo });
-  if (horas.descanso?.salida) pedidas.push({ tipo: 'DESCANSO', horas: horas.descanso });
+  for (const d of horas.descansos ?? []) if (d.salida) pedidas.push({ tipo: 'DESCANSO', horas: d });
   pedidas.sort((a, b) => desdeLaEntrada(a.horas.salida) - desdeLaEntrada(b.horas.salida));
 
   const pausas = pedidas.map(p => {
@@ -273,7 +369,22 @@ export type TramoDeJornada = { entrada: Date; salida: Date | null; fin: FinDeTra
 
 const DE_LA_PAUSA: Record<PausaDeJornada, string> = { ALMUERZO: 'del almuerzo', DESCANSO: 'del descanso' };
 
+const NO_CABE_EN_UN_DIA = 'La jornada no cabe en un día: revisa que las pausas no se crucen y que la salida sea posterior a la entrada';
+
 export function tramosDeLaJornada(t: InstantesDeJornada): { tramos: TramoDeJornada[] } | { error: string } {
+  // Una hora que no avanza pasa al día siguiente (`instantesDeJornada`). Así cabe un
+  // nocturno, pero así también rodaba a mañana una pausa que se cruzaba con otra, y la
+  // jornada quedaba de 33 horas sin que nada avisara. Nada que dure un día entero es
+  // una jornada: se rechaza (12 de septiembre de 2026). Va antes que lo demás, porque
+  // una pausa rodada pasaría como «la última pausa, todavía sin regreso».
+  //
+  // Cambio de comportamiento, a propósito: una jornada sin pausas con la salida a la
+  // misma hora de la entrada pasaba como 24 horas, y tampoco es creíble.
+  const instantes = [t.entrada, ...t.pausas.flatMap(p => [p.salida, p.regreso]), t.salida]
+    .filter((d): d is Date => d !== null)
+    .map(d => d.getTime());
+  if (Math.max(...instantes) - t.entrada.getTime() >= UN_DIA_MS) return { error: NO_CABE_EN_UN_DIA };
+
   const tramos: TramoDeJornada[] = [];
   let inicio = t.entrada;
   for (let i = 0; i < t.pausas.length; i++) {
@@ -283,10 +394,10 @@ export function tramosDeLaJornada(t: InstantesDeJornada): { tramos: TramoDeJorna
     // Salió a una pausa y no volvió: la jornada termina ahí. Cualquier cosa
     // escrita después describe algo que no pudo pasar.
     if (i < t.pausas.length - 1) {
-      return { error: `Si no volvió ${DE_LA_PAUSA[p.tipo]}, no puede haber otra pausa después` };
+      return { error: `Si no volvió ${DE_LA_PAUSA[p.tipo]}, no puede haber otra pausa después. Pon primero la hora del regreso` };
     }
     if (t.salida) {
-      return { error: `Si no volvió ${DE_LA_PAUSA[p.tipo]}, la jornada no puede tener hora de salida` };
+      return { error: `Si no volvió ${DE_LA_PAUSA[p.tipo]}, la jornada no puede tener hora de salida. Pon primero la hora del regreso` };
     }
     return { tramos };
   }
@@ -346,7 +457,10 @@ export type JornadaDelDia<T> = {
   // cada fila del día invita a sumar dos veces el mismo descuento, y esos
   // minutos son plata.
   almuerzo: ResumenPausa | null;
-  descanso: ResumenPausa | null;
+  // Los descansos, por la misma regla: cada resumen en la jornada que contiene su
+  // salida, y el que nadie marcó en la primera del día. Lista vacía en las demás
+  // (12 de septiembre de 2026).
+  descansos: ResumenPausa[];
 };
 
 // Las marcaciones ordenadas por hora de entrada. La base no garantiza ningún
@@ -475,6 +589,9 @@ export type DatosDeSalida = {
   metodoSalida: MetodoMarcacion | null;
   distanciaSalida: number | null;
   salidaEstimada: boolean;
+  // A cuál descanso salió (12 de septiembre de 2026). Solo se hereda con la salida que
+  // queda en el mismo minuto: movida, se vuelve a decidir por la hora.
+  descansoVentana: string | null;
 };
 
 export type MarcacionEditable = RegistroDeDia & DatosDeSalida & { id: string; fotoEntrada: string | null };
@@ -491,7 +608,7 @@ type Papel = PausaDeJornada | 'CIERRE';
 // marcación de antes hereda lo suyo. La posición en la lista es la fila.
 type Hueco<T> = { papel: Papel; hora: Date | null; fuente: T | null };
 
-const SIN_SALIDA = { sedeSalidaId: null, fotoSalida: null, metodoSalida: null, distanciaSalida: null };
+const SIN_SALIDA = { sedeSalidaId: null, fotoSalida: null, metodoSalida: null, distanciaSalida: null, descansoVentana: null };
 
 const mismoMinuto = (a: Date, b: Date) => Math.floor(a.getTime() / MS_MIN) === Math.floor(b.getTime() / MS_MIN);
 
@@ -500,24 +617,78 @@ const mismoMinuto = (a: Date, b: Date) => Math.floor(a.getTime() / MS_MIN) === M
 // de rótulos no compilan hasta que alguien le ponga nombre.
 const esPausa = (fin: FinDeTramo): fin is PausaDeJornada => fin !== null && fin !== 'SALIDA';
 
-// Qué salida guardaba cada marcación antes de editar. El cierre puede no tener
+// Qué salidas guardaban las marcaciones antes de editar. El cierre puede no tener
 // hora: un turno abierto, o uno que el barrido marcó sin poder ponerle hora,
 // sigue siendo el sitio de la salida del día.
-function salidasDeAntes<T extends MarcacionEditable>(antes: T[]): Record<Papel, T | null> {
+//
+// Los descansos son VARIOS desde el 12 de septiembre de 2026, así que van todos:
+// «la primera salida al descanso» ya no es la del descanso. El orden no importa,
+// porque se emparejan por la hora.
+type SalidasDeAntes<T> = { ALMUERZO: T | null; DESCANSOS: T[]; CIERRE: T | null };
+
+function salidasDeAntes<T extends MarcacionEditable>(antes: T[]): SalidasDeAntes<T> {
   const ultima = antes[antes.length - 1];
-  const deLaPausa = (pausa: PausaDeJornada) => antes.find(m => pausaDeLaSalida(m) === pausa) ?? null;
   return {
-    ALMUERZO: deLaPausa('ALMUERZO'),
-    DESCANSO: deLaPausa('DESCANSO'),
+    ALMUERZO: antes.find(m => pausaDeLaSalida(m) === 'ALMUERZO') ?? null,
+    DESCANSOS: antes.filter(m => pausaDeLaSalida(m) === 'DESCANSO'),
     CIERRE: marcacionQueCierra(antes) ?? (ultima && !ultima.salida ? ultima : null),
   };
 }
 
-// Una fila abierta también es el sitio de la salida del día: solo que aún no la tiene.
-function huecosQueQuedan<T>(filas: FilaQueQueda[], antes: Record<Papel, T | null>): Hueco<T>[] {
-  return filas.map(f => {
-    const papel: Papel = esPausa(f.fin) ? f.fin : 'CIERRE';
-    return { papel, hora: f.salida, fuente: antes[papel] };
+// El papel de la salida con que termina cada fila que queda.
+function papelDeLaFila(fin: FilaQueQueda['fin']): Papel {
+  switch (fin) {
+    case 'DESCANSO': return 'DESCANSO';
+    case 'ALMUERZO': return 'ALMUERZO';
+    case 'SALIDA':
+    case null: return 'CIERRE';
+  }
+}
+
+// De qué salida de antes hereda cada fila (12 de septiembre de 2026):
+//
+//   1. La que quedó en el MISMO MINUTO de una salida marcada de antes se queda con esa
+//      salida, tenga el papel que tenga ahora: cambiarle el papel a una marca no la vuelve
+//      otra. Primero las del mismo papel. Una salida que puso el sistema
+//      (`salidaEstimada`) no es la marca de nadie, y esa sigue a su papel.
+//   2. Los descansos que quedan se emparejan por la hora con las salidas al descanso que
+//      nadie se llevó (`emparejarSalidasDeDescanso`).
+//   3. El almuerzo hereda la salida a almorzar y la salida del día la del día (una fila
+//      abierta también es su sitio, solo que aún no la tiene), si nadie se las llevó.
+//
+// Con el papel por delante del minuto, corregir solo cuál pausa fue cuál sin mover sus
+// horas (quien oprimió «almorzar» a las 09:00 por error y «descanso» a las 12:00) le
+// dejaba a cada una la foto y la sede de la otra, y la foto de una salida de las 17:00
+// que pasaba a ser almuerzo aparecía en una salida de las 20:00 que nadie marcó.
+function huecosQueQuedan<T extends MarcacionEditable>(filas: FilaQueQueda[], antes: T[]): Hueco<T>[] {
+  const de = salidasDeAntes(antes);
+  const fuente: (T | null)[] = filas.map(() => null);
+  const tomadas = new Set<T>();
+  const tomar = (k: number, m: T) => {
+    fuente[k] = m;
+    tomadas.add(m);
+  };
+
+  const marcadas = antes.filter(m => m.salida && !m.salidaEstimada);
+  for (const delMismoPapel of [true, false]) {
+    filas.forEach((f, k) => {
+      if (fuente[k] || !f.salida) return;
+      const misma = marcadas.find(m => !tomadas.has(m) && mismoMinuto(m.salida!, f.salida!)
+        && (!delMismoPapel || (pausaDeLaSalida(m) ?? 'CIERRE') === papelDeLaFila(f.fin)));
+      if (misma) tomar(k, misma);
+    });
+  }
+
+  const deDescanso = filas.flatMap((f, k) => (f.fin === 'DESCANSO' && f.salida && !fuente[k] ? [k] : []));
+  const libres = de.DESCANSOS.filter(m => !tomadas.has(m));
+  emparejarSalidasDeDescanso(deDescanso.map(k => filas[k].salida!), libres.map(m => m.salida!))
+    .forEach((j, i) => { if (j !== null) tomar(deDescanso[i], libres[j]); });
+
+  const porSuPapel: Record<Papel, T | null> = { DESCANSO: null, ALMUERZO: de.ALMUERZO, CIERRE: de.CIERRE };
+  return filas.map((f, k) => {
+    const papel = papelDeLaFila(f.fin);
+    const suya = porSuPapel[papel];
+    return { papel, hora: f.salida, fuente: fuente[k] ?? (suya && !tomadas.has(suya) ? suya : null) };
   });
 }
 
@@ -535,43 +706,53 @@ function entradaDe<T extends RegistroDeDia>(antes: T[], i: number): Momento {
 //
 // La primera fila es siempre la primera marcación, que nunca se borra. Para las
 // demás vale primero la que entró en ese mismo minuto —cambiarle el papel a una
-// marca no la vuelve otra— y si no, la que regresaba de la misma pausa. Si
-// ninguna, la fila es nueva.
-function filasQueSeReusan<T extends MarcacionEditable>(antes: T[], filas: FilaQueQueda[]): (T | null)[] {
+// marca no la vuelve otra— y si no, la que regresaba de esa pausa. Si ninguna, la
+// fila es nueva. Tras un descanso, «la que regresaba» es solo el regreso de ESE
+// descanso, nunca el de otro (12 de septiembre de 2026).
+//
+// En DOS pasadas desde el 12 de septiembre de 2026: primero TODAS las filas que
+// entran en el minuto de una marcación, y después las demás. Fila por fila, la del
+// regreso de las 09:15, sin marcación de ese minuto, se llevaba la de las 15:10
+// antes de que la fila de las 15:10 la pidiera, y esa foto aparecía a las 09:15.
+function filasQueSeReusan<T extends MarcacionEditable>(antes: T[], filas: FilaQueQueda[], huecos: Hueco<T>[]): (T | null)[] {
+  const reusa: (T | null)[] = filas.map(() => null);
   const tomadas = new Set<T>();
-  const tomar = (m: T | undefined) => {
-    if (m) tomadas.add(m);
-    return m ?? null;
+  const libre = (m: T) => !tomadas.has(m);
+  const tomar = (k: number, m: T | undefined) => {
+    if (!m) return;
+    tomadas.add(m);
+    reusa[k] = m;
   };
-  return filas.map((f, k) => {
-    if (k === 0) return tomar(antes[0]);
-    const libres = antes.filter(m => !tomadas.has(m));
-    const alMismoMinuto = libres.find(m => m.entrada && mismoMinuto(m.entrada, f.entrada));
-    if (alMismoMinuto) return tomar(alMismoMinuto);
+  const porElMinuto = (k: number) => {
+    tomar(k, antes.find(m => libre(m) && !!m.entrada && mismoMinuto(m.entrada, filas[k].entrada)));
+  };
+  const porLaPausa = (k: number) => {
+    if (reusa[k]) return;
     const anterior = filas[k - 1].fin;
-    if (!esPausa(anterior)) return null;
-    return tomar(libres.find(m => entradaDe(antes, antes.indexOf(m)) === REGRESO_DE[anterior]));
-  });
+    if (!esPausa(anterior)) return;
+    // Tras un descanso, SOLO la marcación que venía justo después de la salida que ese
+    // descanso heredó: es SU regreso. Con varios descansos, «la que regresaba de un
+    // descanso» puede ser el regreso de otro: quitar el de las 09:00 reescribía con la
+    // tarde la fila del regreso de las 09:15, y poner uno nuevo le daba a su regreso la
+    // foto, la sede y el método de entrada del regreso de otro descanso, sin avisar. Si
+    // ese descanso no heredó ninguna salida, o su regreso ya tiene fila, esta nace nueva y
+    // la foto que sobre se avisa en `fotosQueSePierden` (12 de septiembre de 2026). El
+    // almuerzo es uno solo, así que su respaldo por tipo sigue.
+    if (anterior === 'DESCANSO') {
+      const fuente = huecos[k - 1].fuente;
+      const suRegreso = fuente ? antes[antes.indexOf(fuente) + 1] : undefined;
+      if (suRegreso && libre(suRegreso)) tomar(k, suRegreso);
+      return;
+    }
+    tomar(k, antes.find(m => libre(m) && entradaDe(antes, antes.indexOf(m)) === REGRESO_DE[anterior]));
+  };
+  tomar(0, antes[0]);
+  for (let k = 1; k < filas.length; k++) porElMinuto(k);
+  for (let k = 1; k < filas.length; k++) porLaPausa(k);
+  return reusa;
 }
 
-// Una marca que cambió de papel sin cambiar de minuto es la MISMA marca: quien
-// oprimió «salir a descansar» cuando se iba. Se busca solo para el hueco que no
-// tiene de quién heredar una salida con hora, y entre las marcas que ningún otro
-// hueco se llevó. Al minuto, porque el formulario manda HH:mm y el kiosco guarda
-// segundos.
-function reconocerLaMismaMarca<T extends MarcacionEditable>(huecos: Hueco<T>[], antes: T[]): Hueco<T>[] {
-  const tomadas = new Set(huecos.map(h => h.fuente).filter(f => f?.salida));
-  return huecos.map(h => {
-    const hora = h.hora;
-    if (!hora || h.fuente?.salida) return h;
-    const misma = antes.find(m => m.salida && !tomadas.has(m) && mismoMinuto(m.salida, hora));
-    if (!misma) return h;
-    tomadas.add(misma);
-    return { ...h, fuente: misma };
-  });
-}
-
-function datosDelHueco<T extends MarcacionEditable>({ hora, fuente }: Hueco<T>): DatosDeSalida {
+function datosDelHueco<T extends MarcacionEditable>({ papel, hora, fuente }: Hueco<T>): DatosDeSalida {
   // La marca de estimada va con el sitio de la salida y no con la hora: reabrir
   // un turno que cerró el sistema no puede dejarlo listo para que el barrido lo
   // vuelva a cerrar, y ponerle hora a mano no borra que nadie la marcó.
@@ -579,7 +760,10 @@ function datosDelHueco<T extends MarcacionEditable>({ hora, fuente }: Hueco<T>):
   if (!hora) return { ...SIN_SALIDA, salidaEstimada };
   if (!fuente?.salida) return { ...SIN_SALIDA, metodoSalida: 'MANUAL', salidaEstimada };
   const { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida } = fuente;
-  return { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida, salidaEstimada };
+  // A cuál descanso salió solo viaja con la salida al descanso que no se movió de
+  // minuto: movida, se vuelve a decidir por la hora (12 de septiembre de 2026).
+  const descansoVentana = papel === 'DESCANSO' && mismoMinuto(fuente.salida, hora) ? fuente.descansoVentana ?? null : null;
+  return { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida, salidaEstimada, descansoVentana };
 }
 
 // Las fotos que no quedan en ninguna fila: las de las salidas que nadie heredó
@@ -641,8 +825,8 @@ export function salidasTrasEditar<T extends MarcacionEditable>(antes: T[], filas
   fotosQueSePierden: FotoQueSePierde[];
   novedades: { desde: string; hacia: number }[];
 } {
-  const reusadas = filasQueSeReusan(antes, filas);
-  const huecos = reconocerLaMismaMarca(huecosQueQuedan(filas, salidasDeAntes(antes)), antes);
+  const huecos = huecosQueQuedan(filas, antes);
+  const reusadas = filasQueSeReusan(antes, filas, huecos);
   return {
     filas: huecos.map((h, k) => ({ reusa: reusadas[k]?.id ?? null, salida: datosDelHueco(h) })),
     sobran: antes.filter(m => !reusadas.includes(m)).map(m => m.id),
@@ -696,7 +880,7 @@ function cobrarHastaDondeAlcance(cobro: number[], disponible: number[], iDeLaPau
 
 export function partirDiaEnJornadas<T extends RegistroDeDia>(
   registros: T[],
-  dia: DiaParaAlmuerzo & DiaParaDescanso & DiaParaAjuste,
+  dia: DiaParaAlmuerzo & DiaConDescansos & DiaParaAjuste,
 ): JornadaDelDia<T>[] {
   const enOrden = enOrdenDeEntrada(registros);
   if (enOrden.length === 0) return [];
@@ -704,7 +888,8 @@ export function partirDiaEnJornadas<T extends RegistroDeDia>(
   const bloques = agruparEnJornadas(enOrden);
 
   const almuerzo = resumirAlmuerzoDelDia(enOrden, dia);
-  const descanso = resumirDescansoDelDia(enOrden, dia);
+  const descansos = resumenesDeDescanso(enOrden, dia, new Date());
+  const jornadaDe = (m: T | null) => (m ? Math.max(0, bloques.findIndex(b => b.includes(m))) : 0);
   // De qué jornada es cada pausa: la que contiene su salida. Cuando nadie la
   // marcó —el caso de "descontar 60 min" sin ventana horaria, que es el de la
   // mayoría— es la primera del día, que es donde se mira primero.
@@ -731,9 +916,12 @@ export function partirDiaEnJornadas<T extends RegistroDeDia>(
   // El descanso cobra sobre lo que el almuerzo dejó: los dos juntos no pueden
   // quitarle a una jornada más de lo que trabajó.
   const libres = trabajados.map((t, k) => t - quitaAlmuerzo[k]);
+  // Con varios descansos, cada jornada paga lo que sus tramos pasaron dentro de la
+  // UNIÓN de las ventanas: el mismo número con el que el día calcula su descuento.
+  const ventanas = leerDescansos(dia.descansos);
   const descuentoDescanso = minutosDescansoADescontar(todos, dia);
   const quitaDescanso = cobrarHastaDondeAlcance(
-    cobroPorJornada(descuentoDescanso, porBloque.map(ts => minutosEnLaVentana(ts, ventanaDeDescanso(dia))), iDelDescanso),
+    cobroPorJornada(descuentoDescanso, porBloque.map(ts => minutosEnLasVentanas(ts, dia.fecha, ventanas)), iDelDescanso),
     libres, iDelDescanso,
   );
 
@@ -759,7 +947,7 @@ export function partirDiaEnJornadas<T extends RegistroDeDia>(
     minutosAlmuerzoAqui: almuerzoAqui(quitaAlmuerzo[i]),
     minutosDescansoAqui: descansoAqui(quitaDescanso[i]),
     almuerzo: i === iDelAlmuerzo ? almuerzo : null,
-    descanso: i === iDelDescanso ? descanso : null,
+    descansos: descansos.filter(d => jornadaDe(d.marcacion) === i).map(d => d.resumen),
   }));
 }
 
@@ -780,7 +968,7 @@ export function partirDiaEnJornadas<T extends RegistroDeDia>(
 // minutos ya vienen repartidos por tipo de hora y con sus recargos.
 export function minutosContadosDelDia(
   registros: RegistroDeDia[],
-  dia: DiaParaAlmuerzo & DiaParaDescanso & DiaParaAjuste,
+  dia: DiaParaAlmuerzo & DiaConDescansos & DiaParaAjuste,
 ): number {
   const tramos = tramosUtiles(registros).map(r => ajustarAJornada(r.entrada!, r.salida!, dia));
   if (tramos.length === 0) return 0;

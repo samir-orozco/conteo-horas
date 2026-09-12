@@ -4,38 +4,41 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { useMiPlan } from '../../lib/plan';
+import { minutosEntre, minutosDeLosDescansos, MAX_DESCANSOS_POR_FRANJA } from '../../lib/descansos';
+import ListaDeDescansos from './ListaDeDescansos';
+import { cuerpoDelHorario, type Franja, type FormularioDeHorario } from './cuerpoDelHorario';
 
-export type Franja = {
-  dias: string[]; horaEntrada: string; horaSalida: string;
-  tieneAlmuerzo?: boolean; almuerzoInicio?: string | null; almuerzoFin?: string | null;
-  // Descanso no remunerado: una segunda pausa, opcional y con horas propias.
-  descansoInicio?: string | null; descansoFin?: string | null;
-};
 export type Horario = {
   id: string; nombre: string; toleranciaMin: number; almuerzoMin?: number;
   toleranciaSalidaMin?: number; ajustaEntrada?: boolean; fotoEnDescanso?: boolean;
   franjas: Franja[]; _count?: { colaboradores: number };
 };
 
-// Minutos de "HH:MM"; si la salida es menor o igual, cruza medianoche.
-const aMin = (s: string) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
 // Vuelta a "HH:MM". Da la vuelta al día para que un almuerzo de madrugada no
 // termine en "25:00".
 const aHHMM = (min: number) => {
   const t = ((min % 1440) + 1440) % 1440;
   return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
 };
-const duracionFranjaMin = (f: Franja) => { let fin = aMin(f.horaSalida); const ini = aMin(f.horaEntrada); if (fin <= ini) fin += 1440; return fin - ini; };
-// Duración de una ventana, si tiene sus dos horas. Es la que manda sobre los
-// minutos sueltos: el admin pone las horas y el sistema calcula el tiempo.
-const minutosEntre = (ini?: string | null, fin?: string | null): number => {
-  if (!ini || !fin) return 0;
-  let f = aMin(fin); const i = aMin(ini);
-  if (f <= i) f += 1440;
-  return f - i;
-};
+// Duración de la franja con la regla compartida de lib/descansos.ts: si la salida no
+// avanza, cruza la medianoche, y sin sus dos horas no dura nada. Aquí vivía una copia de
+// esa cuenta que con una hora borrada daba NaN, y el resumen decía «NaN h» (12 de
+// septiembre de 2026, CLAUDE.md §9.3).
+const duracionFranjaMin = (f: Franja) => minutosEntre(f.horaEntrada, f.horaSalida);
+// Duración de la ventana del almuerzo, si tiene sus dos horas. Es la que manda sobre
+// los minutos sueltos: el admin pone las horas y el sistema calcula el tiempo.
 const minutosVentana = (f: Franja) => minutosEntre(f.almuerzoInicio, f.almuerzoFin);
-const minutosDescanso = (f: Franja) => minutosEntre(f.descansoInicio, f.descansoFin);
+// Los descansos no remunerados de la franja. El servidor los manda como lista; si algún
+// día no llegaran, la franja no tiene descansos, y abrir el horario no puede reventar.
+const descansosDe = (f: Franja) => (Array.isArray(f.descansos) ? f.descansos : []);
+const minutosDescanso = (f: Franja) => minutosDeLosDescansos(descansosDe(f));
+// Cómo dice la tarjeta del horario los descansos de una franja: el horario cuando es uno,
+// y cuántos cuando son varios.
+const descansosEnLaTarjeta = (f: Franja) => {
+  const ds = descansosDe(f);
+  if (ds.length === 0) return null;
+  return ds.length === 1 ? `descanso ${ds[0].inicio}–${ds[0].fin}` : `${ds.length} descansos`;
+};
 
 export const DIAS_SEMANA = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 export const DIA_CORTO: Record<string, string> = {
@@ -67,7 +70,7 @@ export default function TabHorario() {
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [modalHorario, setModalHorario] = useState(false);
   const [editandoHorario, setEditandoHorario] = useState<Horario | null>(null);
-  const [formHorario, setFormHorario] = useState<{ nombre: string; toleranciaMin: number; almuerzoMin: number; toleranciaSalidaMin: number; ajustaEntrada: boolean; fotoEnDescanso: boolean; franjas: Franja[] }>(HORARIO_VACIO);
+  const [formHorario, setFormHorario] = useState<FormularioDeHorario>(HORARIO_VACIO);
   const [errorHorario, setErrorHorario] = useState('');
   const [eliminandoHorario, setEliminandoHorario] = useState<Horario | null>(null);
   // Desde cuándo aplicó el último cambio. Sin decirlo, el administrador que le
@@ -111,7 +114,7 @@ export default function TabHorario() {
           franjas: h.franjas.map(f => ({
             dias: [...f.dias], horaEntrada: f.horaEntrada, horaSalida: f.horaSalida,
             tieneAlmuerzo: f.tieneAlmuerzo !== false, almuerzoInicio: f.almuerzoInicio ?? '', almuerzoFin: f.almuerzoFin ?? '',
-            descansoInicio: f.descansoInicio ?? '', descansoFin: f.descansoFin ?? '',
+            descansos: descansosDe(f).map(d => ({ inicio: d.inicio, fin: d.fin })),
           })),
         }
       : { ...HORARIO_VACIO, franjas: [{ ...FRANJA_LV, dias: [...FRANJA_LV.dias] }] });
@@ -126,11 +129,13 @@ export default function TabHorario() {
       return setErrorHorario('Cada franja debe tener al menos un día seleccionado.');
     }
     try {
+      // Cada franja con su clave `descansos`, también vacía: sin ella el servidor cree
+      // que es la pantalla de antes y pide recargar (ver cuerpoDelHorario.ts).
       if (editandoHorario) {
-        const { data } = await api.put(`/horarios/${editandoHorario.id}`, formHorario);
+        const { data } = await api.put(`/horarios/${editandoHorario.id}`, cuerpoDelHorario(formHorario));
         setAvisoHorario(data.regeneracion ?? null);
       } else {
-        await api.post('/horarios', formHorario);
+        await api.post('/horarios', cuerpoDelHorario(formHorario));
       }
       setModalHorario(false);
       cargarHorarios();
@@ -174,7 +179,7 @@ export default function TabHorario() {
   // así que un interruptor propio podría acabar diciendo una cosa mientras los
   // datos dicen otra. Sin horas configuradas, nadie marca nada.
   const marcanAlmuerzo = formHorario.franjas.some(f => f.almuerzoInicio && f.almuerzoFin);
-  const hayDescanso = formHorario.franjas.some(f => f.descansoInicio && f.descansoFin);
+  const hayDescanso = formHorario.franjas.some(f => minutosDescanso(f) > 0);
 
   const cambiarModoAlmuerzo = (marcan: boolean) => {
     setFormHorario(p => ({
@@ -195,7 +200,7 @@ export default function TabHorario() {
   const hoy = new Date();
 
   // Resumen en vivo del horario que se está editando (horas por semana/mes ya
-  // sin almuerzo ni descanso no remunerado). El descanso se descuenta aunque el
+  // sin almuerzo ni descansos no remunerados). Los descansos se descuentan aunque el
   // día no descuente almuerzo, igual que al calcular la jornada esperada.
   const semanaMin = formHorario.franjas.reduce(
     (s, f) => s + f.dias.length * Math.max(0,
@@ -265,8 +270,10 @@ export default function TabHorario() {
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-semibold text-ink">{h.nombre}</p>
                   <div className="flex gap-1">
-                    <button onClick={() => abrirHorario(h)} className="p-1.5 text-muted hover:bg-primary/30 hover:text-ink rounded-lg"><Pencil size={13} /></button>
-                    <button onClick={() => setEliminandoHorario(h)} className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
+                    <button onClick={() => abrirHorario(h)} aria-label={`Editar el horario ${h.nombre}`} title="Editar horario"
+                      className="p-1.5 text-muted hover:bg-primary/30 hover:text-ink rounded-lg"><Pencil size={13} /></button>
+                    <button onClick={() => setEliminandoHorario(h)} aria-label={`Eliminar el horario ${h.nombre}`} title="Eliminar horario"
+                      className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={13} /></button>
                   </div>
                 </div>
                 <div className="mt-1 space-y-0.5">
@@ -274,8 +281,8 @@ export default function TabHorario() {
                     <p key={i} className="text-xs text-ink">
                       <span className="text-muted">{f.dias.map(d => DIA_CORTO[d]).join(' · ')}</span>
                       {' '}<span className="font-medium">{f.horaEntrada} — {f.horaSalida}</span>
-                      {f.descansoInicio && f.descansoFin && (
-                        <span className="text-muted"> · descanso {f.descansoInicio}–{f.descansoFin}</span>
+                      {descansosEnLaTarjeta(f) && (
+                        <span className="text-muted"> · {descansosEnLaTarjeta(f)}</span>
                       )}
                     </p>
                   ))}
@@ -523,27 +530,29 @@ export default function TabHorario() {
                 )}
               </div>
 
-              {/* Descanso no remunerado: una pausa que NO se paga —el desayuno, una
-                  pausa activa— y que se marca en el kiosco igual que el almuerzo.
-                  No tiene un modo "solo descontar minutos": sin horas no hay forma
-                  de saber qué tiempo quitar, y quitarlo a ciegas le cobraría la
-                  pausa también a quien se fue antes de tomarla. */}
+              {/* Descansos no remunerados: pausas que NO se pagan (el desayuno, una pausa
+                  activa) y que se marcan en el kiosco igual que el almuerzo; hasta tres por
+                  franja desde el 12 de septiembre de 2026. No tienen un modo "solo
+                  descontar minutos": sin horas no hay forma de saber qué tiempo quitar, y
+                  quitarlo a ciegas le cobraría la pausa también a quien se fue antes de
+                  tomarla. La foto se decide una vez para todos. */}
               <div className="border border-gray-200 rounded-xl p-3">
-                <p className="text-xs font-medium text-ink">Descanso no remunerado</p>
+                <p className="text-xs font-medium text-ink">Descansos no remunerados</p>
                 <p className="text-[11px] text-muted mt-1 leading-relaxed">
-                  Una pausa que no se paga, como el desayuno. Se le ponen horas en cada franja de abajo,
-                  y el kiosco les ofrece salir a su descanso y marcar el regreso, igual que el almuerzo.
-                  Solo se descuenta el tiempo que caiga entre esas horas.
+                  Pausas que no se pagan, como el desayuno o una pausa activa: hasta {MAX_DESCANSOS_POR_FRANJA} por
+                  franja, con sus horas en cada franja de abajo. El kiosco les ofrece salir a su descanso y marcar
+                  el regreso, igual que el almuerzo, y anota a cuál salieron según la hora. Solo se descuenta el
+                  tiempo que caiga entre esas horas.
                 </p>
                 <label className="flex items-start gap-2 mt-3 cursor-pointer">
                   <input type="checkbox" checked={formHorario.fotoEnDescanso}
                     onChange={e => setFormHorario(p => ({ ...p, fotoEnDescanso: e.target.checked }))}
                     className="mt-0.5 accent-primary" />
                   <span className="text-xs text-ink/80">
-                    Guardar la foto al marcar el descanso
+                    Guardar la foto al marcar los descansos
                     <span className="block text-[11px] text-muted">
                       La cara se reconoce igual para marcar. Desmárcalo si no quieres guardar las fotos
-                      de la salida y el regreso del descanso.
+                      de la salida y el regreso de los descansos.
                     </span>
                   </span>
                 </label>
@@ -641,42 +650,15 @@ export default function TabHorario() {
                         </p>
                       </div>
                     )}
-                    {/* Ventana del descanso no remunerado. Vacía = estos días no
-                        tienen descanso, que es lo normal. */}
+                    {/* Los descansos no remunerados de estos días, debajo del almuerzo:
+                        hasta tres, cada uno con su desde y su hasta (12 de septiembre de
+                        2026). Sin ninguno, estos días no tienen descansos, que es lo normal. */}
                     <div className="border-t border-gray-100 pt-3 mt-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-xs font-medium text-muted">
-                          Descanso no remunerado <span className="font-normal text-gray-400">(opcional)</span>
-                        </p>
-                        {(f.descansoInicio || f.descansoFin) && (
-                          <button type="button" onClick={() => setFranja(i, { descansoInicio: '', descansoFin: '' })}
-                            className="text-[11px] font-semibold text-red-500 hover:text-red-600 underline underline-offset-2">
-                            Limpiar
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-medium text-muted mb-1">Desde</label>
-                          <input type="time" aria-label="Descanso desde" value={f.descansoInicio ?? ''}
-                            onChange={e => setFranja(i, { descansoInicio: e.target.value })}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-muted mb-1">Hasta</label>
-                          <input type="time" aria-label="Descanso hasta" value={f.descansoFin ?? ''}
-                            onChange={e => setFranja(i, { descansoFin: e.target.value })}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                        </div>
-                      </div>
-                      {f.descansoInicio && f.descansoFin ? (
-                        <p className="text-[11px] text-muted mt-1.5 leading-relaxed">
-                          Descanso de <b>{minutosDescanso(f)} min</b>. No se paga: se descuenta lo que caiga entre esas horas,
-                          y quien lo marque no lo paga dos veces.
-                        </p>
-                      ) : (f.descansoInicio || f.descansoFin) ? (
-                        <p className="text-[11px] text-amber-700 mt-1.5">Faltan las dos horas: con una sola no se puede guardar.</p>
-                      ) : null}
+                      <p className="text-xs font-medium text-muted mb-1">
+                        Descansos no remunerados <span className="font-normal text-gray-400">(opcional)</span>
+                      </p>
+                      <ListaDeDescansos descansos={descansosDe(f)} max={MAX_DESCANSOS_POR_FRANJA}
+                        onCambiar={descansos => setFranja(i, { descansos })} />
                     </div>
                   </div>
                 ))}
@@ -714,7 +696,7 @@ export default function TabHorario() {
                   <p className="text-[11px] text-muted mt-2">Ya se descontó {formHorario.almuerzoMin} min de almuerzo en las franjas marcadas.</p>
                 )}
                 {hayDescanso && (
-                  <p className="text-[11px] text-muted mt-1">También se descontó el descanso no remunerado de las franjas que lo tienen.</p>
+                  <p className="text-[11px] text-muted mt-1">También se descontaron los descansos no remunerados de las franjas que los tienen.</p>
                 )}
               </div>
 

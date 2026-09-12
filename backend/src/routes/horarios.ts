@@ -3,28 +3,33 @@ import { prisma } from '../prisma';
 import { jornadaVigente } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { regenerarDiasDeHorario, regenerarDiasDeVarios } from '../utils/materializarDias';
-import { FranjaConVentanas, franjasConVentanaImposible, franjaParaGuardar } from '../utils/ventanasDeHorario';
+import {
+  FranjaConVentanas, franjasConVentanaImposible, franjaParaGuardar, franjaBasicaValida,
+  franjaParaResponder, pantallaViejaBorraDescansos,
+} from '../utils/ventanasDeHorario';
 
-// Cada franja: días válidos, horas HH:MM y al menos un día
+// Cada franja: al menos un día y horas de verdad. La regla vive en
+// `franjaBasicaValida`, con sus pruebas: aquí había una regex propia que dejaba
+// pasar «99:99» (12 de septiembre de 2026).
 function validarFranjas(franjas: unknown): franjas is FranjaConVentanas[] {
   if (!Array.isArray(franjas) || franjas.length === 0) return false;
-  return franjas.every(f =>
-    Array.isArray(f?.dias) && f.dias.length > 0 &&
-    /^\d{2}:\d{2}$/.test(f?.horaEntrada) && /^\d{2}:\d{2}$/.test(f?.horaSalida)
-  );
+  return franjas.every(franjaBasicaValida);
 }
 
 const mensajeVentanasImposibles = (imposibles: string[]) =>
-  `El almuerzo o el descanso no caben dentro de la jornada: ${imposibles.join(', ')}. ` +
-  'Revisa que la hora de inicio sea anterior a la de fin y que las dos pausas no se crucen.';
+  `El almuerzo o los descansos no caben dentro de la jornada: ${imposibles.join(', ')}. ` +
+  'Revisa que cada hora de inicio sea anterior a la de fin, que ninguna pausa se cruce con otra y que no haya más de 3 descansos por franja.';
 
 // Horarios de trabajo de la empresa (se asignan a cada colaborador). Un horario
 // agrupa varias franjas: ej. "Oficina" = L-V 08:00-17:00 + Sáb 08:00-12:00.
+//
+// Las franjas viajan con sus descansos como ARREGLO (`franjaParaResponder`), nunca
+// con el texto que se guarda (12 de septiembre de 2026).
 export default async function horarioRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
 
   app.get('/', auth, async (request) => {
-    return prisma.horario.findMany({
+    const horarios = await prisma.horario.findMany({
       where: { empresaId: request.empresaId, activo: true },
       include: {
         franjas: true,
@@ -32,6 +37,7 @@ export default async function horarioRoutes(app: FastifyInstance) {
       },
       orderBy: { nombre: 'asc' },
     });
+    return horarios.map(h => ({ ...h, franjas: h.franjas.map(franjaParaResponder) }));
   });
 
   // Norma de jornada máxima semanal vigente hoy (Ley 2101), para la etiqueta de cumplimiento
@@ -72,14 +78,27 @@ export default async function horarioRoutes(app: FastifyInstance) {
       },
       include: { franjas: true },
     });
-    return reply.status(201).send(horario);
+    return reply.status(201).send({ ...horario, franjas: horario.franjas.map(franjaParaResponder) });
   });
 
   app.put('/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const existente = await prisma.horario.findFirst({ where: { id, empresaId: request.empresaId } });
+    const existente = await prisma.horario.findFirst({
+      where: { id, empresaId: request.empresaId },
+      include: { franjas: { select: { descansos: true } } },
+    });
     if (!existente) return reply.status(404).send({ error: 'Horario no encontrado' });
     const { nombre, toleranciaMin, almuerzoMin, toleranciaSalidaMin, ajustaEntrada, fotoEnDescanso, franjas } = request.body as any;
+    // Una pantalla de horarios abierta antes de los descansos manda las franjas sin
+    // la clave `descansos`. Como las franjas se reemplazan enteras, guardar desde ahí
+    // borraría los descansos que otro ya configuró. Se le pide recargar ANTES de
+    // tocar nada (12 de septiembre de 2026).
+    if (Array.isArray(franjas) && pantallaViejaBorraDescansos(existente.franjas, franjas)) {
+      return reply.status(400).send({
+        error: 'Esta pantalla quedó desactualizada. Recarga la página y vuelve a guardar el horario.',
+        codigo: 'FORMATO_VIEJO',
+      });
+    }
     if (!validarFranjas(franjas)) {
       return reply.status(400).send({ error: 'Agrega al menos una franja con días y horas válidas (HH:MM)' });
     }
@@ -127,7 +146,7 @@ export default async function horarioRoutes(app: FastifyInstance) {
       app.log.error(err, 'No se pudieron regenerar los días del horario');
     }
 
-    return { ...actualizado, regeneracion };
+    return { ...actualizado, franjas: actualizado.franjas.map(franjaParaResponder), regeneracion };
   });
 
   // Desactiva el horario y lo desasigna de los colaboradores

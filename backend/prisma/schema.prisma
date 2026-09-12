@@ -179,12 +179,15 @@ model FranjaHorario {
   // almuerza en la madrugada. Vacía = comportamiento histórico (minutos fijos).
   almuerzoInicio String?
   almuerzoFin    String?
-  // Ventana del DESCANSO NO REMUNERADO de este día ("09:00" → "09:15"): una pausa
-  // aparte del almuerzo, que se marca igual que él y tampoco se paga. A
-  // diferencia del almuerzo no tiene minutos fijos de respaldo: vacía = la franja
-  // no tiene descanso.
-  descansoInicio String?
-  descansoFin    String?
+  // VARIOS DESCANSOS NO REMUNERADOS (12 de septiembre de 2026): hasta tres por
+  // franja, además del almuerzo, cada uno con su desde y su hasta, guardados como
+  // texto: [{"inicio":"09:00","fin":"09:15"},{"inicio":"15:00","fin":"15:10"}].
+  // A diferencia del almuerzo no tienen minutos fijos de respaldo. Reemplaza a las
+  // dos columnas de UNA sola ventana de ee7a0c7, que nunca salieron.
+  // NULL = sin descansos, nunca "[]". Se lee siempre con `leerDescansos`
+  // (utils/descansos.ts), que nunca lanza. Texto y no Json: es el tipo que MariaDB
+  // agrega en línea (sql/descansos-no-remunerados.sql).
+  descansos      String?
 
   @@map("franjas_horario")
 }
@@ -346,9 +349,10 @@ model DiaEsperado {
   // lo ya liquidado. Vacía en todo lo anterior a la función.
   almuerzoInicio      String?
   almuerzoFin         String?
-  // La del descanso no remunerado también se congela, por lo mismo.
-  descansoInicio      String?
-  descansoFin         String?
+  // La lista de descansos no remunerados de ESE día, congelada con el formato de
+  // `FranjaHorario.descansos` (12 de septiembre de 2026), por lo mismo que el
+  // almuerzo: cambiarla mañana no puede mover lo ya liquidado. NULL = sin descansos.
+  descansos           String?
   // De qué horario salió, solo informativo: el horario puede cambiar después.
   horarioId           String?
   // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)
@@ -395,6 +399,10 @@ model Registro {
   // vuelta es la misma jornada. Nunca va junto con `salidaAlmuerzo`: una salida
   // es a una sola pausa.
   salidaDescanso  Boolean          @default(false)
+  // A CUÁL descanso salió, con la clave "09:00-09:15" (12 de septiembre de 2026).
+  // Lo asigna el servidor por la hora, no la tableta: la persona solo toca
+  // «descanso». Null en toda salida que no es a un descanso y en todo lo anterior.
+  descansoVentana String?
   // El regreso del almuerzo lo puso el sistema porque nadie lo marcó. Va en el
   // dato y no solo en el color: el día que alguien reclame, el registro tiene
   // que poder decir que esa hora no la marcó una persona.

@@ -1,6 +1,12 @@
 import { toZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear } from 'date-fns';
-import { minutosDe, esDeParteDelDia, type NovedadParaDia } from './tardanzas';
+import { minutosDe, esDeParteDelDia, duracionFranjaMin, type NovedadParaDia } from './tardanzas';
+
+import { leerDescansos, unirIntervalos } from './descansos';
+
+// La duración de una franja vive en tardanzas.ts desde el 12 de septiembre de
+// 2026. Se reexporta porque diasEsperados y sus pruebas la importan de aquí.
+export { duracionFranjaMin };
 
 const TZ = 'America/Bogota';
 
@@ -78,13 +84,6 @@ function semanaKeyDeZonificada(z: Date): string {
   return `${getISOWeekYear(z)}-W${getISOWeek(z)}`;
 }
 
-// Duración de una franja en minutos, contemplando que cruce medianoche.
-export function duracionFranjaMin(horaEntrada: string, horaSalida: string): number {
-  const ini = minutosDe(horaEntrada);
-  const fin = minutosDe(horaSalida);
-  return fin > ini ? fin - ini : 24 * 60 - ini + fin;
-}
-
 export type PermisoRango = NovedadParaDia & { tipo: string };
 
 // Lo que el horario del colaborador exigía UN día, ya congelado. Es la forma
@@ -100,8 +99,8 @@ export type DiaEsperadoParaSaldo = {
   horaSalida: string | null;
   almuerzoInicio: string | null;
   almuerzoFin: string | null;
-  descansoInicio: string | null;
-  descansoFin: string | null;
+  // La lista congelada de descansos no remunerados (texto de utils/descansos.ts).
+  descansos: string | null;
 };
 
 type Tramo = [number, number];
@@ -137,15 +136,19 @@ const enLosDosDias = (t: Tramo): Tramo[] => [t, [t[0] + 24 * 60, t[1] + 24 * 60]
 function minutosDeParteDelDia(dia: DiaEsperadoParaSaldo, p: PermisoRango): number | null {
   if (!dia.horaEntrada || !dia.horaSalida) return null;
   const franja = tramoDe(dia.horaEntrada, dia.horaSalida);
+  // Cada pausa en sus dos posiciones. El almuerzo aparte, como siempre. Los
+  // descansos, UNIDOS: dos ventanas congeladas que se pisan no pueden excusar dos
+  // veces la misma hora (12 de septiembre de 2026). Almuerzo y descansos no se
+  // pueden cruzar al guardar, así que no se funden entre sí.
   const pausas: Tramo[] = [];
-  if (dia.almuerzoInicio && dia.almuerzoFin) pausas.push(tramoDe(dia.almuerzoInicio, dia.almuerzoFin));
-  if (dia.descansoInicio && dia.descansoFin) pausas.push(tramoDe(dia.descansoInicio, dia.descansoFin));
+  if (dia.almuerzoInicio && dia.almuerzoFin) pausas.push(...enLosDosDias(tramoDe(dia.almuerzoInicio, dia.almuerzoFin)));
+  pausas.push(...unirIntervalos(leerDescansos(dia.descansos).flatMap(v => enLosDosDias(tramoDe(v.inicio, v.fin)))));
   let minutos = 0;
   for (const tramo of enLosDosDias(tramoDe(p.horaInicio!, p.horaFin!))) {
     const cubierto = cruce(franja, tramo);
     if (!cubierto) continue;
     minutos += largo(cubierto);
-    for (const pausa of pausas) for (const a of enLosDosDias(pausa)) minutos -= largo(cruce(cubierto, a));
+    for (const a of pausas) minutos -= largo(cruce(cubierto, a));
   }
   return minutos;
 }

@@ -101,9 +101,11 @@ describe('calcularDiasEsperados', () => {
   });
 });
 
-// El descanso no remunerado se congela con el día, igual que la ventana de
-// almuerzo, y sale de lo que el horario exige: no se paga.
-describe('calcularDiasEsperados — descanso no remunerado', () => {
+// Los descansos no remunerados se congelan con el día, igual que la ventana de
+// almuerzo, y salen de lo que el horario exige: no se pagan. Desde el 12 de
+// septiembre de 2026 la franja trae una LISTA; los casos de un solo descanso
+// conservan sus números.
+describe('calcularDiasEsperados — descansos no remunerados', () => {
   // 1 de julio de 2026 es miércoles: 08:00-17:00 con almuerzo de 12:00 a 13:00.
   const conDescanso = (franja: Record<string, unknown>) => ({
     activo: true, toleranciaMin: 0, almuerzoMin: 0,
@@ -112,39 +114,56 @@ describe('calcularDiasEsperados — descanso no remunerado', () => {
       tieneAlmuerzo: true, almuerzoInicio: '12:00', almuerzoFin: '13:00', ...franja,
     }],
   });
+  const lista = (...v: [string, string][]) => JSON.stringify(v.map(([inicio, fin]) => ({ inicio, fin })));
 
   it('congela la ventana y la descuenta de lo exigido, además del almuerzo', () => {
-    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ descansoInicio: '09:00', descansoFin: '09:15' }));
-    expect(d.descansoInicio).toBe('09:00');
-    expect(d.descansoFin).toBe('09:15');
+    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ descansos: lista(['09:00', '09:15']) }));
+    expect(d.descansos).toBe('[{"inicio":"09:00","fin":"09:15"}]');
     expect(d.minutosEsperados).toBe(465); // 9 h − 60 de almuerzo − 15 de descanso
     expect(d.almuerzoMin).toBe(60); // el almuerzo sigue siendo solo el almuerzo
   });
 
-  it('sin descanso configurado lo exigido no cambia y la ventana queda vacía', () => {
+  it('sin descansos configurados lo exigido no cambia y el día queda en NULL', () => {
     const [d] = dias('2026-07-01', '2026-07-01', conDescanso({}));
-    expect(d.descansoInicio).toBeNull();
-    expect(d.descansoFin).toBeNull();
+    expect(d.descansos).toBeNull();
     expect(d.minutosEsperados).toBe(480);
   });
 
-  it('media ventana no es un descanso', () => {
-    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ descansoInicio: '09:00', descansoFin: null }));
-    expect(d.descansoInicio).toBeNull();
+  it('un elemento con una sola hora no es un descanso', () => {
+    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ descansos: '[{"inicio":"09:00","fin":null}]' }));
+    expect(d.descansos).toBeNull();
     expect(d.minutosEsperados).toBe(480);
   });
 
   it('no depende de que la franja descuente almuerzo', () => {
-    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ tieneAlmuerzo: false, descansoInicio: '10:00', descansoFin: '10:15' }));
+    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ tieneAlmuerzo: false, descansos: lista(['10:00', '10:15']) }));
     expect(d.minutosEsperados).toBe(525); // 9 h − 15 de descanso, sin almuerzo
-    expect(d.descansoInicio).toBe('10:00');
+    expect(d.descansos).toBe('[{"inicio":"10:00","fin":"10:15"}]');
   });
 
-  it('un día sin franja no tiene descanso', () => {
+  it('un día sin franja no tiene descansos', () => {
     // 5 de julio de 2026 es domingo.
-    const [domingo] = dias('2026-07-05', '2026-07-05', conDescanso({ descansoInicio: '09:00', descansoFin: '09:15' }));
-    expect(domingo.descansoInicio).toBeNull();
-    expect(domingo.descansoFin).toBeNull();
+    const [domingo] = dias('2026-07-05', '2026-07-05', conDescanso({ descansos: lista(['09:00', '09:15']) }));
+    expect(domingo.descansos).toBeNull();
+  });
+
+  it('congela la lista en el orden de la jornada y descuenta la unión: el ejemplo del dueño', () => {
+    // 07:00-16:00, almuerzo de 12:00 a 13:00, descansos de 15:00 a 15:10 y de 09:00 a
+    // 09:15 guardados en desorden: 540 − 60 − 25 = 455.
+    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ horaEntrada: '07:00', horaSalida: '16:00', descansos: lista(['15:00', '15:10'], ['09:00', '09:15']) }));
+    expect(d.minutosEsperados).toBe(455);
+    expect(d.descansos).toBe('[{"inicio":"09:00","fin":"09:15"},{"inicio":"15:00","fin":"15:10"}]');
+  });
+
+  it('dos ventanas que se pisan restan la unión, no la suma', () => {
+    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ descansos: lista(['09:00', '09:30'], ['09:15', '09:45']) }));
+    expect(d.minutosEsperados).toBe(480 - 45);
+  });
+
+  it('una lista rota en la franja no revienta: el día queda sin descansos', () => {
+    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ horaEntrada: '07:00', horaSalida: '16:00', descansos: '[{"inicio":"09:00",' }));
+    expect(d.minutosEsperados).toBe(480);
+    expect(d.descansos).toBeNull();
   });
 });
 

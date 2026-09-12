@@ -5,7 +5,7 @@ import type { Pausa } from '../tipos';
 type Props = {
   pausa: Pausa;      // de qué pausa está volviendo
   salida: string;    // cuándo salió a esa pausa
-  sugerido: string;  // fin de la ventana de esa pausa
+  sugerido: string;  // a qué hora le tocaba volver de esa pausa
   ahora: Date;
   onConfirmar: (regresoA?: string) => void;
   onCancelar: () => void;
@@ -41,7 +41,10 @@ export default function RegresoOlvidado({ pausa, salida, sugerido, ahora, onConf
           className="w-full flex items-center justify-center gap-3 bg-primary hover:bg-primary-dark text-ink font-bold py-4 rounded-2xl text-base disabled:opacity-60 transition-colors">
           <Clock size={20} /> A las {horaBog(sugerido, 'HH:mm')}
         </button>
-        <p className="text-xs text-white/40 mt-2">Es la hora en que terminaba tu {nombre}</p>
+        {/* No «la hora en que terminaba tu descanso»: a un descanso tomado fuera de su
+            ventana se le propone la salida más lo que dura (12 de septiembre de 2026), y
+            esa no es la hora en que termina. Dicho así vale igual para el almuerzo. */}
+        <p className="text-xs text-white/40 mt-2">Es la hora a la que te tocaba volver</p>
 
         <button onClick={() => onConfirmar()} disabled={marcando}
           className="w-full mt-5 flex items-center justify-center gap-3 border border-white/15 hover:bg-white/5 text-white font-semibold py-3.5 rounded-2xl text-base disabled:opacity-60 transition-colors">

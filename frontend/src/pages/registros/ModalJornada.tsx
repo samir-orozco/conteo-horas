@@ -12,6 +12,7 @@ import FotosJornada from '../../components/FotosJornada';
 import { TIPO_PERMISO_LABEL as TIPO_NOVEDAD } from '../../constants/permisos';
 import { MOMENTO_TONO, type Momento } from '../../constants/momentos';
 import { nombreConDefecto } from '../../lib/porDefecto';
+import { totalesDeDescansos, salioDentroDeSuVentana } from './resumenDeDescansos';
 
 const TZ = 'America/Bogota';
 
@@ -49,7 +50,8 @@ export type Jornada = {
     programado: boolean; horaEntrada: string | null; horaSalida: string | null;
     toleranciaMin: number; toleranciaSalidaMin: number; ajustaEntrada: boolean;
     almuerzoMin: number; almuerzoInicio: string | null; almuerzoFin: string | null;
-    descansoInicio?: string | null; descansoFin?: string | null;
+    // Los descansos que el horario pedía ese día, como lista (12 de septiembre de 2026).
+    descansos?: { inicio: string; fin: string }[];
     minutosEsperados: number; congelado: boolean;
   } | null;
   tramos: {
@@ -68,9 +70,10 @@ export type Jornada = {
   // del 12 de septiembre de 2026).
   sedes?: { abrio: SedeDelDetalle | null; cerro: SedeDelDetalle | null; abrioAtribuida?: SedeDelDetalle | null };
   almuerzo: ResumenDePausa;
-  // Opcional por la misma razón: un servidor anterior no lo manda, y entonces
-  // ese día no tiene descanso que mostrar.
-  descanso?: ResumenDePausa | null;
+  // Un resumen por cada descanso no remunerado del día, en su orden (12 de septiembre
+  // de 2026). Opcional por la misma razón: un servidor anterior no lo manda, y entonces
+  // ese día no tiene descansos que mostrar.
+  descansos?: ResumenDePausa[];
   minutosDelDia: number;
   minutosTarde: number | null;
   motivoSinTardanza: string | null;
@@ -172,6 +175,21 @@ function DatoDePausa({ tipo, p }: { tipo: Pausa; p: ResumenDePausa | null | unde
   );
 }
 
+// Varios descansos en la tira de arriba (12 de septiembre de 2026): un solo dato con a
+// cuántos salió y lo que costaron entre todos. El detalle de cada uno va abajo, un
+// bloque por descanso.
+function DatoDeDescansos({ descansos }: { descansos: ResumenDePausa[] }) {
+  const { marcados, de, minutosDescontados } = totalesDeDescansos(descansos);
+  return (
+    <Dato rotulo="Descansos">
+      <span className="text-sm">{`${marcados} de ${de} marcados`}</span>
+      <p className="text-[11px] text-muted">
+        {minutosDescontados > 0 ? `se descontó ${enHoras(minutosDescontados)}` : 'no se le descontó nada'}
+      </p>
+    </Dato>
+  );
+}
+
 // Una pausa en curso o sin regreso. En curso no hay nada que corregir: se dice y
 // ya, para que nadie salga a buscar una marcación que falta. Sin regreso, el
 // resto del día no se está contando, y eso sí hay que corregirlo.
@@ -206,11 +224,29 @@ function AvisoDePausa({ tipo, p }: { tipo: Pausa; p: ResumenDePausa }) {
 // Lo de MÁS es lo que se tomó menos lo que le corresponde, no lo que se pasó al
 // volver: quien sale quince minutos antes y vuelve quince tarde se tomó media
 // hora de más, no quince.
-function EfectoEnElDia({ p }: { p: ResumenDePausa }) {
+//
+// Un DESCANSO cuya salida no cayó en la ventana donde quedó anotado no fue «dentro de su
+// hora» aunque durara menos: se dice que fue fuera de su hora, sin verde, con lo que se
+// descontó (12 de septiembre de 2026). Es Carla, cuya salida de las 15:00 quedó en el de
+// 09:00 a 09:15 y salía «dentro de su hora · se descontó 15 min». El almuerzo NO se tocó
+// porque no se pidió, pero tiene el mismo hueco: el kiosco deja salir a almorzar a
+// cualquier hora (`puedeSalirA`, backend/src/utils/almuerzo.ts), y uno de 10:00 a 10:30
+// con ventana de 12:00 a 13:00 sigue diciendo «dentro de su hora · se descontó 1h». Lo
+// decide el dueño.
+function EfectoEnElDia({ tipo, p }: { tipo: Pausa; p: ResumenDePausa }) {
   if (p.estado === 'EN_CURSO') return <span className="text-sm text-amber-700 font-semibold">está fuera ahora</span>;
   if (p.estado === 'ABIERTO') return <span className="text-sm text-red-600 font-semibold">no volvió a marcar</span>;
   if (p.estado === 'MARCADO' && p.minutos !== null && p.minutosVentana !== null) {
     const deMas = p.minutos - p.minutosVentana;
+    if (tipo === 'DESCANSO' && !salioDentroDeSuVentana(p)) return (
+      <>
+        <span className="text-sm text-orange-700 font-semibold">fuera de su hora</span>
+        <p className="text-[11px] text-muted">
+          {p.minutosDescontados > 0 ? `se descontó ${enHoras(p.minutosDescontados)}` : 'no se le descontó nada'}
+        </p>
+        {deMas > 0 && <p className="text-[11px] text-muted">{`se tomó ${enHoras(deMas)} de más`}</p>}
+      </>
+    );
     if (deMas > 0) return (
       <>
         <span className="text-sm text-orange-700 font-semibold">−{enHoras(deMas)}</span>
@@ -238,12 +274,16 @@ function EfectoEnElDia({ p }: { p: ResumenDePausa }) {
 // datos que se leen de un vistazo en vez de cuatro frases seguidas. Y sin el
 // párrafo que explicaba la mecánica del descuento: quien abre este bloque quiere
 // saber qué pasó ese día, no cómo funciona el motor.
-function DetalleDePausa({ tipo, p, ventana }: { tipo: Pausa; p: ResumenDePausa; ventana: { inicio: string; fin: string } }) {
-  const { titulo, Icono } = PAUSA[tipo];
+// `titulo` es para cuando el día tiene varios descansos (12 de septiembre de 2026): cada
+// bloque dice de cuál es, «Descanso de 09:00 a 09:15».
+function DetalleDePausa({ tipo, p, ventana, titulo }: {
+  tipo: Pausa; p: ResumenDePausa; ventana: { inicio: string; fin: string }; titulo?: string;
+}) {
+  const { titulo: tituloDeLaPausa, Icono } = PAUSA[tipo];
   return (
     <div>
       <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
-        <Icono size={13} /> {titulo}
+        <Icono size={13} /> {titulo ?? tituloDeLaPausa}
       </p>
       <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Dato rotulo="Su horario">
@@ -268,7 +308,7 @@ function DetalleDePausa({ tipo, p, ventana }: { tipo: Pausa; p: ResumenDePausa; 
         </Dato>
 
         <Dato rotulo="Efecto en el día">
-          <EfectoEnElDia p={p} />
+          <EfectoEnElDia tipo={tipo} p={p} />
         </Dato>
       </div>
     </div>
@@ -361,7 +401,13 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
   const abrioAtribuida = j?.sedes?.abrioAtribuida ?? null;
   const entrada = hhmm(r?.entrada ?? null);
   const a = j?.almuerzo;
-  const d = j?.descanso ?? null;
+  // Los descansos del día, cada uno con su ventana. Con uno solo se pinta como se
+  // pintaba; con varios, la tira de arriba los resume en un dato y abajo va un bloque
+  // por cada uno.
+  const ds = j?.descansos ?? [];
+  // Los descansos que el horario pedía ese día. Opcional: un servidor anterior no los manda.
+  const descansosDelDia = j?.dia?.descansos ?? [];
+  const hayVentanaDeDescanso = ds.some(p => p.ventana);
 
   // Extremos del día: la primera entrada y la última salida de todos los tramos.
   const primeraEntrada = j ? hhmm(j.tramos.find(t => t.entrada)?.entrada ?? null) : null;
@@ -441,7 +487,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
             </div>
 
             {/* Lo primero que se pregunta el administrador: ¿trabajó su jornada? */}
-            <div className={`bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 gap-3 ${d?.ventana ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
+            <div className={`bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 gap-3 ${hayVentanaDeDescanso ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
               {/* La llegada va aquí, pegada a la hora que la produce, en vez de
                   en un bloque aparte con su propia frase. */}
               <Dato rotulo="Entró">
@@ -462,7 +508,9 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               </Dato>
               <Dato rotulo="Salió"><span className="font-mono text-red-600">{ultimaSalida ?? '—'}</span></Dato>
               <DatoDePausa tipo="ALMUERZO" p={a} />
-              {d?.ventana && <DatoDePausa tipo="DESCANSO" p={d} />}
+              {hayVentanaDeDescanso && (ds.length === 1
+                ? <DatoDePausa tipo="DESCANSO" p={ds[0]} />
+                : <DatoDeDescansos descansos={ds} />)}
               <Dato rotulo="Contado ese día">
                 <b className="text-base">{enHoras(j.minutosDelDia)}</b>
                 {j.dia?.programado && (
@@ -471,12 +519,12 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               </Dato>
             </div>
             <p className="text-[11px] text-muted -mt-3">
-              El tiempo contado suma todas las marcaciones del día y ya tiene descontados el almuerzo y el descanso.
+              El tiempo contado suma todas las marcaciones del día y ya tiene descontados el almuerzo y los descansos.
               No es plata: el reparto en horas ordinarias, extras y recargos está en Reportes.
             </p>
 
             {a && <AvisoDePausa tipo="ALMUERZO" p={a} />}
-            {d && <AvisoDePausa tipo="DESCANSO" p={d} />}
+            {ds.map((p, i) => <AvisoDePausa key={i} tipo="DESCANSO" p={p} />)}
 
             {/* La observación, que es lo único de la marcación que no cabe
                 arriba. El resto —llegada, sede, horas— se subió a la cabecera:
@@ -550,7 +598,10 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
 
             {/* Las pausas del día que tienen horario */}
             {a?.ventana && <DetalleDePausa tipo="ALMUERZO" p={a} ventana={a.ventana} />}
-            {d?.ventana && <DetalleDePausa tipo="DESCANSO" p={d} ventana={d.ventana} />}
+            {ds.map((p, i) => p.ventana && (
+              <DetalleDePausa key={i} tipo="DESCANSO" p={p} ventana={p.ventana}
+                titulo={ds.length > 1 ? `Descanso de ${p.ventana.inicio} a ${p.ventana.fin}` : undefined} />
+            ))}
 
             {/* El resto del día */}
             {j.tramos.length > 1 && (
@@ -611,6 +662,15 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                     </p>
                   ) : (
                     <p>Ese día no estaba programado en su horario.</p>
+                  )}
+                  {/* Los descansos que pedía ese día (12 de septiembre de 2026). Restan de lo
+                      exigido igual que el almuerzo, así que sin ellos la sección no decía por
+                      qué el día pedía menos. */}
+                  {descansosDelDia.length > 0 && (
+                    <p>
+                      {`${descansosDelDia.length === 1 ? 'Descanso no remunerado' : 'Descansos no remunerados'}: ${
+                        descansosDelDia.map(d => `${d.inicio} a ${d.fin}`).join(' · ')}`}
+                    </p>
                   )}
                   {!j.dia.congelado && (
                     <p className="text-[11px] text-muted">

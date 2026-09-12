@@ -13,7 +13,8 @@ import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
 } from '../utils/saldoTiempo';
 import { diferenciasDeRegistro, type EstadoRegistro } from '../utils/cambiosRegistro';
-import { resumirAlmuerzoDelDia, resumirDescansoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, tramosDeLaJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, salidasTrasEditar } from '../utils/jornada';
+import { leerDescansos, completarVentanasDeDescanso, MAX_MARCACIONES_POR_JORNADA } from '../utils/descansos';
+import { resumirAlmuerzoDelDia, resumirDescansosDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, tramosDeLaJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, salidasTrasEditar, leerPausaDelCuerpo, leerDescansosDelCuerpo } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -37,6 +38,10 @@ function camposRegistro(body: any, esNuevo: boolean) {
   // sabría qué ventana descontar ni qué regreso esperar.
   if (out.salidaAlmuerzo === true) out.salidaDescanso = false;
   else if (out.salidaDescanso === true) out.salidaAlmuerzo = false;
+  // Una salida que deja de ser al descanso no puede seguir diciendo a cuál descanso
+  // salió: la tabla la resumiría en una ventana que ya no le corresponde (12 de
+  // septiembre de 2026).
+  if (out.salidaDescanso === false || out.salidaAlmuerzo === true) out.descansoVentana = null;
   return out;
 }
 
@@ -268,7 +273,7 @@ export default async function registroRoutes(app: FastifyInstance) {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
           toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
-          descansoInicio: true, descansoFin: true,
+          descansos: true,
         },
       });
       for (const d of materializados) {
@@ -420,7 +425,9 @@ export default async function registroRoutes(app: FastifyInstance) {
           tieneFotoEntrada: !!primera.fotoEntrada,
           tieneFotoSalida: !!cierra?.fotoSalida,
           almuerzo: jornada.almuerzo,
-          descanso: jornada.descanso,
+          // Un resumen por descanso de la jornada, en su orden (12 de septiembre de
+          // 2026). Lista vacía si el día no tiene descansos o son de otra jornada.
+          descansos: jornada.descansos,
           novedad: novedadesPorDia.get(clave) ?? null,
           marcaciones: marcaciones.map(m => ({
             id: m.id,
@@ -490,7 +497,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
         orderBy: { entrada: 'asc' },
         select: {
-          id: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true,
+          id: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true,
           entradaEstimada: true, salidaEstimada: true,
           sede: { select: { id: true, nombre: true, activa: true } },
           sedeSalida: { select: { id: true, nombre: true, activa: true } },
@@ -615,7 +622,9 @@ export default async function registroRoutes(app: FastifyInstance) {
       },
       colaborador: { nombre: colaborador.nombre, apellido: colaborador.apellido, cargo: colaborador.cargo },
       fecha: inicioDia,
-      dia: dia ? { ...dia, congelado: fueCongelado } : null,
+      // Los descansos del día viajan como arreglo, nunca como el texto guardado: el
+      // navegador no tiene por qué saber parsearlo (12 de septiembre de 2026).
+      dia: dia ? { ...dia, descansos: leerDescansos(dia.descansos), congelado: fueCongelado } : null,
       tramos: delDia.map(t => ({
         ...t,
         sedeAtribuida: sedeAtribuidaDe(t.id),
@@ -627,8 +636,9 @@ export default async function registroRoutes(app: FastifyInstance) {
       })),
       sedes: { ...sedes, abrioAtribuida },
       almuerzo,
-      // El descanso no remunerado, con el mismo resumen que el almuerzo.
-      descanso: resumirDescansoDelDia(delDia, dia),
+      // Los descansos no remunerados, uno por ventana y con el mismo resumen que el
+      // almuerzo (12 de septiembre de 2026).
+      descansos: resumirDescansosDelDia(delDia, dia),
       minutosDelDia: minutosContadosDelDia(delDia, dia),
       minutosTarde,
       motivoSinTardanza,
@@ -872,9 +882,10 @@ export default async function registroRoutes(app: FastifyInstance) {
   // primer PUT pise al segundo tramo y lo rechace, aunque el resultado final
   // fuera perfectamente válido.
   //
-  // Cada pausa llega con su nombre —`almuerzo` y `descanso`, cada una con su
-  // salida y su regreso— y la jornada se guarda en una fila por tramo trabajado:
-  // con las dos pausas son tres filas, que la tabla sigue mostrando en una línea.
+  // Cada pausa llega con su nombre —`almuerzo`, y `descansos`, una lista de hasta
+  // tres, cada una con su salida y su regreso— y la jornada se guarda en una fila
+  // por tramo trabajado: con el almuerzo y tres descansos son cinco filas, que la
+  // tabla sigue mostrando en una línea (12 de septiembre de 2026).
   app.put('/jornada/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
     const payload = request.user as any;
@@ -903,22 +914,15 @@ export default async function registroRoutes(app: FastifyInstance) {
     }
     if (!b.entrada) return reply.status(400).send({ error: 'La jornada necesita una hora de entrada.' });
 
-    // Cada pausa: a qué hora salió y, si ya volvió, a qué hora regresó.
-    const leerPausa = (p: unknown) => {
-      const o = (p && typeof p === 'object' ? p : {}) as { salida?: unknown; regreso?: unknown };
-      return {
-        salida: typeof o.salida === 'string' && o.salida ? o.salida : undefined,
-        regreso: typeof o.regreso === 'string' && o.regreso ? o.regreso : undefined,
-      };
-    };
-    const almuerzo = leerPausa(b.almuerzo);
-    const descanso = leerPausa(b.descanso);
+    // Cada pausa: a qué hora salió y, si ya volvió, a qué hora regresó. Los
+    // descansos son una lista, con sus reglas en `leerDescansosDelCuerpo`.
+    const almuerzo = leerPausaDelCuerpo(b.almuerzo);
     if (almuerzo.regreso && !almuerzo.salida) {
       return reply.status(400).send({ error: 'Para registrar el regreso del almuerzo hace falta la hora en que salió.' });
     }
-    if (descanso.regreso && !descanso.salida) {
-      return reply.status(400).send({ error: 'Para registrar el regreso del descanso hace falta la hora en que salió.' });
-    }
+    const leidos = leerDescansosDelCuerpo(b.descansos);
+    if ('error' in leidos) return reply.status(400).send(leidos);
+    const { descansos } = leidos;
 
     // Las marcaciones que HOY componen esta jornada, para saber a cuáles escribir.
     // Van por el día de ORIGEN, que es donde la marcación vive ahora mismo.
@@ -929,10 +933,11 @@ export default async function registroRoutes(app: FastifyInstance) {
     });
     const jornadas = agruparEnJornadas(delDiaOrigen.filter(r => r.entrada));
     const esta = jornadas.find(j => j.some(m => m.id === id)) ?? [primera];
-    // Entrada, descanso y almuerzo: una jornada son a lo sumo tres marcaciones.
-    if (esta.length > 3) {
+    // Una fila por tramo: la de la entrada y una más por cada pausa, el almuerzo y
+    // hasta tres descansos. Una jornada son a lo sumo cinco marcaciones.
+    if (esta.length > MAX_MARCACIONES_POR_JORNADA) {
       return reply.status(400).send({
-        error: 'Esta jornada tiene más de tres marcaciones. Edítalas una por una desde el detalle.',
+        error: 'Esta jornada tiene más de cinco marcaciones. Edítalas una por una desde el detalle.',
         codigo: 'DEMASIADAS_MARCACIONES',
       });
     }
@@ -946,14 +951,14 @@ export default async function registroRoutes(app: FastifyInstance) {
     const t = instantesDeJornada(fechaBase, {
       entrada: b.entrada,
       ...(almuerzo.salida ? { almuerzo: { salida: almuerzo.salida, regreso: almuerzo.regreso } } : {}),
-      ...(descanso.salida ? { descanso: { salida: descanso.salida, regreso: descanso.regreso } } : {}),
+      ...(descansos.length > 0 ? { descansos } : {}),
       salida: b.salida || undefined,
     });
     // Una fila por tramo trabajado, y cada una sabe cómo termina. Una pausa sin
     // regreso cierra la jornada ahí: lo que venga escrito después no pudo pasar.
     const partida = tramosDeLaJornada(t);
     if ('error' in partida) {
-      return reply.status(400).send({ error: `${partida.error}. Pon primero la hora del regreso.` });
+      return reply.status(400).send({ error: `${partida.error}.` });
     }
     const nuevos = partida.tramos;
 
@@ -1028,6 +1033,17 @@ export default async function registroRoutes(app: FastifyInstance) {
       });
     }
 
+    // A cuál descanso queda anotada cada fila que termina en un descanso, con la misma
+    // regla del kiosco y de la tabla: la ventana heredada de la salida del mismo
+    // minuto si sigue en el día, y si no, la que tocaba a esa hora. Se lee el día de
+    // DESTINO, que puede no estar materializado todavía (12 de septiembre de 2026).
+    await asegurarDiaSinFallar(colaboradorId, fechaBase, app.log);
+    const diaDestino = await prisma.diaEsperado.findFirst({
+      where: { colaboradorId, fecha: { gte: destino.inicioDia, lt: destino.finDia } },
+      select: { fecha: true, horaEntrada: true, descansos: true },
+    });
+    const ventanas = completarVentanasDeDescanso(diaDestino, nuevos, plan.filas.map(f => f.salida.descansoVentana));
+
     await prisma.$transaction(async (tx) => {
       // Qué novedades cuelgan de cada marcación, leído ANTES de mover nada. Con
       // tres filas una novedad puede pasar de la primera a la segunda y otra de la
@@ -1044,6 +1060,7 @@ export default async function registroRoutes(app: FastifyInstance) {
           ...comunes, entrada: nuevos[i].entrada, salida: nuevos[i].salida,
           salidaAlmuerzo: nuevos[i].fin === 'ALMUERZO', salidaDescanso: nuevos[i].fin === 'DESCANSO',
           ...salida,
+          descansoVentana: ventanas[i],
         };
         if (reusa) {
           await tx.registro.update({ where: { id: reusa }, data: datos });
