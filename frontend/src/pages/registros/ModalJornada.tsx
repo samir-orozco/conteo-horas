@@ -3,30 +3,40 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
 import {
-  X, Edit2, Trash2, MapPin, UtensilsCrossed,
-  Info, CalendarClock,
+  X, Edit2, Trash2, MapPin, UtensilsCrossed, Coffee,
+  Info, CalendarClock, type LucideIcon,
 } from 'lucide-react';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import FotosJornada from '../../components/FotosJornada';
 import { TIPO_PERMISO_LABEL as TIPO_NOVEDAD } from '../../constants/permisos';
-import { type Momento } from '../../constants/momentos';
+import { MOMENTO_TONO, type Momento } from '../../constants/momentos';
 import { nombreConDefecto } from '../../lib/porDefecto';
 
 const TZ = 'America/Bogota';
 
 export type SedeDelDetalle = { id?: string; nombre: string; activa: boolean };
 
+// Lo que el servidor resume de cada pausa del día —almuerzo o descanso no
+// remunerado—: si se tomó, cuánto duró y qué le costó al día.
+export type ResumenDePausa = {
+  estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
+  ventana: { inicio: string; fin: string } | null;
+  salida: string | null; regreso: string | null;
+  minutos: number | null; minutosVentana: number | null; minutosDescontados: number;
+  regresoEstimado: boolean; seExcedio: boolean; minutosDeMas: number;
+};
+
 export type Jornada = {
   registro: {
     id: string; colaboradorId: string; fecha: string;
     entrada: string | null; salida: string | null;
     tipo: string; observacion: string | null;
-    salidaEstimada: boolean; salidaAlmuerzo: boolean; entradaEstimada: boolean;
+    salidaEstimada: boolean; salidaAlmuerzo: boolean; salidaDescanso?: boolean; entradaEstimada: boolean;
     creadoEn: string; editadoPor: string | null; editadoEn: string | null;
     sede: SedeDelDetalle | null;
     // Dónde se marcó la salida de ESTA marcación. No es dónde se cerró la
-    // jornada: en una con almuerzo es la salida al descanso. Para eso, `sedes`.
+    // jornada: en una con almuerzo es la salida a almorzar. Para eso, `sedes`.
     sedeSalida?: SedeDelDetalle | null;
     tieneFotoEntrada: boolean; tieneFotoSalida: boolean;
     // La novedad que nació de esta marcación se borra con ella. El diálogo de
@@ -39,11 +49,12 @@ export type Jornada = {
     programado: boolean; horaEntrada: string | null; horaSalida: string | null;
     toleranciaMin: number; toleranciaSalidaMin: number; ajustaEntrada: boolean;
     almuerzoMin: number; almuerzoInicio: string | null; almuerzoFin: string | null;
+    descansoInicio?: string | null; descansoFin?: string | null;
     minutosEsperados: number; congelado: boolean;
   } | null;
   tramos: {
     id: string; entrada: string | null; salida: string | null;
-    salidaAlmuerzo: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
+    salidaAlmuerzo: boolean; salidaDescanso?: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
     // Qué es cada extremo de este tramo dentro del día. Lo decide el backend:
     // depende de los tramos vecinos, no del registro solo.
     momentoEntrada: Momento | null; momentoSalida: Momento | null;
@@ -56,13 +67,10 @@ export type Jornada = {
   // a un presencial cuya jornada no abrió en una sede probada (decisión del dueño
   // del 12 de septiembre de 2026).
   sedes?: { abrio: SedeDelDetalle | null; cerro: SedeDelDetalle | null; abrioAtribuida?: SedeDelDetalle | null };
-  almuerzo: {
-    estado: 'SIN_VENTANA' | 'MARCADO' | 'EN_CURSO' | 'ABIERTO' | 'NO_MARCADO';
-    ventana: { inicio: string; fin: string } | null;
-    salida: string | null; regreso: string | null;
-    minutos: number | null; minutosVentana: number | null; minutosDescontados: number;
-    regresoEstimado: boolean; seExcedio: boolean; minutosDeMas: number;
-  };
+  almuerzo: ResumenDePausa;
+  // Opcional por la misma razón: un servidor anterior no lo manda, y entonces
+  // ese día no tiene descanso que mostrar.
+  descanso?: ResumenDePausa | null;
   minutosDelDia: number;
   minutosTarde: number | null;
   motivoSinTardanza: string | null;
@@ -90,10 +98,34 @@ const fechaLarga = (s: string) =>
 // columna de asistencia solo genera dudas; la razón las cierra.
 const SIN_TARDANZA: Record<string, string> = {
   SIN_ENTRADA: 'Esta marcación no tiene hora de entrada.',
-  NO_ES_PRIMERA: 'No es la primera entrada del día. La llegada tarde solo se mide en la primera, para que volver del descanso no cuente como llegar tarde.',
+  NO_ES_PRIMERA: 'No es la primera entrada del día. La llegada tarde solo se mide en la primera, para que volver del almuerzo o del descanso no cuente como llegar tarde.',
   FESTIVO: 'Ese día era festivo.',
   NO_PROGRAMADO: 'Ese día no estaba programado en su horario.',
   SIN_HORARIO: 'Este colaborador no tiene un horario activo.',
+};
+
+type Pausa = 'ALMUERZO' | 'DESCANSO';
+
+// Cómo se dice cada pausa. Todo junto, para que el detalle de un descanso nunca
+// salga con los textos del almuerzo.
+const PAUSA: Record<Pausa, { rotulo: string; titulo: string; Icono: LucideIcon; enCurso: string; salio: string }> = {
+  ALMUERZO: {
+    rotulo: 'Almuerzo', titulo: 'Almuerzo de este día', Icono: UtensilsCrossed,
+    enCurso: 'Está almorzando', salio: 'Salió a almorzar',
+  },
+  DESCANSO: {
+    rotulo: 'Descanso', titulo: 'Descanso no remunerado de este día', Icono: Coffee,
+    enCurso: 'Está en su descanso', salio: 'Salió a su descanso',
+  },
+};
+
+// Qué fue cada extremo de un tramo, dicho en la lista de marcaciones del día.
+// Entrada y salida no llevan nota: son lo que se espera.
+const NOTA_DEL_MOMENTO: Partial<Record<Momento, string>> = {
+  SALIDA_ALMUERZO: 'salió a almorzar',
+  REGRESO_ALMUERZO: 'volvió del almuerzo',
+  SALIDA_DESCANSO: 'salió a su descanso',
+  REGRESO_DESCANSO: 'volvió del descanso',
 };
 
 function Chip({ tono, children }: { tono: string; children: React.ReactNode }) {
@@ -105,6 +137,140 @@ function Dato({ rotulo, children }: { rotulo: string; children: React.ReactNode 
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{rotulo}</p>
       <div className="text-sm text-ink">{children}</div>
+    </div>
+  );
+}
+
+function NotaDelMomento({ momento }: { momento: Momento | null }) {
+  const nota = momento ? NOTA_DEL_MOMENTO[momento] : undefined;
+  if (!momento || !nota) return null;
+  return <span className={`text-[11px] ${MOMENTO_TONO[momento]}`}> · {nota}</span>;
+}
+
+// La pausa en la tira de arriba: lo que PASÓ, no lo que costó. Esta celda
+// mostraba los minutos descontados, así que a quien marcaba bien su pausa —y por
+// eso no se le descuenta nada— le salía un guion, como si no hubiera parado,
+// encima del detalle de su hora y media. Al revés de lo que hay que premiar. El
+// costo va debajo, en pequeño.
+function DatoDePausa({ tipo, p }: { tipo: Pausa; p: ResumenDePausa | null | undefined }) {
+  return (
+    <Dato rotulo={PAUSA[tipo].rotulo}>
+      {p?.salida ? (
+        <>
+          <span className="font-mono text-sm">{hhmm(p.salida)} → {hhmm(p.regreso) ?? '···'}</span>
+          <p className="text-[11px] text-muted">
+            {p.minutosDescontados > 0
+              ? `se descontó ${enHoras(p.minutosDescontados)}`
+              : 'no se le descontó nada'}
+          </p>
+        </>
+      ) : p && p.minutosDescontados > 0 ? (
+        <>−{enHoras(p.minutosDescontados)}
+          <p className="text-[11px] text-muted">{p.ventana ? 'no lo marcó' : 'fijo del horario'}</p></>
+      ) : <span className="text-gray-400">—</span>}
+    </Dato>
+  );
+}
+
+// Una pausa en curso o sin regreso. En curso no hay nada que corregir: se dice y
+// ya, para que nadie salga a buscar una marcación que falta. Sin regreso, el
+// resto del día no se está contando, y eso sí hay que corregirlo.
+function AvisoDePausa({ tipo, p }: { tipo: Pausa; p: ResumenDePausa }) {
+  const { Icono, enCurso, salio } = PAUSA[tipo];
+  if (p.estado === 'EN_CURSO') {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+        <Icono size={16} className="mt-0.5 shrink-0" />
+        <span>
+          {enCurso} desde las <b>{hhmm(p.salida)}</b>. Su jornada sigue
+          abierta: marcará el regreso al volver.
+        </span>
+      </div>
+    );
+  }
+  if (p.estado === 'ABIERTO') {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-900 flex items-start gap-2">
+        <Info size={16} className="mt-0.5 shrink-0" />
+        <span>
+          {salio} a las <b>{hhmm(p.salida)}</b> y nunca volvió a marcar.
+          El resto de ese día <b>no se está contando ni pagando</b>. Si siguió trabajando,
+          agrega la marcación de la tarde con el botón <b>Editar</b> o creando una nueva.
+        </span>
+      </div>
+    );
+  }
+  return null;
+}
+
+// Lo de MÁS es lo que se tomó menos lo que le corresponde, no lo que se pasó al
+// volver: quien sale quince minutos antes y vuelve quince tarde se tomó media
+// hora de más, no quince.
+function EfectoEnElDia({ p }: { p: ResumenDePausa }) {
+  if (p.estado === 'EN_CURSO') return <span className="text-sm text-amber-700 font-semibold">está fuera ahora</span>;
+  if (p.estado === 'ABIERTO') return <span className="text-sm text-red-600 font-semibold">no volvió a marcar</span>;
+  if (p.estado === 'MARCADO' && p.minutos !== null && p.minutosVentana !== null) {
+    const deMas = p.minutos - p.minutosVentana;
+    if (deMas > 0) return (
+      <>
+        <span className="text-sm text-orange-700 font-semibold">−{enHoras(deMas)}</span>
+        <p className="text-[11px] text-muted">se tomó de más</p>
+      </>
+    );
+    return (
+      <>
+        <span className="text-sm text-green-700 font-semibold">dentro de su hora</span>
+        {p.minutosDescontados > 0 && (
+          <p className="text-[11px] text-muted">se descontó {enHoras(p.minutosDescontados)}</p>
+        )}
+      </>
+    );
+  }
+  return (
+    <>
+      <span className="text-sm">−{enHoras(p.minutosDescontados)}</span>
+      <p className="text-[11px] text-muted">de la ventana, siguió marcado</p>
+    </>
+  );
+}
+
+// El bloque de una pausa con horario. En tarjetas, como la tira de arriba: tres
+// datos que se leen de un vistazo en vez de cuatro frases seguidas. Y sin el
+// párrafo que explicaba la mecánica del descuento: quien abre este bloque quiere
+// saber qué pasó ese día, no cómo funciona el motor.
+function DetalleDePausa({ tipo, p, ventana }: { tipo: Pausa; p: ResumenDePausa; ventana: { inicio: string; fin: string } }) {
+  const { titulo, Icono } = PAUSA[tipo];
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
+        <Icono size={13} /> {titulo}
+      </p>
+      <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <Dato rotulo="Su horario">
+          <span className="font-mono text-sm">{ventana.inicio} → {ventana.fin}</span>
+          {p.minutosVentana !== null && (
+            <p className="text-[11px] text-muted">{enHoras(p.minutosVentana)}</p>
+          )}
+        </Dato>
+
+        <Dato rotulo="Se lo tomó">
+          {p.salida ? (
+            <>
+              <span className="font-mono text-sm">{hhmm(p.salida)} → {hhmm(p.regreso) ?? '···'}</span>
+              <p className="text-[11px] text-muted">
+                {p.minutos !== null ? enHoras(p.minutos) : 'sigue fuera'}
+                {p.regresoEstimado && ' · regreso estimado'}
+              </p>
+            </>
+          ) : (
+            <span className="text-sm text-muted">no lo marcó</span>
+          )}
+        </Dato>
+
+        <Dato rotulo="Efecto en el día">
+          <EfectoEnElDia p={p} />
+        </Dato>
+      </div>
     </div>
   );
 }
@@ -125,7 +291,7 @@ type Props = {
   // pantalla que muestra el diálogo, pero solo aquí se sabe el número.
   onEliminar: (registroId: string, novedadesLigadas: number) => void;
   // Saltar a otra marcación del día. Desde que la tabla muestra una fila por
-  // JORNADA, el regreso del almuerzo ya no tiene fila propia: si no se puede
+  // JORNADA, el regreso de una pausa ya no tiene fila propia: si no se puede
   // llegar a él desde aquí, no se puede llegar de ninguna forma.
   onVerMarcacion: (registroId: string) => void;
 };
@@ -188,13 +354,14 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
 
   const r = j?.registro;
   // Las sedes de la JORNADA, no de esta marcación suelta: en una jornada con
-  // almuerzo, la salida de la primera marcación es la del descanso. Un servidor
+  // almuerzo, la salida de la primera marcación es la de almorzar. Un servidor
   // anterior no manda `sedes`, y entonces solo se sabe dónde abrió esta.
   const abrio = j?.sedes ? j.sedes.abrio : r?.sede ?? null;
   const cerro = j?.sedes ? j.sedes.cerro : null;
   const abrioAtribuida = j?.sedes?.abrioAtribuida ?? null;
   const entrada = hhmm(r?.entrada ?? null);
   const a = j?.almuerzo;
+  const d = j?.descanso ?? null;
 
   // Extremos del día: la primera entrada y la última salida de todos los tramos.
   const primeraEntrada = j ? hhmm(j.tramos.find(t => t.entrada)?.entrada ?? null) : null;
@@ -231,7 +398,8 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
             <div className="flex flex-wrap gap-1.5">
               {r.entrada && !r.salida && <Chip tono="bg-green-100 text-green-800">Está adentro ahora</Chip>}
               {r.salidaEstimada && <Chip tono="bg-amber-50 text-amber-700">El sistema cerró este turno</Chip>}
-              {r.salidaAlmuerzo && <Chip tono="bg-yellow-50 text-yellow-700">Salió a su descanso</Chip>}
+              {r.salidaAlmuerzo && <Chip tono="bg-yellow-50 text-yellow-700">Salió a almorzar</Chip>}
+              {r.salidaDescanso && <Chip tono="bg-sky-50 text-sky-700">Salió a su descanso</Chip>}
               {r.entradaEstimada && <Chip tono="bg-amber-50 text-amber-700">Regreso puesto por el sistema</Chip>}
               {r.editadoPor && <Chip tono="bg-blue-50 text-blue-700">Corregido a mano</Chip>}
               {j.festivo && <Chip tono="bg-purple-100 text-purple-700">Festivo: {j.festivo.nombre}</Chip>}
@@ -273,7 +441,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
             </div>
 
             {/* Lo primero que se pregunta el administrador: ¿trabajó su jornada? */}
-            <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className={`bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 gap-3 ${d?.ventana ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
               {/* La llegada va aquí, pegada a la hora que la produce, en vez de
                   en un bloque aparte con su propia frase. */}
               <Dato rotulo="Entró">
@@ -293,26 +461,8 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                 )}
               </Dato>
               <Dato rotulo="Salió"><span className="font-mono text-red-600">{ultimaSalida ?? '—'}</span></Dato>
-              {/* Lo que PASÓ, no lo que costó. Esta celda mostraba los minutos
-                  descontados, así que a quien marcaba bien su descanso —y por eso
-                  no se le descuenta nada— le salía un guion, como si no hubiera
-                  descansado, encima del detalle de su hora y media. Al revés de
-                  lo que hay que premiar. El costo va debajo, en pequeño. */}
-              <Dato rotulo="Descanso">
-                {a?.salida ? (
-                  <>
-                    <span className="font-mono text-sm">{hhmm(a.salida)} → {hhmm(a.regreso) ?? '···'}</span>
-                    <p className="text-[11px] text-muted">
-                      {a.minutosDescontados > 0
-                        ? `se descontó ${enHoras(a.minutosDescontados)}`
-                        : 'no se le descontó nada'}
-                    </p>
-                  </>
-                ) : a && a.minutosDescontados > 0 ? (
-                  <>−{enHoras(a.minutosDescontados)}
-                    <p className="text-[11px] text-muted">{a.ventana ? 'no lo marcó' : 'fijo del horario'}</p></>
-                ) : <span className="text-gray-400">—</span>}
-              </Dato>
+              <DatoDePausa tipo="ALMUERZO" p={a} />
+              {d?.ventana && <DatoDePausa tipo="DESCANSO" p={d} />}
               <Dato rotulo="Contado ese día">
                 <b className="text-base">{enHoras(j.minutosDelDia)}</b>
                 {j.dia?.programado && (
@@ -321,33 +471,12 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               </Dato>
             </div>
             <p className="text-[11px] text-muted -mt-3">
-              El tiempo contado suma todas las marcaciones del día y ya tiene descontado el descanso.
+              El tiempo contado suma todas las marcaciones del día y ya tiene descontados el almuerzo y el descanso.
               No es plata: el reparto en horas ordinarias, extras y recargos está en Reportes.
             </p>
 
-            {/* Está descansando ahora mismo. No hay nada que corregir: se dice y
-                ya, para que nadie salga a buscar una marcación que falta. */}
-            {a?.estado === 'EN_CURSO' && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
-                <UtensilsCrossed size={16} className="mt-0.5 shrink-0" />
-                <span>
-                  Está en su descanso desde las <b>{hhmm(a.salida)}</b>. Su jornada sigue
-                  abierta: marcará el regreso al volver.
-                </span>
-              </div>
-            )}
-
-            {/* Salió a su descanso y nunca volvió: la tarde no se está contando. */}
-            {a?.estado === 'ABIERTO' && (
-              <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-900 flex items-start gap-2">
-                <Info size={16} className="mt-0.5 shrink-0" />
-                <span>
-                  Salió a su descanso a las <b>{hhmm(a.salida)}</b> y nunca volvió a marcar.
-                  El resto de ese día <b>no se está contando ni pagando</b>. Si siguió trabajando,
-                  agrega la marcación de la tarde con el botón <b>Editar</b> o creando una nueva.
-                </span>
-              </div>
-            )}
+            {a && <AvisoDePausa tipo="ALMUERZO" p={a} />}
+            {d && <AvisoDePausa tipo="DESCANSO" p={d} />}
 
             {/* La observación, que es lo único de la marcación que no cabe
                 arriba. El resto —llegada, sede, horas— se subió a la cabecera:
@@ -419,74 +548,9 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               </div>
             )}
 
-            {/* El descanso del día */}
-            {a?.ventana && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
-                  <UtensilsCrossed size={13} /> Descanso de este día
-                </p>
-                {/* En tarjetas, como la tira de arriba: tres datos que se leen
-                    de un vistazo en vez de cuatro frases seguidas. Y sin el
-                    párrafo que explicaba la mecánica del descuento: quien abre
-                    este bloque quiere saber qué pasó ese día, no cómo funciona
-                    el motor. */}
-                <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <Dato rotulo="Su horario">
-                    <span className="font-mono text-sm">{a.ventana.inicio} → {a.ventana.fin}</span>
-                    {a.minutosVentana !== null && (
-                      <p className="text-[11px] text-muted">{enHoras(a.minutosVentana)}</p>
-                    )}
-                  </Dato>
-
-                  <Dato rotulo="Se lo tomó">
-                    {a.salida ? (
-                      <>
-                        <span className="font-mono text-sm">{hhmm(a.salida)} → {hhmm(a.regreso) ?? '···'}</span>
-                        <p className="text-[11px] text-muted">
-                          {a.minutos !== null ? enHoras(a.minutos) : 'sigue fuera'}
-                          {a.regresoEstimado && ' · regreso estimado'}
-                        </p>
-                      </>
-                    ) : (
-                      <span className="text-sm text-muted">no lo marcó</span>
-                    )}
-                  </Dato>
-
-                  {/* Lo de MÁS es lo que se tomó menos lo que le corresponde, no
-                      lo que se pasó al volver: quien sale quince minutos antes y
-                      vuelve quince tarde se tomó media hora de más, no quince. */}
-                  <Dato rotulo="Efecto en el día">
-                    {(() => {
-                      if (a.estado === 'EN_CURSO') return <span className="text-sm text-amber-700 font-semibold">está fuera ahora</span>;
-                      if (a.estado === 'ABIERTO') return <span className="text-sm text-red-600 font-semibold">no volvió a marcar</span>;
-                      if (a.estado === 'MARCADO' && a.minutos !== null && a.minutosVentana !== null) {
-                        const deMas = a.minutos - a.minutosVentana;
-                        if (deMas > 0) return (
-                          <>
-                            <span className="text-sm text-orange-700 font-semibold">−{enHoras(deMas)}</span>
-                            <p className="text-[11px] text-muted">se tomó de más</p>
-                          </>
-                        );
-                        return (
-                          <>
-                            <span className="text-sm text-green-700 font-semibold">dentro de su hora</span>
-                            {a.minutosDescontados > 0 && (
-                              <p className="text-[11px] text-muted">se descontó {enHoras(a.minutosDescontados)}</p>
-                            )}
-                          </>
-                        );
-                      }
-                      return (
-                        <>
-                          <span className="text-sm">−{enHoras(a.minutosDescontados)}</span>
-                          <p className="text-[11px] text-muted">de la ventana, siguió marcado</p>
-                        </>
-                      );
-                    })()}
-                  </Dato>
-                </div>
-              </div>
-            )}
+            {/* Las pausas del día que tienen horario */}
+            {a?.ventana && <DetalleDePausa tipo="ALMUERZO" p={a} ventana={a.ventana} />}
+            {d?.ventana && <DetalleDePausa tipo="DESCANSO" p={d} ventana={d.ventana} />}
 
             {/* El resto del día */}
             {j.tramos.length > 1 && (
@@ -501,8 +565,8 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                       /* Vuelven a ser botones. Dejaron de serlo cuando cada
                          marcación tenía su fila en la tabla y bastaba cerrar y
                          tocar la otra; ahora la jornada entera es UNA fila, así
-                         que esta lista es el único camino al regreso del
-                         almuerzo —y a su foto, su hora y su botón de editar. */
+                         que esta lista es el único camino al regreso de una
+                         pausa —y a su foto, su hora y su botón de editar. */
                       <button key={t.id} type="button" disabled={esEste}
                         onClick={() => onVerMarcacion(t.id)}
                         className={`w-full text-left border rounded-xl px-3 py-2 text-sm transition-colors ${
@@ -511,8 +575,8 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                           <span>
                             <span className="text-muted">{i + 1}.</span>{' '}
                             <span className="font-mono">{hhmm(t.entrada) ?? '—'} → {hhmm(t.salida) ?? '—'}</span>
-                            {t.momentoSalida === 'SALIDA_ALMUERZO' && <span className="text-[11px] text-yellow-700"> · salió a su descanso</span>}
-                            {t.momentoEntrada === 'REGRESO_ALMUERZO' && <span className="text-[11px] text-yellow-700"> · volvió del descanso</span>}
+                            <NotaDelMomento momento={t.momentoSalida} />
+                            <NotaDelMomento momento={t.momentoEntrada} />
                             {t.salidaEstimada && <span className="text-[11px] text-amber-700"> · salida estimada</span>}
                             {t.entradaEstimada && <span className="text-[11px] text-amber-700"> · regreso estimado</span>}
                           </span>

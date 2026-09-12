@@ -120,7 +120,7 @@ export default function CamposColaborador({
       </CampoFormulario>
 
       <CampoFormulario rotulo="Horario de trabajo"
-        descripcion="Define qué se le exige cada día: llegadas tarde, extras y descanso.">
+        descripcion="Define qué se le exige cada día: llegadas tarde, extras y pausas.">
         {id => (
           <select id={id} value={valores.horarioId ?? ''} className={`${ENTRADA} ${MEDIO}`}
             onChange={e => onCambio({ horarioId: e.target.value })}>

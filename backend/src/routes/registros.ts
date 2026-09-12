@@ -13,7 +13,7 @@ import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
 } from '../utils/saldoTiempo';
 import { diferenciasDeRegistro, type EstadoRegistro } from '../utils/cambiosRegistro';
-import { resumirAlmuerzoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, salidasTrasEditar } from '../utils/jornada';
+import { resumirAlmuerzoDelDia, resumirDescansoDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, tramosDeLaJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, salidasTrasEditar } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -30,8 +30,13 @@ function camposRegistro(body: any, esNuevo: boolean) {
   if (body.observacion !== undefined) out.observacion = body.observacion || null;
   // Qué fue esa salida. Se deja corregir porque al absorber una marcación —dejar
   // que una sola cubra todo el día— la superviviente conservaba la marca de
-  // salida al descanso, y la tabla decía "Sin regreso" sobre un día completo.
+  // salida al almuerzo, y la tabla decía "Sin regreso" sobre un día completo.
   if (typeof body.salidaAlmuerzo === 'boolean') out.salidaAlmuerzo = body.salidaAlmuerzo;
+  if (typeof body.salidaDescanso === 'boolean') out.salidaDescanso = body.salidaDescanso;
+  // Una salida es a UNA pausa. Con las dos marcas encendidas la jornada no
+  // sabría qué ventana descontar ni qué regreso esperar.
+  if (out.salidaAlmuerzo === true) out.salidaDescanso = false;
+  else if (out.salidaDescanso === true) out.salidaAlmuerzo = false;
   return out;
 }
 
@@ -263,6 +268,7 @@ export default async function registroRoutes(app: FastifyInstance) {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
           toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+          descansoInicio: true, descansoFin: true,
         },
       });
       for (const d of materializados) {
@@ -401,9 +407,11 @@ export default async function registroRoutes(app: FastifyInstance) {
           // Antes la columna restaba salida menos entrada de un tramo suelto, así
           // que un día con almuerzo mostraba dos duraciones parciales.
           minutosContados: jornada.minutosContados,
-          // Lo que ESTA jornada pagó de almuerzo. El resumen `almuerzo` es del
-          // día entero: en un día con dos jornadas no son el mismo número.
+          // Lo que ESTA jornada pagó de cada pausa. Los resúmenes `almuerzo` y
+          // `descanso` son del día entero: en un día con dos jornadas no son el
+          // mismo número.
           minutosAlmuerzoAqui: jornada.minutosAlmuerzoAqui,
+          minutosDescansoAqui: jornada.minutosDescansoAqui,
           entradaEstimada: primera.entradaEstimada,
           // No sale de `cierra`: el auto-cierre sin franja marca la jornada y
           // deja la hora en null, y entonces ninguna marcación la cierra.
@@ -412,12 +420,14 @@ export default async function registroRoutes(app: FastifyInstance) {
           tieneFotoEntrada: !!primera.fotoEntrada,
           tieneFotoSalida: !!cierra?.fotoSalida,
           almuerzo: jornada.almuerzo,
+          descanso: jornada.descanso,
           novedad: novedadesPorDia.get(clave) ?? null,
           marcaciones: marcaciones.map(m => ({
             id: m.id,
             entrada: m.entrada,
             salida: m.salida,
             salidaAlmuerzo: m.salidaAlmuerzo,
+            salidaDescanso: m.salidaDescanso,
             entradaEstimada: m.entradaEstimada,
             salidaEstimada: m.salidaEstimada,
             tieneFotoEntrada: !!m.fotoEntrada,
@@ -458,7 +468,7 @@ export default async function registroRoutes(app: FastifyInstance) {
       where: { id, colaborador: { empresaId: request.empresaId } },
       select: {
         id: true, colaboradorId: true, fecha: true, entrada: true, salida: true,
-        tipo: true, observacion: true, salidaEstimada: true, salidaAlmuerzo: true,
+        tipo: true, observacion: true, salidaEstimada: true, salidaAlmuerzo: true, salidaDescanso: true,
         entradaEstimada: true, creadoEn: true, editadoPor: true, editadoEn: true,
         fotoEntrada: false, fotoSalida: false,
         sede: { select: { id: true, nombre: true, activa: true } },
@@ -480,7 +490,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
         orderBy: { entrada: 'asc' },
         select: {
-          id: true, entrada: true, salida: true, salidaAlmuerzo: true,
+          id: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true,
           entradaEstimada: true, salidaEstimada: true,
           sede: { select: { id: true, nombre: true, activa: true } },
           sedeSalida: { select: { id: true, nombre: true, activa: true } },
@@ -617,6 +627,8 @@ export default async function registroRoutes(app: FastifyInstance) {
       })),
       sedes: { ...sedes, abrioAtribuida },
       almuerzo,
+      // El descanso no remunerado, con el mismo resumen que el almuerzo.
+      descanso: resumirDescansoDelDia(delDia, dia),
       minutosDelDia: minutosContadosDelDia(delDia, dia),
       minutosTarde,
       motivoSinTardanza,
@@ -646,7 +658,7 @@ export default async function registroRoutes(app: FastifyInstance) {
       where: { colaboradorId: registro.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
       orderBy: { entrada: 'asc' },
       select: {
-        id: true, entrada: true, salida: true, salidaAlmuerzo: true,
+        id: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true,
         entradaEstimada: true, salidaEstimada: true, fotoEntrada: true, fotoSalida: true,
         sede: { select: { id: true, nombre: true } },
         sedeSalida: { select: { id: true, nombre: true } },
@@ -848,21 +860,37 @@ export default async function registroRoutes(app: FastifyInstance) {
     return actualizado;
   });
 
-  // Guardar una JORNADA entera: entrada, descanso y salida de una sola vez.
+  // Guardar una JORNADA entera: entrada, sus pausas y salida de una sola vez.
   //
   // Existe porque el formulario por marcación mentía. La fila de la tabla es una
   // jornada, pero al editarla se abría la PRIMERA marcación, cuya salida es la
-  // del descanso: quien había marcado su entrada y su descanso veía "Salida
+  // del almuerzo: quien había marcado su entrada y su almuerzo veía "Salida
   // 11:38" y con razón esperaba verla vacía, porque no se había ido a trabajar.
   //
   // Va en una transacción y con una sola validación sobre el estado FINAL. Hacer
-  // dos PUT seguidos no sirve: mover el descanso de 11:38 a 12:30 hace que el
+  // dos PUT seguidos no sirve: mover el almuerzo de 11:38 a 12:30 hace que el
   // primer PUT pise al segundo tramo y lo rechace, aunque el resultado final
   // fuera perfectamente válido.
+  //
+  // Cada pausa llega con su nombre —`almuerzo` y `descanso`, cada una con su
+  // salida y su regreso— y la jornada se guarda en una fila por tramo trabajado:
+  // con las dos pausas son tres filas, que la tabla sigue mostrando en una línea.
   app.put('/jornada/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
     const payload = request.user as any;
-    const b = request.body as any;
+    const b = (request.body && typeof request.body === 'object' ? request.body : {}) as any;
+
+    // El formato de antes mandaba el ALMUERZO con las claves `descansoSalida` y
+    // `descansoRegreso`. Ahora el descanso es otra pausa, que no se paga: una
+    // pestaña vieja abierta durante el despliegue guardaría el almuerzo como
+    // descanso no remunerado, y nadie lo notaría hasta la nómina. Se rechaza
+    // diciendo qué hacer.
+    if ('descansoSalida' in b || 'descansoRegreso' in b) {
+      return reply.status(400).send({
+        error: 'Esta pantalla quedó desactualizada. Recarga la página y vuelve a guardar la jornada.',
+        codigo: 'FORMATO_VIEJO',
+      });
+    }
 
     const primera = await prisma.registro.findFirst({
       where: { id, colaborador: { empresaId: request.empresaId } },
@@ -874,13 +902,22 @@ export default async function registroRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Colaborador no encontrado' });
     }
     if (!b.entrada) return reply.status(400).send({ error: 'La jornada necesita una hora de entrada.' });
-    if (b.descansoRegreso && !b.descansoSalida) {
-      return reply.status(400).send({ error: 'Para registrar el regreso del descanso hace falta la hora en que salió.' });
+
+    // Cada pausa: a qué hora salió y, si ya volvió, a qué hora regresó.
+    const leerPausa = (p: unknown) => {
+      const o = (p && typeof p === 'object' ? p : {}) as { salida?: unknown; regreso?: unknown };
+      return {
+        salida: typeof o.salida === 'string' && o.salida ? o.salida : undefined,
+        regreso: typeof o.regreso === 'string' && o.regreso ? o.regreso : undefined,
+      };
+    };
+    const almuerzo = leerPausa(b.almuerzo);
+    const descanso = leerPausa(b.descanso);
+    if (almuerzo.regreso && !almuerzo.salida) {
+      return reply.status(400).send({ error: 'Para registrar el regreso del almuerzo hace falta la hora en que salió.' });
     }
-    if (b.descansoSalida && !b.descansoRegreso && b.salida) {
-      return reply.status(400).send({
-        error: 'Salió al descanso y todavía no ha vuelto, así que la jornada no puede tener hora de salida. Pon primero la hora del regreso.',
-      });
+    if (descanso.regreso && !descanso.salida) {
+      return reply.status(400).send({ error: 'Para registrar el regreso del descanso hace falta la hora en que salió.' });
     }
 
     // Las marcaciones que HOY componen esta jornada, para saber a cuáles escribir.
@@ -892,9 +929,10 @@ export default async function registroRoutes(app: FastifyInstance) {
     });
     const jornadas = agruparEnJornadas(delDiaOrigen.filter(r => r.entrada));
     const esta = jornadas.find(j => j.some(m => m.id === id)) ?? [primera];
-    if (esta.length > 2) {
+    // Entrada, descanso y almuerzo: una jornada son a lo sumo tres marcaciones.
+    if (esta.length > 3) {
       return reply.status(400).send({
-        error: 'Esta jornada tiene más de dos marcaciones. Edítalas una por una desde el detalle.',
+        error: 'Esta jornada tiene más de tres marcaciones. Edítalas una por una desde el detalle.',
         codigo: 'DEMASIADAS_MARCACIONES',
       });
     }
@@ -907,10 +945,17 @@ export default async function registroRoutes(app: FastifyInstance) {
       : inicioDia;
     const t = instantesDeJornada(fechaBase, {
       entrada: b.entrada,
-      descansoSalida: b.descansoSalida || undefined,
-      descansoRegreso: b.descansoRegreso || undefined,
+      ...(almuerzo.salida ? { almuerzo: { salida: almuerzo.salida, regreso: almuerzo.regreso } } : {}),
+      ...(descanso.salida ? { descanso: { salida: descanso.salida, regreso: descanso.regreso } } : {}),
       salida: b.salida || undefined,
     });
+    // Una fila por tramo trabajado, y cada una sabe cómo termina. Una pausa sin
+    // regreso cierra la jornada ahí: lo que venga escrito después no pudo pasar.
+    const partida = tramosDeLaJornada(t);
+    if ('error' in partida) {
+      return reply.status(400).send({ error: `${partida.error}. Pon primero la hora del regreso.` });
+    }
+    const nuevos = partida.tramos;
 
     // Los tramos que van a quedar, y con qué chocarían.
     //
@@ -931,10 +976,6 @@ export default async function registroRoutes(app: FastifyInstance) {
       },
       select: { id: true, entrada: true, salida: true },
     });
-    const nuevos = [
-      { entrada: t.entrada, salida: t.descansoSalida ?? t.salida },
-      ...(t.descansoRegreso ? [{ entrada: t.descansoRegreso, salida: t.salida }] : []),
-    ];
     const hhmm = (d: Date | null) => (d ? format(toZonedTime(d, TZ), 'HH:mm') : '—');
     for (const n of nuevos) {
       const choque = tramoQueChoca(n, ajenos);
@@ -961,14 +1002,17 @@ export default async function registroRoutes(app: FastifyInstance) {
     // bien: anotar un cambio que luego se revierte sería peor que no anotarlo.
     const cambiosPrimera = {
       entrada: t.entrada, salida: nuevos[0].salida,
-      salidaAlmuerzo: !!t.descansoSalida,
+      salidaAlmuerzo: nuevos[0].fin === 'ALMUERZO',
+      salidaDescanso: nuevos[0].fin === 'DESCANSO',
       tipo: comunes.tipo, observacion: comunes.observacion, fecha: comunes.fecha,
     };
     const antesPrimera = { ...esta[0] } as any;
 
-    // Quitar o poner el descanso cambia QUÉ salida guarda cada fila, y todo lo que
-    // dice cómo se marcó esa salida tiene que ir con ella. Ver `salidasTrasEditar`.
-    const plan = salidasTrasEditar(esta, t);
+    // Quitar, poner o mover una pausa cambia QUÉ salida guarda cada fila, y todo
+    // lo que dice cómo se marcó esa salida tiene que ir con ella. También decide
+    // qué fila se reescribe con cada tramo —por su entrada, no por su posición— y
+    // cuál sobra. Ver `salidasTrasEditar`.
+    const plan = salidasTrasEditar(esta, nuevos);
 
     // Una foto del kiosco que no queda en ninguna fila se borra al guardar. Es
     // evidencia de asistencia, así que no se borra sin que el administrador lo
@@ -985,31 +1029,45 @@ export default async function registroRoutes(app: FastifyInstance) {
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.registro.update({
-        where: { id: esta[0].id },
-        data: { ...comunes, entrada: t.entrada, salida: nuevos[0].salida, salidaAlmuerzo: !!t.descansoSalida, ...plan.primera },
+      // Qué novedades cuelgan de cada marcación, leído ANTES de mover nada. Con
+      // tres filas una novedad puede pasar de la primera a la segunda y otra de la
+      // segunda a la tercera: moviéndolas por marcación, la primera viajaría dos veces.
+      const ligadas = plan.novedades.length === 0 ? [] : await tx.permiso.findMany({
+        where: { registroId: { in: plan.novedades.map(n => n.desde) } },
+        select: { id: true, registroId: true },
       });
-      const segunda = esta[1];
-      let idSegunda = segunda?.id ?? null;
-      if (nuevos[1]) {
-        const datos = { ...comunes, entrada: nuevos[1].entrada, salida: nuevos[1].salida, salidaAlmuerzo: false, ...plan.segunda };
-        if (segunda) await tx.registro.update({ where: { id: segunda.id }, data: datos });
+
+      const ids: string[] = [];
+      for (let i = 0; i < nuevos.length; i++) {
+        const { reusa, salida } = plan.filas[i];
+        const datos = {
+          ...comunes, entrada: nuevos[i].entrada, salida: nuevos[i].salida,
+          salidaAlmuerzo: nuevos[i].fin === 'ALMUERZO', salidaDescanso: nuevos[i].fin === 'DESCANSO',
+          ...salida,
+        };
+        if (reusa) {
+          await tx.registro.update({ where: { id: reusa }, data: datos });
+          ids.push(reusa);
+          continue;
+        }
         // Fila nueva nacida de una edición del admin: su entrada la escribió él. Su
-        // salida puede no ser nueva —al poner el descanso es la salida del día, que
+        // salida puede no ser nueva —al poner una pausa es la salida del día, que
         // sí se marcó en el kiosco— y por eso el método de salida viene del plan.
-        else idSegunda = (await tx.registro.create({
+        const creada = await tx.registro.create({
           data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any, metodoEntrada: 'MANUAL' },
           select: { id: true },
-        })).id;
+        });
+        ids.push(creada.id);
       }
+
       // Las novedades se mueven ANTES de borrar: cuelgan de su marcación con ON
-      // DELETE CASCADE, y borrar la tarde se llevaba la de la salida temprana.
+      // DELETE CASCADE, y borrar la fila de un regreso se llevaba la de la salida temprana.
       for (const n of plan.novedades) {
-        const hacia = n.hacia === 'primera' ? esta[0].id : idSegunda;
-        if (hacia) await tx.permiso.updateMany({ where: { registroId: n.desde }, data: { registroId: hacia } });
+        const suyas = ligadas.filter(p => p.registroId === n.desde).map(p => p.id);
+        if (suyas.length > 0) await tx.permiso.updateMany({ where: { id: { in: suyas } }, data: { registroId: ids[n.hacia] } });
       }
-      // Se quitó el descanso: la marcación del regreso ya no representa nada.
-      if (!nuevos[1] && segunda) await tx.registro.delete({ where: { id: segunda.id } });
+      // Las marcaciones que ya no representan ninguna marca de la jornada.
+      for (const sobra of plan.sobran) await tx.registro.delete({ where: { id: sobra } });
     });
 
     await anotarCambios(esta[0].id, antesPrimera, cambiosPrimera, request.usuarioId, request.usuarioNombre)

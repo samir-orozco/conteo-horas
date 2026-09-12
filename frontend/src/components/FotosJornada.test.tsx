@@ -117,6 +117,21 @@ describe('las fotos de verificación facial del día', () => {
     expect(screen.getByAltText('Foto de entrada')).toBeTruthy();
   });
 
+  it('el regreso del descanso sin ubicación dice su momento y su sede por defecto', async () => {
+    // Unión con el descanso no remunerado (12 de septiembre de 2026): el servidor le
+    // atribuye sede a la foto de entrada de cada tramo, también al regreso de una
+    // pausa, y ese regreso tiene su propio rótulo.
+    responder([
+      foto({ registroId: 'a', momento: 'ENTRADA', jornada: 0, sede: LAURELES }),
+      foto({ registroId: 'a', momento: 'SALIDA_DESCANSO', hora: bog(9, 0), jornada: 0, sede: LAURELES }),
+      foto({ registroId: 'b', momento: 'REGRESO_DESCANSO', hora: bog(9, 15), jornada: 0, sede: null, sedeAtribuida: { ...LAURELES, activa: true, porDefecto: true } }),
+      foto({ registroId: 'b', momento: 'SALIDA', hora: bog(17, 0), jornada: 0, sede: null }),
+    ]);
+    render(<FotosJornada registroId="a" />);
+    expect(await screen.findByText(/Regreso del descanso/)).toBeTruthy();
+    expect(screen.getByText('Laureles (por defecto)')).toBeTruthy();
+  });
+
   it('con un backend que todavía no manda el turno, cae a la lista de antes', async () => {
     responder([
       foto({ registroId: 'a', momento: 'ENTRADA' }),

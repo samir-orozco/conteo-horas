@@ -27,7 +27,7 @@ import notificacionRoutes from './routes/notificaciones';
 import { configurarWebhook } from './utils/telegram';
 import { cerrarTurnosOlvidados } from './utils/cierreTurnos';
 import { avisarContratosDeTodas } from './routes/contratos';
-import { avisarAlmuerzosSinRegreso } from './utils/cierreAlmuerzo';
+import { avisarPausasSinRegreso } from './utils/cierreAlmuerzo';
 import { mantenerVentana } from './utils/materializarDias';
 import { decidirAccesoEmpresa } from './utils/accesoEmpresa';
 
@@ -206,8 +206,8 @@ const start = async () => {
     // Almuerzos que quedaron sin regreso. No se cierran solos: la evidencia de
     // quien volvió y no marcó es idéntica a la de quien se fue para la casa, así
     // que darle la tarde por buena sería fabricar horas pagadas. Se avisa.
-    avisarAlmuerzosSinRegreso(app.log);
-    setInterval(() => avisarAlmuerzosSinRegreso(app.log), 24 * 60 * 60 * 1000);
+    avisarPausasSinRegreso(app.log);
+    setInterval(() => avisarPausasSinRegreso(app.log), 24 * 60 * 60 * 1000);
 
     // Vencimientos de contratos. Antes esto solo corría cuando alguien abría el
     // tablero, así que la empresa que no entraba no se enteraba. Al arrancar y

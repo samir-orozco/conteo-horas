@@ -40,7 +40,7 @@ describe('CamposColaborador', () => {
   it('explica lo que no se deduce del nombre del campo', () => {
     montar();
     expect(screen.getByText(/la que digita para marcar en el kiosco/i)).toBeInTheDocument();
-    expect(screen.getByText(/llegadas tarde, extras y descanso/i)).toBeInTheDocument();
+    expect(screen.getByText(/llegadas tarde, extras y pausas/i)).toBeInTheDocument();
     expect(screen.getByText(/se calcula su hora extra/i)).toBeInTheDocument();
   });
 

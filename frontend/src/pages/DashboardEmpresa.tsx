@@ -46,7 +46,7 @@ export default function DashboardEmpresa() {
             gente, y las dos cosas parecerían contradecirse. */}
         <Kpi icon={UserCheck} titulo="En planta ahora" valor={String(d.totales.enPlanta)} acento="text-green-600"
           detalle={d.enDescanso?.length
-            ? `${d.enDescanso.length} en descanso · de ${d.totales.colaboradoresActivos} colaboradores`
+            ? `${d.enDescanso.length} en pausa · de ${d.totales.colaboradoresActivos} colaboradores`
             : `de ${d.totales.colaboradoresActivos} colaboradores`} />
         <Kpi icon={Users} titulo="Colaboradores" valor={String(d.totales.colaboradoresActivos)} detalle="activos en la empresa" />
         <Kpi icon={Clock} titulo="Horas esta semana" valor={`${d.totales.horasSemana}h`} detalle="trabajadas por el equipo" />

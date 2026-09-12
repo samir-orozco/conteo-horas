@@ -1,5 +1,5 @@
 // Verifica la COSTURA de la sede de salida en las rutas, que las pruebas de
-// `sedesDeLaJornada` y `sedesDeSalidaTrasEditar` no cubren: que el detalle mande
+// `sedesDeLaJornada` y `salidasTrasEditar` no cubren: que el detalle mande
 // las sedes de la JORNADA, que editar a mano mueva o borre la sede de salida, y
 // que el kiosco la escriba siempre, null incluido. Es lo que pide CLAUDE.md §8.6.
 //
@@ -116,7 +116,7 @@ async function main() {
 
   // ---- Editar la jornada: poner el descanso ----
   const e2 = await pedir('PUT', `/api/registros/jornada/${A.id}`, admin,
-    { fecha: DIA, entrada: '08:00', descansoSalida: '12:00', descansoRegreso: '13:00', salida: '17:00', tipo: 'NORMAL' });
+    { fecha: DIA, entrada: '08:00', almuerzo: { salida: '12:00', regreso: '13:00' }, salida: '17:00', tipo: 'NORMAL' });
   comprobar('poner el descanso: la ruta acepta', '200', `${e2.estado}`);
   comprobar('poner el descanso: la salida al descanso no se sabe dónde fue', 'sin sede', await sedeSalidaDe(A.id));
   const nueva = await prisma.registro.findFirst({ where: { colaboradorId: sup.id, entrada: hora('13:00') }, select: { id: true, sedeSalidaId: true } });

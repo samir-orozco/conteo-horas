@@ -10,9 +10,9 @@ import { rangoDiaBogota } from '../utils/fechas';
 import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes, exigeRetoDePose } from '../utils/kioscoConfig';
 import { decidirUbicacionDeMarca, MODALIDAD_POR_DEFECTO, puedeCerrarAqui } from '../utils/modalidad';
 import { VENTANA_TURNO_MS } from '../utils/cierreTurnos';
-import { puedeSalirAAlmorzar, dentroDeLaVentana } from '../utils/almuerzo';
+import { puedeSalirAAlmorzar, puedeSalirADescanso, dentroDeLaVentana, dentroDelDescanso } from '../utils/almuerzo';
 import { salidaAntesDeHora, ventanaDeSalidaTemprana, ventanaDeLlegadaTarde, llegadaTarde } from '../utils/tardanzas';
-import { almuerzoSinRegreso } from '../utils/cierreAlmuerzo';
+import { almuerzoSinRegreso, descansoSinRegreso } from '../utils/cierreAlmuerzo';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 
 const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -94,23 +94,34 @@ function fotoValida(foto: unknown): foto is string {
 // `fechaAncla` es la del turno abierto, no la de hoy: un turno nocturno que
 // almuerza a la 01:00 pertenece al día en que ENTRÓ, y su ventana vive en la
 // fila de ese día.
-async function almuerzoDelTurno(colaboradorId: string, fechaAncla: Date) {
+//
+// Lo mismo para las dos pausas, almuerzo y descanso no remunerado: una sola
+// lectura del día y una sola de las salidas del turno.
+async function pausasDelTurno(colaboradorId: string, fechaAncla: Date) {
   const { inicioDia, finDia } = rangoDiaBogota(fechaAncla);
-  const [dia, marcados] = await Promise.all([
+  const [dia, tomadas] = await Promise.all([
     // Por rango y no por clave exacta: MySQL puede devolver la fecha con
     // milisegundos y una fila así quedaría huérfana sin que nadie se entere.
     prisma.diaEsperado.findFirst({
       where: { colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
       // `fecha` hace falta para saber si la persona está DENTRO de la ventana
       // ahora mismo: la de un turno nocturno cae en la madrugada siguiente.
-      select: { fecha: true, almuerzoInicio: true, almuerzoFin: true },
+      select: { fecha: true, almuerzoInicio: true, almuerzoFin: true, descansoInicio: true, descansoFin: true },
     }),
-    prisma.registro.count({
-      where: { colaboradorId, salidaAlmuerzo: true, salida: { gte: new Date(Date.now() - VENTANA_TURNO_MS) } },
+    prisma.registro.findMany({
+      where: {
+        colaboradorId,
+        salida: { gte: new Date(Date.now() - VENTANA_TURNO_MS) },
+        OR: [{ salidaAlmuerzo: true }, { salidaDescanso: true }],
+      },
+      select: { salidaAlmuerzo: true, salidaDescanso: true },
     }),
   ]);
-  const yaAlmorzo = marcados > 0;
-  return { ventana: dia, yaAlmorzo, puede: puedeSalirAAlmorzar(dia, yaAlmorzo) };
+  return {
+    dia,
+    puedeAlmorzar: puedeSalirAAlmorzar(dia, tomadas.some(t => t.salidaAlmuerzo)),
+    puedeDescansar: puedeSalirADescanso(dia, tomadas.some(t => t.salidaDescanso)),
+  };
 }
 
 // Deja una novedad pendiente de aprobación y avisa al administrador. La usan el
@@ -409,28 +420,32 @@ export default async function workerRoutes(app: FastifyInstance) {
           salida: { not: null, gte: new Date(Date.now() - VENTANA_TURNO_MS) },
         },
         orderBy: { salida: 'desc' },
-        select: { salida: true, salidaAlmuerzo: true },
+        select: { salida: true, salidaAlmuerzo: true, salidaDescanso: true },
       }),
     ]);
 
-    // La ventana se ancla al turno abierto; sin turno abierto, al día de hoy.
-    const almuerzo = await almuerzoDelTurno(payload.id, abierto?.fecha ?? inicioDia);
+    // Las ventanas se anclan al turno abierto; sin turno abierto, al día de hoy.
+    const pausas = await pausasDelTurno(payload.id, abierto?.fecha ?? inicioDia);
     const enAlmuerzo = !abierto && ultimoCerrado?.salidaAlmuerzo === true;
+    const enDescanso = !abierto && ultimoCerrado?.salidaDescanso === true;
 
     // ¿Se le pasó la hora de volver? Si sí, el kiosco le pregunta a qué hora
     // regresó en vez de abrirle el turno a esta hora: quien marca a las 17:00 el
-    // regreso de un almuerzo de las 12:00 perdería la tarde entera.
+    // regreso de un almuerzo de las 12:00 perdería la tarde entera. Vale igual
+    // para el descanso, medido contra su propia ventana.
     let regresoSugerido: Date | null = null;
-    if (enAlmuerzo && ultimoCerrado?.salida) {
-      const diaDelAlmuerzo = await prisma.diaEsperado.findFirst({
+    if ((enAlmuerzo || enDescanso) && ultimoCerrado?.salida) {
+      const diaDeLaPausa = await prisma.diaEsperado.findFirst({
         where: {
           colaboradorId: payload.id,
           fecha: { gte: rangoDiaBogota(ultimoCerrado.salida).inicioDia, lt: rangoDiaBogota(ultimoCerrado.salida).finDia },
         },
-        select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true },
+        select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true, descansoInicio: true, descansoFin: true },
       });
-      if (diaDelAlmuerzo) {
-        const p = almuerzoSinRegreso(ultimoCerrado.salida, diaDelAlmuerzo, new Date());
+      if (diaDeLaPausa) {
+        const p = enDescanso
+          ? descansoSinRegreso(ultimoCerrado.salida, diaDeLaPausa, new Date())
+          : almuerzoSinRegreso(ultimoCerrado.salida, diaDeLaPausa, new Date());
         if (p.vencido) regresoSugerido = p.finVentana;
       }
     }
@@ -439,21 +454,30 @@ export default async function workerRoutes(app: FastifyInstance) {
       entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
       dentroAhora: !!abierto,
       turnoCerradoHoy: cerradoHoy ? { entrada: cerradoHoy.entrada, salida: cerradoHoy.salida } : null,
-      // Solo se manda la ventana cuando de verdad se puede usar: el kiosco
+      // Solo se manda cada ventana cuando de verdad se puede usar: el kiosco
       // pregunta exactamente cuando el servidor va a creerle.
-      almuerzo: almuerzo.puede
+      almuerzo: pausas.puedeAlmorzar
         ? {
-            inicio: almuerzo.ventana!.almuerzoInicio!,
-            fin: almuerzo.ventana!.almuerzoFin!,
+            inicio: pausas.dia!.almuerzoInicio!,
+            fin: pausas.dia!.almuerzoFin!,
             // Estando dentro, el kiosco lo ofrece en el botón grande en vez de
             // esconderlo detrás de "Registrar Salida". Lo decide el servidor, que
             // es quien tiene la fecha del turno: la ventana de un nocturno cae en
             // la madrugada del día siguiente al que ancla su fila.
-            ahora: dentroDeLaVentana(new Date(), almuerzo.ventana!),
+            ahora: dentroDeLaVentana(new Date(), pausas.dia!),
+          }
+        : null,
+      descanso: pausas.puedeDescansar
+        ? {
+            inicio: pausas.dia!.descansoInicio!,
+            fin: pausas.dia!.descansoFin!,
+            ahora: dentroDelDescanso(new Date(), pausas.dia!),
           }
         : null,
       enAlmuerzo,
       salidaAlmuerzo: enAlmuerzo ? ultimoCerrado!.salida : null,
+      enDescanso,
+      salidaDescanso: enDescanso ? ultimoCerrado!.salida : null,
       // Con hora: se le pregunta a qué hora volvió. Sin ella: está a tiempo.
       regresoSugerido,
     };
@@ -471,12 +495,13 @@ export default async function workerRoutes(app: FastifyInstance) {
     }
     marcandoAhora.add(payload.id);
     try {
-      const { foto, lat, lng, almuerzo, regresoA } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown; almuerzo?: unknown; regresoA?: unknown };
+      const { foto, lat, lng, almuerzo, descanso, regresoA } = (request.body ?? {}) as { foto?: unknown; lat?: unknown; lng?: unknown; almuerzo?: unknown; descanso?: unknown; regresoA?: unknown };
       const fotoGuardar = fotoValida(foto) ? foto : null;
       const pidioAlmuerzo = almuerzo === true;
-      // Hora de regreso del almuerzo que la propia persona confirma en el
-      // kiosco cuando se le olvidó marcarla. Solo se acepta un instante válido;
-      // más abajo se comprueba además que caiga donde debe.
+      const pidioDescanso = descanso === true;
+      // Hora de regreso de la pausa —almuerzo o descanso— que la propia persona
+      // confirma en el kiosco cuando se le olvidó marcarla. Solo se acepta un
+      // instante válido; más abajo se comprueba además que caiga donde debe.
       const regresoPedido = typeof regresoA === 'string' && !Number.isNaN(Date.parse(regresoA))
         ? new Date(regresoA) : null;
 
@@ -594,13 +619,20 @@ export default async function workerRoutes(app: FastifyInstance) {
             codigo: 'SEDE_DISTINTA',
           });
         }
-        // Salida a almorzar: se valida contra el día congelado y contra si ya
-        // almorzó. Que lo diga el cliente no basta — el flag decide cómo se lee
-        // el día después, y nadie debería poder inventarlo desde el navegador.
-        const esAlmuerzo = pidioAlmuerzo && (await almuerzoDelTurno(payload.id, abierto.fecha)).puede;
+        // Salida a una pausa —almuerzo o descanso no remunerado—: se valida contra
+        // el día congelado y contra si ya la tomó. Que lo diga el cliente no basta:
+        // el flag decide cómo se lee el día después, y nadie debería poder
+        // inventarlo desde el navegador. Si llegaran las dos, manda el almuerzo.
+        const pausas = pidioAlmuerzo || pidioDescanso ? await pausasDelTurno(payload.id, abierto.fecha) : null;
+        const esAlmuerzo = pidioAlmuerzo && !!pausas?.puedeAlmorzar;
+        const esDescanso = !esAlmuerzo && pidioDescanso && !!pausas?.puedeDescansar;
+        // El horario puede pedir que en el descanso no se guarde la foto. La cara se
+        // reconoce igual para marcar; lo que no queda es la imagen.
+        const fotoDeLaSalida = esDescanso && col?.horario?.fotoEnDescanso === false ? null : fotoGuardar;
 
         // ¿Se va antes de que termine su franja? Se resuelve ANTES de escribir
-        // nada. Irse a su descanso no es irse temprano: ahí no se pregunta.
+        // nada. Irse a su almuerzo o a su descanso no es irse temprano: ahí no se
+        // pregunta.
         //
         // Si se va temprano, la novedad guarda qué tramo excusa: desde ahora hasta
         // el fin de su franja. Sin eso quedaba de día completo, y al aprobarla el
@@ -609,7 +641,7 @@ export default async function workerRoutes(app: FastifyInstance) {
         let salidaTemprana = false;
         let ventanaNovedad: { horaInicio: string; horaFin: string } | null = null;
         const horario = col?.horario;
-        if (!esAlmuerzo && horario && horario.activo && !festHoy) {
+        if (!esAlmuerzo && !esDescanso && horario && horario.activo && !festHoy) {
           const franja = horario.franjas.find(f => ((f.dias as string[]) ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
           if (franja) salidaTemprana = salidaAntesDeHora(ahoraBog, franja, horario.toleranciaMin ?? 0);
           if (franja && salidaTemprana) ventanaNovedad = ventanaDeSalidaTemprana(ahoraBog, franja);
@@ -638,6 +670,7 @@ export default async function workerRoutes(app: FastifyInstance) {
             // este turno" se quedaba pegado sobre una salida real.
             salidaEstimada: false,
             ...(esAlmuerzo ? { salidaAlmuerzo: true } : {}),
+            ...(esDescanso ? { salidaDescanso: true } : {}),
             // Dónde se CERRÓ, con la misma regla que la entrada: donde ocurrió la
             // marca. Se escribe para todos, también para un híbrido, que así
             // recupera la fidelidad que antes perdía. Sin sede identificada va
@@ -645,7 +678,7 @@ export default async function workerRoutes(app: FastifyInstance) {
             // saltarse el null dejaba viva la sede de una salida anterior en un
             // turno que un administrador había reabierto.
             sedeSalidaId: sedeDeLaMarca,
-            ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
+            ...(fotoDeLaSalida ? { fotoSalida: fotoDeLaSalida } : {}),
             ...camposDeAutenticacion(payload, 'salida'),
           },
         });
@@ -657,37 +690,42 @@ export default async function workerRoutes(app: FastifyInstance) {
             .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la salida temprana'));
         }
 
-        return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo };
+        return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo, salidaDescanso: esDescanso };
       } else {
         // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
         const entradasPrevias = await prisma.registro.count({
           where: { colaboradorId: payload.id, fecha: { gte: inicioDia, lt: finDia }, entrada: { not: null } },
         });
 
-        // Volver del almuerzo es la MISMA jornada, así que el tramo pertenece al
-        // día en que se entró, no al día en que se vuelve. Solo se nota en un
-        // turno nocturno, donde el almuerzo cae después de medianoche: sin esto
-        // el regreso quedaba anclado al día siguiente, la jornada se partía en
-        // dos días y el reporte contaba media noche en cada uno. En el turno de
-        // día `fecha` es la misma y esto no cambia nada.
-        const volviendoDeAlmorzar = await prisma.registro.findFirst({
+        // Volver de una pausa —almuerzo o descanso— es la MISMA jornada, así que
+        // el tramo pertenece al día en que se entró, no al día en que se vuelve.
+        // Solo se nota en un turno nocturno, donde la pausa cae después de
+        // medianoche: sin esto el regreso quedaba anclado al día siguiente, la
+        // jornada se partía en dos días y el reporte contaba media noche en cada
+        // uno. En el turno de día `fecha` es la misma y esto no cambia nada.
+        //
+        // Cuenta solo si la ÚLTIMA salida fue a una pausa. Antes valía cualquier
+        // salida a almorzar de las últimas 18 horas, así que quien almorzó, cerró
+        // su jornada y volvía de madrugada a otro turno entraba como si volviera
+        // de almorzar: colgado del día anterior y sin medirle la llegada tarde.
+        const ultimaSalida = await prisma.registro.findFirst({
           where: {
             colaboradorId: payload.id,
-            salidaAlmuerzo: true,
             salida: { not: null, gte: new Date(ahora.getTime() - VENTANA_TURNO_MS) },
           },
           orderBy: { salida: 'desc' },
-          select: { fecha: true, salida: true },
+          select: { fecha: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true },
         });
+        const volviendoDePausa = ultimaSalida?.salidaAlmuerzo || ultimaSalida?.salidaDescanso ? ultimaSalida : null;
 
         // ¿Llega tarde a su primera entrada del día? Se resuelve ANTES de escribir
         // nada, igual que la salida temprana: sin motivo no se marca la entrada.
-        // Volver del almuerzo no es llegar tarde, aunque en un turno nocturno sea
+        // Volver de una pausa no es llegar tarde, aunque en un turno nocturno sea
         // la primera marca del día calendario.
         // La decisión vive en `llegadaTarde` (utils/tardanzas.ts), con sus pruebas.
         const tardanza = llegadaTarde(ahoraBog, {
           esPrimeraEntrada: entradasPrevias === 0,
-          vuelveDeAlmorzar: !!volviendoDeAlmorzar,
+          vuelveDeUnaPausa: !!volviendoDePausa,
           esFestivo: !!festHoy,
           horario: col?.horario,
         });
@@ -698,24 +736,26 @@ export default async function workerRoutes(app: FastifyInstance) {
           });
         }
 
-        // Regreso del almuerzo con hora corregida por la propia persona. Se
-        // valida contra la ventana de SU día, no contra lo que mande el cliente:
-        // tiene que estar después de la salida a almorzar, no puede ser futura,
-        // y no puede pasarse del fin de su ventana. Así lo peor que alguien
-        // puede conseguir manipulando el navegador es declarar que volvió a la
-        // hora a la que le tocaba, que es exactamente lo que el kiosco propone.
+        // Regreso de la pausa con hora corregida por la propia persona. Se valida
+        // contra la ventana de SU día y de ESA pausa, no contra lo que mande el
+        // cliente: tiene que estar después de la salida, no puede ser futura, y
+        // no puede pasarse del fin de su ventana. Así lo peor que alguien puede
+        // conseguir manipulando el navegador es declarar que volvió a la hora a
+        // la que le tocaba, que es exactamente lo que el kiosco propone.
         let entradaReal = ahora;
         let esRegresoEstimado = false;
-        if (regresoPedido && volviendoDeAlmorzar?.salida) {
-          const rango = rangoDiaBogota(volviendoDeAlmorzar.fecha);
-          const diaAlm = await prisma.diaEsperado.findFirst({
+        if (regresoPedido && volviendoDePausa?.salida) {
+          const rango = rangoDiaBogota(volviendoDePausa.fecha);
+          const diaDeLaPausa = await prisma.diaEsperado.findFirst({
             where: { colaboradorId: payload.id, fecha: { gte: rango.inicioDia, lt: rango.finDia } },
-            select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true },
+            select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true, descansoInicio: true, descansoFin: true },
           });
-          const p = diaAlm ? almuerzoSinRegreso(volviendoDeAlmorzar.salida, diaAlm, ahora) : null;
+          const p = !diaDeLaPausa ? null
+            : volviendoDePausa.salidaDescanso ? descansoSinRegreso(volviendoDePausa.salida, diaDeLaPausa, ahora)
+            : almuerzoSinRegreso(volviendoDePausa.salida, diaDeLaPausa, ahora);
           const tope = p?.finVentana;
           const dentro = tope
-            && regresoPedido > volviendoDeAlmorzar.salida
+            && regresoPedido > volviendoDePausa.salida
             && regresoPedido <= ahora
             && regresoPedido <= tope;
           if (dentro) {
@@ -726,17 +766,21 @@ export default async function workerRoutes(app: FastifyInstance) {
           }
         }
 
+        // El horario puede pedir que en el descanso no se guarde la foto, y eso
+        // vale también para la marca del regreso.
+        const fotoDeLaEntrada = volviendoDePausa?.salidaDescanso && col?.horario?.fotoEnDescanso === false ? null : fotoGuardar;
+
         const nuevo = await prisma.registro.create({
           data: {
             colaboradorId: payload.id,
-            fecha: volviendoDeAlmorzar?.fecha ?? inicioDia,
+            fecha: volviendoDePausa?.fecha ?? inicioDia,
             entrada: entradaReal,
             ...(esRegresoEstimado ? { entradaEstimada: true } : {}),
             tipo: tipo as any,
             // Queda guardado DÓNDE marcó, no dónde debía: el filtro por sede de
             // los reportes tiene que reflejar la realidad.
             ...(sedeDeLaMarca ? { sedeId: sedeDeLaMarca } : {}),
-            ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
+            ...(fotoDeLaEntrada ? { fotoEntrada: fotoDeLaEntrada } : {}),
             ...camposDeAutenticacion(payload, 'entrada'),
           },
         });

@@ -44,7 +44,7 @@ type Atribuida = { id: string; nombre: string; porDefecto: boolean } | null | un
 
 async function main() {
   const { app } = await montarApp();
-  const pedir = async (method: 'GET' | 'POST' | 'DELETE', url: string, token: string, payload?: object) => {
+  const pedir = async (method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, token: string, payload?: object) => {
     const r = await app.inject({ method, url, headers: { authorization: `Bearer ${token}` }, ...(payload ? { payload } : {}) });
     let cuerpo: any = r.body;
     try { cuerpo = r.json(); } catch { /* no era JSON */ }
@@ -165,11 +165,12 @@ async function main() {
 
   // ---- 5. Las filas del período, escritas directo en la base ----
   const fila = async (colaboradorId: string, dia: string, entrada: string, salida: string,
-    extra: { sedeId?: string; sedeSalidaId?: string; salidaAlmuerzo?: boolean } = {}) =>
+    extra: { sedeId?: string; sedeSalidaId?: string; salidaAlmuerzo?: boolean; salidaDescanso?: boolean } = {}) =>
     (await prisma.registro.create({
       data: {
         colaboradorId, fecha: medianoche(dia), entrada: bog(dia, entrada), salida: bog(dia, salida), tipo: 'NORMAL',
-        sedeId: extra.sedeId ?? null, sedeSalidaId: extra.sedeSalidaId ?? null, salidaAlmuerzo: extra.salidaAlmuerzo ?? false,
+        sedeId: extra.sedeId ?? null, sedeSalidaId: extra.sedeSalidaId ?? null,
+        salidaAlmuerzo: extra.salidaAlmuerzo ?? false, salidaDescanso: extra.salidaDescanso ?? false,
       },
       select: { id: true },
     })).id;
@@ -295,9 +296,83 @@ async function main() {
   const leerFotos = (cuerpo: any) => ((cuerpo?.fotos ?? []) as any[]).map(f => `${f.momento} ${leerAtribuida(f.sedeAtribuida)}`).join(' · ') || 'ninguna';
   comprobar('GET /registros/:id/jornada/fotos del presencial por defecto: la entrada trae la principal atribuida y la salida no',
     'ENTRADA principal/Sede principal/true · SALIDA null', leerFotos((await pedir('GET', `/api/registros/${p1}/jornada/fotos`, token)).cuerpo));
-  comprobar('GET /registros/:id/jornada/fotos del día con la mañana en Sur: solo el regreso del descanso, que no tiene sede, trae Sur atribuida',
+  comprobar('GET /registros/:id/jornada/fotos del día con la mañana en Sur: solo el regreso del almuerzo, que no tiene sede, trae Sur atribuida',
     'ENTRADA null · SALIDA_ALMUERZO null · REGRESO_ALMUERZO sur/Sur/true · SALIDA null',
     leerFotos((await pedir('GET', `/api/registros/${tardeSur}/jornada/fotos`, token)).cuerpo));
+
+  // ---- 7b. Con el descanso no remunerado (unión del 12 de septiembre de 2026) ----
+  // Una jornada con descanso y almuerzo son TRES filas. La sede atribuida sale de la
+  // regla del día (regla b de utils/sedePrincipal.ts) y de la agrupación en jornadas
+  // de utils/jornada.ts, que desde ee7a0c7 también funde el regreso del descanso. Van
+  // en días de agosto, fuera del período de los reportes de la sección 6, para no
+  // mover sus líneas. Las personas se crean directo en la base: aquí no se prueba el
+  // alta, y POST /colaboradores tiene el tope del plan.
+  const presencialCon = async (nombre: string, sedeIds: string[]) => (await prisma.colaborador.create({
+    data: {
+      empresaId: empresa.id, nombre, apellido: 'Prueba', cedula: String(cedula++), salarioMensual: 1_750_905,
+      modalidad: 'PRESENCIAL', sedes: { create: sedeIds.map(sedeId => ({ sedeId })) },
+    },
+    select: { id: true },
+  })).id;
+  const jornadasDelDia = async (colaboradorId: string, dia: string) => {
+    const r = await pedir('GET', `/api/registros?desde=${dia}&hasta=${dia}&colaboradorId=${colaboradorId}`, token);
+    return ((Array.isArray(r.cuerpo) ? r.cuerpo : []) as any[])
+      .map(j => `${j.marcaciones?.length} marcas · ${nombreSede(j.sede?.id)}→${leerAtribuida(j.sedeAtribuida)}`).join(' | ') || 'ninguna';
+  };
+
+  // Solo el regreso del descanso marcó con ubicación, en Sur; su sede por defecto es Norte.
+  const conPista = await presencialCon('Presencial con la pista en el regreso del descanso', [norte.id]);
+  const conPistaEntrada = await fila(conPista, '2026-08-11', '08:00', '10:00', { salidaDescanso: true });
+  await fila(conPista, '2026-08-11', '10:15', '12:00', { sedeId: sur.id, salidaAlmuerzo: true });
+  const conPistaTarde = await fila(conPista, '2026-08-11', '13:00', '17:00');
+  comprobar('descanso · GET /registros: entrada, descanso, almuerzo y salida son UNA jornada, y se le atribuye Sur, que probó el regreso del descanso, no Norte, su sede por defecto',
+    '3 marcas · sin sede→sur/Sur/true', await jornadasDelDia(conPista, '2026-08-11'));
+  const conPistaDet = (await pedir('GET', `/api/registros/${conPistaTarde}/jornada`, token)).cuerpo;
+  comprobar('descanso · GET /registros/:id/jornada desde el último tramo: la entrada y el regreso del almuerzo traen Sur atribuida, el regreso del descanso no, y la jornada abre en Sur por defecto',
+    'sur/Sur/true · null · sur/Sur/true · abrio null · abrioAtribuida sur/Sur/true',
+    `${((conPistaDet?.tramos ?? []) as any[]).map(t => leerAtribuida(t.sedeAtribuida)).join(' · ')} · abrio ${conPistaDet?.sedes?.abrio === null ? 'null' : nombreSede(conPistaDet?.sedes?.abrio?.id)} · abrioAtribuida ${leerAtribuida(conPistaDet?.sedes?.abrioAtribuida)}`);
+  comprobar('descanso · GET /registros/:id/jornada/fotos: las marcas del descanso tienen su momento, y solo las entradas sin sede probada traen la atribuida',
+    'ENTRADA sur/Sur/true · SALIDA_DESCANSO null · REGRESO_DESCANSO null · SALIDA_ALMUERZO null · REGRESO_ALMUERZO sur/Sur/true · SALIDA null',
+    leerFotos((await pedir('GET', `/api/registros/${conPistaEntrada}/jornada/fotos`, token)).cuerpo));
+
+  // Un supervisor sale al descanso en Sur y a almorzar en Norte, y regresa del almuerzo
+  // sin ubicación. El detalle se abre con el id de cualquier tramo: si la agrupación
+  // partiera la jornada en el descanso, desde el regreso del descanso o del almuerzo
+  // abriría en Norte, la sede de salida del tramo del almuerzo.
+  const supervisor = await presencialCon('Presencial que sale al descanso en Sur', [norte.id]);
+  const tramosSupervisor = [
+    await fila(supervisor, '2026-08-12', '08:00', '10:00', { sedeSalidaId: sur.id, salidaDescanso: true }),
+    await fila(supervisor, '2026-08-12', '10:15', '12:00', { sedeSalidaId: norte.id, salidaAlmuerzo: true }),
+    await fila(supervisor, '2026-08-12', '13:00', '17:00'),
+  ];
+  const abreDesde = async (id: string) => leerAtribuida((await pedir('GET', `/api/registros/${id}/jornada`, token)).cuerpo?.sedes?.abrioAtribuida);
+  comprobar('descanso · GET /registros/:id/jornada abierto desde la entrada, desde el regreso del descanso y desde el regreso del almuerzo: la misma jornada, que abre en Sur por defecto',
+    'sur/Sur/true · sur/Sur/true · sur/Sur/true',
+    `${await abreDesde(tramosSupervisor[0])} · ${await abreDesde(tramosSupervisor[1])} · ${await abreDesde(tramosSupervisor[2])}`);
+
+  // El editor de jornada con el formato nuevo, sobre un presencial con dos sedes:
+  // escribe las tres filas y ninguna sede, igual que el kiosco y la carga manual
+  // (decisión del 12 de septiembre). La sede se ve al leer. Y el formato de antes
+  // sigue rechazado: la guarda FORMATO_VIEJO no se quita para que esto pase.
+  const editado = await presencialCon('Presencial editado con las dos pausas', [norte.id, sur.id]);
+  const unaFila = await fila(editado, '2026-08-13', '08:00', '17:00');
+  const editarJornada = (cuerpo: object) => pedir('PUT', `/api/registros/jornada/${unaFila}`, token,
+    { colaboradorId: editado, fecha: '2026-08-13', tipo: 'NORMAL', observacion: '', ...cuerpo });
+  const horaBogota = (d: Date | null) => (d ? new Date(d.getTime() - 5 * 3_600_000).toISOString().slice(11, 16) : 'sin hora');
+  const filasDelEditado = async () => (await prisma.registro.findMany({
+    where: { colaboradorId: editado }, orderBy: { entrada: 'asc' },
+    select: { entrada: true, salidaAlmuerzo: true, salidaDescanso: true, sedeId: true, sedeSalidaId: true },
+  })).map(r => `${horaBogota(r.entrada)} ${r.salidaDescanso ? 'D' : r.salidaAlmuerzo ? 'A' : '-'} ${nombreSede(r.sedeId)}/${nombreSede(r.sedeSalidaId)}`).join(' | ');
+  const vieja = await editarJornada({ entrada: '08:00', descansoSalida: '12:00', descansoRegreso: '13:00', salida: '17:00' });
+  comprobar('descanso · PUT /registros/jornada con las claves de antes: 400 FORMATO_VIEJO, y no toca la jornada',
+    '400 FORMATO_VIEJO · 08:00 - sin sede/sin sede', `${vieja.estado} ${vieja.cuerpo?.codigo} · ${await filasDelEditado()}`);
+  const nueva = await editarJornada({
+    entrada: '08:00', descanso: { salida: '09:00', regreso: '09:15' }, almuerzo: { salida: '12:00', regreso: '13:00' }, salida: '17:00',
+  });
+  comprobar('descanso · PUT /registros/jornada con el descanso y el almuerzo: 200, tres filas y ninguna sede escrita, ni de entrada ni de salida',
+    '200 · 08:00 D sin sede/sin sede | 09:15 A sin sede/sin sede | 13:00 - sin sede/sin sede', `${nueva.estado} · ${await filasDelEditado()}`);
+  comprobar('descanso · GET /registros del editado: una jornada de tres marcas con Norte, la más antigua de sus sedes, por defecto',
+    '3 marcas · sin sede→norte/Norte/true', await jornadasDelDia(editado, '2026-08-13'));
 
   // ---- 8. Desactivar sedes: suelta las asignaciones y no reasigna a nadie ----
   const d1 = await pedir('DELETE', `/api/sedes/${sur.id}`, token);

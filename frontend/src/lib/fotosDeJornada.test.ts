@@ -71,11 +71,25 @@ describe('sedesDelTurno', () => {
     expect(r.distintas).toBe(false);
   });
 
-  it('la salida a descanso no es el cierre del turno', () => {
+  it('la salida a almorzar no es el cierre del turno', () => {
     const r = sedesDelTurno([
       f({ sede: POBLADO }),
       f({ momento: 'SALIDA_ALMUERZO', sede: LAURELES }),
     ]);
+    expect(r.cerro).toBeNull();
+    expect(r.distintas).toBe(false);
+  });
+
+  it('la salida al descanso tampoco es el cierre, y la sede atribuida a su regreso no abre el turno', () => {
+    // Unión con el descanso no remunerado (12 de septiembre de 2026): el servidor le
+    // atribuye sede a la foto del regreso de una pausa. Con el cierre leído como
+    // «cualquier salida», este turno diría que cerró en Laureles.
+    const r = sedesDelTurno([
+      f({ sede: POBLADO }),
+      f({ momento: 'SALIDA_DESCANSO', sede: LAURELES }),
+      f({ momento: 'REGRESO_DESCANSO', sede: null, sedeAtribuida: { ...LAURELES, activa: true, porDefecto: true } }),
+    ]);
+    expect(r.abrio?.nombre).toBe('El Poblado');
     expect(r.cerro).toBeNull();
     expect(r.distintas).toBe(false);
   });

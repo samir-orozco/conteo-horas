@@ -153,6 +153,26 @@ describe('dónde se abrió cada fila · b) otra fila del mismo día con sede pro
   });
 });
 
+// Unión con el descanso no remunerado (12 de septiembre de 2026): una jornada con
+// descanso y almuerzo son TRES filas del mismo día. Estas pruebas fijan la regla b)
+// con esa forma: la regla no mira pausas, mira el día, así que la sede que probó
+// cualquiera de los tres tramos le da la pista a los otros dos. Lo que NO prueban es
+// que las rutas le pasen a la regla también la fila del regreso del descanso: eso lo
+// protege la costura, prisma/verificar-sede-principal.ts sección 7b (CLAUDE.md 8.6).
+describe('dónde se abrió cada fila · b) con las tres filas de un día con descanso y almuerzo', () => {
+  it('solo el regreso del descanso marcó con ubicación: la entrada y el regreso del almuerzo cuentan en esa sede, no en la suya', () => {
+    // 08:00 entra sin ubicación y sale al descanso; 10:00 regresa en Sur y sale a
+    // almorzar; 13:00 regresa del almuerzo sin ubicación. Su sede por defecto es Norte.
+    expect(lugares([marca(7, 8), marca(7, 10, 'sur'), marca(7, 13)], presencial('norte')))
+      .toEqual(['sur (por defecto)', 'sur', 'sur (por defecto)']);
+  });
+
+  it('cada tramo toma primero la sede de su propia salida: salir al descanso en Sur y a almorzar en Norte no se mezclan', () => {
+    expect(lugares([marca(7, 8, null, 'sur'), marca(7, 10, null, 'norte'), marca(7, 13)]))
+      .toEqual(['sur (por defecto)', 'norte (por defecto)', 'sur (por defecto)']);
+  });
+});
+
 describe('dónde se abrió cada fila · dos días distintos', () => {
   it('la sede probada de un día no se le supone al siguiente', () => {
     expect(lugares([marca(7, 8, 'sur'), marca(8, 8)])).toEqual(['sur', 'principal (por defecto)']);

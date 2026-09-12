@@ -23,12 +23,20 @@ export type Estado = {
   // Salió a almorzar y todavía no vuelve.
   enAlmuerzo: boolean;
   salidaAlmuerzo: string | null;
-  // Se le pasó la hora de volver: el kiosco le pregunta a qué hora regresó en
-  // vez de abrirle el turno a esta hora. null = está a tiempo, nada que preguntar.
+  // Lo mismo para el descanso no remunerado, con su propia ventana. Opcionales:
+  // un backend anterior no los manda, y entonces el kiosco no ofrece descanso.
+  descanso?: { inicio: string; fin: string; ahora: boolean } | null;
+  enDescanso?: boolean;
+  salidaDescanso?: string | null;
+  // Se le pasó la hora de volver de su pausa: el kiosco le pregunta a qué hora
+  // regresó en vez de abrirle el turno a esta hora. null = está a tiempo.
   regresoSugerido: string | null;
 };
+// Las dos pausas de una jornada. El almuerzo se paga según el horario; el
+// descanso no remunerado no se paga nunca.
+export type Pausa = 'ALMUERZO' | 'DESCANSO';
 export type Flash =
-  | { tipo: 'ok'; accion: 'ENTRADA' | 'SALIDA'; hora: string; nombre: string; almuerzo?: boolean }
+  | { tipo: 'ok'; accion: 'ENTRADA' | 'SALIDA'; hora: string; nombre: string; pausa?: Pausa }
   | { tipo: 'error'; msg: string }
   | null;
 

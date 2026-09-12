@@ -12,7 +12,7 @@ const LAURELES = { id: 's2', nombre: 'Laureles', activa: true };
 const PRINCIPAL = { id: 's0', nombre: 'Sede principal', activa: true };
 
 // La PRIMERA marcación de una jornada con almuerzo, que es la que abre la fila de
-// la tabla: su salida es la del descanso, no la del día.
+// la tabla: su salida es la del almuerzo, no la del día.
 function jornada(p: { salidaAlDescansoEn: typeof POBLADO | null; sedes?: Jornada['sedes']; sedeDeEntrada?: typeof POBLADO | null }): Jornada {
   return {
     registro: {
@@ -88,5 +88,20 @@ describe('las sedes en el detalle de la jornada', () => {
     expect(await screen.findByText('Cerró en Laureles')).toBeInTheDocument();
     expect(screen.queryByText(/por defecto/)).toBeNull();
     expect(screen.queryByText(/El Poblado/)).toBeNull();
+  });
+});
+
+// Unión con el descanso no remunerado (12 de septiembre de 2026): el tipo de la
+// jornada chocó entre `sedes.abrioAtribuida` y el resumen `descanso`. Las dos cosas
+// tienen que llegar a la pantalla a la vez.
+describe('la sede por defecto junto al descanso no remunerado', () => {
+  it('una jornada sin sede probada y con descanso muestra la sede por defecto y el bloque del descanso', async () => {
+    const descanso: Jornada['descanso'] = {
+      estado: 'MARCADO', ventana: { inicio: '09:00', fin: '09:15' }, salida: bog(9), regreso: bog(9, 15),
+      minutos: 15, minutosVentana: 15, minutosDescontados: 0, regresoEstimado: false, seExcedio: false, minutosDeMas: 0,
+    };
+    montar({ ...jornada({ sedeDeEntrada: null, salidaAlDescansoEn: null, sedes: { abrio: null, cerro: null, abrioAtribuida: PRINCIPAL } }), descanso });
+    expect(await screen.findByText('Sede principal (por defecto)')).toBeInTheDocument();
+    expect(screen.getByText('Descanso no remunerado de este día')).toBeInTheDocument();
   });
 });

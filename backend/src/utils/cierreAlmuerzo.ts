@@ -1,5 +1,8 @@
-import { finDeLaVentana, GRACIA_MIN } from './jornada';
-import type { DiaParaAlmuerzo } from './almuerzo';
+import { GRACIA_MIN } from './jornada';
+import {
+  finDeLaVentanaDe, ventanaDeAlmuerzo, ventanaDeDescanso,
+  type DiaParaAlmuerzo, type DiaParaDescanso, type VentanaDelDia,
+} from './almuerzo';
 
 // El almuerzo que nadie cerró.
 //
@@ -19,30 +22,36 @@ import type { DiaParaAlmuerzo } from './almuerzo';
 
 const MS_MIN = 60_000;
 
-// La gracia vive junto a `finDeLaVentana`, en `jornada.ts`: la tabla y este
+// La gracia vive en `jornada.ts` (`GRACIA_MIN`): la tabla y este
 // aviso tienen que estar de acuerdo en cuándo un descanso pasa de estar en curso
 // a ser un olvido. Se reexporta porque ya había quien la importaba de aquí.
 export { GRACIA_MIN } from './jornada';
 
-export type AlmuerzoPendiente = {
+export type PausaPendiente = {
   vencido: boolean;         // ya pasó la ventana con holgura y sigue sin volver
   finVentana: Date | null;  // la hora a la que debía volver, para proponerla
 };
 
-export function almuerzoSinRegreso(
-  salida: Date,
-  dia: DiaParaAlmuerzo,
-  ahora: Date,
-): AlmuerzoPendiente {
+// La misma pregunta para el almuerzo y para el descanso no remunerado: lo único
+// que cambia es contra qué ventana se mide.
+function pausaSinRegreso(salida: Date, ventana: VentanaDelDia, ahora: Date): PausaPendiente {
   // Sin ventana congelada no se sabe cuándo debía volver. No se propone nada:
   // una hora inventada en una pantalla de nómina se acaba tomando por cierta.
-  if (!dia.almuerzoInicio || !dia.almuerzoFin) return { vencido: false, finVentana: null };
+  if (!ventana.inicio || !ventana.fin) return { vencido: false, finVentana: null };
 
-  const fin = finDeLaVentana(salida, dia);
+  const fin = finDeLaVentanaDe(salida, ventana);
   return {
     vencido: ahora.getTime() > fin + GRACIA_MIN * MS_MIN,
     finVentana: new Date(fin),
   };
+}
+
+export function almuerzoSinRegreso(salida: Date, dia: DiaParaAlmuerzo, ahora: Date): PausaPendiente {
+  return pausaSinRegreso(salida, ventanaDeAlmuerzo(dia), ahora);
+}
+
+export function descansoSinRegreso(salida: Date, dia: DiaParaDescanso, ahora: Date): PausaPendiente {
+  return pausaSinRegreso(salida, ventanaDeDescanso(dia), ahora);
 }
 
 // ── La red de seguridad ──────────────────────────────────────────────────────
@@ -61,33 +70,33 @@ import { notificar } from './notificaciones';
 const TZ = 'America/Bogota';
 type Log = { info: (msg: string) => void; error: (obj: unknown, msg?: string) => void };
 
-// Avisa de los almuerzos que quedaron sin regreso en días YA PASADOS. Hoy no se
-// toca: la persona todavía puede llegar al kiosco y arreglarlo ella misma.
+// Avisa de las pausas —almuerzo o descanso no remunerado— que quedaron sin
+// regreso en días YA PASADOS. Hoy no se toca: la persona todavía puede llegar al
+// kiosco y arreglarlo ella misma.
 //
 // Corre a diario y mira una semana atrás, así que hay que comprobar a mano que
-// el aviso no exista ya: `notificar` siempre crea, y sin esto el mismo almuerzo
-// olvidado llenaría la campana siete veces. Una campana con ruido se deja de
+// el aviso no exista ya: `notificar` siempre crea, y sin esto la misma pausa
+// olvidada llenaría la campana siete veces. Una campana con ruido se deja de
 // mirar, y entonces el aviso que sí importaba tampoco se ve.
-export async function avisarAlmuerzosSinRegreso(log?: Log): Promise<number> {
+export async function avisarPausasSinRegreso(log?: Log): Promise<number> {
   try {
     const { inicioDia } = rangoDiaBogota();
     const desde = new Date(inicioDia.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const salidasAAlmorzar = await prisma.registro.findMany({
+    const salidasAPausa = await prisma.registro.findMany({
       where: {
-        salidaAlmuerzo: true,
+        OR: [{ salidaAlmuerzo: true }, { salidaDescanso: true }],
         salida: { not: null },
         fecha: { gte: desde, lt: inicioDia },
       },
       select: {
-        id: true, colaboradorId: true, fecha: true, salida: true,
+        id: true, colaboradorId: true, fecha: true, salida: true, salidaDescanso: true,
         colaborador: { select: { nombre: true, apellido: true, empresaId: true } },
       },
     });
-    if (salidasAAlmorzar.length === 0) return 0;
 
     let avisados = 0;
-    for (const s of salidasAAlmorzar) {
+    for (const s of salidasAPausa) {
       // ¿Hubo alguna entrada posterior ese mismo día? Si la hubo, volvió.
       const { finDia } = rangoDiaBogota(s.fecha);
       const regreso = await prisma.registro.findFirst({
@@ -107,22 +116,29 @@ export async function avisarAlmuerzosSinRegreso(log?: Log): Promise<number> {
 
       const nombre = `${s.colaborador.nombre} ${s.colaborador.apellido}`;
       const z = toZonedTime(s.salida!, TZ);
+      // De qué pausa no volvió, dicho con sus palabras.
+      const pausa = s.salidaDescanso
+        ? { regreso: 'su regreso del descanso', salio: 'Salió a su descanso' }
+        : { regreso: 'su regreso del almuerzo', salio: 'Salió a almorzar' };
       await notificar(s.colaborador.empresaId, {
         tipo: 'NO_MARCO_SALIDA',
-        titulo: `${nombre} no marcó su regreso del almuerzo`,
+        titulo: `${nombre} no marcó ${pausa.regreso}`,
         // La consecuencia en plata, no solo el hecho: "no marcó" suena a
         // trámite, y lo que de verdad pasa es que no se le está pagando.
-        cuerpo: `Salió a almorzar a las ${format(z, 'HH:mm')} del ${format(z, "d 'de' MMM", { locale: es })} y no volvió a marcar. El resto de ese día no se le está contando ni pagando: revísalo y corrige la hora si siguió trabajando.`,
+        cuerpo: `${pausa.salio} a las ${format(z, 'HH:mm')} del ${format(z, "d 'de' MMM", { locale: es })} y no volvió a marcar. El resto de ese día no se le está contando ni pagando: revísalo y corrige la hora si siguió trabajando.`,
         entidad: 'registro',
         entidadId: s.id,
       });
       avisados++;
     }
 
-    if (avisados > 0) log?.info(`Almuerzos sin regreso avisados: ${avisados}`);
+    // Se registra SIEMPRE, también la pasada que no encontró nada: un trabajo que
+    // solo habla cuando hace algo no se distingue de uno que nunca corrió
+    // (CLAUDE.md §8.3).
+    log?.info(`Pausas sin regreso: ${salidasAPausa.length} salidas revisadas, ${avisados} avisadas`);
     return avisados;
   } catch (err) {
-    log?.error(err, 'Error avisando almuerzos sin regreso');
+    log?.error(err, 'Error avisando pausas sin regreso');
     return 0;
   }
 }

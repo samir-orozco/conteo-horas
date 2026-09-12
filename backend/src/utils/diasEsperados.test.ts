@@ -101,6 +101,53 @@ describe('calcularDiasEsperados', () => {
   });
 });
 
+// El descanso no remunerado se congela con el día, igual que la ventana de
+// almuerzo, y sale de lo que el horario exige: no se paga.
+describe('calcularDiasEsperados — descanso no remunerado', () => {
+  // 1 de julio de 2026 es miércoles: 08:00-17:00 con almuerzo de 12:00 a 13:00.
+  const conDescanso = (franja: Record<string, unknown>) => ({
+    activo: true, toleranciaMin: 0, almuerzoMin: 0,
+    franjas: [{
+      dias: ['MIERCOLES'], horaEntrada: '08:00', horaSalida: '17:00',
+      tieneAlmuerzo: true, almuerzoInicio: '12:00', almuerzoFin: '13:00', ...franja,
+    }],
+  });
+
+  it('congela la ventana y la descuenta de lo exigido, además del almuerzo', () => {
+    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ descansoInicio: '09:00', descansoFin: '09:15' }));
+    expect(d.descansoInicio).toBe('09:00');
+    expect(d.descansoFin).toBe('09:15');
+    expect(d.minutosEsperados).toBe(465); // 9 h − 60 de almuerzo − 15 de descanso
+    expect(d.almuerzoMin).toBe(60); // el almuerzo sigue siendo solo el almuerzo
+  });
+
+  it('sin descanso configurado lo exigido no cambia y la ventana queda vacía', () => {
+    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({}));
+    expect(d.descansoInicio).toBeNull();
+    expect(d.descansoFin).toBeNull();
+    expect(d.minutosEsperados).toBe(480);
+  });
+
+  it('media ventana no es un descanso', () => {
+    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ descansoInicio: '09:00', descansoFin: null }));
+    expect(d.descansoInicio).toBeNull();
+    expect(d.minutosEsperados).toBe(480);
+  });
+
+  it('no depende de que la franja descuente almuerzo', () => {
+    const [d] = dias('2026-07-01', '2026-07-01', conDescanso({ tieneAlmuerzo: false, descansoInicio: '10:00', descansoFin: '10:15' }));
+    expect(d.minutosEsperados).toBe(525); // 9 h − 15 de descanso, sin almuerzo
+    expect(d.descansoInicio).toBe('10:00');
+  });
+
+  it('un día sin franja no tiene descanso', () => {
+    // 5 de julio de 2026 es domingo.
+    const [domingo] = dias('2026-07-05', '2026-07-05', conDescanso({ descansoInicio: '09:00', descansoFin: '09:15' }));
+    expect(domingo.descansoInicio).toBeNull();
+    expect(domingo.descansoFin).toBeNull();
+  });
+});
+
 // El backfill no ha corrido para todo el mundo, y hay colaboradores anteriores a
 // la función. Para esos días no hay fila y hay que caer al horario actual: es lo
 // que el sistema hacía siempre, así que nadie ve un cambio. Donde SÍ hay fila,

@@ -20,6 +20,7 @@ import colaboradorRoutes from '../src/routes/colaboradores';
 import registroRoutes from '../src/routes/registros';
 import sedeRoutes from '../src/routes/sedes';
 import adminRoutes from '../src/routes/admin';
+import horarioRoutes from '../src/routes/horarios';
 
 type Sesion = { id: string; rol: string; nombre?: string; empresaId?: string | null };
 
@@ -71,6 +72,7 @@ export async function montarApp() {
   await app.register(registroRoutes, { prefix: '/api/registros' });
   await app.register(sedeRoutes, { prefix: '/api/sedes' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
+  await app.register(horarioRoutes, { prefix: '/api/horarios' });
   await app.ready();
 
   const tokenAdmin = (empresaId: string) =>

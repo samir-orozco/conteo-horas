@@ -152,6 +152,11 @@ model Horario {
   // solo en la salida sería asimétrico a favor de la empresa, así que la
   // simetría existe pero se elige a propósito.
   ajustaEntrada       Boolean         @default(false)
+  // Si se guarda la foto de verificación al marcar el DESCANSO NO REMUNERADO
+  // (salida y regreso). La persona se identifica igual que siempre: lo único que
+  // se decide aquí es si esa foto se conserva. Prendido por defecto, que es lo
+  // que pasa con cualquier otra marca.
+  fotoEnDescanso      Boolean         @default(true)
   activo              Boolean         @default(true)
   creadoEn            DateTime        @default(now())
   // Un horario tiene varias franjas: ej. L-V 08:00-17:00 y Sáb 08:00-12:00
@@ -174,6 +179,12 @@ model FranjaHorario {
   // almuerza en la madrugada. Vacía = comportamiento histórico (minutos fijos).
   almuerzoInicio String?
   almuerzoFin    String?
+  // Ventana del DESCANSO NO REMUNERADO de este día ("09:00" → "09:15"): una pausa
+  // aparte del almuerzo, que se marca igual que él y tampoco se paga. A
+  // diferencia del almuerzo no tiene minutos fijos de respaldo: vacía = la franja
+  // no tiene descanso.
+  descansoInicio String?
+  descansoFin    String?
 
   @@map("franjas_horario")
 }
@@ -335,6 +346,9 @@ model DiaEsperado {
   // lo ya liquidado. Vacía en todo lo anterior a la función.
   almuerzoInicio      String?
   almuerzoFin         String?
+  // La del descanso no remunerado también se congela, por lo mismo.
+  descansoInicio      String?
+  descansoFin         String?
   // De qué horario salió, solo informativo: el horario puede cambiar después.
   horarioId           String?
   // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)
@@ -377,6 +391,10 @@ model Registro {
   // La salida fue a almorzar, no el fin de la jornada. Lo dice el propio
   // colaborador en el kiosco: el sistema no puede adivinarlo.
   salidaAlmuerzo  Boolean          @default(false)
+  // La salida fue al DESCANSO NO REMUNERADO: tampoco cierra la jornada, y la
+  // vuelta es la misma jornada. Nunca va junto con `salidaAlmuerzo`: una salida
+  // es a una sola pausa.
+  salidaDescanso  Boolean          @default(false)
   // El regreso del almuerzo lo puso el sistema porque nadie lo marcó. Va en el
   // dato y no solo en el color: el día que alguien reclame, el registro tiene
   // que poder decir que esa hora no la marcó una persona.

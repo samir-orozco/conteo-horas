@@ -10,7 +10,9 @@ export type Dash = {
   // Opcional a propósito: durante un despliegue hay una ventana en la que el
   // navegador ya tiene este bundle y el servidor todavía responde el anterior,
   // que no manda el campo. Que falte un dato no puede tumbar el tablero.
-  enDescanso?: { id: string; nombre: string; cargo: string | null; desde: string }[];
+  // `pausa` dice a cuál salió. Opcional: un backend anterior no lo manda, y
+  // entonces es el almuerzo, que era la única pausa.
+  enDescanso?: { id: string; nombre: string; cargo: string | null; desde: string; pausa?: 'ALMUERZO' | 'DESCANSO' }[];
   salidasRecientes: { registroId: string; id: string; nombre: string; cargo: string | null; entrada: string | null; salida: string; tieneFotoSalida: boolean }[];
   llegadasTardeHoy: { id: string; nombre: string; horaLlegada: string; minutosTarde: number }[];
   sinMarcarHoy: { id: string; nombre: string; cargo: string | null; horario: string; horaEntrada: string; novedad: string | null }[];
