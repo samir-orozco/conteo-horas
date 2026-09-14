@@ -1,6 +1,6 @@
 # Política de Tratamiento de Datos Personales
 
-**HoraPro** · Versión 1.0 · Vigencia: 9 de septiembre de 2026
+**HoraPro** · Versión 1.1 · Vigencia: 14 de septiembre de 2026
 
 ## 1. Quiénes somos
 
@@ -50,7 +50,7 @@ Son los datos de los trabajadores de nuestros clientes. La empresa empleadora lo
 
 **Novedades y ausencias:** tipo de novedad (incapacidad de EPS o de ARL, licencias, calamidad, cita médica), su descripción y el documento que se adjunte como soporte.
 
-**Foto de perfil** y **datos biométricos**, que se explican en el punto 5.
+**Foto de perfil**, **datos biométricos** y **la constancia de lo que se autorizó sobre el rostro**, que se explican en el punto 5.
 
 **Ubicación al marcar.** Cuando la empresa activa la geocerca, el dispositivo envía la ubicación en el momento de marcar. **Esa coordenada no se guarda.** Se usa en el instante para decidir si la marca cae dentro del sitio de trabajo y se descarta. De esa decisión solo queda registrada la sede. HoraPro no almacena el recorrido ni la ubicación de ningún trabajador.
 
@@ -66,7 +66,9 @@ La ley colombiana considera sensibles, entre otros, los datos biométricos y los
 
 ### 5.1 Reconocimiento facial
 
-Cuando la empresa registra el rostro de un trabajador, el navegador calcula un descriptor matemático, una lista de 128 números por cada toma, y ese descriptor se guarda asociado a la persona. También se guarda la fecha del registro. La primera toma se conserva como foto de perfil solo si la ficha no tenía una.
+El rostro de un trabajador lo puede registrar el administrador de la empresa desde la ficha, o el propio trabajador con un enlace que le envía la empresa. En los dos casos el navegador calcula un descriptor matemático, una lista de 128 números por cada toma, y ese descriptor se guarda asociado a la persona. También se guarda la fecha del registro. Las tomas del escaneo no se guardan, salvo la primera, que se conserva como foto de perfil solo si la ficha no tenía una.
+
+**El enlace de registro.** La empresa lo crea desde la ficha del trabajador y se lo envía por sus propios medios: HoraPro no le escribe al trabajador. El enlace dura una hora y sirve una sola vez. Antes de mostrar nada pide la cédula de la persona, y se bloquea si se escribe mal cinco veces. Después muestra el texto de la autorización con dos opciones igual de visibles: autorizar y registrar el rostro, para lo cual hay que declarar ser mayor de edad, o no autorizar. Si la persona ya tenía el rostro registrado, ve desde cuándo, cuántas tomas tiene y su foto de perfil, y puede actualizarlo o retirar su autorización.
 
 El cálculo se hace en el propio navegador y con modelos servidos desde nuestro dominio. Ese dato no se envía a ningún proveedor externo de reconocimiento facial.
 
@@ -74,13 +76,13 @@ Cada vez que alguien marca entrada o salida en el kiosco se guarda además **una
 
 **Sobre la autorización.** Autorizar el tratamiento de un dato sensible es facultativo: ninguna persona está obligada a hacerlo, y ninguna actividad puede condicionarse a entregarlo.
 
-**La autorización del trabajador la obtiene y la conserva la empresa empleadora**, que es el responsable de ese dato y quien mantiene la relación laboral. HoraPro actúa como encargado y no almacena esa constancia. Antes de permitir el primer registro facial, el panel le recuerda al administrador de la empresa que debe contar con la autorización del titular.
+**La autorización del trabajador la obtiene la empresa empleadora**, que es el responsable de ese dato y quien mantiene la relación laboral. HoraPro actúa como encargado y, por cuenta de la empresa, guarda una constancia de cada decisión que se toma en el sistema: la fecha y la hora, el texto exacto que se mostró, si la tomó el trabajador desde su enlace o el administrador desde la ficha, la declaración de mayoría de edad cuando la hay y qué usuario la registró. Antes de permitir el registro facial desde la ficha, el panel le recuerda al administrador que debe contar con la autorización del titular.
 
-Si usted quiere saber qué autorizó, o revocarla, la puerta es su empleador. En el punto 12 le explicamos cómo proceder si no obtiene respuesta.
+Si usted quiere saber qué autorizó, o revocarla, la puerta es su empleador. Si su empleador le envía un enlace de registro, desde ese enlace también puede retirar su autorización. En el punto 12 le explicamos cómo proceder si no obtiene respuesta.
 
 **Sobre la alternativa.** El kiosco permite marcar con cédula sin usar el rostro. La configuración le permite a la empresa desactivar esa opción y dejar el rostro como única vía. Recomendamos expresamente **no** hacerlo, porque condicionar la marcación de asistencia a entregar un dato biométrico es contrario a la ley.
 
-**Revocación.** La empresa puede eliminar en cualquier momento el registro facial de una persona desde su ficha. Al hacerlo se borra el descriptor y la fecha de registro. La foto de perfil se elimina por separado.
+**Revocación.** La empresa puede eliminar en cualquier momento el registro facial de una persona desde su ficha, y el trabajador puede retirar su autorización desde un enlace de registro. En los dos casos se borran el descriptor y la fecha de registro. Cuando la retira el trabajador, queda además la constancia de que no autorizó, con su fecha. La foto de perfil se elimina por separado. El kiosco puede tardar hasta 30 segundos en dejar de reconocer a la persona.
 
 ### 5.2 Datos de salud
 
@@ -94,13 +96,13 @@ Adjuntar el soporte es facultativo, y esa autorización, igual que la del rostro
 
 ### 6.1 El servicio no está dirigido a menores de edad
 
-HoraPro es una herramienta de trabajo para empresas. No está pensado para menores de edad y no tiene contenido dirigido a ellos. La ficha del trabajador, con todos sus datos, la crea y la administra la empresa empleadora, como se explica en el punto 4. Lo único que HoraPro le pide directamente a un trabajador es lo del kiosco al marcar: su cédula o su rostro para identificarse, y la fotografía que queda como evidencia de la marcación.
+HoraPro es una herramienta de trabajo para empresas. No está pensado para menores de edad y no tiene contenido dirigido a ellos. La ficha del trabajador, con todos sus datos, la crea y la administra la empresa empleadora, como se explica en el punto 4. HoraPro le pide directamente a un trabajador solo dos cosas. En el kiosco, al marcar: su cédula o su rostro para identificarse, y la fotografía que queda como evidencia de la marcación. Y en el enlace de registro facial, si su empresa se lo envía: su cédula para confirmar que es él, su decisión sobre la autorización, la declaración de que es mayor de edad, que es obligatoria para autorizar, y el escaneo de su rostro.
 
 Tampoco existe en el producto ningún campo para datos de familiares. No hay hijos, ni cónyuge, ni beneficiarios, ni acudiente, ni representante legal, ni contacto de emergencia. Nada de eso lo pedimos y nada de eso lo guardamos. El correo y el teléfono que sí tiene la ficha son opcionales y son los del propio trabajador.
 
 Lo decimos con una salvedad, porque los campos de texto libre de la ficha, de las marcaciones y de las novedades admiten lo que escriba la empresa, y los soportes que adjunte pueden contener cualquier cosa. Le pedimos a la empresa empleadora no usar esos campos para datos de terceros, y menos de menores de edad.
 
-**HoraPro no comprueba la edad de nadie.** La fecha de nacimiento de la ficha es opcional, no se valida contra ninguna edad mínima ni máxima, y su único uso en el producto es la lista de cumpleaños del mes. El sistema no distingue a un trabajador menor de edad de uno mayor y no puede advertirle a la empresa que lo es.
+**HoraPro no comprueba la edad de nadie.** La fecha de nacimiento de la ficha es opcional, no se valida contra ninguna edad mínima ni máxima, y su único uso en el producto es la lista de cumpleaños del mes. El sistema no distingue a un trabajador menor de edad de uno mayor y no puede advertirle a la empresa que lo es. El enlace de registro facial le pide a la persona declarar que es mayor de edad antes de autorizar, y no la deja registrarse sin esa declaración. Es una declaración de la persona, no una comprobación.
 
 ### 6.2 Si la empresa vincula a un adolescente autorizado para trabajar
 
@@ -110,7 +112,7 @@ Si una empresa cliente vincula a una persona en esa situación y la carga en el 
 
 El tratamiento de datos de niños, niñas y adolescentes no es un tratamiento común con requisitos añadidos: la regla de partida es la prohibición. El artículo 7 de la Ley 1581 de 2012 ordena asegurar el respeto de sus derechos prevalentes y declara proscrito el tratamiento de sus datos personales, salvo los de naturaleza pública. La Corte Constitucional, en la sentencia C-748 de 2011, precisó que esa prohibición no es absoluta: esos datos sí pueden tratarse, siempre que no se ponga en riesgo la prevalencia de sus derechos fundamentales y que el tratamiento responda a su interés superior, lo que se aprecia caso por caso. Cumplido eso, el artículo 12 del Decreto 1377 de 2013 agrega que la autorización la otorga el representante legal, y solo después de que el menor haya ejercido su derecho a ser escuchado. Su opinión se valora según su madurez, su autonomía y su capacidad para entender el asunto.
 
-**Esa autorización la obtiene y la conserva la empresa empleadora**, que es el responsable del dato, igual que ocurre con la autorización del rostro y con los soportes médicos del punto 5. HoraPro actúa como encargado: almacena y procesa la información por cuenta de la empresa, no tiene relación con el trabajador ni con su familia, y no guarda esa constancia. El panel no tiene ningún campo para registrar la autorización de un padre, una madre o un representante legal, ni en la ficha ni en el flujo del registro facial. Eso no nos deja al margen: el mismo artículo 12 le exige tanto al responsable como al encargado velar por el uso adecuado de esos datos, y de ahí sale lo que decimos enseguida.
+**Esa autorización la obtiene y la conserva la empresa empleadora**, que es el responsable del dato, igual que ocurre con la autorización del rostro y con los soportes médicos del punto 5. HoraPro actúa como encargado: almacena y procesa la información por cuenta de la empresa, no tiene relación con el trabajador ni con su familia, y no guarda la constancia de la autorización de su representante legal. El panel no tiene ningún campo para registrar la autorización de un padre, una madre o un representante legal, ni en la ficha ni en el flujo del registro facial. Eso no nos deja al margen: el mismo artículo 12 le exige tanto al responsable como al encargado velar por el uso adecuado de esos datos, y de ahí sale lo que decimos enseguida.
 
 ### 6.3 Recomendamos no activar el registro facial de un trabajador menor de edad
 
@@ -120,7 +122,7 @@ Un dato biométrico de un menor de edad reúne dos agravantes a la vez. Es un da
 
 Y así funciona hoy el producto, que es la razón práctica de la recomendación:
 
-  - La casilla que el panel muestra antes del primer registro facial dice que autoriza **el colaborador**. No contempla a un representante legal, y no hay dónde dejar constancia de su autorización.
+  - La casilla que el panel muestra antes del registro facial desde la ficha dice que autoriza **el colaborador**. No contempla a un representante legal, y no hay dónde dejar constancia de su autorización. El enlace de registro, por su parte, exige declarar que se es mayor de edad para autorizar: no está pensado para que lo use un menor ni su representante.
   - El descriptor facial no se borra solo. Se conserva hasta que la empresa lo elimine desde la ficha del trabajador.
   - Salvo que la empresa lo haya desactivado en su configuración, el kiosco permite marcar con la cédula, sin usar el rostro. Mientras esa opción siga activa, no registrar el rostro no le quita nada a la empresa ni al control de la jornada. Dejar el rostro como única vía es justamente lo que desaconsejamos en el punto 5.
 
@@ -149,7 +151,9 @@ Somos precisos aquí, porque prometer un plazo que no se cumple sería peor que 
 | Fotografía de cada marcación | **Se elimina automáticamente a los 60 días.** Un proceso del servidor vacía esas imágenes de todo registro con más de 60 días. La marcación en sí, con su fecha, hora y sede, no se borra. |
 | Registro de jornada | Se conserva de forma indefinida. Es el soporte de la liquidación de nómina y de una eventual inspección laboral, y su conservación la determina la empresa empleadora conforme a sus obligaciones legales. |
 | Ficha del trabajador, contratos, novedades y sus soportes | Mientras dure la relación de la empresa con HoraPro y mientras la empresa deba conservarlos por sus obligaciones laborales, contables y legales. El retiro de un trabajador lo marca como inactivo y **no elimina su información**. |
-| Descriptor facial y foto de perfil | Hasta que la empresa los elimine desde la ficha del trabajador. No hay borrado automático. |
+| Descriptor facial y foto de perfil | Hasta que la empresa los elimine desde la ficha del trabajador, o hasta que el trabajador retire su autorización desde un enlace de registro, que borra el descriptor. No hay borrado automático. |
+| Constancias de la autorización del registro facial | Mientras exista la ficha del trabajador, también después de que retire su autorización o de que se borre su registro facial, porque son la prueba de lo que se decidió. El retiro de un trabajador no las elimina. Solo se eliminan si se elimina la cuenta de la empresa. |
+| Enlaces de registro facial | De cada enlace se guarda su huella, nunca el enlace mismo, con su vencimiento, si se usó y los intentos de cédula equivocada. Se conservan como las constancias. Un enlace vencido o usado no sirve para nada. |
 | Datos de la cuenta, suscripción, pagos y comprobantes | Mientras dure la relación comercial y después, mientras sean necesarios para obligaciones contables, tributarias y legales. |
 | Registros técnicos del servidor | Los genera y los conserva nuestro proveedor de hosting conforme a su propia configuración, sobre la que no tenemos control. No los usamos para perfilar a nadie: su única finalidad es diagnosticar fallas y detectar abusos. |
 | Copias de seguridad | Se hace una copia semanal de la base de datos, y cada copia nueva reemplaza a la anterior. Eso significa que un dato eliminado puede seguir existiendo en la copia vigente **hasta siete días** después de haberlo borrado, y desaparece cuando esa copia se sobrescribe. |
@@ -191,7 +195,8 @@ Aplicamos estas medidas, que son las que el producto tiene hoy:
   - Verificación del correo al crear la cuenta, y enlaces de recuperación con vencimiento.
   - Separación estricta por empresa: cada consulta del sistema está limitada a la empresa del usuario que la hace.
   - El enlace del kiosco es único por empresa, y la empresa puede exigir que solo marquen dispositivos previamente autorizados.
-  - Límite de intentos por minuto en las pantallas públicas del kiosco.
+  - Límite de intentos por minuto en las pantallas públicas del kiosco y del enlace de registro facial.
+  - El enlace de registro facial dura una hora, sirve una sola vez y se bloquea al quinto intento de cédula equivocada. En la base de datos se guarda solo su huella: con lo guardado no se puede armar un enlace que funcione.
   - Los datos biométricos y los soportes médicos no se exponen en los listados del sistema y solo se entregan a solicitud expresa de un usuario autorizado de la empresa.
   - Los pagos con tarjeta se hacen en el sitio de la pasarela. HoraPro no manipula datos de tarjeta.
 
@@ -292,7 +297,7 @@ La razón de esa regla es que quien tiene los datos debe tener la oportunidad de
 
 **El número de versión.** Cada versión que publiquemos de este documento, sustancial o no el cambio, sube el número que aparece al comienzo de la página, debajo del título. Corregir una redacción, reordenar el texto o cambiar un canal de atención no son cambios sustanciales: suben la versión y se publican aquí, pero no llevan aviso previo. Cambiar quién es el responsable, o los datos con los que se le identifica en el punto 14, sí lo es, y lleva el aviso de los 15 días.
 
-Esta política rige desde el 9 de septiembre de 2026. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.
+Esta política rige desde el 14 de septiembre de 2026. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.
 
 **Registro Nacional de Bases de Datos.** La obligación de inscribir las bases de datos ante la Superintendencia de Industria y Comercio recae sobre sociedades y entidades sin ánimo de lucro que superan el umbral de activos fijado por la norma, y sobre entidades públicas. Las personas naturales están exceptuadas, y por eso HoraPro no está inscrito en ese registro. Esto no lo exime de ninguna de las demás obligaciones de la Ley 1581, que se cumplen en los términos de esta política.
 
