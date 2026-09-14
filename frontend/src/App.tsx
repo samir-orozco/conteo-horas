@@ -32,6 +32,7 @@ import AdminEmpresaDetalle from './pages/admin/AdminEmpresaDetalle';
 import AdminAfiliados from './pages/admin/AdminAfiliados';
 import PanelAfiliado from './pages/PanelAfiliado';
 import RegistroAfiliado from './pages/RegistroAfiliado';
+import RegistroFacial from './pages/RegistroFacial';
 
 function Cargando() {
   return (
@@ -91,6 +92,8 @@ export default function App() {
           <Route path="/restablecer" element={<Restablecer />} />
           <Route path="/autologin" element={<AutoLogin />} />
           <Route path="/marcador/:token" element={<Marcador />} />
+          {/* La persona registra su rostro con el enlace que le mandó su empresa. */}
+          <Route path="/registro-facial/:token" element={<RegistroFacial />} />
           <Route path="/marcador" element={<Marcador />} />
 
           {/* Panel de empresa */}

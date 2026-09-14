@@ -14,6 +14,7 @@ import festivoRoutes from './routes/festivos';
 import configuracionRoutes from './routes/configuracion';
 import reporteRoutes from './routes/reportes';
 import workerRoutes from './routes/worker';
+import registroFacialRoutes from './routes/registroFacial';
 import adminRoutes from './routes/admin';
 import afiliadoAdminRoutes from './routes/afiliados';
 import afiliadoPanelRoutes from './routes/afiliado-panel';
@@ -149,6 +150,8 @@ app.register(configuracionRoutes, { prefix: '/api/configuracion' });
 app.register(reporteRoutes, { prefix: '/api/reportes' });
 app.register(sedeRoutes, { prefix: '/api/sedes' });
 app.register(workerRoutes, { prefix: '/api/worker' });
+// Público, como el kiosco: la persona registra su rostro con el enlace que le mandó su empresa.
+app.register(registroFacialRoutes, { prefix: '/api/registro-facial' });
 app.register(adminRoutes, { prefix: '/api/admin' });
 app.register(afiliadoAdminRoutes, { prefix: '/api/admin/afiliados' });
 app.register(afiliadoPanelRoutes, { prefix: '/api/afiliado' });

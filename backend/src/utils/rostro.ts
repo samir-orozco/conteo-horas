@@ -34,6 +34,12 @@ function muestrasDe(guardado: unknown): number[][] {
   return [];
 }
 
+// Cuántas tomas tiene guardadas una persona. La ficha y el enlace de registro muestran este número en
+// vez de las fotos, que no se guardan.
+export function cuantasMuestras(guardado: unknown): number {
+  return muestrasDe(guardado).length;
+}
+
 // CUÁNTO TIENE QUE SEPARAR AL PRIMERO DEL SEGUNDO PARA FIARSE.
 //
 // Este número es un JUICIO, no una medición, y conviene que quede dicho: no hay

@@ -222,6 +222,10 @@ model Colaborador {
   // es una imagen y no se puede volver a convertir en una.
   rostroDescriptor Json?
   rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
+  // NO AUTORIZÓ EL USO DE SU ROSTRO (14 de septiembre de 2026). Lo dijo la propia persona desde su
+  // enlace de registro; si tenía rostro registrado, se borró. Null = nunca lo dijo, y registrar el
+  // rostro después lo vuelve a null. La constancia completa vive en `constancias_biometricas`.
+  rostroRechazadoEn DateTime?
   // Foto de perfil (data URL). Es dato personal común, NO biométrico: sirve
   // para reconocer a quién se está mirando en la ficha, no para autenticar. Va
   // aparte del descriptor a propósito, para poder borrar una sin borrar la otra.
@@ -270,6 +274,8 @@ model Colaborador {
   vinculacion      VinculacionEvento[]
   diasEsperados    DiaEsperado[]
   sedes            ColaboradorSede[]
+  enlacesRegistroFacial  EnlaceRegistroFacial[]
+  constanciasBiometricas ConstanciaBiometrica[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
@@ -779,6 +785,65 @@ model VinculacionEvento {
 
   @@index([colaboradorId, fecha])
   @@map("vinculacion_eventos")
+}
+
+// ENLACE PARA QUE LA PERSONA REGISTRE SU ROSTRO (14 de septiembre de 2026).
+//
+// Lo crea el administrador desde la ficha y se lo manda a la persona. Dura una hora, sirve una sola
+// vez, y crear otro anula el anterior. Del token se guarda solo su huella SHA-256: quien lea la base
+// no puede armar un enlace que funcione. Ver `src/utils/registroFacial.ts`.
+model EnlaceRegistroFacial {
+  id             String      @id @default(cuid())
+  colaboradorId  String
+  colaborador    Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  tokenHash      String      @unique
+  venceEn        DateTime
+  usadoEn        DateTime?
+  anuladoEn      DateTime?
+  // Cédulas equivocadas escritas con este enlace. Al llegar al tope queda bloqueado.
+  intentosCedula Int         @default(0)
+  // Quién lo creó. Queda en null si el usuario se borra, igual que en vinculacion_eventos.
+  usuarioId      String?
+  creadoEn       DateTime    @default(now())
+
+  @@index([colaboradorId])
+  @@map("enlaces_registro_facial")
+}
+
+// CONSTANCIA DE LO QUE SE DECIDIÓ SOBRE EL ROSTRO DE UNA PERSONA (14 de septiembre de 2026).
+//
+// Una fila por decisión, y nunca se edita: quien autoriza y después retira la autorización deja las
+// dos. Guarda el texto EXACTO que se mostró, porque lo que se autorizó es ese texto y no el que haya
+// en el código el día que alguien pregunte.
+model ConstanciaBiometrica {
+  id            String             @id @default(cuid())
+  colaboradorId String
+  colaborador   Colaborador        @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  decision      DecisionBiometrica
+  origen        OrigenConstancia
+  texto         String             @db.Text
+  // Lo que marcó la persona en el enlace. Null cuando registró el administrador desde la ficha.
+  mayorDeEdad   Boolean?
+  // El administrador que registró desde la ficha. Null cuando decidió la persona desde el enlace.
+  usuarioId     String?
+  // El enlace con que decidió la persona. Sin llave: la constancia no depende de que el enlace siga.
+  enlaceId      String?
+  creadoEn      DateTime           @default(now())
+
+  @@index([colaboradorId, creadoEn])
+  @@map("constancias_biometricas")
+}
+
+// Qué decidió la persona sobre el uso de su rostro.
+enum DecisionBiometrica {
+  AUTORIZA
+  NO_AUTORIZA
+}
+
+// Dónde quedó la decisión: la persona desde su enlace, o el administrador desde la ficha.
+enum OrigenConstancia {
+  ENLACE
+  ADMINISTRADOR
 }
 
 enum TipoVinculacion {

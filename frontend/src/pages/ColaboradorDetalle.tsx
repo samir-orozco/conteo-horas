@@ -5,7 +5,7 @@ import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 import {
   Edit2, Plus, X, CalendarOff, LogIn, LogOut, BadgeDollarSign, AlarmClock,
-  ScanFace, Check, Trash2, ShieldCheck, Lock, Undo2,
+  ScanFace, Check, Trash2, ShieldCheck, Lock, Undo2, Copy,
 } from 'lucide-react';
 import api from '../lib/api';
 import { resumenFranjas, type Franja } from './Colaboradores';
@@ -32,6 +32,10 @@ import TabsFicha from '../features/colaboradores/TabsFicha';
 import { useTabFicha } from '../features/colaboradores/useTabFicha';
 import { useMiPlan } from '../lib/plan';
 import IconoDeAdjunto from '../components/IconoDeAdjunto';
+import { useAuth } from '../context/AuthContext';
+import { copiarTexto } from '../lib/clipboard';
+import EtiquetaBiometrica from '../features/colaboradores/EtiquetaBiometrica';
+import { mensajeDelEnlace, horaConPunto } from '../features/colaboradores/biometria';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
 type Colaborador = {
@@ -43,7 +47,23 @@ type Colaborador = {
   puedeCerrarEnOtraSede?: boolean;
   creadoEn?: string;
   fechaRetiro?: string | null; motivoRetiro?: string | null;
+  rostroRechazadoEn?: string | null;
+  biometria?: Biometria;
 };
+// Lo del registro facial que manda GET /colaboradores/:id (14 de septiembre de 2026).
+type Biometria = {
+  tomas: number;
+  ultimaConstancia: { decision: 'AUTORIZA' | 'NO_AUTORIZA'; origen: 'ENLACE' | 'ADMINISTRADOR'; creadoEn: string } | null;
+  enlaceVenceEn: string | null;
+  permiteCedula: boolean;
+  textoAutorizacionAdministrador: string;
+};
+
+// Quién dejó el registro facial que rige, según la última constancia.
+function quienRegistro(constancia: Biometria['ultimaConstancia']): string {
+  if (constancia?.decision !== 'AUTORIZA') return '';
+  return constancia.origen === 'ENLACE' ? ' · lo registró la persona desde su enlace' : ' · lo registró el administrador';
+}
 type Tardanzas = {
   sinHorario: boolean;
   detalle: { fecha: string; horaEsperada: string; horaLlegada: string; minutosTarde: number }[];
@@ -271,6 +291,38 @@ export default function ColaboradorDetalle() {
     setConfirmarEliminarRostro(false);
     setToast('Registro facial eliminado');
     cargar();
+  };
+
+  // El enlace para que la persona registre su rostro ella misma (14 de septiembre de 2026). El token
+  // llega esta sola vez: si se cierra la ventana sin copiarlo, se crea otro y el anterior deja de servir.
+  const { usuario } = useAuth();
+  const [enlaceRostro, setEnlaceRostro] = useState<{ url: string; venceEn: string } | null>(null);
+  const [creandoEnlace, setCreandoEnlace] = useState(false);
+  const [errorEnlace, setErrorEnlace] = useState('');
+  const [mensajeCopiado, setMensajeCopiado] = useState(false);
+
+  const crearEnlaceRostro = async () => {
+    setCreandoEnlace(true);
+    setErrorEnlace('');
+    setMensajeCopiado(false);
+    try {
+      const { data } = await api.post(`/colaboradores/${id}/enlace-rostro`);
+      setEnlaceRostro({ url: `${window.location.origin}/registro-facial/${data.token}`, venceEn: data.venceEn });
+      cargar();
+    } catch (err) {
+      setErrorEnlace((err as { response?: { data?: { error?: string } } }).response?.data?.error
+        ?? 'No pudimos crear el enlace. Intenta de nuevo.');
+    } finally {
+      setCreandoEnlace(false);
+    }
+  };
+
+  const copiarMensajeDelEnlace = async () => {
+    if (!enlaceRostro || !col) return;
+    await copiarTexto(mensajeDelEnlace({
+      nombre: col.nombre, empresa: usuario?.empresaNombre ?? 'tu empresa', url: enlaceRostro.url, venceEn: enlaceRostro.venceEn,
+    }));
+    setMensajeCopiado(true);
   };
 
   // Borrar una novedad. El endpoint existía desde siempre; lo que faltaba era
@@ -519,17 +571,27 @@ export default function ColaboradorDetalle() {
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Reconocimiento facial */}
         <div className="bg-white rounded-card border border-gray-200 p-5 flex flex-col lg:col-span-2">
-          <p className="font-semibold text-ink mb-1 flex items-center gap-2"><ScanFace size={16} /> Reconocimiento facial</p>
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h2 className="font-semibold text-ink flex items-center gap-2"><ScanFace size={16} /> Reconocimiento facial</h2>
+            <EtiquetaBiometrica col={col} />
+          </div>
           {col.rostroEnroladoEn ? (
             <>
               {/* La tarjeta ocupa todo el ancho, así que el botón no se estira:
                   un "Actualizar" de 900px no se lee como un botón. El estado a
                   la izquierda y las acciones a la derecha, como cualquier fila. */}
               <div className="flex flex-col items-start gap-3 mt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
-                <p className="text-xs text-green-700 flex items-center gap-1.5 min-w-0">
-                  <Check size={14} className="shrink-0" />
-                  <span>Registrado el {format(new Date(col.rostroEnroladoEn), "d 'de' MMMM 'de' yyyy", { locale: es })}. Ya puede marcar con su rostro en el kiosco.</span>
-                </p>
+                <div className="min-w-0">
+                  <p className="text-xs text-green-700 flex items-center gap-1.5 min-w-0">
+                    <Check size={14} className="shrink-0" />
+                    <span>Registrado el {format(new Date(col.rostroEnroladoEn), "d 'de' MMMM 'de' yyyy", { locale: es })}. Ya puede marcar con su rostro en el kiosco.</span>
+                  </p>
+                  {col.biometria && (
+                    <p className="text-xs text-muted mt-1">
+                      {col.biometria.tomas} {col.biometria.tomas === 1 ? 'toma' : 'tomas'}{quienRegistro(col.biometria.ultimaConstancia)}
+                    </p>
+                  )}
+                </div>
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => setModalCamara(true)}
                     className="border-2 border-gray-200 hover:border-primary text-ink font-semibold px-4 py-2 rounded-xl text-sm flex items-center gap-2">
@@ -545,10 +607,19 @@ export default function ColaboradorDetalle() {
             </>
           ) : (
             <>
+              {col.rostroRechazadoEn && (
+                <div className="text-xs text-ink bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-3">
+                  <p>El {fechaLarga(col.rostroRechazadoEn)}, {col.nombre} dijo desde su enlace que no autoriza el uso de su rostro.</p>
+                  {col.biometria && !col.biometria.permiteCedula && (
+                    <p className="text-amber-700 mt-1">Esta empresa no permite marcar con cédula, así que no va a poder marcar. Actívala en Configuración, en Marcación.</p>
+                  )}
+                </div>
+              )}
               <p className="text-xs text-muted mb-3 flex-1">Registra su rostro para que marque en el kiosco sin digitar la cédula. La captura es guiada (frente y perfiles). Del rostro se guarda un cálculo matemático, no una imagen: ese cálculo no se puede volver a convertir en una cara. La primera toma sí queda como foto de perfil, y se puede quitar desde el círculo de la foto.</p>
               <label className="flex items-start gap-2 text-xs text-muted mb-2 cursor-pointer">
                 <input type="checkbox" checked={consentimientoRostro} onChange={e => setConsentimientoRostro(e.target.checked)} className="mt-0.5 rounded" />
-                <span>El colaborador autoriza el tratamiento de su rostro como dato biométrico, conforme a la Ley 1581 de 2012 (Habeas Data).</span>
+                {/* El texto lo manda el servidor: es el que queda en la constancia. */}
+                <span>{col.biometria?.textoAutorizacionAdministrador}</span>
               </label>
               <label className="flex items-start gap-2 text-xs text-muted mb-3 cursor-pointer">
                 <input type="checkbox" checked={usaGafas} onChange={e => setUsaGafas(e.target.checked)} className="mt-0.5 rounded" />
@@ -560,8 +631,47 @@ export default function ColaboradorDetalle() {
               </button>
             </>
           )}
+          {col.activo && (
+            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-x-4">
+              <p className="text-xs text-muted">
+                {col.biometria?.enlaceVenceEn
+                  ? `Hay un enlace sin usar que vence a las ${horaConPunto(col.biometria.enlaceVenceEn)} Si creas otro, ese deja de servir.`
+                  : 'Mándale un enlace para que registre su rostro desde su teléfono y decida si lo autoriza.'}
+              </p>
+              <button onClick={crearEnlaceRostro} disabled={creandoEnlace}
+                className="shrink-0 border-2 border-gray-200 hover:border-primary text-ink font-semibold px-4 py-2 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+                <Copy size={16} /> Crear enlace de registro facial
+              </button>
+            </div>
+          )}
+          {errorEnlace && <p className="text-red-600 text-xs mt-2">{errorEnlace}</p>}
         </div>
       </div>
+
+      {/* Modal del enlace de registro facial: la dirección se muestra esta sola vez. */}
+      {enlaceRostro && (
+        <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setEnlaceRostro(null)}>
+          <div role="dialog" aria-label="Enlace de registro facial" className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-lg text-ink flex items-center gap-2"><ScanFace size={18} /> Enlace de registro facial</h3>
+              <button onClick={() => setEnlaceRostro(null)} aria-label="Cerrar"><X size={20} className="text-gray-400" /></button>
+            </div>
+            <p className="text-sm text-muted">
+              Mándaselo a {col.nombre}. El enlace dura 1 hora, vence a las {horaConPunto(enlaceRostro.venceEn)} y sirve una sola vez.
+            </p>
+            <input readOnly value={enlaceRostro.url} onFocus={e => e.target.select()} aria-label="Dirección del enlace"
+              className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm !bg-gray-50" />
+            <p className="text-xs text-muted">Esta dirección no se vuelve a mostrar: si cierras sin copiarla, crea otro enlace.</p>
+            <div className="flex items-center justify-end gap-3">
+              {mensajeCopiado && <span className="text-sm text-green-700">Mensaje copiado</span>}
+              <button onClick={copiarMensajeDelEnlace}
+                className="bg-primary hover:bg-primary-dark text-ink font-semibold px-5 py-2 rounded-xl text-sm flex items-center gap-2">
+                <Copy size={16} /> Copiar mensaje
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal cámara: enrolar/actualizar rostro */}
       {modalCamara && (

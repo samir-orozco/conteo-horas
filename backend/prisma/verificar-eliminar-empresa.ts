@@ -68,6 +68,11 @@ async function sembrar(etiqueta: string, afiliadoId: string): Promise<Caso> {
   const contrato = await prisma.contrato.create({ data: { colaboradorId: colaborador.id, tipo: 'FIJO', fechaInicio: AHORA } });
   const prorroga = await prisma.prorrogaContrato.create({ data: { contratoId: contrato.id, desde: AHORA, hasta: AHORA } });
   const vinculo = await prisma.vinculacionEvento.create({ data: { colaboradorId: colaborador.id, tipo: 'INGRESO', fecha: AHORA } });
+  // El registro facial por enlace (14 de septiembre de 2026): una constancia y un enlace de la persona.
+  const constancia = await prisma.constanciaBiometrica.create({
+    data: { colaboradorId: colaborador.id, decision: 'AUTORIZA', origen: 'ADMINISTRADOR', texto: 'Autoriza.' },
+  });
+  const enlace = await prisma.enlaceRegistroFacial.create({ data: { colaboradorId: colaborador.id, tokenHash: `h-${s}`, venceEn: AHORA } });
   const dispositivo = await prisma.dispositivoKiosco.create({ data: { empresaId: empresa.id, nombre: 'Tablet', token: `t-${s}` } });
   // En 2099: si quedara huérfano mientras se detecta, no altera ningún reporte real.
   const festivo = await prisma.diaFestivo.create({ data: { empresaId: empresa.id, fecha: new Date(Date.UTC(2099, 0, 1, 5)), nombre: `Festivo ${s}` } });
@@ -83,6 +88,7 @@ async function sembrar(etiqueta: string, afiliadoId: string): Promise<Caso> {
       permisos: [permisoLigado.id, permisoSuelto.id], contratos: [contrato.id], prorrogas_contrato: [prorroga.id],
       vinculacion_eventos: [vinculo.id], dispositivos_kiosco: [dispositivo.id], dias_festivos: [festivo.id],
       configuracion: [configuracion.id], notificaciones: [notificacion.id],
+      constancias_biometricas: [constancia.id], enlaces_registro_facial: [enlace.id],
     },
   };
 }
@@ -113,10 +119,13 @@ async function contar(caso: Caso): Promise<Record<string, number>> {
     prisma.diaFestivo.count(porId(f.dias_festivos)),
     prisma.configuracion.count(porId(f.configuracion)),
     prisma.notificacion.count(porId(f.notificaciones)),
+    prisma.constanciaBiometrica.count(porId(f.constancias_biometricas)),
+    prisma.enlaceRegistroFacial.count(porId(f.enlaces_registro_facial)),
   ]);
   const tablas = ['empresas', 'suscripciones', 'pagos', 'comisiones', 'usuarios', 'horarios', 'franjas_horario', 'sedes',
     'colaboradores', 'colaboradores_sedes', 'dias_esperados', 'registros', 'registro_cambios', 'permisos', 'contratos',
-    'prorrogas_contrato', 'vinculacion_eventos', 'dispositivos_kiosco', 'dias_festivos', 'configuracion', 'notificaciones'];
+    'prorrogas_contrato', 'vinculacion_eventos', 'dispositivos_kiosco', 'dias_festivos', 'configuracion', 'notificaciones',
+    'constancias_biometricas', 'enlaces_registro_facial'];
   return Object.fromEntries(tablas.map((t, i) => [t, n[i]]));
 }
 

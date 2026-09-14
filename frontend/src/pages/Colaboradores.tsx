@@ -17,8 +17,9 @@ import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
 import CamposColaborador, { type ValoresColaborador } from '../features/colaboradores/CamposColaborador';
 import { payloadColaborador } from '../features/colaboradores/payloadColaborador';
 import { ETIQUETA_MODALIDAD, TONO_MODALIDAD, normalizarModalidad } from '../features/colaboradores/modalidad';
+import EtiquetaBiometrica from '../features/colaboradores/EtiquetaBiometrica';
 
-type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null; modalidad?: string; puedeCerrarEnOtraSede?: boolean; foto?: string | null };
+type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null; modalidad?: string; puedeCerrarEnOtraSede?: boolean; foto?: string | null; rostroEnroladoEn?: string | null; rostroRechazadoEn?: string | null };
 // Los colores del chip de contrato. Se quedan en la pantalla y no en la regla:
 // qué es urgente lo decide estadoContrato.ts, cómo se ve lo decide esto.
 const TONO_CHIP: Record<string, string> = {
@@ -191,7 +192,7 @@ export default function Colaboradores() {
   type Fila = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
     salarioMensual: number; activo: boolean; fechaRetiro?: string | null; motivoRetiro?: string | null;
     estadoContrato?: string | null; sedeIds?: string[]; sedeNombres?: string[];
-    fotoMini?: string | null; modalidad?: string };
+    fotoMini?: string | null; modalidad?: string; rostroEnroladoEn?: string | null; rostroRechazadoEn?: string | null };
   const filas: Fila[] = pestanaActiva === 'retirados'
     ? retirados.map(r => ({ ...r, activo: false }))
     : pestanaActiva === 'activos'
@@ -329,7 +330,12 @@ export default function Colaboradores() {
                       foto={col.fotoMini} activo={col.activo} />
                     <div className="min-w-0">
                       <p className="font-semibold text-ink truncate">{col.nombre} {col.apellido}</p>
-                      <p className="text-xs text-muted">{col.cedula}</p>
+                      {/* La etiqueta del registro facial va junto a la cédula, que es
+                          con lo que se identifica a la persona en el kiosco. */}
+                      <p className="text-xs text-muted flex flex-wrap items-center gap-1.5">
+                        <span>{col.cedula}</span>
+                        <EtiquetaBiometrica col={col} />
+                      </p>
                     </div>
                   </div>
                 </td>

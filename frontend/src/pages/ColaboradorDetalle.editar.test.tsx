@@ -12,6 +12,8 @@ const { get, put } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn() }));
 vi.mock('../lib/api', () => ({
   default: { get: (...a: unknown[]) => get(...a), put: (...a: unknown[]) => put(...a), post: vi.fn(), delete: vi.fn() },
 }));
+// La ficha toma de la sesión el nombre de la empresa, para el mensaje del enlace de registro facial.
+vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ usuario: { nombre: 'Admin', empresaNombre: 'Empresa de prueba' } }) }));
 
 // Una ficha como la devuelve GET /colaboradores/:id.
 const FICHA = {

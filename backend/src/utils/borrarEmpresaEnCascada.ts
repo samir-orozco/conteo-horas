@@ -89,6 +89,13 @@ export async function borrarEmpresaEnCascada(
     await tx.registro.findMany({ where: deSuGente, select: { id: true } }),
     await tx.registro.findMany({ where: deSusSedes, select: { id: true } }),
   ), parte => tx.registro.deleteMany({ where: { id: { in: parte } } }));
+  // Lo del registro facial por enlace (14 de septiembre de 2026). Las dos tablas
+  // cuelgan del colaborador con ON DELETE CASCADE, pero se borran aquí igual que
+  // el resto: el conteo de lo borrado tiene que decir lo que se fue.
+  await enLotes('constancias_biometricas', ids(await tx.constanciaBiometrica.findMany({ where: deSuGente, select: { id: true } })),
+    parte => tx.constanciaBiometrica.deleteMany({ where: { id: { in: parte } } }));
+  await enLotes('enlaces_registro_facial', ids(await tx.enlaceRegistroFacial.findMany({ where: deSuGente, select: { id: true } })),
+    parte => tx.enlaceRegistroFacial.deleteMany({ where: { id: { in: parte } } }));
   // Llave compuesta, sin id: se borra por colaborador y por sede, que son el
   // comienzo de su clave y de su índice.
   await enLotes('colaboradores_sedes', colaboradores, parte => tx.colaboradorSede.deleteMany({ where: { colaboradorId: { in: parte } } }));
