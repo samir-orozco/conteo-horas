@@ -152,6 +152,11 @@ model Horario {
   // solo en la salida sería asimétrico a favor de la empresa, así que la
   // simetría existe pero se elige a propósito.
   ajustaEntrada       Boolean         @default(false)
+  // Si se guarda la foto de verificación al marcar el DESCANSO NO REMUNERADO
+  // (salida y regreso). La persona se identifica igual que siempre: lo único que
+  // se decide aquí es si esa foto se conserva. Prendido por defecto, que es lo
+  // que pasa con cualquier otra marca.
+  fotoEnDescanso      Boolean         @default(true)
   activo              Boolean         @default(true)
   creadoEn            DateTime        @default(now())
   // Un horario tiene varias franjas: ej. L-V 08:00-17:00 y Sáb 08:00-12:00
@@ -174,6 +179,15 @@ model FranjaHorario {
   // almuerza en la madrugada. Vacía = comportamiento histórico (minutos fijos).
   almuerzoInicio String?
   almuerzoFin    String?
+  // VARIOS DESCANSOS NO REMUNERADOS (12 de septiembre de 2026): hasta tres por
+  // franja, además del almuerzo, cada uno con su desde y su hasta, guardados como
+  // texto: [{"inicio":"09:00","fin":"09:15"},{"inicio":"15:00","fin":"15:10"}].
+  // A diferencia del almuerzo no tienen minutos fijos de respaldo. Reemplaza a las
+  // dos columnas de UNA sola ventana de ee7a0c7, que nunca salieron.
+  // NULL = sin descansos, nunca "[]". Se lee siempre con `leerDescansos`
+  // (utils/descansos.ts), que nunca lanza. Texto y no Json: es el tipo que MariaDB
+  // agrega en línea (sql/descansos-no-remunerados.sql).
+  descansos      String?
 
   @@map("franjas_horario")
 }
@@ -193,56 +207,69 @@ model DispositivoKiosco {
 }
 
 model Colaborador {
-  id               String              @id @default(cuid())
-  empresaId        String
-  empresa          Empresa             @relation(fields: [empresaId], references: [id])
-  nombre           String
-  apellido         String
-  cedula           String // marcación en kiosco por cédula
-  cargo            String?
-  email            String?
-  telefono         String?
-  fechaNacimiento  DateTime?
-  salarioMensual   Float
+  id                    String              @id @default(cuid())
+  empresaId             String
+  empresa               Empresa             @relation(fields: [empresaId], references: [id])
+  nombre                String
+  apellido              String
+  cedula                String // marcación en kiosco por cédula
+  cargo                 String?
+  email                 String?
+  telefono              String?
+  fechaNacimiento       DateTime?
+  salarioMensual        Float
   // Reconocimiento facial: descriptor matemático (128 floats). El descriptor no
   // es una imagen y no se puede volver a convertir en una.
-  rostroDescriptor Json?
-  rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
+  rostroDescriptor      Json?
+  rostroEnroladoEn      DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
   // Foto de perfil (data URL). Es dato personal común, NO biométrico: sirve
   // para reconocer a quién se está mirando en la ficha, no para autenticar. Va
   // aparte del descriptor a propósito, para poder borrar una sin borrar la otra.
-  foto             String?             @db.LongText
+  foto                  String?             @db.LongText
   // La misma foto, chiquita, para las listas. Se guarda aparte y no se recorta
   // al vuelo porque la lista la pide para TODOS: mandar la grande son cientos
   // de kilobytes por carga, y en un plan de 150 personas son megas.
-  fotoMini         String?             @db.LongText
-  horarioId        String?
-  horario          Horario?            @relation(fields: [horarioId], references: [id])
+  fotoMini              String?             @db.LongText
+  horarioId             String?
+  horario               Horario?            @relation(fields: [horarioId], references: [id])
   // No admite null a propósito: un null sería un cuarto estado que significa
   // PRESENCIAL igual, y siendo no-nulo el compilador avisa si una ruta con
   // `select` explícito olvida pedirlo (un undefined ahí bloquearía a un remoto
   // en silencio, tratándolo como presencial).
-  modalidad        ModalidadTrabajo    @default(PRESENCIAL)
-  activo           Boolean             @default(true)
+  modalidad             ModalidadTrabajo    @default(PRESENCIAL)
+  // PUEDE CERRAR UN TURNO EN UNA SEDE DISTINTA DE LA QUE LO ABRIÓ.
+  //
+  // Existe por los supervisores que recorren varias sedes en el mismo turno.
+  // Solo cambia algo para PRESENCIAL: a un HIBRIDO la regla de misma sede ya no
+  // le aplica, y a un REMOTO no se le mira la ubicación. Aun con el permiso, la
+  // salida tiene que marcarse DENTRO de una de sus sedes asignadas.
+  //
+  // Vive aquí y no en ColaboradorSede porque esa tabla se borra y se vuelve a
+  // crear en cada guardado del formulario: el permiso se perdería en la
+  // siguiente edición. No admite null por la misma razón que `modalidad`: false
+  // es la regla de siempre, y con el DEFAULT todos los que ya existen quedan
+  // exactamente como estaban.
+  puedeCerrarEnOtraSede Boolean             @default(false)
+  activo                Boolean             @default(true)
   // Retiro: cuándo salió y por qué. Antes solo quedaba `activo: false`, así que
   // se perdía la fecha, y esa fecha es justo la que se necesita para liquidar,
   // para un certificado laboral y para una inspección del Ministerio.
-  fechaRetiro      DateTime?
-  motivoRetiro     MotivoRetiro?
+  fechaRetiro           DateTime?
+  motivoRetiro          MotivoRetiro?
   // Resto del modelo de precio por colaborador: cuando el cobro dependía del
   // número de personas, el retiro se aplazaba a fin de mes para no regalar el
   // mes pagado. Hoy el precio es plano por plan y no mira cuántos hay, así que
   // aplazar no protege un peso: solo bloquea contratar al reemplazo. Se deja el
   // campo porque puede haber retiros programados sin aplicar en producción.
-  retiroProgramado DateTime?
-  creadoEn         DateTime            @default(now())
-  actualizadoEn    DateTime            @updatedAt
-  registros        Registro[]
-  permisos         Permiso[]
-  contratos        Contrato[]
-  vinculacion      VinculacionEvento[]
-  diasEsperados    DiaEsperado[]
-  sedes            ColaboradorSede[]
+  retiroProgramado      DateTime?
+  creadoEn              DateTime            @default(now())
+  actualizadoEn         DateTime            @updatedAt
+  registros             Registro[]
+  permisos              Permiso[]
+  contratos             Contrato[]
+  vinculacion           VinculacionEvento[]
+  diasEsperados         DiaEsperado[]
+  sedes                 ColaboradorSede[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
@@ -269,8 +296,11 @@ model Sede {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  colaboradores ColaboradorSede[]
-  registros     Registro[]
+  colaboradores     ColaboradorSede[]
+  // Dos relaciones con Registro, y Prisma exige nombrarlas cuando van al mismo
+  // modelo: la sede donde se ABRIÓ el turno y la sede donde se CERRÓ.
+  registros         Registro[]        @relation("SedeDeEntrada")
+  registrosCerrados Registro[]        @relation("SedeDeSalida")
 
   @@index([empresaId])
   @@map("sedes")
@@ -319,6 +349,10 @@ model DiaEsperado {
   // lo ya liquidado. Vacía en todo lo anterior a la función.
   almuerzoInicio      String?
   almuerzoFin         String?
+  // La lista de descansos no remunerados de ESE día, congelada con el formato de
+  // `FranjaHorario.descansos` (12 de septiembre de 2026), por lo mismo que el
+  // almuerzo: cambiarla mañana no puede mover lo ya liquidado. NULL = sin descansos.
+  descansos           String?
   // De qué horario salió, solo informativo: el horario puede cambiar después.
   horarioId           String?
   // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)
@@ -339,7 +373,16 @@ model Registro {
   // colaborador: el filtro por sede de los reportes tiene que decir dónde marcó
   // de verdad, no dónde debería. Null en todo lo anterior a la función.
   sedeId          String?
-  sede            Sede?            @relation(fields: [sedeId], references: [id])
+  sede            Sede?            @relation("SedeDeEntrada", fields: [sedeId], references: [id])
+  // Sede donde se CERRÓ el turno, con la misma regla: donde ocurrió la marca de
+  // salida. Null en todo lo anterior a esta columna y en las salidas sin sede
+  // (remoto, híbrido fuera de sus sedes, auto-cierre, carga manual).
+  //
+  // Null significa NO SE SABE. Nunca se rellena con la sede de la entrada: eso
+  // afirmaría un lugar que nadie registró, y el día que alguien pregunte dónde
+  // cerró ese turno, el dato inventado no se distinguiría del real.
+  sedeSalidaId    String?
+  sedeSalida      Sede?            @relation("SedeDeSalida", fields: [sedeSalidaId], references: [id])
   fecha           DateTime
   entrada         DateTime?
   salida          DateTime?
@@ -352,6 +395,14 @@ model Registro {
   // La salida fue a almorzar, no el fin de la jornada. Lo dice el propio
   // colaborador en el kiosco: el sistema no puede adivinarlo.
   salidaAlmuerzo  Boolean          @default(false)
+  // La salida fue al DESCANSO NO REMUNERADO: tampoco cierra la jornada, y la
+  // vuelta es la misma jornada. Nunca va junto con `salidaAlmuerzo`: una salida
+  // es a una sola pausa.
+  salidaDescanso  Boolean          @default(false)
+  // A CUÁL descanso salió, con la clave "09:00-09:15" (12 de septiembre de 2026).
+  // Lo asigna el servidor por la hora, no la tableta: la persona solo toca
+  // «descanso». Null en toda salida que no es a un descanso y en todo lo anterior.
+  descansoVentana String?
   // El regreso del almuerzo lo puso el sistema porque nadie lo marcó. Va en el
   // dato y no solo en el color: el día que alguien reclame, el registro tiene
   // que poder decir que esa hora no la marcó una persona.

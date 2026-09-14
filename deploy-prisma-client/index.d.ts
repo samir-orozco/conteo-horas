@@ -3368,11 +3368,13 @@ export namespace Prisma {
   export type SedeCountOutputType = {
     colaboradores: number
     registros: number
+    registrosCerrados: number
   }
 
   export type SedeCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     colaboradores?: boolean | SedeCountOutputTypeCountColaboradoresArgs
     registros?: boolean | SedeCountOutputTypeCountRegistrosArgs
+    registrosCerrados?: boolean | SedeCountOutputTypeCountRegistrosCerradosArgs
   }
 
   // Custom InputTypes
@@ -3397,6 +3399,13 @@ export namespace Prisma {
    * SedeCountOutputType without action
    */
   export type SedeCountOutputTypeCountRegistrosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RegistroWhereInput
+  }
+
+  /**
+   * SedeCountOutputType without action
+   */
+  export type SedeCountOutputTypeCountRegistrosCerradosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: RegistroWhereInput
   }
 
@@ -9546,6 +9555,7 @@ export namespace Prisma {
     almuerzoMin: number | null
     toleranciaSalidaMin: number | null
     ajustaEntrada: boolean | null
+    fotoEnDescanso: boolean | null
     activo: boolean | null
     creadoEn: Date | null
   }
@@ -9558,6 +9568,7 @@ export namespace Prisma {
     almuerzoMin: number | null
     toleranciaSalidaMin: number | null
     ajustaEntrada: boolean | null
+    fotoEnDescanso: boolean | null
     activo: boolean | null
     creadoEn: Date | null
   }
@@ -9570,6 +9581,7 @@ export namespace Prisma {
     almuerzoMin: number
     toleranciaSalidaMin: number
     ajustaEntrada: number
+    fotoEnDescanso: number
     activo: number
     creadoEn: number
     _all: number
@@ -9596,6 +9608,7 @@ export namespace Prisma {
     almuerzoMin?: true
     toleranciaSalidaMin?: true
     ajustaEntrada?: true
+    fotoEnDescanso?: true
     activo?: true
     creadoEn?: true
   }
@@ -9608,6 +9621,7 @@ export namespace Prisma {
     almuerzoMin?: true
     toleranciaSalidaMin?: true
     ajustaEntrada?: true
+    fotoEnDescanso?: true
     activo?: true
     creadoEn?: true
   }
@@ -9620,6 +9634,7 @@ export namespace Prisma {
     almuerzoMin?: true
     toleranciaSalidaMin?: true
     ajustaEntrada?: true
+    fotoEnDescanso?: true
     activo?: true
     creadoEn?: true
     _all?: true
@@ -9719,6 +9734,7 @@ export namespace Prisma {
     almuerzoMin: number
     toleranciaSalidaMin: number
     ajustaEntrada: boolean
+    fotoEnDescanso: boolean
     activo: boolean
     creadoEn: Date
     _count: HorarioCountAggregateOutputType | null
@@ -9750,6 +9766,7 @@ export namespace Prisma {
     almuerzoMin?: boolean
     toleranciaSalidaMin?: boolean
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: boolean
     empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
@@ -9767,6 +9784,7 @@ export namespace Prisma {
     almuerzoMin?: boolean
     toleranciaSalidaMin?: boolean
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: boolean
   }
@@ -9793,6 +9811,7 @@ export namespace Prisma {
       almuerzoMin: number
       toleranciaSalidaMin: number
       ajustaEntrada: boolean
+      fotoEnDescanso: boolean
       activo: boolean
       creadoEn: Date
     }, ExtArgs["result"]["horario"]>
@@ -10174,6 +10193,7 @@ export namespace Prisma {
     readonly almuerzoMin: FieldRef<"Horario", 'Int'>
     readonly toleranciaSalidaMin: FieldRef<"Horario", 'Int'>
     readonly ajustaEntrada: FieldRef<"Horario", 'Boolean'>
+    readonly fotoEnDescanso: FieldRef<"Horario", 'Boolean'>
     readonly activo: FieldRef<"Horario", 'Boolean'>
     readonly creadoEn: FieldRef<"Horario", 'DateTime'>
   }
@@ -10547,6 +10567,7 @@ export namespace Prisma {
     tieneAlmuerzo: boolean | null
     almuerzoInicio: string | null
     almuerzoFin: string | null
+    descansos: string | null
   }
 
   export type FranjaHorarioMaxAggregateOutputType = {
@@ -10557,6 +10578,7 @@ export namespace Prisma {
     tieneAlmuerzo: boolean | null
     almuerzoInicio: string | null
     almuerzoFin: string | null
+    descansos: string | null
   }
 
   export type FranjaHorarioCountAggregateOutputType = {
@@ -10568,6 +10590,7 @@ export namespace Prisma {
     tieneAlmuerzo: number
     almuerzoInicio: number
     almuerzoFin: number
+    descansos: number
     _all: number
   }
 
@@ -10580,6 +10603,7 @@ export namespace Prisma {
     tieneAlmuerzo?: true
     almuerzoInicio?: true
     almuerzoFin?: true
+    descansos?: true
   }
 
   export type FranjaHorarioMaxAggregateInputType = {
@@ -10590,6 +10614,7 @@ export namespace Prisma {
     tieneAlmuerzo?: true
     almuerzoInicio?: true
     almuerzoFin?: true
+    descansos?: true
   }
 
   export type FranjaHorarioCountAggregateInputType = {
@@ -10601,6 +10626,7 @@ export namespace Prisma {
     tieneAlmuerzo?: true
     almuerzoInicio?: true
     almuerzoFin?: true
+    descansos?: true
     _all?: true
   }
 
@@ -10685,6 +10711,7 @@ export namespace Prisma {
     tieneAlmuerzo: boolean
     almuerzoInicio: string | null
     almuerzoFin: string | null
+    descansos: string | null
     _count: FranjaHorarioCountAggregateOutputType | null
     _min: FranjaHorarioMinAggregateOutputType | null
     _max: FranjaHorarioMaxAggregateOutputType | null
@@ -10713,6 +10740,7 @@ export namespace Prisma {
     tieneAlmuerzo?: boolean
     almuerzoInicio?: boolean
     almuerzoFin?: boolean
+    descansos?: boolean
     horario?: boolean | HorarioDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["franjaHorario"]>
 
@@ -10726,6 +10754,7 @@ export namespace Prisma {
     tieneAlmuerzo?: boolean
     almuerzoInicio?: boolean
     almuerzoFin?: boolean
+    descansos?: boolean
   }
 
   export type FranjaHorarioInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -10746,6 +10775,7 @@ export namespace Prisma {
       tieneAlmuerzo: boolean
       almuerzoInicio: string | null
       almuerzoFin: string | null
+      descansos: string | null
     }, ExtArgs["result"]["franjaHorario"]>
     composites: {}
   }
@@ -11124,6 +11154,7 @@ export namespace Prisma {
     readonly tieneAlmuerzo: FieldRef<"FranjaHorario", 'Boolean'>
     readonly almuerzoInicio: FieldRef<"FranjaHorario", 'String'>
     readonly almuerzoFin: FieldRef<"FranjaHorario", 'String'>
+    readonly descansos: FieldRef<"FranjaHorario", 'String'>
   }
     
 
@@ -12363,6 +12394,7 @@ export namespace Prisma {
     fotoMini: string | null
     horarioId: string | null
     modalidad: $Enums.ModalidadTrabajo | null
+    puedeCerrarEnOtraSede: boolean | null
     activo: boolean | null
     fechaRetiro: Date | null
     motivoRetiro: $Enums.MotivoRetiro | null
@@ -12387,6 +12419,7 @@ export namespace Prisma {
     fotoMini: string | null
     horarioId: string | null
     modalidad: $Enums.ModalidadTrabajo | null
+    puedeCerrarEnOtraSede: boolean | null
     activo: boolean | null
     fechaRetiro: Date | null
     motivoRetiro: $Enums.MotivoRetiro | null
@@ -12412,6 +12445,7 @@ export namespace Prisma {
     fotoMini: number
     horarioId: number
     modalidad: number
+    puedeCerrarEnOtraSede: number
     activo: number
     fechaRetiro: number
     motivoRetiro: number
@@ -12446,6 +12480,7 @@ export namespace Prisma {
     fotoMini?: true
     horarioId?: true
     modalidad?: true
+    puedeCerrarEnOtraSede?: true
     activo?: true
     fechaRetiro?: true
     motivoRetiro?: true
@@ -12470,6 +12505,7 @@ export namespace Prisma {
     fotoMini?: true
     horarioId?: true
     modalidad?: true
+    puedeCerrarEnOtraSede?: true
     activo?: true
     fechaRetiro?: true
     motivoRetiro?: true
@@ -12495,6 +12531,7 @@ export namespace Prisma {
     fotoMini?: true
     horarioId?: true
     modalidad?: true
+    puedeCerrarEnOtraSede?: true
     activo?: true
     fechaRetiro?: true
     motivoRetiro?: true
@@ -12607,6 +12644,7 @@ export namespace Prisma {
     fotoMini: string | null
     horarioId: string | null
     modalidad: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede: boolean
     activo: boolean
     fechaRetiro: Date | null
     motivoRetiro: $Enums.MotivoRetiro | null
@@ -12651,6 +12689,7 @@ export namespace Prisma {
     fotoMini?: boolean
     horarioId?: boolean
     modalidad?: boolean
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: boolean
     motivoRetiro?: boolean
@@ -12686,6 +12725,7 @@ export namespace Prisma {
     fotoMini?: boolean
     horarioId?: boolean
     modalidad?: boolean
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: boolean
     motivoRetiro?: boolean
@@ -12735,6 +12775,7 @@ export namespace Prisma {
       fotoMini: string | null
       horarioId: string | null
       modalidad: $Enums.ModalidadTrabajo
+      puedeCerrarEnOtraSede: boolean
       activo: boolean
       fechaRetiro: Date | null
       motivoRetiro: $Enums.MotivoRetiro | null
@@ -13134,6 +13175,7 @@ export namespace Prisma {
     readonly fotoMini: FieldRef<"Colaborador", 'String'>
     readonly horarioId: FieldRef<"Colaborador", 'String'>
     readonly modalidad: FieldRef<"Colaborador", 'ModalidadTrabajo'>
+    readonly puedeCerrarEnOtraSede: FieldRef<"Colaborador", 'Boolean'>
     readonly activo: FieldRef<"Colaborador", 'Boolean'>
     readonly fechaRetiro: FieldRef<"Colaborador", 'DateTime'>
     readonly motivoRetiro: FieldRef<"Colaborador", 'MotivoRetiro'>
@@ -13837,6 +13879,7 @@ export namespace Prisma {
     empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
     colaboradores?: boolean | Sede$colaboradoresArgs<ExtArgs>
     registros?: boolean | Sede$registrosArgs<ExtArgs>
+    registrosCerrados?: boolean | Sede$registrosCerradosArgs<ExtArgs>
     _count?: boolean | SedeCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["sede"]>
 
@@ -13858,6 +13901,7 @@ export namespace Prisma {
     empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
     colaboradores?: boolean | Sede$colaboradoresArgs<ExtArgs>
     registros?: boolean | Sede$registrosArgs<ExtArgs>
+    registrosCerrados?: boolean | Sede$registrosCerradosArgs<ExtArgs>
     _count?: boolean | SedeCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -13867,6 +13911,7 @@ export namespace Prisma {
       empresa: Prisma.$EmpresaPayload<ExtArgs>
       colaboradores: Prisma.$ColaboradorSedePayload<ExtArgs>[]
       registros: Prisma.$RegistroPayload<ExtArgs>[]
+      registrosCerrados: Prisma.$RegistroPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -14222,6 +14267,7 @@ export namespace Prisma {
     empresa<T extends EmpresaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EmpresaDefaultArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     colaboradores<T extends Sede$colaboradoresArgs<ExtArgs> = {}>(args?: Subset<T, Sede$colaboradoresArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findMany"> | Null>
     registros<T extends Sede$registrosArgs<ExtArgs> = {}>(args?: Subset<T, Sede$registrosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findMany"> | Null>
+    registrosCerrados<T extends Sede$registrosCerradosArgs<ExtArgs> = {}>(args?: Subset<T, Sede$registrosCerradosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -14583,6 +14629,26 @@ export namespace Prisma {
    * Sede.registros
    */
   export type Sede$registrosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Registro
+     */
+    select?: RegistroSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RegistroInclude<ExtArgs> | null
+    where?: RegistroWhereInput
+    orderBy?: RegistroOrderByWithRelationInput | RegistroOrderByWithRelationInput[]
+    cursor?: RegistroWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RegistroScalarFieldEnum | RegistroScalarFieldEnum[]
+  }
+
+  /**
+   * Sede.registrosCerrados
+   */
+  export type Sede$registrosCerradosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the Registro
      */
@@ -15515,6 +15581,7 @@ export namespace Prisma {
     ajustaEntrada: boolean | null
     almuerzoInicio: string | null
     almuerzoFin: string | null
+    descansos: string | null
     horarioId: string | null
     origen: string | null
     creadoEn: Date | null
@@ -15535,6 +15602,7 @@ export namespace Prisma {
     ajustaEntrada: boolean | null
     almuerzoInicio: string | null
     almuerzoFin: string | null
+    descansos: string | null
     horarioId: string | null
     origen: string | null
     creadoEn: Date | null
@@ -15555,6 +15623,7 @@ export namespace Prisma {
     ajustaEntrada: number
     almuerzoInicio: number
     almuerzoFin: number
+    descansos: number
     horarioId: number
     origen: number
     creadoEn: number
@@ -15591,6 +15660,7 @@ export namespace Prisma {
     ajustaEntrada?: true
     almuerzoInicio?: true
     almuerzoFin?: true
+    descansos?: true
     horarioId?: true
     origen?: true
     creadoEn?: true
@@ -15611,6 +15681,7 @@ export namespace Prisma {
     ajustaEntrada?: true
     almuerzoInicio?: true
     almuerzoFin?: true
+    descansos?: true
     horarioId?: true
     origen?: true
     creadoEn?: true
@@ -15631,6 +15702,7 @@ export namespace Prisma {
     ajustaEntrada?: true
     almuerzoInicio?: true
     almuerzoFin?: true
+    descansos?: true
     horarioId?: true
     origen?: true
     creadoEn?: true
@@ -15738,6 +15810,7 @@ export namespace Prisma {
     ajustaEntrada: boolean
     almuerzoInicio: string | null
     almuerzoFin: string | null
+    descansos: string | null
     horarioId: string | null
     origen: string
     creadoEn: Date
@@ -15777,6 +15850,7 @@ export namespace Prisma {
     ajustaEntrada?: boolean
     almuerzoInicio?: boolean
     almuerzoFin?: boolean
+    descansos?: boolean
     horarioId?: boolean
     origen?: boolean
     creadoEn?: boolean
@@ -15799,6 +15873,7 @@ export namespace Prisma {
     ajustaEntrada?: boolean
     almuerzoInicio?: boolean
     almuerzoFin?: boolean
+    descansos?: boolean
     horarioId?: boolean
     origen?: boolean
     creadoEn?: boolean
@@ -15828,6 +15903,7 @@ export namespace Prisma {
       ajustaEntrada: boolean
       almuerzoInicio: string | null
       almuerzoFin: string | null
+      descansos: string | null
       horarioId: string | null
       origen: string
       creadoEn: Date
@@ -16215,6 +16291,7 @@ export namespace Prisma {
     readonly ajustaEntrada: FieldRef<"DiaEsperado", 'Boolean'>
     readonly almuerzoInicio: FieldRef<"DiaEsperado", 'String'>
     readonly almuerzoFin: FieldRef<"DiaEsperado", 'String'>
+    readonly descansos: FieldRef<"DiaEsperado", 'String'>
     readonly horarioId: FieldRef<"DiaEsperado", 'String'>
     readonly origen: FieldRef<"DiaEsperado", 'String'>
     readonly creadoEn: FieldRef<"DiaEsperado", 'DateTime'>
@@ -16558,6 +16635,7 @@ export namespace Prisma {
     id: string | null
     colaboradorId: string | null
     sedeId: string | null
+    sedeSalidaId: string | null
     fecha: Date | null
     entrada: Date | null
     salida: Date | null
@@ -16565,6 +16643,8 @@ export namespace Prisma {
     observacion: string | null
     salidaEstimada: boolean | null
     salidaAlmuerzo: boolean | null
+    salidaDescanso: boolean | null
+    descansoVentana: string | null
     entradaEstimada: boolean | null
     fotoEntrada: string | null
     fotoSalida: string | null
@@ -16581,6 +16661,7 @@ export namespace Prisma {
     id: string | null
     colaboradorId: string | null
     sedeId: string | null
+    sedeSalidaId: string | null
     fecha: Date | null
     entrada: Date | null
     salida: Date | null
@@ -16588,6 +16669,8 @@ export namespace Prisma {
     observacion: string | null
     salidaEstimada: boolean | null
     salidaAlmuerzo: boolean | null
+    salidaDescanso: boolean | null
+    descansoVentana: string | null
     entradaEstimada: boolean | null
     fotoEntrada: string | null
     fotoSalida: string | null
@@ -16604,6 +16687,7 @@ export namespace Prisma {
     id: number
     colaboradorId: number
     sedeId: number
+    sedeSalidaId: number
     fecha: number
     entrada: number
     salida: number
@@ -16611,6 +16695,8 @@ export namespace Prisma {
     observacion: number
     salidaEstimada: number
     salidaAlmuerzo: number
+    salidaDescanso: number
+    descansoVentana: number
     entradaEstimada: number
     fotoEntrada: number
     fotoSalida: number
@@ -16639,6 +16725,7 @@ export namespace Prisma {
     id?: true
     colaboradorId?: true
     sedeId?: true
+    sedeSalidaId?: true
     fecha?: true
     entrada?: true
     salida?: true
@@ -16646,6 +16733,8 @@ export namespace Prisma {
     observacion?: true
     salidaEstimada?: true
     salidaAlmuerzo?: true
+    salidaDescanso?: true
+    descansoVentana?: true
     entradaEstimada?: true
     fotoEntrada?: true
     fotoSalida?: true
@@ -16662,6 +16751,7 @@ export namespace Prisma {
     id?: true
     colaboradorId?: true
     sedeId?: true
+    sedeSalidaId?: true
     fecha?: true
     entrada?: true
     salida?: true
@@ -16669,6 +16759,8 @@ export namespace Prisma {
     observacion?: true
     salidaEstimada?: true
     salidaAlmuerzo?: true
+    salidaDescanso?: true
+    descansoVentana?: true
     entradaEstimada?: true
     fotoEntrada?: true
     fotoSalida?: true
@@ -16685,6 +16777,7 @@ export namespace Prisma {
     id?: true
     colaboradorId?: true
     sedeId?: true
+    sedeSalidaId?: true
     fecha?: true
     entrada?: true
     salida?: true
@@ -16692,6 +16785,8 @@ export namespace Prisma {
     observacion?: true
     salidaEstimada?: true
     salidaAlmuerzo?: true
+    salidaDescanso?: true
+    descansoVentana?: true
     entradaEstimada?: true
     fotoEntrada?: true
     fotoSalida?: true
@@ -16795,6 +16890,7 @@ export namespace Prisma {
     id: string
     colaboradorId: string
     sedeId: string | null
+    sedeSalidaId: string | null
     fecha: Date
     entrada: Date | null
     salida: Date | null
@@ -16802,6 +16898,8 @@ export namespace Prisma {
     observacion: string | null
     salidaEstimada: boolean
     salidaAlmuerzo: boolean
+    salidaDescanso: boolean
+    descansoVentana: string | null
     entradaEstimada: boolean
     fotoEntrada: string | null
     fotoSalida: string | null
@@ -16837,6 +16935,7 @@ export namespace Prisma {
     id?: boolean
     colaboradorId?: boolean
     sedeId?: boolean
+    sedeSalidaId?: boolean
     fecha?: boolean
     entrada?: boolean
     salida?: boolean
@@ -16844,6 +16943,8 @@ export namespace Prisma {
     observacion?: boolean
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: boolean
     entradaEstimada?: boolean
     fotoEntrada?: boolean
     fotoSalida?: boolean
@@ -16856,6 +16957,7 @@ export namespace Prisma {
     creadoEn?: boolean
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
     sede?: boolean | Registro$sedeArgs<ExtArgs>
+    sedeSalida?: boolean | Registro$sedeSalidaArgs<ExtArgs>
     cambios?: boolean | Registro$cambiosArgs<ExtArgs>
     novedades?: boolean | Registro$novedadesArgs<ExtArgs>
     _count?: boolean | RegistroCountOutputTypeDefaultArgs<ExtArgs>
@@ -16866,6 +16968,7 @@ export namespace Prisma {
     id?: boolean
     colaboradorId?: boolean
     sedeId?: boolean
+    sedeSalidaId?: boolean
     fecha?: boolean
     entrada?: boolean
     salida?: boolean
@@ -16873,6 +16976,8 @@ export namespace Prisma {
     observacion?: boolean
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: boolean
     entradaEstimada?: boolean
     fotoEntrada?: boolean
     fotoSalida?: boolean
@@ -16888,6 +16993,7 @@ export namespace Prisma {
   export type RegistroInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
     sede?: boolean | Registro$sedeArgs<ExtArgs>
+    sedeSalida?: boolean | Registro$sedeSalidaArgs<ExtArgs>
     cambios?: boolean | Registro$cambiosArgs<ExtArgs>
     novedades?: boolean | Registro$novedadesArgs<ExtArgs>
     _count?: boolean | RegistroCountOutputTypeDefaultArgs<ExtArgs>
@@ -16898,6 +17004,7 @@ export namespace Prisma {
     objects: {
       colaborador: Prisma.$ColaboradorPayload<ExtArgs>
       sede: Prisma.$SedePayload<ExtArgs> | null
+      sedeSalida: Prisma.$SedePayload<ExtArgs> | null
       cambios: Prisma.$RegistroCambioPayload<ExtArgs>[]
       novedades: Prisma.$PermisoPayload<ExtArgs>[]
     }
@@ -16905,6 +17012,7 @@ export namespace Prisma {
       id: string
       colaboradorId: string
       sedeId: string | null
+      sedeSalidaId: string | null
       fecha: Date
       entrada: Date | null
       salida: Date | null
@@ -16912,6 +17020,8 @@ export namespace Prisma {
       observacion: string | null
       salidaEstimada: boolean
       salidaAlmuerzo: boolean
+      salidaDescanso: boolean
+      descansoVentana: string | null
       entradaEstimada: boolean
       fotoEntrada: string | null
       fotoSalida: string | null
@@ -17264,6 +17374,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     sede<T extends Registro$sedeArgs<ExtArgs> = {}>(args?: Subset<T, Registro$sedeArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    sedeSalida<T extends Registro$sedeSalidaArgs<ExtArgs> = {}>(args?: Subset<T, Registro$sedeSalidaArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     cambios<T extends Registro$cambiosArgs<ExtArgs> = {}>(args?: Subset<T, Registro$cambiosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroCambioPayload<ExtArgs>, T, "findMany"> | Null>
     novedades<T extends Registro$novedadesArgs<ExtArgs> = {}>(args?: Subset<T, Registro$novedadesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PermisoPayload<ExtArgs>, T, "findMany"> | Null>
     /**
@@ -17298,6 +17409,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Registro", 'String'>
     readonly colaboradorId: FieldRef<"Registro", 'String'>
     readonly sedeId: FieldRef<"Registro", 'String'>
+    readonly sedeSalidaId: FieldRef<"Registro", 'String'>
     readonly fecha: FieldRef<"Registro", 'DateTime'>
     readonly entrada: FieldRef<"Registro", 'DateTime'>
     readonly salida: FieldRef<"Registro", 'DateTime'>
@@ -17305,6 +17417,8 @@ export namespace Prisma {
     readonly observacion: FieldRef<"Registro", 'String'>
     readonly salidaEstimada: FieldRef<"Registro", 'Boolean'>
     readonly salidaAlmuerzo: FieldRef<"Registro", 'Boolean'>
+    readonly salidaDescanso: FieldRef<"Registro", 'Boolean'>
+    readonly descansoVentana: FieldRef<"Registro", 'String'>
     readonly entradaEstimada: FieldRef<"Registro", 'Boolean'>
     readonly fotoEntrada: FieldRef<"Registro", 'String'>
     readonly fotoSalida: FieldRef<"Registro", 'String'>
@@ -17617,6 +17731,21 @@ export namespace Prisma {
    * Registro.sede
    */
   export type Registro$sedeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    where?: SedeWhereInput
+  }
+
+  /**
+   * Registro.sedeSalida
+   */
+  export type Registro$sedeSalidaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the Sede
      */
@@ -29332,6 +29461,7 @@ export namespace Prisma {
     almuerzoMin: 'almuerzoMin',
     toleranciaSalidaMin: 'toleranciaSalidaMin',
     ajustaEntrada: 'ajustaEntrada',
+    fotoEnDescanso: 'fotoEnDescanso',
     activo: 'activo',
     creadoEn: 'creadoEn'
   };
@@ -29347,7 +29477,8 @@ export namespace Prisma {
     horaSalida: 'horaSalida',
     tieneAlmuerzo: 'tieneAlmuerzo',
     almuerzoInicio: 'almuerzoInicio',
-    almuerzoFin: 'almuerzoFin'
+    almuerzoFin: 'almuerzoFin',
+    descansos: 'descansos'
   };
 
   export type FranjaHorarioScalarFieldEnum = (typeof FranjaHorarioScalarFieldEnum)[keyof typeof FranjaHorarioScalarFieldEnum]
@@ -29382,6 +29513,7 @@ export namespace Prisma {
     fotoMini: 'fotoMini',
     horarioId: 'horarioId',
     modalidad: 'modalidad',
+    puedeCerrarEnOtraSede: 'puedeCerrarEnOtraSede',
     activo: 'activo',
     fechaRetiro: 'fechaRetiro',
     motivoRetiro: 'motivoRetiro',
@@ -29432,6 +29564,7 @@ export namespace Prisma {
     ajustaEntrada: 'ajustaEntrada',
     almuerzoInicio: 'almuerzoInicio',
     almuerzoFin: 'almuerzoFin',
+    descansos: 'descansos',
     horarioId: 'horarioId',
     origen: 'origen',
     creadoEn: 'creadoEn',
@@ -29445,6 +29578,7 @@ export namespace Prisma {
     id: 'id',
     colaboradorId: 'colaboradorId',
     sedeId: 'sedeId',
+    sedeSalidaId: 'sedeSalidaId',
     fecha: 'fecha',
     entrada: 'entrada',
     salida: 'salida',
@@ -29452,6 +29586,8 @@ export namespace Prisma {
     observacion: 'observacion',
     salidaEstimada: 'salidaEstimada',
     salidaAlmuerzo: 'salidaAlmuerzo',
+    salidaDescanso: 'salidaDescanso',
+    descansoVentana: 'descansoVentana',
     entradaEstimada: 'entradaEstimada',
     fotoEntrada: 'fotoEntrada',
     fotoSalida: 'fotoSalida',
@@ -30401,6 +30537,7 @@ export namespace Prisma {
     almuerzoMin?: IntFilter<"Horario"> | number
     toleranciaSalidaMin?: IntFilter<"Horario"> | number
     ajustaEntrada?: BoolFilter<"Horario"> | boolean
+    fotoEnDescanso?: BoolFilter<"Horario"> | boolean
     activo?: BoolFilter<"Horario"> | boolean
     creadoEn?: DateTimeFilter<"Horario"> | Date | string
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
@@ -30416,6 +30553,7 @@ export namespace Prisma {
     almuerzoMin?: SortOrder
     toleranciaSalidaMin?: SortOrder
     ajustaEntrada?: SortOrder
+    fotoEnDescanso?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
     empresa?: EmpresaOrderByWithRelationInput
@@ -30434,6 +30572,7 @@ export namespace Prisma {
     almuerzoMin?: IntFilter<"Horario"> | number
     toleranciaSalidaMin?: IntFilter<"Horario"> | number
     ajustaEntrada?: BoolFilter<"Horario"> | boolean
+    fotoEnDescanso?: BoolFilter<"Horario"> | boolean
     activo?: BoolFilter<"Horario"> | boolean
     creadoEn?: DateTimeFilter<"Horario"> | Date | string
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
@@ -30449,6 +30588,7 @@ export namespace Prisma {
     almuerzoMin?: SortOrder
     toleranciaSalidaMin?: SortOrder
     ajustaEntrada?: SortOrder
+    fotoEnDescanso?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
     _count?: HorarioCountOrderByAggregateInput
@@ -30469,6 +30609,7 @@ export namespace Prisma {
     almuerzoMin?: IntWithAggregatesFilter<"Horario"> | number
     toleranciaSalidaMin?: IntWithAggregatesFilter<"Horario"> | number
     ajustaEntrada?: BoolWithAggregatesFilter<"Horario"> | boolean
+    fotoEnDescanso?: BoolWithAggregatesFilter<"Horario"> | boolean
     activo?: BoolWithAggregatesFilter<"Horario"> | boolean
     creadoEn?: DateTimeWithAggregatesFilter<"Horario"> | Date | string
   }
@@ -30485,6 +30626,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolFilter<"FranjaHorario"> | boolean
     almuerzoInicio?: StringNullableFilter<"FranjaHorario"> | string | null
     almuerzoFin?: StringNullableFilter<"FranjaHorario"> | string | null
+    descansos?: StringNullableFilter<"FranjaHorario"> | string | null
     horario?: XOR<HorarioRelationFilter, HorarioWhereInput>
   }
 
@@ -30497,6 +30639,7 @@ export namespace Prisma {
     tieneAlmuerzo?: SortOrder
     almuerzoInicio?: SortOrderInput | SortOrder
     almuerzoFin?: SortOrderInput | SortOrder
+    descansos?: SortOrderInput | SortOrder
     horario?: HorarioOrderByWithRelationInput
   }
 
@@ -30512,6 +30655,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolFilter<"FranjaHorario"> | boolean
     almuerzoInicio?: StringNullableFilter<"FranjaHorario"> | string | null
     almuerzoFin?: StringNullableFilter<"FranjaHorario"> | string | null
+    descansos?: StringNullableFilter<"FranjaHorario"> | string | null
     horario?: XOR<HorarioRelationFilter, HorarioWhereInput>
   }, "id">
 
@@ -30524,6 +30668,7 @@ export namespace Prisma {
     tieneAlmuerzo?: SortOrder
     almuerzoInicio?: SortOrderInput | SortOrder
     almuerzoFin?: SortOrderInput | SortOrder
+    descansos?: SortOrderInput | SortOrder
     _count?: FranjaHorarioCountOrderByAggregateInput
     _max?: FranjaHorarioMaxOrderByAggregateInput
     _min?: FranjaHorarioMinOrderByAggregateInput
@@ -30541,6 +30686,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolWithAggregatesFilter<"FranjaHorario"> | boolean
     almuerzoInicio?: StringNullableWithAggregatesFilter<"FranjaHorario"> | string | null
     almuerzoFin?: StringNullableWithAggregatesFilter<"FranjaHorario"> | string | null
+    descansos?: StringNullableWithAggregatesFilter<"FranjaHorario"> | string | null
   }
 
   export type DispositivoKioscoWhereInput = {
@@ -30623,6 +30769,7 @@ export namespace Prisma {
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoFilter<"Colaborador"> | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFilter<"Colaborador"> | boolean
     activo?: BoolFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
@@ -30656,6 +30803,7 @@ export namespace Prisma {
     fotoMini?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     modalidad?: SortOrder
+    puedeCerrarEnOtraSede?: SortOrder
     activo?: SortOrder
     fechaRetiro?: SortOrderInput | SortOrder
     motivoRetiro?: SortOrderInput | SortOrder
@@ -30693,6 +30841,7 @@ export namespace Prisma {
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoFilter<"Colaborador"> | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFilter<"Colaborador"> | boolean
     activo?: BoolFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
@@ -30726,6 +30875,7 @@ export namespace Prisma {
     fotoMini?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     modalidad?: SortOrder
+    puedeCerrarEnOtraSede?: SortOrder
     activo?: SortOrder
     fechaRetiro?: SortOrderInput | SortOrder
     motivoRetiro?: SortOrderInput | SortOrder
@@ -30759,6 +30909,7 @@ export namespace Prisma {
     fotoMini?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     horarioId?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoWithAggregatesFilter<"Colaborador"> | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolWithAggregatesFilter<"Colaborador"> | boolean
     activo?: BoolWithAggregatesFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableWithAggregatesFilter<"Colaborador"> | $Enums.MotivoRetiro | null
@@ -30784,6 +30935,7 @@ export namespace Prisma {
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
     colaboradores?: ColaboradorSedeListRelationFilter
     registros?: RegistroListRelationFilter
+    registrosCerrados?: RegistroListRelationFilter
   }
 
   export type SedeOrderByWithRelationInput = {
@@ -30800,6 +30952,7 @@ export namespace Prisma {
     empresa?: EmpresaOrderByWithRelationInput
     colaboradores?: ColaboradorSedeOrderByRelationAggregateInput
     registros?: RegistroOrderByRelationAggregateInput
+    registrosCerrados?: RegistroOrderByRelationAggregateInput
   }
 
   export type SedeWhereUniqueInput = Prisma.AtLeast<{
@@ -30819,6 +30972,7 @@ export namespace Prisma {
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
     colaboradores?: ColaboradorSedeListRelationFilter
     registros?: RegistroListRelationFilter
+    registrosCerrados?: RegistroListRelationFilter
   }, "id">
 
   export type SedeOrderByWithAggregationInput = {
@@ -30921,6 +31075,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
     almuerzoInicio?: StringNullableFilter<"DiaEsperado"> | string | null
     almuerzoFin?: StringNullableFilter<"DiaEsperado"> | string | null
+    descansos?: StringNullableFilter<"DiaEsperado"> | string | null
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
@@ -30942,6 +31097,7 @@ export namespace Prisma {
     ajustaEntrada?: SortOrder
     almuerzoInicio?: SortOrderInput | SortOrder
     almuerzoFin?: SortOrderInput | SortOrder
+    descansos?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -30967,6 +31123,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
     almuerzoInicio?: StringNullableFilter<"DiaEsperado"> | string | null
     almuerzoFin?: StringNullableFilter<"DiaEsperado"> | string | null
+    descansos?: StringNullableFilter<"DiaEsperado"> | string | null
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
@@ -30988,6 +31145,7 @@ export namespace Prisma {
     ajustaEntrada?: SortOrder
     almuerzoInicio?: SortOrderInput | SortOrder
     almuerzoFin?: SortOrderInput | SortOrder
+    descansos?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -31016,6 +31174,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolWithAggregatesFilter<"DiaEsperado"> | boolean
     almuerzoInicio?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
     almuerzoFin?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
+    descansos?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
     horarioId?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
     origen?: StringWithAggregatesFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeWithAggregatesFilter<"DiaEsperado"> | Date | string
@@ -31029,6 +31188,7 @@ export namespace Prisma {
     id?: StringFilter<"Registro"> | string
     colaboradorId?: StringFilter<"Registro"> | string
     sedeId?: StringNullableFilter<"Registro"> | string | null
+    sedeSalidaId?: StringNullableFilter<"Registro"> | string | null
     fecha?: DateTimeFilter<"Registro"> | Date | string
     entrada?: DateTimeNullableFilter<"Registro"> | Date | string | null
     salida?: DateTimeNullableFilter<"Registro"> | Date | string | null
@@ -31036,6 +31196,8 @@ export namespace Prisma {
     observacion?: StringNullableFilter<"Registro"> | string | null
     salidaEstimada?: BoolFilter<"Registro"> | boolean
     salidaAlmuerzo?: BoolFilter<"Registro"> | boolean
+    salidaDescanso?: BoolFilter<"Registro"> | boolean
+    descansoVentana?: StringNullableFilter<"Registro"> | string | null
     entradaEstimada?: BoolFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableFilter<"Registro"> | string | null
     fotoSalida?: StringNullableFilter<"Registro"> | string | null
@@ -31048,6 +31210,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
     sede?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
+    sedeSalida?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
     cambios?: RegistroCambioListRelationFilter
     novedades?: PermisoListRelationFilter
   }
@@ -31056,6 +31219,7 @@ export namespace Prisma {
     id?: SortOrder
     colaboradorId?: SortOrder
     sedeId?: SortOrderInput | SortOrder
+    sedeSalidaId?: SortOrderInput | SortOrder
     fecha?: SortOrder
     entrada?: SortOrderInput | SortOrder
     salida?: SortOrderInput | SortOrder
@@ -31063,6 +31227,8 @@ export namespace Prisma {
     observacion?: SortOrderInput | SortOrder
     salidaEstimada?: SortOrder
     salidaAlmuerzo?: SortOrder
+    salidaDescanso?: SortOrder
+    descansoVentana?: SortOrderInput | SortOrder
     entradaEstimada?: SortOrder
     fotoEntrada?: SortOrderInput | SortOrder
     fotoSalida?: SortOrderInput | SortOrder
@@ -31075,6 +31241,7 @@ export namespace Prisma {
     creadoEn?: SortOrder
     colaborador?: ColaboradorOrderByWithRelationInput
     sede?: SedeOrderByWithRelationInput
+    sedeSalida?: SedeOrderByWithRelationInput
     cambios?: RegistroCambioOrderByRelationAggregateInput
     novedades?: PermisoOrderByRelationAggregateInput
   }
@@ -31086,6 +31253,7 @@ export namespace Prisma {
     NOT?: RegistroWhereInput | RegistroWhereInput[]
     colaboradorId?: StringFilter<"Registro"> | string
     sedeId?: StringNullableFilter<"Registro"> | string | null
+    sedeSalidaId?: StringNullableFilter<"Registro"> | string | null
     fecha?: DateTimeFilter<"Registro"> | Date | string
     entrada?: DateTimeNullableFilter<"Registro"> | Date | string | null
     salida?: DateTimeNullableFilter<"Registro"> | Date | string | null
@@ -31093,6 +31261,8 @@ export namespace Prisma {
     observacion?: StringNullableFilter<"Registro"> | string | null
     salidaEstimada?: BoolFilter<"Registro"> | boolean
     salidaAlmuerzo?: BoolFilter<"Registro"> | boolean
+    salidaDescanso?: BoolFilter<"Registro"> | boolean
+    descansoVentana?: StringNullableFilter<"Registro"> | string | null
     entradaEstimada?: BoolFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableFilter<"Registro"> | string | null
     fotoSalida?: StringNullableFilter<"Registro"> | string | null
@@ -31105,6 +31275,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
     sede?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
+    sedeSalida?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
     cambios?: RegistroCambioListRelationFilter
     novedades?: PermisoListRelationFilter
   }, "id">
@@ -31113,6 +31284,7 @@ export namespace Prisma {
     id?: SortOrder
     colaboradorId?: SortOrder
     sedeId?: SortOrderInput | SortOrder
+    sedeSalidaId?: SortOrderInput | SortOrder
     fecha?: SortOrder
     entrada?: SortOrderInput | SortOrder
     salida?: SortOrderInput | SortOrder
@@ -31120,6 +31292,8 @@ export namespace Prisma {
     observacion?: SortOrderInput | SortOrder
     salidaEstimada?: SortOrder
     salidaAlmuerzo?: SortOrder
+    salidaDescanso?: SortOrder
+    descansoVentana?: SortOrderInput | SortOrder
     entradaEstimada?: SortOrder
     fotoEntrada?: SortOrderInput | SortOrder
     fotoSalida?: SortOrderInput | SortOrder
@@ -31144,6 +31318,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Registro"> | string
     colaboradorId?: StringWithAggregatesFilter<"Registro"> | string
     sedeId?: StringNullableWithAggregatesFilter<"Registro"> | string | null
+    sedeSalidaId?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     fecha?: DateTimeWithAggregatesFilter<"Registro"> | Date | string
     entrada?: DateTimeNullableWithAggregatesFilter<"Registro"> | Date | string | null
     salida?: DateTimeNullableWithAggregatesFilter<"Registro"> | Date | string | null
@@ -31151,6 +31326,8 @@ export namespace Prisma {
     observacion?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     salidaEstimada?: BoolWithAggregatesFilter<"Registro"> | boolean
     salidaAlmuerzo?: BoolWithAggregatesFilter<"Registro"> | boolean
+    salidaDescanso?: BoolWithAggregatesFilter<"Registro"> | boolean
+    descansoVentana?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     entradaEstimada?: BoolWithAggregatesFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     fotoSalida?: StringNullableWithAggregatesFilter<"Registro"> | string | null
@@ -32772,6 +32949,7 @@ export namespace Prisma {
     almuerzoMin?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutHorariosInput
@@ -32787,6 +32965,7 @@ export namespace Prisma {
     almuerzoMin?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioUncheckedCreateNestedManyWithoutHorarioInput
@@ -32800,6 +32979,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutHorariosNestedInput
@@ -32815,6 +32995,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUncheckedUpdateManyWithoutHorarioNestedInput
@@ -32829,6 +33010,7 @@ export namespace Prisma {
     almuerzoMin?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: Date | string
   }
@@ -32840,6 +33022,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -32852,6 +33035,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -32864,6 +33048,7 @@ export namespace Prisma {
     tieneAlmuerzo?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
     horario: HorarioCreateNestedOneWithoutFranjasInput
   }
 
@@ -32876,6 +33061,7 @@ export namespace Prisma {
     tieneAlmuerzo?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
   }
 
   export type FranjaHorarioUpdateInput = {
@@ -32886,6 +33072,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
     horario?: HorarioUpdateOneRequiredWithoutFranjasNestedInput
   }
 
@@ -32898,6 +33085,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FranjaHorarioCreateManyInput = {
@@ -32909,6 +33097,7 @@ export namespace Prisma {
     tieneAlmuerzo?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
   }
 
   export type FranjaHorarioUpdateManyMutationInput = {
@@ -32919,6 +33108,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FranjaHorarioUncheckedUpdateManyInput = {
@@ -32930,6 +33120,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type DispositivoKioscoCreateInput = {
@@ -33009,6 +33200,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -33042,6 +33234,7 @@ export namespace Prisma {
     fotoMini?: string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -33071,6 +33264,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -33104,6 +33298,7 @@ export namespace Prisma {
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -33135,6 +33330,7 @@ export namespace Prisma {
     fotoMini?: string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -33158,6 +33354,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -33183,6 +33380,7 @@ export namespace Prisma {
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -33204,6 +33402,7 @@ export namespace Prisma {
     empresa: EmpresaCreateNestedOneWithoutSedesInput
     colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
     registros?: RegistroCreateNestedManyWithoutSedeInput
+    registrosCerrados?: RegistroCreateNestedManyWithoutSedeSalidaInput
   }
 
   export type SedeUncheckedCreateInput = {
@@ -33219,6 +33418,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
     registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
+    registrosCerrados?: RegistroUncheckedCreateNestedManyWithoutSedeSalidaInput
   }
 
   export type SedeUpdateInput = {
@@ -33234,6 +33434,7 @@ export namespace Prisma {
     empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
     colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
     registros?: RegistroUpdateManyWithoutSedeNestedInput
+    registrosCerrados?: RegistroUpdateManyWithoutSedeSalidaNestedInput
   }
 
   export type SedeUncheckedUpdateInput = {
@@ -33249,6 +33450,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
+    registrosCerrados?: RegistroUncheckedUpdateManyWithoutSedeSalidaNestedInput
   }
 
   export type SedeCreateManyInput = {
@@ -33342,6 +33544,7 @@ export namespace Prisma {
     ajustaEntrada?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -33363,6 +33566,7 @@ export namespace Prisma {
     ajustaEntrada?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -33382,6 +33586,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33403,6 +33608,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33423,6 +33629,7 @@ export namespace Prisma {
     ajustaEntrada?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -33442,6 +33649,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33462,6 +33670,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33477,6 +33686,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -33489,6 +33700,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
     sede?: SedeCreateNestedOneWithoutRegistrosInput
+    sedeSalida?: SedeCreateNestedOneWithoutRegistrosCerradosInput
     cambios?: RegistroCambioCreateNestedManyWithoutRegistroInput
     novedades?: PermisoCreateNestedManyWithoutRegistroInput
   }
@@ -33497,6 +33709,7 @@ export namespace Prisma {
     id?: string
     colaboradorId: string
     sedeId?: string | null
+    sedeSalidaId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -33504,6 +33717,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -33527,6 +33742,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -33539,6 +33756,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
     sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    sedeSalida?: SedeUpdateOneWithoutRegistrosCerradosNestedInput
     cambios?: RegistroCambioUpdateManyWithoutRegistroNestedInput
     novedades?: PermisoUpdateManyWithoutRegistroNestedInput
   }
@@ -33547,6 +33765,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     colaboradorId?: StringFieldUpdateOperationsInput | string
     sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    sedeSalidaId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -33554,6 +33773,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -33572,6 +33793,7 @@ export namespace Prisma {
     id?: string
     colaboradorId: string
     sedeId?: string | null
+    sedeSalidaId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -33579,6 +33801,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -33600,6 +33824,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -33616,6 +33842,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     colaboradorId?: StringFieldUpdateOperationsInput | string
     sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    sedeSalidaId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -33623,6 +33850,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -35537,6 +35766,7 @@ export namespace Prisma {
     almuerzoMin?: SortOrder
     toleranciaSalidaMin?: SortOrder
     ajustaEntrada?: SortOrder
+    fotoEnDescanso?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
   }
@@ -35555,6 +35785,7 @@ export namespace Prisma {
     almuerzoMin?: SortOrder
     toleranciaSalidaMin?: SortOrder
     ajustaEntrada?: SortOrder
+    fotoEnDescanso?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
   }
@@ -35567,6 +35798,7 @@ export namespace Prisma {
     almuerzoMin?: SortOrder
     toleranciaSalidaMin?: SortOrder
     ajustaEntrada?: SortOrder
+    fotoEnDescanso?: SortOrder
     activo?: SortOrder
     creadoEn?: SortOrder
   }
@@ -35591,6 +35823,7 @@ export namespace Prisma {
     tieneAlmuerzo?: SortOrder
     almuerzoInicio?: SortOrder
     almuerzoFin?: SortOrder
+    descansos?: SortOrder
   }
 
   export type FranjaHorarioMaxOrderByAggregateInput = {
@@ -35601,6 +35834,7 @@ export namespace Prisma {
     tieneAlmuerzo?: SortOrder
     almuerzoInicio?: SortOrder
     almuerzoFin?: SortOrder
+    descansos?: SortOrder
   }
 
   export type FranjaHorarioMinOrderByAggregateInput = {
@@ -35611,6 +35845,7 @@ export namespace Prisma {
     tieneAlmuerzo?: SortOrder
     almuerzoInicio?: SortOrder
     almuerzoFin?: SortOrder
+    descansos?: SortOrder
   }
 
   export type DispositivoKioscoCountOrderByAggregateInput = {
@@ -35741,6 +35976,7 @@ export namespace Prisma {
     fotoMini?: SortOrder
     horarioId?: SortOrder
     modalidad?: SortOrder
+    puedeCerrarEnOtraSede?: SortOrder
     activo?: SortOrder
     fechaRetiro?: SortOrder
     motivoRetiro?: SortOrder
@@ -35769,6 +36005,7 @@ export namespace Prisma {
     fotoMini?: SortOrder
     horarioId?: SortOrder
     modalidad?: SortOrder
+    puedeCerrarEnOtraSede?: SortOrder
     activo?: SortOrder
     fechaRetiro?: SortOrder
     motivoRetiro?: SortOrder
@@ -35793,6 +36030,7 @@ export namespace Prisma {
     fotoMini?: SortOrder
     horarioId?: SortOrder
     modalidad?: SortOrder
+    puedeCerrarEnOtraSede?: SortOrder
     activo?: SortOrder
     fechaRetiro?: SortOrder
     motivoRetiro?: SortOrder
@@ -35955,6 +36193,7 @@ export namespace Prisma {
     ajustaEntrada?: SortOrder
     almuerzoInicio?: SortOrder
     almuerzoFin?: SortOrder
+    descansos?: SortOrder
     horarioId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -35982,6 +36221,7 @@ export namespace Prisma {
     ajustaEntrada?: SortOrder
     almuerzoInicio?: SortOrder
     almuerzoFin?: SortOrder
+    descansos?: SortOrder
     horarioId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -36002,6 +36242,7 @@ export namespace Prisma {
     ajustaEntrada?: SortOrder
     almuerzoInicio?: SortOrder
     almuerzoFin?: SortOrder
+    descansos?: SortOrder
     horarioId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
@@ -36048,6 +36289,7 @@ export namespace Prisma {
     id?: SortOrder
     colaboradorId?: SortOrder
     sedeId?: SortOrder
+    sedeSalidaId?: SortOrder
     fecha?: SortOrder
     entrada?: SortOrder
     salida?: SortOrder
@@ -36055,6 +36297,8 @@ export namespace Prisma {
     observacion?: SortOrder
     salidaEstimada?: SortOrder
     salidaAlmuerzo?: SortOrder
+    salidaDescanso?: SortOrder
+    descansoVentana?: SortOrder
     entradaEstimada?: SortOrder
     fotoEntrada?: SortOrder
     fotoSalida?: SortOrder
@@ -36076,6 +36320,7 @@ export namespace Prisma {
     id?: SortOrder
     colaboradorId?: SortOrder
     sedeId?: SortOrder
+    sedeSalidaId?: SortOrder
     fecha?: SortOrder
     entrada?: SortOrder
     salida?: SortOrder
@@ -36083,6 +36328,8 @@ export namespace Prisma {
     observacion?: SortOrder
     salidaEstimada?: SortOrder
     salidaAlmuerzo?: SortOrder
+    salidaDescanso?: SortOrder
+    descansoVentana?: SortOrder
     entradaEstimada?: SortOrder
     fotoEntrada?: SortOrder
     fotoSalida?: SortOrder
@@ -36099,6 +36346,7 @@ export namespace Prisma {
     id?: SortOrder
     colaboradorId?: SortOrder
     sedeId?: SortOrder
+    sedeSalidaId?: SortOrder
     fecha?: SortOrder
     entrada?: SortOrder
     salida?: SortOrder
@@ -36106,6 +36354,8 @@ export namespace Prisma {
     observacion?: SortOrder
     salidaEstimada?: SortOrder
     salidaAlmuerzo?: SortOrder
+    salidaDescanso?: SortOrder
+    descansoVentana?: SortOrder
     entradaEstimada?: SortOrder
     fotoEntrada?: SortOrder
     fotoSalida?: SortOrder
@@ -37887,6 +38137,13 @@ export namespace Prisma {
     connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
   }
 
+  export type RegistroCreateNestedManyWithoutSedeSalidaInput = {
+    create?: XOR<RegistroCreateWithoutSedeSalidaInput, RegistroUncheckedCreateWithoutSedeSalidaInput> | RegistroCreateWithoutSedeSalidaInput[] | RegistroUncheckedCreateWithoutSedeSalidaInput[]
+    connectOrCreate?: RegistroCreateOrConnectWithoutSedeSalidaInput | RegistroCreateOrConnectWithoutSedeSalidaInput[]
+    createMany?: RegistroCreateManySedeSalidaInputEnvelope
+    connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+  }
+
   export type ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput = {
     create?: XOR<ColaboradorSedeCreateWithoutSedeInput, ColaboradorSedeUncheckedCreateWithoutSedeInput> | ColaboradorSedeCreateWithoutSedeInput[] | ColaboradorSedeUncheckedCreateWithoutSedeInput[]
     connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutSedeInput | ColaboradorSedeCreateOrConnectWithoutSedeInput[]
@@ -37898,6 +38155,13 @@ export namespace Prisma {
     create?: XOR<RegistroCreateWithoutSedeInput, RegistroUncheckedCreateWithoutSedeInput> | RegistroCreateWithoutSedeInput[] | RegistroUncheckedCreateWithoutSedeInput[]
     connectOrCreate?: RegistroCreateOrConnectWithoutSedeInput | RegistroCreateOrConnectWithoutSedeInput[]
     createMany?: RegistroCreateManySedeInputEnvelope
+    connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+  }
+
+  export type RegistroUncheckedCreateNestedManyWithoutSedeSalidaInput = {
+    create?: XOR<RegistroCreateWithoutSedeSalidaInput, RegistroUncheckedCreateWithoutSedeSalidaInput> | RegistroCreateWithoutSedeSalidaInput[] | RegistroUncheckedCreateWithoutSedeSalidaInput[]
+    connectOrCreate?: RegistroCreateOrConnectWithoutSedeSalidaInput | RegistroCreateOrConnectWithoutSedeSalidaInput[]
+    createMany?: RegistroCreateManySedeSalidaInputEnvelope
     connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
   }
 
@@ -37945,6 +38209,20 @@ export namespace Prisma {
     deleteMany?: RegistroScalarWhereInput | RegistroScalarWhereInput[]
   }
 
+  export type RegistroUpdateManyWithoutSedeSalidaNestedInput = {
+    create?: XOR<RegistroCreateWithoutSedeSalidaInput, RegistroUncheckedCreateWithoutSedeSalidaInput> | RegistroCreateWithoutSedeSalidaInput[] | RegistroUncheckedCreateWithoutSedeSalidaInput[]
+    connectOrCreate?: RegistroCreateOrConnectWithoutSedeSalidaInput | RegistroCreateOrConnectWithoutSedeSalidaInput[]
+    upsert?: RegistroUpsertWithWhereUniqueWithoutSedeSalidaInput | RegistroUpsertWithWhereUniqueWithoutSedeSalidaInput[]
+    createMany?: RegistroCreateManySedeSalidaInputEnvelope
+    set?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    disconnect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    delete?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    update?: RegistroUpdateWithWhereUniqueWithoutSedeSalidaInput | RegistroUpdateWithWhereUniqueWithoutSedeSalidaInput[]
+    updateMany?: RegistroUpdateManyWithWhereWithoutSedeSalidaInput | RegistroUpdateManyWithWhereWithoutSedeSalidaInput[]
+    deleteMany?: RegistroScalarWhereInput | RegistroScalarWhereInput[]
+  }
+
   export type ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput = {
     create?: XOR<ColaboradorSedeCreateWithoutSedeInput, ColaboradorSedeUncheckedCreateWithoutSedeInput> | ColaboradorSedeCreateWithoutSedeInput[] | ColaboradorSedeUncheckedCreateWithoutSedeInput[]
     connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutSedeInput | ColaboradorSedeCreateOrConnectWithoutSedeInput[]
@@ -37970,6 +38248,20 @@ export namespace Prisma {
     connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
     update?: RegistroUpdateWithWhereUniqueWithoutSedeInput | RegistroUpdateWithWhereUniqueWithoutSedeInput[]
     updateMany?: RegistroUpdateManyWithWhereWithoutSedeInput | RegistroUpdateManyWithWhereWithoutSedeInput[]
+    deleteMany?: RegistroScalarWhereInput | RegistroScalarWhereInput[]
+  }
+
+  export type RegistroUncheckedUpdateManyWithoutSedeSalidaNestedInput = {
+    create?: XOR<RegistroCreateWithoutSedeSalidaInput, RegistroUncheckedCreateWithoutSedeSalidaInput> | RegistroCreateWithoutSedeSalidaInput[] | RegistroUncheckedCreateWithoutSedeSalidaInput[]
+    connectOrCreate?: RegistroCreateOrConnectWithoutSedeSalidaInput | RegistroCreateOrConnectWithoutSedeSalidaInput[]
+    upsert?: RegistroUpsertWithWhereUniqueWithoutSedeSalidaInput | RegistroUpsertWithWhereUniqueWithoutSedeSalidaInput[]
+    createMany?: RegistroCreateManySedeSalidaInputEnvelope
+    set?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    disconnect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    delete?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
+    update?: RegistroUpdateWithWhereUniqueWithoutSedeSalidaInput | RegistroUpdateWithWhereUniqueWithoutSedeSalidaInput[]
+    updateMany?: RegistroUpdateManyWithWhereWithoutSedeSalidaInput | RegistroUpdateManyWithWhereWithoutSedeSalidaInput[]
     deleteMany?: RegistroScalarWhereInput | RegistroScalarWhereInput[]
   }
 
@@ -38027,6 +38319,12 @@ export namespace Prisma {
     connect?: SedeWhereUniqueInput
   }
 
+  export type SedeCreateNestedOneWithoutRegistrosCerradosInput = {
+    create?: XOR<SedeCreateWithoutRegistrosCerradosInput, SedeUncheckedCreateWithoutRegistrosCerradosInput>
+    connectOrCreate?: SedeCreateOrConnectWithoutRegistrosCerradosInput
+    connect?: SedeWhereUniqueInput
+  }
+
   export type RegistroCambioCreateNestedManyWithoutRegistroInput = {
     create?: XOR<RegistroCambioCreateWithoutRegistroInput, RegistroCambioUncheckedCreateWithoutRegistroInput> | RegistroCambioCreateWithoutRegistroInput[] | RegistroCambioUncheckedCreateWithoutRegistroInput[]
     connectOrCreate?: RegistroCambioCreateOrConnectWithoutRegistroInput | RegistroCambioCreateOrConnectWithoutRegistroInput[]
@@ -38079,6 +38377,16 @@ export namespace Prisma {
     delete?: SedeWhereInput | boolean
     connect?: SedeWhereUniqueInput
     update?: XOR<XOR<SedeUpdateToOneWithWhereWithoutRegistrosInput, SedeUpdateWithoutRegistrosInput>, SedeUncheckedUpdateWithoutRegistrosInput>
+  }
+
+  export type SedeUpdateOneWithoutRegistrosCerradosNestedInput = {
+    create?: XOR<SedeCreateWithoutRegistrosCerradosInput, SedeUncheckedCreateWithoutRegistrosCerradosInput>
+    connectOrCreate?: SedeCreateOrConnectWithoutRegistrosCerradosInput
+    upsert?: SedeUpsertWithoutRegistrosCerradosInput
+    disconnect?: SedeWhereInput | boolean
+    delete?: SedeWhereInput | boolean
+    connect?: SedeWhereUniqueInput
+    update?: XOR<XOR<SedeUpdateToOneWithWhereWithoutRegistrosCerradosInput, SedeUpdateWithoutRegistrosCerradosInput>, SedeUncheckedUpdateWithoutRegistrosCerradosInput>
   }
 
   export type RegistroCambioUpdateManyWithoutRegistroNestedInput = {
@@ -39207,6 +39515,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -39238,6 +39547,7 @@ export namespace Prisma {
     fotoMini?: string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -39362,6 +39672,7 @@ export namespace Prisma {
     almuerzoMin?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioCreateNestedManyWithoutHorarioInput
@@ -39375,6 +39686,7 @@ export namespace Prisma {
     almuerzoMin?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioUncheckedCreateNestedManyWithoutHorarioInput
@@ -39403,6 +39715,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
     registros?: RegistroCreateNestedManyWithoutSedeInput
+    registrosCerrados?: RegistroCreateNestedManyWithoutSedeSalidaInput
   }
 
   export type SedeUncheckedCreateWithoutEmpresaInput = {
@@ -39417,6 +39730,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
     registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
+    registrosCerrados?: RegistroUncheckedCreateNestedManyWithoutSedeSalidaInput
   }
 
   export type SedeCreateOrConnectWithoutEmpresaInput = {
@@ -39640,6 +39954,7 @@ export namespace Prisma {
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoFilter<"Colaborador"> | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFilter<"Colaborador"> | boolean
     activo?: BoolFilter<"Colaborador"> | boolean
     fechaRetiro?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     motivoRetiro?: EnumMotivoRetiroNullableFilter<"Colaborador"> | $Enums.MotivoRetiro | null
@@ -39781,6 +40096,7 @@ export namespace Prisma {
     almuerzoMin?: IntFilter<"Horario"> | number
     toleranciaSalidaMin?: IntFilter<"Horario"> | number
     ajustaEntrada?: BoolFilter<"Horario"> | boolean
+    fotoEnDescanso?: BoolFilter<"Horario"> | boolean
     activo?: BoolFilter<"Horario"> | boolean
     creadoEn?: DateTimeFilter<"Horario"> | Date | string
   }
@@ -40377,6 +40693,7 @@ export namespace Prisma {
     tieneAlmuerzo?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
   }
 
   export type FranjaHorarioUncheckedCreateWithoutHorarioInput = {
@@ -40387,6 +40704,7 @@ export namespace Prisma {
     tieneAlmuerzo?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
   }
 
   export type FranjaHorarioCreateOrConnectWithoutHorarioInput = {
@@ -40414,6 +40732,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -40445,6 +40764,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -40558,6 +40878,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolFilter<"FranjaHorario"> | boolean
     almuerzoInicio?: StringNullableFilter<"FranjaHorario"> | string | null
     almuerzoFin?: StringNullableFilter<"FranjaHorario"> | string | null
+    descansos?: StringNullableFilter<"FranjaHorario"> | string | null
   }
 
   export type ColaboradorUpsertWithWhereUniqueWithoutHorarioInput = {
@@ -40583,6 +40904,7 @@ export namespace Prisma {
     almuerzoMin?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutHorariosInput
@@ -40597,6 +40919,7 @@ export namespace Prisma {
     almuerzoMin?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: Date | string
     colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutHorarioInput
@@ -40625,6 +40948,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutHorariosNestedInput
@@ -40639,6 +40963,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutHorarioNestedInput
@@ -40822,6 +41147,7 @@ export namespace Prisma {
     almuerzoMin?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutHorariosInput
@@ -40836,6 +41162,7 @@ export namespace Prisma {
     almuerzoMin?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: Date | string
     franjas?: FranjaHorarioUncheckedCreateNestedManyWithoutHorarioInput
@@ -40855,6 +41182,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -40866,6 +41195,7 @@ export namespace Prisma {
     editadoEn?: Date | string | null
     creadoEn?: Date | string
     sede?: SedeCreateNestedOneWithoutRegistrosInput
+    sedeSalida?: SedeCreateNestedOneWithoutRegistrosCerradosInput
     cambios?: RegistroCambioCreateNestedManyWithoutRegistroInput
     novedades?: PermisoCreateNestedManyWithoutRegistroInput
   }
@@ -40873,6 +41203,7 @@ export namespace Prisma {
   export type RegistroUncheckedCreateWithoutColaboradorInput = {
     id?: string
     sedeId?: string | null
+    sedeSalidaId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -40880,6 +41211,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -41039,6 +41372,7 @@ export namespace Prisma {
     ajustaEntrada?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -41058,6 +41392,7 @@ export namespace Prisma {
     ajustaEntrada?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -41173,6 +41508,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutHorariosNestedInput
@@ -41187,6 +41523,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUncheckedUpdateManyWithoutHorarioNestedInput
@@ -41215,6 +41552,7 @@ export namespace Prisma {
     id?: StringFilter<"Registro"> | string
     colaboradorId?: StringFilter<"Registro"> | string
     sedeId?: StringNullableFilter<"Registro"> | string | null
+    sedeSalidaId?: StringNullableFilter<"Registro"> | string | null
     fecha?: DateTimeFilter<"Registro"> | Date | string
     entrada?: DateTimeNullableFilter<"Registro"> | Date | string | null
     salida?: DateTimeNullableFilter<"Registro"> | Date | string | null
@@ -41222,6 +41560,8 @@ export namespace Prisma {
     observacion?: StringNullableFilter<"Registro"> | string | null
     salidaEstimada?: BoolFilter<"Registro"> | boolean
     salidaAlmuerzo?: BoolFilter<"Registro"> | boolean
+    salidaDescanso?: BoolFilter<"Registro"> | boolean
+    descansoVentana?: StringNullableFilter<"Registro"> | string | null
     entradaEstimada?: BoolFilter<"Registro"> | boolean
     fotoEntrada?: StringNullableFilter<"Registro"> | string | null
     fotoSalida?: StringNullableFilter<"Registro"> | string | null
@@ -41372,6 +41712,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
     almuerzoInicio?: StringNullableFilter<"DiaEsperado"> | string | null
     almuerzoFin?: StringNullableFilter<"DiaEsperado"> | string | null
+    descansos?: StringNullableFilter<"DiaEsperado"> | string | null
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
@@ -41487,6 +41828,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -41498,6 +41841,7 @@ export namespace Prisma {
     editadoEn?: Date | string | null
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
+    sedeSalida?: SedeCreateNestedOneWithoutRegistrosCerradosInput
     cambios?: RegistroCambioCreateNestedManyWithoutRegistroInput
     novedades?: PermisoCreateNestedManyWithoutRegistroInput
   }
@@ -41505,6 +41849,7 @@ export namespace Prisma {
   export type RegistroUncheckedCreateWithoutSedeInput = {
     id?: string
     colaboradorId: string
+    sedeSalidaId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -41512,6 +41857,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -41533,6 +41880,70 @@ export namespace Prisma {
 
   export type RegistroCreateManySedeInputEnvelope = {
     data: RegistroCreateManySedeInput | RegistroCreateManySedeInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RegistroCreateWithoutSedeSalidaInput = {
+    id?: string
+    fecha: Date | string
+    entrada?: Date | string | null
+    salida?: Date | string | null
+    tipo?: $Enums.TipoRegistro
+    observacion?: string | null
+    salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
+    entradaEstimada?: boolean
+    fotoEntrada?: string | null
+    fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
+    editadoPor?: string | null
+    editadoEn?: Date | string | null
+    creadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
+    sede?: SedeCreateNestedOneWithoutRegistrosInput
+    cambios?: RegistroCambioCreateNestedManyWithoutRegistroInput
+    novedades?: PermisoCreateNestedManyWithoutRegistroInput
+  }
+
+  export type RegistroUncheckedCreateWithoutSedeSalidaInput = {
+    id?: string
+    colaboradorId: string
+    sedeId?: string | null
+    fecha: Date | string
+    entrada?: Date | string | null
+    salida?: Date | string | null
+    tipo?: $Enums.TipoRegistro
+    observacion?: string | null
+    salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
+    entradaEstimada?: boolean
+    fotoEntrada?: string | null
+    fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
+    editadoPor?: string | null
+    editadoEn?: Date | string | null
+    creadoEn?: Date | string
+    cambios?: RegistroCambioUncheckedCreateNestedManyWithoutRegistroInput
+    novedades?: PermisoUncheckedCreateNestedManyWithoutRegistroInput
+  }
+
+  export type RegistroCreateOrConnectWithoutSedeSalidaInput = {
+    where: RegistroWhereUniqueInput
+    create: XOR<RegistroCreateWithoutSedeSalidaInput, RegistroUncheckedCreateWithoutSedeSalidaInput>
+  }
+
+  export type RegistroCreateManySedeSalidaInputEnvelope = {
+    data: RegistroCreateManySedeSalidaInput | RegistroCreateManySedeSalidaInput[]
     skipDuplicates?: boolean
   }
 
@@ -41629,6 +42040,22 @@ export namespace Prisma {
     data: XOR<RegistroUpdateManyMutationInput, RegistroUncheckedUpdateManyWithoutSedeInput>
   }
 
+  export type RegistroUpsertWithWhereUniqueWithoutSedeSalidaInput = {
+    where: RegistroWhereUniqueInput
+    update: XOR<RegistroUpdateWithoutSedeSalidaInput, RegistroUncheckedUpdateWithoutSedeSalidaInput>
+    create: XOR<RegistroCreateWithoutSedeSalidaInput, RegistroUncheckedCreateWithoutSedeSalidaInput>
+  }
+
+  export type RegistroUpdateWithWhereUniqueWithoutSedeSalidaInput = {
+    where: RegistroWhereUniqueInput
+    data: XOR<RegistroUpdateWithoutSedeSalidaInput, RegistroUncheckedUpdateWithoutSedeSalidaInput>
+  }
+
+  export type RegistroUpdateManyWithWhereWithoutSedeSalidaInput = {
+    where: RegistroScalarWhereInput
+    data: XOR<RegistroUpdateManyMutationInput, RegistroUncheckedUpdateManyWithoutSedeSalidaInput>
+  }
+
   export type ColaboradorCreateWithoutSedesInput = {
     id?: string
     nombre: string
@@ -41644,6 +42071,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -41676,6 +42104,7 @@ export namespace Prisma {
     fotoMini?: string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -41706,6 +42135,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutSedesInput
     registros?: RegistroCreateNestedManyWithoutSedeInput
+    registrosCerrados?: RegistroCreateNestedManyWithoutSedeSalidaInput
   }
 
   export type SedeUncheckedCreateWithoutColaboradoresInput = {
@@ -41720,6 +42150,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
+    registrosCerrados?: RegistroUncheckedCreateNestedManyWithoutSedeSalidaInput
   }
 
   export type SedeCreateOrConnectWithoutColaboradoresInput = {
@@ -41753,6 +42184,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -41785,6 +42217,7 @@ export namespace Prisma {
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -41821,6 +42254,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
     registros?: RegistroUpdateManyWithoutSedeNestedInput
+    registrosCerrados?: RegistroUpdateManyWithoutSedeSalidaNestedInput
   }
 
   export type SedeUncheckedUpdateWithoutColaboradoresInput = {
@@ -41835,6 +42269,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
+    registrosCerrados?: RegistroUncheckedUpdateManyWithoutSedeSalidaNestedInput
   }
 
   export type ColaboradorCreateWithoutDiasEsperadosInput = {
@@ -41852,6 +42287,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -41884,6 +42320,7 @@ export namespace Prisma {
     fotoMini?: string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -41928,6 +42365,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -41960,6 +42398,7 @@ export namespace Prisma {
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -41988,6 +42427,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -42020,6 +42460,7 @@ export namespace Prisma {
     fotoMini?: string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -42050,6 +42491,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutSedesInput
     colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
+    registrosCerrados?: RegistroCreateNestedManyWithoutSedeSalidaInput
   }
 
   export type SedeUncheckedCreateWithoutRegistrosInput = {
@@ -42064,11 +42506,47 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
+    registrosCerrados?: RegistroUncheckedCreateNestedManyWithoutSedeSalidaInput
   }
 
   export type SedeCreateOrConnectWithoutRegistrosInput = {
     where: SedeWhereUniqueInput
     create: XOR<SedeCreateWithoutRegistrosInput, SedeUncheckedCreateWithoutRegistrosInput>
+  }
+
+  export type SedeCreateWithoutRegistrosCerradosInput = {
+    id?: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutSedesInput
+    colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
+    registros?: RegistroCreateNestedManyWithoutSedeInput
+  }
+
+  export type SedeUncheckedCreateWithoutRegistrosCerradosInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
+    registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
+  }
+
+  export type SedeCreateOrConnectWithoutRegistrosCerradosInput = {
+    where: SedeWhereUniqueInput
+    create: XOR<SedeCreateWithoutRegistrosCerradosInput, SedeUncheckedCreateWithoutRegistrosCerradosInput>
   }
 
   export type RegistroCambioCreateWithoutRegistroInput = {
@@ -42169,6 +42647,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -42201,6 +42680,7 @@ export namespace Prisma {
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -42237,6 +42717,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
     colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
+    registrosCerrados?: RegistroUpdateManyWithoutSedeSalidaNestedInput
   }
 
   export type SedeUncheckedUpdateWithoutRegistrosInput = {
@@ -42251,6 +42732,48 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
+    registrosCerrados?: RegistroUncheckedUpdateManyWithoutSedeSalidaNestedInput
+  }
+
+  export type SedeUpsertWithoutRegistrosCerradosInput = {
+    update: XOR<SedeUpdateWithoutRegistrosCerradosInput, SedeUncheckedUpdateWithoutRegistrosCerradosInput>
+    create: XOR<SedeCreateWithoutRegistrosCerradosInput, SedeUncheckedCreateWithoutRegistrosCerradosInput>
+    where?: SedeWhereInput
+  }
+
+  export type SedeUpdateToOneWithWhereWithoutRegistrosCerradosInput = {
+    where?: SedeWhereInput
+    data: XOR<SedeUpdateWithoutRegistrosCerradosInput, SedeUncheckedUpdateWithoutRegistrosCerradosInput>
+  }
+
+  export type SedeUpdateWithoutRegistrosCerradosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
+    colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
+    registros?: RegistroUpdateManyWithoutSedeNestedInput
+  }
+
+  export type SedeUncheckedUpdateWithoutRegistrosCerradosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
+    registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
   }
 
   export type RegistroCambioUpsertWithWhereUniqueWithoutRegistroInput = {
@@ -42314,6 +42837,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -42346,6 +42870,7 @@ export namespace Prisma {
     fotoMini?: string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -42373,6 +42898,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -42385,6 +42912,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
     sede?: SedeCreateNestedOneWithoutRegistrosInput
+    sedeSalida?: SedeCreateNestedOneWithoutRegistrosCerradosInput
     cambios?: RegistroCambioCreateNestedManyWithoutRegistroInput
   }
 
@@ -42392,6 +42920,7 @@ export namespace Prisma {
     id?: string
     colaboradorId: string
     sedeId?: string | null
+    sedeSalidaId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -42399,6 +42928,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -42443,6 +42974,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -42475,6 +43007,7 @@ export namespace Prisma {
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -42508,6 +43041,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42520,6 +43055,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
     sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    sedeSalida?: SedeUpdateOneWithoutRegistrosCerradosNestedInput
     cambios?: RegistroCambioUpdateManyWithoutRegistroNestedInput
   }
 
@@ -42527,6 +43063,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     colaboradorId?: StringFieldUpdateOperationsInput | string
     sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    sedeSalidaId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -42534,6 +43071,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43780,6 +44319,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -43792,6 +44333,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutRegistrosInput
     sede?: SedeCreateNestedOneWithoutRegistrosInput
+    sedeSalida?: SedeCreateNestedOneWithoutRegistrosCerradosInput
     novedades?: PermisoCreateNestedManyWithoutRegistroInput
   }
 
@@ -43799,6 +44341,7 @@ export namespace Prisma {
     id?: string
     colaboradorId: string
     sedeId?: string | null
+    sedeSalidaId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -43806,6 +44349,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -43844,6 +44389,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43856,6 +44403,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
     sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    sedeSalida?: SedeUpdateOneWithoutRegistrosCerradosNestedInput
     novedades?: PermisoUpdateManyWithoutRegistroNestedInput
   }
 
@@ -43863,6 +44411,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     colaboradorId?: StringFieldUpdateOperationsInput | string
     sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    sedeSalidaId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -43870,6 +44419,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43898,6 +44449,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -43930,6 +44482,7 @@ export namespace Prisma {
     fotoMini?: string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -43974,6 +44527,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -44006,6 +44560,7 @@ export namespace Prisma {
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -44034,6 +44589,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -44066,6 +44622,7 @@ export namespace Prisma {
     fotoMini?: string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -44140,6 +44697,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -44172,6 +44730,7 @@ export namespace Prisma {
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -44331,6 +44890,7 @@ export namespace Prisma {
     fotoMini?: string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -44359,6 +44919,7 @@ export namespace Prisma {
     almuerzoMin?: number
     toleranciaSalidaMin?: number
     ajustaEntrada?: boolean
+    fotoEnDescanso?: boolean
     activo?: boolean
     creadoEn?: Date | string
   }
@@ -44469,6 +45030,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -44500,6 +45062,7 @@ export namespace Prisma {
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -44530,6 +45093,7 @@ export namespace Prisma {
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -44584,6 +45148,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUpdateManyWithoutHorarioNestedInput
@@ -44597,6 +45162,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     franjas?: FranjaHorarioUncheckedUpdateManyWithoutHorarioNestedInput
@@ -44610,6 +45176,7 @@ export namespace Prisma {
     almuerzoMin?: IntFieldUpdateOperationsInput | number
     toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEnDescanso?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -44626,6 +45193,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
     registros?: RegistroUpdateManyWithoutSedeNestedInput
+    registrosCerrados?: RegistroUpdateManyWithoutSedeSalidaNestedInput
   }
 
   export type SedeUncheckedUpdateWithoutEmpresaInput = {
@@ -44640,6 +45208,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
+    registrosCerrados?: RegistroUncheckedUpdateManyWithoutSedeSalidaNestedInput
   }
 
   export type SedeUncheckedUpdateManyWithoutEmpresaInput = {
@@ -44817,6 +45386,7 @@ export namespace Prisma {
     tieneAlmuerzo?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
   }
 
   export type ColaboradorCreateManyHorarioInput = {
@@ -44835,6 +45405,7 @@ export namespace Prisma {
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
     activo?: boolean
     fechaRetiro?: Date | string | null
     motivoRetiro?: $Enums.MotivoRetiro | null
@@ -44851,6 +45422,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FranjaHorarioUncheckedUpdateWithoutHorarioInput = {
@@ -44861,6 +45433,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type FranjaHorarioUncheckedUpdateManyWithoutHorarioInput = {
@@ -44871,6 +45444,7 @@ export namespace Prisma {
     tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ColaboradorUpdateWithoutHorarioInput = {
@@ -44888,6 +45462,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -44919,6 +45494,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -44949,6 +45525,7 @@ export namespace Prisma {
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
     fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
@@ -44960,6 +45537,7 @@ export namespace Prisma {
   export type RegistroCreateManyColaboradorInput = {
     id?: string
     sedeId?: string | null
+    sedeSalidaId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -44967,6 +45545,8 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -45037,6 +45617,7 @@ export namespace Prisma {
     ajustaEntrada?: boolean
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
+    descansos?: string | null
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
@@ -45057,6 +45638,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45068,6 +45651,7 @@ export namespace Prisma {
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    sedeSalida?: SedeUpdateOneWithoutRegistrosCerradosNestedInput
     cambios?: RegistroCambioUpdateManyWithoutRegistroNestedInput
     novedades?: PermisoUpdateManyWithoutRegistroNestedInput
   }
@@ -45075,6 +45659,7 @@ export namespace Prisma {
   export type RegistroUncheckedUpdateWithoutColaboradorInput = {
     id?: StringFieldUpdateOperationsInput | string
     sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    sedeSalidaId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45082,6 +45667,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45099,6 +45686,7 @@ export namespace Prisma {
   export type RegistroUncheckedUpdateManyWithoutColaboradorInput = {
     id?: StringFieldUpdateOperationsInput | string
     sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    sedeSalidaId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45106,6 +45694,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45268,6 +45858,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -45287,6 +45878,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -45306,6 +45898,7 @@ export namespace Prisma {
     ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -45335,6 +45928,7 @@ export namespace Prisma {
   export type RegistroCreateManySedeInput = {
     id?: string
     colaboradorId: string
+    sedeSalidaId?: string | null
     fecha: Date | string
     entrada?: Date | string | null
     salida?: Date | string | null
@@ -45342,6 +45936,33 @@ export namespace Prisma {
     observacion?: string | null
     salidaEstimada?: boolean
     salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
+    entradaEstimada?: boolean
+    fotoEntrada?: string | null
+    fotoSalida?: string | null
+    metodoEntrada?: $Enums.MetodoMarcacion | null
+    metodoSalida?: $Enums.MetodoMarcacion | null
+    distanciaEntrada?: number | null
+    distanciaSalida?: number | null
+    editadoPor?: string | null
+    editadoEn?: Date | string | null
+    creadoEn?: Date | string
+  }
+
+  export type RegistroCreateManySedeSalidaInput = {
+    id?: string
+    colaboradorId: string
+    sedeId?: string | null
+    fecha: Date | string
+    entrada?: Date | string | null
+    salida?: Date | string | null
+    tipo?: $Enums.TipoRegistro
+    observacion?: string | null
+    salidaEstimada?: boolean
+    salidaAlmuerzo?: boolean
+    salidaDescanso?: boolean
+    descansoVentana?: string | null
     entradaEstimada?: boolean
     fotoEntrada?: string | null
     fotoSalida?: string | null
@@ -45378,6 +45999,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45389,6 +46012,7 @@ export namespace Prisma {
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
+    sedeSalida?: SedeUpdateOneWithoutRegistrosCerradosNestedInput
     cambios?: RegistroCambioUpdateManyWithoutRegistroNestedInput
     novedades?: PermisoUpdateManyWithoutRegistroNestedInput
   }
@@ -45396,6 +46020,7 @@ export namespace Prisma {
   export type RegistroUncheckedUpdateWithoutSedeInput = {
     id?: StringFieldUpdateOperationsInput | string
     colaboradorId?: StringFieldUpdateOperationsInput | string
+    sedeSalidaId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45403,6 +46028,8 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45420,6 +46047,7 @@ export namespace Prisma {
   export type RegistroUncheckedUpdateManyWithoutSedeInput = {
     id?: StringFieldUpdateOperationsInput | string
     colaboradorId?: StringFieldUpdateOperationsInput | string
+    sedeSalidaId?: NullableStringFieldUpdateOperationsInput | string | null
     fecha?: DateTimeFieldUpdateOperationsInput | Date | string
     entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45427,6 +46055,87 @@ export namespace Prisma {
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
     salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RegistroUpdateWithoutSedeSalidaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutRegistrosNestedInput
+    sede?: SedeUpdateOneWithoutRegistrosNestedInput
+    cambios?: RegistroCambioUpdateManyWithoutRegistroNestedInput
+    novedades?: PermisoUpdateManyWithoutRegistroNestedInput
+  }
+
+  export type RegistroUncheckedUpdateWithoutSedeSalidaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
+    entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    metodoEntrada?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
+    distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
+    distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cambios?: RegistroCambioUncheckedUpdateManyWithoutRegistroNestedInput
+    novedades?: PermisoUncheckedUpdateManyWithoutRegistroNestedInput
+  }
+
+  export type RegistroUncheckedUpdateManyWithoutSedeSalidaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    entrada?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salida?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tipo?: EnumTipoRegistroFieldUpdateOperationsInput | $Enums.TipoRegistro
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    salidaEstimada?: BoolFieldUpdateOperationsInput | boolean
+    salidaAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    salidaDescanso?: BoolFieldUpdateOperationsInput | boolean
+    descansoVentana?: NullableStringFieldUpdateOperationsInput | string | null
     entradaEstimada?: BoolFieldUpdateOperationsInput | boolean
     fotoEntrada?: NullableStringFieldUpdateOperationsInput | string | null
     fotoSalida?: NullableStringFieldUpdateOperationsInput | string | null
