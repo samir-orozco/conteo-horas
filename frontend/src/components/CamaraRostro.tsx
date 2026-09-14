@@ -8,9 +8,11 @@ import {
   MIN_MUESTRAS_POSE, MS_MIN_CUADRO, desviacionYaw, promediarDescriptores, capturarFoto,
   MSG_ENCUADRE, poseCumple, RESTRICCIONES_VIDEO, fijarZoomMinimo,
   esperarVideoEstable, crearEstabilizadorEncuadre,
-  type Modo, type Estado, type PasoEnrolar, type TipoPose,
+  type Modo, type Estado, type TipoPose,
 } from './camaraRostro/rostroCliente';
 import { sortearLado, poseDelReto, flechaDelReto, MS_QUIETO_GIRO, type FaseDelReto } from './camaraRostro/reto';
+import { pasosDeEnrolamiento, mensajeBajoLaTarjeta, type PasoGuiado } from './camaraRostro/pasosEnrolar';
+import TarjetaDePaso from './camaraRostro/TarjetaDePaso';
 
 type Props = {
   // login: captura rápida quedándose quieto (sin gestos)
@@ -75,14 +77,8 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
   const [primeraVez, setPrimeraVez] = useState<boolean | null>(null);
   const [metrica, setMetrica] = useState<{ camara?: number; rostro?: number }>({}); // solo dev
 
-  const pasos: PasoEnrolar[] = modo === 'enrolar'
-    ? [
-        { id: 'frente', etiqueta: 'Frente', texto: 'Mira de frente a la cámara', tipo: 'frontal' },
-        { id: 'derecha', etiqueta: 'Derecha', texto: 'Gira tu rostro a la derecha', tipo: 'derecha' },
-        { id: 'izquierda', etiqueta: 'Izquierda', texto: 'Gira tu rostro a la izquierda', tipo: 'izquierda' },
-        ...(pasoGafas ? [{ id: 'singafas', etiqueta: 'Sin gafas', texto: 'Quítate las gafas y mira de frente', tipo: 'frontal' as const }] : []),
-      ]
-    : [];
+  // Los pasos del registro guiado, con su dibujo y su flecha (camaraRostro/pasosEnrolar.ts).
+  const pasos: PasoGuiado[] = modo === 'enrolar' ? pasosDeEnrolamiento(pasoGafas) : [];
 
   useEffect(() => {
     let activo = true;
@@ -445,6 +441,24 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
           </div>
         )}
 
+        {/* LA FLECHA DE LOS GIROS DEL REGISTRO (14 de septiembre de 2026). El paso decía «Gira tu rostro
+            a la derecha» para una pose que se hace girando hacia la izquierda propia, y la gente giraba
+            al revés. La flecha sale de la misma regla que la del reto (pasosEnrolar.ts), así que no puede
+            contradecir lo que espera la detección. Va aparte del bloque del reto a propósito: el ingreso
+            del kiosco no se toca. Se esconde mientras sostiene la pose, para que no siga girando. */}
+        {modo === 'enrolar' && estado === 'guiando' && encuadreOk && progreso === 0 && pasos[pasoActual]?.flecha && (
+          <div className="absolute inset-0 pointer-events-none flex items-center">
+            <div className={`absolute ${pasos[pasoActual].flecha === 'izq' ? 'left-3' : 'right-3'}`}>
+              <div className="hp-ripple absolute inset-0 rounded-full bg-primary/30" />
+              <div className="relative w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                {pasos[pasoActual].flecha === 'izq'
+                  ? <ArrowLeft size={30} className="text-ink" strokeWidth={3} />
+                  : <ArrowRight size={30} className="text-ink" strokeWidth={3} />}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Línea de escaneo mientras lee el rostro (CSS puro; funciona en Android) */}
         {estado === 'guiando' && encuadreOk && (
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -493,6 +507,12 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
         </div>
       )}
 
+      {/* La tarjeta del paso que toca, con su dibujo (14 de septiembre de 2026). Se ve desde que la
+          cámara se prepara, para que la persona sepa qué viene. */}
+      {modo === 'enrolar' && !hayError && (estado === 'cargando' || estado === 'calibrando' || estado === 'guiando') && pasos[pasoActual] && (
+        <TarjetaDePaso paso={pasos[pasoActual]} numero={pasoActual + 1} total={pasos.length} />
+      )}
+
       {/* Progreso del enrolamiento: un chip por pose */}
       {modo === 'enrolar' && !hayError && (
         <div className="flex flex-wrap justify-center gap-1.5">
@@ -512,7 +532,7 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
 
       <p className={`text-sm font-medium text-center ${hayError ? 'text-red-500' : estado === 'exito' ? 'text-green-600' : 'text-muted'}`}>
         {estado === 'error' && <AlertTriangle size={14} className="inline mr-1 -mt-0.5" />}
-        {errorExterno ?? mensaje}
+        {errorExterno ?? (modo === 'enrolar' ? mensajeBajoLaTarjeta(mensaje, pasos[pasoActual]?.texto) : mensaje)}
       </p>
 
       {/* AVISO DE QUE LA FOTO QUEDA GUARDADA.
