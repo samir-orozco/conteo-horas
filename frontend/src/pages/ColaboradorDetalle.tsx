@@ -90,6 +90,7 @@ export default function ColaboradorDetalle() {
 
   const [modalEditar, setModalEditar] = useState(false);
   const [formEdit, setFormEdit] = useState<any>(null);
+  const [errorEdicion, setErrorEdicion] = useState('');
   const [modalNovedad, setModalNovedad] = useState(false);
   const [novedad, setNovedad] = useState(EMPTY_NOVEDAD);
   const [errorNovedad, setErrorNovedad] = useState('');
@@ -190,11 +191,19 @@ export default function ColaboradorDetalle() {
   // atras del navegador devuelve al tab anterior en vez de salir de la ficha.
   const [tab, cambiarTab] = useTabFicha();
 
+  // Sin atajar el error, un rechazo del servidor dejaba la ventana abierta sin
+  // decir por qué (13 de septiembre de 2026).
   const guardarEdicion = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api.put(`/colaboradores/${id}`, { ...formEdit, horarioId: formEdit.horarioId || null, sedeIds: formEdit.sedeIds ?? [] });
-    setModalEditar(false);
-    cargar();
+    setErrorEdicion('');
+    try {
+      await api.put(`/colaboradores/${id}`, { ...formEdit, horarioId: formEdit.horarioId || null, sedeIds: formEdit.sedeIds ?? [] });
+      setModalEditar(false);
+      cargar();
+    } catch (err) {
+      setErrorEdicion((err as { response?: { data?: { error?: string } } }).response?.data?.error
+        ?? 'No pudimos guardar los cambios. Intenta de nuevo.');
+    }
   };
 
   const guardarNovedad = async (e: React.FormEvent) => {
@@ -367,6 +376,7 @@ export default function ColaboradorDetalle() {
             // `?? false`, editar otro dato le quitaría el permiso a un supervisor.
             puedeCerrarEnOtraSede: col.puedeCerrarEnOtraSede,
           });
+          setErrorEdicion('');
           setModalEditar(true);
         }}
       />
@@ -721,6 +731,11 @@ export default function ColaboradorDetalle() {
                   resumenFranjas={resumenFranjas}
                 />
               </div>
+              {/* Fuera de la zona que se desplaza: con el formulario largo, abajo
+                  del todo no se vería al darle a guardar. */}
+              {errorEdicion && (
+                <p role="alert" className="mx-6 mt-3 shrink-0 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{errorEdicion}</p>
+              )}
               <div className="px-6 py-4 border-t border-gray-100 shrink-0 flex gap-3 justify-end">
                 <button type="button" onClick={() => setModalEditar(false)}
                   className="px-4 py-2 text-sm text-muted border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>

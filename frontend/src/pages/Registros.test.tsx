@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, waitFor, act, fireEvent } from '@testing-library/react';
+import { render, screen, within, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('../lib/api', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), delete: vi.fn() } }));
@@ -123,7 +123,7 @@ describe('guardar una jornada que deja fotos del kiosco sin marca', () => {
 //
 // Decisión del dueño del 12 de septiembre de 2026, «mostrarla al leer»: el servidor
 // manda en `sedeAtribuida` la sede que se le cuenta a un presencial cuya jornada no
-// abrió en una sede probada. La tabla la muestra con «por defecto» y el filtro de
+// abrió en una sede probada. La tabla la muestra con su nombre y el filtro de
 // sede la incluye; «cruzó de sede» sigue mirando solo `sede` y `sedeSalida`.
 describe('la sede de una jornada que la ubicación no probó', () => {
   const NORTE = { id: 's-norte', nombre: 'Norte' };
@@ -153,25 +153,28 @@ describe('la sede de una jornada que la ubicación no probó', () => {
 
   const filaDe = (nombre: string) => screen.queryByRole('row', { name: new RegExp(nombre) });
 
-  it('sin sede probada, la celda dice la sede atribuida con «por defecto»', async () => {
+  // Desde el 13 de septiembre de 2026 la sede atribuida se escribe solo con su nombre: el dueño
+  // pidió quitar «por defecto».
+  it('sin sede probada, la celda dice el nombre de la sede atribuida, sin «por defecto»', async () => {
     render(<Registros />);
-    expect(await screen.findByRole('row', { name: /Ana/ })).toHaveTextContent('Sede principal (por defecto)');
+    const ana = await screen.findByRole('row', { name: /Ana/ });
+    expect(ana).toHaveTextContent('Sede principal');
+    expect(ana).not.toHaveTextContent('por defecto');
     expect(filaDe('Beto')).toHaveTextContent('Norte');
-    expect(filaDe('Beto')).not.toHaveTextContent('por defecto');
   });
 
-  it('con la salida probada, la celda dice dónde cerró y no la sede por defecto', async () => {
+  it('con la salida probada, la celda dice dónde cerró y no la sede atribuida', async () => {
     render(<Registros />);
     const caro = await screen.findByRole('row', { name: /Caro/ });
     expect(caro).toHaveTextContent('Cerró en Sur');
-    expect(caro).not.toHaveTextContent('por defecto');
+    expect(caro).not.toHaveTextContent('Norte');
   });
 
   // Revisión del 12 de septiembre de 2026: la columna la decide la empresa, como en los
   // reportes, y no cuántas sedes distintas traen las filas (la regla, en
   // sedeDeJornada.test.ts). Filtrando a una persona, lo normal es que todas sus
   // jornadas digan la misma sede por defecto, y la columna desaparecía justo ahí.
-  it('con Norte y Sur activas, las jornadas de una persona que cuentan en Sur por defecto: la columna aparece y dice «Sur (por defecto)»', async () => {
+  it('con Norte y Sur activas, las jornadas de una persona que cuentan en Sur por defecto: la columna aparece y dice «Sur»', async () => {
     const eva = (dia: number) => ({
       ...jornadaDe('Eva', { sedeAtribuida: porDefecto(SUR) }),
       id: `j-eva-${dia}`, fecha: new Date(Date.UTC(2026, 8, dia, 5)).toISOString(),
@@ -184,19 +187,22 @@ describe('la sede de una jornada que la ubicación no probó', () => {
     const filas = await screen.findAllByRole('row', { name: /Eva/ });
     expect(filas).toHaveLength(2);
     expect(await screen.findByRole('columnheader', { name: 'Sede' })).toBeInTheDocument();
-    for (const f of filas) expect(f).toHaveTextContent('Sur (por defecto)');
+    for (const f of filas) {
+      expect(f).toHaveTextContent('Sur');
+      expect(f).not.toHaveTextContent('por defecto');
+    }
   });
 
-  it('con una sola sede activa y solo la sede por defecto en las filas, la columna no aparece', async () => {
+  // Pedido del dueño del 13 de septiembre de 2026: en la tabla faltaba la sede. Con una sola sede
+  // activa y solo la sede por defecto en las filas, la columna no aparecía.
+  it('con una sola sede activa y solo la sede por defecto en las filas, la columna aparece y dice la sede', async () => {
     get.mockImplementation((url: string) => Promise.resolve({
       data: url === '/registros' ? [jornadaDe('Ana', { sedeAtribuida: porDefecto(PRINCIPAL) })] : url === '/sedes' ? [PRINCIPAL] : [],
     }));
     render(<Registros />);
     await screen.findByRole('row', { name: /Ana/ });
-    // Esperar a que lleguen las sedes: sin esto pasaría con la lista todavía vacía.
-    await waitFor(() => expect(get).toHaveBeenCalledWith('/sedes'));
-    await act(async () => {});
-    expect(screen.queryByRole('columnheader', { name: 'Sede' })).toBeNull();
+    expect(await screen.findByRole('columnheader', { name: 'Sede' })).toBeInTheDocument();
+    expect(filaDe('Ana')).toHaveTextContent('Sede principal');
     expect(filaDe('Ana')).not.toHaveTextContent('por defecto');
   });
 
@@ -243,7 +249,8 @@ describe('la sede de una jornada que la ubicación no probó', () => {
     const fila = await screen.findByRole('row', { name: /Dora/ });
     expect(await screen.findByRole('columnheader', { name: 'Sede' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Descansos' })).toBeInTheDocument();
-    expect(fila).toHaveTextContent('Sur (por defecto)');
+    expect(fila).toHaveTextContent('Sur');
+    expect(fila).not.toHaveTextContent('por defecto');
     expect(fila).toHaveTextContent('09:00 → 09:15');
   });
 });
@@ -407,5 +414,160 @@ describe('varios descansos en la tabla y en el editor de la jornada', () => {
     render(<Registros />);
     await screen.findByRole('row', { name: /Julián/ });
     expect(screen.queryByRole('columnheader', { name: /Descanso/ })).toBeNull();
+  });
+});
+
+// AGREGAR UNA JORNADA A MANO (12 de septiembre de 2026). Idea del dueño: elegir a la persona
+// y la fecha, traer con un clic el horario de ese día (entrada, almuerzo, descansos y
+// salida), ajustar lo que haga falta y guardar la jornada entera. Antes el alta a mano
+// guardaba una sola marcación, sin sus pausas.
+describe('agregar una jornada a mano', () => {
+  const post = api.post as unknown as ReturnType<typeof vi.fn>;
+  const HORARIO_DEL_LUNES = {
+    programado: true, horaEntrada: '07:00', horaSalida: '16:00', almuerzoInicio: '12:00', almuerzoFin: '13:00', almuerzoMin: 60,
+    descansos: [{ inicio: '09:00', fin: '09:15' }, { inicio: '15:00', fin: '15:10' }],
+  };
+  const servir = (dia: unknown) => get.mockImplementation((url: string) => Promise.resolve({
+    data: url === '/registros' ? [] : url === '/colaboradores' ? [COLABORADOR] : url === '/registros/horario-del-dia' ? dia : [],
+  }));
+  // El formulario es un diálogo con su título. Antes se llegaba subiendo dos niveles desde el
+  // título, y cualquier cambio de diseño en la cabecera apuntaba a otro recuadro.
+  const tarjeta = () => screen.getByRole('dialog', { name: 'Nuevo registro' });
+  const abrirAlta = async () => {
+    const usuario = userEvent.setup();
+    render(<Registros />);
+    await usuario.click(await screen.findByRole('button', { name: 'Agregar manual' }));
+    await usuario.selectOptions(within(tarjeta()).getByLabelText('Colaborador'), 'c1');
+    fireEvent.change(within(tarjeta()).getByLabelText('Fecha'), { target: { value: '2026-09-07' } });
+    return usuario;
+  };
+
+  beforeEach(() => { post.mockReset(); });
+
+  it('«Traer su horario» llena la entrada, el almuerzo, los descansos y la salida con el horario de ese día', async () => {
+    servir(HORARIO_DEL_LUNES);
+    const usuario = await abrirAlta();
+    await usuario.click(within(tarjeta()).getByRole('button', { name: 'Traer su horario' }));
+    await waitFor(() => expect(within(tarjeta()).getByLabelText('Entrada')).toHaveValue('07:00'));
+    expect(get).toHaveBeenCalledWith('/registros/horario-del-dia', { params: { colaboradorId: 'c1', fecha: '2026-09-07' } });
+    expect(within(tarjeta()).getByLabelText('Salida')).toHaveValue('16:00');
+    expect(within(tarjeta()).getByLabelText('Almuerzo: salió')).toHaveValue('12:00');
+    expect(within(tarjeta()).getByLabelText('Almuerzo: regresó')).toHaveValue('13:00');
+    expect(within(tarjeta()).getByLabelText('Descanso 1: salió')).toHaveValue('09:00');
+    expect(within(tarjeta()).getByLabelText('Descanso 2: regresó')).toHaveValue('15:10');
+  });
+
+  it('guardar la jornada nueva la manda entera a /registros/jornada, con sus pausas', async () => {
+    servir(HORARIO_DEL_LUNES);
+    post.mockResolvedValueOnce({ data: { ok: true } });
+    const usuario = await abrirAlta();
+    await usuario.click(within(tarjeta()).getByRole('button', { name: 'Traer su horario' }));
+    await waitFor(() => expect(within(tarjeta()).getByLabelText('Entrada')).toHaveValue('07:00'));
+    fireEvent.change(within(tarjeta()).getByLabelText('Salida'), { target: { value: '16:30' } });
+    await usuario.click(within(tarjeta()).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    const [url, datos] = post.mock.calls[0];
+    expect(url).toBe('/registros/jornada');
+    expect(datos).toMatchObject({
+      colaboradorId: 'c1', fecha: '2026-09-07', entrada: '07:00', salida: '16:30',
+      almuerzo: { salida: '12:00', regreso: '13:00' },
+      descansos: [{ salida: '09:00', regreso: '09:15' }, { salida: '15:00', regreso: '15:10' }],
+    });
+  });
+
+  it('un día sin turno lo dice y no borra lo que ya estaba escrito', async () => {
+    servir({ programado: false });
+    const usuario = await abrirAlta();
+    fireEvent.change(within(tarjeta()).getByLabelText('Entrada'), { target: { value: '08:00' } });
+    await usuario.click(within(tarjeta()).getByRole('button', { name: 'Traer su horario' }));
+    // Dice «de entonces» porque se lee el día guardado: con el horario de hoy ese día puede tener
+    // turno, y sin eso parecía un error (13 de septiembre de 2026, pedido del dueño).
+    expect(await within(tarjeta()).findByText('Ese día, su horario de entonces no tenía turno.')).toBeInTheDocument();
+    expect(within(tarjeta()).getByLabelText('Entrada')).toHaveValue('08:00');
+  });
+
+  it('sin la persona elegida no hay horario que traer', async () => {
+    servir(HORARIO_DEL_LUNES);
+    const usuario = userEvent.setup();
+    render(<Registros />);
+    await usuario.click(await screen.findByRole('button', { name: 'Agregar manual' }));
+    expect(within(tarjeta()).getByRole('button', { name: 'Traer su horario' })).toBeDisabled();
+  });
+
+  // El diseño nuevo del formulario (13 de septiembre de 2026, aprobado por el dueño): debajo
+  // de las horas se lee qué día queda la jornada, el tipo se elige con un clic y el almuerzo
+  // se quita con su papelera, como los descansos.
+  it('debajo de las horas dice qué día y de qué hora a qué hora queda la jornada', async () => {
+    servir(HORARIO_DEL_LUNES);
+    const usuario = await abrirAlta();
+    await usuario.click(within(tarjeta()).getByRole('button', { name: 'Traer su horario' }));
+    expect(await within(tarjeta()).findByText('Lunes 7 de septiembre, de 07:00 a 16:00')).toBeInTheDocument();
+  });
+
+  it('el tipo se elige con un clic y viaja al guardar', async () => {
+    servir(HORARIO_DEL_LUNES);
+    post.mockResolvedValueOnce({ data: { ok: true } });
+    const usuario = await abrirAlta();
+    await usuario.click(within(tarjeta()).getByRole('button', { name: 'Traer su horario' }));
+    await waitFor(() => expect(within(tarjeta()).getByLabelText('Entrada')).toHaveValue('07:00'));
+    expect(within(tarjeta()).getByRole('radio', { name: 'Normal' })).toHaveAttribute('aria-checked', 'true');
+    await usuario.click(within(tarjeta()).getByRole('radio', { name: 'Permiso' }));
+    expect(within(tarjeta()).getByRole('radio', { name: 'Permiso' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(tarjeta()).getByRole('radio', { name: 'Normal' })).toHaveAttribute('aria-checked', 'false');
+    await usuario.click(within(tarjeta()).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+    expect(post.mock.calls[0][1]).toMatchObject({ tipo: 'PERMISO' });
+  });
+
+  it('la papelera del almuerzo borra sus dos horas', async () => {
+    servir(HORARIO_DEL_LUNES);
+    const usuario = await abrirAlta();
+    await usuario.click(within(tarjeta()).getByRole('button', { name: 'Traer su horario' }));
+    await waitFor(() => expect(within(tarjeta()).getByLabelText('Almuerzo: salió')).toHaveValue('12:00'));
+    await usuario.click(within(tarjeta()).getByRole('button', { name: 'Quitar el almuerzo' }));
+    expect(within(tarjeta()).getByLabelText('Almuerzo: salió')).toHaveValue('');
+    expect(within(tarjeta()).getByLabelText('Almuerzo: regresó')).toHaveValue('');
+  });
+});
+
+// LA TABLA CON LA PERSONA Y SUS HORAS (13 de septiembre de 2026, pedido del dueño sobre una
+// imagen): la foto junto al nombre, y la entrada y la salida en una sola columna, separadas por
+// una raya. La foto es la miniatura que ya trae GET /colaboradores: la lista de jornadas no
+// manda fotos.
+describe('la tabla: la foto de la persona y la entrada y la salida juntas', () => {
+  const FOTO = 'data:image/jpeg;base64,mini';
+  const servirCon = (colaboradores: unknown[], jornadas: unknown[]) => get.mockImplementation((url: string) => Promise.resolve({
+    data: url === '/registros' ? jornadas : url === '/colaboradores' ? colaboradores : [],
+  }));
+  const celdaDe = (fila: HTMLElement, texto: string) => within(fila).getByText(texto).closest('td')!;
+
+  it('la entrada y la salida van en una sola columna', async () => {
+    servirCon([COLABORADOR], [JORNADA]);
+    render(<Registros />);
+    const fila = await screen.findByRole('row', { name: /Julián/ });
+    expect(screen.getByRole('columnheader', { name: /Entrada.*Salida/ })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Salida' })).toBeNull();
+    expect(celdaDe(fila, '08:00')).toBe(celdaDe(fila, '17:00'));
+  });
+
+  it('la salida que puso el sistema sigue diciendo «No marcó salida», en la misma columna', async () => {
+    servirCon([COLABORADOR], [{ ...JORNADA, salidaEstimada: true }]);
+    render(<Registros />);
+    const fila = await screen.findByRole('row', { name: /Julián/ });
+    expect(within(celdaDe(fila, '08:00')).getByText('No marcó salida · ~17:00')).toBeInTheDocument();
+  });
+
+  it('cada fila lleva la foto de la persona junto a su nombre', async () => {
+    servirCon([{ ...COLABORADOR, fotoMini: FOTO }], [JORNADA]);
+    render(<Registros />);
+    const fila = await screen.findByRole('row', { name: /Julián/ });
+    expect(await within(fila).findByAltText('Foto de Julián Restrepo')).toHaveAttribute('src', FOTO);
+  });
+
+  it('sin foto, sus iniciales', async () => {
+    servirCon([COLABORADOR], [JORNADA]);
+    render(<Registros />);
+    const fila = await screen.findByRole('row', { name: /Julián/ });
+    expect(within(fila).getByText('JR')).toBeInTheDocument();
   });
 });

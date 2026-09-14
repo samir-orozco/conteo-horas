@@ -290,7 +290,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       borrado = await prisma.$transaction(tx => borrarEmpresaEnCascada(tx, id), { timeout: 60_000 });
     } catch (e) {
       // La transacción se revierte entera: no se borró nada. Se dice así, en vez
-      // del 'Internal Server Error' que no le dice nada a nadie.
+      // del error genérico, que no dice si se alcanzó a borrar algo.
       request.log.error({ err: e, empresaId: id, nit: resumen.nit }, 'Falló la eliminación de la empresa; la transacción se revirtió');
       return reply.status(500).send({ error: 'No se pudo eliminar la empresa y no se borró nada. Intenta de nuevo en un momento.' });
     }

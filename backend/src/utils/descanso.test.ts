@@ -2,19 +2,16 @@ import { describe, it, expect } from 'vitest';
 import { minutosAlmuerzoADescontar } from './almuerzo';
 import { minutosDescansoADescontar } from './descansos';
 
-// El DESCANSO NO REMUNERADO es una pausa aparte del almuerzo, con la misma regla de
-// fondo: se descuentan los minutos de su ventana durante los cuales la persona
-// estuvo MARCADA. Marcarlo deja el hueco fuera de lo trabajado; no marcarlo lo
-// descuenta igual.
+// El DESCANSO NO REMUNERADO es una pausa aparte del almuerzo, con la misma regla del
+// dueño (12 de septiembre de 2026): cada descanso cuesta SIEMPRE el tiempo de su ventana.
+// Lo que la persona se tomó marcado cuenta para ese tiempo, y lo que falte se descuenta
+// de lo trabajado.
 //
-// Lo que NO hereda del almuerzo: los minutos fijos de respaldo. El almuerzo los
-// conserva por el histórico; el descanso nace con ventana, así que sin ventana no
-// hay descanso y no se descuenta nada.
+// Lo que NO hereda del almuerzo: los minutos fijos de respaldo. El descanso nace con
+// ventana, así que sin ventana no hay descanso y no se descuenta nada.
 //
-// Desde el 12 de septiembre de 2026 el día guarda una LISTA de descansos. Estos son
-// los nueve casos de cuando había uno solo, con sus mismos números, escritos como
-// una lista de una ventana: con cero o un descanso nada puede cambiar. Los casos de
-// varios descansos viven en descansos.test.ts.
+// Aquí van los casos de un solo descanso, escritos como una lista de una ventana. Los de
+// varios viven en descansos.test.ts.
 
 const bog = (dia: number, h: number, m = 0) => new Date(Date.UTC(2026, 7, dia, h + 5, m, 0));
 const lista = (inicio: string, fin: string) => JSON.stringify([{ inicio, fin }]);
@@ -22,6 +19,7 @@ const lista = (inicio: string, fin: string) => JSON.stringify([{ inicio, fin }])
 // Día de apoyo: 08:00-17:00 con almuerzo de 12:00 a 13:00 y descanso de 09:00 a 09:15.
 const dia = (extra: Record<string, unknown> = {}) => ({
   fecha: bog(5, 0),
+  horaEntrada: '08:00' as string | null,
   almuerzoMin: 60,
   almuerzoInicio: '12:00' as string | null,
   almuerzoFin: '13:00' as string | null,
@@ -29,24 +27,29 @@ const dia = (extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
-const tramo = (h1: number, m1: number, h2: number, m2: number, d = 5) =>
-  ({ entrada: bog(d, h1, m1), salida: bog(d, h2, m2) });
+// Un tramo trabajado. `pausa` dice a qué salió al terminarlo.
+const tramo = (h1: number, m1: number, h2: number, m2: number, pausa: 'D' | 'A' | null = null, d = 5) =>
+  ({ entrada: bog(d, h1, m1), salida: bog(d, h2, m2), salidaDescanso: pausa === 'D', salidaAlmuerzo: pausa === 'A' });
 
 describe('minutosDescansoADescontar, con una sola ventana', () => {
-  it('jornada completa sin marcar el descanso: descuenta la ventana entera', () => {
+  it('jornada completa sin marcar el descanso: se descuenta completo', () => {
     expect(minutosDescansoADescontar([tramo(8, 0, 17, 0)], dia())).toBe(15);
   });
 
-  it('marcó su descanso: el hueco ya está fuera de lo trabajado', () => {
-    expect(minutosDescansoADescontar([tramo(8, 0, 9, 0), tramo(9, 15, 17, 0)], dia())).toBe(0);
+  it('marcó su descanso completo: ya lo tomó, no se descuenta de nuevo', () => {
+    expect(minutosDescansoADescontar([tramo(8, 0, 9, 0, 'D'), tramo(9, 15, 17, 0)], dia())).toBe(0);
   });
 
-  it('se tomó 5 minutos: los otros 10 estuvo marcado y se descuentan igual', () => {
-    expect(minutosDescansoADescontar([tramo(8, 0, 9, 0), tramo(9, 5, 17, 0)], dia())).toBe(10);
+  it('se tomó 5 minutos: se completan los 10 que faltan', () => {
+    expect(minutosDescansoADescontar([tramo(8, 0, 9, 0, 'D'), tramo(9, 5, 17, 0)], dia())).toBe(10);
   });
 
-  it('se fue antes del descanso: no se le descuenta', () => {
-    expect(minutosDescansoADescontar([tramo(8, 0, 8, 45)], dia())).toBe(0);
+  it('lo tomó a otra hora, de 10:00 a 10:15: se descuenta una sola vez', () => {
+    expect(minutosDescansoADescontar([tramo(8, 0, 10, 0, 'D'), tramo(10, 15, 17, 0)], dia())).toBe(0);
+  });
+
+  it('se fue antes del descanso: se descuenta igual', () => {
+    expect(minutosDescansoADescontar([tramo(8, 0, 8, 45)], dia())).toBe(15);
   });
 
   it('sin ventana no hay descanso: no hereda minutos fijos como el almuerzo', () => {
@@ -61,14 +64,15 @@ describe('minutosDescansoADescontar, con una sola ventana', () => {
     expect(minutosDescansoADescontar([], dia())).toBe(0);
   });
 
-  it('turno nocturno: el descanso de la madrugada se ubica en el día siguiente', () => {
-    const d = dia({ descansos: lista('02:00', '02:15') });
+  it('turno nocturno: el descanso de la madrugada sin marcar se descuenta completo', () => {
+    const d = dia({ horaEntrada: '21:00', descansos: lista('02:00', '02:15') });
     expect(minutosDescansoADescontar([{ entrada: bog(5, 21, 0), salida: bog(6, 5, 0) }], d)).toBe(15);
   });
 
-  it('el descanso y el almuerzo se miden cada uno con su propia ventana', () => {
-    const t = [tramo(8, 0, 17, 0)];
-    expect(minutosDescansoADescontar(t, dia())).toBe(15);
+  it('el descanso y el almuerzo se cuentan cada uno con su propia salida', () => {
+    // Salió al descanso de 09:00 a 09:15 y no marcó almuerzo.
+    const t = [tramo(8, 0, 9, 0, 'D'), tramo(9, 15, 17, 0)];
+    expect(minutosDescansoADescontar(t, dia())).toBe(0);
     expect(minutosAlmuerzoADescontar(t, dia())).toBe(60);
   });
 });

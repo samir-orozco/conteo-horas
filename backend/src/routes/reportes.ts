@@ -13,6 +13,7 @@ import {
 } from '../utils/sedesDeReporte';
 import { sedesPorDefecto } from '../utils/sedesDeEmpresa';
 import { liquidarRegistros } from '../utils/liquidarRegistros';
+import { COLABORADOR_SIN_FOTOS } from '../utils/columnasDeColaborador';
 
 
 // Lo que devuelven los dos resúmenes que se filtran por sede. El filtro decide
@@ -74,17 +75,23 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
 
     const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosRango, diasMaterializados] = await Promise.all([
+      // El colaborador viaja entero en la respuesta, pero sin sus fotos ni su descriptor facial,
+      // que es un dato biométrico: se mandaban al navegador y ninguna pantalla los lee de aquí,
+      // solo el nombre y el apellido (13 de septiembre de 2026).
       prisma.colaborador.findFirst({
         where: { id: colaboradorId, empresaId: request.empresaId },
-        include: { horario: { include: { franjas: true } } },
+        select: { ...COLABORADOR_SIN_FOTOS, horario: { include: { franjas: true } } },
       }),
       // `select` explícito: sin él vienen también `fotoEntrada` y `fotoSalida`,
       // que son base64 de cientos de KB cada una. Un mes de marcaciones se
       // convertía en decenas de MB cargados en memoria para no usarlos. Las
       // fotos se piden aparte, una a una, con `GET /registros/:id/fotos`.
+      //
+      // También las abiertas: no se liquidan, pero la entrada de una puede ser el regreso
+      // de una pausa, y sin ella la pausa se cobraba entera (utils/liquidarRegistros.ts).
       prisma.registro.findMany({
-        where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } },
-        select: { id: true, fecha: true, entrada: true, salida: true },
+        where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: { id: true, fecha: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
         orderBy: { fecha: 'asc' },
       }),
       prisma.diaFestivo.findMany({
@@ -178,9 +185,14 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // salario y vive en /liquidacion, donde el salario está a la vista. Dejarlo
     // fuera evita además traer los permisos de toda la empresa en cada consulta.
     const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, diasTodosEsp, sedes, defectoDe, filasDeLugar] = await Promise.all([
+      // Solo lo que usa este resumen. Sin `select` venían todas las columnas de cada persona
+      // activa, también `foto`, `fotoMini` y `rostroDescriptor` (13 de septiembre de 2026).
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
-        include: { horario: { include: { franjas: true } } },
+        select: {
+          id: true, nombre: true, apellido: true, salarioMensual: true, modalidad: true,
+          horario: { include: { franjas: true } },
+        },
         orderBy: { nombre: 'asc' },
       }),
       // Igual que en /liquidacion, pero aquí pesa más: son los registros de
@@ -191,9 +203,12 @@ export default async function reporteRoutes(app: FastifyInstance) {
         // turnos y la sede solo decide quién aparece (ver `responderPorSede`).
         // Filtrando aquí, el tope semanal se medía sobre la parte de la semana
         // que quedaba: quien repartió la semana entre dos sedes tenía $0 de
-        // extras en cada una.
-        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } },
-        select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, sedeId: true, sedeSalidaId: true },
+        // extras en cada una. También las abiertas, por lo mismo que en /liquidacion.
+        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: {
+          id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, sedeId: true, sedeSalidaId: true,
+          salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true,
+        },
         orderBy: { fecha: 'asc' },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
@@ -254,9 +269,11 @@ export default async function reporteRoutes(app: FastifyInstance) {
   // Llegadas tarde de un colaborador según su horario asignado
   app.get('/tardanzas', auth, async (request, reply) => {
     const { colaboradorId, desde, hasta } = request.query as any;
+    // Solo lo que usa este reporte: si existe, su horario y su salario. Sin `select` venían todas
+    // las columnas, también `foto`, `fotoMini` y `rostroDescriptor` (13 de septiembre de 2026).
     const colaborador = await prisma.colaborador.findFirst({
       where: { id: colaboradorId, empresaId: request.empresaId },
-      include: { horario: { include: { franjas: true } } },
+      select: { salarioMensual: true, horario: { include: { franjas: true } } },
     });
     if (!colaborador) return reply.status(404).send({ error: 'Colaborador no encontrado' });
     if (!colaborador.horario || !colaborador.horario.activo) {
@@ -310,9 +327,14 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
 
     const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas, diasTodos, sedes, defectoDe] = await Promise.all([
+      // Solo lo que usa este resumen, igual que /extras-resumen: sin `select` venían todas las
+      // columnas de cada persona activa, también sus fotos y su descriptor facial.
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
-        include: { horario: { include: { franjas: true } } },
+        select: {
+          id: true, nombre: true, apellido: true, salarioMensual: true, modalidad: true,
+          horario: { include: { franjas: true } },
+        },
         orderBy: { nombre: 'asc' },
       }),
       // Sin filtro de sede, por lo mismo que en /extras-resumen: la primera entrada

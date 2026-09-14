@@ -1,17 +1,23 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { Camera, ImageOff, Info, MapPin } from 'lucide-react';
+import { Camera, Coffee, ImageOff, Info, LogIn, MapPin, UtensilsCrossed, type LucideIcon } from 'lucide-react';
 import api from '../lib/api';
 import { fotosExpiradas, MESES_RETENCION_FOTOS } from '../lib/retencionFotos';
 import { MOMENTO_LABEL, MOMENTO_TONO, type FotoDeJornada } from '../constants/momentos';
-import { agruparPorJornada, sedesDelTurno } from '../lib/fotosDeJornada';
-import { nombreConDefecto } from '../lib/porDefecto';
+import { agruparPorJornada, sedesDelTurno, partesDeLaJornada, type ParteDeLaJornada } from '../lib/fotosDeJornada';
 
 const TZ = 'America/Bogota';
 const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : null;
 
 type Respuesta = { fecha: string; fotos: FotoDeJornada[] };
+
+// Cómo se llama cada parte del día y qué dice el lugar de una marca que no existe.
+const PARTE: Record<ParteDeLaJornada, { titulo: string; Icono: LucideIcon; sinAbrir: string; sinCerrar: string }> = {
+  ENTRADA_Y_SALIDA: { titulo: 'Entrada y salida', Icono: LogIn, sinAbrir: 'Sin entrada', sinCerrar: 'Sin salida' },
+  ALMUERZO: { titulo: 'Almuerzo', Icono: UtensilsCrossed, sinAbrir: 'Sin salida a almorzar', sinCerrar: 'Sin regreso' },
+  DESCANSO: { titulo: 'Descanso', Icono: Coffee, sinAbrir: 'Sin salida al descanso', sinCerrar: 'Sin regreso' },
+};
 
 // Las fotos de verificación facial de un DÍA, cada una con lo que de verdad es.
 //
@@ -28,6 +34,11 @@ type Respuesta = { fecha: string; fotos: FotoDeJornada[] };
 // como una sola secuencia de seis fotos y no se sabía cuál salida cerraba cuál
 // entrada. Cada turno lleva ahora su título con las horas, y cada foto la sede
 // donde se tomó. Con UN solo turno no se pone título: sería ruido.
+//
+// Y DENTRO DE CADA TURNO, POR PARTES (13 de septiembre de 2026, pedido del dueño): la entrada y
+// la salida, el almuerzo y el descanso, cada uno en su bloque y siempre en ese orden. En el orden
+// en que se marcaron, las pausas quedaban revueltas con la jornada. En cada fila lo que abre va a
+// la izquierda y lo que cierra a la derecha.
 export default function FotosJornada({ registroId }: { registroId: string }) {
   // La respuesta se guarda junto al día al que pertenece. Así, cuando cambia el
   // `registroId`, lo que hay en pantalla se descarta solo —no hay que limpiarlo
@@ -62,8 +73,8 @@ export default function FotosJornada({ registroId }: { registroId: string }) {
 
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
-        <Camera size={13} /> Verificación facial
+      <p className="text-sm font-medium text-ink mb-2 flex items-center gap-1.5">
+        <Camera size={14} /> Verificación facial
       </p>
 
       {error ? (
@@ -96,20 +107,36 @@ export default function FotosJornada({ registroId }: { registroId: string }) {
                 <span aria-hidden="true" className="flex-1 h-px bg-gray-100" />
               </div>
             );
-            const grilla = (
-              /* `items-start`: sin esto las celdas se estiran a la altura de la
-                 fila y el hueco de "sin foto" se desbordaba sobre el rótulo de
-                 abajo. */
-              <div className="grid grid-cols-2 gap-3 items-start">
-                {grupo.map((f, i) => (
-                  <TarjetaFoto key={`${f.registroId}-${f.momento}-${i}`} f={f} expiradas={expiradas} />
-                ))}
+            const partes = (
+              <div className="space-y-3">
+                {partesDeLaJornada(grupo).map(({ parte, filas }) => {
+                  const { titulo: tituloDeLaParte, Icono, sinAbrir, sinCerrar } = PARTE[parte];
+                  const nombre = parte === 'DESCANSO' && filas.length > 1 ? 'Descansos' : tituloDeLaParte;
+                  return (
+                    <div key={parte} role="group" aria-label={nombre} className="bg-blue-50 rounded-xl p-3">
+                      <p className="text-xs font-semibold text-ink mb-2 flex items-center gap-1.5">
+                        <Icono size={13} aria-hidden="true" />{nombre}
+                      </p>
+                      {/* `items-start`: sin esto las celdas se estiran a la altura de la
+                          fila y el hueco de "sin foto" se desbordaba sobre el rótulo de
+                          abajo. */}
+                      <div className="grid grid-cols-2 gap-3 items-start">
+                        {filas.map((fila, i) => (
+                          <Fragment key={i}>
+                            {fila.abre ? <TarjetaFoto f={fila.abre} expiradas={expiradas} /> : <SinMarca texto={sinAbrir} />}
+                            {fila.cierra ? <TarjetaFoto f={fila.cierra} expiradas={expiradas} /> : <SinMarca texto={sinCerrar} />}
+                          </Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             );
             return conTitulos ? (
-              <section key={gi} aria-label={titulo}>{cabecera}{grilla}</section>
+              <section key={gi} aria-label={titulo}>{cabecera}{partes}</section>
             ) : (
-              <div key={gi}>{cabecera}{grilla}</div>
+              <div key={gi}>{cabecera}{partes}</div>
             );
           })}
         </div>
@@ -126,9 +153,10 @@ export default function FotosJornada({ registroId }: { registroId: string }) {
 // tipo nuevo en cada render y desmontaría todas las fotos cada vez.
 function TarjetaFoto({ f, expiradas }: { f: FotoDeJornada; expiradas: boolean }) {
   const lugar = f.sede?.nombre ?? null;
-  // Sin sede probada, la etiqueta dice la que se le atribuye, con «por defecto». El
-  // texto de la foto no: nadie probó que se tomara ahí (12 de septiembre de 2026).
-  const etiqueta = lugar ?? (f.sedeAtribuida ? nombreConDefecto(f.sedeAtribuida.nombre) : null);
+  // Sin sede probada, la etiqueta dice la que se le atribuye (12 de septiembre de 2026), y
+  // desde el 13 solo con su nombre: el dueño pidió quitar «por defecto». El texto de la foto
+  // no la dice: nadie probó que se tomara ahí.
+  const etiqueta = lugar ?? f.sedeAtribuida?.nombre ?? null;
   return (
     <div>
       <p className={`text-[10px] font-semibold uppercase mb-1.5 ${MOMENTO_TONO[f.momento]}`}>
@@ -160,13 +188,27 @@ function TarjetaFoto({ f, expiradas }: { f: FotoDeJornada; expiradas: boolean })
         {/* Dónde se tomó. Solo si se sabe: una salida de antes de que se
             guardara su sede no lleva etiqueta, en vez de heredar la de la
             entrada y afirmar un lugar que nadie registró. La sede atribuida a
-            una entrada sí va, pero dice «por defecto». */}
+            una entrada también va. */}
         {etiqueta && (
           <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
             <MapPin size={10} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{etiqueta}</span>
           </span>
         )}
+      </div>
+    </div>
+  );
+}
+
+// El lugar de una marca que no existe: la salida de quien sigue adentro, el regreso de quien no
+// volvió. Ocupa lo mismo que una foto, con un rótulo vacío encima, para que cada fila siga
+// emparejada: la salida de un descanso nunca queda al lado del regreso de otro.
+function SinMarca({ texto }: { texto: string }) {
+  return (
+    <div>
+      <p aria-hidden="true" className="text-[10px] font-semibold mb-1.5">&nbsp;</p>
+      <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 aspect-[4/3] flex items-center justify-center px-3 text-center">
+        <p className="text-[11px] text-muted">{texto}</p>
       </div>
     </div>
   );

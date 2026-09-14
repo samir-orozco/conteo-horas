@@ -1,4 +1,5 @@
 import { formatInTimeZone } from 'date-fns-tz';
+import { es } from 'date-fns/locale';
 
 // El formulario de una JORNADA: sus horas sueltas "HH:MM", armadas desde las
 // marcaciones que la componen, y el cuerpo que se le manda al servidor.
@@ -50,6 +51,44 @@ export function horasDeLaJornada(marcas: MarcacionDeJornada[], salidaDeLaJornada
     else if (m.salidaDescanso) horas.descansos.push({ salida: hhmm(m.salida), regreso });
   });
   return horas;
+}
+
+// Lo que el horario pedía un día, como lo devuelve el servidor (GET /registros/horario-del-dia).
+export type HorarioDelDia = {
+  programado: boolean;
+  horaEntrada?: string | null; horaSalida?: string | null;
+  almuerzoInicio?: string | null; almuerzoFin?: string | null;
+  descansos?: { inicio: string; fin: string }[];
+};
+
+// Las horas del formulario con el horario de ese día, para agregar a mano una jornada que
+// no se marcó (12 de septiembre de 2026, idea del dueño): la entrada y la salida de la
+// franja, y cada pausa con las horas de su ventana. Un almuerzo de minutos fijos, sin
+// horas, queda vacío: se descuenta igual. Null si ese día no tenía turno.
+export function horasDelHorario(dia: HorarioDelDia): HorasDelFormulario | null {
+  if (!dia.programado || !dia.horaEntrada || !dia.horaSalida) return null;
+  const conAlmuerzo = !!dia.almuerzoInicio && !!dia.almuerzoFin;
+  return {
+    entrada: dia.horaEntrada, salida: dia.horaSalida,
+    almuerzoSalida: conAlmuerzo ? dia.almuerzoInicio! : '',
+    almuerzoRegreso: conAlmuerzo ? dia.almuerzoFin! : '',
+    descansos: (dia.descansos ?? []).map(d => ({ salida: d.inicio, regreso: d.fin })),
+  };
+}
+
+// La línea bajo las horas del formulario (13 de septiembre de 2026): qué día queda la
+// jornada y de qué hora a qué hora, para verlo antes de guardar. La fecha del campo es un
+// día de calendario de Bogotá y se lee a su mediodía: leída como medianoche UTC, al
+// occidente de Colombia sería el día anterior. Una fecha que no se entiende no dice nada,
+// porque formatearla lanza y tumbaría la pantalla.
+export function resumenDeLaJornada(fecha: string, entrada: string, salida: string): string {
+  const dia = new Date(`${fecha}T12:00:00-05:00`);
+  if (!fecha || Number.isNaN(dia.getTime())) return '';
+  const nombre = formatInTimeZone(dia, TZ, "EEEE d 'de' MMMM", { locale: es });
+  const conMayuscula = nombre.charAt(0).toUpperCase() + nombre.slice(1);
+  if (entrada && salida) return `${conMayuscula}, de ${entrada} a ${salida}`;
+  if (entrada) return `${conMayuscula}, desde las ${entrada}`;
+  return conMayuscula;
 }
 
 // Cada pausa viaja con su nombre y sus horas. El almuerzo vacío no viaja; con solo el

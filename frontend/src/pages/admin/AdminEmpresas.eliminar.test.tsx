@@ -108,14 +108,6 @@ describe('confirmar el borrado', () => {
     expect(await within(dialogo).findByText(/exactamente como aparece/)).toBeInTheDocument();
   });
 
-  it('un 500 que no escribió la ruta no se muestra como "Internal Server Error"', async () => {
-    post.mockRejectedValue({ response: { status: 500, data: { error: 'Internal Server Error' } } });
-    await montar();
-    const dialogo = await confirmarCon('900111222-1');
-    expect(await within(dialogo).findByText(/no se pudo eliminar la empresa/i)).toBeInTheDocument();
-    expect(screen.queryByText('Internal Server Error')).not.toBeInTheDocument();
-  });
-
   it('el 500 que sí escribió la ruta se muestra tal cual', async () => {
     post.mockRejectedValue({ response: { status: 500, data: { error: 'No se pudo eliminar la empresa y no se borró nada. Intenta de nuevo en un momento.' } } });
     await montar();

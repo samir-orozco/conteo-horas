@@ -53,7 +53,7 @@ export type FotoDeJornada = {
   // de la entrada: eso sería afirmar un lugar que nadie registró.
   sede?: { id: string; nombre: string } | null;
   // La sede que se le atribuye al leer a la ENTRADA de un presencial que marcó sin
-  // ubicación (decisión del dueño del 12 de septiembre de 2026). Solo para mostrarla
-  // con «por defecto»: no dice dónde se tomó la foto. En las salidas no viene.
+  // ubicación (decisión del dueño del 12 de septiembre de 2026). Solo para mostrarla, con su
+  // nombre (sin «por defecto» desde el 13): no dice dónde se tomó la foto. En las salidas no viene.
   sedeAtribuida?: { id: string; nombre: string; activa?: boolean; porDefecto?: boolean } | null;
 };

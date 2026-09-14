@@ -89,10 +89,10 @@ describe('ReporteExtras con varias sedes', () => {
     expect(lineaDe(/Todas las sedes/)).toEqual(['Todas las sedes', '$ 19.500', '$ 190.000', '$ 209.500']);
   });
 
-  it('a un presencial que marcó sin ubicación se le ve su sede con «por defecto», también dentro de un mixto', async () => {
+  it('a un presencial que marcó sin ubicación se le ve el nombre de su sede, sin «por defecto», también dentro de un mixto', async () => {
     // Decisión del dueño del 12 de septiembre de 2026: la sede que ninguna marca
     // probó se le atribuye al leer, y el servidor la manda con `porDefecto`. Un
-    // presencial ya no se ve «Sin sede».
+    // presencial ya no se ve «Sin sede». Desde el 13 de septiembre, sin «por defecto».
     montarCon([LAURELES, POBLADO, PRINCIPAL], {
       ...RESPUESTA,
       colaboradores: [
@@ -103,11 +103,12 @@ describe('ReporteExtras con varias sedes', () => {
     });
     await screen.findByRole('region', { name: 'Resumen por sede' });
     const sinUbicacion = screen.getByRole('row', { name: /SinUbicacion/ });
-    expect(sinUbicacion).toHaveTextContent('Sede principal (por defecto)');
+    expect(sinUbicacion).toHaveTextContent('Sede principal');
+    expect(sinUbicacion).not.toHaveTextContent('por defecto');
     expect(sinUbicacion).not.toHaveTextContent('Sin sede');
     const mezcla = screen.getByRole('row', { name: /Mezcla/ });
     expect(mezcla).toHaveTextContent('Mixto');
-    expect(mezcla).toHaveTextContent('El Poblado (por defecto) · Laureles');
+    expect(mezcla).toHaveTextContent('El Poblado · Laureles');
   });
 
   // «Sin sede» sigue siendo legítimo para un híbrido o un remoto.

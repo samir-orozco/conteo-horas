@@ -2,24 +2,29 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Coffee, Eye, ArrowRight, type LucideIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Coffee, Eye, ArrowRight, Clock, User, type LucideIcon } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable, type ResumenDePausa } from './registros/ModalJornada';
-import { HORAS_VACIAS, horasDeLaJornada, cuerpoDeLaJornada, type PausaDelFormulario } from './registros/formJornada';
+import { HORAS_VACIAS, horasDeLaJornada, cuerpoDeLaJornada, horasDelHorario, resumenDeLaJornada, type PausaDelFormulario, type HorarioDelDia } from './registros/formJornada';
 import { etiquetaDeDescansos, detalleDeDescansos } from './registros/resumenDeDescansos';
 import { MAX_DESCANSOS_POR_FRANJA, MAX_MARCACIONES_POR_JORNADA } from '../lib/descansos';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import MenuFiltros from '../components/MenuFiltros';
 import MenuAcciones from '../components/MenuAcciones';
 import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
-import { nombreConDefecto } from '../lib/porDefecto';
 import SelectorColaborador from '../components/SelectorColaborador';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
 import { avisoDeFotosPorBorrar, type FotoPorBorrar } from '../lib/fotosPorBorrar';
+import AvatarMini from '../components/AvatarMini';
 
 const TZ = 'America/Bogota';
-type Colaborador = { id: string; nombre: string; apellido: string };
+// `fotoMini`: la miniatura que ya manda GET /colaboradores. La lista de jornadas no trae fotos.
+type Colaborador = { id: string; nombre: string; apellido: string; fotoMini?: string | null };
+// La foto de la persona de cada fila de la tabla (13 de septiembre de 2026). Quien ya no está
+// activo no viene en GET /colaboradores y sale con sus iniciales.
+const fotoMiniDe = (colaboradores: Colaborador[], id: string) =>
+  colaboradores.find(c => c.id === id)?.fotoMini ?? null;
 type Marcacion = {
   id: string; entrada: string | null; salida: string | null;
   salidaAlmuerzo: boolean; salidaDescanso?: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
@@ -206,52 +211,52 @@ function CeldaSede({ r }: { r: Registro }) {
   // Abrió sin sede pero cerró en una: se dice dónde CERRÓ, no se deja creer que
   // toda la jornada fue ahí.
   if (r.sedeSalida) return <span className="whitespace-nowrap">Cerró en {r.sedeSalida.nombre}</span>;
-  // Sin ninguna sede probada, la que se le atribuye, con la etiqueta: un presencial
-  // no se ve sin sede, pero tampoco se hace pasar por un lugar que probó la
-  // ubicación (decisión del dueño del 12 de septiembre de 2026).
-  if (r.sedeAtribuida) return <span className="whitespace-nowrap">{nombreConDefecto(r.sedeAtribuida.nombre)}</span>;
+  // Sin ninguna sede probada, la que se le atribuye: un presencial no se ve sin sede
+  // (decisión del dueño del 12 de septiembre de 2026). Desde el 13, solo con su nombre: el
+  // dueño pidió quitar «por defecto».
+  if (r.sedeAtribuida) return <span className="whitespace-nowrap">{r.sedeAtribuida.nombre}</span>;
   return <span className="text-gray-300">-</span>;
 }
+
+// El diseño del formulario de la jornada (13 de septiembre de 2026, aprobado por el dueño):
+// campos grises sin borde y rótulos legibles. Antes todo llevaba borde, con rótulos pequeños
+// y grises, y ningún campo pesaba más que otro. El gris va con `!` porque index.css pinta de
+// blanco, con !important, todo input y select (lo mismo hace el kiosco con `hp-input-dark`).
+const ETIQUETA = 'block text-sm font-medium text-ink mb-1.5';
+const CAMPO = 'w-full !bg-blue-50 rounded-lg px-3 py-2.5 text-sm text-ink placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary';
+const HORA_DE_PAUSA = 'w-[6.5rem] bg-white border border-blue-200 rounded-lg px-2 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary';
+const TIPOS_DE_REGISTRO = [
+  { valor: 'NORMAL', texto: 'Normal' },
+  { valor: 'PERMISO', texto: 'Permiso' },
+  { valor: 'FESTIVO', texto: 'Festivo' },
+] as const;
 
 // Una pausa DENTRO de la jornada y no como otra salida. Es una pausa dentro del
 // turno: sirve para saber si se tomó a tiempo y en su medida, no para decir que
 // la persona se fue. Fuera del componente por la misma razón que `CeldaSede`:
 // definida adentro, cada tecla la volvería a montar y el campo perdería el foco.
-function BloqueDePausa({ titulo, Icono, salida, regreso, onSalida, onRegreso, nota, onQuitar }: {
+//
+// Una fila por pausa, con sus dos horas y su papelera: la del almuerzo borra sus dos horas y
+// la de un descanso lo quita de la lista. En pantallas angostas las horas bajan a otra línea.
+function FilaDePausa({ titulo, Icono, salida, regreso, onSalida, onRegreso, onQuitar }: {
   titulo: string; Icono: LucideIcon; salida: string; regreso: string;
-  onSalida: (v: string) => void; onRegreso: (v: string) => void; nota?: string;
-  // Solo los descansos se quitan con un botón, porque son una lista (12 de septiembre de
-  // 2026). El almuerzo se quita borrando sus dos horas, como siempre.
-  onQuitar?: () => void;
+  onSalida: (v: string) => void; onRegreso: (v: string) => void; onQuitar: () => void;
 }) {
   return (
-    <div className="border border-gray-200 rounded-xl p-3">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <p className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
-          <Icono size={13} /> {titulo}
-        </p>
-        {onQuitar && (
-          <button type="button" onClick={onQuitar} aria-label={`Quitar el ${titulo.toLowerCase()}`}
-            className="text-[11px] font-semibold text-red-500 hover:text-red-600 underline underline-offset-2">
-            Quitar
-          </button>
-        )}
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2.5 border-b border-blue-200">
+      <Icono size={17} className="text-blue-600 shrink-0" aria-hidden="true" />
+      <span className="flex-1 min-w-[6rem] text-sm text-ink">{titulo}</span>
+      <div className="flex items-center gap-2 ml-auto">
+        <input type="time" aria-label={`${titulo}: salió`} value={salida}
+          onChange={e => onSalida(e.target.value)} className={HORA_DE_PAUSA} />
+        <span className="text-xs text-muted">a</span>
+        <input type="time" aria-label={`${titulo}: regresó`} value={regreso}
+          onChange={e => onRegreso(e.target.value)} className={HORA_DE_PAUSA} />
+        <button type="button" onClick={onQuitar} aria-label={`Quitar el ${titulo.toLowerCase()}`}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-white">
+          <Trash2 size={16} />
+        </button>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Salió</label>
-          <input type="time" aria-label={`${titulo}: salió`} value={salida}
-            onChange={e => onSalida(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Regresó</label>
-          <input type="time" aria-label={`${titulo}: regresó`} value={regreso}
-            onChange={e => onRegreso(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-        </div>
-      </div>
-      {nota && <p className="text-[11px] text-gray-500 mt-2">{nota}</p>}
     </div>
   );
 }
@@ -296,6 +301,8 @@ export default function Registros() {
   // Las fotos del kiosco que se borrarían al guardar la jornada, cuando el
   // servidor pide confirmarlo. Mientras esto está abierto no se ha escrito nada.
   const [fotosPorBorrar, setFotosPorBorrar] = useState<FotoPorBorrar[] | null>(null);
+  // Por qué no se pudo traer el horario de ese día a una jornada nueva.
+  const [avisoHorario, setAvisoHorario] = useState<string | null>(null);
 
   // Filtro de llegada y paginación. La página vuelve a 1 desde cada setter en
   // vez de con un efecto: así no hay un render intermedio mostrando la página 7
@@ -357,6 +364,7 @@ export default function Registros() {
   // se lee la tabla y como la piensa quien la corrige.
   const abrirJornada = (j: Registro) => {
     setErrorGuardar(null);
+    setAvisoHorario(null);
     setEditando(null);
     setJornadaEditada(j);
     setForm({
@@ -374,6 +382,7 @@ export default function Registros() {
   // Alta manual, o edición de UNA marcación suelta desde el detalle.
   const abrir = (reg?: RegistroEditable) => {
     setErrorGuardar(null);
+    setAvisoHorario(null);
     setJornadaEditada(null);
     setEditando(reg || null);
     setForm(reg ? {
@@ -393,6 +402,23 @@ export default function Registros() {
   const cambiarDescanso = (i: number, cambio: Partial<PausaDelFormulario>) =>
     setForm(p => ({ ...p, descansos: p.descansos.map((d, j) => (j === i ? { ...d, ...cambio } : d)) }));
 
+  // Trae a una jornada nueva el horario de ese día: la entrada, el almuerzo, los descansos
+  // y la salida, para no escribirlos uno por uno (12 de septiembre de 2026, idea del
+  // dueño). Un día sin turno lo dice y no toca lo que ya estaba escrito.
+  const traerHorario = async () => {
+    setAvisoHorario(null);
+    try {
+      const { data } = await api.get('/registros/horario-del-dia', { params: { colaboradorId: form.colaboradorId, fecha: form.fecha } });
+      const horas = horasDelHorario(data as HorarioDelDia);
+      // «De entonces»: lo que se trae es el día guardado, y con el horario de hoy ese día puede
+      // tener turno. Sin decirlo parecía un error (13 de septiembre de 2026, pedido del dueño).
+      if (!horas) { setAvisoHorario('Ese día, su horario de entonces no tenía turno.'); return; }
+      setForm(p => ({ ...p, ...horas }));
+    } catch {
+      setAvisoHorario('No pudimos traer el horario de ese día.');
+    }
+  };
+
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorGuardar(null);
@@ -408,17 +434,21 @@ export default function Registros() {
   // una pausa al quitarla, la de la salida al reabrir—, el servidor no escribe
   // nada y devuelve cuáles. Se le pregunta a quien edita, y solo si confirma se
   // vuelve a mandar lo mismo diciéndolo.
+  //
+  // Una jornada nueva viaja igual, entera, a POST /registros/jornada (12 de septiembre de
+  // 2026): el alta a mano guardaba una sola marcación, sin sus pausas.
   const enviarJornada = async (confirmarBorrarFotos = false) => {
-    if (!jornadaEditada) return;
+    const cuerpo = {
+      colaboradorId: form.colaboradorId,
+      fecha: form.fecha,
+      ...cuerpoDeLaJornada(form),
+      tipo: form.tipo,
+      observacion: form.observacion,
+      ...(confirmarBorrarFotos ? { confirmarBorrarFotos: true } : {}),
+    };
     try {
-      await api.put(`/registros/jornada/${jornadaEditada.id}`, {
-        colaboradorId: form.colaboradorId,
-        fecha: form.fecha,
-        ...cuerpoDeLaJornada(form),
-        tipo: form.tipo,
-        observacion: form.observacion,
-        ...(confirmarBorrarFotos ? { confirmarBorrarFotos: true } : {}),
-      });
+      if (jornadaEditada) await api.put(`/registros/jornada/${jornadaEditada.id}`, cuerpo);
+      else await api.post('/registros/jornada', cuerpo);
       setModal(false);
       cargar();
     } catch (err) {
@@ -440,7 +470,9 @@ export default function Registros() {
   };
 
   const enviar = async (extra?: { salidaAlmuerzo: boolean; salidaDescanso: boolean }) => {
-    if (jornadaEditada) {
+    // Una jornada, nueva o editada, viaja entera. Solo la marcación suelta que se abre
+    // desde el detalle se guarda por su lado.
+    if (jornadaEditada || !editando) {
       await enviarJornada();
       return;
     }
@@ -455,8 +487,7 @@ export default function Registros() {
     if (entrada && salida && salida <= entrada) salida = new Date(salida.getTime() + 86400000);
     const data = { ...form, fecha, entrada, salida, ...extra };
     try {
-      if (editando) await api.put(`/registros/${editando.id}`, data);
-      else await api.post('/registros', data);
+      await api.put(`/registros/${editando.id}`, data);
       setModal(false);
       cargar();
     } catch (err) {
@@ -525,10 +556,9 @@ export default function Registros() {
   // La de Descansos, solo cuando alguna jornada del rango trae alguno: los descansos
   // no remunerados siempre tienen horario, y en una empresa que no los usa sería
   // una columna vacía en cada fila.
-  // La columna de sede aparece con más de una sede activa en la empresa, como en los
-  // reportes, o con alguna sede probada en las filas (`muestraColumnaSede`). En una
-  // empresa de una sola oficina sería una columna vacía, o la misma sede por
-  // defecto repetida, en cada fila.
+  // La columna de sede aparece si la empresa tiene alguna sede activa, o si alguna fila trae
+  // una sede, probada o por defecto (`muestraColumnaSede`). Desde el 13 de septiembre de 2026
+  // sale también en una empresa de una sola sede: el dueño la echaba de menos en la tabla.
   const haySedes = muestraColumnaSede(registros, sedes);
   const opcionesSede = opcionesDeSede(sedes, registros);
   const hayAlmuerzo = registros.some(r => r.almuerzo && (r.almuerzo.estado !== 'SIN_VENTANA' || r.minutosAlmuerzoAqui > 0));
@@ -588,13 +618,20 @@ export default function Registros() {
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[680px]">
-          <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+          {/* Los títulos en letra normal y la persona y sus horas como en la imagen del dueño
+              (13 de septiembre de 2026). */}
+          <thead className="bg-gray-50 text-gray-600 text-[13px] [&_th]:font-medium">
             <tr>
-              <th className="px-4 py-3 text-left">Colaborador</th>
+              <th className="px-4 py-3 text-left">
+                <span className="inline-flex items-center gap-1.5"><User size={14} aria-hidden="true" />Colaborador</span>
+              </th>
               <th className="px-4 py-3 text-left">Fecha</th>
               {haySedes && <th className="px-4 py-3 text-left">Sede</th>}
-              <th className="px-4 py-3 text-center">Entrada</th>
-              <th className="px-4 py-3 text-center">Salida</th>
+              <th className="px-4 py-3 text-left">
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <Clock size={14} aria-hidden="true" />Entrada{' '}<span aria-hidden="true" className="text-gray-300">|</span>{' '}Salida
+                </span>
+              </th>
               {hayAlmuerzo && <th className="px-4 py-3 text-center">Almuerzo</th>}
               {hayDescanso && <th className="px-4 py-3 text-center">Descansos</th>}
               <th className="px-4 py-3 text-center">Llegada</th>
@@ -606,19 +643,36 @@ export default function Registros() {
           <tbody className="divide-y divide-gray-100">
             {visibles.map(r => (
               <tr key={r.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setJornadaId(r.id)}>
-                <td className="px-4 py-3 font-medium text-gray-800">{r.colaborador.nombre} {r.colaborador.apellido}</td>
+                <td className="px-4 py-3 font-medium text-gray-800">
+                  <div className="flex items-center gap-3">
+                    <AvatarMini nombre={r.colaborador.nombre} apellido={r.colaborador.apellido}
+                      foto={fotoMiniDe(colaboradores, r.colaboradorId)} />
+                    <span className="whitespace-nowrap">{r.colaborador.nombre} {r.colaborador.apellido}</span>
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-gray-600 capitalize">{format(toZonedTime(new Date(r.fecha), TZ), "d MMM yyyy", { locale: es })}</td>
                 {haySedes && <td className="px-4 py-3 text-gray-600"><CeldaSede r={r} /></td>}
-                <td className="px-4 py-3 text-center text-green-700 font-mono">{fmtHora(r.entrada)}</td>
-                <td className="px-4 py-3 text-center">
-                  {r.salidaEstimada ? (
-                    <span title="El sistema cerró el turno porque no marcó salida. Revisa la hora."
-                      className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 whitespace-nowrap">
-                      No marcó salida{r.salida ? ` · ~${fmtHora(r.salida)}` : ''}
+                {/* La entrada y la salida en una sola columna, separadas por una raya. La entrada va en
+                    un ancho fijo para que la raya quede alineada en todas las filas, y a un lector de
+                    pantalla cada hora le dice cuál es. */}
+                <td className="px-4 py-3">
+                  <div className="flex items-center tabular-nums whitespace-nowrap">
+                    <span className="w-12 text-ink"><span className="sr-only">Entrada </span><span>{fmtHora(r.entrada)}</span></span>
+                    <span aria-hidden="true" className="mx-3 h-4 w-px bg-gray-300" />
+                    <span className="min-w-[3.5rem]">
+                      <span className="sr-only">Salida </span>
+                      {r.salidaEstimada ? (
+                        <span title="El sistema cerró el turno porque no marcó salida. Revisa la hora."
+                          className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 whitespace-nowrap">
+                          No marcó salida{r.salida ? ` · ~${fmtHora(r.salida)}` : ''}
+                        </span>
+                      ) : r.salida ? (
+                        <span className="text-red-600">{fmtHora(r.salida)}</span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
                     </span>
-                  ) : (
-                    <span className="text-red-600 font-mono">{fmtHora(r.salida)}</span>
-                  )}
+                  </div>
                 </td>
                 {hayAlmuerzo && (
                   <td className="px-4 py-3 text-center">
@@ -744,83 +798,113 @@ export default function Registros() {
 
       {modal && (
         <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">{jornadaEditada ? 'Editar jornada' : editando ? 'Editar marcación' : 'Nuevo registro'}</h3>
-              <button onClick={() => setModal(false)}><X size={20} className="text-gray-400" /></button>
-            </div>
-            <form onSubmit={guardar} className="space-y-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="titulo-del-registro"
+            className="bg-white rounded-card p-6 w-full max-w-xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-4 mb-5">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Colaborador</label>
-                <select value={form.colaboradorId} onChange={e => setForm(p => ({ ...p, colaboradorId: e.target.value }))} required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <h3 id="titulo-del-registro" className="font-bold text-xl text-ink">{jornadaEditada ? 'Editar jornada' : editando ? 'Editar marcación' : 'Nuevo registro'}</h3>
+                {!editando && <p className="text-sm text-muted mt-0.5">Una jornada completa, con sus pausas</p>}
+              </div>
+              <button type="button" onClick={() => setModal(false)} aria-label="Cerrar"
+                className="p-1.5 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-ink">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={guardar} className="space-y-5">
+              <div>
+                <label className={ETIQUETA}>Colaborador</label>
+                <select aria-label="Colaborador" value={form.colaboradorId} onChange={e => setForm(p => ({ ...p, colaboradorId: e.target.value }))} required
+                  className={CAMPO}>
                   <option value="">Seleccionar...</option>
                   {colaboradores.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Fecha</label>
-                  <input type="date" value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} required className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              <div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className={ETIQUETA}>Fecha</label>
+                    <input type="date" aria-label="Fecha" value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))} required className={CAMPO} />
+                  </div>
+                  <div>
+                    <label className={ETIQUETA}>Entrada</label>
+                    <input type="time" aria-label="Entrada" value={form.entrada} onChange={e => setForm(p => ({ ...p, entrada: e.target.value }))} className={CAMPO} />
+                  </div>
+                  <div>
+                    <label className={ETIQUETA}>Salida</label>
+                    <input type="time" aria-label="Salida" value={form.salida} onChange={e => setForm(p => ({ ...p, salida: e.target.value }))} className={CAMPO} />
+                    {jornadaEditada && !form.salida && (
+                      <p className="text-[11px] text-muted mt-1">Vacía: no ha terminado su turno</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Entrada</label>
-                  <input type="time" value={form.entrada} onChange={e => setForm(p => ({ ...p, entrada: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Salida</label>
-                  <input type="time" value={form.salida} onChange={e => setForm(p => ({ ...p, salida: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
-                  {jornadaEditada && !form.salida && (
-                    <p className="text-[11px] text-muted mt-1">Vacía: no ha terminado su turno</p>
+                {/* Debajo de las horas, qué día queda la jornada, para verlo antes de guardar. En una
+                    jornada nueva, al lado, el botón que la llena con el horario de ese día, y se
+                    ajusta lo que haga falta (12 de septiembre de 2026). */}
+                <div className="flex items-center justify-between gap-3 mt-2">
+                  <p className="text-xs text-muted">{resumenDeLaJornada(form.fecha, form.entrada, form.salida)}</p>
+                  {!jornadaEditada && !editando && (
+                    <button type="button" onClick={traerHorario} disabled={!form.colaboradorId || !form.fecha}
+                      className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-ink font-semibold px-4 py-2 rounded-lg text-sm whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed">
+                      <Clock size={15} /> Traer su horario
+                    </button>
                   )}
                 </div>
+                {avisoHorario && <p className="text-[11px] text-amber-700 mt-1 text-right">{avisoHorario}</p>}
               </div>
 
-              {/* Las pausas, DENTRO de la jornada y no como otras salidas. Con las
-                  dos marcadas son tres marcaciones, y se guardan en una sola fila
-                  de la tabla. */}
-              {jornadaEditada && (
-                <>
-                  <BloqueDePausa titulo="Almuerzo" Icono={UtensilsCrossed}
-                    salida={form.almuerzoSalida} regreso={form.almuerzoRegreso}
-                    onSalida={v => setForm(p => ({ ...p, almuerzoSalida: v }))}
-                    onRegreso={v => setForm(p => ({ ...p, almuerzoRegreso: v }))}
-                    nota="Vacío si ese día no marcó almuerzo. Si borras las dos horas, la jornada queda sin almuerzo." />
-                  {/* Los descansos no remunerados, hasta tres, en el orden del formulario
-                      (12 de septiembre de 2026). Cada uno es una marcación más: con el
-                      almuerzo y los tres, la jornada son cinco. A cuál descanso del horario
-                      se anota cada uno lo decide el servidor por la hora. */}
-                  {form.descansos.map((d, i) => (
-                    <BloqueDePausa key={i} titulo={`Descanso ${i + 1}`} Icono={Coffee}
-                      salida={d.salida} regreso={d.regreso}
-                      onSalida={v => cambiarDescanso(i, { salida: v })}
-                      onRegreso={v => cambiarDescanso(i, { regreso: v })}
-                      onQuitar={() => setForm(p => ({ ...p, descansos: p.descansos.filter((_, j) => j !== i) }))} />
-                  ))}
-                  <div className="flex items-start justify-between gap-3">
+              {/* Las pausas, DENTRO de la jornada y no como otras salidas, juntas en un recuadro con
+                  una fila por pausa. Cada una es una marcación más: con el almuerzo y los tres
+                  descansos, la jornada son cinco, y se guardan en una sola fila de la tabla. A cuál
+                  descanso del horario se anota cada uno lo decide el servidor por la hora. */}
+              {(jornadaEditada || !editando) && (
+                <div>
+                  <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                    <span className="text-sm font-medium text-ink">Pausas</span>
+                    <span className="text-xs text-muted text-right">No se pagan: cuestan siempre su tiempo</span>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl px-4 pt-1 pb-3">
+                    <FilaDePausa titulo="Almuerzo" Icono={UtensilsCrossed}
+                      salida={form.almuerzoSalida} regreso={form.almuerzoRegreso}
+                      onSalida={v => setForm(p => ({ ...p, almuerzoSalida: v }))}
+                      onRegreso={v => setForm(p => ({ ...p, almuerzoRegreso: v }))}
+                      onQuitar={() => setForm(p => ({ ...p, almuerzoSalida: '', almuerzoRegreso: '' }))} />
+                    {form.descansos.map((d, i) => (
+                      <FilaDePausa key={i} titulo={`Descanso ${i + 1}`} Icono={Coffee}
+                        salida={d.salida} regreso={d.regreso}
+                        onSalida={v => cambiarDescanso(i, { salida: v })}
+                        onRegreso={v => cambiarDescanso(i, { regreso: v })}
+                        onQuitar={() => setForm(p => ({ ...p, descansos: p.descansos.filter((_, j) => j !== i) }))} />
+                    ))}
                     <button type="button"
                       onClick={() => setForm(p => ({ ...p, descansos: [...p.descansos, { salida: '', regreso: '' }] }))}
                       disabled={form.descansos.length >= MAX_DESCANSOS_POR_FRANJA}
-                      className="flex items-center gap-1 text-xs font-semibold text-blue-800 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed shrink-0">
-                      <Plus size={13} /> Agregar descanso
+                      className="mt-3 inline-flex items-center gap-1.5 bg-white border border-blue-300 rounded-lg px-3 py-1.5 text-xs font-semibold text-ink hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <Plus size={14} /> Agregar descanso
                     </button>
-                    <p className="text-[11px] text-gray-500 text-right">
-                      No se pagan: lo que caiga en su horario se descuenta.
-                    </p>
                   </div>
-                </>
+                  <p className="text-[11px] text-muted mt-1.5">Deja vacía la pausa que ese día no marcó.</p>
+                </div>
               )}
+              {/* El tipo se elige con un clic, como la modalidad de trabajo (components/SelectorModalidad). */}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
-                <select value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
-                  <option value="NORMAL">Normal</option>
-                  <option value="PERMISO">Permiso</option>
-                  <option value="FESTIVO">Festivo</option>
-                </select>
+                <span id="rotulo-tipo-del-registro" className={ETIQUETA}>Tipo</span>
+                <div role="radiogroup" aria-labelledby="rotulo-tipo-del-registro" className="inline-flex gap-0.5 bg-blue-50 rounded-lg p-1">
+                  {TIPOS_DE_REGISTRO.map(t => {
+                    const activo = form.tipo === t.valor;
+                    return (
+                      <button key={t.valor} type="button" role="radio" aria-checked={activo}
+                        onClick={() => setForm(p => ({ ...p, tipo: t.valor }))}
+                        className={`px-3.5 py-1.5 rounded-md text-sm transition-colors ${activo ? 'bg-white text-ink font-medium shadow-sm' : 'text-blue-600 hover:text-ink'}`}>
+                        {t.texto}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Observación</label>
-                <input value={form.observacion} onChange={e => setForm(p => ({ ...p, observacion: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                <label htmlFor="observacion-del-registro" className={ETIQUETA}>Observación</label>
+                <input id="observacion-del-registro" value={form.observacion} onChange={e => setForm(p => ({ ...p, observacion: e.target.value }))}
+                  placeholder="Olvidó marcar la salida" className={CAMPO} />
               </div>
 
               {/* La tardanza se evalúa solo sobre la primera entrada del día (para
@@ -868,9 +952,9 @@ export default function Registros() {
                 <ActividadRegistro registroId={(jornadaEditada?.id ?? editando?.id)!} />
               )}
 
-              <div className="flex gap-3 justify-end">
-                <button type="button" onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
-                <button type="submit" className="px-4 py-2 text-sm bg-blue-800 text-white rounded-lg hover:bg-blue-700">Guardar</button>
+              <div className="flex gap-3 justify-end pt-1">
+                <button type="button" onClick={() => setModal(false)} className="px-5 py-2.5 text-sm text-ink border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
+                <button type="submit" className="px-6 py-2.5 text-sm font-semibold bg-blue-800 text-white rounded-lg hover:bg-blue-700">Guardar</button>
               </div>
             </form>
           </div>

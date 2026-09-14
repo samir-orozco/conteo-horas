@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../src/prisma';
 import { calcularHorasEsperadas, armarSaldo, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS } from '../src/utils/saldoTiempo';
 import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo, calcularValorHora } from '../src/utils/horasColombiana';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../src/utils/vigencias';
@@ -11,8 +11,10 @@ import { getISOWeek, getISOWeekYear } from 'date-fns';
 // Comprobación de escritorio del saldo, replicando lo que hace GET /liquidacion.
 // No es un test automatizado: imprime los números para cotejarlos a mano contra
 // el escenario sembrado por seed-julio-saldo.ts.
+//
+// El cliente viene de src/prisma, como en materializar-julio.ts: es el que carga
+// el .env, así que el script no depende de cómo se generó el cliente de Prisma.
 
-const prisma = new PrismaClient();
 const TZ = 'America/Bogota';
 const fmtMin = (m: number) => `${Math.trunc(Math.abs(m) / 60)}h${String(Math.round(Math.abs(m) % 60)).padStart(2, '0')}`;
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -38,14 +40,23 @@ async function main() {
     prisma.permiso.findMany({ where: { colaboradorId: colaborador.id, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } }, select: { fechaInicio: true, fechaFin: true, tipo: true } }),
     prisma.diaEsperado.findMany({
       where: { colaboradorId: colaborador.id, fecha: { gte: desdeF, lt: finExclusivo } },
-      select: { fecha: true, programado: true, horaEntrada: true, horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true },
+      select: {
+        fecha: true, programado: true, horaEntrada: true, horaSalida: true,
+        toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+        toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+        descansos: true,
+      },
       orderBy: { fecha: 'asc' },
     }),
   ]);
 
   const horario = colaborador.horario as any;
   const festivosDates = festivos.map(f => new Date(f.fecha));
-  const extraConfig = construirExtraConfig(cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL', horario);
+  // Los días llegan MATERIALIZADOS de la tabla; los que aún no lo estén caen al
+  // horario vigente, igual que en GET /liquidacion. Se resuelven antes de liquidar
+  // porque, como en la ruta, el ExtraConfig sale de los días ya combinados.
+  const diasEsperados = combinarDiasEsperados(desdeF, finExclusivo, diasMaterializados, horario);
+  const extraConfig = construirExtraConfig(cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL', horario, diasEsperados);
   const horasMes = horasMesDeJornada(jornadaVigente(new Date(hastaStr), jornadas));
   const valorHora = calcularValorHora(colaborador.salarioMensual, horasMes);
 
@@ -94,10 +105,8 @@ async function main() {
   liquidacion.forEach(l => console.log(`   ${l.codigo}  ${l.horas}h  ${l.esExtra ? '(EXTRA)' : '(ordinaria)'}  ${cop(l.subtotal)}`));
 
   // --- lado ESPERADO, con y sin la política por defecto ---
-  // Los días llegan MATERIALIZADOS de la tabla; los que aún no lo estén caen al
-  // horario vigente, igual que en GET /liquidacion. La cuenta de abajo dice de
-  // dónde salió cada día: si la materialización no corrió, hay que saberlo.
-  const diasEsperados = combinarDiasEsperados(desdeF, finExclusivo, diasMaterializados, horario);
+  // La cuenta de abajo dice de dónde salió cada día: si la materialización no
+  // corrió, hay que saberlo.
   console.log(`\nDías del rango: ${diasEsperados.length} · materializados en tabla: ${diasMaterializados.length} · resueltos con el horario vigente: ${diasEsperados.length - diasMaterializados.length}`);
 
   for (const [etiqueta, valorCfg] of [['PERSONAL remunerado (default)', null], ['PERSONAL NO remunerado', 'CALAMIDAD,MEDICO,OTRO']] as const) {

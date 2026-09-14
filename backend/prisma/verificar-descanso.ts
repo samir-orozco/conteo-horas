@@ -30,6 +30,9 @@
 //     fotos de cada salida, los topes, y las novedades que siguen a su salida. Además
 //     (12 de septiembre de 2026): el regreso de un descanso solo va a la fila de ESE
 //     descanso (Ana), y una fila vacía no corre el «descanso N» del mensaje.
+//  4c. LA JORNADA NUEVA A MANO (12 de septiembre de 2026). GET /api/registros/horario-del-dia
+//     trae el horario del día sin crear nada, y POST /api/registros/jornada guarda la jornada
+//     entera de una vez, con sus pausas, y rechaza el cruce y a la persona de otra empresa.
 import { prisma } from '../src/prisma';
 import { rangoDiaBogota, medianocheBogota } from '../src/utils/fechas';
 import { DIAS_SEMANA } from '../src/utils/tardanzas';
@@ -487,9 +490,10 @@ async function main() {
   console.log(`
 Calculado a mano, franja 07:00–16:00, almuerzo 12:00–13:00, descansos 09:00–09:15 y 15:00–15:10:
   el día pide   540 − 60 − 15 − 10 = 455
-  Ana           07–09 + 09:15–12 + 13–15 + 15:10–16 = 120 + 165 + 120 + 50 = 455; nada dentro de pausas → 455, saldo 0
-  Beto          07–16 = 540; dentro del almuerzo 60 y de los descansos 25 → 455, saldo 0
-  Carla         07–10 + 10:15–12 + 13–15 + 15:10–16 = 180 + 105 + 120 + 50 = 455; dentro de 09:00–09:15 → −15 → 440, debe 15
+  Cada pausa cuesta siempre su tiempo: lo tomado marcado cuenta, y lo que falte se descuenta (12 de septiembre de 2026).
+  Ana           07–09 + 09:15–12 + 13–15 + 15:10–16 = 120 + 165 + 120 + 50 = 455; tomó 60 de almuerzo y 25 de descansos → 455, saldo 0
+  Beto          07–16 = 540; no marcó ninguna pausa → −60 y −25 → 455, saldo 0
+  Carla         07–10 + 10:15–12 + 13–15 + 15:10–16 = 180 + 105 + 120 + 50 = 455; tomó 15 + 10 = 25 de descansos, a otra hora → 455, saldo 0
   tardanzas     las tres entran a las 07:00 con tolerancia 0 → 0`);
 
   const q = (colaboradorId: string, desde: string, hasta: string) => `colaboradorId=${colaboradorId}&desde=${desde}&hasta=${hasta}`;
@@ -499,8 +503,8 @@ Calculado a mano, franja 07:00–16:00, almuerzo 12:00–13:00, descansos 09:00�
       '09:00-09:15 MARCADO 09:00→09:15 desc:0 más:0 | 15:00-15:10 MARCADO 15:00→15:10 desc:0 más:0'],
     ['Beto', beto, '455 455 0', '1 fila · 1 marcaciones · 455 · descanso aquí 25',
       '09:00-09:15 NO_MARCADO desc:15 más:0 | 15:00-15:10 NO_MARCADO desc:10 más:0'],
-    ['Carla', carla, '455 440 15', '1 fila · 4 marcaciones · 440 · descanso aquí 15',
-      '09:00-09:15 MARCADO 15:00→15:10 desc:15 más:0 | 15:00-15:10 MARCADO 10:00→10:15 desc:0 más:5'],
+    ['Carla', carla, '455 455 0', '1 fila · 4 marcaciones · 455 · descanso aquí 0',
+      '09:00-09:15 MARCADO 15:00→15:10 desc:0 más:0 | 15:00-15:10 MARCADO 10:00→10:15 desc:0 más:5'],
   ];
   for (const [nombre, c, liquidacion, fila, porVentana] of esperado) {
     const liq = await leer<RespLiquidacion>(`/api/reportes/liquidacion?${q(c.id, '2026-09-07', '2026-09-07')}`);
@@ -513,8 +517,8 @@ Calculado a mano, franja 07:00–16:00, almuerzo 12:00–13:00, descansos 09:00�
     comprobar(`${nombre} · registros: un resumen por ventana, en orden`, porVentana, estados(filas[0]?.descansos));
   }
   const detalleCarla = await leer<RespDetalle>(`/api/registros/${carlaPrimera.id}/jornada`);
-  comprobar('Carla · detalle: el día viaja con los descansos como arreglo, el día contó 440, y los resúmenes dicen lo mismo que la tabla',
-    '09:00-09:15,15:00-15:10 · 440 · 09:00-09:15 MARCADO 15:00→15:10 desc:15 más:0 | 15:00-15:10 MARCADO 10:00→10:15 desc:0 más:5',
+  comprobar('Carla · detalle: el día viaja con los descansos como arreglo, el día contó 455, y los resúmenes dicen lo mismo que la tabla',
+    '09:00-09:15,15:00-15:10 · 455 · 09:00-09:15 MARCADO 15:00→15:10 desc:0 más:0 | 15:00-15:10 MARCADO 10:00→10:15 desc:0 más:5',
     `${listaDe(detalleCarla.dia?.descansos)} · ${detalleCarla.minutosDelDia} · ${estados(detalleCarla.descansos)}`);
 
   // El caso de UN solo descanso que ya estaba (ee7a0c7), con la lista de uno: franja
@@ -790,6 +794,37 @@ Calculado a mano, franja 07:00–16:00, almuerzo 12:00–13:00, descansos 09:00�
     `${editadoP.statusCode} · ${filasP.length} filas · nuevas sin sede: ${filasP.filter(f => f.metodoEntrada === 'MANUAL').every(f => f.sedeId === null) && filasP.some(f => f.metodoEntrada === 'MANUAL') ? 'sí' : 'no'}`);
   comprobar('presencial · editor: la jornada sigue abriendo en Norte en la tabla', '1 fila · 3 marcaciones · Prueba Norte', await jornadaP());
   comprobar('presencial · editor: y el reporte por Norte la sigue contando en Norte, sin mixto', 'aparece · Prueba Norte', await enNorte());
+
+  // ===================== 4c. LA JORNADA NUEVA A MANO =====================
+  const nueva = await persona('Nueva');
+  const diasDeNueva = () => prisma.diaEsperado.count({ where: { colaboradorId: nueva.id } });
+  const diasAntes = await diasDeNueva();
+  const horarioDelMartes = await leer<{ horaEntrada: string; horaSalida: string; almuerzoInicio: string; almuerzoFin: string; descansos: { inicio: string; fin: string }[] }>(
+    `/api/registros/horario-del-dia?colaboradorId=${nueva.id}&fecha=2026-09-08`);
+  comprobar('jornada nueva · el horario del martes: entrada, almuerzo y los dos descansos en orden, sin crear el día',
+    `07:00-16:00 12:00-13:00 09:00-09:15,15:00-15:10 · días ${diasAntes}`,
+    `${horarioDelMartes.horaEntrada}-${horarioDelMartes.horaSalida} ${horarioDelMartes.almuerzoInicio}-${horarioDelMartes.almuerzoFin} ${horarioDelMartes.descansos.map(v => `${v.inicio}-${v.fin}`).join(',')} · días ${await diasDeNueva()}`);
+  const creada = await enviar('POST', '/api/registros/jornada', {
+    colaboradorId: nueva.id, fecha: '2026-09-08', tipo: 'NORMAL', observacion: '',
+    entrada: '07:00', almuerzo: { salida: '12:00', regreso: '13:00' },
+    descansos: [{ salida: '09:00', regreso: '09:15' }, { salida: '15:00', regreso: '15:10' }], salida: '16:00',
+  });
+  const filasDeNueva = await prisma.registro.findMany({
+    where: { colaboradorId: nueva.id }, orderBy: { entrada: 'asc' },
+    select: { entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true, metodoEntrada: true, metodoSalida: true },
+  });
+  comprobar('jornada nueva · POST la guarda entera: 201 y cuatro filas, cada salida con su pausa y su ventana, todas escritas a mano',
+    `201 · ${CUATRO} · MANUAL`,
+    `${creada.statusCode} · ${describir(filasDeNueva)} · ${[...new Set(filasDeNueva.flatMap(f => [f.metodoEntrada, f.metodoSalida]))].join(',')}`);
+  const liqDeNueva = await leer<RespLiquidacion>(`/api/reportes/liquidacion?${q(nueva.id, '2026-09-08', '2026-09-08')}`);
+  comprobar('jornada nueva · la liquidación del martes: exigía 455 y contó 455', '455 455 0',
+    `${liqDeNueva.saldo.minutosEsperados} ${liqDeNueva.saldo.minutosTrabajados} ${liqDeNueva.saldo.minutosSaldo}`);
+  const encima = await enviar('POST', '/api/registros/jornada', { colaboradorId: nueva.id, fecha: '2026-09-08', entrada: '08:00', salida: '10:00' });
+  comprobar('jornada nueva · otra encima del mismo día se rechaza por cruce, sin escribir nada', '400 CRUCE_DE_MARCACIONES · 4 filas',
+    `${encima.statusCode} ${encima.json<{ codigo?: string }>().codigo} · ${await prisma.registro.count({ where: { colaboradorId: nueva.id } })} filas`);
+  const deOtra = await enviar('POST', '/api/registros/jornada', { colaboradorId: presencial.id, fecha: '2026-09-08', entrada: '07:00', salida: '16:00' });
+  comprobar('jornada nueva · con una persona de otra empresa: 404 y nada escrito ese día', '404 · 0',
+    `${deOtra.statusCode} · ${await prisma.registro.count({ where: { colaboradorId: presencial.id, fecha: { gte: MARTES, lt: new Date(MARTES.getTime() + UN_DIA_MS) } } })}`);
 
   console.log('\nRESULTADOS');
   for (const c of casos) {

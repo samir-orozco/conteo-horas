@@ -143,13 +143,9 @@ export default function AdminEmpresas() {
       cerrarEliminar();
       cargar();
     } catch (err) {
-      // Un 500 que no escribió la ruta llega como 'Internal Server Error', que no
-      // le dice nada a nadie. Lo que sí escribió la ruta se muestra tal cual.
-      const status = (err as { response?: { status?: number } }).response?.status ?? 0;
-      const mensaje = mensajeDeError(err, 'No se pudo eliminar la empresa.');
-      setErrorEliminar(status >= 500 && mensaje === 'Internal Server Error'
-        ? 'No se pudo eliminar la empresa. Intenta de nuevo en un momento.'
-        : mensaje);
+      // Lo que diga el servidor, también en un 500: la ruta escribe el suyo, y lo que
+      // no atajó ya llega en español desde el manejador de errores del backend.
+      setErrorEliminar(mensajeDeError(err, 'No se pudo eliminar la empresa.'));
     } finally {
       setBorrando(false);
     }

@@ -67,14 +67,14 @@ describe('resumirAlmuerzoDelDia — con ventana', () => {
     expect(r.minutosDescontados).toBe(0);
   });
 
-  it('almorzó 20 minutos: se ve lo que tomó, y lo que se descuenta sigue siendo la ventana', () => {
+  it('almorzó 20 minutos: se ve lo que tomó, y se completan los 40 que faltan de la hora', () => {
     const r = resumirAlmuerzoDelDia(
       [reg(bog(8), bog(12), { salidaAlmuerzo: true }), reg(bog(12, 20), bog(17))],
       dia(),
     );
     expect(r.minutos).toBe(20);
     expect(r.seExcedio).toBe(false);
-    // Estuvo marcado de 12:20 a 13:00: esos 40 se descuentan igual.
+    // Se tomó 20 de sus 60 minutos: el almuerzo cuesta la hora completa.
     expect(r.minutosDescontados).toBe(40);
   });
 
@@ -124,10 +124,11 @@ describe('resumirAlmuerzoDelDia — con ventana', () => {
     expect(r.minutosDescontados).toBe(60);
   });
 
-  it('se fue temprano y nunca llegó a la ventana: no marcó, pero tampoco paga', () => {
+  it('se fue temprano, antes de la ventana: no marcó, y el almuerzo se descuenta igual', () => {
+    // Decisión del dueño del 12 de septiembre de 2026: el almuerzo cuesta siempre su hora.
     const r = resumirAlmuerzoDelDia([reg(bog(8), bog(10))], dia());
     expect(r.estado).toBe('NO_MARCADO');
-    expect(r.minutosDescontados).toBe(0);
+    expect(r.minutosDescontados).toBe(60);
   });
 
   it('un día sin marcaciones no descuenta nada', () => {
@@ -222,10 +223,22 @@ describe('minutosContadosDelDia', () => {
     expect(r).toBe(480); // 540 trabajados − 60 de ventana
   });
 
-  it('se fue temprano y nunca llegó a la ventana: no paga almuerzo', () => {
-    // El error que originó todo esto: dos horas trabajadas contaban como una.
+  it('se fue a las 10:00, antes de la ventana: el almuerzo se descuenta igual', () => {
+    // Decisión del dueño del 12 de septiembre de 2026: el almuerzo cuesta siempre el tiempo
+    // fijado, aunque la persona se haya ido antes. Con una novedad aprobada la tarde se le
+    // excusa entera (saldoTiempo.ts), así que no queda debiendo esa hora.
     const r = minutosContadosDelDia([reg(bog(8), bog(10))], diaCompleto());
-    expect(r).toBe(120);
+    expect(r).toBe(60);
+  });
+
+  it('el almuerzo cuesta siempre su hora, lo tome como lo tome: la tabla del dueño', () => {
+    const casos: [string, ReturnType<typeof reg>[], number][] = [
+      ['volvió antes: de 12:00 a 12:40', [reg(bog(8), bog(12), { salidaAlmuerzo: true }), reg(bog(12, 40), bog(17))], 480],
+      ['salió antes: de 11:50 a 12:50', [reg(bog(8), bog(11, 50), { salidaAlmuerzo: true }), reg(bog(12, 50), bog(17))], 480],
+      ['a otra hora: de 11:00 a 12:00', [reg(bog(8), bog(11), { salidaAlmuerzo: true }), reg(bog(12), bog(17))], 480],
+      ['se demoró: de 12:00 a 13:30', [reg(bog(8), bog(12), { salidaAlmuerzo: true }), reg(bog(13, 30), bog(17))], 450],
+    ];
+    for (const [nombre, regs, minutos] of casos) expect(minutosContadosDelDia(regs, diaCompleto()), nombre).toBe(minutos);
   });
 
   it('aplica la tolerancia de salida, igual que la liquidación', () => {
@@ -394,9 +407,9 @@ describe('partirDiaEnJornadas', () => {
     const j = partirDiaEnJornadas([reg(bog(8), bog(12)), reg(bog(18), bog(14))], diaCompleto());
     expect(j).toHaveLength(2);
     expect(j[1].minutosContados).toBe(0);
-    // 4h de la mañana menos la hora de almuerzo que estuvo marcado: 12:00 cierra
-    // justo al empezar la ventana, así que no hay solape y quedan los 240.
-    expect(j[0].minutosContados).toBe(240);
+    // 4 h de la mañana menos la hora de almuerzo, que cuesta siempre su hora aunque se
+    // haya ido justo al empezar la ventana (12 de septiembre de 2026).
+    expect(j[0].minutosContados).toBe(180);
   });
 
   it('el almuerzo lo paga la jornada que estuvo dentro de la ventana, no la primera', () => {
@@ -410,11 +423,12 @@ describe('partirDiaEnJornadas', () => {
     expect(j[1].minutosContados).toBe(270);
   });
 
-  it('dos jornadas que cruzan la ventana a medias la pagan a medias', () => {
-    // 08:00-12:30 pisa 30 minutos de la ventana; 12:40-18:00 pisa los otros 20.
+  it('dos jornadas que cruzan la ventana a medias se reparten la hora según lo que pisó cada una', () => {
+    // 08:00-12:30 pisa 30 minutos de la ventana y 12:40-18:00 pisa 20. Sin almuerzo marcado
+    // se descuenta la hora entera (12 de septiembre de 2026): 36 y 24.
     const j = partirDiaEnJornadas([reg(bog(8), bog(12, 30)), reg(bog(12, 40), bog(18))], diaCompleto());
-    expect(j[0].minutosContados).toBe(240);
-    expect(j[1].minutosContados).toBe(300);
+    expect(j[0].minutosContados).toBe(234);
+    expect(j[1].minutosContados).toBe(296);
   });
 
   it('sin ventana, la tarjeta de almuerzo dice lo que pagó ESA jornada', () => {

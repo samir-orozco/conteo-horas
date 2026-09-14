@@ -30,6 +30,7 @@ import { avisarContratosDeTodas } from './routes/contratos';
 import { avisarPausasSinRegreso } from './utils/cierreAlmuerzo';
 import { mantenerVentana } from './utils/materializarDias';
 import { decidirAccesoEmpresa } from './utils/accesoEmpresa';
+import { manejarError } from './utils/respuestaDeError';
 
 // Reexportado por compatibilidad: media base de código hace `import { prisma }
 // from '../index'`. El cliente ahora vive en `./prisma` (ver el porqué allí).
@@ -133,6 +134,10 @@ app.decorate('requireAfiliado', async (request: any, reply: any) => {
   }
   request.afiliadoId = payload.afiliadoId;
 });
+
+// Lo que ninguna ruta atajó sale con un texto fijo y sin el mensaje interno; los 4xx salen como
+// siempre. Va antes de registrar las rutas para que lo hereden todas. Ver utils/respuestaDeError.ts.
+app.setErrorHandler(manejarError);
 
 app.register(authRoutes, { prefix: '/api/auth' });
 app.register(colaboradorRoutes, { prefix: '/api/colaboradores' });

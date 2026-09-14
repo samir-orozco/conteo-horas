@@ -31,9 +31,12 @@ export async function materializarColaborador(
   finExclusivo: Date,
   opciones: { pisarExistentes?: boolean } = {},
 ): Promise<number> {
+  // Solo el horario y su id, que es lo que se escribe en cada día. Sin `select` venían todas las
+  // columnas de la persona, también sus fotos y su descriptor facial, en cada materialización
+  // (13 de septiembre de 2026).
   const colaborador = await prisma.colaborador.findUnique({
     where: { id: colaboradorId },
-    include: { horario: { include: { franjas: true } } },
+    select: { horarioId: true, horario: { include: { franjas: true } } },
   });
   if (!colaborador) return 0;
 

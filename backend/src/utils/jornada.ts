@@ -1,12 +1,12 @@
 import type { MetodoMarcacion } from '@prisma/client';
 import {
   minutosAlmuerzoADescontar, minutosEnLaVentana, finDeLaVentanaDe, ventanaDeAlmuerzo,
-  type DiaParaAlmuerzo, type VentanaDelDia,
+  type DiaParaAlmuerzo, type VentanaDelDia, type MarcaDePausa,
 } from './almuerzo';
 import { ajustarAJornada, type DiaParaAjuste } from './ajusteJornada';
 import { minutosDe, duracionFranjaMin } from './tardanzas';
 import {
-  minutosDesdeLaEntrada, minutosDescansoADescontar, minutosEnLasVentanas, leerDescansos, ventanasEnOrden,
+  minutosDesdeLaEntrada, minutosDescansoADescontar, descuentoDeCadaDescanso, minutosEnLasVentanas, leerDescansos, ventanasEnOrden,
   ventanasDeLasSalidas, regresoEsperadoDelDescanso, claveDeVentana, emparejarSalidasDeDescanso,
   MAX_DESCANSOS_POR_FRANJA, type DiaConDescansos,
 } from './descansos';
@@ -26,8 +26,9 @@ import {
 // Distingue a propósito dos números que es fácil confundir:
 //  - `minutos`: lo que la persona se tomó de verdad (lo que se ve).
 //  - `minutosDescontados`: lo que esa pausa le cuesta al día (lo que se paga).
-// No son lo mismo. Quien almuerza en 20 minutos se tomó 20, pero se le
-// descuentan los 60 de la ventana: ese tiempo se lo regaló a la empresa.
+// No son lo mismo. Quien almuerza en 20 minutos se tomó 20, y su almuerzo le cuesta
+// igual los 60 fijados: los otros 40 se descuentan de lo trabajado (12 de septiembre
+// de 2026).
 
 const MS_MIN = 60_000;
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
@@ -169,23 +170,24 @@ function resumirSalida(
   };
 }
 
-// Los tramos completos del día son los que cuentan para el descuento: uno
-// abierto todavía no dice cuánto se trabajó.
-const tramosCerrados = (registros: RegistroDeDia[]) =>
-  tramosUtiles(registros).map(r => ({ entrada: r.entrada!, salida: r.salida! }));
+// Las marcaciones del día como las mide el descuento de las pausas: los tramos
+// terminados con la tolerancia de salida ya aplicada, igual que el motor de horas, y
+// los abiertos tal cual, porque la entrada de uno abierto puede ser el regreso de una
+// pausa. La usa también la liquidación (utils/liquidarRegistros.ts).
+export function marcasParaDescontar<T extends MarcaDePausa>(registros: readonly T[], dia: DiaParaAjuste): MarcaDePausa[] {
+  return registros.map(r => (r.entrada && r.salida && r.salida.getTime() > r.entrada.getTime()
+    ? { ...r, ...ajustarAJornada(r.entrada, r.salida, dia) }
+    : r));
+}
 
 export function resumirAlmuerzoDelDia(
   registros: RegistroDeDia[],
   dia: DiaParaAlmuerzo,
   ahora: Date = new Date(),
 ): ResumenPausa {
-  const tramos = tramosCerrados(registros);
-  // Un día sin ningún tramo cerrado no ha pagado nada, así que tampoco ha
-  // descontado nada. Hay que decirlo aquí porque `minutosAlmuerzoADescontar`
-  // devuelve los minutos fijos antes de mirar los tramos; el motor no se entera
-  // porque solo mete al cálculo los días con algún tramo cerrado (reportes.ts).
-  const minutosDescontados = tramos.length > 0 ? minutosAlmuerzoADescontar(tramos, dia) : 0;
-  return resumirPausa(registros, 'ALMUERZO', ventanaDeAlmuerzo(dia), minutosDescontados, ahora);
+  // Un día sin ningún tramo cerrado no ha pagado nada, así que tampoco ha descontado
+  // nada: `minutosAlmuerzoADescontar` lo mira por su cuenta.
+  return resumirPausa(registros, 'ALMUERZO', ventanaDeAlmuerzo(dia), minutosAlmuerzoADescontar(registros, dia), ahora);
 }
 
 // Qué pasó con cada DESCANSO del día (12 de septiembre de 2026): un resumen por
@@ -196,9 +198,9 @@ export function resumirAlmuerzoDelDia(
 // (`ventanasDeLasSalidas`): la guardada en la marcación si sigue en el día, y si no,
 // la que tocaba a esa hora. Así la tabla y el kiosco cuentan la misma historia.
 //
-// `minutosDescontados` de cada ventana es lo que cayó dentro de ella y no de las
-// anteriores, redondeado sobre el acumulado: los resúmenes SUMAN el descuento del
-// día, que se redondea una sola vez.
+// `minutosDescontados` de cada ventana es lo que le toca del descuento del día
+// (`descuentoDeCadaDescanso`): los resúmenes SUMAN el descuento del día, que se
+// redondea una sola vez.
 type ResumenConSuSalida<T> = { resumen: ResumenPausa; marcacion: T | null };
 
 function resumenesDeDescanso<T extends RegistroDeDia>(registros: T[], dia: DiaConDescansos, ahora: Date): ResumenConSuSalida<T>[] {
@@ -209,8 +211,7 @@ function resumenesDeDescanso<T extends RegistroDeDia>(registros: T[], dia: DiaCo
   const salidas = enOrden.filter(r => pausaDeLaSalida(r) === 'DESCANSO');
   const asignadas = ventanasDeLasSalidas(dia, salidas.map(r => ({ salida: r.salida!, descansoVentana: r.descansoVentana ?? null })));
 
-  const tramos = tramosCerrados(registros);
-  const acumulado = (k: number) => (tramos.length === 0 ? 0 : Math.round(minutosEnLasVentanas(tramos, dia.fecha, ventanas.slice(0, k))));
+  const descontados = descuentoDeCadaDescanso(registros, dia);
   const vacio: ResumenPausa = {
     estado: 'NO_MARCADO', ventana: null, salida: null, regreso: null, minutos: null,
     minutosVentana: null, minutosDescontados: 0, regresoEstimado: false, seExcedio: false, minutosDeMas: 0,
@@ -221,7 +222,7 @@ function resumenesDeDescanso<T extends RegistroDeDia>(registros: T[], dia: DiaCo
       ...vacio,
       ventana: { inicio: v.inicio, fin: v.fin },
       minutosVentana: duracionFranjaMin(v.inicio, v.fin),
-      minutosDescontados: acumulado(k + 1) - acumulado(k),
+      minutosDescontados: descontados[k],
     };
     const i = asignadas.findIndex(a => a !== null && claveDeVentana(a) === claveDeVentana(v));
     if (i < 0) return { resumen: base, marcacion: null };
@@ -845,7 +846,7 @@ export type FinDeTramo = PausaDeJornada | 'SALIDA' | null;
 // mediodía deja las dos mintiendo aunque el total del día cuadre. Sin solape
 // —el almuerzo fijo sin ventana, que no es proporcional a nada— va entero a la
 // jornada de la pausa.
-function cobroPorJornada(descuento: number, solapes: (number | null)[], iDeLaPausa: number): number[] {
+export function cobroPorJornada(descuento: number, solapes: (number | null)[], iDeLaPausa: number): number[] {
   const enLaVentana = solapes.reduce<number>((s, p) => s + (p ?? 0), 0);
   const cobro = new Array(solapes.length).fill(0);
   if (enLaVentana <= 0) {
@@ -867,7 +868,7 @@ function cobroPorJornada(descuento: number, solapes: (number | null)[], iDeLaPau
 // Lo que una jornada no alcanza a pagar lo pagan las demás, empezando por la de
 // la pausa. Media jornada con una hora de almuerzo fijo dejaría el recorte a
 // medias y el día contaría de más.
-function cobrarHastaDondeAlcance(cobro: number[], disponible: number[], iDeLaPausa: number): number[] {
+export function cobrarHastaDondeAlcance(cobro: number[], disponible: number[], iDeLaPausa: number): number[] {
   const quita = cobro.map((c, k) => Math.min(c, disponible[k]));
   let pendiente = cobro.reduce((s, c, k) => s + c - quita[k], 0);
   for (const i of [iDeLaPausa, ...cobro.map((_, k) => k).filter(k => k !== iDeLaPausa)]) {
@@ -902,13 +903,11 @@ export function partirDiaEnJornadas<T extends RegistroDeDia>(
   const trabajados = porBloque.map(ts =>
     ts.reduce((s, t) => s + (t.salida.getTime() - t.entrada.getTime()) / MS_MIN, 0));
 
-  // Cada descuento se calcula UNA vez para todo el día y después se reparte. Es
-  // la trampa de este cálculo: sin ventana horaria `minutosAlmuerzoADescontar`
-  // devuelve los minutos fijos del día, no un número proporcional a los tramos,
-  // así que pedirlo una vez por jornada lo cobraría dos veces y le robaría una
-  // hora al día sin que nadie lo notara.
-  const todos = porBloque.flat();
-  const descuentoAlmuerzo = todos.length > 0 ? minutosAlmuerzoADescontar(todos, dia) : 0;
+  // Cada descuento se calcula UNA vez para todo el día y después se reparte. Cuesta lo
+  // fijado del día, no un número proporcional a los tramos, así que pedirlo una vez por
+  // jornada lo cobraría dos veces y le robaría una hora al día sin que nadie lo notara.
+  const marcas = marcasParaDescontar(enOrden, dia);
+  const descuentoAlmuerzo = minutosAlmuerzoADescontar(marcas, dia);
   const quitaAlmuerzo = cobrarHastaDondeAlcance(
     cobroPorJornada(descuentoAlmuerzo, porBloque.map(ts => minutosEnLaVentana(ts, ventanaDeAlmuerzo(dia))), iDelAlmuerzo),
     trabajados, iDelAlmuerzo,
@@ -916,10 +915,10 @@ export function partirDiaEnJornadas<T extends RegistroDeDia>(
   // El descanso cobra sobre lo que el almuerzo dejó: los dos juntos no pueden
   // quitarle a una jornada más de lo que trabajó.
   const libres = trabajados.map((t, k) => t - quitaAlmuerzo[k]);
-  // Con varios descansos, cada jornada paga lo que sus tramos pasaron dentro de la
-  // UNIÓN de las ventanas: el mismo número con el que el día calcula su descuento.
+  // Con varios descansos, cada jornada paga en proporción a lo que sus tramos pasaron
+  // dentro de la UNIÓN de las ventanas.
   const ventanas = leerDescansos(dia.descansos);
-  const descuentoDescanso = minutosDescansoADescontar(todos, dia);
+  const descuentoDescanso = minutosDescansoADescontar(marcas, dia);
   const quitaDescanso = cobrarHastaDondeAlcance(
     cobroPorJornada(descuentoDescanso, porBloque.map(ts => minutosEnLasVentanas(ts, dia.fecha, ventanas)), iDelDescanso),
     libres, iDelDescanso,
@@ -976,9 +975,9 @@ export function minutosContadosDelDia(
   const trabajados = tramos.reduce(
     (s, t) => s + (t.salida.getTime() - t.entrada.getTime()) / MS_MIN, 0,
   );
-  const soloTramos = tramos.map(t => ({ entrada: t.entrada, salida: t.salida }));
-  const almuerzo = minutosAlmuerzoADescontar(soloTramos, dia);
-  const descanso = minutosDescansoADescontar(soloTramos, dia);
+  const marcas = marcasParaDescontar(registros, dia);
+  const almuerzo = minutosAlmuerzoADescontar(marcas, dia);
+  const descanso = minutosDescansoADescontar(marcas, dia);
   // Media jornada con una hora de almuerzo fijo daría negativo. Cero es la
   // respuesta honesta; un número en rojo sería una invención.
   return Math.max(0, Math.round(trabajados - almuerzo - descanso));

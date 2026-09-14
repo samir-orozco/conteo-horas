@@ -519,6 +519,13 @@ regla es «ni uno más que hoy», no castigar lo que está a medias.
 por sede, que quitaron otros. Se bajó en el mismo commit en que se contó, como
 dice la regla de abajo.
 
+**Bajó a 176 el 12 de septiembre de 2026**: dos al quitar de `liquidacionJulio.test.ts`
+la réplica a mano de la liquidación, y dos más en `routes/registros.ts`, al leer campo por
+campo el cuerpo de una jornada.
+
+**Bajó a 173 el 13 de septiembre de 2026**: los tres `any` de `limpiarPermiso`, al mudarla de
+`routes/permisos.ts` a `utils/cuerpoDePermiso.ts` con sus tipos.
+
 ### El frontend tiene el problema contrario, y sigue sin resolver
 
 `frontend` sale con **66 errores preexistentes**, o sea que su `npm run lint`

@@ -4,7 +4,7 @@
 export type SedeCorta = { id: string; nombre: string };
 // `sedeAtribuida` (decisión del dueño del 12 de septiembre de 2026, «mostrarla al
 // leer»): la sede que el servidor le atribuye a la jornada de un presencial que no
-// abrió en una sede probada. Sirve para mostrarla con «por defecto» y para el
+// abrió en una sede probada. Sirve para mostrarla, con su nombre, y para el
 // filtro de sede; nunca para decir que cruzó de sede, porque no la probó la ubicación.
 export type ConSedes = { sede?: SedeCorta | null; sedeSalida?: SedeCorta | null; sedeAtribuida?: SedeCorta | null };
 
@@ -63,15 +63,16 @@ export function opcionesDeSede(activas: SedeCorta[], filas: ConSedes[]): OpcionS
  * Si la tabla pinta la columna de sede. `activas` son las sedes activas de la
  * empresa, las que lista GET /sedes.
  *
- * Con más de una sede activa, sí, igual que los reportes (`sedes.length > 1`).
- * Antes dependía de cuántas sedes distintas traían las filas, y filtrando a una
- * persona de una empresa con varias sedes, todas sus jornadas decían la misma sede
- * por defecto y la columna desaparecía justo ahí (revisión del 12 de septiembre de
- * 2026). Con una sola sede activa, o ninguna, solo si alguna fila tiene una sede
- * probada, que puede ser una ya desactivada: si no, sería la misma etiqueta
- * repetida en cada fila.
+ * Con alguna sede activa, sí. Pedido del dueño del 13 de septiembre de 2026: con una
+ * sola sede y solo sedes por defecto en las filas la columna no salía, para no repetir
+ * la misma etiqueta, y en la tabla faltaba la sede. Ya el 12 de septiembre había dejado
+ * de depender de cuántas sedes distintas traían las filas: filtrando a una persona, todas
+ * sus jornadas decían la misma sede por defecto y la columna desaparecía justo ahí.
+ *
+ * Sin ninguna sede activa, solo si alguna fila trae una sede, probada o por defecto, que
+ * puede ser una ya desactivada. Si ninguna trae, sería una columna de guiones.
  */
 export function muestraColumnaSede(filas: ConSedes[], activas: SedeCorta[]): boolean {
-  if (activas.length > 1) return true;
-  return filas.some(r => r.sede || r.sedeSalida);
+  if (activas.length > 0) return true;
+  return filas.some(r => r.sede || r.sedeSalida || r.sedeAtribuida);
 }

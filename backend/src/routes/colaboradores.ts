@@ -13,6 +13,8 @@ import { medianocheBogota, hoyEnBogota } from '../utils/fechas';
 import { documentoValido, tipoDeDocumento, nombreDeDocumento, cambioDeDocumento } from '../utils/documentos';
 import { retiroEsCoherente, fechaMinimaDeRetiro } from '../utils/vinculacion';
 import { regenerarDiasDeColaborador, mantenerVentanaDeColaborador } from '../utils/materializarDias';
+import { COLABORADOR_SIN_FOTOS, COLABORADOR_SIN_DESCRIPTOR } from '../utils/columnasDeColaborador';
+import { textoMuyLargo } from '../utils/largoDeColumna';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -75,9 +77,14 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     await aplicarRetiros(request.empresaId!);
     // Se incluyen las sedes para que el modal de edición de la LISTA pueda
     // mostrarlas sin pedir cada colaborador por separado.
+    // Sin la foto grande ni el descriptor facial. Antes la consulta traía las dos fotos y el
+    // descriptor, quitaba la grande al responder y mandaba el descriptor, que es un dato biométrico,
+    // al navegador sin que ninguna pantalla lo use (13 de septiembre de 2026).
     const filas = await prisma.colaborador.findMany({
       where: { empresaId: request.empresaId, activo: true },
-      include: {
+      select: {
+        ...COLABORADOR_SIN_FOTOS,
+        fotoMini: true,
         // Con el nombre, no solo el id: la lista pinta una columna de sede y
         // pedir los nombres aparte sería una consulta por cada carga.
         sedes: { select: { sedeId: true, sede: { select: { nombre: true } } } },
@@ -100,7 +107,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     // Viaja la miniatura, nunca la grande: la lista pinta un círculo de 36
     // píxeles, y mandar la de la ficha por cada persona son cientos de
     // kilobytes por carga. La grande se pide con la ficha, que es donde se ve.
-    return filas.map(({ sedes, contratos, foto: _foto, ...c }) => ({
+    return filas.map(({ sedes, contratos, ...c }) => ({
       ...c,
       sedeIds: sedes.map(s => s.sedeId),
       sedeNombres: sedes.map(s => s.sede.nombre),
@@ -110,9 +117,12 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
 
   app.get('/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
+    // La ficha sí lleva las dos fotos, pero no el descriptor facial: es un dato biométrico que
+    // viajaba al navegador y ninguna pantalla lo usa (13 de septiembre de 2026).
     const col = await prisma.colaborador.findFirst({
       where: { id, empresaId: request.empresaId },
-      include: {
+      select: {
+        ...COLABORADOR_SIN_DESCRIPTOR,
         horario: { include: { franjas: true } },
         // Con el nombre, no solo el id: la lista pinta una columna de sede y
         // pedir los nombres aparte sería una consulta por cada carga.
@@ -226,9 +236,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: 'El archivo trae más de 500 filas. Súbelo por partes.' });
     }
 
-    // Todo el cuerpo va envuelto: si algo revienta aquí, la pantalla mostraba
-    // "Internal Server Error" y no había forma de saber por qué sin el servidor
-    // delante. Ahora el registro dice qué llegó y qué falló.
+    // Todo el cuerpo va envuelto para que el registro diga qué llegó y qué falló.
+    // A la pantalla va un texto fijo: el mensaje interno no le sirve a quien
+    // importa el archivo, y no tiene por qué verlo.
     try {
     const [horarios, sedes, existentes, cap] = await Promise.all([
       prisma.horario.findMany({ where: { empresaId: request.empresaId! }, select: { id: true } }),
@@ -293,10 +303,10 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     return { ...respuesta, creados: creados.length };
     } catch (err) {
       request.log.error({ err, filas: filas.length, soloValidar }, 'Falló la carga masiva de colaboradores');
-      const detalle = err instanceof Error ? err.message.split('\n')[0] : 'error desconocido';
-      return reply.status(500).send({
-        error: `No pudimos procesar el archivo: ${detalle}`,
-      });
+      // Antes iba la primera línea del error, y la de Prisma empieza con un salto
+      // de línea: la pantalla quedaba en «No pudimos procesar el archivo: » sin
+      // nada más (13 de septiembre de 2026).
+      return reply.status(500).send({ error: 'No pudimos procesar el archivo. Intenta de nuevo en un momento.' });
     }
   });
 
@@ -314,11 +324,16 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     }
     const malaFoto = fotoInvalida(data);
     if (malaFoto) return reply.status(400).send({ error: malaFoto });
+    // Un texto más largo que su columna lo rechazaba MySQL al guardar, y la
+    // pantalla solo decía «Ocurrió un error inesperado».
+    const muyLargo = textoMuyLargo(data);
+    if (muyLargo) return reply.status(400).send({ error: muyLargo });
 
     // La cédula es única por empresa. Si ya existe desactivado (lo "borraron"),
     // se reactiva con los datos nuevos y conserva todo su historial de horas.
     const existente = await prisma.colaborador.findUnique({
       where: { empresaId_cedula: { empresaId: request.empresaId!, cedula: data.cedula } },
+      select: { id: true, activo: true, nombre: true, apellido: true },
     });
     if (existente?.activo) {
       return reply.status(409).send({ error: `La cédula ${data.cedula} ya está registrada para ${existente.nombre} ${existente.apellido}` });
@@ -347,9 +362,12 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     };
 
     if (existente) {
+      // Lo que devuelven esta ruta y las que editan, retiran o reingresan llega al navegador: sin el
+      // descriptor facial (13 de septiembre de 2026).
       const reactivado = await prisma.colaborador.update({
         where: { id: existente.id },
         data: { ...data, activo: true, retiroProgramado: null },
+        select: COLABORADOR_SIN_DESCRIPTOR,
       });
       // Aquí SÍ hay que pisar: quien vuelve trae filas viejas de cuando estuvo
       // activo, y `mantenerVentanaDeColaborador` solo rellena huecos. Sin esto
@@ -368,6 +386,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
 
     const colaborador = await prisma.colaborador.create({
       data: { ...data, empresaId: request.empresaId! },
+      select: COLABORADOR_SIN_DESCRIPTOR,
     });
     await registrarEvento({ colaboradorId: colaborador.id, tipo: 'INGRESO',
       fecha: medianocheBogota(hoyEnBogota()), usuarioId: request.usuarioId ?? null });
@@ -378,7 +397,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
 
   app.put('/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
+    const existente = await prisma.colaborador.findFirst({
+      where: { id, empresaId: request.empresaId }, select: { id: true, horarioId: true },
+    });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
     const { empresaId: _ignorar, horario: _rel, sedeIds, ...rest } = request.body as any;
     const data = normalizar(rest);
@@ -393,7 +414,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     }
     const malaFoto = fotoInvalida(data);
     if (malaFoto) return reply.status(400).send({ error: malaFoto });
-    const actualizado = await prisma.colaborador.update({ where: { id }, data });
+    const muyLargo = textoMuyLargo(data);
+    if (muyLargo) return reply.status(400).send({ error: muyLargo });
+    const actualizado = await prisma.colaborador.update({ where: { id }, data, select: COLABORADOR_SIN_DESCRIPTOR });
     await sincronizarSedes(id, sedeIds, request.empresaId!);
 
     // Cambiar a alguien de horario es la otra forma de reescribir el pasado:
@@ -489,13 +512,16 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   // puede haber en una pestaña abierta. Hace lo mismo que retirar, sin motivo.
   app.delete('/:id', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
+    const existente = await prisma.colaborador.findFirst({
+      where: { id, empresaId: request.empresaId }, select: { id: true },
+    });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
 
     const fechaRetiro = medianocheBogota(hoyEnBogota());
     const colaborador = await prisma.colaborador.update({
       where: { id },
       data: { activo: false, fechaRetiro, retiroProgramado: null },
+      select: COLABORADOR_SIN_DESCRIPTOR,
     });
     await registrarEvento({ colaboradorId: id, tipo: 'RETIRO', fecha: fechaRetiro,
       usuarioId: request.usuarioId ?? null });
@@ -596,6 +622,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
       // El estado vuelve a cero, pero la historia NO se toca: el retiro anterior
       // sigue en `vinculacion_eventos` con su fecha, su motivo y su soporte.
       data: { activo: true, fechaRetiro: null, motivoRetiro: null, retiroProgramado: null },
+      select: COLABORADOR_SIN_DESCRIPTOR,
     });
     await registrarEvento({ colaboradorId: id, tipo: 'REINGRESO',
       fecha: medianocheBogota(hoyEnBogota()), usuarioId: request.usuarioId ?? null });
@@ -621,7 +648,10 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     const { descriptores, foto, fotoMini } = request.body as {
       descriptores: unknown; foto?: unknown; fotoMini?: unknown;
     };
-    const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
+    // La foto actual sí hace falta: la primera toma del escaneo solo se guarda si todavía no hay una.
+    const existente = await prisma.colaborador.findFirst({
+      where: { id, empresaId: request.empresaId }, select: { id: true, foto: true },
+    });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
     if (!esListaDescriptoresValida(descriptores)) {
       return reply.status(400).send({ error: 'Muestras faciales inválidas' });
@@ -635,6 +665,7 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
         rostroEnroladoEn: new Date(),
         ...(primeraFoto ? { foto: primeraFoto, fotoMini: primeraMini } : {}),
       },
+      select: { rostroEnroladoEn: true, foto: true },
     });
     return { ok: true, rostroEnroladoEn: colaborador.rostroEnroladoEn, foto: colaborador.foto };
   });
@@ -673,7 +704,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
 
   app.delete('/:id/rostro', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const existente = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
+    const existente = await prisma.colaborador.findFirst({
+      where: { id, empresaId: request.empresaId }, select: { id: true },
+    });
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
     await prisma.colaborador.update({
       where: { id },
@@ -684,7 +717,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
 
   app.get('/:id/valor-hora', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const colaborador = await prisma.colaborador.findFirst({ where: { id, empresaId: request.empresaId } });
+    const colaborador = await prisma.colaborador.findFirst({
+      where: { id, empresaId: request.empresaId }, select: { salarioMensual: true },
+    });
     if (!colaborador) return reply.status(404).send({ error: 'No encontrado' });
 
     const jornadas = await prisma.jornadaVigencia.findMany();

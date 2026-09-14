@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agruparPorJornada, sedesDelTurno } from './fotosDeJornada';
+import { agruparPorJornada, sedesDelTurno, partesDeLaJornada } from './fotosDeJornada';
 import type { FotoDeJornada } from '../constants/momentos';
 
 const f = (p: Partial<FotoDeJornada>): FotoDeJornada => ({
@@ -92,5 +92,48 @@ describe('sedesDelTurno', () => {
     expect(r.abrio?.nombre).toBe('El Poblado');
     expect(r.cerro).toBeNull();
     expect(r.distintas).toBe(false);
+  });
+});
+
+// LAS FOTOS DE UN TURNO, POR PARTES (13 de septiembre de 2026, pedido del dueño): la entrada y la
+// salida, el almuerzo y el descanso, siempre en ese orden. En el orden en que se marcaron, las
+// pausas quedaban revueltas con la jornada. Cada fila junta lo que abre y lo que cierra.
+describe('partesDeLaJornada', () => {
+  const clave = (partes: ReturnType<typeof partesDeLaJornada>) => partes.map(p =>
+    `${p.parte}: ${p.filas.map(fila => `${fila.abre?.registroId ?? '-'}/${fila.cierra?.registroId ?? '-'}`).join(' ')}`);
+
+  it('tres partes en orden fijo, aunque se marcaran intercaladas', () => {
+    const fotos = [
+      f({ registroId: 'e', momento: 'ENTRADA' }),
+      f({ registroId: 'd1', momento: 'SALIDA_DESCANSO' }),
+      f({ registroId: 'd2', momento: 'REGRESO_DESCANSO' }),
+      f({ registroId: 'a1', momento: 'SALIDA_ALMUERZO' }),
+      f({ registroId: 'a2', momento: 'REGRESO_ALMUERZO' }),
+      f({ registroId: 's', momento: 'SALIDA' }),
+    ];
+    expect(clave(partesDeLaJornada(fotos))).toEqual(['ENTRADA_Y_SALIDA: e/s', 'ALMUERZO: a1/a2', 'DESCANSO: d1/d2']);
+  });
+
+  it('cada salida a una pausa va con su regreso, y la que no volvió queda con el hueco', () => {
+    const fotos = [
+      f({ registroId: 'x1', momento: 'SALIDA_DESCANSO' }),
+      f({ registroId: 'y1', momento: 'SALIDA_DESCANSO' }),
+      f({ registroId: 'y2', momento: 'REGRESO_DESCANSO' }),
+    ];
+    expect(clave(partesDeLaJornada(fotos))).toEqual(['DESCANSO: x1/- y1/y2']);
+  });
+
+  it('un regreso sin su salida no se pega a la pausa anterior', () => {
+    const fotos = [
+      f({ registroId: 'x1', momento: 'SALIDA_ALMUERZO' }),
+      f({ registroId: 'x2', momento: 'REGRESO_ALMUERZO' }),
+      f({ registroId: 'z', momento: 'REGRESO_ALMUERZO' }),
+    ];
+    expect(clave(partesDeLaJornada(fotos))).toEqual(['ALMUERZO: x1/x2 -/z']);
+  });
+
+  it('sin pausas solo está la entrada y la salida, y sin fotos no hay partes', () => {
+    expect(clave(partesDeLaJornada([f({ registroId: 'e' })]))).toEqual(['ENTRADA_Y_SALIDA: e/-']);
+    expect(partesDeLaJornada([])).toEqual([]);
   });
 });

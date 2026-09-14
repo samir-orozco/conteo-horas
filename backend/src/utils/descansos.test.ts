@@ -215,38 +215,45 @@ describe('minutosDeLaUnion: lo que los descansos le quitan a lo exigido', () => 
   });
 });
 
-describe('minutosDescansoADescontar, con varios descansos', () => {
-  const dia = (descansos: string | null) => ({ fecha: LUNES, descansos });
+describe('minutosDescansoADescontar, con varios descansos: cada uno cuesta su tiempo', () => {
+  const dia = (descansos: string | null, horaEntrada = '07:00') => ({ fecha: LUNES, horaEntrada, descansos });
+  const alDescanso = (desde: Date, hasta: Date) => ({ entrada: desde, salida: hasta, salidaDescanso: true });
 
   it('dos descansos sin marcar ninguno descuentan los dos', () => {
     expect(minutosDescansoADescontar([tramo(bog(7), bog(16))], dia(DOS))).toBe(25);
   });
 
-  it('marcó los dos: 0', () => {
-    expect(minutosDescansoADescontar([tramo(bog(7), bog(9)), tramo(bog(9, 15), bog(15)), tramo(bog(15, 10), bog(16))], dia(DOS))).toBe(0);
+  it('marcó los dos completos: 0', () => {
+    expect(minutosDescansoADescontar([alDescanso(bog(7), bog(9)), alDescanso(bog(9, 15), bog(15)), tramo(bog(15, 10), bog(16))], dia(DOS))).toBe(0);
   });
 
   it('marcó el de la mañana y no el de la tarde: descuenta 10', () => {
-    expect(minutosDescansoADescontar([tramo(bog(7), bog(9)), tramo(bog(9, 15), bog(16))], dia(DOS))).toBe(10);
+    expect(minutosDescansoADescontar([alDescanso(bog(7), bog(9)), tramo(bog(9, 15), bog(16))], dia(DOS))).toBe(10);
+  });
+
+  it('se demoró media hora en el de la mañana y no tomó el de la tarde: ya usó sus 25 minutos', () => {
+    // Los descansos del día se cuentan juntos: lo que tomó en uno cuenta para el otro. Lo
+    // de más tampoco se paga, porque no estaba marcado.
+    expect(minutosDescansoADescontar([alDescanso(bog(7), bog(9)), tramo(bog(9, 30), bog(16))], dia(DOS))).toBe(0);
   });
 
   it('dos ventanas congeladas que se pisan descuentan la unión, no la suma', () => {
     expect(minutosDescansoADescontar([tramo(bog(7), bog(16))], dia(lista(V('09:00', '09:30'), V('09:15', '09:45'))))).toBe(45);
   });
 
-  it('se redondea una vez por día: 7,5 + 7,5 son 15, no 16', () => {
+  it('se tomó dos minutos y medio de cada uno: se completan los 15 que faltan', () => {
     const d = dia(lista(V('09:00', '09:10'), V('10:00', '10:10')));
-    const tramos = [tramo(bog(7), bog(9, 7, 7, 30)), tramo(bog(10, 2, 7, 30), bog(16))];
-    expect(minutosDescansoADescontar(tramos, d)).toBe(15);
+    const marcas = [alDescanso(bog(7), bog(9)), alDescanso(bog(9, 2, 7, 30), bog(10)), tramo(bog(10, 2, 7, 30), bog(16))];
+    expect(minutosDescansoADescontar(marcas, d)).toBe(15);
   });
 
-  it('turno nocturno con dos descansos de madrugada', () => {
-    const d = dia(lista(V('01:00', '01:15'), V('03:00', '03:10')));
+  it('turno nocturno con dos descansos de madrugada, sin marcar', () => {
+    const d = dia(lista(V('01:00', '01:15'), V('03:00', '03:10')), '21:00');
     expect(minutosDescansoADescontar([tramo(bog(21), bog(5, 0, 8))], d)).toBe(25);
   });
 
   it('un descanso que cruza la medianoche', () => {
-    expect(minutosDescansoADescontar([tramo(bog(22), bog(6, 0, 8))], dia(lista(V('23:55', '00:05'))))).toBe(10);
+    expect(minutosDescansoADescontar([tramo(bog(22), bog(6, 0, 8))], dia(lista(V('23:55', '00:05')), '22:00'))).toBe(10);
   });
 
   it('una lista rota no descuenta nada, y no lanza', () => {

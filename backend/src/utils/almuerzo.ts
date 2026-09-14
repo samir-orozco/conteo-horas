@@ -2,33 +2,35 @@ import { minutosDe } from './tardanzas';
 
 // Cuánto almuerzo se le descuenta a alguien en un día.
 //
-// La regla es una sola:
+// La regla, decidida por el dueño el 12 de septiembre de 2026, es una sola:
 //
-//   Se descuentan los minutos de la ventana de almuerzo durante los cuales la
-//   persona estuvo MARCADA.
+//   El almuerzo cuesta SIEMPRE el tiempo que fijó el horario. Lo que la persona se
+//   tomó marcado (de su salida a almorzar a la siguiente entrada) cuenta para ese
+//   tiempo, y lo que falte se descuenta de lo trabajado.
 //
-// De ahí salen solos cuatro comportamientos que antes eran problemas distintos:
+// De ahí salen los casos:
 //
-//  - No marcó el almuerzo: estuvo marcado toda la ventana → se descuenta
-//    completa. No marcar deja de ser negocio.
-//  - Se fue temprano y nunca llegó a la ventana: no se descuenta nada. Antes
-//    perdía una hora que jamás tomó — quien salía a las 10:00 tras trabajar dos
-//    horas terminaba con una sola contada.
-//  - Marcó su almuerzo: el hueco ya quedó fuera de lo trabajado, así que no se
-//    vuelve a restar. Antes se cobraba dos veces, y el disciplinado que marcaba
-//    cobraba menos que el que no.
-//  - Almorzó en 20 minutos: los otros 40 estuvo marcado y se le descuentan
-//    igual. Ese tiempo se lo regala a la empresa; la jornada semanal la fija la
-//    norma, no la velocidad para comer.
+//  - No marcó el almuerzo: se descuenta completo.
+//  - Lo marcó y volvió antes: se completa hasta el tiempo fijado. Volver antes es
+//    decisión de la persona, no de la empresa.
+//  - Lo tomó a otra hora: se descuenta una sola vez. La regla anterior medía cuánto
+//    estuvo marcado dentro de la ventana, y quien almorzaba de 11:00 a 12:00 con
+//    ventana de 12:00 a 13:00 pagaba la hora que salió y otra vez la de la ventana.
+//  - Se demoró: no se descuenta nada más. Lo de más tampoco se paga, porque no estaba
+//    marcado.
+//  - Se fue antes de la hora del almuerzo, llegó después, o salió a almorzar y no
+//    volvió: se descuenta igual lo fijado. Si tiene una novedad aprobada, esa parte del
+//    día se le excusa entera (saldoTiempo.ts), así que no queda debiendo el almuerzo.
 //
-// Sin ventana configurada se conserva el comportamiento de siempre (restar los
-// minutos fijos). Eso es lo que mantiene quietos los reportes ya emitidos: los
-// días materializados antes de esta función no tienen ventana.
+// Lo fijado es `almuerzoMin` del día: los minutos del horario, o lo que dura la ventana
+// cuando el horario la tiene (diasEsperados.ts). La ventana ya no decide cuánto se
+// descuenta: decide cuándo el kiosco ofrece almorzar y a cuál jornada del día se le
+// cobra (utils/jornada.ts).
 //
-// Los DESCANSOS NO REMUNERADOS usan la misma regla de fondo, cada uno con su
-// ventana, y viven en utils/descansos.ts desde el 12 de septiembre de 2026, cuando
-// el día pasó a tener varios. De aquí toman `solape`, `instantesDe`, `estaDentroDe`
-// y `finDeLaVentanaDe`, para no medir de otra manera.
+// Los DESCANSOS NO REMUNERADOS siguen la misma regla, con sus ventanas como tiempo
+// fijado, y viven en utils/descansos.ts. De aquí toman `solape`, `instantesDe`,
+// `estaDentroDe`, `finDeLaVentanaDe` y la medida de lo tomado, para no medir de otra
+// manera.
 
 const MS_MIN = 60_000;
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
@@ -103,18 +105,40 @@ export function minutosEnVentana(tramos: TramoTrabajado[], dia: DiaParaAlmuerzo)
   return minutosEnLaVentana(tramos, ventanaDeAlmuerzo(dia));
 }
 
+// Una marcación del día con lo que hace falta para medir sus pausas: sus horas y a qué
+// salió al terminar. Una abierta también sirve: su entrada puede ser el regreso de una.
+export type MarcaDePausa = {
+  entrada: Date | null;
+  salida: Date | null;
+  salidaAlmuerzo?: boolean;
+  salidaDescanso?: boolean;
+  descansoVentana?: string | null;
+};
+
+// ¿Este tramo se trabajó? Uno abierto todavía no, y uno con la salida antes de la
+// entrada es un imposible que no se cuenta (ver `tramosUtiles` en utils/jornada.ts).
+export const seTrabajo = (m: MarcaDePausa) =>
+  !!m.entrada && !!m.salida && m.salida.getTime() > m.entrada.getTime();
+
+// Minutos que se tomó la pausa que empezó con esta salida: hasta la siguiente entrada
+// del día. Sin regreso, cero: no hay con qué medir cuánto se tomó, y se descuenta lo
+// fijado.
+export function minutosTomadosEnLaPausa(salida: Date, marcas: readonly MarcaDePausa[]): number {
+  const despues = marcas.map(m => m.entrada?.getTime() ?? Number.NaN).filter(t => t > salida.getTime());
+  return despues.length === 0 ? 0 : (Math.min(...despues) - salida.getTime()) / MS_MIN;
+}
+
 export function minutosAlmuerzoADescontar(
-  tramos: TramoTrabajado[],
-  dia: DiaParaAlmuerzo,
+  marcas: readonly MarcaDePausa[],
+  dia: Pick<DiaParaAlmuerzo, 'almuerzoMin'>,
 ): number {
-  // Sin ventana: comportamiento histórico. No se toca el pasado. Ojo al orden:
-  // esta guarda va ANTES de mirar los tramos, y hay reportes viejos que dependen
-  // de eso. Quien necesite un cero con la lista vacía lo comprueba por su cuenta.
-  if (!dia.almuerzoInicio || !dia.almuerzoFin) return dia.almuerzoMin;
-  if (tramos.length === 0) return 0;
-  // El redondeo se queda aquí, en el único sitio donde estaba: lo consume
-  // `reportes.ts` y moverlo movería nómina ya emitida.
-  return Math.round(minutosEnVentana(tramos, dia)!);
+  // Un día sin nada trabajado no ha pagado nada, así que tampoco descuenta nada.
+  if (dia.almuerzoMin <= 0 || !marcas.some(seTrabajo)) return 0;
+  const tomados = marcas
+    .filter(m => m.salida && m.salidaAlmuerzo)
+    .reduce((s, m) => s + minutosTomadosEnLaPausa(m.salida!, marcas), 0);
+  // Se redondea una sola vez: unos segundos de más o de menos no mueven el minuto.
+  return Math.max(0, Math.round(dia.almuerzoMin - tomados));
 }
 
 // ¿La persona está DENTRO de la ventana en este instante?

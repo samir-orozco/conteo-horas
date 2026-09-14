@@ -74,7 +74,6 @@ const conLasDos = () => [
   reg(bog(13), bog(17)),
 ];
 const conIds = <T,>(regs: T[]) => regs.map((r, i) => ({ ...r, id: 'abcdef'[i] }));
-const tramos = (regs: ReturnType<typeof reg>[]) => regs.filter(r => r.entrada && r.salida).map(r => ({ entrada: r.entrada!, salida: r.salida! }));
 
 describe('resumirDescansosDelDia, con un solo descanso', () => {
   it('lo marcó: sale la hora real y no se descuenta de nuevo', () => {
@@ -149,15 +148,15 @@ describe('resumirDescansosDelDia, con varios descansos', () => {
     ];
     for (const e of escenarios) {
       const suma = resumirDescansosDelDia(e.regs, e.dia).reduce((s, r) => s + r.minutosDescontados, 0);
-      expect(suma).toBe(minutosDescansoADescontar(tramos(e.regs), e.dia));
+      expect(suma).toBe(minutosDescansoADescontar(e.regs, e.dia));
     }
   });
 
-  it('Carla: la salida de las 10:00 se resume en la ventana de las 15:00, con 5 min de más; la de las 15:00, en la de las 09:00, con 15 descontados y 0 de más', () => {
+  it('Carla: la salida de las 10:00 se resume en la ventana de las 15:00, con 5 min de más; la de las 15:00, en la de las 09:00, con 0 de más; y como tomó los 25 minutos de los dos, no se descuenta nada', () => {
     for (const guardada of [true, false]) {
       const [manana, tarde] = resumirDescansosDelDia(carla(guardada), diaDelEjemplo());
       expect([manana.ventana, manana.estado, manana.salida, manana.regreso, manana.minutosDescontados, manana.minutosDeMas, manana.seExcedio], `guardada ${guardada}`)
-        .toEqual([{ inicio: '09:00', fin: '09:15' }, 'MARCADO', bog(15), bog(15, 10), 15, 0, false]);
+        .toEqual([{ inicio: '09:00', fin: '09:15' }, 'MARCADO', bog(15), bog(15, 10), 0, 0, false]);
       expect([tarde.ventana, tarde.estado, tarde.salida, tarde.regreso, tarde.minutosDescontados, tarde.minutosDeMas, tarde.seExcedio], `guardada ${guardada}`)
         .toEqual([{ inicio: '15:00', fin: '15:10' }, 'MARCADO', bog(10), bog(10, 15), 0, 5, true]);
     }
@@ -231,8 +230,11 @@ describe('minutosContadosDelDia, con descansos', () => {
     expect(minutosContadosDelDia(conLasDos(), diaCompleto())).toBe(465);
   });
 
-  it('el ejemplo del dueño: Ana 455, Beto 455 y Carla 440', () => {
-    expect([ana(), beto(), carla()].map(regs => minutosContadosDelDia(regs, diaDelEjemplo()))).toEqual([455, 455, 440]);
+  it('el ejemplo del dueño: Ana, Beto y Carla cuentan 455', () => {
+    // Carla tomó sus descansos a otra hora, de 10:00 a 10:15 y de 15:00 a 15:10: 25 minutos,
+    // lo que suman los dos. Con la regla del solape se le cobraba otra vez el de las 09:00, en
+    // el que estuvo trabajando, y contaba 440 (12 de septiembre de 2026).
+    expect([ana(), beto(), carla()].map(regs => minutosContadosDelDia(regs, diaDelEjemplo()))).toEqual([455, 455, 455]);
   });
 });
 
@@ -254,20 +256,24 @@ describe('partirDiaEnJornadas, con descansos', () => {
     expect(j.map(x => x.descansos.map(r => `${r.ventana?.inicio} ${r.estado}`))).toEqual([['09:00 NO_MARCADO'], ['15:00 MARCADO']]);
   });
 
-  it('el descanso no marcado lo paga la jornada que estuvo dentro de su ventana', () => {
-    // 08:00-09:05 pisa 5 minutos del descanso; 09:30-17:00 no pisa nada del
-    // descanso pero sí la hora entera del almuerzo.
+  it('el descanso no marcado lo paga completo la jornada que estuvo dentro de su ventana', () => {
+    // 08:00-09:05 pisa 5 minutos del descanso; 09:30-17:00 no pisa nada del descanso pero sí
+    // la hora entera del almuerzo. Sin marcarlo, el descanso cuesta sus 15 (12 de septiembre
+    // de 2026), y los paga la jornada que tocó su ventana.
     const j = partirDiaEnJornadas([reg(bog(8), bog(9, 5)), reg(bog(9, 30), bog(17))], diaCompleto());
     expect(j).toHaveLength(2);
-    expect([j[0].minutosDescansoAqui, j[1].minutosDescansoAqui]).toEqual([5, 0]);
+    expect([j[0].minutosDescansoAqui, j[1].minutosDescansoAqui]).toEqual([15, 0]);
     expect([j[0].minutosAlmuerzoAqui, j[1].minutosAlmuerzoAqui]).toEqual([0, 60]);
-    expect([j[0].minutosContados, j[1].minutosContados]).toEqual([60, 390]);
+    expect([j[0].minutosContados, j[1].minutosContados]).toEqual([50, 390]);
   });
 
-  it('cada jornada paga lo que cayó dentro de sus ventanas', () => {
+  it('cada jornada paga los descansos que cayeron en sus ventanas, y el almuerzo que nadie tomó lo paga la primera', () => {
+    // Se fue a las 10:00 y volvió a las 14:00, sin marcar nada: el almuerzo cuesta su hora
+    // igual (12 de septiembre de 2026) y ninguna jornada tocó su ventana.
     const j = partirDiaEnJornadas([reg(bog(7), bog(10)), reg(bog(14), bog(16))], diaDelEjemplo());
     expect(j.map(x => x.minutosDescansoAqui)).toEqual([15, 10]);
-    expect(j.map(x => x.minutosContados)).toEqual([165, 110]);
+    expect(j.map(x => x.minutosAlmuerzoAqui)).toEqual([60, 0]);
+    expect(j.map(x => x.minutosContados)).toEqual([105, 110]);
   });
 
   it('LA INVARIANTE con descansos: las jornadas suman exactamente lo que cuenta el día', () => {

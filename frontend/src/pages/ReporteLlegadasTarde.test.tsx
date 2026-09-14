@@ -72,16 +72,18 @@ describe('ReporteLlegadasTarde con varias sedes', () => {
     expect(lineaDe(/Todas las sedes/)).toEqual(['Todas las sedes', '3', '1h 2min', '$ 10.333']);
   });
 
-  it('a un presencial que marcó sin ubicación se le ve su sede con «por defecto», no «Sin sede»', async () => {
+  it('a un presencial que marcó sin ubicación se le ve el nombre de su sede, sin «por defecto», no «Sin sede»', async () => {
     // Misma regla que en extras (12 de septiembre de 2026): el servidor la manda con
-    // `porDefecto`, y la fila tiene que decirlo.
+    // `porDefecto`. Desde el 13 de septiembre la fila dice solo el nombre: el dueño pidió
+    // quitar «por defecto».
     montarCon([LAURELES, POBLADO], {
       ...RESPUESTA,
       colaboradores: [...RESPUESTA.colaboradores, fila('SinUbicacion', [{ ...LAURELES, porDefecto: true }], 15, 2_500)],
     });
     await screen.findByRole('region', { name: 'Resumen por sede' });
     const sinUbicacion = screen.getByRole('row', { name: /SinUbicacion/ });
-    expect(sinUbicacion).toHaveTextContent('Laureles (por defecto)');
+    expect(sinUbicacion).toHaveTextContent('Laureles');
+    expect(sinUbicacion).not.toHaveTextContent('por defecto');
     expect(sinUbicacion).not.toHaveTextContent('Sin sede');
   });
 

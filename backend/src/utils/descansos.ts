@@ -1,5 +1,8 @@
 import { minutosDe, duracionFranjaMin } from './tardanzas';
-import { solape, instantesDe, estaDentroDe, finDeLaVentanaDe, type TramoTrabajado } from './almuerzo';
+import {
+  solape, instantesDe, estaDentroDe, finDeLaVentanaDe, seTrabajo, minutosTomadosEnLaPausa,
+  type TramoTrabajado, type MarcaDePausa,
+} from './almuerzo';
 
 // VARIOS DESCANSOS NO REMUNERADOS POR FRANJA (decisión del dueño, 12 de septiembre
 // de 2026).
@@ -189,13 +192,57 @@ export function minutosEnLasVentanas(tramos: readonly TramoTrabajado[], fecha: D
   return intervalos.reduce((s, [a, b]) => s + cruza(a, b), 0);
 }
 
-// Cuánto descanso no remunerado se le descuenta a alguien en un día: lo que estuvo
-// marcado dentro de la unión de sus ventanas, redondeado UNA sola vez por día. Sin
-// ventanas no hay descanso: no hereda los minutos fijos del almuerzo. Vivía en
-// almuerzo.ts cuando el día tenía una sola ventana (12 de septiembre de 2026).
-export function minutosDescansoADescontar(tramos: readonly TramoTrabajado[], dia: { fecha: Date; descansos: string | null }): number {
-  if (tramos.length === 0) return 0;
-  return Math.round(minutosEnLasVentanas(tramos, dia.fecha, leerDescansos(dia.descansos)));
+// Cuánto descanso no remunerado se le descuenta a alguien en un día, con la regla del
+// almuerzo (utils/almuerzo.ts, decisión del dueño del 12 de septiembre de 2026): los
+// descansos del día cuestan SIEMPRE lo que suman sus ventanas, y lo que la persona se
+// tomó marcado en sus salidas al descanso cuenta para ese tiempo. Se redondea una vez.
+//
+// Se cuentan JUNTOS y no ventana por ventana. El kiosco anota a cuál descanso sale cada
+// quien por la hora, y fuera de las ventanas lo anota en el próximo: Carla, que toma de
+// 10:00 a 10:15 y de 15:00 a 15:10, queda con la salida de 15 minutos en la ventana de 10
+// y la de 10 en la de 15. Contados por ventana se le cobraban 5 minutos aunque se tomó
+// exactamente sus 25.
+//
+// Lo que suman las ventanas es su UNIÓN: dos congeladas que se pisan no cobran dos veces
+// la hora compartida. Sin ventanas no hay descanso: no hereda los minutos fijos del
+// almuerzo.
+export function minutosDescansoADescontar(marcas: readonly MarcaDePausa[], dia: DiaConDescansos): number {
+  return Math.round(descuentoDeDescansoExacto(marcas, dia));
+}
+
+function descuentoDeDescansoExacto(marcas: readonly MarcaDePausa[], dia: DiaConDescansos): number {
+  const fijado = minutosDeLaUnion(dia.horaEntrada, leerDescansos(dia.descansos));
+  if (fijado <= 0 || !marcas.some(seTrabajo)) return 0;
+  const tomados = marcas
+    .filter(m => m.salida && m.salidaDescanso)
+    .reduce((s, m) => s + minutosTomadosEnLaPausa(m.salida!, marcas), 0);
+  return Math.max(0, fijado - tomados);
+}
+
+// Cómo se reparte ese descuento entre las ventanas, para decir en el resumen de cada
+// descanso cuánto costó (utils/jornada.ts). A cada ventana le toca lo que le faltó a su
+// salida anotada, en el orden de la jornada y hasta agotar el descuento del día,
+// redondeado sobre el acumulado: los repartos SUMAN el descuento del día. La plata no
+// depende de este reparto.
+export function descuentoDeCadaDescanso(marcas: readonly MarcaDePausa[], dia: DiaConDescansos): number[] {
+  const ventanas = ventanasEnOrden(dia.horaEntrada, leerDescansos(dia.descansos));
+  const salidas = marcas
+    .filter(m => m.salida && m.salidaDescanso)
+    .sort((a, b) => a.salida!.getTime() - b.salida!.getTime());
+  const asignadas = ventanasDeLasSalidas(dia, salidas.map(m => ({ salida: m.salida!, descansoVentana: m.descansoVentana ?? null })));
+  let quedan = descuentoDeDescansoExacto(marcas, dia);
+  let acumulado = 0;
+  let entregado = 0;
+  return ventanas.map(v => {
+    const i = asignadas.findIndex(a => a !== null && claveDeVentana(a) === claveDeVentana(v));
+    const tomados = i < 0 ? 0 : minutosTomadosEnLaPausa(salidas[i].salida!, marcas);
+    const aqui = Math.min(quedan, Math.max(0, duracionFranjaMin(v.inicio, v.fin) - tomados));
+    quedan -= aqui;
+    acumulado += aqui;
+    const redondeado = Math.round(acumulado) - entregado;
+    entregado += redondeado;
+    return redondeado;
+  });
 }
 
 // ─────────────────────────────── EL KIOSCO ───────────────────────────────

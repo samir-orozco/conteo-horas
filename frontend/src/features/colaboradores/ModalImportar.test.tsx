@@ -300,9 +300,10 @@ describe('crear', () => {
   it('si el servidor se cae lo dice, sin perder lo que ya estaba escrito', async () => {
     montar();
     await subir();
-    post.mockRejectedValueOnce({ response: { data: { error: 'Internal Server Error' } } });
+    // Lo que manda el backend cuando algo falla sin que la ruta lo ataje (utils/respuestaDeError.ts).
+    post.mockRejectedValueOnce({ response: { status: 500, data: { error: 'Ocurrió un error inesperado. Intenta de nuevo en un momento.' } } });
     await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
-    expect(await screen.findByText(/Internal Server Error/i)).toBeInTheDocument();
+    expect(await screen.findByText('Ocurrió un error inesperado. Intenta de nuevo en un momento.')).toBeInTheDocument();
     expect(screen.getByLabelText('Nombre de la fila 1')).toHaveValue('Ana');
   });
 });

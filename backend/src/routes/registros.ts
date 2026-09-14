@@ -1,4 +1,5 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import type { Registro, TipoRegistro } from '@prisma/client';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { prisma } from '../prisma';
@@ -6,6 +7,7 @@ import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar, regenerarDiasDeColaborador } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
+import { REGISTRO_SIN_FOTOS } from '../utils/columnasDeRegistro';
 import { lugaresDeEntrada, type FilaConLugar } from '../utils/sedePrincipal';
 import { sedesPorDefecto } from '../utils/sedesDeEmpresa';
 import { eventosDeRevision, type FilaDeRevision } from '../utils/revisionMarcaciones';
@@ -13,11 +15,47 @@ import {
   esPermisoRemunerado, parsearPoliticaPermisos, CLAVE_PERMISOS_REMUNERADOS,
 } from '../utils/saldoTiempo';
 import { diferenciasDeRegistro, type EstadoRegistro } from '../utils/cambiosRegistro';
-import { leerDescansos, completarVentanasDeDescanso, MAX_MARCACIONES_POR_JORNADA } from '../utils/descansos';
+import { leerDescansos, ventanasEnOrden, completarVentanasDeDescanso, MAX_MARCACIONES_POR_JORNADA } from '../utils/descansos';
 import { resumirAlmuerzoDelDia, resumirDescansosDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, tramosDeLaJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, salidasTrasEditar, leerPausaDelCuerpo, leerDescansosDelCuerpo } from '../utils/jornada';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
+
+// El cuerpo de una jornada como llega del formulario, leído campo por campo: lo que no es
+// texto no es una hora ni un id. `formatoViejo` dice si trae las claves con que el editor de
+// antes mandaba el almuerzo.
+type CuerpoDeJornada = {
+  colaboradorId?: string; fecha?: string; entrada?: string; salida?: string;
+  almuerzo: unknown; descansos: unknown; tipo?: string; observacion?: string;
+  confirmarBorrarFotos: boolean; formatoViejo: boolean;
+};
+
+function leerCuerpoDeJornada(body: unknown): CuerpoDeJornada {
+  const o = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
+  const texto = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
+  return {
+    colaboradorId: texto(o.colaboradorId), fecha: texto(o.fecha), entrada: texto(o.entrada), salida: texto(o.salida),
+    almuerzo: o.almuerzo, descansos: o.descansos, tipo: texto(o.tipo), observacion: texto(o.observacion),
+    confirmarBorrarFotos: o.confirmarBorrarFotos === true,
+    formatoViejo: 'descansoSalida' in o || 'descansoRegreso' in o,
+  };
+}
+
+// "2026-08-14" se ancla a medianoche de BOGOTÁ, no de UTC. `new Date` sobre esa cadena da
+// medianoche UTC, que en Bogotá es el día ANTERIOR a las siete de la tarde: guardar así
+// movía la jornada entera un día atrás. Null si no es una fecha.
+function fechaDeLaJornada(fecha: string | undefined): Date | null {
+  return fecha && /^\d{4}-\d{2}-\d{2}/.test(fecha) ? new Date(`${fecha.slice(0, 10)}T05:00:00.000Z`) : null;
+}
+
+// El formato de antes mandaba el ALMUERZO con las claves `descansoSalida` y
+// `descansoRegreso`. Ahora el descanso es otra pausa, que no se paga: una pestaña vieja
+// abierta durante el despliegue guardaría el almuerzo como descanso no remunerado, y nadie
+// lo notaría hasta la nómina. Se rechaza diciendo qué hacer.
+const FORMATO_VIEJO = {
+  error: 'Esta pantalla quedó desactualizada. Recarga la página y vuelve a guardar la jornada.',
+  codigo: 'FORMATO_VIEJO',
+};
 
 // Lista blanca de campos que la empresa puede escribir en un registro. Evita
 // mass-assignment (inyectar fotos base64, editadoPor, creadoEn, etc. desde el body).
@@ -208,9 +246,11 @@ export default async function registroRoutes(app: FastifyInstance) {
     };
   }
 
-  // Verifica que el colaborador pertenezca a la empresa del token
+  // Verifica que el colaborador pertenezca a la empresa del token. Solo el id: quien pregunta
+  // solo quiere saber si existe, y sin `select` venían todas sus columnas, también las fotos y el
+  // descriptor facial (13 de septiembre de 2026).
   async function colaboradorDeEmpresa(colaboradorId: string, empresaId: string) {
-    return prisma.colaborador.findFirst({ where: { id: colaboradorId, empresaId } });
+    return prisma.colaborador.findFirst({ where: { id: colaboradorId, empresaId }, select: { id: true } });
   }
 
   app.get('/', auth, async (request) => {
@@ -224,17 +264,34 @@ export default async function registroRoutes(app: FastifyInstance) {
       // de Bogotá), así que cubrimos todo el día tomando hasta el inicio del día siguiente.
       if (hasta) where.fecha.lt = new Date(new Date(hasta).getTime() + 24 * 60 * 60 * 1000);
     }
-    const registros = await prisma.registro.findMany({
-      where,
-      include: {
-        colaborador: { include: { horario: { include: { franjas: true } } } },
-        // Con el nombre: la tabla pinta dónde se abrió y dónde se cerró cada
-        // jornada, y pedir los nombres aparte sería otra consulta por carga.
-        sede: { select: { id: true, nombre: true } },
-        sedeSalida: { select: { id: true, nombre: true } },
-      },
-      orderBy: { fecha: 'desc' },
-    });
+    // Las marcaciones sin sus dos fotos y, aparte, cuáles tienen foto, trayendo solo los ids,
+    // como el detalle de la jornada. Con `include` venían también `fotoEntrada` y `fotoSalida`,
+    // base64 de cientos de KB por marcación, solo para pintar si había foto; las fotos se piden
+    // con /:id/fotos (13 de septiembre de 2026).
+    const [registros, conFotoEntrada, conFotoSalida] = await Promise.all([
+      prisma.registro.findMany({
+        where,
+        select: {
+          ...REGISTRO_SIN_FOTOS,
+          // Solo lo que usa esta ruta: el nombre para la fila, la modalidad para atribuir la
+          // sede y el horario para los días esperados. Con `include` venían TODAS las columnas
+          // del colaborador, también `foto` y `fotoMini` (base64) y `rostroDescriptor`, que se
+          // traían de MySQL en cada carga de la tabla para no usarse (13 de septiembre de 2026).
+          colaborador: {
+            select: { id: true, nombre: true, apellido: true, modalidad: true, horario: { include: { franjas: true } } },
+          },
+          // Con el nombre: la tabla pinta dónde se abrió y dónde se cerró cada
+          // jornada, y pedir los nombres aparte sería otra consulta por carga.
+          sede: { select: { id: true, nombre: true } },
+          sedeSalida: { select: { id: true, nombre: true } },
+        },
+        orderBy: { fecha: 'desc' },
+      }),
+      prisma.registro.findMany({ where: { ...where, fotoEntrada: { not: null } }, select: { id: true } }),
+      prisma.registro.findMany({ where: { ...where, fotoSalida: { not: null } }, select: { id: true } }),
+    ]);
+    const idsConFotoEntrada = new Set(conFotoEntrada.map(r => r.id));
+    const idsConFotoSalida = new Set(conFotoSalida.map(r => r.id));
 
     // Dónde abrió cada jornada de un presencial cuando la ubicación no lo probó, con
     // TODAS sus filas del listado (ver `sedesAtribuidas`). Va en `sedeAtribuida`.
@@ -422,8 +479,8 @@ export default async function registroRoutes(app: FastifyInstance) {
           // deja la hora en null, y entonces ninguna marcación la cierra.
           salidaEstimada: laCerroElSistema(marcaciones),
           salidaAlmuerzo: cierra?.salidaAlmuerzo ?? false,
-          tieneFotoEntrada: !!primera.fotoEntrada,
-          tieneFotoSalida: !!cierra?.fotoSalida,
+          tieneFotoEntrada: idsConFotoEntrada.has(primera.id),
+          tieneFotoSalida: !!cierra && idsConFotoSalida.has(cierra.id),
           almuerzo: jornada.almuerzo,
           // Un resumen por descanso de la jornada, en su orden (12 de septiembre de
           // 2026). Lista vacía si el día no tiene descansos o son de otra jornada.
@@ -437,8 +494,8 @@ export default async function registroRoutes(app: FastifyInstance) {
             salidaDescanso: m.salidaDescanso,
             entradaEstimada: m.entradaEstimada,
             salidaEstimada: m.salidaEstimada,
-            tieneFotoEntrada: !!m.fotoEntrada,
-            tieneFotoSalida: !!m.fotoSalida,
+            tieneFotoEntrada: idsConFotoEntrada.has(m.id),
+            tieneFotoSalida: idsConFotoSalida.has(m.id),
             tieneNovedadLigada: novedadesLigadas.has(m.id),
           })),
         });
@@ -870,48 +927,23 @@ export default async function registroRoutes(app: FastifyInstance) {
     return actualizado;
   });
 
-  // Guardar una JORNADA entera: entrada, sus pausas y salida de una sola vez.
+  // Escribe una jornada entera sobre las marcaciones que hoy la componen (`esta`), o una
+  // nueva si no hay ninguna. La usan el editor (PUT /jornada/:id) y el alta a mano de una
+  // jornada entera (POST /jornada), para que las dos validen y guarden igual.
   //
-  // Existe porque el formulario por marcación mentía. La fila de la tabla es una
-  // jornada, pero al editarla se abría la PRIMERA marcación, cuya salida es la
-  // del almuerzo: quien había marcado su entrada y su almuerzo veía "Salida
-  // 11:38" y con razón esperaba verla vacía, porque no se había ido a trabajar.
+  // Va en una transacción y con una sola validación sobre el estado FINAL. Hacer dos PUT
+  // seguidos no sirve: mover el almuerzo de 11:38 a 12:30 hace que el primer PUT pise al
+  // segundo tramo y lo rechace, aunque el resultado final fuera perfectamente válido.
   //
-  // Va en una transacción y con una sola validación sobre el estado FINAL. Hacer
-  // dos PUT seguidos no sirve: mover el almuerzo de 11:38 a 12:30 hace que el
-  // primer PUT pise al segundo tramo y lo rechace, aunque el resultado final
-  // fuera perfectamente válido.
-  //
-  // Cada pausa llega con su nombre —`almuerzo`, y `descansos`, una lista de hasta
-  // tres, cada una con su salida y su regreso— y la jornada se guarda en una fila
-  // por tramo trabajado: con el almuerzo y tres descansos son cinco filas, que la
-  // tabla sigue mostrando en una línea (12 de septiembre de 2026).
-  app.put('/jornada/:id', auth, async (request, reply) => {
-    const { id } = request.params as { id: string };
+  // Cada pausa llega con su nombre —`almuerzo`, y `descansos`, una lista de hasta tres,
+  // cada una con su salida y su regreso— y la jornada se guarda en una fila por tramo
+  // trabajado: con el almuerzo y tres descansos son cinco filas, que la tabla sigue
+  // mostrando en una línea (12 de septiembre de 2026).
+  async function escribirJornada(
+    request: FastifyRequest, reply: FastifyReply, b: CuerpoDeJornada,
+    esta: Registro[], colaboradorId: string, fechaBase: Date,
+  ) {
     const payload = request.user as any;
-    const b = (request.body && typeof request.body === 'object' ? request.body : {}) as any;
-
-    // El formato de antes mandaba el ALMUERZO con las claves `descansoSalida` y
-    // `descansoRegreso`. Ahora el descanso es otra pausa, que no se paga: una
-    // pestaña vieja abierta durante el despliegue guardaría el almuerzo como
-    // descanso no remunerado, y nadie lo notaría hasta la nómina. Se rechaza
-    // diciendo qué hacer.
-    if ('descansoSalida' in b || 'descansoRegreso' in b) {
-      return reply.status(400).send({
-        error: 'Esta pantalla quedó desactualizada. Recarga la página y vuelve a guardar la jornada.',
-        codigo: 'FORMATO_VIEJO',
-      });
-    }
-
-    const primera = await prisma.registro.findFirst({
-      where: { id, colaborador: { empresaId: request.empresaId } },
-    });
-    if (!primera) return reply.status(404).send({ error: 'Registro no encontrado' });
-
-    const colaboradorId = b.colaboradorId ?? primera.colaboradorId;
-    if (b.colaboradorId !== undefined && !(await colaboradorDeEmpresa(colaboradorId, request.empresaId!))) {
-      return reply.status(404).send({ error: 'Colaborador no encontrado' });
-    }
     if (!b.entrada) return reply.status(400).send({ error: 'La jornada necesita una hora de entrada.' });
 
     // Cada pausa: a qué hora salió y, si ya volvió, a qué hora regresó. Los
@@ -924,30 +956,6 @@ export default async function registroRoutes(app: FastifyInstance) {
     if ('error' in leidos) return reply.status(400).send(leidos);
     const { descansos } = leidos;
 
-    // Las marcaciones que HOY componen esta jornada, para saber a cuáles escribir.
-    // Van por el día de ORIGEN, que es donde la marcación vive ahora mismo.
-    const { inicioDia, finDia } = rangoDiaBogota(primera.fecha);
-    const delDiaOrigen = await prisma.registro.findMany({
-      where: { colaboradorId: primera.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
-      orderBy: { entrada: 'asc' },
-    });
-    const jornadas = agruparEnJornadas(delDiaOrigen.filter(r => r.entrada));
-    const esta = jornadas.find(j => j.some(m => m.id === id)) ?? [primera];
-    // Una fila por tramo: la de la entrada y una más por cada pausa, el almuerzo y
-    // hasta tres descansos. Una jornada son a lo sumo cinco marcaciones.
-    if (esta.length > MAX_MARCACIONES_POR_JORNADA) {
-      return reply.status(400).send({
-        error: 'Esta jornada tiene más de cinco marcaciones. Edítalas una por una desde el detalle.',
-        codigo: 'DEMASIADAS_MARCACIONES',
-      });
-    }
-
-    // "2026-08-14" se ancla a medianoche de BOGOTÁ, no de UTC. `new Date` sobre
-    // esa cadena da medianoche UTC, que en Bogotá es el día ANTERIOR a las siete
-    // de la tarde: guardar así movía la jornada entera un día atrás.
-    const fechaBase = typeof b.fecha === 'string' && /^\d{4}-\d{2}-\d{2}/.test(b.fecha)
-      ? new Date(`${b.fecha.slice(0, 10)}T05:00:00.000Z`)
-      : inicioDia;
     const t = instantesDeJornada(fechaBase, {
       entrada: b.entrada,
       ...(almuerzo.salida ? { almuerzo: { salida: almuerzo.salida, regreso: almuerzo.regreso } } : {}),
@@ -977,7 +985,7 @@ export default async function registroRoutes(app: FastifyInstance) {
       where: {
         colaboradorId,
         fecha: { gte: destino.inicioDia, lt: destino.finDia },
-        id: { notIn: idsPropios },
+        ...(idsPropios.length > 0 ? { id: { notIn: idsPropios } } : {}),
       },
       select: { id: true, entrada: true, salida: true },
     });
@@ -996,7 +1004,7 @@ export default async function registroRoutes(app: FastifyInstance) {
     const comunes = {
       colaboradorId,
       fecha: fechaBase,
-      ...(TIPOS_REGISTRO.has(b.tipo) ? { tipo: b.tipo } : {}),
+      ...(b.tipo && TIPOS_REGISTRO.has(b.tipo) ? { tipo: b.tipo as TipoRegistro } : {}),
       observacion: b.observacion || null,
       editadoPor: payload.email ?? payload.id,
       editadoEn: new Date(),
@@ -1024,7 +1032,7 @@ export default async function registroRoutes(app: FastifyInstance) {
     // haya visto: la primera vez se devuelve la lista y el formulario pregunta.
     // Va después de todas las validaciones, para no pedir una confirmación que
     // luego termine en otro error.
-    if (plan.fotosQueSePierden.length > 0 && b.confirmarBorrarFotos !== true) {
+    if (plan.fotosQueSePierden.length > 0 && !b.confirmarBorrarFotos) {
       const n = plan.fotosQueSePierden.length;
       return reply.status(409).send({
         error: `Guardar así borra ${n === 1 ? 'una foto' : `${n} fotos`} del kiosco que ya no pertenecen a ninguna marca de la jornada.`,
@@ -1071,7 +1079,7 @@ export default async function registroRoutes(app: FastifyInstance) {
         // salida puede no ser nueva —al poner una pausa es la salida del día, que
         // sí se marcó en el kiosco— y por eso el método de salida viene del plan.
         const creada = await tx.registro.create({
-          data: { ...datos, tipo: (b.tipo ?? esta[0].tipo) as any, metodoEntrada: 'MANUAL' },
+          data: { ...datos, tipo: comunes.tipo ?? esta[0]?.tipo ?? 'NORMAL', metodoEntrada: 'MANUAL' },
           select: { id: true },
         });
         ids.push(creada.id);
@@ -1087,11 +1095,94 @@ export default async function registroRoutes(app: FastifyInstance) {
       for (const sobra of plan.sobran) await tx.registro.delete({ where: { id: sobra } });
     });
 
-    await anotarCambios(esta[0].id, antesPrimera, cambiosPrimera, request.usuarioId, request.usuarioNombre)
-      .catch(err => request.log.error(err, 'No se pudo anotar el cambio de la jornada'));
+    // Una jornada nueva no tiene estado viejo contra el cual anotar nada.
+    if (esta.length > 0) {
+      await anotarCambios(esta[0].id, antesPrimera, cambiosPrimera, request.usuarioId, request.usuarioNombre)
+        .catch(err => request.log.error(err, 'No se pudo anotar el cambio de la jornada'));
+    }
 
     await asegurarDiaSinFallar(colaboradorId, fechaBase, app.log);
-    return { ok: true };
+    return esta.length > 0 ? { ok: true } : reply.status(201).send({ ok: true });
+  }
+
+  // Guardar una JORNADA entera: entrada, sus pausas y salida de una sola vez.
+  //
+  // Existe porque el formulario por marcación mentía. La fila de la tabla es una
+  // jornada, pero al editarla se abría la PRIMERA marcación, cuya salida es la
+  // del almuerzo: quien había marcado su entrada y su almuerzo veía "Salida
+  // 11:38" y con razón esperaba verla vacía, porque no se había ido a trabajar.
+  app.put('/jornada/:id', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const b = leerCuerpoDeJornada(request.body);
+    if (b.formatoViejo) return reply.status(400).send(FORMATO_VIEJO);
+
+    const primera = await prisma.registro.findFirst({
+      where: { id, colaborador: { empresaId: request.empresaId } },
+    });
+    if (!primera) return reply.status(404).send({ error: 'Registro no encontrado' });
+
+    const colaboradorId = b.colaboradorId ?? primera.colaboradorId;
+    if (b.colaboradorId !== undefined && !(await colaboradorDeEmpresa(colaboradorId, request.empresaId!))) {
+      return reply.status(404).send({ error: 'Colaborador no encontrado' });
+    }
+
+    // Las marcaciones que HOY componen esta jornada, para saber a cuáles escribir.
+    // Van por el día de ORIGEN, que es donde la marcación vive ahora mismo.
+    const { inicioDia, finDia } = rangoDiaBogota(primera.fecha);
+    const delDiaOrigen = await prisma.registro.findMany({
+      where: { colaboradorId: primera.colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
+      orderBy: { entrada: 'asc' },
+    });
+    const jornadas = agruparEnJornadas(delDiaOrigen.filter(r => r.entrada));
+    const esta = jornadas.find(j => j.some(m => m.id === id)) ?? [primera];
+    // Una fila por tramo: la de la entrada y una más por cada pausa, el almuerzo y
+    // hasta tres descansos. Una jornada son a lo sumo cinco marcaciones.
+    if (esta.length > MAX_MARCACIONES_POR_JORNADA) {
+      return reply.status(400).send({
+        error: 'Esta jornada tiene más de cinco marcaciones. Edítalas una por una desde el detalle.',
+        codigo: 'DEMASIADAS_MARCACIONES',
+      });
+    }
+    return escribirJornada(request, reply, b, esta, colaboradorId, fechaDeLaJornada(b.fecha) ?? inicioDia);
+  });
+
+  // Agregar a mano una jornada ENTERA: la persona, la fecha, la entrada, sus pausas y la
+  // salida, de una vez (12 de septiembre de 2026). Idea del dueño: con el horario de ese
+  // día traído con un clic (GET /horario-del-dia), cargar un día que no se marcó queda en
+  // elegir la fecha y guardar. El alta de una sola marcación (POST /) sigue igual.
+  app.post('/jornada', auth, async (request, reply) => {
+    const b = leerCuerpoDeJornada(request.body);
+    if (b.formatoViejo) return reply.status(400).send(FORMATO_VIEJO);
+    if (!b.colaboradorId || !(await colaboradorDeEmpresa(b.colaboradorId, request.empresaId!))) {
+      return reply.status(404).send({ error: 'Colaborador no encontrado' });
+    }
+    const fechaBase = fechaDeLaJornada(b.fecha);
+    if (!fechaBase) return reply.status(400).send({ error: 'La jornada necesita una fecha.' });
+    return escribirJornada(request, reply, b, [], b.colaboradorId, fechaBase);
+  });
+
+  // Lo que el horario de una persona pedía un día, para llenar el formulario de una
+  // jornada nueva (12 de septiembre de 2026): la entrada, la salida, la ventana del
+  // almuerzo y la de cada descanso, en el orden de la jornada. Del día congelado si ya
+  // existe; si no, del horario vigente, sin guardar nada: consultar no crea días.
+  app.get('/horario-del-dia', auth, async (request, reply) => {
+    const { colaboradorId, fecha } = request.query as { colaboradorId?: string; fecha?: string };
+    const fechaBase = fechaDeLaJornada(fecha);
+    if (!colaboradorId || !fechaBase) return reply.status(400).send({ error: 'Falta la persona o la fecha.' });
+    const colaborador = await prisma.colaborador.findFirst({
+      where: { id: colaboradorId, empresaId: request.empresaId },
+      select: { horario: { include: { franjas: true } } },
+    });
+    if (!colaborador) return reply.status(404).send({ error: 'Colaborador no encontrado' });
+    const { inicioDia, finDia } = rangoDiaBogota(fechaBase);
+    const congelados = await prisma.diaEsperado.findMany({ where: { colaboradorId, fecha: { gte: inicioDia, lt: finDia } } });
+    const [dia] = combinarDiasEsperados(inicioDia, finDia, congelados, colaborador.horario);
+    if (!dia) return { programado: false };
+    return {
+      programado: dia.programado, horaEntrada: dia.horaEntrada, horaSalida: dia.horaSalida,
+      almuerzoInicio: dia.almuerzoInicio, almuerzoFin: dia.almuerzoFin, almuerzoMin: dia.almuerzoMin,
+      descansos: ventanasEnOrden(dia.horaEntrada, leerDescansos(dia.descansos)),
+    };
   });
 
   // Actividad de una marcación: qué se cambió, quién y cuándo.

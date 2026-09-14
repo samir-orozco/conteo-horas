@@ -42,6 +42,9 @@ function montar(j: Jornada) {
   render(<ModalJornada registroId="a" onCerrar={vi.fn()} onEditar={vi.fn()} onEliminar={vi.fn()} onVerMarcacion={vi.fn()} />);
 }
 
+// Las pausas del día van juntas en un recuadro, una fila por pausa (13 de septiembre de 2026).
+const pausas = () => screen.getByRole('region', { name: 'Pausas de este día' });
+
 // Con llaves a propósito: lo que DEVUELVE un beforeEach, Vitest lo toma como
 // limpieza y lo llama al terminar la prueba. `mockReset` devuelve el propio mock,
 // así que sin llaves se llamaba `get()` sin URL después de cada prueba.
@@ -71,22 +74,23 @@ describe('las sedes en el detalle de la jornada', () => {
 
   // Decisión del dueño del 12 de septiembre de 2026, «mostrarla al leer»: «Abrió en»
   // y «Cerró en» siguen siendo solo de sedes que probó la ubicación. Si no hay
-  // ninguna, se dice la sede que se le atribuye, con la etiqueta.
-  it('sin ninguna sede probada, dice la sede por defecto con esa etiqueta', async () => {
+  // ninguna, se dice la sede que se le atribuye. Desde el 13 de septiembre, solo con su
+  // nombre: el dueño pidió quitar «por defecto».
+  it('sin ninguna sede probada, dice el nombre de la sede atribuida, sin «por defecto»', async () => {
     montar(jornada({ sedeDeEntrada: null, salidaAlDescansoEn: null, sedes: { abrio: null, cerro: null, abrioAtribuida: PRINCIPAL } }));
-    expect(await screen.findByText('Sede principal (por defecto)')).toBeInTheDocument();
+    expect(await screen.findByText('Sede principal')).toBeInTheDocument();
+    expect(screen.queryByText(/por defecto/)).toBeNull();
     expect(screen.queryByText(/Abrió en|Cerró en/)).toBeNull();
   });
 
-  it('si la sede por defecto está desactivada, también lo dice', async () => {
+  it('si la sede atribuida está desactivada, también lo dice', async () => {
     montar(jornada({ sedeDeEntrada: null, salidaAlDescansoEn: null, sedes: { abrio: null, cerro: null, abrioAtribuida: { ...LAURELES, activa: false } } }));
-    expect(await screen.findByText('Laureles (por defecto) (desactivada)')).toBeInTheDocument();
+    expect(await screen.findByText('Laureles (desactivada)')).toBeInTheDocument();
   });
 
-  it('con una sede probada no se mezcla la por defecto: «Cerró en» es solo lo probado', async () => {
+  it('con una sede probada no se mezcla la atribuida: «Cerró en» es solo lo probado', async () => {
     montar(jornada({ sedeDeEntrada: null, salidaAlDescansoEn: null, sedes: { abrio: null, cerro: LAURELES, abrioAtribuida: POBLADO } }));
     expect(await screen.findByText('Cerró en Laureles')).toBeInTheDocument();
-    expect(screen.queryByText(/por defecto/)).toBeNull();
     expect(screen.queryByText(/El Poblado/)).toBeNull();
   });
 });
@@ -101,12 +105,12 @@ const resumen = (p: Partial<ResumenDePausa>): ResumenDePausa => ({
   ...p,
 });
 
-describe('la sede por defecto junto al descanso no remunerado', () => {
-  it('una jornada sin sede probada y con descanso muestra la sede por defecto y el bloque del descanso', async () => {
+describe('la sede atribuida junto al descanso no remunerado', () => {
+  it('una jornada sin sede probada y con descanso muestra el nombre de la sede atribuida y la fila del descanso', async () => {
     const descanso = resumen({ estado: 'MARCADO', salida: bog(9), regreso: bog(9, 15), minutos: 15 });
     montar({ ...jornada({ sedeDeEntrada: null, salidaAlDescansoEn: null, sedes: { abrio: null, cerro: null, abrioAtribuida: PRINCIPAL } }), descansos: [descanso] });
-    expect(await screen.findByText('Sede principal (por defecto)')).toBeInTheDocument();
-    expect(screen.getByText('Descanso no remunerado de este día')).toBeInTheDocument();
+    expect(await screen.findByText('Sede principal')).toBeInTheDocument();
+    expect(within(pausas()).getByRole('group', { name: 'Descanso' })).toBeInTheDocument();
   });
 });
 
@@ -122,15 +126,15 @@ describe('los descansos no remunerados en el detalle', () => {
     }),
   ];
 
-  it('con dos descansos pinta un bloque por cada uno con su horario en el título', async () => {
+  it('con dos descansos pinta una fila por cada uno con su horario', async () => {
     montar({ ...jornada({ salidaAlDescansoEn: null }), descansos: CARLA });
-    expect(await screen.findByText('Descanso de 09:00 a 09:15')).toBeInTheDocument();
-    expect(screen.getByText('Descanso de 15:00 a 15:10')).toBeInTheDocument();
-    expect(screen.queryByText('Descanso no remunerado de este día')).toBeNull();
-    // En la tira de arriba, un solo dato para los dos: cuántos marcó y cuánto costaron.
-    const tira = screen.getByText('Descansos', { selector: 'p' }).parentElement!;
-    expect(within(tira).getByText('2 de 2 marcados')).toBeInTheDocument();
-    expect(within(tira).getByText('se descontó 15 min')).toBeInTheDocument();
+    const recuadro = await screen.findByRole('region', { name: 'Pausas de este día' });
+    expect(within(recuadro).getByRole('group', { name: 'Descanso 1' })).toHaveTextContent('su horario 09:00 a 09:15');
+    expect(within(recuadro).getByRole('group', { name: 'Descanso 2' })).toHaveTextContent('su horario 15:00 a 15:10');
+    // En la tarjeta de arriba, un solo dato para los dos: cuántos marcó y cuánto costaron.
+    const tarjeta = screen.getByText('Descansos', { selector: 'p' }).parentElement!;
+    expect(within(tarjeta).getByText('2 de 2 marcados')).toBeInTheDocument();
+    expect(within(tarjeta).getByText('se descontó 15 min')).toBeInTheDocument();
   });
 
   it('cada descanso avisa por su cuenta: el que no volvió se dice aunque el otro esté marcado', async () => {
@@ -148,59 +152,137 @@ describe('los descansos no remunerados en el detalle', () => {
   // Carla salió a las 15:00 y esa salida quedó en el de 09:00 a 09:15. Se tomó 10 minutos de
   // una ventana de 15, y el bloque decía «dentro de su hora», en verde, con «se descontó 15
   // min» debajo: como si lo hubiera tomado bien y aun así se le cobrara (12 de septiembre de
-  // 2026). El bloque dice que fue fuera de su hora y lo que se descontó.
-  it('Carla: el bloque de un descanso que salió fuera de su ventana dice que fue fuera de su hora, con lo que se descontó', async () => {
+  // 2026). La fila dice que fue fuera de su hora y lo que se descontó.
+  it('Carla: la fila de un descanso que salió fuera de su ventana dice que fue fuera de su hora, con lo que se descontó', async () => {
     montar({ ...jornada({ salidaAlDescansoEn: null }), descansos: CARLA });
-    const manana = (await screen.findByText('Descanso de 09:00 a 09:15')).parentElement!;
-    expect(within(manana).getByText('fuera de su hora')).toBeInTheDocument();
+    const manana = within(await screen.findByRole('region', { name: 'Pausas de este día' })).getByRole('group', { name: 'Descanso 1' });
+    expect(within(manana).getByText('Fuera de su hora')).toBeInTheDocument();
     expect(within(manana).getByText('se descontó 15 min')).toBeInTheDocument();
-    const tarde = screen.getByText('Descanso de 15:00 a 15:10').parentElement!;
-    expect(within(tarde).getByText('fuera de su hora')).toBeInTheDocument();
+    const tarde = within(pausas()).getByRole('group', { name: 'Descanso 2' });
+    expect(within(tarde).getByText('Fuera de su hora')).toBeInTheDocument();
     expect(within(tarde).getByText('no se le descontó nada')).toBeInTheDocument();
     expect(within(tarde).getByText('se tomó 5 min de más')).toBeInTheDocument();
-    expect(screen.queryByText('dentro de su hora')).toBeNull();
+    expect(screen.queryByText('Dentro de su hora')).toBeNull();
   });
 
-  it('el que salió dentro de su ventana sigue diciendo «dentro de su hora»', async () => {
+  it('el que salió dentro de su ventana sigue diciendo «Dentro de su hora»', async () => {
     const aTiempo = resumen({ estado: 'MARCADO', salida: bog(9, 2), regreso: bog(9, 14), minutos: 12 });
     montar({ ...jornada({ salidaAlDescansoEn: null }), descansos: [aTiempo] });
-    const bloque = (await screen.findByText('Descanso no remunerado de este día')).parentElement!;
-    expect(within(bloque).getByText('dentro de su hora')).toBeInTheDocument();
-    expect(within(bloque).queryByText('fuera de su hora')).toBeNull();
+    const fila = within(await screen.findByRole('region', { name: 'Pausas de este día' })).getByRole('group', { name: 'Descanso' });
+    expect(within(fila).getByText('Dentro de su hora')).toBeInTheDocument();
+    expect(within(fila).queryByText('Fuera de su hora')).toBeNull();
   });
 });
 
+const DIA: NonNullable<Jornada['dia']> = {
+  programado: true, horaEntrada: '07:00', horaSalida: '16:00', toleranciaMin: 10, toleranciaSalidaMin: 0, ajustaEntrada: false,
+  almuerzoMin: 0, almuerzoInicio: '12:00', almuerzoFin: '13:00', minutosEsperados: 455, congelado: true,
+};
+
 // LO QUE EL HORARIO PEDÍA ESE DÍA, con sus descansos (12 de septiembre de 2026). El servidor
 // ya manda la lista del día en `dia.descansos`; sin mostrarla, la sección decía la entrada y
-// la salida de un día que exigía menos minutos, sin decir por qué.
+// la salida de un día que exigía menos minutos, sin decir por qué. Desde el 13 de septiembre
+// cada dato va con su rótulo, y el almuerzo también.
 describe('lo que el horario pedía ese día', () => {
-  const DIA: NonNullable<Jornada['dia']> = {
-    programado: true, horaEntrada: '07:00', horaSalida: '16:00', toleranciaMin: 10, toleranciaSalidaMin: 0, ajustaEntrada: false,
-    almuerzoMin: 0, almuerzoInicio: '12:00', almuerzoFin: '13:00', minutosEsperados: 455, congelado: true,
-  };
-  const seccion = async () => (await screen.findByText('Lo que el horario pedía ese día')).parentElement!;
+  const seccion = () => screen.findByRole('region', { name: 'Lo que el horario pedía ese día' });
 
   it('dice los descansos del día, cada uno con su horario y en su orden', async () => {
     montar({ ...jornada({ salidaAlDescansoEn: null }), dia: { ...DIA, descansos: [{ inicio: '09:00', fin: '09:15' }, { inicio: '15:00', fin: '15:10' }] } });
-    expect(within(await seccion()).getByText('Descansos no remunerados: 09:00 a 09:15 · 15:00 a 15:10')).toBeInTheDocument();
+    const s = await seccion();
+    expect(within(s).getByText('Descansos no remunerados')).toBeInTheDocument();
+    expect(within(s).getByText('09:00 a 09:15 · 15:00 a 15:10')).toBeInTheDocument();
   });
 
   it('con uno solo lo dice en singular', async () => {
     montar({ ...jornada({ salidaAlDescansoEn: null }), dia: { ...DIA, descansos: [{ inicio: '10:00', fin: '10:15' }] } });
-    expect(within(await seccion()).getByText('Descanso no remunerado: 10:00 a 10:15')).toBeInTheDocument();
+    const s = await seccion();
+    expect(within(s).getByText('Descanso no remunerado')).toBeInTheDocument();
+    expect(within(s).getByText('10:00 a 10:15')).toBeInTheDocument();
   });
 
   it('sin descansos ese día no dice nada de descansos', async () => {
     montar({ ...jornada({ salidaAlDescansoEn: null }), dia: { ...DIA, descansos: [] } });
     const s = await seccion();
-    expect(within(s).getByText(/Entrada 07:00/)).toBeInTheDocument();
+    expect(within(s).getByText('07:00 a 16:00')).toBeInTheDocument();
     expect(within(s).queryByText(/[Dd]escanso/)).toBeNull();
   });
 
   it('un servidor que no manda `dia.descansos` no tumba la sección', async () => {
     montar({ ...jornada({ salidaAlDescansoEn: null }), dia: DIA });
     const s = await seccion();
-    expect(within(s).getByText(/Entrada 07:00/)).toBeInTheDocument();
+    expect(within(s).getByText('07:00 a 16:00')).toBeInTheDocument();
     expect(within(s).queryByText(/[Dd]escanso/)).toBeNull();
+  });
+
+  it('dice también la hora del almuerzo, que antes no aparecía', async () => {
+    montar({ ...jornada({ salidaAlDescansoEn: null }), dia: DIA });
+    const s = await seccion();
+    expect(within(s).getByText('Almuerzo')).toBeInTheDocument();
+    expect(within(s).getByText('12:00 a 13:00')).toBeInTheDocument();
+  });
+});
+
+// EL DISEÑO NUEVO DEL DETALLE (13 de septiembre de 2026, aprobado por el dueño sobre una maqueta):
+// los tiempos en tarjetas, las pausas en un recuadro y las marcaciones con cada hora rotulada.
+type Tramo = Jornada['tramos'][number];
+const tramo = (id: string, entrada: string | null, salida: string | null, p: Partial<Tramo> = {}): Tramo => ({
+  id, entrada, salida, salidaAlmuerzo: false, salidaDescanso: false, entradaEstimada: false, salidaEstimada: false,
+  momentoEntrada: 'ENTRADA', momentoSalida: salida ? 'SALIDA' : null, tieneFotoEntrada: false, tieneFotoSalida: false, ...p,
+});
+// Julián Torres el sábado 12: almorzó, salió a su descanso, volvió y no marcó la salida.
+const JULIAN = [
+  tramo('a', bog(7), bog(17, 20), { salidaAlmuerzo: true, momentoSalida: 'SALIDA_ALMUERZO' }),
+  tramo('b', bog(17, 27), bog(17, 32), { salidaDescanso: true, momentoEntrada: 'REGRESO_ALMUERZO', momentoSalida: 'SALIDA_DESCANSO' }),
+  tramo('c', bog(17, 42), null, { momentoEntrada: 'REGRESO_DESCANSO' }),
+];
+
+describe('el detalle de la jornada, con el diseño nuevo', () => {
+  // Decía «Salió 17:32», que era la salida al descanso: tomaba la última marcación CON salida.
+  it('si la última marcación sigue abierta, la salida del día dice «sin salida» y no la hora de una pausa', async () => {
+    montar({ ...jornada({ salidaAlDescansoEn: null }), tramos: JULIAN });
+    const salio = (await screen.findByText('Salió', { selector: 'p' })).parentElement!;
+    expect(within(salio).getByText('sin salida')).toBeInTheDocument();
+    expect(within(salio).queryByText('17:32')).toBeNull();
+    expect(screen.getByText('Sin salida')).toBeInTheDocument();
+  });
+
+  it('con la jornada cerrada, la salida del día es la de la última marcación', async () => {
+    const cerrada = [JULIAN[0], JULIAN[1], tramo('c', bog(17, 42), bog(18), { momentoEntrada: 'REGRESO_DESCANSO' })];
+    montar({ ...jornada({ salidaAlDescansoEn: null }), tramos: cerrada });
+    const salio = (await screen.findByText('Salió', { selector: 'p' })).parentElement!;
+    expect(within(salio).getByText('18:00')).toBeInTheDocument();
+    expect(screen.queryByText('Sin salida')).toBeNull();
+  });
+
+  it('arriba no repite etiquetas ni dice lo que solo le pasó a la primera marcación', async () => {
+    montar({ ...jornada({ salidaAlDescansoEn: null }), tramos: JULIAN });
+    expect(await screen.findAllByText('Sin salida')).toHaveLength(1);
+    expect(screen.queryByText('Salió a almorzar')).toBeNull();
+  });
+
+  it('cada marcación dice qué fue cada una de sus horas', async () => {
+    montar({ ...jornada({ salidaAlDescansoEn: null }), tramos: JULIAN });
+    const lista = await screen.findByRole('region', { name: 'Las 3 marcaciones de ese día' });
+    const [, segunda, tercera] = within(lista).getAllByRole('button');
+    expect(within(segunda).getByText('Regreso del almuerzo')).toBeInTheDocument();
+    expect(within(segunda).getByText('17:27')).toBeInTheDocument();
+    expect(within(segunda).getByText('Salida al descanso')).toBeInTheDocument();
+    expect(within(segunda).getByText('17:32')).toBeInTheDocument();
+    expect(within(segunda).getByText('5 min')).toBeInTheDocument();
+    expect(within(tercera).getByText('Regreso del descanso')).toBeInTheDocument();
+    expect(within(tercera).getByText('sin salida')).toBeInTheDocument();
+  });
+
+  it('lo contado se compara con lo que pedía el horario, sin decir cuánto falta', async () => {
+    montar({ ...jornada({ salidaAlDescansoEn: null }), minutosDelDia: 623, dia: { ...DIA, minutosEsperados: 640 } });
+    const barra = await screen.findByRole('progressbar', { name: 'Contado frente a lo que pedía el horario' });
+    expect(barra).toHaveAttribute('aria-valuenow', '97');
+    expect(screen.getByText('el horario pedía 10h 40min')).toBeInTheDocument();
+    expect(screen.queryByText(/falta/)).toBeNull();
+  });
+
+  it('el subtítulo va en letra normal: el día con mayúscula inicial y lo demás como se escribe', async () => {
+    montar(jornada({ salidaAlDescansoEn: null }));
+    expect(await screen.findByText('Julián Restrepo · Jueves 10 de septiembre de 2026')).toBeInTheDocument();
   });
 });

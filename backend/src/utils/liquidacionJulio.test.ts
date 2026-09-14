@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo, calcularValorHora, CODIGOS_EXTRA } from './horasColombiana';
+import { calcularValorHora } from './horasColombiana';
 import { calcularHorasEsperadas, armarSaldo } from './saldoTiempo';
-import { calcularTardanzas } from './tardanzas';
+import { calcularTardanzas, construirExtraConfig } from './tardanzas';
 import { rangoReporte } from './fechas';
 import { calcularDiasEsperados } from './diasEsperados';
+import { jornadaVigente } from './vigencias';
+import { liquidarRegistros } from './liquidarRegistros';
 
 // Prueba de extremo a extremo del motor, sin base de datos, sobre el escenario de
 // julio 2026 que se verificó A MANO contra el reporte real (ver prisma/seed-julio-saldo.ts
@@ -26,6 +28,9 @@ const HORARIO: any = {
   ],
 };
 
+// Vigentes desde siempre, como las guarda la base: `tiposVigentes` descarta el tipo
+// inactivo o fuera de su vigencia.
+const SIEMPRE = new Date(Date.UTC(2000, 0, 1, 5));
 const TIPOS = [
   { codigo: 'HOD', nombre: 'Ordinaria Diurna', horaInicio: 6, horaFin: 21, recargo: 1.0 },
   { codigo: 'HON', nombre: 'Ordinaria Nocturna', horaInicio: 6, horaFin: 21, recargo: 1.35 },
@@ -35,7 +40,7 @@ const TIPOS = [
   { codigo: 'HND', nombre: 'Dominical Nocturna', horaInicio: 6, horaFin: 21, recargo: 2.25 },
   { codigo: 'HEDD', nombre: 'Extra Dominical Diurna', horaInicio: 6, horaFin: 21, recargo: 2.15 },
   { codigo: 'HEND', nombre: 'Extra Dominical Nocturna', horaInicio: 6, horaFin: 21, recargo: 2.65 },
-];
+].map(t => ({ ...t, activo: true, vigenteDesde: SIEMPRE, vigenteHasta: null }));
 
 // Día trabajado: [día del mes, hora entrada, min entrada, hora salida, min salida]
 const DIAS: [number, number, number, number, number][] = [
@@ -75,50 +80,27 @@ const HORAS_MES = 210; // jornada vigente al cierre del período (42h) × 5
 // La Ley 2101 baja la jornada de 44h a 42h el 15 de julio de 2026, así que las
 // dos primeras semanas del mes tienen un tope distinto a las dos últimas. El
 // motor resuelve la jornada UNA vez por semana ISO, con el primer día que ve.
-const CAMBIO_LEY = Date.UTC(2026, 6, 15, 5, 0, 0);
-const jornadaDe = (fecha: Date) => (fecha.getTime() < CAMBIO_LEY ? 44 : 42);
-
-// Réplica de liquidarRegistros (reportes.ts) agrupando por semana ISO.
-function liquidar() {
-  const porSemana = new Map<string, typeof REGISTROS>();
-  for (const r of REGISTROS) {
-    const z = new Date(r.fecha.getTime() - 5 * 3600 * 1000);
-    const jueves = new Date(z); jueves.setUTCDate(z.getUTCDate() + 4 - (z.getUTCDay() || 7));
-    const k = jueves.toISOString().slice(0, 10);
-    if (!porSemana.has(k)) porSemana.set(k, []);
-    porSemana.get(k)!.push(r);
-  }
-  const acumulado: Record<string, any> = {};
-  for (const [, regs] of porSemana) {
-    let ordSemana = 0;
-    const jornadaSemana = jornadaDe(regs[0].fecha); // una vez por semana, como el motor
-    for (const r of regs) {
-      const { resultado, minutosOrdinariosTrabajados } = calcularHorasTrabajadas(
-        r.entrada, r.salida, FESTIVOS, TIPOS, jornadaSemana, ordSemana,
-      );
-      descontarAlmuerzo(resultado, HORARIO.almuerzoMin); // 0 en este horario
-      ordSemana += minutosOrdinariosTrabajados;
-      for (const p of resultado) {
-        if (!acumulado[p.codigo]) acumulado[p.codigo] = { ...p };
-        else acumulado[p.codigo].minutos += p.minutos;
-      }
-    }
-  }
-  const horasPorTipo = Object.values(acumulado) as any[];
-  const liquidacion = calcularLiquidacion(SALARIO, HORAS_MES, horasPorTipo);
-  const minutosOrdinarios = horasPorTipo
-    .filter(t => !CODIGOS_EXTRA.has(t.codigo))
-    .reduce((s, t) => s + t.minutos, 0);
-  return { liquidacion, minutosOrdinarios };
-}
+// Las vigencias van como las guarda la base, y de ellas salen las dos cuentas: la
+// de la liquidación y la del saldo.
+const JORNADAS = [
+  { id: 'ley-44', vigenteDesde: SIEMPRE, horasSemanales: 44 },
+  { id: 'ley-42', vigenteDesde: new Date(Date.UTC(2026, 6, 15, 5, 0, 0)), horasSemanales: 42 },
+];
+const jornadaDe = (fecha: Date) => jornadaVigente(fecha, JORNADAS);
 
 describe('julio 2026 — escenario verificado a mano', () => {
   const { desdeF, finExclusivo } = rangoReporte('2026-07-01', '2026-07-31');
-  const { minutosOrdinarios } = liquidar();
   // Los días esperados llegan materializados, como en producción. Se generan con
   // el mismo horario de arriba: si materializar cambiara un solo minuto, los
   // números de este archivo se moverían y la prueba lo cantaría.
   const DIAS_ESPERADOS = calcularDiasEsperados(desdeF, finExclusivo, HORARIO);
+  // La liquidación de verdad, con lo que le pasa /liquidacion. Hasta el 12 de septiembre
+  // de 2026 aquí había una réplica a mano del cálculo, que seguía en verde aunque el
+  // cálculo real cambiara.
+  const { minutosOrdinarios } = liquidarRegistros(
+    REGISTROS, HORARIO, construirExtraConfig('SEMANAL', HORARIO, DIAS_ESPERADOS), FESTIVOS, TIPOS, JORNADAS,
+    SALARIO, HORAS_MES, false, DIAS_ESPERADOS,
+  );
 
   it('trabajó 167h 20min de horas ordinarias', () => {
     expect(minutosOrdinarios).toBe(167 * 60 + 20);

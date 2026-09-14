@@ -58,7 +58,7 @@ export default function ListaDeDescansos({ descansos, onCambiar, max }: Props) {
         <Plus size={13} /> {lleno ? `Máximo ${max} descansos por franja` : 'Agregar descanso'}
       </button>
       <p className="text-[11px] text-muted leading-relaxed">
-        Los descansos no se pagan: se descuenta el tiempo que caiga entre sus horas, igual que el almuerzo.
+        Los descansos no se pagan: cuestan siempre su tiempo, aunque los tomen a otra hora, igual que el almuerzo.
         Quien lo marca no lo paga dos veces.
       </p>
     </div>

@@ -59,6 +59,42 @@ describe('la validación de una carga masiva', () => {
     expect(r.errores[0].mensaje).toMatch(/repetida/i);
   });
 
+  // Las columnas de texto son varchar(191). Un valor más largo pasaba la validación y MySQL rechazaba la
+  // transacción entera al crear: la vista previa decía que todo estaba bien y crear fallaba sin decir por
+  // qué. Medido el 13 de septiembre de 2026 contra MySQL: 191 caracteres caben y 192 no, y cuenta
+  // caracteres, no la longitud de JavaScript (191 emojis caben, y para JavaScript miden 382).
+  describe('un texto que no cabe en su columna', () => {
+    const MUY_LARGO = 'Es muy largo: tiene 192 caracteres y caben 191.';
+
+    it.each([
+      ['nombre', 'x'.repeat(192)],
+      ['apellido', 'x'.repeat(192)],
+      ['cedula', '1'.repeat(192)],
+      ['cargo', 'x'.repeat(192)],
+      ['email', `${'a'.repeat(187)}@b.co`],
+      ['telefono', '3'.repeat(192)],
+    ])('%s con 192 caracteres es un error de su celda, y la fila no se crea', (campo, valor) => {
+      expect(valor).toHaveLength(192);
+      const r = validarImportacion([fila({ [campo]: valor })], ctx());
+      expect(r.errores).toEqual([{ fila: 2, campo, mensaje: MUY_LARGO }]);
+      expect(r.validas).toEqual([]);
+    });
+
+    it('191 caracteres sí caben', () => {
+      expect(validarImportacion([fila({ cargo: 'x'.repeat(191) })], ctx()).errores).toEqual([]);
+    });
+
+    it('cuenta caracteres como MySQL, no la longitud de JavaScript', () => {
+      expect(validarImportacion([fila({ cargo: '😀'.repeat(191) })], ctx()).errores).toEqual([]);
+      expect(validarImportacion([fila({ cargo: '😀'.repeat(192) })], ctx()).errores)
+        .toEqual([{ fila: 2, campo: 'cargo', mensaje: MUY_LARGO }]);
+    });
+
+    it('se mide sin los espacios de los extremos, que no se guardan', () => {
+      expect(validarImportacion([fila({ cargo: `  ${'x'.repeat(191)}  ` })], ctx()).errores).toEqual([]);
+    });
+  });
+
   it('una cédula que ya trabaja en la empresa no se vuelve a crear', () => {
     const r = validarImportacion([fila()], ctx({ cedulasActivas: new Set(['1020304050']) }));
     expect(errores(r)).toContain('2:cedula');

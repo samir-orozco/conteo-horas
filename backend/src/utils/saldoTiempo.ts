@@ -2,7 +2,6 @@ import { toZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear } from 'date-fns';
 import { minutosDe, esDeParteDelDia, duracionFranjaMin, type NovedadParaDia } from './tardanzas';
 
-import { leerDescansos, unirIntervalos } from './descansos';
 
 // La duración de una franja vive en tardanzas.ts desde el 12 de septiembre de
 // 2026. Se reexporta porque diasEsperados y sus pruebas la importan de aquí.
@@ -93,14 +92,10 @@ export type DiaEsperadoParaSaldo = {
   fecha: Date; // medianoche de Bogotá
   programado: boolean; // false = ese día no se trabajaba
   minutosEsperados: number; // ya neto de almuerzo y de descanso
-  // La franja y las ventanas de pausa de ESE día: contra ellas se mide cuánto de
-  // la jornada cubre una novedad de parte del día.
+  // La franja de ESE día: contra ella se mide cuánto de la jornada cubre una novedad
+  // de parte del día.
   horaEntrada: string | null;
   horaSalida: string | null;
-  almuerzoInicio: string | null;
-  almuerzoFin: string | null;
-  // La lista congelada de descansos no remunerados (texto de utils/descansos.ts).
-  descansos: string | null;
 };
 
 type Tramo = [number, number];
@@ -125,32 +120,21 @@ const largo = (t: Tramo | null) => (t ? t[1] - t[0] : 0);
 // es [180, 360] contado desde su día, y [1620, 1800] contado desde la entrada.
 const enLosDosDias = (t: Tramo): Tramo[] => [t, [t[0] + 24 * 60, t[1] + 24 * 60]];
 
-// Minutos de la jornada que excusa una novedad de parte del día: los de su tramo
-// que caen dentro de la franja, menos los de las ventanas de almuerzo y de
-// descanso, que tampoco se trabajaban. `null` si el día no dice su franja: sin
-// ella no hay contra qué medir, y la novedad cubre el día entero como siempre.
+// Minutos de la jornada que excusa una novedad de parte del día: los de su tramo que
+// caen dentro de la franja, ENTEROS. `null` si el día no dice su franja: sin ella no hay
+// contra qué medir, y la novedad cubre el día entero como siempre.
 //
-// Sin ventana de almuerzo no se resta nada por él, a propósito: en ese caso lo
-// trabajado descuenta la hora entera aunque la persona se haya ido antes de
-// almorzar (`descontarAlmuerzo`), y restarla aquí también la cobraría dos veces.
+// Las pausas que caen dentro del tramo no se restan (12 de septiembre de 2026). El
+// almuerzo y los descansos cuestan siempre su tiempo en lo trabajado, aunque la persona
+// se haya ido antes de tomarlos (utils/almuerzo.ts), así que restarlos también aquí los
+// cobraría dos veces: quien trabajó de 08:00 a 11:00 con una hora de almuerzo y una
+// novedad hasta las 17:00 queda con 120 trabajados y 120 exigidos. Hasta esa fecha se
+// restaban las ventanas, porque quien se iba antes no pagaba su almuerzo.
 function minutosDeParteDelDia(dia: DiaEsperadoParaSaldo, p: PermisoRango): number | null {
   if (!dia.horaEntrada || !dia.horaSalida) return null;
   const franja = tramoDe(dia.horaEntrada, dia.horaSalida);
-  // Cada pausa en sus dos posiciones. El almuerzo aparte, como siempre. Los
-  // descansos, UNIDOS: dos ventanas congeladas que se pisan no pueden excusar dos
-  // veces la misma hora (12 de septiembre de 2026). Almuerzo y descansos no se
-  // pueden cruzar al guardar, así que no se funden entre sí.
-  const pausas: Tramo[] = [];
-  if (dia.almuerzoInicio && dia.almuerzoFin) pausas.push(...enLosDosDias(tramoDe(dia.almuerzoInicio, dia.almuerzoFin)));
-  pausas.push(...unirIntervalos(leerDescansos(dia.descansos).flatMap(v => enLosDosDias(tramoDe(v.inicio, v.fin)))));
-  let minutos = 0;
-  for (const tramo of enLosDosDias(tramoDe(p.horaInicio!, p.horaFin!))) {
-    const cubierto = cruce(franja, tramo);
-    if (!cubierto) continue;
-    minutos += largo(cubierto);
-    for (const a of pausas) minutos -= largo(cruce(cubierto, a));
-  }
-  return minutos;
+  return enLosDosDias(tramoDe(p.horaInicio!, p.horaFin!))
+    .reduce((minutos, tramo) => minutos + largo(cruce(franja, tramo)), 0);
 }
 
 // Cuánto de UN día cubren sus novedades, separado en lo que se paga y lo que no.

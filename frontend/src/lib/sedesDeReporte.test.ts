@@ -36,14 +36,15 @@ describe('textoDeSedes', () => {
 
   // A un presencial, la sede que ninguna marca probó se la atribuye el servidor al
   // leer y la manda con `porDefecto` (decisión del dueño del 12 de septiembre de 2026).
-  it('una sede que solo existe por atribución lleva «por defecto»', () => {
+  // Desde el 13 de septiembre se escribe solo con su nombre: el dueño pidió quitar «por defecto».
+  it('una sede que solo existe por atribución se escribe con su nombre, sin «por defecto»', () => {
     expect(textoDeSedes([{ id: 'sede-p', nombre: 'Sede principal', porDefecto: true }]))
-      .toEqual({ texto: 'Sede principal (por defecto)', mixto: false });
+      .toEqual({ texto: 'Sede principal', mixto: false });
   });
 
-  it('en un mixto, «por defecto» va pegado a la sede que ninguna marca probó y no a la otra', () => {
+  it('en un mixto, la sede atribuida y la probada se escriben igual', () => {
     expect(textoDeSedes([{ id: 'sede-n', nombre: 'Norte', porDefecto: true }, { id: 'sede-s', nombre: 'Sur', porDefecto: false }]))
-      .toEqual({ texto: 'Norte (por defecto) · Sur', mixto: true });
+      .toEqual({ texto: 'Norte · Sur', mixto: true });
   });
 
   it('quien no marcó en el período no tiene sede que mostrar', () => {

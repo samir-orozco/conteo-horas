@@ -1,3 +1,5 @@
+import { MAX_CARACTERES, TEXTOS_DEL_COLABORADOR, caracteres } from './largoDeColumna';
+
 // Carga masiva de colaboradores desde el formato de Excel.
 //
 // La validación vive aquí, en el servidor, y NO en el navegador. La pantalla la
@@ -158,6 +160,14 @@ export function validarImportacion(filas: FilaCruda[], ctx: ContextoImportacion)
     };
     const horarioId = elegir(CLAVE_HORARIO, ctx.horariosValidos, 'jornada');
     const sedeId = elegir(CLAVE_SEDE, ctx.sedesValidas, 'sede');
+
+    // Lo que no cabe en su columna se dice aquí, en su celda. Antes pasaba la
+    // vista previa y MySQL rechazaba la transacción entera al crear. Cuánto cabe
+    // y cómo se cuenta está en largoDeColumna.ts, igual que para el alta.
+    for (const clave of Object.keys(TEXTOS_DEL_COLABORADOR)) {
+      const largo = caracteres(v(clave));
+      if (largo > MAX_CARACTERES) err(clave, `Es muy largo: tiene ${largo} caracteres y caben ${MAX_CARACTERES}.`);
+    }
 
     if (rota) return;
     validas.push({

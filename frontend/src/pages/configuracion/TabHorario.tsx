@@ -487,7 +487,7 @@ export default function TabHorario() {
                     {
                       valor: true as const,
                       titulo: 'Que marquen su almuerzo',
-                      detalle: 'Al salir, el kiosco les ofrece salir a almorzar o terminar la jornada. Quien se va temprano deja de pagar un almuerzo que nunca tomó.',
+                      detalle: 'Al salir, el kiosco les ofrece salir a almorzar o terminar la jornada. El almuerzo cuesta siempre su tiempo: si vuelven antes se completa, y si se demoran lo de más tampoco se paga.',
                     },
                   ].map(op => (
                     <label key={String(op.valor)}
@@ -512,7 +512,7 @@ export default function TabHorario() {
                     <p className="text-[11px] text-muted mt-1.5 leading-relaxed">
                       {formHorario.almuerzoMin > 0 ? (
                         <>Se descuentan <b>{formHorario.almuerzoMin} min</b> a todo el que trabaje un día con almuerzo,
-                        aunque se haya ido temprano. Es como funciona hoy.</>
+                        aunque se haya ido temprano.</>
                       ) : (
                         <>En <b>0</b> no se descuenta almuerzo en ningún día.</>
                       )}
@@ -541,8 +541,8 @@ export default function TabHorario() {
                 <p className="text-[11px] text-muted mt-1 leading-relaxed">
                   Pausas que no se pagan, como el desayuno o una pausa activa: hasta {MAX_DESCANSOS_POR_FRANJA} por
                   franja, con sus horas en cada franja de abajo. El kiosco les ofrece salir a su descanso y marcar
-                  el regreso, igual que el almuerzo, y anota a cuál salieron según la hora. Solo se descuenta el
-                  tiempo que caiga entre esas horas.
+                  el regreso, igual que el almuerzo, y anota a cuál salieron según la hora. Los descansos del
+                  día cuestan siempre lo que suman, aunque los tomen a otra hora o vuelvan antes.
                 </p>
                 <label className="flex items-start gap-2 mt-3 cursor-pointer">
                   <input type="checkbox" checked={formHorario.fotoEnDescanso}
@@ -606,10 +606,9 @@ export default function TabHorario() {
                       Descontar almuerzo en estos días
                       <span className="text-muted">— desmárcalo para días cortos (ej. sábado)</span>
                     </label>
-                    {/* Ventana del almuerzo: lo convierte de "cuánto" en "cuándo".
-                        Con ella, quien se va temprano deja de perder un almuerzo que
-                        nunca tomó, y quien lo marca deja de pagarlo dos veces.
-                        Vacía = como siempre. */}
+                    {/* Ventana del almuerzo: dice cuándo se almuerza, para que el kiosco lo
+                        ofrezca a esa hora. Cuánto se descuenta no depende de ella: el almuerzo
+                        cuesta siempre lo que dura. Vacía = los minutos fijos. */}
                     {f.tieneAlmuerzo !== false && marcanAlmuerzo && (
                       <div className="border-t border-gray-100 pt-3 mt-1">
                         {/* Mismas proporciones que Entrada/Salida de arriba: los
@@ -640,8 +639,8 @@ export default function TabHorario() {
                         </div>
                         <p className="text-[11px] text-muted mt-1.5 leading-relaxed">
                           {f.almuerzoInicio && f.almuerzoFin ? (
-                            <>Almuerzo de <b>{minutosVentana(f)} min</b>. Solo se le descuenta a quien esté trabajando
-                            entre esas horas: quien salga antes no lo paga, y quien lo marque no lo paga dos veces.</>
+                            <>Almuerzo de <b>{minutosVentana(f)} min</b>. Se descuenta siempre completo: quien lo marque y vuelva
+                            antes lo completa, y quien lo tome a otra hora no lo paga dos veces.</>
                           ) : (
                             <>Faltan las horas de este día. Mientras estén vacías se descuentan los
                             <b> {formHorario.almuerzoMin} min</b> fijos a todo el que trabaje, aunque se haya ido temprano,

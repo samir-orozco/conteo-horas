@@ -111,10 +111,19 @@ describe('muestraColumnaSede', () => {
     expect(muestraColumnaSede([{ sedeSalida: POBLADO }], [PRINCIPAL])).toBe(true);
     expect(muestraColumnaSede([{ sede: POBLADO }], [])).toBe(true);
   });
-  it('con una sola sede activa y solo sedes por defecto, no: sería la misma etiqueta en cada fila', () => {
-    expect(muestraColumnaSede([{ sedeAtribuida: PRINCIPAL }, { sedeAtribuida: LAURELES }], [PRINCIPAL])).toBe(false);
+  // Pedido del dueño del 13 de septiembre de 2026: en la tabla faltaba la sede. Antes, con una
+  // sola sede activa y solo sedes por defecto en las filas, la columna no salía, para no repetir
+  // la misma etiqueta en cada fila.
+  it('con una sola sede activa, se muestra aunque todas las filas digan la sede por defecto', () => {
+    expect(muestraColumnaSede([{ sedeAtribuida: PRINCIPAL }, { sedeAtribuida: LAURELES }], [PRINCIPAL])).toBe(true);
   });
-  it('sin sedes activas y sin ninguna sede probada, no se muestra', () => {
+  it('con una sola sede activa, se muestra también si las filas no traen ninguna sede', () => {
+    expect(muestraColumnaSede([{}, { sede: null, sedeSalida: null, sedeAtribuida: null }], [PRINCIPAL])).toBe(true);
+  });
+  it('sin sedes activas, se muestra si alguna fila trae la sede por defecto', () => {
+    expect(muestraColumnaSede([{ sedeAtribuida: PRINCIPAL }], [])).toBe(true);
+  });
+  it('sin sedes activas y sin ninguna sede en las filas, no se muestra: sería una columna de guiones', () => {
     expect(muestraColumnaSede([{}, { sede: null, sedeSalida: null, sedeAtribuida: null }], [])).toBe(false);
   });
 });

@@ -31,8 +31,9 @@ const JORNADAS = [{ vigenteDesde: SIEMPRE, horasSemanales: 42 }];
 // Un instante del lunes 7 de septiembre de 2026 en hora de Bogotá (UTC-5 fijo).
 const lunes = (h: number, min = 0) => new Date(Date.UTC(2026, 8, 7, h + 5, min, 0));
 const LUNES = lunes(0);
-const fila = (id: string, desde: [number, number], hasta: [number, number]) =>
-  ({ id, fecha: LUNES, entrada: lunes(...desde), salida: lunes(...hasta) });
+// Una marcación del lunes. `pausa` dice a qué salió al terminarla.
+const fila = (id: string, desde: [number, number], hasta: [number, number], pausa: { salidaAlmuerzo?: boolean; salidaDescanso?: boolean } = {}) =>
+  ({ id, fecha: LUNES, entrada: lunes(...desde), salida: lunes(...hasta), ...pausa });
 
 // El día del dueño: de 07:00 a 16:00, almuerzo de 12:00 a 13:00 y dos descansos que suman 25.
 const DIA: DiaEsperadoCalculado = {
@@ -59,10 +60,10 @@ describe('liquidarRegistros: las pausas de un día se cobran enteras, llegue pri
     expect(liquidar([larga, corta], [DIA]).minutosOrdinarios).toBe(465);
   });
 
-  it('dos filas dentro de la ventana no pagan el almuerzo dos veces', () => {
-    // Salió tarde a almorzar y volvió temprano: 30 minutos dentro de la ventana en la
-    // primera fila y 15 en la segunda. 330 + 195 = 525, menos 45 y 25 → 455.
-    expect(liquidar([fila('m', [7, 0], [12, 30]), fila('t', [12, 45], [16, 0])], [DIA]).minutosOrdinarios).toBe(455);
+  it('volvió antes del almuerzo: se completa hasta la hora fijada, sin cobrarla dos veces', () => {
+    // Salió a almorzar a las 12:30 y volvió a las 12:45: tomó 15 de sus 60 minutos, así que
+    // se descuentan los 45 que faltan. 330 + 195 = 525, menos 45 y 25 de descansos → 455.
+    expect(liquidar([fila('m', [7, 0], [12, 30], { salidaAlmuerzo: true }), fila('t', [12, 45], [16, 0])], [DIA]).minutosOrdinarios).toBe(455);
   });
 
   it('el almuerzo fijo sin ventana también se cobra entero, aunque la primera fila solo tenga diez minutos', () => {
@@ -93,6 +94,63 @@ describe('liquidarRegistros: cada pausa se le cobra a la fila donde pasó', () =
     const cruzado = { ...madrugada, almuerzoInicio: null, almuerzoFin: null, almuerzoMin: 0, descansos: '05:55-06:05' };
     const r = liquidar([fila('dia', [6, 0], [15, 0]), fila('noche', [5, 50], [6, 0])], [cruzado]);
     expect([minutosDe(r, 'HON'), minutosDe(r, 'HOD')]).toEqual([5, 535]);
+  });
+});
+
+describe('liquidarRegistros: la pausa cuesta siempre el tiempo fijado (12 de septiembre de 2026)', () => {
+  // De 07:00 a 16:00 con almuerzo de 12:00 a 13:00 y sin descansos: el día exige 480.
+  const soloAlmuerzo = { ...DIA, descansos: null, minutosEsperados: 480 };
+
+  it('almorzó a otra hora, de 11:00 a 12:00: cuenta 8 h, no 7 h', () => {
+    const r = liquidar([fila('m', [7, 0], [11, 0], { salidaAlmuerzo: true }), fila('t', [12, 0], [16, 0])], [soloAlmuerzo]);
+    expect(r.minutosOrdinarios).toBe(480);
+  });
+
+  it('salió 10 minutos antes y volvió a la hora: cuenta 8 h, no 7 h 50 min', () => {
+    const r = liquidar([fila('m', [7, 0], [11, 50], { salidaAlmuerzo: true }), fila('t', [12, 50], [16, 0])], [soloAlmuerzo]);
+    expect(r.minutosOrdinarios).toBe(480);
+  });
+
+  it('se demoró, de 12:00 a 13:30: cuenta 7 h 30 min', () => {
+    const r = liquidar([fila('m', [7, 0], [12, 0], { salidaAlmuerzo: true }), fila('t', [13, 30], [16, 0])], [soloAlmuerzo]);
+    expect(r.minutosOrdinarios).toBe(450);
+  });
+
+  it('se fue a las 11:00: se descuenta igual la hora del almuerzo', () => {
+    expect(liquidar([fila('m', [7, 0], [11, 0])], [soloAlmuerzo]).minutosOrdinarios).toBe(180);
+  });
+
+  it('una jornada nocturna se cuenta por su fecha: el regreso de la madrugada es del mismo día', () => {
+    // Del lunes a las 22:00 al martes a las 06:00, con almuerzo de 01:00 a 01:30 marcado
+    // completo. El regreso entra el martes pero su fila es del lunes: contado por el día de
+    // la entrada, el almuerzo quedaba sin regreso y se cobraba entero.
+    const noche = { ...DIA, horaEntrada: '22:00', horaSalida: '06:00', almuerzoMin: 30, almuerzoInicio: '01:00', almuerzoFin: '01:30', descansos: null, minutosEsperados: 450 };
+    const r = liquidar([fila('antes', [22, 0], [25, 0], { salidaAlmuerzo: true }), fila('despues', [25, 30], [30, 0])], [noche]);
+    expect(r.minutosOrdinarios).toBe(450);
+  });
+});
+
+describe('liquidarRegistros: dice lo mismo que la tabla de Registros', () => {
+  it('volvió del descanso y sigue trabajando: su regreso está en una marcación todavía abierta', () => {
+    // La tabla lo ve y no le descuenta nada; la liquidación, sin la marcación abierta, lo daba
+    // por no vuelto y le cobraba el descanso entero mientras seguía en su turno.
+    const soloDescanso = { ...DIA, almuerzoMin: 0, almuerzoInicio: null, almuerzoFin: null, descansos: '09:00-09:15', minutosEsperados: 525 };
+    const abierta = { id: 'abierta', fecha: LUNES, entrada: lunes(9, 15), salida: null };
+    const r = liquidar([fila('m', [7, 0], [9, 0], { salidaDescanso: true }), abierta], [soloDescanso]);
+    expect([r.minutosOrdinarios, r.registrosCont]).toEqual([120, 1]);
+  });
+
+  it('dos marcas de segundos con una hora de almuerzo: cero, como en la tabla', () => {
+    // Pedro Salazar el 17 de julio en la base local: de 14:29:50 a 14:29:58 y de 14:30:05 a
+    // 14:31:52. La tabla cuenta 0. Redondeando lo que le toca a cada fila, la primera quedaba
+    // debiendo cero y sus ocho segundos se pagaban.
+    const sinVentana = { ...DIA, almuerzoInicio: null, almuerzoFin: null, descansos: null };
+    const conSegundos = (id: string, h: number, m: number, s: number) => new Date(lunes(h, m).getTime() + s * 1000);
+    const marcas = [
+      { id: 'a', fecha: LUNES, entrada: conSegundos('a', 14, 29, 50), salida: conSegundos('a', 14, 29, 58) },
+      { id: 'b', fecha: LUNES, entrada: conSegundos('b', 14, 30, 5), salida: conSegundos('b', 14, 31, 52) },
+    ];
+    expect(liquidar(marcas, [sinVentana]).minutosOrdinarios).toBe(0);
   });
 });
 

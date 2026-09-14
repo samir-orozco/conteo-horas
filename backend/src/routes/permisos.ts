@@ -8,34 +8,10 @@ import { CLAVE_PERMISOS_REMUNERADOS, parsearPoliticaPermisos, esPermisoRemunerad
 // que agregar un formato en un sitio no lo agregara en el otro, que es
 // exactamente lo que el comentario de cabecera de documentos.ts dice que se
 // quiso evitar. Ahora las dos usan la misma función.
-import { cambioDeDocumento, documentoValido } from '../utils/documentos';
-
-// Campos que la empresa puede enviar (evita pasar basura a Prisma).
-//
-// Devuelve el motivo en vez de los datos cuando la evidencia no se acepta: la
-// ruta lo convierte en un 400. Antes se descartaba sin decir nada y la novedad
-// se guardaba sin el adjunto que la persona creía haber subido.
-function limpiarPermiso(data: any, esNuevo: boolean):
-  { ok: true; datos: any } | { ok: false; motivo: string } {
-  const out: any = {};
-  if (esNuevo) out.colaboradorId = data.colaboradorId;
-  if (data.tipo !== undefined) out.tipo = data.tipo;
-  if (data.descripcion !== undefined) out.descripcion = data.descripcion || null;
-  if (data.fechaInicio !== undefined) out.fechaInicio = data.fechaInicio;
-  if (data.fechaFin !== undefined) out.fechaFin = data.fechaFin;
-  if (data.aprobado !== undefined) out.aprobado = data.aprobado;
-
-  const cambio = cambioDeDocumento(data.evidencia, data.evidenciaNombre);
-  if (cambio.accion === 'rechazar') return { ok: false, motivo: cambio.motivo };
-  if (cambio.accion === 'quitar') {
-    out.evidencia = null; out.evidenciaTipo = null; out.evidenciaNombre = null;
-  } else if (cambio.accion === 'guardar') {
-    out.evidencia = cambio.documento;
-    out.evidenciaTipo = cambio.tipo;
-    out.evidenciaNombre = cambio.nombre;
-  }
-  return { ok: true, datos: out };
-}
+import { documentoValido } from '../utils/documentos';
+// Los campos que la empresa puede enviar, revisados antes de pasárselos a Prisma.
+import { limpiarPermiso } from '../utils/cuerpoDePermiso';
+import type { Prisma } from '@prisma/client';
 
 // El listado NO trae la evidencia (base64 pesado); solo el tipo/nombre para saber que existe.
 const SELECT_LISTA = {
@@ -79,7 +55,7 @@ export default async function permisoRoutes(app: FastifyInstance) {
   app.post('/', auth, async (request, reply) => {
     const data = request.body as any;
     const col = await prisma.colaborador.findFirst({
-      where: { id: data.colaboradorId, empresaId: request.empresaId },
+      where: { id: data.colaboradorId, empresaId: request.empresaId }, select: { id: true },
     });
     if (!col) return reply.status(404).send({ error: 'Colaborador no encontrado' });
     if (documentoValido(data.evidencia)) {
@@ -88,7 +64,8 @@ export default async function permisoRoutes(app: FastifyInstance) {
     }
     const limpio = limpiarPermiso(data, true);
     if (!limpio.ok) return reply.status(400).send({ error: limpio.motivo });
-    const permiso = await prisma.permiso.create({ data: limpio.datos });
+    // Al crear, limpiarPermiso ya exigió la persona, el tipo y las dos fechas.
+    const permiso = await prisma.permiso.create({ data: limpio.datos as Prisma.PermisoUncheckedCreateInput });
     return reply.status(201).send(permiso);
   });
 

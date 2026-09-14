@@ -3,15 +3,14 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toZonedTime } from 'date-fns-tz';
 import {
-  X, Edit2, Trash2, MapPin, UtensilsCrossed, Coffee,
+  X, Edit2, Trash2, MapPin, UtensilsCrossed, Coffee, LogIn, LogOut,
   Info, CalendarClock, type LucideIcon,
 } from 'lucide-react';
 import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import FotosJornada from '../../components/FotosJornada';
 import { TIPO_PERMISO_LABEL as TIPO_NOVEDAD } from '../../constants/permisos';
-import { MOMENTO_TONO, type Momento } from '../../constants/momentos';
-import { nombreConDefecto } from '../../lib/porDefecto';
+import { MOMENTO_LABEL, MOMENTO_TONO, type Momento } from '../../constants/momentos';
 import { totalesDeDescansos, salioDentroDeSuVentana } from './resumenDeDescansos';
 
 const TZ = 'America/Bogota';
@@ -88,14 +87,24 @@ export type Jornada = {
   } | null;
 };
 
+type Tramo = Jornada['tramos'][number];
+
 const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : null;
 const enHoras = (min: number) => {
   const h = Math.floor(min / 60), m = min % 60;
   if (h === 0) return `${m} min`;
   return m === 0 ? `${h}h` : `${h}h ${m}min`;
 };
-const fechaLarga = (s: string) =>
-  format(toZonedTime(new Date(s), TZ), "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
+// «Sábado 12 de septiembre de 2026»: mayúscula solo al principio. Con `capitalize` salía
+// «Sábado 12 De Septiembre De 2026», y también el cargo con cada palabra en mayúscula.
+const fechaLarga = (s: string) => {
+  const texto = format(toZonedTime(new Date(s), TZ), "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+};
+
+// El diseño del detalle (13 de septiembre de 2026, aprobado por el dueño sobre una maqueta):
+// los títulos de sección en letra normal, como en el formulario de la jornada.
+const TITULO_DE_SECCION = 'text-sm font-medium text-ink mb-2 flex items-center gap-1.5';
 
 // Por qué esta marcación no tiene medida de llegada. Un guion mudo en una
 // columna de asistencia solo genera dudas; la razón las cierra.
@@ -111,82 +120,67 @@ type Pausa = 'ALMUERZO' | 'DESCANSO';
 
 // Cómo se dice cada pausa. Todo junto, para que el detalle de un descanso nunca
 // salga con los textos del almuerzo.
-const PAUSA: Record<Pausa, { rotulo: string; titulo: string; Icono: LucideIcon; enCurso: string; salio: string }> = {
-  ALMUERZO: {
-    rotulo: 'Almuerzo', titulo: 'Almuerzo de este día', Icono: UtensilsCrossed,
-    enCurso: 'Está almorzando', salio: 'Salió a almorzar',
-  },
-  DESCANSO: {
-    rotulo: 'Descanso', titulo: 'Descanso no remunerado de este día', Icono: Coffee,
-    enCurso: 'Está en su descanso', salio: 'Salió a su descanso',
-  },
-};
-
-// Qué fue cada extremo de un tramo, dicho en la lista de marcaciones del día.
-// Entrada y salida no llevan nota: son lo que se espera.
-const NOTA_DEL_MOMENTO: Partial<Record<Momento, string>> = {
-  SALIDA_ALMUERZO: 'salió a almorzar',
-  REGRESO_ALMUERZO: 'volvió del almuerzo',
-  SALIDA_DESCANSO: 'salió a su descanso',
-  REGRESO_DESCANSO: 'volvió del descanso',
+const PAUSA: Record<Pausa, { rotulo: string; Icono: LucideIcon; enCurso: string; salio: string }> = {
+  ALMUERZO: { rotulo: 'Almuerzo', Icono: UtensilsCrossed, enCurso: 'Está almorzando', salio: 'Salió a almorzar' },
+  DESCANSO: { rotulo: 'Descanso', Icono: Coffee, enCurso: 'Está en su descanso', salio: 'Salió a su descanso' },
 };
 
 function Chip({ tono, children }: { tono: string; children: React.ReactNode }) {
-  return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${tono}`}>{children}</span>;
+  return <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${tono}`}>{children}</span>;
 }
 
-function Dato({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
+// Un tiempo del día en su tarjeta. El rótulo es un <p> con solo su texto: así se encuentra la
+// tarjeta, y lo que dice va debajo.
+function Tarjeta({ rotulo, Icono, aviso = false, children }: {
+  rotulo: string; Icono: LucideIcon; aviso?: boolean; children: React.ReactNode;
+}) {
   return (
-    <div>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{rotulo}</p>
-      <div className="text-sm text-ink">{children}</div>
+    <div className={`rounded-xl border px-3 py-2.5 ${aviso ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white'}`}>
+      <p className={`text-xs flex items-center gap-1.5 ${aviso ? 'text-amber-700' : 'text-muted'}`}>
+        <Icono size={13} aria-hidden="true" />{rotulo}
+      </p>
+      <div className="mt-1">{children}</div>
     </div>
   );
 }
 
-function NotaDelMomento({ momento }: { momento: Momento | null }) {
-  const nota = momento ? NOTA_DEL_MOMENTO[momento] : undefined;
-  if (!momento || !nota) return null;
-  return <span className={`text-[11px] ${MOMENTO_TONO[momento]}`}> · {nota}</span>;
-}
-
-// La pausa en la tira de arriba: lo que PASÓ, no lo que costó. Esta celda
-// mostraba los minutos descontados, así que a quien marcaba bien su pausa —y por
-// eso no se le descuenta nada— le salía un guion, como si no hubiera parado,
-// encima del detalle de su hora y media. Al revés de lo que hay que premiar. El
-// costo va debajo, en pequeño.
-function DatoDePausa({ tipo, p }: { tipo: Pausa; p: ResumenDePausa | null | undefined }) {
+// La pausa en su tarjeta: lo que PASÓ, no lo que costó. Esta celda mostraba los
+// minutos descontados, así que a quien marcaba bien su pausa —y por eso no se le
+// descuenta nada— le salía un guion, como si no hubiera parado, encima del detalle
+// de su hora y media. Al revés de lo que hay que premiar. El costo va debajo, en
+// pequeño.
+function TarjetaDePausa({ tipo, p }: { tipo: Pausa; p: ResumenDePausa | null | undefined }) {
+  const { rotulo, Icono } = PAUSA[tipo];
   return (
-    <Dato rotulo={PAUSA[tipo].rotulo}>
+    <Tarjeta rotulo={rotulo} Icono={Icono}>
       {p?.salida ? (
         <>
-          <span className="font-mono text-sm">{hhmm(p.salida)} → {hhmm(p.regreso) ?? '···'}</span>
-          <p className="text-[11px] text-muted">
-            {p.minutosDescontados > 0
-              ? `se descontó ${enHoras(p.minutosDescontados)}`
-              : 'no se le descontó nada'}
+          <p className="text-[15px] font-semibold text-ink tabular-nums">{hhmm(p.salida)} a {hhmm(p.regreso) ?? '···'}</p>
+          <p className="text-xs text-muted">
+            {p.minutosDescontados > 0 ? `se descontó ${enHoras(p.minutosDescontados)}` : 'no se le descontó nada'}
           </p>
         </>
       ) : p && p.minutosDescontados > 0 ? (
-        <>−{enHoras(p.minutosDescontados)}
-          <p className="text-[11px] text-muted">{p.ventana ? 'no lo marcó' : 'fijo del horario'}</p></>
-      ) : <span className="text-gray-400">—</span>}
-    </Dato>
+        <>
+          <p className="text-[15px] font-semibold text-ink">−{enHoras(p.minutosDescontados)}</p>
+          <p className="text-xs text-muted">{p.ventana ? 'no lo marcó' : 'fijo del horario'}</p>
+        </>
+      ) : <p className="text-[15px] text-gray-400">—</p>}
+    </Tarjeta>
   );
 }
 
-// Varios descansos en la tira de arriba (12 de septiembre de 2026): un solo dato con a
-// cuántos salió y lo que costaron entre todos. El detalle de cada uno va abajo, un
-// bloque por descanso.
-function DatoDeDescansos({ descansos }: { descansos: ResumenDePausa[] }) {
+// Varios descansos en una sola tarjeta (12 de septiembre de 2026): a cuántos salió y lo que
+// costaron entre todos. El detalle de cada uno va abajo, una fila por descanso.
+function TarjetaDeDescansos({ descansos }: { descansos: ResumenDePausa[] }) {
   const { marcados, de, minutosDescontados } = totalesDeDescansos(descansos);
   return (
-    <Dato rotulo="Descansos">
-      <span className="text-sm">{`${marcados} de ${de} marcados`}</span>
-      <p className="text-[11px] text-muted">
+    <Tarjeta rotulo="Descansos" Icono={Coffee}>
+      <p className="text-[15px] font-semibold text-ink">{`${marcados} de ${de} marcados`}</p>
+      <p className="text-xs text-muted">
         {minutosDescontados > 0 ? `se descontó ${enHoras(minutosDescontados)}` : 'no se le descontó nada'}
       </p>
-    </Dato>
+    </Tarjeta>
   );
 }
 
@@ -234,83 +228,132 @@ function AvisoDePausa({ tipo, p }: { tipo: Pausa; p: ResumenDePausa }) {
 // con ventana de 12:00 a 13:00 sigue diciendo «dentro de su hora · se descontó 1h». Lo
 // decide el dueño.
 function EfectoEnElDia({ tipo, p }: { tipo: Pausa; p: ResumenDePausa }) {
-  if (p.estado === 'EN_CURSO') return <span className="text-sm text-amber-700 font-semibold">está fuera ahora</span>;
-  if (p.estado === 'ABIERTO') return <span className="text-sm text-red-600 font-semibold">no volvió a marcar</span>;
+  if (p.estado === 'EN_CURSO') return <p className="text-sm text-amber-700 font-semibold">Está fuera ahora</p>;
+  if (p.estado === 'ABIERTO') return <p className="text-sm text-red-600 font-semibold">No volvió a marcar</p>;
   if (p.estado === 'MARCADO' && p.minutos !== null && p.minutosVentana !== null) {
     const deMas = p.minutos - p.minutosVentana;
     if (tipo === 'DESCANSO' && !salioDentroDeSuVentana(p)) return (
       <>
-        <span className="text-sm text-orange-700 font-semibold">fuera de su hora</span>
-        <p className="text-[11px] text-muted">
+        <p className="text-sm text-orange-700 font-semibold">Fuera de su hora</p>
+        <p className="text-xs text-muted">
           {p.minutosDescontados > 0 ? `se descontó ${enHoras(p.minutosDescontados)}` : 'no se le descontó nada'}
         </p>
-        {deMas > 0 && <p className="text-[11px] text-muted">{`se tomó ${enHoras(deMas)} de más`}</p>}
+        {deMas > 0 && <p className="text-xs text-muted">{`se tomó ${enHoras(deMas)} de más`}</p>}
       </>
     );
     if (deMas > 0) return (
       <>
-        <span className="text-sm text-orange-700 font-semibold">−{enHoras(deMas)}</span>
-        <p className="text-[11px] text-muted">se tomó de más</p>
+        <p className="text-sm text-orange-700 font-semibold">−{enHoras(deMas)}</p>
+        <p className="text-xs text-muted">se tomó de más</p>
       </>
     );
     return (
       <>
-        <span className="text-sm text-green-700 font-semibold">dentro de su hora</span>
-        {p.minutosDescontados > 0 && (
-          <p className="text-[11px] text-muted">se descontó {enHoras(p.minutosDescontados)}</p>
-        )}
+        <p className="text-sm text-green-700 font-semibold">Dentro de su hora</p>
+        {p.minutosDescontados > 0 && <p className="text-xs text-muted">se descontó {enHoras(p.minutosDescontados)}</p>}
       </>
     );
   }
   return (
     <>
-      <span className="text-sm">−{enHoras(p.minutosDescontados)}</span>
-      <p className="text-[11px] text-muted">de la ventana, siguió marcado</p>
+      <p className="text-sm text-ink">−{enHoras(p.minutosDescontados)}</p>
+      <p className="text-xs text-muted">de la ventana, siguió marcado</p>
     </>
   );
 }
 
-// El bloque de una pausa con horario. En tarjetas, como la tira de arriba: tres
-// datos que se leen de un vistazo en vez de cuatro frases seguidas. Y sin el
-// párrafo que explicaba la mecánica del descuento: quien abre este bloque quiere
-// saber qué pasó ese día, no cómo funciona el motor.
-// `titulo` es para cuando el día tiene varios descansos (12 de septiembre de 2026): cada
-// bloque dice de cuál es, «Descanso de 09:00 a 09:15».
-function DetalleDePausa({ tipo, p, ventana, titulo }: {
-  tipo: Pausa; p: ResumenDePausa; ventana: { inicio: string; fin: string }; titulo?: string;
+// Una pausa con horario, en su fila del recuadro de pausas: lo que pedía su horario, lo que se
+// tomó y lo que le costó al día. Antes era un bloque por pausa, cada uno con su título; ahora
+// van juntas, como en el formulario de la jornada, y con varios descansos cada uno lleva su
+// número (13 de septiembre de 2026).
+function FilaDePausa({ tipo, p, ventana, nombre }: {
+  tipo: Pausa; p: ResumenDePausa; ventana: { inicio: string; fin: string }; nombre: string;
 }) {
-  const { titulo: tituloDeLaPausa, Icono } = PAUSA[tipo];
+  const { Icono } = PAUSA[tipo];
+  return (
+    <div role="group" aria-label={nombre}
+      className="grid grid-cols-1 sm:grid-cols-[1.3fr_1fr_1fr] gap-x-4 gap-y-1.5 py-3 border-b border-gray-200 last:border-b-0">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <Icono size={17} className="text-gray-500 shrink-0" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-ink">{nombre}</p>
+          {/* Los minutos van juntos: sueltos, «min» se partía a otra línea. */}
+          <p className="text-xs text-muted">
+            su horario {ventana.inicio} a {ventana.fin}
+            {p.minutosVentana !== null && <span className="whitespace-nowrap">{` · ${enHoras(p.minutosVentana)}`}</span>}
+          </p>
+        </div>
+      </div>
+      <div className="pl-7 sm:pl-0">
+        {p.salida ? (
+          <>
+            <p className="text-sm text-ink tabular-nums">{hhmm(p.salida)} a {hhmm(p.regreso) ?? '···'}</p>
+            <p className="text-xs text-muted">
+              se lo tomó{p.minutos !== null ? ` · ${enHoras(p.minutos)}` : ' · sigue fuera'}
+              {p.regresoEstimado && ' · regreso estimado'}
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted">no lo marcó</p>
+        )}
+      </div>
+      <div className="pl-7 sm:pl-0">
+        <EfectoEnElDia tipo={tipo} p={p} />
+      </div>
+    </div>
+  );
+}
+
+// Una hora de una marcación, con el rótulo de lo que fue: la entrada, la salida a almorzar, el
+// regreso del descanso. `sinHora` es lo que dice cuando esa marca no existe.
+function HoraDeMarcacion({ momento, hora, sinHora, estimada, textoEstimada }: {
+  momento: Momento; hora: string | null; sinHora: string; estimada: boolean; textoEstimada: string;
+}) {
+  return (
+    <span className="flex-1 min-w-0">
+      <span className={`block text-xs ${MOMENTO_TONO[momento]}`}>{MOMENTO_LABEL[momento]}</span>
+      {hora
+        ? <span className="block text-base font-semibold text-ink tabular-nums">{hhmm(hora)}</span>
+        : <span className="block text-sm text-amber-700">{sinHora}</span>}
+      {estimada && <span className="block text-[11px] text-amber-700">{textoEstimada}</span>}
+    </span>
+  );
+}
+
+// Una marcación del día en su fila (13 de septiembre de 2026, pedido del dueño): más alta y con
+// cada hora rotulada con lo que fue, en vez de una línea con las notas pegadas a las horas.
+//
+// Sigue siendo un botón. Dejó de serlo cuando cada marcación tenía su fila en la tabla y bastaba
+// cerrar y tocar la otra; ahora la jornada entera es UNA fila, así que esta lista es el único
+// camino al regreso de una pausa —y a su foto, su hora y su botón de editar.
+function FilaDeMarcacion({ t, numero, esEsta, onVer }: { t: Tramo; numero: number; esEsta: boolean; onVer: () => void }) {
+  const minutos = t.entrada && t.salida
+    ? Math.round((new Date(t.salida).getTime() - new Date(t.entrada).getTime()) / 60000)
+    : null;
+  return (
+    <button type="button" disabled={esEsta} onClick={onVer}
+      className={`w-full text-left rounded-xl border px-4 py-3.5 flex items-center gap-4 transition-colors ${
+        esEsta ? 'border-primary bg-primary/10' : 'border-gray-200 hover:border-primary hover:bg-gray-50'}`}>
+      <span className="shrink-0 w-7 h-7 rounded-full bg-gray-100 text-xs font-semibold text-gray-600 flex items-center justify-center">
+        {numero}
+      </span>
+      <HoraDeMarcacion momento={t.momentoEntrada ?? 'ENTRADA'} hora={t.entrada} sinHora="sin entrada"
+        estimada={t.entradaEstimada} textoEstimada="regreso estimado" />
+      <HoraDeMarcacion momento={t.momentoSalida ?? 'SALIDA'} hora={t.salida} sinHora="sin salida"
+        estimada={t.salidaEstimada} textoEstimada="salida estimada" />
+      <span className="shrink-0 min-w-[4.5rem] text-right text-sm text-muted tabular-nums">
+        {minutos !== null ? enHoras(minutos) : ''}
+      </span>
+    </button>
+  );
+}
+
+// Un dato de lo que pedía el horario, con su rótulo encima.
+function DatoDelHorario({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
-        <Icono size={13} /> {titulo ?? tituloDeLaPausa}
-      </p>
-      <div className="bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
-        <Dato rotulo="Su horario">
-          <span className="font-mono text-sm">{ventana.inicio} → {ventana.fin}</span>
-          {p.minutosVentana !== null && (
-            <p className="text-[11px] text-muted">{enHoras(p.minutosVentana)}</p>
-          )}
-        </Dato>
-
-        <Dato rotulo="Se lo tomó">
-          {p.salida ? (
-            <>
-              <span className="font-mono text-sm">{hhmm(p.salida)} → {hhmm(p.regreso) ?? '···'}</span>
-              <p className="text-[11px] text-muted">
-                {p.minutos !== null ? enHoras(p.minutos) : 'sigue fuera'}
-                {p.regresoEstimado && ' · regreso estimado'}
-              </p>
-            </>
-          ) : (
-            <span className="text-sm text-muted">no lo marcó</span>
-          )}
-        </Dato>
-
-        <Dato rotulo="Efecto en el día">
-          <EfectoEnElDia tipo={tipo} p={p} />
-        </Dato>
-      </div>
+      <dt className="text-xs text-muted">{rotulo}</dt>
+      <dd className="text-sm text-ink tabular-nums">{valor}</dd>
     </div>
   );
 }
@@ -401,38 +444,62 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
   const abrioAtribuida = j?.sedes?.abrioAtribuida ?? null;
   const entrada = hhmm(r?.entrada ?? null);
   const a = j?.almuerzo;
-  // Los descansos del día, cada uno con su ventana. Con uno solo se pinta como se
-  // pintaba; con varios, la tira de arriba los resume en un dato y abajo va un bloque
-  // por cada uno.
+  // Los descansos del día, cada uno con su ventana. Con uno solo va en su tarjeta como el
+  // almuerzo; con varios, una tarjeta los resume y abajo va una fila por cada uno.
   const ds = j?.descansos ?? [];
   // Los descansos que el horario pedía ese día. Opcional: un servidor anterior no los manda.
   const descansosDelDia = j?.dia?.descansos ?? [];
   const hayVentanaDeDescanso = ds.some(p => p.ventana);
+  const hayPausasConHorario = !!a?.ventana || hayVentanaDeDescanso;
 
-  // Extremos del día: la primera entrada y la última salida de todos los tramos.
+  // Los extremos del DÍA, no de esta marcación: la primera entrada, y la salida solo si la
+  // última marcación la cerró. Antes se tomaba la última marcación que tuviera salida, y una
+  // jornada que volvió del descanso y no marcó la salida decía «Salió 17:32», la hora en que
+  // salió al descanso (13 de septiembre de 2026). Un servidor anterior no manda el momento de
+  // cada marca, y entonces se lee de las banderas de la pausa.
   const primeraEntrada = j ? hhmm(j.tramos.find(t => t.entrada)?.entrada ?? null) : null;
-  const ultimaSalida = j ? hhmm([...j.tramos].reverse().find(t => t.salida)?.salida ?? null) : null;
+  const ultimo = j && j.tramos.length > 0 ? j.tramos[j.tramos.length - 1] : null;
+  const cierraLaJornada = !!ultimo?.salida && (ultimo.momentoSalida
+    ? ultimo.momentoSalida === 'SALIDA'
+    : !ultimo.salidaAlmuerzo && !ultimo.salidaDescanso);
+  const salidaDelDia = cierraLaJornada ? hhmm(ultimo!.salida) : null;
+  const sinSalida = !!ultimo && !cierraLaJornada;
+  const salidaDelSistema = ultimo ? ultimo.salidaEstimada : !!r?.salidaEstimada;
+
+  // Lo contado frente a lo que pedía el horario, para la barra. Sin «cuánto falta»: la deuda de
+  // verdad sale del saldo del período, que tiene en cuenta más que un día (decisión del dueño del
+  // 13 de septiembre de 2026). La barra no pasa del 100 aunque haya trabajado de más.
+  const porcentaje = j?.dia?.programado && j.dia.minutosEsperados > 0
+    ? Math.min(100, Math.round((j.minutosDelDia / j.dia.minutosEsperados) * 100))
+    : null;
+  const almuerzoDelHorario = j?.dia?.almuerzoInicio && j.dia.almuerzoFin
+    ? `${j.dia.almuerzoInicio} a ${j.dia.almuerzoFin}`
+    : j?.dia && j.dia.almuerzoMin > 0 ? enHoras(j.dia.almuerzoMin) : null;
 
   return (
     <>
     <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onCerrar}>
       <div
+        role="dialog" aria-modal="true" aria-labelledby="titulo-del-detalle"
         onClick={e => e.stopPropagation()}
         className="hp-pop bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto"
       >
-        <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-3 border-b border-gray-100 sticky top-0 bg-white z-10">
+        <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-gray-100 sticky top-0 bg-white z-10">
           <div className="min-w-0">
-            <h3 className="font-bold text-lg text-ink truncate">
+            <h3 id="titulo-del-detalle" className="font-bold text-xl text-ink truncate">
               {entrada ? `Marcación de las ${entrada}` : 'Marcación sin hora de entrada'}
             </h3>
             {j && (
-              <p className="text-xs text-muted capitalize truncate">
+              <p className="text-sm text-muted truncate">
                 {j.colaborador.nombre} {j.colaborador.apellido}
                 {j.colaborador.cargo && ` · ${j.colaborador.cargo}`} · {fechaLarga(j.fecha)}
               </p>
             )}
           </div>
-          <button onClick={onCerrar} className="shrink-0"><X size={20} className="text-gray-400" /></button>
+          <button type="button" onClick={onCerrar} aria-label="Cerrar"
+            className="shrink-0 p-1.5 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-ink">
+            <X size={18} />
+          </button>
         </div>
 
         {error && <p className="text-center text-red-500 py-10 text-sm px-6">{error}</p>}
@@ -440,14 +507,14 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
 
         {j && r && (
           <div className="p-6 space-y-5">
-            {/* Estado de un vistazo */}
+            {/* Estado de un vistazo. Solo lo que es del DÍA: «Salió a almorzar» hablaba de la
+                primera marcación, que la lista de abajo ya dice, y dos parejas de etiquetas
+                decían lo mismo con otras palabras (13 de septiembre de 2026). */}
             <div className="flex flex-wrap gap-1.5">
-              {r.entrada && !r.salida && <Chip tono="bg-green-100 text-green-800">Está adentro ahora</Chip>}
-              {r.salidaEstimada && <Chip tono="bg-amber-50 text-amber-700">El sistema cerró este turno</Chip>}
-              {r.salidaAlmuerzo && <Chip tono="bg-yellow-50 text-yellow-700">Salió a almorzar</Chip>}
-              {r.salidaDescanso && <Chip tono="bg-sky-50 text-sky-700">Salió a su descanso</Chip>}
+              {sinSalida && <Chip tono="bg-amber-50 text-amber-700">Sin salida</Chip>}
+              {salidaDelSistema && <Chip tono="bg-amber-100 text-amber-800">Salida puesta por el sistema</Chip>}
               {r.entradaEstimada && <Chip tono="bg-amber-50 text-amber-700">Regreso puesto por el sistema</Chip>}
-              {r.editadoPor && <Chip tono="bg-blue-50 text-blue-700">Corregido a mano</Chip>}
+              {r.editadoPor && <Chip tono="bg-gray-100 text-gray-700">Corregido a mano</Chip>}
               {j.festivo && <Chip tono="bg-purple-100 text-purple-700">Festivo: {j.festivo.nombre}</Chip>}
               {j.novedad && (
                 <Chip tono={j.novedad.aprobado ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}>
@@ -460,78 +527,90 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   igual. Un cierre sin sede registrada no dice nada: no es «cerró
                   en otra parte», es «no se sabe». */}
               {abrio && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1">
-                  <MapPin size={10} /> {cerro && cerro.id !== abrio.id ? 'Abrió en ' : ''}{abrio.nombre}{!abrio.activa && ' (desactivada)'}
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 inline-flex items-center gap-1">
+                  <MapPin size={12} /> {cerro && cerro.id !== abrio.id ? 'Abrió en ' : ''}{abrio.nombre}{!abrio.activa && ' (desactivada)'}
                 </span>
               )}
               {cerro && (!abrio || cerro.id !== abrio.id) && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 inline-flex items-center gap-1">
-                  <MapPin size={10} /> Cerró en {cerro.nombre}{!cerro.activa && ' (desactivada)'}
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 inline-flex items-center gap-1">
+                  <MapPin size={12} /> Cerró en {cerro.nombre}{!cerro.activa && ' (desactivada)'}
                 </span>
               )}
-              {/* Sin ninguna sede probada, la que se le atribuye al leer, con la
-                  etiqueta (decisión del dueño del 12 de septiembre de 2026). Con una
-                  probada no sale: «Abrió en» y «Cerró en» son solo de lo que probó
-                  la ubicación. */}
+              {/* Sin ninguna sede probada, la que se le atribuye al leer (decisión del dueño del 12
+                  de septiembre de 2026), y desde el 13 solo con su nombre: el dueño pidió quitar
+                  «por defecto». Con una probada no sale: «Abrió en» y «Cerró en» son solo de lo
+                  que probó la ubicación. */}
               {!abrio && !cerro && abrioAtribuida && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1">
-                  <MapPin size={10} /> {nombreConDefecto(abrioAtribuida.nombre)}{!abrioAtribuida.activa && ' (desactivada)'}
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 inline-flex items-center gap-1">
+                  <MapPin size={12} /> {abrioAtribuida.nombre}{!abrioAtribuida.activa && ' (desactivada)'}
                 </span>
-              )}
-              {r.salidaEstimada && (
-                <Chip tono="bg-amber-100 text-amber-800">Salida puesta por el sistema</Chip>
-              )}
-              {r.entrada && !r.salida && (
-                <Chip tono="bg-green-100 text-green-800">Sigue adentro</Chip>
               )}
             </div>
 
-            {/* Lo primero que se pregunta el administrador: ¿trabajó su jornada? */}
-            <div className={`bg-gray-50 rounded-xl px-4 py-3 grid grid-cols-2 gap-3 ${hayVentanaDeDescanso ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
-              {/* La llegada va aquí, pegada a la hora que la produce, en vez de
-                  en un bloque aparte con su propia frase. */}
-              <Dato rotulo="Entró">
-                <span className="font-mono text-green-700">{primeraEntrada ?? '—'}</span>
+            {/* Lo primero que se pregunta el administrador: ¿trabajó su jornada? Cada tiempo en
+                su tarjeta, y la llegada pegada a la hora que la produce. */}
+            <div className={`grid grid-cols-2 gap-2 ${hayVentanaDeDescanso ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
+              <Tarjeta rotulo="Entró" Icono={LogIn}>
+                <p className="text-lg font-semibold text-ink tabular-nums">{primeraEntrada ?? '—'}</p>
                 {j.minutosTarde === null ? (
-                  <p className="text-[11px] text-muted"
+                  <p className="text-xs text-muted"
                     title={SIN_TARDANZA[j.motivoSinTardanza ?? ''] ?? 'No se puede medir la llegada.'}>
                     sin medir
                   </p>
                 ) : j.minutosTarde > 0 ? (
-                  <p className="text-[11px] text-orange-700 font-semibold"
+                  <p className="text-xs text-orange-700 font-semibold"
                     title={`Entraba a las ${j.dia?.horaEntrada}${(j.dia?.toleranciaMin ?? 0) > 0 ? ` con ${j.dia!.toleranciaMin} min de tolerancia` : ''}`}>
                     {enHoras(j.minutosTarde)} tarde
                   </p>
                 ) : (
-                  <p className="text-[11px] text-green-700" title={`Entraba a las ${j.dia?.horaEntrada}`}>a tiempo</p>
+                  <p className="text-xs text-green-700" title={`Entraba a las ${j.dia?.horaEntrada}`}>a tiempo</p>
                 )}
-              </Dato>
-              <Dato rotulo="Salió"><span className="font-mono text-red-600">{ultimaSalida ?? '—'}</span></Dato>
-              <DatoDePausa tipo="ALMUERZO" p={a} />
+              </Tarjeta>
+              <Tarjeta rotulo="Salió" Icono={LogOut} aviso={sinSalida}>
+                <p className={`text-lg font-semibold tabular-nums ${sinSalida ? 'text-amber-800' : 'text-ink'}`}>{salidaDelDia ?? '—'}</p>
+                {sinSalida && <p className="text-xs text-amber-700">sin salida</p>}
+                {salidaDelDia && salidaDelSistema && <p className="text-xs text-amber-700">la puso el sistema</p>}
+              </Tarjeta>
+              <TarjetaDePausa tipo="ALMUERZO" p={a} />
               {hayVentanaDeDescanso && (ds.length === 1
-                ? <DatoDePausa tipo="DESCANSO" p={ds[0]} />
-                : <DatoDeDescansos descansos={ds} />)}
-              <Dato rotulo="Contado ese día">
-                <b className="text-base">{enHoras(j.minutosDelDia)}</b>
-                {j.dia?.programado && (
-                  <p className="text-[11px] text-muted">el horario pedía {enHoras(j.dia.minutosEsperados)}</p>
-                )}
-              </Dato>
+                ? <TarjetaDePausa tipo="DESCANSO" p={ds[0]} />
+                : <TarjetaDeDescansos descansos={ds} />)}
             </div>
-            <p className="text-[11px] text-muted -mt-3">
-              El tiempo contado suma todas las marcaciones del día y ya tiene descontados el almuerzo y los descansos.
-              No es plata: el reparto en horas ordinarias, extras y recargos está en Reportes.
-            </p>
+
+            <div className="space-y-1.5">
+              <div className="rounded-xl border border-primary px-4 py-3">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-muted">Contado ese día</p>
+                    <p className="text-2xl font-bold text-ink tabular-nums">{enHoras(j.minutosDelDia)}</p>
+                  </div>
+                  {j.dia?.programado && (
+                    <p className="text-sm text-gray-600 text-right">el horario pedía {enHoras(j.dia.minutosEsperados)}</p>
+                  )}
+                </div>
+                {porcentaje !== null && (
+                  <div role="progressbar" aria-label="Contado frente a lo que pedía el horario"
+                    aria-valuemin={0} aria-valuemax={100} aria-valuenow={porcentaje}
+                    className="h-1.5 bg-gray-100 rounded-full mt-2.5 overflow-hidden">
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${porcentaje}%` }} />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted">
+                Suma todas las marcaciones del día, ya sin almuerzo ni descansos. No es plata: las horas
+                ordinarias, extras y recargos están en Reportes.
+              </p>
+            </div>
 
             {a && <AvisoDePausa tipo="ALMUERZO" p={a} />}
             {ds.map((p, i) => <AvisoDePausa key={i} tipo="DESCANSO" p={p} />)}
 
             {/* La observación, que es lo único de la marcación que no cabe
                 arriba. El resto —llegada, sede, horas— se subió a la cabecera:
-                aquí repetía lo que la tira ya decía y lo que la lista de abajo
+                aquí repetía lo que las tarjetas ya decían y lo que la lista de abajo
                 vuelve a decir marcación por marcación. */}
             {r.observacion && (
-              <p className="text-sm text-ink bg-gray-50 rounded-xl px-4 py-3">{r.observacion}</p>
+              <p className="text-sm text-ink bg-blue-50 rounded-xl px-4 py-3">{r.observacion}</p>
             )}
 
             {/* La novedad del día: verla, decidirla y, si el tipo estaba mal,
@@ -539,8 +618,8 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                 que cambiarlo aquí es cambiar plata: se dice en la misma línea. */}
             {j.novedad && (
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2 flex items-center gap-1.5">
-                  <CalendarClock size={13} /> Novedad de este día
+                <p className={TITULO_DE_SECCION}>
+                  <CalendarClock size={14} /> Novedad de este día
                 </p>
                 <div className={`rounded-xl px-4 py-3 space-y-2.5 text-sm border ${
                   j.novedad.aprobado ? 'bg-green-50/60 border-green-200' : 'bg-amber-50/60 border-amber-200'}`}>
@@ -564,7 +643,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
 
                   <div className="flex flex-wrap items-end gap-3">
                     <div className="min-w-[190px]">
-                      <label className="block text-[10px] font-semibold uppercase tracking-wide text-muted mb-1">Motivo</label>
+                      <label className="block text-xs text-muted mb-1">Motivo</label>
                       <select value={j.novedad.tipo} disabled={guardandoNovedad}
                         onChange={e => guardarNovedad({ tipo: e.target.value })}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white disabled:opacity-60">
@@ -596,90 +675,72 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
               </div>
             )}
 
-            {/* Las pausas del día que tienen horario */}
-            {a?.ventana && <DetalleDePausa tipo="ALMUERZO" p={a} ventana={a.ventana} />}
-            {ds.map((p, i) => p.ventana && (
-              <DetalleDePausa key={i} tipo="DESCANSO" p={p} ventana={p.ventana}
-                titulo={ds.length > 1 ? `Descanso de ${p.ventana.inicio} a ${p.ventana.fin}` : undefined} />
-            ))}
+            {/* Las pausas del día que tienen horario, juntas en un recuadro */}
+            {hayPausasConHorario && (
+              <section aria-labelledby="titulo-pausas-del-dia">
+                <p id="titulo-pausas-del-dia" className={TITULO_DE_SECCION}>Pausas de este día</p>
+                <div className="bg-blue-50 rounded-xl px-4">
+                  {a?.ventana && <FilaDePausa tipo="ALMUERZO" p={a} ventana={a.ventana} nombre="Almuerzo" />}
+                  {ds.map((p, i) => p.ventana && (
+                    <FilaDePausa key={i} tipo="DESCANSO" p={p} ventana={p.ventana}
+                      nombre={ds.length > 1 ? `Descanso ${i + 1}` : 'Descanso'} />
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* El resto del día */}
             {j.tramos.length > 1 && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
+              <section aria-labelledby="titulo-marcaciones-del-dia">
+                <p id="titulo-marcaciones-del-dia" className={TITULO_DE_SECCION}>
                   Las {j.tramos.length} marcaciones de ese día
                 </p>
-                <div className="space-y-1.5">
-                  {j.tramos.map((t, i) => {
-                    const esEste = t.id === r.id;
-                    return (
-                      /* Vuelven a ser botones. Dejaron de serlo cuando cada
-                         marcación tenía su fila en la tabla y bastaba cerrar y
-                         tocar la otra; ahora la jornada entera es UNA fila, así
-                         que esta lista es el único camino al regreso de una
-                         pausa —y a su foto, su hora y su botón de editar. */
-                      <button key={t.id} type="button" disabled={esEste}
-                        onClick={() => onVerMarcacion(t.id)}
-                        className={`w-full text-left border rounded-xl px-3 py-2 text-sm transition-colors ${
-                          esEste ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-primary hover:bg-gray-50'}`}>
-                        <span className="flex items-baseline justify-between gap-2 flex-wrap">
-                          <span>
-                            <span className="text-muted">{i + 1}.</span>{' '}
-                            <span className="font-mono">{hhmm(t.entrada) ?? '—'} → {hhmm(t.salida) ?? '—'}</span>
-                            <NotaDelMomento momento={t.momentoSalida} />
-                            <NotaDelMomento momento={t.momentoEntrada} />
-                            {t.salidaEstimada && <span className="text-[11px] text-amber-700"> · salida estimada</span>}
-                            {t.entradaEstimada && <span className="text-[11px] text-amber-700"> · regreso estimado</span>}
-                          </span>
-                          {t.entrada && t.salida && (
-                            <span className="text-xs text-muted shrink-0">
-                              {enHoras(Math.round((new Date(t.salida).getTime() - new Date(t.entrada).getTime()) / 60000))}
-                            </span>
-                          )}
-                        </span>
-                      </button>
-                    );
-                  })}
+                <div className="space-y-2">
+                  {j.tramos.map((t, i) => (
+                    <FilaDeMarcacion key={t.id} t={t} numero={i + 1} esEsta={t.id === r.id}
+                      onVer={() => onVerMarcacion(t.id)} />
+                  ))}
                 </div>
-              </div>
+              </section>
             )}
 
-            {/* Lo que el horario exigía ese día */}
+            {/* Lo que el horario exigía ese día, cada dato con su rótulo */}
             {j.dia && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
-                  Lo que el horario pedía ese día
-                </p>
-                <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm space-y-1.5">
+              <section aria-labelledby="titulo-horario-del-dia">
+                <p id="titulo-horario-del-dia" className={TITULO_DE_SECCION}>Lo que el horario pedía ese día</p>
+                <div className="bg-blue-50 rounded-xl px-4 py-3 text-sm">
                   <Chip tono={j.dia.congelado ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}>
                     {j.dia.congelado ? 'Guardado ese día' : 'Reconstruido con el horario actual'}
                   </Chip>
                   {j.dia.programado ? (
-                    <p>
-                      Entrada {j.dia.horaEntrada} · Salida {j.dia.horaSalida} ·
-                      Tolerancia de llegada {j.dia.toleranciaMin} min
-                      {j.dia.toleranciaSalidaMin > 0 && ` · Tolerancia de salida ${j.dia.toleranciaSalidaMin} min`}
-                    </p>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 mt-3">
+                      <DatoDelHorario rotulo="Entrada y salida" valor={`${j.dia.horaEntrada} a ${j.dia.horaSalida}`} />
+                      <DatoDelHorario rotulo="Tolerancia de llegada" valor={`${j.dia.toleranciaMin} min`} />
+                      {j.dia.toleranciaSalidaMin > 0 && (
+                        <DatoDelHorario rotulo="Tolerancia de salida" valor={`${j.dia.toleranciaSalidaMin} min`} />
+                      )}
+                      {/* El almuerzo no aparecía, y es lo que más resta de lo exigido. */}
+                      {almuerzoDelHorario && <DatoDelHorario rotulo="Almuerzo" valor={almuerzoDelHorario} />}
+                      {/* Los descansos que pedía ese día (12 de septiembre de 2026). Restan de lo
+                          exigido igual que el almuerzo, así que sin ellos la sección no decía por
+                          qué el día pedía menos. */}
+                      {descansosDelDia.length > 0 && (
+                        <DatoDelHorario
+                          rotulo={descansosDelDia.length === 1 ? 'Descanso no remunerado' : 'Descansos no remunerados'}
+                          valor={descansosDelDia.map(d => `${d.inicio} a ${d.fin}`).join(' · ')} />
+                      )}
+                    </dl>
                   ) : (
-                    <p>Ese día no estaba programado en su horario.</p>
-                  )}
-                  {/* Los descansos que pedía ese día (12 de septiembre de 2026). Restan de lo
-                      exigido igual que el almuerzo, así que sin ellos la sección no decía por
-                      qué el día pedía menos. */}
-                  {descansosDelDia.length > 0 && (
-                    <p>
-                      {`${descansosDelDia.length === 1 ? 'Descanso no remunerado' : 'Descansos no remunerados'}: ${
-                        descansosDelDia.map(d => `${d.inicio} a ${d.fin}`).join(' · ')}`}
-                    </p>
+                    <p className="mt-2">Ese día no estaba programado en su horario.</p>
                   )}
                   {!j.dia.congelado && (
-                    <p className="text-[11px] text-muted">
+                    <p className="text-xs text-muted mt-3">
                       Este día se armó con el horario que tiene hoy esta persona, que es el mismo
                       que se usó para liquidarlo. Solo cambiaría si le modificas el horario.
                     </p>
                   )}
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Verificación facial: la evidencia del DÍA, no la de esta
@@ -691,8 +752,8 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
             <FotosJornada registroId={registroId} />
 
             {/* Rastro de cambios y acciones */}
-            <div className="border-t border-gray-100 pt-4">
-              <div className="text-[11px] text-muted space-y-0.5 mb-4">
+            <div className="border-t border-gray-100 pt-4 flex flex-wrap items-end justify-between gap-3">
+              <div className="text-xs text-muted space-y-0.5">
                 <p>Creado el {format(toZonedTime(new Date(r.creadoEn), TZ), "d 'de' MMMM 'a las' HH:mm", { locale: es })}</p>
                 {r.editadoEn ? (
                   <p>
@@ -702,7 +763,7 @@ export default function ModalJornada({ registroId, onCerrar, onEditar, onElimina
                   </p>
                 ) : <p>Sin correcciones desde que se creó.</p>}
               </div>
-              <div className="flex flex-wrap gap-2 justify-end">
+              <div className="flex flex-wrap gap-2">
                 <button onClick={() => onEliminar(r.id, r.tieneNovedadLigada ? 1 : 0)}
                   className="flex items-center gap-1.5 text-sm text-red-600 border border-red-200 rounded-lg px-4 py-2 hover:bg-red-50">
                   <Trash2 size={14} /> Eliminar

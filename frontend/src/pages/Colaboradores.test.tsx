@@ -90,8 +90,8 @@ describe('Colaboradores · alta de un colaborador y la Sede principal', () => {
 // LA SEDE QUE SE VE EN LA LISTA, Y EL FILTRO.
 //
 // «Mostrar la principal» (12 de septiembre de 2026): un presencial sin sedes se ve y
-// se filtra en la Sede principal, con «por defecto». «Sin sede» queda para un
-// híbrido o un remoto sin sedes.
+// se filtra en la Sede principal. Hasta el 13 de septiembre llevaba «por defecto»; el
+// dueño pidió quitarlo. «Sin sede» queda para un híbrido o un remoto sin sedes.
 describe('Colaboradores · la sede que se ve en la lista', () => {
   const persona = (nombre: string, extra: Record<string, unknown>) => ({
     id: `c-${nombre}`, nombre, apellido: 'Prueba', cedula: nombre, salarioMensual: 1_000_000,
@@ -120,15 +120,16 @@ describe('Colaboradores · la sede que se ve en la lista', () => {
 
   const fila = (nombre: string) => screen.queryByRole('row', { name: new RegExp(nombre) });
 
-  it('un presencial sin sedes se ve en la Sede principal «por defecto»; un remoto sin sedes, «Sin sede»', async () => {
+  it('un presencial sin sedes se ve en la Sede principal, sin «por defecto»; un remoto sin sedes, «Sin sede»', async () => {
     render(<MemoryRouter><Colaboradores /></MemoryRouter>);
     const ana = await screen.findByRole('row', { name: /Ana/ });
-    await waitFor(() => expect(ana).toHaveTextContent('Sede principal (por defecto)'));
+    await waitFor(() => expect(ana).toHaveTextContent('Sede principal'));
+    expect(ana).not.toHaveTextContent('por defecto');
     expect(ana).not.toHaveTextContent('Sin sede');
     expect(fila('Beto')).toHaveTextContent('Sin sede');
-    expect(fila('Beto')).not.toHaveTextContent('por defecto');
+    expect(fila('Beto')).not.toHaveTextContent('Sede principal');
     expect(fila('Caro')).toHaveTextContent('Norte');
-    expect(fila('Caro')).not.toHaveTextContent('por defecto');
+    expect(fila('Caro')).not.toHaveTextContent('Sede principal');
   });
 
   it('en el filtro, la Sede principal trae al presencial sin sedes, y «Sin sede» solo al remoto', async () => {
@@ -148,13 +149,13 @@ describe('Colaboradores · la sede que se ve en la lista', () => {
     expect(fila('Caro')).toBeNull();
   });
 
-  it('un retirado no se ve «Sin sede» ni «por defecto»: la lista no trae sus sedes ni su modalidad', async () => {
+  it('un retirado no se ve «Sin sede» ni en la Sede principal: la lista no trae sus sedes ni su modalidad', async () => {
     const u = userEvent.setup();
     render(<MemoryRouter><Colaboradores /></MemoryRouter>);
     await act(async () => {});
     await u.click(await screen.findByRole('button', { name: /Retirados/ }));
     const dani = await screen.findByRole('row', { name: /Dani/ });
     expect(dani).not.toHaveTextContent('Sin sede');
-    expect(dani).not.toHaveTextContent('por defecto');
+    expect(dani).not.toHaveTextContent('Sede principal');
   });
 });

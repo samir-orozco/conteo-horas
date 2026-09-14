@@ -9,7 +9,6 @@ import ModalReingreso from '../features/colaboradores/ModalReingreso';
 import ModalImportar from '../features/colaboradores/ModalImportar';
 import Toast from '../components/Toast';
 import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros, sedesQueCuentan, sedesParaFiltrar, SIN_SEDE } from '../features/colaboradores/estadoContrato';
-import { nombreConDefecto } from '../lib/porDefecto';
 import type { SedeOpcion } from '../components/SelectorSedes';
 import MenuFiltros from '../components/MenuFiltros';
 import AvatarMini from '../components/AvatarMini';
@@ -81,14 +80,14 @@ function enlaceMasCupo(nombre?: string, empresa?: string | null, nombrePlan?: st
 // La sede de una fila de la lista. Fuera del componente, como las celdas de Registros.
 //
 // «Mostrar la principal» (decisión del dueño del 12 de septiembre de 2026): un
-// presencial sin sedes se ve en la Sede principal, por defecto, y «Sin sede» queda
-// para un híbrido o un remoto. Un retirado lleva un guion, como Cargo cuando falta: la
-// lista de retirados no trae sus sedes ni su modalidad, y «Sin sede» afirmaría algo
-// que no se sabe.
+// presencial sin sedes se ve en la Sede principal, y «Sin sede» queda para un híbrido o
+// un remoto. Desde el 13 de septiembre sin «por defecto»: el dueño pidió quitarlo. Un
+// retirado lleva un guion, como Cargo cuando falta: la lista de retirados no trae sus
+// sedes ni su modalidad, y «Sin sede» afirmaría algo que no se sabe.
 function TextoSede({ col, sedes }: { col: { activo: boolean; sedeIds?: string[]; sedeNombres?: string[]; modalidad?: string }; sedes: SedeOpcion[] }) {
   if (!col.activo) return <span className="text-gray-400">-</span>;
   const principal = sedes.find(s => s.principal);
-  if (sedesQueCuentan(col, sedes).porDefecto && principal) return <>{nombreConDefecto(principal.nombre)}</>;
+  if (sedesQueCuentan(col, sedes).porDefecto && principal) return <>{principal.nombre}</>;
   if (col.sedeNombres?.length) return <>{col.sedeNombres.join(' · ')}</>;
   return <span className="text-gray-400">Sin sede</span>;
 }

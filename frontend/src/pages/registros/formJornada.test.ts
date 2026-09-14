@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { horasDeLaJornada, cuerpoDeLaJornada, type HorasDelFormulario } from './formJornada';
+import { horasDeLaJornada, cuerpoDeLaJornada, type HorasDelFormulario, horasDelHorario, resumenDeLaJornada } from './formJornada';
 
 // El formulario de una jornada tiene sus pausas: el almuerzo y, desde el 12 de
 // septiembre de 2026, hasta tres descansos no remunerados, cada una con su salida y su
@@ -109,5 +109,62 @@ describe('cuerpoDeLaJornada', () => {
     expect(cuerpoDeLaJornada({ ...horas, almuerzoSalida: '' }).almuerzo).toEqual({ salida: '', regreso: '13:00' });
     expect(cuerpoDeLaJornada({ ...horas, descansos: [{ salida: '', regreso: '09:15' }] }).descansos)
       .toEqual([{ salida: '', regreso: '09:15' }]);
+  });
+});
+
+// Traer el horario de ese día al agregar una jornada a mano (12 de septiembre de 2026): la
+// entrada, la salida y la ventana de cada pausa, para no escribirlas una por una.
+describe('horasDelHorario', () => {
+  const DIA = {
+    programado: true, horaEntrada: '07:00', horaSalida: '16:00', almuerzoInicio: '12:00', almuerzoFin: '13:00',
+    descansos: [{ inicio: '09:00', fin: '09:15' }, { inicio: '15:00', fin: '15:10' }],
+  };
+
+  it('con almuerzo y dos descansos: cada pausa con las horas de su ventana, en su orden', () => {
+    expect(horasDelHorario(DIA)).toEqual({
+      entrada: '07:00', salida: '16:00', almuerzoSalida: '12:00', almuerzoRegreso: '13:00',
+      descansos: [{ salida: '09:00', regreso: '09:15' }, { salida: '15:00', regreso: '15:10' }],
+    });
+  });
+
+  it('con el almuerzo en minutos fijos, sin horas: el almuerzo queda vacío y se descuenta igual', () => {
+    expect(horasDelHorario({ ...DIA, almuerzoInicio: null, almuerzoFin: null, descansos: [] }))
+      .toEqual({ entrada: '07:00', salida: '16:00', almuerzoSalida: '', almuerzoRegreso: '', descansos: [] });
+  });
+
+  it('un día sin turno no trae nada', () => {
+    expect(horasDelHorario({ programado: false })).toBeNull();
+    expect(horasDelHorario({ ...DIA, horaEntrada: null })).toBeNull();
+  });
+
+  it('dos formularios no comparten la lista de descansos', () => {
+    horasDelHorario(DIA)!.descansos.push({ salida: '10:00', regreso: '10:10' });
+    expect(horasDelHorario(DIA)!.descansos).toHaveLength(2);
+  });
+});
+
+// La línea bajo las horas del formulario (13 de septiembre de 2026): dice qué día queda la
+// jornada antes de guardarla. La fecha del campo es un día de calendario de Bogotá; leída
+// como medianoche UTC, al occidente de Colombia se pintaba el día anterior (CLAUDE.md §7).
+describe('resumenDeLaJornada', () => {
+  it('el día de la semana, la fecha y de qué hora a qué hora', () => {
+    expect(resumenDeLaJornada('2026-09-11', '08:00', '17:00')).toBe('Viernes 11 de septiembre, de 08:00 a 17:00');
+  });
+
+  it('sin salida todavía, desde la hora de entrada', () => {
+    expect(resumenDeLaJornada('2026-09-11', '08:00', '')).toBe('Viernes 11 de septiembre, desde las 08:00');
+  });
+
+  it('sin horas, solo el día', () => {
+    expect(resumenDeLaJornada('2026-09-11', '', '')).toBe('Viernes 11 de septiembre');
+  });
+
+  it('sin fecha no dice nada', () => {
+    expect(resumenDeLaJornada('', '08:00', '17:00')).toBe('');
+  });
+
+  // Formatear una fecha inválida lanza, y esa excepción tumbaría la pantalla entera.
+  it('con una fecha que no se entiende no dice nada, y no rompe el formulario', () => {
+    expect(resumenDeLaJornada('no es una fecha', '08:00', '17:00')).toBe('');
   });
 });

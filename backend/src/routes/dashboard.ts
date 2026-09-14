@@ -6,6 +6,7 @@ import { calcularHorasTrabajadas, descontarAlmuerzo } from '../utils/horasColomb
 import { jornadaVigente, tiposVigentes } from '../utils/vigencias';
 import { franjaDelDia, HorarioConFranjas, construirExtraConfig, excusaLaTardanza } from '../utils/tardanzas';
 import { almuerzoDelRegistro, cobroDePausas } from '../utils/liquidarRegistros';
+import { minutosAlmuerzoADescontar } from '../utils/almuerzo';
 
 const TZ = 'America/Bogota';
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -90,7 +91,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       }),
       prisma.registro.findMany({
         where: { colaboradorId: { in: colIds }, fecha: { gte: inicioSemanaMes, lte: finDia }, salida: { not: null } },
-        select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true },
+        select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, salidaAlmuerzo: true },
         orderBy: { fecha: 'asc' },
       }),
       // IDs de las salidas de hoy que tienen foto de verificación (para el ícono de cámara)
@@ -248,6 +249,16 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       colaboradores.map(c => [c.id, (c as any).horario as HorarioConFranjas | null])
     );
     const cobrarAlmuerzo = cobroDePausas();
+    // Cuánto almuerzo debe cada día de cada persona, con la regla de utils/almuerzo.ts: lo
+    // fijado menos lo que se tomó marcado. El panel no lee días congelados, así que lo fijado
+    // es el almuerzo del horario vigente, como siempre. El día es el de la fecha de la jornada.
+    const filasPorColDia = new Map<string, typeof registrosMes>();
+    for (const r of registrosMes) {
+      const k = `${r.colaboradorId}|${claveDia(r.fecha)}`;
+      filasPorColDia.set(k, [...(filasPorColDia.get(k) ?? []), r]);
+    }
+    const almuerzoPorColDia = new Map([...filasPorColDia].map(([k, filas]) => [k,
+      minutosAlmuerzoADescontar(filas, { almuerzoMin: almuerzoDelRegistro(horarioPorCol.get(filas[0].colaboradorId), filas[0].fecha) })]));
 
     // Modo de horas extra (mismo criterio que el reporte de liquidación)
     const cfgModo = await prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } });
@@ -267,9 +278,8 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         const { resultado, minutosOrdinariosTrabajados } = calcularHorasTrabajadas(
           r.entrada, r.salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfigPorCol.get(r.colaboradorId)
         );
-        const claveColDia = `${r.colaboradorId}|${claveDia(r.entrada)}`;
-        const almuerzo = almuerzoDelRegistro(horarioPorCol.get(r.colaboradorId), r.entrada);
-        const almuerzoCobrado = cobrarAlmuerzo(claveColDia, almuerzo, m => descontarAlmuerzo(resultado, m));
+        const claveColDia = `${r.colaboradorId}|${claveDia(r.fecha)}`;
+        const almuerzoCobrado = cobrarAlmuerzo(claveColDia, almuerzoPorColDia.get(claveColDia) ?? 0, m => descontarAlmuerzo(resultado, m));
         minutosOrdSemana += Math.max(0, minutosOrdinariosTrabajados - almuerzoCobrado);
         for (const p of resultado) {
           if (CODIGOS_EXTRA.has(p.codigo)) minutosExtraMes += p.minutos;

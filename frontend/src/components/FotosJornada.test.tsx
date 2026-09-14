@@ -104,20 +104,22 @@ describe('las fotos de verificación facial del día', () => {
     expect(screen.getAllByText('El Poblado')).toHaveLength(1);
   });
 
-  it('una entrada sin sede probada lleva su sede por defecto, con esa etiqueta, sin afirmar dónde se tomó la foto', async () => {
+  it('una entrada sin sede probada lleva el nombre de su sede, sin «por defecto» y sin afirmar dónde se tomó la foto', async () => {
     // 12 de septiembre de 2026: la sede de un presencial que marcó sin ubicación se
-    // muestra al leer. En la etiqueta sí; en el texto de la foto no, porque nadie
-    // probó que se tomara ahí.
+    // muestra al leer, y desde el 13 solo con su nombre: el dueño pidió quitar «por
+    // defecto». En la etiqueta sí; en el texto de la foto no, porque nadie probó que se
+    // tomara ahí.
     responder([
       foto({ momento: 'ENTRADA', jornada: 0, sede: null, sedeAtribuida: { id: 's0', nombre: 'Sede principal', activa: true, porDefecto: true } }),
       foto({ momento: 'SALIDA', hora: bog(17, 0), jornada: 0, sede: null }),
     ]);
     render(<FotosJornada registroId="r1" />);
-    expect(await screen.findByText('Sede principal (por defecto)')).toBeTruthy();
+    expect(await screen.findByText('Sede principal')).toBeTruthy();
+    expect(screen.queryByText(/por defecto/)).toBeNull();
     expect(screen.getByAltText('Foto de entrada')).toBeTruthy();
   });
 
-  it('el regreso del descanso sin ubicación dice su momento y su sede por defecto', async () => {
+  it('el regreso del descanso sin ubicación dice su momento y el nombre de su sede', async () => {
     // Unión con el descanso no remunerado (12 de septiembre de 2026): el servidor le
     // atribuye sede a la foto de entrada de cada tramo, también al regreso de una
     // pausa, y ese regreso tiene su propio rótulo.
@@ -129,7 +131,9 @@ describe('las fotos de verificación facial del día', () => {
     ]);
     render(<FotosJornada registroId="a" />);
     expect(await screen.findByText(/Regreso del descanso/)).toBeTruthy();
-    expect(screen.getByText('Laureles (por defecto)')).toBeTruthy();
+    // La entrada y la salida al descanso probaron Laureles; el regreso la tiene por atribución.
+    expect(screen.getAllByText('Laureles')).toHaveLength(3);
+    expect(screen.queryByText(/por defecto/)).toBeNull();
   });
 
   it('con un backend que todavía no manda el turno, cae a la lista de antes', async () => {
@@ -150,5 +154,41 @@ describe('las fotos de verificación facial del día', () => {
     ]);
     render(<FotosJornada registroId="r1" />);
     expect(await screen.findByText(/marcó/)).toBeTruthy();
+  });
+
+  // POR PARTES (13 de septiembre de 2026, pedido del dueño). En el orden en que se marcaron, el
+  // almuerzo y el descanso quedaban revueltos con la entrada y la salida. Ahora son tres bloques
+  // fijos, y en cada uno la salida y el regreso de la misma pausa van lado a lado.
+  it('separa las fotos por partes: entrada y salida, almuerzo y descanso, en ese orden', async () => {
+    responder([
+      foto({ registroId: 'a', momento: 'ENTRADA', hora: bog(7, 0), jornada: 0 }),
+      foto({ registroId: 'a', momento: 'SALIDA_DESCANSO', hora: bog(9, 0), jornada: 0 }),
+      foto({ registroId: 'b', momento: 'REGRESO_DESCANSO', hora: bog(9, 15), jornada: 0 }),
+      foto({ registroId: 'b', momento: 'SALIDA_ALMUERZO', hora: bog(12, 0), jornada: 0 }),
+      foto({ registroId: 'c', momento: 'REGRESO_ALMUERZO', hora: bog(13, 0), jornada: 0 }),
+      foto({ registroId: 'c', momento: 'SALIDA', hora: bog(17, 0), jornada: 0 }),
+    ]);
+    render(<FotosJornada registroId="a" />);
+    await screen.findAllByRole('img');
+    const partes = screen.getAllByRole('group');
+    const alt = (parte: HTMLElement) => within(parte).getAllByRole('img').map(i => i.getAttribute('alt'));
+    expect(partes.map(p => p.getAttribute('aria-label'))).toEqual(['Entrada y salida', 'Almuerzo', 'Descanso']);
+    expect(alt(partes[0])).toEqual(['Foto de entrada', 'Foto de salida']);
+    expect(alt(partes[1])).toEqual(['Foto de salida a almorzar', 'Foto de regreso del almuerzo']);
+    expect(alt(partes[2])).toEqual(['Foto de salida al descanso', 'Foto de regreso del descanso']);
+  });
+
+  it('con dos descansos dice «Descansos», y la marca que falta lo dice en su lugar', async () => {
+    responder([
+      foto({ registroId: 'a', momento: 'ENTRADA', hora: bog(7, 0), jornada: 0 }),
+      foto({ registroId: 'a', momento: 'SALIDA_DESCANSO', hora: bog(9, 0), jornada: 0 }),
+      foto({ registroId: 'b', momento: 'REGRESO_DESCANSO', hora: bog(9, 15), jornada: 0 }),
+      foto({ registroId: 'b', momento: 'SALIDA_DESCANSO', hora: bog(15, 0), jornada: 0 }),
+    ]);
+    render(<FotosJornada registroId="a" />);
+    const descansos = await screen.findByRole('group', { name: 'Descansos' });
+    expect(within(descansos).getAllByRole('img')).toHaveLength(3);
+    expect(within(descansos).getByText('Sin regreso')).toBeTruthy();
+    expect(within(screen.getByRole('group', { name: 'Entrada y salida' })).getByText('Sin salida')).toBeTruthy();
   });
 });

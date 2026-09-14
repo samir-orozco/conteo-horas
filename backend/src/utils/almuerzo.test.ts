@@ -1,27 +1,28 @@
 import { describe, it, expect } from 'vitest';
-import { minutosAlmuerzoADescontar, puedeSalirAAlmorzar, dentroDeLaVentana } from './almuerzo';
+import { minutosAlmuerzoADescontar, minutosEnVentana, puedeSalirAAlmorzar, dentroDeLaVentana } from './almuerzo';
 import { calcularDiasEsperados } from './diasEsperados';
 
-// El almuerzo deja de ser un número suelto y pasa a ser una VENTANA horaria.
-// Con eso, una sola regla resuelve cuatro problemas que hoy son distintos:
+// Cuánto almuerzo se le descuenta a alguien en un día. Regla del dueño del 12 de
+// septiembre de 2026:
 //
-//   Se descuentan los minutos de la ventana durante los cuales la persona
-//   estuvo marcada.
+//   El almuerzo cuesta SIEMPRE el tiempo que fijó el horario. Lo que la persona se
+//   tomó marcado cuenta para ese tiempo, y lo que falte se descuenta de lo trabajado.
 //
-//  - Quien no marca almuerzo: estuvo marcado toda la ventana → se le descuenta
-//    completa, igual que hoy. No gana nada por no marcar.
-//  - Quien se va temprano y nunca llega a la ventana: no se le descuenta nada.
-//    Hoy pierde una hora que jamás tomó.
-//  - Quien marca su almuerzo: el hueco ya está fuera de lo trabajado, así que
-//    no se le vuelve a descontar. Hoy se le cobra dos veces.
-//  - Quien almuerza en 20 minutos: los otros 40 los estuvo marcado, así que se
-//    le descuentan igual. El almuerzo es el almuerzo; ese tiempo se lo regala a
-//    la empresa, no se lo cobra.
+//  - No marcó almuerzo: se descuenta completo.
+//  - Lo marcó y volvió antes: se completa hasta el tiempo fijado. Volver antes es
+//    decisión suya, no de la empresa.
+//  - Lo tomó a otra hora: se descuenta una sola vez. La regla anterior medía el solape
+//    con la ventana, y almorzar de 11:00 a 12:00 con ventana de 12:00 a 13:00 se cobraba
+//    dos veces.
+//  - Se demoró: no se descuenta nada más, y lo de más tampoco se paga porque no estaba
+//    marcado.
+//  - Se fue antes de la hora del almuerzo, o salió a almorzar y no volvió: se descuenta
+//    igual el tiempo fijado.
 
 const bog = (dia: number, h: number, m = 0) => new Date(Date.UTC(2026, 7, dia, h + 5, m, 0));
 
 // Día materializado de apoyo: jornada 08:00-17:00, almuerzo de 12:00 a 13:00.
-const dia = (extra: Partial<Parameters<typeof minutosAlmuerzoADescontar>[1]> = {}) => ({
+const dia = (extra: Record<string, unknown> = {}) => ({
   fecha: bog(5, 0),
   almuerzoMin: 60,
   almuerzoInicio: '12:00' as string | null,
@@ -29,11 +30,12 @@ const dia = (extra: Partial<Parameters<typeof minutosAlmuerzoADescontar>[1]> = {
   ...extra,
 });
 
-const tramo = (h1: number, m1: number, h2: number, m2: number, d = 5) =>
-  ({ entrada: bog(d, h1, m1), salida: bog(d, h2, m2) });
+// Un tramo trabajado. `almuerzo` dice que su salida fue a almorzar.
+const tramo = (h1: number, m1: number, h2: number, m2: number, almuerzo = false, d = 5) =>
+  ({ entrada: bog(d, h1, m1), salida: bog(d, h2, m2), salidaAlmuerzo: almuerzo });
 
 describe('minutosAlmuerzoADescontar — sin ventana configurada', () => {
-  it('se comporta como hoy: descuenta los minutos fijos', () => {
+  it('descuenta los minutos fijos', () => {
     const d = dia({ almuerzoInicio: null, almuerzoFin: null });
     expect(minutosAlmuerzoADescontar([tramo(8, 0, 17, 0)], d)).toBe(60);
   });
@@ -44,62 +46,79 @@ describe('minutosAlmuerzoADescontar — sin ventana configurada', () => {
   });
 });
 
-describe('minutosAlmuerzoADescontar — con ventana', () => {
-  it('jornada completa sin marcar almuerzo: descuenta la ventana entera', () => {
+describe('minutosAlmuerzoADescontar — siempre el tiempo fijado', () => {
+  it('jornada completa sin marcar almuerzo: se descuenta completo', () => {
     expect(minutosAlmuerzoADescontar([tramo(8, 0, 17, 0)], dia())).toBe(60);
   });
 
-  it('se fue a las 10:00 por una novedad: NO se le descuenta almuerzo', () => {
-    // Es el error que se corrige: hoy pierde 60 de los 120 minutos que trabajó.
-    expect(minutosAlmuerzoADescontar([tramo(8, 0, 10, 0)], dia())).toBe(0);
+  it('marcó su almuerzo de 12:00 a 13:00: ya lo tomó, no se descuenta de nuevo', () => {
+    expect(minutosAlmuerzoADescontar([tramo(8, 0, 12, 0, true), tramo(13, 0, 17, 0)], dia())).toBe(0);
   });
 
-  it('trabajó hasta las 12:30: solo se descuenta lo que alcanzó a cruzar', () => {
-    expect(minutosAlmuerzoADescontar([tramo(8, 0, 12, 30)], dia())).toBe(30);
+  it('volvió a los 40 minutos: se completan los 20 que faltan', () => {
+    expect(minutosAlmuerzoADescontar([tramo(8, 0, 12, 0, true), tramo(12, 40, 17, 0)], dia())).toBe(20);
   });
 
-  it('llegó a las 12:30: igual, solo el cruce', () => {
-    expect(minutosAlmuerzoADescontar([tramo(12, 30, 17, 0)], dia())).toBe(30);
+  it('salió 10 minutos antes y volvió a la hora: ya tomó su hora', () => {
+    // De 11:50 a 12:50. Con la regla del solape se descontaban 10 más.
+    expect(minutosAlmuerzoADescontar([tramo(8, 0, 11, 50, true), tramo(12, 50, 17, 0)], dia())).toBe(0);
   });
 
-  it('marcó su almuerzo exacto: no se descuenta de nuevo', () => {
-    // El hueco 12:00-13:00 ya está fuera de lo trabajado.
-    const tramos = [tramo(8, 0, 12, 0), tramo(13, 0, 17, 0)];
-    expect(minutosAlmuerzoADescontar(tramos, dia())).toBe(0);
+  it('almorzó a otra hora, de 11:00 a 12:00: se descuenta una sola vez', () => {
+    // Con la regla del solape se cobraba la hora que salió y también la de la ventana.
+    expect(minutosAlmuerzoADescontar([tramo(8, 0, 11, 0, true), tramo(12, 0, 17, 0)], dia())).toBe(0);
   });
 
-  it('almorzó 20 minutos: los 40 restantes se descuentan igual', () => {
-    // Estuvo marcado de 12:20 a 13:00. El almuerzo es el almuerzo.
-    const tramos = [tramo(8, 0, 12, 0), tramo(12, 20, 17, 0)];
-    expect(minutosAlmuerzoADescontar(tramos, dia())).toBe(40);
+  it('se demoró, de 12:00 a 13:30: no se descuenta nada más', () => {
+    // La media hora de más tampoco se paga: no está en lo trabajado.
+    expect(minutosAlmuerzoADescontar([tramo(8, 0, 12, 0, true), tramo(13, 30, 17, 0)], dia())).toBe(0);
   });
 
-  it('almorzó 2 horas: no se descuenta nada extra, el hueco ya lo pagó', () => {
-    const tramos = [tramo(8, 0, 12, 0), tramo(14, 0, 18, 0)];
-    expect(minutosAlmuerzoADescontar(tramos, dia())).toBe(0);
+  it('se fue a las 10:00, antes de la hora del almuerzo: se descuenta igual', () => {
+    expect(minutosAlmuerzoADescontar([tramo(8, 0, 10, 0)], dia())).toBe(60);
   });
 
-  it('salió a almorzar y no volvió: tampoco se le descuenta de nuevo', () => {
-    expect(minutosAlmuerzoADescontar([tramo(8, 0, 12, 0)], dia())).toBe(0);
+  it('llegó a las 12:30: se descuenta igual', () => {
+    expect(minutosAlmuerzoADescontar([tramo(12, 30, 17, 0)], dia())).toBe(60);
   });
 
-  it('un día sin marcaciones no descuenta nada', () => {
+  it('salió a almorzar y no volvió: se descuenta igual, no hay regreso que diga cuánto tomó', () => {
+    expect(minutosAlmuerzoADescontar([tramo(8, 0, 12, 0, true)], dia())).toBe(60);
+  });
+
+  it('salir y volver sin marcar almuerzo no cuenta como almuerzo', () => {
+    expect(minutosAlmuerzoADescontar([tramo(8, 0, 12, 0), tramo(13, 0, 17, 0)], dia())).toBe(60);
+  });
+
+  it('volvió y sigue trabajando: su regreso está en una marcación todavía abierta', () => {
+    const abierta = { entrada: bog(5, 13, 0), salida: null, salidaAlmuerzo: false };
+    expect(minutosAlmuerzoADescontar([tramo(8, 0, 12, 0, true), abierta], dia())).toBe(0);
+  });
+
+  it('unos segundos de más o de menos no cambian el minuto', () => {
+    const marcas = [
+      { entrada: bog(5, 8, 0), salida: new Date(bog(5, 12, 0).getTime() + 5_000), salidaAlmuerzo: true },
+      { entrada: new Date(bog(5, 13, 0).getTime() - 2_000), salida: bog(5, 17, 0), salidaAlmuerzo: false },
+    ];
+    expect(minutosAlmuerzoADescontar(marcas, dia())).toBe(0);
+  });
+
+  it('un día sin tramos terminados no descuenta nada', () => {
     expect(minutosAlmuerzoADescontar([], dia())).toBe(0);
+    expect(minutosAlmuerzoADescontar([{ entrada: bog(5, 8, 0), salida: null, salidaAlmuerzo: false }], dia())).toBe(0);
   });
 });
 
 describe('minutosAlmuerzoADescontar — turno que cruza medianoche', () => {
-  it('el almuerzo de la madrugada se ubica en el día siguiente', () => {
-    // Turno 21:00 → 05:00 con almuerzo de 01:00 a 01:30.
-    const d = dia({ almuerzoInicio: '01:00', almuerzoFin: '01:30', almuerzoMin: 30 });
-    const tramos = [{ entrada: bog(5, 21, 0), salida: bog(6, 5, 0) }];
-    expect(minutosAlmuerzoADescontar(tramos, d)).toBe(30);
+  // Turno 21:00 → 05:00 con almuerzo de 01:00 a 01:30.
+  const d = dia({ almuerzoInicio: '01:00', almuerzoFin: '01:30', almuerzoMin: 30 });
+
+  it('el almuerzo de la madrugada marcado completo no se descuenta de nuevo', () => {
+    expect(minutosAlmuerzoADescontar([tramo(21, 0, 25, 0, true), tramo(25, 30, 29, 0)], d)).toBe(0);
   });
 
-  it('si se fue antes de la madrugada no alcanza su almuerzo', () => {
-    const d = dia({ almuerzoInicio: '01:00', almuerzoFin: '01:30', almuerzoMin: 30 });
-    const tramos = [{ entrada: bog(5, 21, 0), salida: bog(6, 0, 30) }];
-    expect(minutosAlmuerzoADescontar(tramos, d)).toBe(0);
+  it('sin marcarlo se descuenta completo, aunque se haya ido antes de la madrugada', () => {
+    expect(minutosAlmuerzoADescontar([tramo(21, 0, 24, 30)], d)).toBe(30);
   });
 });
 
@@ -172,26 +191,23 @@ describe('la ventana manda sobre los minutos sueltos', () => {
   });
 });
 
-// Una fila de día puede contener DOS tramos de noches distintas: el regreso del
-// almuerzo de la noche anterior (madrugada) y la noche siguiente completa. Sus
-// almuerzos caen en madrugadas distintas, así que hay que contar las dos
-// posiciones de la ventana, no elegir una.
-describe('turno nocturno con dos tramos en la misma fila', () => {
+// A QUIÉN se le cobra el almuerzo en un día de varias jornadas lo decide lo que cada una
+// pasó dentro de la ventana (utils/jornada.ts). Una fila de día puede tener tramos de dos
+// noches distintas, y sus almuerzos caen en madrugadas distintas: se cuentan las dos
+// posiciones de la ventana, no se elige una.
+describe('minutosEnVentana: las dos posiciones de la ventana', () => {
   const U = (d: number, h: number, m = 0) => new Date(Date.UTC(2026, 7, d, h + 5, m, 0));
   const diaMartes = { fecha: U(11, 0), almuerzoMin: 60, almuerzoInicio: '01:00', almuerzoFin: '02:00' };
   const regresoDelLunes = { entrada: U(11, 1, 30), salida: U(11, 6, 0) };
   const nocheDelMartes = { entrada: U(11, 22, 0), salida: U(12, 6, 0) };
 
   it('cada tramo por separado da lo suyo', () => {
-    expect(minutosAlmuerzoADescontar([regresoDelLunes], diaMartes)).toBe(30);
-    expect(minutosAlmuerzoADescontar([nocheDelMartes], diaMartes)).toBe(60);
+    expect(minutosEnVentana([regresoDelLunes], diaMartes)).toBe(30);
+    expect(minutosEnVentana([nocheDelMartes], diaMartes)).toBe(60);
   });
 
   it('juntos suman, no se tapan', () => {
-    // Antes devolvía 30: el solape directo cortaba el cálculo y la ventana
-    // corrida un día —donde estaba el almuerzo no marcado de la noche del
-    // martes— no se probaba nunca. Esos 60 minutos se pagaban como nocturnos.
-    expect(minutosAlmuerzoADescontar([regresoDelLunes, nocheDelMartes], diaMartes)).toBe(90);
+    expect(minutosEnVentana([regresoDelLunes, nocheDelMartes], diaMartes)).toBe(90);
   });
 });
 
