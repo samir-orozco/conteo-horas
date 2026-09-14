@@ -17,6 +17,8 @@ const vinculacion_1 = require("../utils/vinculacion");
 const materializarDias_1 = require("../utils/materializarDias");
 const columnasDeColaborador_1 = require("../utils/columnasDeColaborador");
 const largoDeColumna_1 = require("../utils/largoDeColumna");
+const registroFacial_1 = require("../utils/registroFacial");
+const kioscoConfig_1 = require("../utils/kioscoConfig");
 async function colaboradorRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     // Deja constancia de un movimiento de vinculación. Todo lo que mueve el
@@ -115,6 +117,8 @@ async function colaboradorRoutes(app) {
             where: { id, empresaId: request.empresaId },
             select: {
                 ...columnasDeColaborador_1.COLABORADOR_SIN_DESCRIPTOR,
+                // Se lee solo para contar las tomas: el descriptor no sale de esta ruta.
+                rostroDescriptor: true,
                 horario: { include: { franjas: true } },
                 // Con el nombre, no solo el id: la lista pinta una columna de sede y
                 // pedir los nombres aparte sería una consulta por cada carga.
@@ -123,10 +127,34 @@ async function colaboradorRoutes(app) {
         });
         if (!col)
             return reply.status(404).send({ error: 'No encontrado' });
+        // Lo del registro facial que pinta la ficha (14 de septiembre de 2026): cuántas
+        // tomas tiene, la última constancia, si hay un enlace que todavía sirva y si la
+        // empresa deja marcar con cédula, que es la salida de quien no autoriza.
+        const [ultimaConstancia, enlace, conCedula] = await Promise.all([
+            prisma_1.prisma.constanciaBiometrica.findFirst({
+                where: { colaboradorId: id }, orderBy: { creadoEn: 'desc' },
+                select: { decision: true, origen: true, creadoEn: true },
+            }),
+            prisma_1.prisma.enlaceRegistroFacial.findFirst({
+                where: { colaboradorId: id, usadoEn: null, anuladoEn: null, venceEn: { gt: new Date() }, intentosCedula: { lt: registroFacial_1.MAX_INTENTOS_CEDULA } },
+                orderBy: { creadoEn: 'desc' }, select: { venceEn: true },
+            }),
+            (0, kioscoConfig_1.permiteCedula)(request.empresaId),
+        ]);
         // Se aplana a una lista de ids: es lo que el selector múltiple necesita, y
         // evita que el frontend tenga que conocer la tabla de unión.
-        const { sedes, ...resto } = col;
-        return { ...resto, sedeIds: (sedes ?? []).map((s) => s.sedeId) };
+        const { sedes, rostroDescriptor, ...resto } = col;
+        return {
+            ...resto,
+            sedeIds: (sedes ?? []).map((s) => s.sedeId),
+            biometria: {
+                tomas: (0, rostro_1.cuantasMuestras)(rostroDescriptor),
+                ultimaConstancia,
+                enlaceVenceEn: enlace?.venceEn ?? null,
+                permiteCedula: conCedula,
+                textoAutorizacionAdministrador: registroFacial_1.TEXTO_AUTORIZACION_ADMINISTRADOR,
+            },
+        };
     });
     // Valida que el horario asignado sea de la misma empresa
     async function horarioValido(horarioId, empresaId) {
@@ -561,6 +589,8 @@ async function colaboradorRoutes(app) {
             select: {
                 id: true, nombre: true, apellido: true, cedula: true, cargo: true,
                 salarioMensual: true, fechaRetiro: true, motivoRetiro: true, creadoEn: true,
+                // Para la etiqueta del registro facial en la tabla, igual que en la lista de activos.
+                rostroEnroladoEn: true, rostroRechazadoEn: true,
             },
             orderBy: [{ fechaRetiro: 'desc' }, { nombre: 'asc' }],
         });
@@ -631,16 +661,55 @@ async function colaboradorRoutes(app) {
         }
         const primeraFoto = (0, fotoPerfil_1.fotoParaEnrolar)(existente.foto, foto);
         const primeraMini = primeraFoto && (0, fotoPerfil_1.miniValida)(fotoMini) ? fotoMini : null;
-        const colaborador = await prisma_1.prisma.colaborador.update({
-            where: { id },
-            data: {
-                rostroDescriptor: descriptores,
-                rostroEnroladoEn: new Date(),
-                ...(primeraFoto ? { foto: primeraFoto, fotoMini: primeraMini } : {}),
-            },
-            select: { rostroEnroladoEn: true, foto: true },
-        });
+        // Queda constancia de que lo registró el administrador, con el texto que marcó
+        // en la ficha (14 de septiembre de 2026). Si la persona había dicho que no
+        // autorizaba, registrar ahora quita esa marca: rige la constancia nueva.
+        const [colaborador] = await prisma_1.prisma.$transaction([
+            prisma_1.prisma.colaborador.update({
+                where: { id },
+                data: {
+                    rostroDescriptor: descriptores,
+                    rostroEnroladoEn: new Date(),
+                    rostroRechazadoEn: null,
+                    ...(primeraFoto ? { foto: primeraFoto, fotoMini: primeraMini } : {}),
+                },
+                select: { rostroEnroladoEn: true, foto: true },
+            }),
+            prisma_1.prisma.constanciaBiometrica.create({
+                data: {
+                    colaboradorId: id, decision: 'AUTORIZA', origen: 'ADMINISTRADOR',
+                    texto: registroFacial_1.TEXTO_AUTORIZACION_ADMINISTRADOR, usuarioId: request.usuarioId ?? null,
+                },
+            }),
+        ]);
         return { ok: true, rostroEnroladoEn: colaborador.rostroEnroladoEn, foto: colaborador.foto };
+    });
+    // ENLACE PARA QUE LA PERSONA REGISTRE SU ROSTRO ELLA MISMA (14 de septiembre de 2026).
+    //
+    // Crear uno anula el que estuviera sin usar: queda uno solo que sirva. El token
+    // se devuelve esta única vez; en la base queda su huella. A una persona retirada
+    // no se le crea.
+    app.post('/:id/enlace-rostro', auth, async (request, reply) => {
+        const { id } = request.params;
+        const col = await prisma_1.prisma.colaborador.findFirst({
+            where: { id, empresaId: request.empresaId }, select: { id: true, activo: true },
+        });
+        if (!col)
+            return reply.status(404).send({ error: 'No encontrado' });
+        if (!col.activo)
+            return reply.status(409).send({ error: 'Está retirado: no se le puede enviar un enlace de registro.' });
+        const { token, hash } = (0, registroFacial_1.crearTokenDeEnlace)();
+        const ahora = new Date();
+        const [, enlace] = await prisma_1.prisma.$transaction([
+            prisma_1.prisma.enlaceRegistroFacial.updateMany({
+                where: { colaboradorId: id, usadoEn: null, anuladoEn: null }, data: { anuladoEn: ahora },
+            }),
+            prisma_1.prisma.enlaceRegistroFacial.create({
+                data: { colaboradorId: id, tokenHash: hash, venceEn: new Date(ahora.getTime() + registroFacial_1.DURACION_ENLACE_MS), usuarioId: request.usuarioId ?? null },
+                select: { venceEn: true },
+            }),
+        ]);
+        return reply.status(201).send({ token, venceEn: enlace.venceEn });
     });
     // La foto de perfil, puesta a mano.
     app.put('/:id/foto', auth, async (request, reply) => {

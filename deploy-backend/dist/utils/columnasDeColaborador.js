@@ -12,7 +12,7 @@ exports.COLABORADOR_SIN_DESCRIPTOR = exports.COLABORADOR_SIN_FOTOS = void 0;
 // declara el cliente, así que una columna nueva no se queda afuera sin que nadie lo note.
 exports.COLABORADOR_SIN_FOTOS = {
     id: true, empresaId: true, nombre: true, apellido: true, cedula: true, cargo: true, email: true,
-    telefono: true, fechaNacimiento: true, salarioMensual: true, rostroEnroladoEn: true, horarioId: true,
+    telefono: true, fechaNacimiento: true, salarioMensual: true, rostroEnroladoEn: true, rostroRechazadoEn: true, horarioId: true,
     modalidad: true, puedeCerrarEnOtraSede: true, activo: true, fechaRetiro: true, motivoRetiro: true,
     retiroProgramado: true, creadoEn: true, actualizadoEn: true,
 };

@@ -20,6 +20,7 @@ const festivos_1 = __importDefault(require("./routes/festivos"));
 const configuracion_1 = __importDefault(require("./routes/configuracion"));
 const reportes_1 = __importDefault(require("./routes/reportes"));
 const worker_1 = __importDefault(require("./routes/worker"));
+const registroFacial_1 = __importDefault(require("./routes/registroFacial"));
 const admin_1 = __importDefault(require("./routes/admin"));
 const afiliados_1 = __importDefault(require("./routes/afiliados"));
 const afiliado_panel_1 = __importDefault(require("./routes/afiliado-panel"));
@@ -136,6 +137,8 @@ app.register(configuracion_1.default, { prefix: '/api/configuracion' });
 app.register(reportes_1.default, { prefix: '/api/reportes' });
 app.register(sedes_1.default, { prefix: '/api/sedes' });
 app.register(worker_1.default, { prefix: '/api/worker' });
+// Público, como el kiosco: la persona registra su rostro con el enlace que le mandó su empresa.
+app.register(registroFacial_1.default, { prefix: '/api/registro-facial' });
 app.register(admin_1.default, { prefix: '/api/admin' });
 app.register(afiliados_1.default, { prefix: '/api/admin/afiliados' });
 app.register(afiliado_panel_1.default, { prefix: '/api/afiliado' });

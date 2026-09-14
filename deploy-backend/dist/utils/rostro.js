@@ -5,6 +5,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MARGEN_AMBIGUO = exports.UMBRAL_COINCIDENCIA = void 0;
 exports.esDescriptorValido = esDescriptorValido;
 exports.esListaDescriptoresValida = esListaDescriptoresValida;
+exports.cuantasMuestras = cuantasMuestras;
 exports.identificarRostro = identificarRostro;
 // Distancia recomendada por face-api.js para considerar "misma persona".
 // Por debajo de este umbral se acepta la coincidencia.
@@ -34,6 +35,11 @@ function muestrasDe(guardado) {
     if (esListaDescriptoresValida(guardado))
         return guardado;
     return [];
+}
+// Cuántas tomas tiene guardadas una persona. La ficha y el enlace de registro muestran este número en
+// vez de las fotos, que no se guardan.
+function cuantasMuestras(guardado) {
+    return muestrasDe(guardado).length;
 }
 // CUÁNTO TIENE QUE SEPARAR AL PRIMERO DEL SEGUNDO PARA FIARSE.
 //
