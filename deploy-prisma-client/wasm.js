@@ -249,6 +249,7 @@ exports.Prisma.ColaboradorScalarFieldEnum = {
   salarioMensual: 'salarioMensual',
   rostroDescriptor: 'rostroDescriptor',
   rostroEnroladoEn: 'rostroEnroladoEn',
+  rostroRechazadoEn: 'rostroRechazadoEn',
   foto: 'foto',
   fotoMini: 'fotoMini',
   horarioId: 'horarioId',
@@ -457,6 +458,30 @@ exports.Prisma.VinculacionEventoScalarFieldEnum = {
   creadoEn: 'creadoEn'
 };
 
+exports.Prisma.EnlaceRegistroFacialScalarFieldEnum = {
+  id: 'id',
+  colaboradorId: 'colaboradorId',
+  tokenHash: 'tokenHash',
+  venceEn: 'venceEn',
+  usadoEn: 'usadoEn',
+  anuladoEn: 'anuladoEn',
+  intentosCedula: 'intentosCedula',
+  usuarioId: 'usuarioId',
+  creadoEn: 'creadoEn'
+};
+
+exports.Prisma.ConstanciaBiometricaScalarFieldEnum = {
+  id: 'id',
+  colaboradorId: 'colaboradorId',
+  decision: 'decision',
+  origen: 'origen',
+  texto: 'texto',
+  mayorDeEdad: 'mayorDeEdad',
+  usuarioId: 'usuarioId',
+  enlaceId: 'enlaceId',
+  creadoEn: 'creadoEn'
+};
+
 exports.Prisma.ContratoScalarFieldEnum = {
   id: 'id',
   colaboradorId: 'colaboradorId',
@@ -607,6 +632,16 @@ exports.TipoVinculacion = exports.$Enums.TipoVinculacion = {
   REINGRESO: 'REINGRESO'
 };
 
+exports.DecisionBiometrica = exports.$Enums.DecisionBiometrica = {
+  AUTORIZA: 'AUTORIZA',
+  NO_AUTORIZA: 'NO_AUTORIZA'
+};
+
+exports.OrigenConstancia = exports.$Enums.OrigenConstancia = {
+  ENLACE: 'ENLACE',
+  ADMINISTRADOR: 'ADMINISTRADOR'
+};
+
 exports.TipoContrato = exports.$Enums.TipoContrato = {
   INDEFINIDO: 'INDEFINIDO',
   FIJO: 'FIJO',
@@ -644,6 +679,8 @@ exports.Prisma.ModelName = {
   SolicitudRetiro: 'SolicitudRetiro',
   RegistroCambio: 'RegistroCambio',
   VinculacionEvento: 'VinculacionEvento',
+  EnlaceRegistroFacial: 'EnlaceRegistroFacial',
+  ConstanciaBiometrica: 'ConstanciaBiometrica',
   Contrato: 'Contrato',
   ProrrogaContrato: 'ProrrogaContrato'
 };

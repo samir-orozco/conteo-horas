@@ -134,6 +134,16 @@ export type RegistroCambio = $Result.DefaultSelection<Prisma.$RegistroCambioPayl
  */
 export type VinculacionEvento = $Result.DefaultSelection<Prisma.$VinculacionEventoPayload>
 /**
+ * Model EnlaceRegistroFacial
+ * 
+ */
+export type EnlaceRegistroFacial = $Result.DefaultSelection<Prisma.$EnlaceRegistroFacialPayload>
+/**
+ * Model ConstanciaBiometrica
+ * 
+ */
+export type ConstanciaBiometrica = $Result.DefaultSelection<Prisma.$ConstanciaBiometricaPayload>
+/**
  * Model Contrato
  * 
  */
@@ -288,6 +298,22 @@ export const TipoVinculacion: {
 export type TipoVinculacion = (typeof TipoVinculacion)[keyof typeof TipoVinculacion]
 
 
+export const DecisionBiometrica: {
+  AUTORIZA: 'AUTORIZA',
+  NO_AUTORIZA: 'NO_AUTORIZA'
+};
+
+export type DecisionBiometrica = (typeof DecisionBiometrica)[keyof typeof DecisionBiometrica]
+
+
+export const OrigenConstancia: {
+  ENLACE: 'ENLACE',
+  ADMINISTRADOR: 'ADMINISTRADOR'
+};
+
+export type OrigenConstancia = (typeof OrigenConstancia)[keyof typeof OrigenConstancia]
+
+
 export const TipoContrato: {
   INDEFINIDO: 'INDEFINIDO',
   FIJO: 'FIJO',
@@ -362,6 +388,14 @@ export const EstadoRetiro: typeof $Enums.EstadoRetiro
 export type TipoVinculacion = $Enums.TipoVinculacion
 
 export const TipoVinculacion: typeof $Enums.TipoVinculacion
+
+export type DecisionBiometrica = $Enums.DecisionBiometrica
+
+export const DecisionBiometrica: typeof $Enums.DecisionBiometrica
+
+export type OrigenConstancia = $Enums.OrigenConstancia
+
+export const OrigenConstancia: typeof $Enums.OrigenConstancia
 
 export type TipoContrato = $Enums.TipoContrato
 
@@ -733,6 +767,26 @@ export class PrismaClient<
     * ```
     */
   get vinculacionEvento(): Prisma.VinculacionEventoDelegate<ExtArgs>;
+
+  /**
+   * `prisma.enlaceRegistroFacial`: Exposes CRUD operations for the **EnlaceRegistroFacial** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more EnlaceRegistroFacials
+    * const enlaceRegistroFacials = await prisma.enlaceRegistroFacial.findMany()
+    * ```
+    */
+  get enlaceRegistroFacial(): Prisma.EnlaceRegistroFacialDelegate<ExtArgs>;
+
+  /**
+   * `prisma.constanciaBiometrica`: Exposes CRUD operations for the **ConstanciaBiometrica** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ConstanciaBiometricas
+    * const constanciaBiometricas = await prisma.constanciaBiometrica.findMany()
+    * ```
+    */
+  get constanciaBiometrica(): Prisma.ConstanciaBiometricaDelegate<ExtArgs>;
 
   /**
    * `prisma.contrato`: Exposes CRUD operations for the **Contrato** model.
@@ -1218,6 +1272,8 @@ export namespace Prisma {
     SolicitudRetiro: 'SolicitudRetiro',
     RegistroCambio: 'RegistroCambio',
     VinculacionEvento: 'VinculacionEvento',
+    EnlaceRegistroFacial: 'EnlaceRegistroFacial',
+    ConstanciaBiometrica: 'ConstanciaBiometrica',
     Contrato: 'Contrato',
     ProrrogaContrato: 'ProrrogaContrato'
   };
@@ -1235,7 +1291,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "vinculacionEvento" | "contrato" | "prorrogaContrato"
+      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2823,6 +2879,138 @@ export namespace Prisma {
           }
         }
       }
+      EnlaceRegistroFacial: {
+        payload: Prisma.$EnlaceRegistroFacialPayload<ExtArgs>
+        fields: Prisma.EnlaceRegistroFacialFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.EnlaceRegistroFacialFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EnlaceRegistroFacialPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.EnlaceRegistroFacialFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EnlaceRegistroFacialPayload>
+          }
+          findFirst: {
+            args: Prisma.EnlaceRegistroFacialFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EnlaceRegistroFacialPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.EnlaceRegistroFacialFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EnlaceRegistroFacialPayload>
+          }
+          findMany: {
+            args: Prisma.EnlaceRegistroFacialFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EnlaceRegistroFacialPayload>[]
+          }
+          create: {
+            args: Prisma.EnlaceRegistroFacialCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EnlaceRegistroFacialPayload>
+          }
+          createMany: {
+            args: Prisma.EnlaceRegistroFacialCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.EnlaceRegistroFacialDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EnlaceRegistroFacialPayload>
+          }
+          update: {
+            args: Prisma.EnlaceRegistroFacialUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EnlaceRegistroFacialPayload>
+          }
+          deleteMany: {
+            args: Prisma.EnlaceRegistroFacialDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.EnlaceRegistroFacialUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.EnlaceRegistroFacialUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EnlaceRegistroFacialPayload>
+          }
+          aggregate: {
+            args: Prisma.EnlaceRegistroFacialAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateEnlaceRegistroFacial>
+          }
+          groupBy: {
+            args: Prisma.EnlaceRegistroFacialGroupByArgs<ExtArgs>
+            result: $Utils.Optional<EnlaceRegistroFacialGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.EnlaceRegistroFacialCountArgs<ExtArgs>
+            result: $Utils.Optional<EnlaceRegistroFacialCountAggregateOutputType> | number
+          }
+        }
+      }
+      ConstanciaBiometrica: {
+        payload: Prisma.$ConstanciaBiometricaPayload<ExtArgs>
+        fields: Prisma.ConstanciaBiometricaFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ConstanciaBiometricaFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConstanciaBiometricaPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ConstanciaBiometricaFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConstanciaBiometricaPayload>
+          }
+          findFirst: {
+            args: Prisma.ConstanciaBiometricaFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConstanciaBiometricaPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ConstanciaBiometricaFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConstanciaBiometricaPayload>
+          }
+          findMany: {
+            args: Prisma.ConstanciaBiometricaFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConstanciaBiometricaPayload>[]
+          }
+          create: {
+            args: Prisma.ConstanciaBiometricaCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConstanciaBiometricaPayload>
+          }
+          createMany: {
+            args: Prisma.ConstanciaBiometricaCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ConstanciaBiometricaDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConstanciaBiometricaPayload>
+          }
+          update: {
+            args: Prisma.ConstanciaBiometricaUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConstanciaBiometricaPayload>
+          }
+          deleteMany: {
+            args: Prisma.ConstanciaBiometricaDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ConstanciaBiometricaUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ConstanciaBiometricaUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConstanciaBiometricaPayload>
+          }
+          aggregate: {
+            args: Prisma.ConstanciaBiometricaAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateConstanciaBiometrica>
+          }
+          groupBy: {
+            args: Prisma.ConstanciaBiometricaGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ConstanciaBiometricaGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ConstanciaBiometricaCountArgs<ExtArgs>
+            result: $Utils.Optional<ConstanciaBiometricaCountAggregateOutputType> | number
+          }
+        }
+      }
       Contrato: {
         payload: Prisma.$ContratoPayload<ExtArgs>
         fields: Prisma.ContratoFieldRefs
@@ -3296,6 +3484,8 @@ export namespace Prisma {
     vinculacion: number
     diasEsperados: number
     sedes: number
+    enlacesRegistroFacial: number
+    constanciasBiometricas: number
   }
 
   export type ColaboradorCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3305,6 +3495,8 @@ export namespace Prisma {
     vinculacion?: boolean | ColaboradorCountOutputTypeCountVinculacionArgs
     diasEsperados?: boolean | ColaboradorCountOutputTypeCountDiasEsperadosArgs
     sedes?: boolean | ColaboradorCountOutputTypeCountSedesArgs
+    enlacesRegistroFacial?: boolean | ColaboradorCountOutputTypeCountEnlacesRegistroFacialArgs
+    constanciasBiometricas?: boolean | ColaboradorCountOutputTypeCountConstanciasBiometricasArgs
   }
 
   // Custom InputTypes
@@ -3358,6 +3550,20 @@ export namespace Prisma {
    */
   export type ColaboradorCountOutputTypeCountSedesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ColaboradorSedeWhereInput
+  }
+
+  /**
+   * ColaboradorCountOutputType without action
+   */
+  export type ColaboradorCountOutputTypeCountEnlacesRegistroFacialArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: EnlaceRegistroFacialWhereInput
+  }
+
+  /**
+   * ColaboradorCountOutputType without action
+   */
+  export type ColaboradorCountOutputTypeCountConstanciasBiometricasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ConstanciaBiometricaWhereInput
   }
 
 
@@ -12390,6 +12596,7 @@ export namespace Prisma {
     fechaNacimiento: Date | null
     salarioMensual: number | null
     rostroEnroladoEn: Date | null
+    rostroRechazadoEn: Date | null
     foto: string | null
     fotoMini: string | null
     horarioId: string | null
@@ -12415,6 +12622,7 @@ export namespace Prisma {
     fechaNacimiento: Date | null
     salarioMensual: number | null
     rostroEnroladoEn: Date | null
+    rostroRechazadoEn: Date | null
     foto: string | null
     fotoMini: string | null
     horarioId: string | null
@@ -12441,6 +12649,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor: number
     rostroEnroladoEn: number
+    rostroRechazadoEn: number
     foto: number
     fotoMini: number
     horarioId: number
@@ -12476,6 +12685,7 @@ export namespace Prisma {
     fechaNacimiento?: true
     salarioMensual?: true
     rostroEnroladoEn?: true
+    rostroRechazadoEn?: true
     foto?: true
     fotoMini?: true
     horarioId?: true
@@ -12501,6 +12711,7 @@ export namespace Prisma {
     fechaNacimiento?: true
     salarioMensual?: true
     rostroEnroladoEn?: true
+    rostroRechazadoEn?: true
     foto?: true
     fotoMini?: true
     horarioId?: true
@@ -12527,6 +12738,7 @@ export namespace Prisma {
     salarioMensual?: true
     rostroDescriptor?: true
     rostroEnroladoEn?: true
+    rostroRechazadoEn?: true
     foto?: true
     fotoMini?: true
     horarioId?: true
@@ -12640,6 +12852,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor: JsonValue | null
     rostroEnroladoEn: Date | null
+    rostroRechazadoEn: Date | null
     foto: string | null
     fotoMini: string | null
     horarioId: string | null
@@ -12685,6 +12898,7 @@ export namespace Prisma {
     salarioMensual?: boolean
     rostroDescriptor?: boolean
     rostroEnroladoEn?: boolean
+    rostroRechazadoEn?: boolean
     foto?: boolean
     fotoMini?: boolean
     horarioId?: boolean
@@ -12704,6 +12918,8 @@ export namespace Prisma {
     vinculacion?: boolean | Colaborador$vinculacionArgs<ExtArgs>
     diasEsperados?: boolean | Colaborador$diasEsperadosArgs<ExtArgs>
     sedes?: boolean | Colaborador$sedesArgs<ExtArgs>
+    enlacesRegistroFacial?: boolean | Colaborador$enlacesRegistroFacialArgs<ExtArgs>
+    constanciasBiometricas?: boolean | Colaborador$constanciasBiometricasArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["colaborador"]>
 
@@ -12721,6 +12937,7 @@ export namespace Prisma {
     salarioMensual?: boolean
     rostroDescriptor?: boolean
     rostroEnroladoEn?: boolean
+    rostroRechazadoEn?: boolean
     foto?: boolean
     fotoMini?: boolean
     horarioId?: boolean
@@ -12743,6 +12960,8 @@ export namespace Prisma {
     vinculacion?: boolean | Colaborador$vinculacionArgs<ExtArgs>
     diasEsperados?: boolean | Colaborador$diasEsperadosArgs<ExtArgs>
     sedes?: boolean | Colaborador$sedesArgs<ExtArgs>
+    enlacesRegistroFacial?: boolean | Colaborador$enlacesRegistroFacialArgs<ExtArgs>
+    constanciasBiometricas?: boolean | Colaborador$constanciasBiometricasArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -12757,6 +12976,8 @@ export namespace Prisma {
       vinculacion: Prisma.$VinculacionEventoPayload<ExtArgs>[]
       diasEsperados: Prisma.$DiaEsperadoPayload<ExtArgs>[]
       sedes: Prisma.$ColaboradorSedePayload<ExtArgs>[]
+      enlacesRegistroFacial: Prisma.$EnlaceRegistroFacialPayload<ExtArgs>[]
+      constanciasBiometricas: Prisma.$ConstanciaBiometricaPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -12771,6 +12992,7 @@ export namespace Prisma {
       salarioMensual: number
       rostroDescriptor: Prisma.JsonValue | null
       rostroEnroladoEn: Date | null
+      rostroRechazadoEn: Date | null
       foto: string | null
       fotoMini: string | null
       horarioId: string | null
@@ -13130,6 +13352,8 @@ export namespace Prisma {
     vinculacion<T extends Colaborador$vinculacionArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$vinculacionArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VinculacionEventoPayload<ExtArgs>, T, "findMany"> | Null>
     diasEsperados<T extends Colaborador$diasEsperadosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$diasEsperadosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findMany"> | Null>
     sedes<T extends Colaborador$sedesArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$sedesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findMany"> | Null>
+    enlacesRegistroFacial<T extends Colaborador$enlacesRegistroFacialArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$enlacesRegistroFacialArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "findMany"> | Null>
+    constanciasBiometricas<T extends Colaborador$constanciasBiometricasArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$constanciasBiometricasArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -13171,6 +13395,7 @@ export namespace Prisma {
     readonly salarioMensual: FieldRef<"Colaborador", 'Float'>
     readonly rostroDescriptor: FieldRef<"Colaborador", 'Json'>
     readonly rostroEnroladoEn: FieldRef<"Colaborador", 'DateTime'>
+    readonly rostroRechazadoEn: FieldRef<"Colaborador", 'DateTime'>
     readonly foto: FieldRef<"Colaborador", 'String'>
     readonly fotoMini: FieldRef<"Colaborador", 'String'>
     readonly horarioId: FieldRef<"Colaborador", 'String'>
@@ -13613,6 +13838,46 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ColaboradorSedeScalarFieldEnum | ColaboradorSedeScalarFieldEnum[]
+  }
+
+  /**
+   * Colaborador.enlacesRegistroFacial
+   */
+  export type Colaborador$enlacesRegistroFacialArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+    where?: EnlaceRegistroFacialWhereInput
+    orderBy?: EnlaceRegistroFacialOrderByWithRelationInput | EnlaceRegistroFacialOrderByWithRelationInput[]
+    cursor?: EnlaceRegistroFacialWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: EnlaceRegistroFacialScalarFieldEnum | EnlaceRegistroFacialScalarFieldEnum[]
+  }
+
+  /**
+   * Colaborador.constanciasBiometricas
+   */
+  export type Colaborador$constanciasBiometricasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+    where?: ConstanciaBiometricaWhereInput
+    orderBy?: ConstanciaBiometricaOrderByWithRelationInput | ConstanciaBiometricaOrderByWithRelationInput[]
+    cursor?: ConstanciaBiometricaWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ConstanciaBiometricaScalarFieldEnum | ConstanciaBiometricaScalarFieldEnum[]
   }
 
   /**
@@ -27426,6 +27691,1886 @@ export namespace Prisma {
 
 
   /**
+   * Model EnlaceRegistroFacial
+   */
+
+  export type AggregateEnlaceRegistroFacial = {
+    _count: EnlaceRegistroFacialCountAggregateOutputType | null
+    _avg: EnlaceRegistroFacialAvgAggregateOutputType | null
+    _sum: EnlaceRegistroFacialSumAggregateOutputType | null
+    _min: EnlaceRegistroFacialMinAggregateOutputType | null
+    _max: EnlaceRegistroFacialMaxAggregateOutputType | null
+  }
+
+  export type EnlaceRegistroFacialAvgAggregateOutputType = {
+    intentosCedula: number | null
+  }
+
+  export type EnlaceRegistroFacialSumAggregateOutputType = {
+    intentosCedula: number | null
+  }
+
+  export type EnlaceRegistroFacialMinAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    tokenHash: string | null
+    venceEn: Date | null
+    usadoEn: Date | null
+    anuladoEn: Date | null
+    intentosCedula: number | null
+    usuarioId: string | null
+    creadoEn: Date | null
+  }
+
+  export type EnlaceRegistroFacialMaxAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    tokenHash: string | null
+    venceEn: Date | null
+    usadoEn: Date | null
+    anuladoEn: Date | null
+    intentosCedula: number | null
+    usuarioId: string | null
+    creadoEn: Date | null
+  }
+
+  export type EnlaceRegistroFacialCountAggregateOutputType = {
+    id: number
+    colaboradorId: number
+    tokenHash: number
+    venceEn: number
+    usadoEn: number
+    anuladoEn: number
+    intentosCedula: number
+    usuarioId: number
+    creadoEn: number
+    _all: number
+  }
+
+
+  export type EnlaceRegistroFacialAvgAggregateInputType = {
+    intentosCedula?: true
+  }
+
+  export type EnlaceRegistroFacialSumAggregateInputType = {
+    intentosCedula?: true
+  }
+
+  export type EnlaceRegistroFacialMinAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    tokenHash?: true
+    venceEn?: true
+    usadoEn?: true
+    anuladoEn?: true
+    intentosCedula?: true
+    usuarioId?: true
+    creadoEn?: true
+  }
+
+  export type EnlaceRegistroFacialMaxAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    tokenHash?: true
+    venceEn?: true
+    usadoEn?: true
+    anuladoEn?: true
+    intentosCedula?: true
+    usuarioId?: true
+    creadoEn?: true
+  }
+
+  export type EnlaceRegistroFacialCountAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    tokenHash?: true
+    venceEn?: true
+    usadoEn?: true
+    anuladoEn?: true
+    intentosCedula?: true
+    usuarioId?: true
+    creadoEn?: true
+    _all?: true
+  }
+
+  export type EnlaceRegistroFacialAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which EnlaceRegistroFacial to aggregate.
+     */
+    where?: EnlaceRegistroFacialWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of EnlaceRegistroFacials to fetch.
+     */
+    orderBy?: EnlaceRegistroFacialOrderByWithRelationInput | EnlaceRegistroFacialOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: EnlaceRegistroFacialWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` EnlaceRegistroFacials from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` EnlaceRegistroFacials.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned EnlaceRegistroFacials
+    **/
+    _count?: true | EnlaceRegistroFacialCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: EnlaceRegistroFacialAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: EnlaceRegistroFacialSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: EnlaceRegistroFacialMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: EnlaceRegistroFacialMaxAggregateInputType
+  }
+
+  export type GetEnlaceRegistroFacialAggregateType<T extends EnlaceRegistroFacialAggregateArgs> = {
+        [P in keyof T & keyof AggregateEnlaceRegistroFacial]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateEnlaceRegistroFacial[P]>
+      : GetScalarType<T[P], AggregateEnlaceRegistroFacial[P]>
+  }
+
+
+
+
+  export type EnlaceRegistroFacialGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: EnlaceRegistroFacialWhereInput
+    orderBy?: EnlaceRegistroFacialOrderByWithAggregationInput | EnlaceRegistroFacialOrderByWithAggregationInput[]
+    by: EnlaceRegistroFacialScalarFieldEnum[] | EnlaceRegistroFacialScalarFieldEnum
+    having?: EnlaceRegistroFacialScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: EnlaceRegistroFacialCountAggregateInputType | true
+    _avg?: EnlaceRegistroFacialAvgAggregateInputType
+    _sum?: EnlaceRegistroFacialSumAggregateInputType
+    _min?: EnlaceRegistroFacialMinAggregateInputType
+    _max?: EnlaceRegistroFacialMaxAggregateInputType
+  }
+
+  export type EnlaceRegistroFacialGroupByOutputType = {
+    id: string
+    colaboradorId: string
+    tokenHash: string
+    venceEn: Date
+    usadoEn: Date | null
+    anuladoEn: Date | null
+    intentosCedula: number
+    usuarioId: string | null
+    creadoEn: Date
+    _count: EnlaceRegistroFacialCountAggregateOutputType | null
+    _avg: EnlaceRegistroFacialAvgAggregateOutputType | null
+    _sum: EnlaceRegistroFacialSumAggregateOutputType | null
+    _min: EnlaceRegistroFacialMinAggregateOutputType | null
+    _max: EnlaceRegistroFacialMaxAggregateOutputType | null
+  }
+
+  type GetEnlaceRegistroFacialGroupByPayload<T extends EnlaceRegistroFacialGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<EnlaceRegistroFacialGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof EnlaceRegistroFacialGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], EnlaceRegistroFacialGroupByOutputType[P]>
+            : GetScalarType<T[P], EnlaceRegistroFacialGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type EnlaceRegistroFacialSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    colaboradorId?: boolean
+    tokenHash?: boolean
+    venceEn?: boolean
+    usadoEn?: boolean
+    anuladoEn?: boolean
+    intentosCedula?: boolean
+    usuarioId?: boolean
+    creadoEn?: boolean
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["enlaceRegistroFacial"]>
+
+
+  export type EnlaceRegistroFacialSelectScalar = {
+    id?: boolean
+    colaboradorId?: boolean
+    tokenHash?: boolean
+    venceEn?: boolean
+    usadoEn?: boolean
+    anuladoEn?: boolean
+    intentosCedula?: boolean
+    usuarioId?: boolean
+    creadoEn?: boolean
+  }
+
+  export type EnlaceRegistroFacialInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+  }
+
+  export type $EnlaceRegistroFacialPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "EnlaceRegistroFacial"
+    objects: {
+      colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      colaboradorId: string
+      tokenHash: string
+      venceEn: Date
+      usadoEn: Date | null
+      anuladoEn: Date | null
+      intentosCedula: number
+      usuarioId: string | null
+      creadoEn: Date
+    }, ExtArgs["result"]["enlaceRegistroFacial"]>
+    composites: {}
+  }
+
+  type EnlaceRegistroFacialGetPayload<S extends boolean | null | undefined | EnlaceRegistroFacialDefaultArgs> = $Result.GetResult<Prisma.$EnlaceRegistroFacialPayload, S>
+
+  type EnlaceRegistroFacialCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<EnlaceRegistroFacialFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: EnlaceRegistroFacialCountAggregateInputType | true
+    }
+
+  export interface EnlaceRegistroFacialDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['EnlaceRegistroFacial'], meta: { name: 'EnlaceRegistroFacial' } }
+    /**
+     * Find zero or one EnlaceRegistroFacial that matches the filter.
+     * @param {EnlaceRegistroFacialFindUniqueArgs} args - Arguments to find a EnlaceRegistroFacial
+     * @example
+     * // Get one EnlaceRegistroFacial
+     * const enlaceRegistroFacial = await prisma.enlaceRegistroFacial.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends EnlaceRegistroFacialFindUniqueArgs>(args: SelectSubset<T, EnlaceRegistroFacialFindUniqueArgs<ExtArgs>>): Prisma__EnlaceRegistroFacialClient<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one EnlaceRegistroFacial that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {EnlaceRegistroFacialFindUniqueOrThrowArgs} args - Arguments to find a EnlaceRegistroFacial
+     * @example
+     * // Get one EnlaceRegistroFacial
+     * const enlaceRegistroFacial = await prisma.enlaceRegistroFacial.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends EnlaceRegistroFacialFindUniqueOrThrowArgs>(args: SelectSubset<T, EnlaceRegistroFacialFindUniqueOrThrowArgs<ExtArgs>>): Prisma__EnlaceRegistroFacialClient<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first EnlaceRegistroFacial that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EnlaceRegistroFacialFindFirstArgs} args - Arguments to find a EnlaceRegistroFacial
+     * @example
+     * // Get one EnlaceRegistroFacial
+     * const enlaceRegistroFacial = await prisma.enlaceRegistroFacial.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends EnlaceRegistroFacialFindFirstArgs>(args?: SelectSubset<T, EnlaceRegistroFacialFindFirstArgs<ExtArgs>>): Prisma__EnlaceRegistroFacialClient<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first EnlaceRegistroFacial that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EnlaceRegistroFacialFindFirstOrThrowArgs} args - Arguments to find a EnlaceRegistroFacial
+     * @example
+     * // Get one EnlaceRegistroFacial
+     * const enlaceRegistroFacial = await prisma.enlaceRegistroFacial.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends EnlaceRegistroFacialFindFirstOrThrowArgs>(args?: SelectSubset<T, EnlaceRegistroFacialFindFirstOrThrowArgs<ExtArgs>>): Prisma__EnlaceRegistroFacialClient<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more EnlaceRegistroFacials that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EnlaceRegistroFacialFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all EnlaceRegistroFacials
+     * const enlaceRegistroFacials = await prisma.enlaceRegistroFacial.findMany()
+     * 
+     * // Get first 10 EnlaceRegistroFacials
+     * const enlaceRegistroFacials = await prisma.enlaceRegistroFacial.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const enlaceRegistroFacialWithIdOnly = await prisma.enlaceRegistroFacial.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends EnlaceRegistroFacialFindManyArgs>(args?: SelectSubset<T, EnlaceRegistroFacialFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a EnlaceRegistroFacial.
+     * @param {EnlaceRegistroFacialCreateArgs} args - Arguments to create a EnlaceRegistroFacial.
+     * @example
+     * // Create one EnlaceRegistroFacial
+     * const EnlaceRegistroFacial = await prisma.enlaceRegistroFacial.create({
+     *   data: {
+     *     // ... data to create a EnlaceRegistroFacial
+     *   }
+     * })
+     * 
+     */
+    create<T extends EnlaceRegistroFacialCreateArgs>(args: SelectSubset<T, EnlaceRegistroFacialCreateArgs<ExtArgs>>): Prisma__EnlaceRegistroFacialClient<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many EnlaceRegistroFacials.
+     * @param {EnlaceRegistroFacialCreateManyArgs} args - Arguments to create many EnlaceRegistroFacials.
+     * @example
+     * // Create many EnlaceRegistroFacials
+     * const enlaceRegistroFacial = await prisma.enlaceRegistroFacial.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends EnlaceRegistroFacialCreateManyArgs>(args?: SelectSubset<T, EnlaceRegistroFacialCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a EnlaceRegistroFacial.
+     * @param {EnlaceRegistroFacialDeleteArgs} args - Arguments to delete one EnlaceRegistroFacial.
+     * @example
+     * // Delete one EnlaceRegistroFacial
+     * const EnlaceRegistroFacial = await prisma.enlaceRegistroFacial.delete({
+     *   where: {
+     *     // ... filter to delete one EnlaceRegistroFacial
+     *   }
+     * })
+     * 
+     */
+    delete<T extends EnlaceRegistroFacialDeleteArgs>(args: SelectSubset<T, EnlaceRegistroFacialDeleteArgs<ExtArgs>>): Prisma__EnlaceRegistroFacialClient<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one EnlaceRegistroFacial.
+     * @param {EnlaceRegistroFacialUpdateArgs} args - Arguments to update one EnlaceRegistroFacial.
+     * @example
+     * // Update one EnlaceRegistroFacial
+     * const enlaceRegistroFacial = await prisma.enlaceRegistroFacial.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends EnlaceRegistroFacialUpdateArgs>(args: SelectSubset<T, EnlaceRegistroFacialUpdateArgs<ExtArgs>>): Prisma__EnlaceRegistroFacialClient<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more EnlaceRegistroFacials.
+     * @param {EnlaceRegistroFacialDeleteManyArgs} args - Arguments to filter EnlaceRegistroFacials to delete.
+     * @example
+     * // Delete a few EnlaceRegistroFacials
+     * const { count } = await prisma.enlaceRegistroFacial.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends EnlaceRegistroFacialDeleteManyArgs>(args?: SelectSubset<T, EnlaceRegistroFacialDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more EnlaceRegistroFacials.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EnlaceRegistroFacialUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many EnlaceRegistroFacials
+     * const enlaceRegistroFacial = await prisma.enlaceRegistroFacial.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends EnlaceRegistroFacialUpdateManyArgs>(args: SelectSubset<T, EnlaceRegistroFacialUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one EnlaceRegistroFacial.
+     * @param {EnlaceRegistroFacialUpsertArgs} args - Arguments to update or create a EnlaceRegistroFacial.
+     * @example
+     * // Update or create a EnlaceRegistroFacial
+     * const enlaceRegistroFacial = await prisma.enlaceRegistroFacial.upsert({
+     *   create: {
+     *     // ... data to create a EnlaceRegistroFacial
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the EnlaceRegistroFacial we want to update
+     *   }
+     * })
+     */
+    upsert<T extends EnlaceRegistroFacialUpsertArgs>(args: SelectSubset<T, EnlaceRegistroFacialUpsertArgs<ExtArgs>>): Prisma__EnlaceRegistroFacialClient<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of EnlaceRegistroFacials.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EnlaceRegistroFacialCountArgs} args - Arguments to filter EnlaceRegistroFacials to count.
+     * @example
+     * // Count the number of EnlaceRegistroFacials
+     * const count = await prisma.enlaceRegistroFacial.count({
+     *   where: {
+     *     // ... the filter for the EnlaceRegistroFacials we want to count
+     *   }
+     * })
+    **/
+    count<T extends EnlaceRegistroFacialCountArgs>(
+      args?: Subset<T, EnlaceRegistroFacialCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], EnlaceRegistroFacialCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a EnlaceRegistroFacial.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EnlaceRegistroFacialAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends EnlaceRegistroFacialAggregateArgs>(args: Subset<T, EnlaceRegistroFacialAggregateArgs>): Prisma.PrismaPromise<GetEnlaceRegistroFacialAggregateType<T>>
+
+    /**
+     * Group by EnlaceRegistroFacial.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EnlaceRegistroFacialGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends EnlaceRegistroFacialGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: EnlaceRegistroFacialGroupByArgs['orderBy'] }
+        : { orderBy?: EnlaceRegistroFacialGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, EnlaceRegistroFacialGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetEnlaceRegistroFacialGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the EnlaceRegistroFacial model
+   */
+  readonly fields: EnlaceRegistroFacialFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for EnlaceRegistroFacial.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__EnlaceRegistroFacialClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the EnlaceRegistroFacial model
+   */ 
+  interface EnlaceRegistroFacialFieldRefs {
+    readonly id: FieldRef<"EnlaceRegistroFacial", 'String'>
+    readonly colaboradorId: FieldRef<"EnlaceRegistroFacial", 'String'>
+    readonly tokenHash: FieldRef<"EnlaceRegistroFacial", 'String'>
+    readonly venceEn: FieldRef<"EnlaceRegistroFacial", 'DateTime'>
+    readonly usadoEn: FieldRef<"EnlaceRegistroFacial", 'DateTime'>
+    readonly anuladoEn: FieldRef<"EnlaceRegistroFacial", 'DateTime'>
+    readonly intentosCedula: FieldRef<"EnlaceRegistroFacial", 'Int'>
+    readonly usuarioId: FieldRef<"EnlaceRegistroFacial", 'String'>
+    readonly creadoEn: FieldRef<"EnlaceRegistroFacial", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * EnlaceRegistroFacial findUnique
+   */
+  export type EnlaceRegistroFacialFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+    /**
+     * Filter, which EnlaceRegistroFacial to fetch.
+     */
+    where: EnlaceRegistroFacialWhereUniqueInput
+  }
+
+  /**
+   * EnlaceRegistroFacial findUniqueOrThrow
+   */
+  export type EnlaceRegistroFacialFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+    /**
+     * Filter, which EnlaceRegistroFacial to fetch.
+     */
+    where: EnlaceRegistroFacialWhereUniqueInput
+  }
+
+  /**
+   * EnlaceRegistroFacial findFirst
+   */
+  export type EnlaceRegistroFacialFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+    /**
+     * Filter, which EnlaceRegistroFacial to fetch.
+     */
+    where?: EnlaceRegistroFacialWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of EnlaceRegistroFacials to fetch.
+     */
+    orderBy?: EnlaceRegistroFacialOrderByWithRelationInput | EnlaceRegistroFacialOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for EnlaceRegistroFacials.
+     */
+    cursor?: EnlaceRegistroFacialWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` EnlaceRegistroFacials from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` EnlaceRegistroFacials.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of EnlaceRegistroFacials.
+     */
+    distinct?: EnlaceRegistroFacialScalarFieldEnum | EnlaceRegistroFacialScalarFieldEnum[]
+  }
+
+  /**
+   * EnlaceRegistroFacial findFirstOrThrow
+   */
+  export type EnlaceRegistroFacialFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+    /**
+     * Filter, which EnlaceRegistroFacial to fetch.
+     */
+    where?: EnlaceRegistroFacialWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of EnlaceRegistroFacials to fetch.
+     */
+    orderBy?: EnlaceRegistroFacialOrderByWithRelationInput | EnlaceRegistroFacialOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for EnlaceRegistroFacials.
+     */
+    cursor?: EnlaceRegistroFacialWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` EnlaceRegistroFacials from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` EnlaceRegistroFacials.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of EnlaceRegistroFacials.
+     */
+    distinct?: EnlaceRegistroFacialScalarFieldEnum | EnlaceRegistroFacialScalarFieldEnum[]
+  }
+
+  /**
+   * EnlaceRegistroFacial findMany
+   */
+  export type EnlaceRegistroFacialFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+    /**
+     * Filter, which EnlaceRegistroFacials to fetch.
+     */
+    where?: EnlaceRegistroFacialWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of EnlaceRegistroFacials to fetch.
+     */
+    orderBy?: EnlaceRegistroFacialOrderByWithRelationInput | EnlaceRegistroFacialOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing EnlaceRegistroFacials.
+     */
+    cursor?: EnlaceRegistroFacialWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` EnlaceRegistroFacials from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` EnlaceRegistroFacials.
+     */
+    skip?: number
+    distinct?: EnlaceRegistroFacialScalarFieldEnum | EnlaceRegistroFacialScalarFieldEnum[]
+  }
+
+  /**
+   * EnlaceRegistroFacial create
+   */
+  export type EnlaceRegistroFacialCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+    /**
+     * The data needed to create a EnlaceRegistroFacial.
+     */
+    data: XOR<EnlaceRegistroFacialCreateInput, EnlaceRegistroFacialUncheckedCreateInput>
+  }
+
+  /**
+   * EnlaceRegistroFacial createMany
+   */
+  export type EnlaceRegistroFacialCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many EnlaceRegistroFacials.
+     */
+    data: EnlaceRegistroFacialCreateManyInput | EnlaceRegistroFacialCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * EnlaceRegistroFacial update
+   */
+  export type EnlaceRegistroFacialUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+    /**
+     * The data needed to update a EnlaceRegistroFacial.
+     */
+    data: XOR<EnlaceRegistroFacialUpdateInput, EnlaceRegistroFacialUncheckedUpdateInput>
+    /**
+     * Choose, which EnlaceRegistroFacial to update.
+     */
+    where: EnlaceRegistroFacialWhereUniqueInput
+  }
+
+  /**
+   * EnlaceRegistroFacial updateMany
+   */
+  export type EnlaceRegistroFacialUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update EnlaceRegistroFacials.
+     */
+    data: XOR<EnlaceRegistroFacialUpdateManyMutationInput, EnlaceRegistroFacialUncheckedUpdateManyInput>
+    /**
+     * Filter which EnlaceRegistroFacials to update
+     */
+    where?: EnlaceRegistroFacialWhereInput
+  }
+
+  /**
+   * EnlaceRegistroFacial upsert
+   */
+  export type EnlaceRegistroFacialUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+    /**
+     * The filter to search for the EnlaceRegistroFacial to update in case it exists.
+     */
+    where: EnlaceRegistroFacialWhereUniqueInput
+    /**
+     * In case the EnlaceRegistroFacial found by the `where` argument doesn't exist, create a new EnlaceRegistroFacial with this data.
+     */
+    create: XOR<EnlaceRegistroFacialCreateInput, EnlaceRegistroFacialUncheckedCreateInput>
+    /**
+     * In case the EnlaceRegistroFacial was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<EnlaceRegistroFacialUpdateInput, EnlaceRegistroFacialUncheckedUpdateInput>
+  }
+
+  /**
+   * EnlaceRegistroFacial delete
+   */
+  export type EnlaceRegistroFacialDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+    /**
+     * Filter which EnlaceRegistroFacial to delete.
+     */
+    where: EnlaceRegistroFacialWhereUniqueInput
+  }
+
+  /**
+   * EnlaceRegistroFacial deleteMany
+   */
+  export type EnlaceRegistroFacialDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which EnlaceRegistroFacials to delete
+     */
+    where?: EnlaceRegistroFacialWhereInput
+  }
+
+  /**
+   * EnlaceRegistroFacial without action
+   */
+  export type EnlaceRegistroFacialDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EnlaceRegistroFacial
+     */
+    select?: EnlaceRegistroFacialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EnlaceRegistroFacialInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ConstanciaBiometrica
+   */
+
+  export type AggregateConstanciaBiometrica = {
+    _count: ConstanciaBiometricaCountAggregateOutputType | null
+    _min: ConstanciaBiometricaMinAggregateOutputType | null
+    _max: ConstanciaBiometricaMaxAggregateOutputType | null
+  }
+
+  export type ConstanciaBiometricaMinAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    decision: $Enums.DecisionBiometrica | null
+    origen: $Enums.OrigenConstancia | null
+    texto: string | null
+    mayorDeEdad: boolean | null
+    usuarioId: string | null
+    enlaceId: string | null
+    creadoEn: Date | null
+  }
+
+  export type ConstanciaBiometricaMaxAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    decision: $Enums.DecisionBiometrica | null
+    origen: $Enums.OrigenConstancia | null
+    texto: string | null
+    mayorDeEdad: boolean | null
+    usuarioId: string | null
+    enlaceId: string | null
+    creadoEn: Date | null
+  }
+
+  export type ConstanciaBiometricaCountAggregateOutputType = {
+    id: number
+    colaboradorId: number
+    decision: number
+    origen: number
+    texto: number
+    mayorDeEdad: number
+    usuarioId: number
+    enlaceId: number
+    creadoEn: number
+    _all: number
+  }
+
+
+  export type ConstanciaBiometricaMinAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    decision?: true
+    origen?: true
+    texto?: true
+    mayorDeEdad?: true
+    usuarioId?: true
+    enlaceId?: true
+    creadoEn?: true
+  }
+
+  export type ConstanciaBiometricaMaxAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    decision?: true
+    origen?: true
+    texto?: true
+    mayorDeEdad?: true
+    usuarioId?: true
+    enlaceId?: true
+    creadoEn?: true
+  }
+
+  export type ConstanciaBiometricaCountAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    decision?: true
+    origen?: true
+    texto?: true
+    mayorDeEdad?: true
+    usuarioId?: true
+    enlaceId?: true
+    creadoEn?: true
+    _all?: true
+  }
+
+  export type ConstanciaBiometricaAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ConstanciaBiometrica to aggregate.
+     */
+    where?: ConstanciaBiometricaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConstanciaBiometricas to fetch.
+     */
+    orderBy?: ConstanciaBiometricaOrderByWithRelationInput | ConstanciaBiometricaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ConstanciaBiometricaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConstanciaBiometricas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConstanciaBiometricas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ConstanciaBiometricas
+    **/
+    _count?: true | ConstanciaBiometricaCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ConstanciaBiometricaMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ConstanciaBiometricaMaxAggregateInputType
+  }
+
+  export type GetConstanciaBiometricaAggregateType<T extends ConstanciaBiometricaAggregateArgs> = {
+        [P in keyof T & keyof AggregateConstanciaBiometrica]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateConstanciaBiometrica[P]>
+      : GetScalarType<T[P], AggregateConstanciaBiometrica[P]>
+  }
+
+
+
+
+  export type ConstanciaBiometricaGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ConstanciaBiometricaWhereInput
+    orderBy?: ConstanciaBiometricaOrderByWithAggregationInput | ConstanciaBiometricaOrderByWithAggregationInput[]
+    by: ConstanciaBiometricaScalarFieldEnum[] | ConstanciaBiometricaScalarFieldEnum
+    having?: ConstanciaBiometricaScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ConstanciaBiometricaCountAggregateInputType | true
+    _min?: ConstanciaBiometricaMinAggregateInputType
+    _max?: ConstanciaBiometricaMaxAggregateInputType
+  }
+
+  export type ConstanciaBiometricaGroupByOutputType = {
+    id: string
+    colaboradorId: string
+    decision: $Enums.DecisionBiometrica
+    origen: $Enums.OrigenConstancia
+    texto: string
+    mayorDeEdad: boolean | null
+    usuarioId: string | null
+    enlaceId: string | null
+    creadoEn: Date
+    _count: ConstanciaBiometricaCountAggregateOutputType | null
+    _min: ConstanciaBiometricaMinAggregateOutputType | null
+    _max: ConstanciaBiometricaMaxAggregateOutputType | null
+  }
+
+  type GetConstanciaBiometricaGroupByPayload<T extends ConstanciaBiometricaGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ConstanciaBiometricaGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ConstanciaBiometricaGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ConstanciaBiometricaGroupByOutputType[P]>
+            : GetScalarType<T[P], ConstanciaBiometricaGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ConstanciaBiometricaSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    colaboradorId?: boolean
+    decision?: boolean
+    origen?: boolean
+    texto?: boolean
+    mayorDeEdad?: boolean
+    usuarioId?: boolean
+    enlaceId?: boolean
+    creadoEn?: boolean
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["constanciaBiometrica"]>
+
+
+  export type ConstanciaBiometricaSelectScalar = {
+    id?: boolean
+    colaboradorId?: boolean
+    decision?: boolean
+    origen?: boolean
+    texto?: boolean
+    mayorDeEdad?: boolean
+    usuarioId?: boolean
+    enlaceId?: boolean
+    creadoEn?: boolean
+  }
+
+  export type ConstanciaBiometricaInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+  }
+
+  export type $ConstanciaBiometricaPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ConstanciaBiometrica"
+    objects: {
+      colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      colaboradorId: string
+      decision: $Enums.DecisionBiometrica
+      origen: $Enums.OrigenConstancia
+      texto: string
+      mayorDeEdad: boolean | null
+      usuarioId: string | null
+      enlaceId: string | null
+      creadoEn: Date
+    }, ExtArgs["result"]["constanciaBiometrica"]>
+    composites: {}
+  }
+
+  type ConstanciaBiometricaGetPayload<S extends boolean | null | undefined | ConstanciaBiometricaDefaultArgs> = $Result.GetResult<Prisma.$ConstanciaBiometricaPayload, S>
+
+  type ConstanciaBiometricaCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ConstanciaBiometricaFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ConstanciaBiometricaCountAggregateInputType | true
+    }
+
+  export interface ConstanciaBiometricaDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ConstanciaBiometrica'], meta: { name: 'ConstanciaBiometrica' } }
+    /**
+     * Find zero or one ConstanciaBiometrica that matches the filter.
+     * @param {ConstanciaBiometricaFindUniqueArgs} args - Arguments to find a ConstanciaBiometrica
+     * @example
+     * // Get one ConstanciaBiometrica
+     * const constanciaBiometrica = await prisma.constanciaBiometrica.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ConstanciaBiometricaFindUniqueArgs>(args: SelectSubset<T, ConstanciaBiometricaFindUniqueArgs<ExtArgs>>): Prisma__ConstanciaBiometricaClient<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ConstanciaBiometrica that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ConstanciaBiometricaFindUniqueOrThrowArgs} args - Arguments to find a ConstanciaBiometrica
+     * @example
+     * // Get one ConstanciaBiometrica
+     * const constanciaBiometrica = await prisma.constanciaBiometrica.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ConstanciaBiometricaFindUniqueOrThrowArgs>(args: SelectSubset<T, ConstanciaBiometricaFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ConstanciaBiometricaClient<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ConstanciaBiometrica that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConstanciaBiometricaFindFirstArgs} args - Arguments to find a ConstanciaBiometrica
+     * @example
+     * // Get one ConstanciaBiometrica
+     * const constanciaBiometrica = await prisma.constanciaBiometrica.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ConstanciaBiometricaFindFirstArgs>(args?: SelectSubset<T, ConstanciaBiometricaFindFirstArgs<ExtArgs>>): Prisma__ConstanciaBiometricaClient<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ConstanciaBiometrica that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConstanciaBiometricaFindFirstOrThrowArgs} args - Arguments to find a ConstanciaBiometrica
+     * @example
+     * // Get one ConstanciaBiometrica
+     * const constanciaBiometrica = await prisma.constanciaBiometrica.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ConstanciaBiometricaFindFirstOrThrowArgs>(args?: SelectSubset<T, ConstanciaBiometricaFindFirstOrThrowArgs<ExtArgs>>): Prisma__ConstanciaBiometricaClient<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ConstanciaBiometricas that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConstanciaBiometricaFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ConstanciaBiometricas
+     * const constanciaBiometricas = await prisma.constanciaBiometrica.findMany()
+     * 
+     * // Get first 10 ConstanciaBiometricas
+     * const constanciaBiometricas = await prisma.constanciaBiometrica.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const constanciaBiometricaWithIdOnly = await prisma.constanciaBiometrica.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ConstanciaBiometricaFindManyArgs>(args?: SelectSubset<T, ConstanciaBiometricaFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ConstanciaBiometrica.
+     * @param {ConstanciaBiometricaCreateArgs} args - Arguments to create a ConstanciaBiometrica.
+     * @example
+     * // Create one ConstanciaBiometrica
+     * const ConstanciaBiometrica = await prisma.constanciaBiometrica.create({
+     *   data: {
+     *     // ... data to create a ConstanciaBiometrica
+     *   }
+     * })
+     * 
+     */
+    create<T extends ConstanciaBiometricaCreateArgs>(args: SelectSubset<T, ConstanciaBiometricaCreateArgs<ExtArgs>>): Prisma__ConstanciaBiometricaClient<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ConstanciaBiometricas.
+     * @param {ConstanciaBiometricaCreateManyArgs} args - Arguments to create many ConstanciaBiometricas.
+     * @example
+     * // Create many ConstanciaBiometricas
+     * const constanciaBiometrica = await prisma.constanciaBiometrica.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ConstanciaBiometricaCreateManyArgs>(args?: SelectSubset<T, ConstanciaBiometricaCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ConstanciaBiometrica.
+     * @param {ConstanciaBiometricaDeleteArgs} args - Arguments to delete one ConstanciaBiometrica.
+     * @example
+     * // Delete one ConstanciaBiometrica
+     * const ConstanciaBiometrica = await prisma.constanciaBiometrica.delete({
+     *   where: {
+     *     // ... filter to delete one ConstanciaBiometrica
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ConstanciaBiometricaDeleteArgs>(args: SelectSubset<T, ConstanciaBiometricaDeleteArgs<ExtArgs>>): Prisma__ConstanciaBiometricaClient<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ConstanciaBiometrica.
+     * @param {ConstanciaBiometricaUpdateArgs} args - Arguments to update one ConstanciaBiometrica.
+     * @example
+     * // Update one ConstanciaBiometrica
+     * const constanciaBiometrica = await prisma.constanciaBiometrica.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ConstanciaBiometricaUpdateArgs>(args: SelectSubset<T, ConstanciaBiometricaUpdateArgs<ExtArgs>>): Prisma__ConstanciaBiometricaClient<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ConstanciaBiometricas.
+     * @param {ConstanciaBiometricaDeleteManyArgs} args - Arguments to filter ConstanciaBiometricas to delete.
+     * @example
+     * // Delete a few ConstanciaBiometricas
+     * const { count } = await prisma.constanciaBiometrica.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ConstanciaBiometricaDeleteManyArgs>(args?: SelectSubset<T, ConstanciaBiometricaDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ConstanciaBiometricas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConstanciaBiometricaUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ConstanciaBiometricas
+     * const constanciaBiometrica = await prisma.constanciaBiometrica.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ConstanciaBiometricaUpdateManyArgs>(args: SelectSubset<T, ConstanciaBiometricaUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ConstanciaBiometrica.
+     * @param {ConstanciaBiometricaUpsertArgs} args - Arguments to update or create a ConstanciaBiometrica.
+     * @example
+     * // Update or create a ConstanciaBiometrica
+     * const constanciaBiometrica = await prisma.constanciaBiometrica.upsert({
+     *   create: {
+     *     // ... data to create a ConstanciaBiometrica
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ConstanciaBiometrica we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ConstanciaBiometricaUpsertArgs>(args: SelectSubset<T, ConstanciaBiometricaUpsertArgs<ExtArgs>>): Prisma__ConstanciaBiometricaClient<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ConstanciaBiometricas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConstanciaBiometricaCountArgs} args - Arguments to filter ConstanciaBiometricas to count.
+     * @example
+     * // Count the number of ConstanciaBiometricas
+     * const count = await prisma.constanciaBiometrica.count({
+     *   where: {
+     *     // ... the filter for the ConstanciaBiometricas we want to count
+     *   }
+     * })
+    **/
+    count<T extends ConstanciaBiometricaCountArgs>(
+      args?: Subset<T, ConstanciaBiometricaCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ConstanciaBiometricaCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ConstanciaBiometrica.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConstanciaBiometricaAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ConstanciaBiometricaAggregateArgs>(args: Subset<T, ConstanciaBiometricaAggregateArgs>): Prisma.PrismaPromise<GetConstanciaBiometricaAggregateType<T>>
+
+    /**
+     * Group by ConstanciaBiometrica.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConstanciaBiometricaGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ConstanciaBiometricaGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ConstanciaBiometricaGroupByArgs['orderBy'] }
+        : { orderBy?: ConstanciaBiometricaGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ConstanciaBiometricaGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetConstanciaBiometricaGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ConstanciaBiometrica model
+   */
+  readonly fields: ConstanciaBiometricaFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ConstanciaBiometrica.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ConstanciaBiometricaClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ConstanciaBiometrica model
+   */ 
+  interface ConstanciaBiometricaFieldRefs {
+    readonly id: FieldRef<"ConstanciaBiometrica", 'String'>
+    readonly colaboradorId: FieldRef<"ConstanciaBiometrica", 'String'>
+    readonly decision: FieldRef<"ConstanciaBiometrica", 'DecisionBiometrica'>
+    readonly origen: FieldRef<"ConstanciaBiometrica", 'OrigenConstancia'>
+    readonly texto: FieldRef<"ConstanciaBiometrica", 'String'>
+    readonly mayorDeEdad: FieldRef<"ConstanciaBiometrica", 'Boolean'>
+    readonly usuarioId: FieldRef<"ConstanciaBiometrica", 'String'>
+    readonly enlaceId: FieldRef<"ConstanciaBiometrica", 'String'>
+    readonly creadoEn: FieldRef<"ConstanciaBiometrica", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ConstanciaBiometrica findUnique
+   */
+  export type ConstanciaBiometricaFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+    /**
+     * Filter, which ConstanciaBiometrica to fetch.
+     */
+    where: ConstanciaBiometricaWhereUniqueInput
+  }
+
+  /**
+   * ConstanciaBiometrica findUniqueOrThrow
+   */
+  export type ConstanciaBiometricaFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+    /**
+     * Filter, which ConstanciaBiometrica to fetch.
+     */
+    where: ConstanciaBiometricaWhereUniqueInput
+  }
+
+  /**
+   * ConstanciaBiometrica findFirst
+   */
+  export type ConstanciaBiometricaFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+    /**
+     * Filter, which ConstanciaBiometrica to fetch.
+     */
+    where?: ConstanciaBiometricaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConstanciaBiometricas to fetch.
+     */
+    orderBy?: ConstanciaBiometricaOrderByWithRelationInput | ConstanciaBiometricaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ConstanciaBiometricas.
+     */
+    cursor?: ConstanciaBiometricaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConstanciaBiometricas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConstanciaBiometricas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ConstanciaBiometricas.
+     */
+    distinct?: ConstanciaBiometricaScalarFieldEnum | ConstanciaBiometricaScalarFieldEnum[]
+  }
+
+  /**
+   * ConstanciaBiometrica findFirstOrThrow
+   */
+  export type ConstanciaBiometricaFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+    /**
+     * Filter, which ConstanciaBiometrica to fetch.
+     */
+    where?: ConstanciaBiometricaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConstanciaBiometricas to fetch.
+     */
+    orderBy?: ConstanciaBiometricaOrderByWithRelationInput | ConstanciaBiometricaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ConstanciaBiometricas.
+     */
+    cursor?: ConstanciaBiometricaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConstanciaBiometricas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConstanciaBiometricas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ConstanciaBiometricas.
+     */
+    distinct?: ConstanciaBiometricaScalarFieldEnum | ConstanciaBiometricaScalarFieldEnum[]
+  }
+
+  /**
+   * ConstanciaBiometrica findMany
+   */
+  export type ConstanciaBiometricaFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+    /**
+     * Filter, which ConstanciaBiometricas to fetch.
+     */
+    where?: ConstanciaBiometricaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConstanciaBiometricas to fetch.
+     */
+    orderBy?: ConstanciaBiometricaOrderByWithRelationInput | ConstanciaBiometricaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ConstanciaBiometricas.
+     */
+    cursor?: ConstanciaBiometricaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConstanciaBiometricas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConstanciaBiometricas.
+     */
+    skip?: number
+    distinct?: ConstanciaBiometricaScalarFieldEnum | ConstanciaBiometricaScalarFieldEnum[]
+  }
+
+  /**
+   * ConstanciaBiometrica create
+   */
+  export type ConstanciaBiometricaCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ConstanciaBiometrica.
+     */
+    data: XOR<ConstanciaBiometricaCreateInput, ConstanciaBiometricaUncheckedCreateInput>
+  }
+
+  /**
+   * ConstanciaBiometrica createMany
+   */
+  export type ConstanciaBiometricaCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ConstanciaBiometricas.
+     */
+    data: ConstanciaBiometricaCreateManyInput | ConstanciaBiometricaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ConstanciaBiometrica update
+   */
+  export type ConstanciaBiometricaUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ConstanciaBiometrica.
+     */
+    data: XOR<ConstanciaBiometricaUpdateInput, ConstanciaBiometricaUncheckedUpdateInput>
+    /**
+     * Choose, which ConstanciaBiometrica to update.
+     */
+    where: ConstanciaBiometricaWhereUniqueInput
+  }
+
+  /**
+   * ConstanciaBiometrica updateMany
+   */
+  export type ConstanciaBiometricaUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ConstanciaBiometricas.
+     */
+    data: XOR<ConstanciaBiometricaUpdateManyMutationInput, ConstanciaBiometricaUncheckedUpdateManyInput>
+    /**
+     * Filter which ConstanciaBiometricas to update
+     */
+    where?: ConstanciaBiometricaWhereInput
+  }
+
+  /**
+   * ConstanciaBiometrica upsert
+   */
+  export type ConstanciaBiometricaUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ConstanciaBiometrica to update in case it exists.
+     */
+    where: ConstanciaBiometricaWhereUniqueInput
+    /**
+     * In case the ConstanciaBiometrica found by the `where` argument doesn't exist, create a new ConstanciaBiometrica with this data.
+     */
+    create: XOR<ConstanciaBiometricaCreateInput, ConstanciaBiometricaUncheckedCreateInput>
+    /**
+     * In case the ConstanciaBiometrica was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ConstanciaBiometricaUpdateInput, ConstanciaBiometricaUncheckedUpdateInput>
+  }
+
+  /**
+   * ConstanciaBiometrica delete
+   */
+  export type ConstanciaBiometricaDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+    /**
+     * Filter which ConstanciaBiometrica to delete.
+     */
+    where: ConstanciaBiometricaWhereUniqueInput
+  }
+
+  /**
+   * ConstanciaBiometrica deleteMany
+   */
+  export type ConstanciaBiometricaDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ConstanciaBiometricas to delete
+     */
+    where?: ConstanciaBiometricaWhereInput
+  }
+
+  /**
+   * ConstanciaBiometrica without action
+   */
+  export type ConstanciaBiometricaDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConstanciaBiometrica
+     */
+    select?: ConstanciaBiometricaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConstanciaBiometricaInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model Contrato
    */
 
@@ -29509,6 +31654,7 @@ export namespace Prisma {
     salarioMensual: 'salarioMensual',
     rostroDescriptor: 'rostroDescriptor',
     rostroEnroladoEn: 'rostroEnroladoEn',
+    rostroRechazadoEn: 'rostroRechazadoEn',
     foto: 'foto',
     fotoMini: 'fotoMini',
     horarioId: 'horarioId',
@@ -29762,6 +31908,36 @@ export namespace Prisma {
   export type VinculacionEventoScalarFieldEnum = (typeof VinculacionEventoScalarFieldEnum)[keyof typeof VinculacionEventoScalarFieldEnum]
 
 
+  export const EnlaceRegistroFacialScalarFieldEnum: {
+    id: 'id',
+    colaboradorId: 'colaboradorId',
+    tokenHash: 'tokenHash',
+    venceEn: 'venceEn',
+    usadoEn: 'usadoEn',
+    anuladoEn: 'anuladoEn',
+    intentosCedula: 'intentosCedula',
+    usuarioId: 'usuarioId',
+    creadoEn: 'creadoEn'
+  };
+
+  export type EnlaceRegistroFacialScalarFieldEnum = (typeof EnlaceRegistroFacialScalarFieldEnum)[keyof typeof EnlaceRegistroFacialScalarFieldEnum]
+
+
+  export const ConstanciaBiometricaScalarFieldEnum: {
+    id: 'id',
+    colaboradorId: 'colaboradorId',
+    decision: 'decision',
+    origen: 'origen',
+    texto: 'texto',
+    mayorDeEdad: 'mayorDeEdad',
+    usuarioId: 'usuarioId',
+    enlaceId: 'enlaceId',
+    creadoEn: 'creadoEn'
+  };
+
+  export type ConstanciaBiometricaScalarFieldEnum = (typeof ConstanciaBiometricaScalarFieldEnum)[keyof typeof ConstanciaBiometricaScalarFieldEnum]
+
+
   export const ContratoScalarFieldEnum: {
     id: 'id',
     colaboradorId: 'colaboradorId',
@@ -29978,6 +32154,20 @@ export namespace Prisma {
    * Reference to a field of type 'TipoVinculacion'
    */
   export type EnumTipoVinculacionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TipoVinculacion'>
+    
+
+
+  /**
+   * Reference to a field of type 'DecisionBiometrica'
+   */
+  export type EnumDecisionBiometricaFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DecisionBiometrica'>
+    
+
+
+  /**
+   * Reference to a field of type 'OrigenConstancia'
+   */
+  export type EnumOrigenConstanciaFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrigenConstancia'>
     
 
 
@@ -30765,6 +32955,7 @@ export namespace Prisma {
     salarioMensual?: FloatFilter<"Colaborador"> | number
     rostroDescriptor?: JsonNullableFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
+    rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
@@ -30784,6 +32975,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoListRelationFilter
     diasEsperados?: DiaEsperadoListRelationFilter
     sedes?: ColaboradorSedeListRelationFilter
+    enlacesRegistroFacial?: EnlaceRegistroFacialListRelationFilter
+    constanciasBiometricas?: ConstanciaBiometricaListRelationFilter
   }
 
   export type ColaboradorOrderByWithRelationInput = {
@@ -30799,6 +32992,7 @@ export namespace Prisma {
     salarioMensual?: SortOrder
     rostroDescriptor?: SortOrderInput | SortOrder
     rostroEnroladoEn?: SortOrderInput | SortOrder
+    rostroRechazadoEn?: SortOrderInput | SortOrder
     foto?: SortOrderInput | SortOrder
     fotoMini?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
@@ -30818,6 +33012,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoOrderByRelationAggregateInput
     diasEsperados?: DiaEsperadoOrderByRelationAggregateInput
     sedes?: ColaboradorSedeOrderByRelationAggregateInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialOrderByRelationAggregateInput
+    constanciasBiometricas?: ConstanciaBiometricaOrderByRelationAggregateInput
   }
 
   export type ColaboradorWhereUniqueInput = Prisma.AtLeast<{
@@ -30837,6 +33033,7 @@ export namespace Prisma {
     salarioMensual?: FloatFilter<"Colaborador"> | number
     rostroDescriptor?: JsonNullableFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
+    rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
@@ -30856,6 +33053,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoListRelationFilter
     diasEsperados?: DiaEsperadoListRelationFilter
     sedes?: ColaboradorSedeListRelationFilter
+    enlacesRegistroFacial?: EnlaceRegistroFacialListRelationFilter
+    constanciasBiometricas?: ConstanciaBiometricaListRelationFilter
   }, "id" | "empresaId_cedula">
 
   export type ColaboradorOrderByWithAggregationInput = {
@@ -30871,6 +33070,7 @@ export namespace Prisma {
     salarioMensual?: SortOrder
     rostroDescriptor?: SortOrderInput | SortOrder
     rostroEnroladoEn?: SortOrderInput | SortOrder
+    rostroRechazadoEn?: SortOrderInput | SortOrder
     foto?: SortOrderInput | SortOrder
     fotoMini?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
@@ -30905,6 +33105,7 @@ export namespace Prisma {
     salarioMensual?: FloatWithAggregatesFilter<"Colaborador"> | number
     rostroDescriptor?: JsonNullableWithAggregatesFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
+    rostroRechazadoEn?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     horarioId?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
@@ -32164,6 +34365,158 @@ export namespace Prisma {
     creadoEn?: DateTimeWithAggregatesFilter<"VinculacionEvento"> | Date | string
   }
 
+  export type EnlaceRegistroFacialWhereInput = {
+    AND?: EnlaceRegistroFacialWhereInput | EnlaceRegistroFacialWhereInput[]
+    OR?: EnlaceRegistroFacialWhereInput[]
+    NOT?: EnlaceRegistroFacialWhereInput | EnlaceRegistroFacialWhereInput[]
+    id?: StringFilter<"EnlaceRegistroFacial"> | string
+    colaboradorId?: StringFilter<"EnlaceRegistroFacial"> | string
+    tokenHash?: StringFilter<"EnlaceRegistroFacial"> | string
+    venceEn?: DateTimeFilter<"EnlaceRegistroFacial"> | Date | string
+    usadoEn?: DateTimeNullableFilter<"EnlaceRegistroFacial"> | Date | string | null
+    anuladoEn?: DateTimeNullableFilter<"EnlaceRegistroFacial"> | Date | string | null
+    intentosCedula?: IntFilter<"EnlaceRegistroFacial"> | number
+    usuarioId?: StringNullableFilter<"EnlaceRegistroFacial"> | string | null
+    creadoEn?: DateTimeFilter<"EnlaceRegistroFacial"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+  }
+
+  export type EnlaceRegistroFacialOrderByWithRelationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tokenHash?: SortOrder
+    venceEn?: SortOrder
+    usadoEn?: SortOrderInput | SortOrder
+    anuladoEn?: SortOrderInput | SortOrder
+    intentosCedula?: SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    colaborador?: ColaboradorOrderByWithRelationInput
+  }
+
+  export type EnlaceRegistroFacialWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    tokenHash?: string
+    AND?: EnlaceRegistroFacialWhereInput | EnlaceRegistroFacialWhereInput[]
+    OR?: EnlaceRegistroFacialWhereInput[]
+    NOT?: EnlaceRegistroFacialWhereInput | EnlaceRegistroFacialWhereInput[]
+    colaboradorId?: StringFilter<"EnlaceRegistroFacial"> | string
+    venceEn?: DateTimeFilter<"EnlaceRegistroFacial"> | Date | string
+    usadoEn?: DateTimeNullableFilter<"EnlaceRegistroFacial"> | Date | string | null
+    anuladoEn?: DateTimeNullableFilter<"EnlaceRegistroFacial"> | Date | string | null
+    intentosCedula?: IntFilter<"EnlaceRegistroFacial"> | number
+    usuarioId?: StringNullableFilter<"EnlaceRegistroFacial"> | string | null
+    creadoEn?: DateTimeFilter<"EnlaceRegistroFacial"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+  }, "id" | "tokenHash">
+
+  export type EnlaceRegistroFacialOrderByWithAggregationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tokenHash?: SortOrder
+    venceEn?: SortOrder
+    usadoEn?: SortOrderInput | SortOrder
+    anuladoEn?: SortOrderInput | SortOrder
+    intentosCedula?: SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    _count?: EnlaceRegistroFacialCountOrderByAggregateInput
+    _avg?: EnlaceRegistroFacialAvgOrderByAggregateInput
+    _max?: EnlaceRegistroFacialMaxOrderByAggregateInput
+    _min?: EnlaceRegistroFacialMinOrderByAggregateInput
+    _sum?: EnlaceRegistroFacialSumOrderByAggregateInput
+  }
+
+  export type EnlaceRegistroFacialScalarWhereWithAggregatesInput = {
+    AND?: EnlaceRegistroFacialScalarWhereWithAggregatesInput | EnlaceRegistroFacialScalarWhereWithAggregatesInput[]
+    OR?: EnlaceRegistroFacialScalarWhereWithAggregatesInput[]
+    NOT?: EnlaceRegistroFacialScalarWhereWithAggregatesInput | EnlaceRegistroFacialScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"EnlaceRegistroFacial"> | string
+    colaboradorId?: StringWithAggregatesFilter<"EnlaceRegistroFacial"> | string
+    tokenHash?: StringWithAggregatesFilter<"EnlaceRegistroFacial"> | string
+    venceEn?: DateTimeWithAggregatesFilter<"EnlaceRegistroFacial"> | Date | string
+    usadoEn?: DateTimeNullableWithAggregatesFilter<"EnlaceRegistroFacial"> | Date | string | null
+    anuladoEn?: DateTimeNullableWithAggregatesFilter<"EnlaceRegistroFacial"> | Date | string | null
+    intentosCedula?: IntWithAggregatesFilter<"EnlaceRegistroFacial"> | number
+    usuarioId?: StringNullableWithAggregatesFilter<"EnlaceRegistroFacial"> | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"EnlaceRegistroFacial"> | Date | string
+  }
+
+  export type ConstanciaBiometricaWhereInput = {
+    AND?: ConstanciaBiometricaWhereInput | ConstanciaBiometricaWhereInput[]
+    OR?: ConstanciaBiometricaWhereInput[]
+    NOT?: ConstanciaBiometricaWhereInput | ConstanciaBiometricaWhereInput[]
+    id?: StringFilter<"ConstanciaBiometrica"> | string
+    colaboradorId?: StringFilter<"ConstanciaBiometrica"> | string
+    decision?: EnumDecisionBiometricaFilter<"ConstanciaBiometrica"> | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaFilter<"ConstanciaBiometrica"> | $Enums.OrigenConstancia
+    texto?: StringFilter<"ConstanciaBiometrica"> | string
+    mayorDeEdad?: BoolNullableFilter<"ConstanciaBiometrica"> | boolean | null
+    usuarioId?: StringNullableFilter<"ConstanciaBiometrica"> | string | null
+    enlaceId?: StringNullableFilter<"ConstanciaBiometrica"> | string | null
+    creadoEn?: DateTimeFilter<"ConstanciaBiometrica"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+  }
+
+  export type ConstanciaBiometricaOrderByWithRelationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    decision?: SortOrder
+    origen?: SortOrder
+    texto?: SortOrder
+    mayorDeEdad?: SortOrderInput | SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    enlaceId?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    colaborador?: ColaboradorOrderByWithRelationInput
+  }
+
+  export type ConstanciaBiometricaWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ConstanciaBiometricaWhereInput | ConstanciaBiometricaWhereInput[]
+    OR?: ConstanciaBiometricaWhereInput[]
+    NOT?: ConstanciaBiometricaWhereInput | ConstanciaBiometricaWhereInput[]
+    colaboradorId?: StringFilter<"ConstanciaBiometrica"> | string
+    decision?: EnumDecisionBiometricaFilter<"ConstanciaBiometrica"> | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaFilter<"ConstanciaBiometrica"> | $Enums.OrigenConstancia
+    texto?: StringFilter<"ConstanciaBiometrica"> | string
+    mayorDeEdad?: BoolNullableFilter<"ConstanciaBiometrica"> | boolean | null
+    usuarioId?: StringNullableFilter<"ConstanciaBiometrica"> | string | null
+    enlaceId?: StringNullableFilter<"ConstanciaBiometrica"> | string | null
+    creadoEn?: DateTimeFilter<"ConstanciaBiometrica"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+  }, "id">
+
+  export type ConstanciaBiometricaOrderByWithAggregationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    decision?: SortOrder
+    origen?: SortOrder
+    texto?: SortOrder
+    mayorDeEdad?: SortOrderInput | SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    enlaceId?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    _count?: ConstanciaBiometricaCountOrderByAggregateInput
+    _max?: ConstanciaBiometricaMaxOrderByAggregateInput
+    _min?: ConstanciaBiometricaMinOrderByAggregateInput
+  }
+
+  export type ConstanciaBiometricaScalarWhereWithAggregatesInput = {
+    AND?: ConstanciaBiometricaScalarWhereWithAggregatesInput | ConstanciaBiometricaScalarWhereWithAggregatesInput[]
+    OR?: ConstanciaBiometricaScalarWhereWithAggregatesInput[]
+    NOT?: ConstanciaBiometricaScalarWhereWithAggregatesInput | ConstanciaBiometricaScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ConstanciaBiometrica"> | string
+    colaboradorId?: StringWithAggregatesFilter<"ConstanciaBiometrica"> | string
+    decision?: EnumDecisionBiometricaWithAggregatesFilter<"ConstanciaBiometrica"> | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaWithAggregatesFilter<"ConstanciaBiometrica"> | $Enums.OrigenConstancia
+    texto?: StringWithAggregatesFilter<"ConstanciaBiometrica"> | string
+    mayorDeEdad?: BoolNullableWithAggregatesFilter<"ConstanciaBiometrica"> | boolean | null
+    usuarioId?: StringNullableWithAggregatesFilter<"ConstanciaBiometrica"> | string | null
+    enlaceId?: StringNullableWithAggregatesFilter<"ConstanciaBiometrica"> | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"ConstanciaBiometrica"> | Date | string
+  }
+
   export type ContratoWhereInput = {
     AND?: ContratoWhereInput | ContratoWhereInput[]
     OR?: ContratoWhereInput[]
@@ -33197,6 +35550,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -33215,6 +35569,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateInput = {
@@ -33230,6 +35586,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     horarioId?: string | null
@@ -33247,6 +35604,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUpdateInput = {
@@ -33261,6 +35620,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -33279,6 +35639,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateInput = {
@@ -33294,6 +35656,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -33311,6 +35674,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateManyInput = {
@@ -33326,6 +35691,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     horarioId?: string | null
@@ -33351,6 +35717,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -33376,6 +35743,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34770,6 +37138,172 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type EnlaceRegistroFacialCreateInput = {
+    id?: string
+    tokenHash: string
+    venceEn: Date | string
+    usadoEn?: Date | string | null
+    anuladoEn?: Date | string | null
+    intentosCedula?: number
+    usuarioId?: string | null
+    creadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutEnlacesRegistroFacialInput
+  }
+
+  export type EnlaceRegistroFacialUncheckedCreateInput = {
+    id?: string
+    colaboradorId: string
+    tokenHash: string
+    venceEn: Date | string
+    usadoEn?: Date | string | null
+    anuladoEn?: Date | string | null
+    intentosCedula?: number
+    usuarioId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type EnlaceRegistroFacialUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    venceEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    anuladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    intentosCedula?: IntFieldUpdateOperationsInput | number
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutEnlacesRegistroFacialNestedInput
+  }
+
+  export type EnlaceRegistroFacialUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    venceEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    anuladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    intentosCedula?: IntFieldUpdateOperationsInput | number
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EnlaceRegistroFacialCreateManyInput = {
+    id?: string
+    colaboradorId: string
+    tokenHash: string
+    venceEn: Date | string
+    usadoEn?: Date | string | null
+    anuladoEn?: Date | string | null
+    intentosCedula?: number
+    usuarioId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type EnlaceRegistroFacialUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    venceEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    anuladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    intentosCedula?: IntFieldUpdateOperationsInput | number
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EnlaceRegistroFacialUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    venceEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    anuladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    intentosCedula?: IntFieldUpdateOperationsInput | number
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConstanciaBiometricaCreateInput = {
+    id?: string
+    decision: $Enums.DecisionBiometrica
+    origen: $Enums.OrigenConstancia
+    texto: string
+    mayorDeEdad?: boolean | null
+    usuarioId?: string | null
+    enlaceId?: string | null
+    creadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutConstanciasBiometricasInput
+  }
+
+  export type ConstanciaBiometricaUncheckedCreateInput = {
+    id?: string
+    colaboradorId: string
+    decision: $Enums.DecisionBiometrica
+    origen: $Enums.OrigenConstancia
+    texto: string
+    mayorDeEdad?: boolean | null
+    usuarioId?: string | null
+    enlaceId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type ConstanciaBiometricaUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    decision?: EnumDecisionBiometricaFieldUpdateOperationsInput | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaFieldUpdateOperationsInput | $Enums.OrigenConstancia
+    texto?: StringFieldUpdateOperationsInput | string
+    mayorDeEdad?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    enlaceId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutConstanciasBiometricasNestedInput
+  }
+
+  export type ConstanciaBiometricaUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    decision?: EnumDecisionBiometricaFieldUpdateOperationsInput | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaFieldUpdateOperationsInput | $Enums.OrigenConstancia
+    texto?: StringFieldUpdateOperationsInput | string
+    mayorDeEdad?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    enlaceId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConstanciaBiometricaCreateManyInput = {
+    id?: string
+    colaboradorId: string
+    decision: $Enums.DecisionBiometrica
+    origen: $Enums.OrigenConstancia
+    texto: string
+    mayorDeEdad?: boolean | null
+    usuarioId?: string | null
+    enlaceId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type ConstanciaBiometricaUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    decision?: EnumDecisionBiometricaFieldUpdateOperationsInput | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaFieldUpdateOperationsInput | $Enums.OrigenConstancia
+    texto?: StringFieldUpdateOperationsInput | string
+    mayorDeEdad?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    enlaceId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConstanciaBiometricaUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    decision?: EnumDecisionBiometricaFieldUpdateOperationsInput | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaFieldUpdateOperationsInput | $Enums.OrigenConstancia
+    texto?: StringFieldUpdateOperationsInput | string
+    mayorDeEdad?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    enlaceId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type ContratoCreateInput = {
     id?: string
     tipo: $Enums.TipoContrato
@@ -35930,6 +38464,18 @@ export namespace Prisma {
     none?: ColaboradorSedeWhereInput
   }
 
+  export type EnlaceRegistroFacialListRelationFilter = {
+    every?: EnlaceRegistroFacialWhereInput
+    some?: EnlaceRegistroFacialWhereInput
+    none?: EnlaceRegistroFacialWhereInput
+  }
+
+  export type ConstanciaBiometricaListRelationFilter = {
+    every?: ConstanciaBiometricaWhereInput
+    some?: ConstanciaBiometricaWhereInput
+    none?: ConstanciaBiometricaWhereInput
+  }
+
   export type RegistroOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -35954,6 +38500,14 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
+  export type EnlaceRegistroFacialOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ConstanciaBiometricaOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type ColaboradorEmpresaIdCedulaCompoundUniqueInput = {
     empresaId: string
     cedula: string
@@ -35972,6 +38526,7 @@ export namespace Prisma {
     salarioMensual?: SortOrder
     rostroDescriptor?: SortOrder
     rostroEnroladoEn?: SortOrder
+    rostroRechazadoEn?: SortOrder
     foto?: SortOrder
     fotoMini?: SortOrder
     horarioId?: SortOrder
@@ -36001,6 +38556,7 @@ export namespace Prisma {
     fechaNacimiento?: SortOrder
     salarioMensual?: SortOrder
     rostroEnroladoEn?: SortOrder
+    rostroRechazadoEn?: SortOrder
     foto?: SortOrder
     fotoMini?: SortOrder
     horarioId?: SortOrder
@@ -36026,6 +38582,7 @@ export namespace Prisma {
     fechaNacimiento?: SortOrder
     salarioMensual?: SortOrder
     rostroEnroladoEn?: SortOrder
+    rostroRechazadoEn?: SortOrder
     foto?: SortOrder
     fotoMini?: SortOrder
     horarioId?: SortOrder
@@ -36984,6 +39541,133 @@ export namespace Prisma {
     _max?: NestedEnumTipoVinculacionFilter<$PrismaModel>
   }
 
+  export type EnlaceRegistroFacialCountOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tokenHash?: SortOrder
+    venceEn?: SortOrder
+    usadoEn?: SortOrder
+    anuladoEn?: SortOrder
+    intentosCedula?: SortOrder
+    usuarioId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type EnlaceRegistroFacialAvgOrderByAggregateInput = {
+    intentosCedula?: SortOrder
+  }
+
+  export type EnlaceRegistroFacialMaxOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tokenHash?: SortOrder
+    venceEn?: SortOrder
+    usadoEn?: SortOrder
+    anuladoEn?: SortOrder
+    intentosCedula?: SortOrder
+    usuarioId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type EnlaceRegistroFacialMinOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    tokenHash?: SortOrder
+    venceEn?: SortOrder
+    usadoEn?: SortOrder
+    anuladoEn?: SortOrder
+    intentosCedula?: SortOrder
+    usuarioId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type EnlaceRegistroFacialSumOrderByAggregateInput = {
+    intentosCedula?: SortOrder
+  }
+
+  export type EnumDecisionBiometricaFilter<$PrismaModel = never> = {
+    equals?: $Enums.DecisionBiometrica | EnumDecisionBiometricaFieldRefInput<$PrismaModel>
+    in?: $Enums.DecisionBiometrica[]
+    notIn?: $Enums.DecisionBiometrica[]
+    not?: NestedEnumDecisionBiometricaFilter<$PrismaModel> | $Enums.DecisionBiometrica
+  }
+
+  export type EnumOrigenConstanciaFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenConstancia | EnumOrigenConstanciaFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenConstancia[]
+    notIn?: $Enums.OrigenConstancia[]
+    not?: NestedEnumOrigenConstanciaFilter<$PrismaModel> | $Enums.OrigenConstancia
+  }
+
+  export type BoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
+  export type ConstanciaBiometricaCountOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    decision?: SortOrder
+    origen?: SortOrder
+    texto?: SortOrder
+    mayorDeEdad?: SortOrder
+    usuarioId?: SortOrder
+    enlaceId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type ConstanciaBiometricaMaxOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    decision?: SortOrder
+    origen?: SortOrder
+    texto?: SortOrder
+    mayorDeEdad?: SortOrder
+    usuarioId?: SortOrder
+    enlaceId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type ConstanciaBiometricaMinOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    decision?: SortOrder
+    origen?: SortOrder
+    texto?: SortOrder
+    mayorDeEdad?: SortOrder
+    usuarioId?: SortOrder
+    enlaceId?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type EnumDecisionBiometricaWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DecisionBiometrica | EnumDecisionBiometricaFieldRefInput<$PrismaModel>
+    in?: $Enums.DecisionBiometrica[]
+    notIn?: $Enums.DecisionBiometrica[]
+    not?: NestedEnumDecisionBiometricaWithAggregatesFilter<$PrismaModel> | $Enums.DecisionBiometrica
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDecisionBiometricaFilter<$PrismaModel>
+    _max?: NestedEnumDecisionBiometricaFilter<$PrismaModel>
+  }
+
+  export type EnumOrigenConstanciaWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenConstancia | EnumOrigenConstanciaFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenConstancia[]
+    notIn?: $Enums.OrigenConstancia[]
+    not?: NestedEnumOrigenConstanciaWithAggregatesFilter<$PrismaModel> | $Enums.OrigenConstancia
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOrigenConstanciaFilter<$PrismaModel>
+    _max?: NestedEnumOrigenConstanciaFilter<$PrismaModel>
+  }
+
+  export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
   export type EnumTipoContratoFilter<$PrismaModel = never> = {
     equals?: $Enums.TipoContrato | EnumTipoContratoFieldRefInput<$PrismaModel>
     in?: $Enums.TipoContrato[]
@@ -37881,6 +40565,20 @@ export namespace Prisma {
     connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
   }
 
+  export type EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<EnlaceRegistroFacialCreateWithoutColaboradorInput, EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput> | EnlaceRegistroFacialCreateWithoutColaboradorInput[] | EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: EnlaceRegistroFacialCreateOrConnectWithoutColaboradorInput | EnlaceRegistroFacialCreateOrConnectWithoutColaboradorInput[]
+    createMany?: EnlaceRegistroFacialCreateManyColaboradorInputEnvelope
+    connect?: EnlaceRegistroFacialWhereUniqueInput | EnlaceRegistroFacialWhereUniqueInput[]
+  }
+
+  export type ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<ConstanciaBiometricaCreateWithoutColaboradorInput, ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput> | ConstanciaBiometricaCreateWithoutColaboradorInput[] | ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput | ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput[]
+    createMany?: ConstanciaBiometricaCreateManyColaboradorInputEnvelope
+    connect?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+  }
+
   export type RegistroUncheckedCreateNestedManyWithoutColaboradorInput = {
     create?: XOR<RegistroCreateWithoutColaboradorInput, RegistroUncheckedCreateWithoutColaboradorInput> | RegistroCreateWithoutColaboradorInput[] | RegistroUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: RegistroCreateOrConnectWithoutColaboradorInput | RegistroCreateOrConnectWithoutColaboradorInput[]
@@ -37921,6 +40619,20 @@ export namespace Prisma {
     connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutColaboradorInput | ColaboradorSedeCreateOrConnectWithoutColaboradorInput[]
     createMany?: ColaboradorSedeCreateManyColaboradorInputEnvelope
     connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+  }
+
+  export type EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<EnlaceRegistroFacialCreateWithoutColaboradorInput, EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput> | EnlaceRegistroFacialCreateWithoutColaboradorInput[] | EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: EnlaceRegistroFacialCreateOrConnectWithoutColaboradorInput | EnlaceRegistroFacialCreateOrConnectWithoutColaboradorInput[]
+    createMany?: EnlaceRegistroFacialCreateManyColaboradorInputEnvelope
+    connect?: EnlaceRegistroFacialWhereUniqueInput | EnlaceRegistroFacialWhereUniqueInput[]
+  }
+
+  export type ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<ConstanciaBiometricaCreateWithoutColaboradorInput, ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput> | ConstanciaBiometricaCreateWithoutColaboradorInput[] | ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput | ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput[]
+    createMany?: ConstanciaBiometricaCreateManyColaboradorInputEnvelope
+    connect?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
   }
 
   export type EnumModalidadTrabajoFieldUpdateOperationsInput = {
@@ -38033,6 +40745,34 @@ export namespace Prisma {
     deleteMany?: ColaboradorSedeScalarWhereInput | ColaboradorSedeScalarWhereInput[]
   }
 
+  export type EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<EnlaceRegistroFacialCreateWithoutColaboradorInput, EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput> | EnlaceRegistroFacialCreateWithoutColaboradorInput[] | EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: EnlaceRegistroFacialCreateOrConnectWithoutColaboradorInput | EnlaceRegistroFacialCreateOrConnectWithoutColaboradorInput[]
+    upsert?: EnlaceRegistroFacialUpsertWithWhereUniqueWithoutColaboradorInput | EnlaceRegistroFacialUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: EnlaceRegistroFacialCreateManyColaboradorInputEnvelope
+    set?: EnlaceRegistroFacialWhereUniqueInput | EnlaceRegistroFacialWhereUniqueInput[]
+    disconnect?: EnlaceRegistroFacialWhereUniqueInput | EnlaceRegistroFacialWhereUniqueInput[]
+    delete?: EnlaceRegistroFacialWhereUniqueInput | EnlaceRegistroFacialWhereUniqueInput[]
+    connect?: EnlaceRegistroFacialWhereUniqueInput | EnlaceRegistroFacialWhereUniqueInput[]
+    update?: EnlaceRegistroFacialUpdateWithWhereUniqueWithoutColaboradorInput | EnlaceRegistroFacialUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: EnlaceRegistroFacialUpdateManyWithWhereWithoutColaboradorInput | EnlaceRegistroFacialUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: EnlaceRegistroFacialScalarWhereInput | EnlaceRegistroFacialScalarWhereInput[]
+  }
+
+  export type ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<ConstanciaBiometricaCreateWithoutColaboradorInput, ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput> | ConstanciaBiometricaCreateWithoutColaboradorInput[] | ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput | ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput[]
+    upsert?: ConstanciaBiometricaUpsertWithWhereUniqueWithoutColaboradorInput | ConstanciaBiometricaUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: ConstanciaBiometricaCreateManyColaboradorInputEnvelope
+    set?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+    disconnect?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+    delete?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+    connect?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+    update?: ConstanciaBiometricaUpdateWithWhereUniqueWithoutColaboradorInput | ConstanciaBiometricaUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: ConstanciaBiometricaUpdateManyWithWhereWithoutColaboradorInput | ConstanciaBiometricaUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: ConstanciaBiometricaScalarWhereInput | ConstanciaBiometricaScalarWhereInput[]
+  }
+
   export type RegistroUncheckedUpdateManyWithoutColaboradorNestedInput = {
     create?: XOR<RegistroCreateWithoutColaboradorInput, RegistroUncheckedCreateWithoutColaboradorInput> | RegistroCreateWithoutColaboradorInput[] | RegistroUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: RegistroCreateOrConnectWithoutColaboradorInput | RegistroCreateOrConnectWithoutColaboradorInput[]
@@ -38115,6 +40855,34 @@ export namespace Prisma {
     update?: ColaboradorSedeUpdateWithWhereUniqueWithoutColaboradorInput | ColaboradorSedeUpdateWithWhereUniqueWithoutColaboradorInput[]
     updateMany?: ColaboradorSedeUpdateManyWithWhereWithoutColaboradorInput | ColaboradorSedeUpdateManyWithWhereWithoutColaboradorInput[]
     deleteMany?: ColaboradorSedeScalarWhereInput | ColaboradorSedeScalarWhereInput[]
+  }
+
+  export type EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<EnlaceRegistroFacialCreateWithoutColaboradorInput, EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput> | EnlaceRegistroFacialCreateWithoutColaboradorInput[] | EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: EnlaceRegistroFacialCreateOrConnectWithoutColaboradorInput | EnlaceRegistroFacialCreateOrConnectWithoutColaboradorInput[]
+    upsert?: EnlaceRegistroFacialUpsertWithWhereUniqueWithoutColaboradorInput | EnlaceRegistroFacialUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: EnlaceRegistroFacialCreateManyColaboradorInputEnvelope
+    set?: EnlaceRegistroFacialWhereUniqueInput | EnlaceRegistroFacialWhereUniqueInput[]
+    disconnect?: EnlaceRegistroFacialWhereUniqueInput | EnlaceRegistroFacialWhereUniqueInput[]
+    delete?: EnlaceRegistroFacialWhereUniqueInput | EnlaceRegistroFacialWhereUniqueInput[]
+    connect?: EnlaceRegistroFacialWhereUniqueInput | EnlaceRegistroFacialWhereUniqueInput[]
+    update?: EnlaceRegistroFacialUpdateWithWhereUniqueWithoutColaboradorInput | EnlaceRegistroFacialUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: EnlaceRegistroFacialUpdateManyWithWhereWithoutColaboradorInput | EnlaceRegistroFacialUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: EnlaceRegistroFacialScalarWhereInput | EnlaceRegistroFacialScalarWhereInput[]
+  }
+
+  export type ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<ConstanciaBiometricaCreateWithoutColaboradorInput, ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput> | ConstanciaBiometricaCreateWithoutColaboradorInput[] | ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput | ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput[]
+    upsert?: ConstanciaBiometricaUpsertWithWhereUniqueWithoutColaboradorInput | ConstanciaBiometricaUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: ConstanciaBiometricaCreateManyColaboradorInputEnvelope
+    set?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+    disconnect?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+    delete?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+    connect?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+    update?: ConstanciaBiometricaUpdateWithWhereUniqueWithoutColaboradorInput | ConstanciaBiometricaUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: ConstanciaBiometricaUpdateManyWithWhereWithoutColaboradorInput | ConstanciaBiometricaUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: ConstanciaBiometricaScalarWhereInput | ConstanciaBiometricaScalarWhereInput[]
   }
 
   export type EmpresaCreateNestedOneWithoutSedesInput = {
@@ -38831,6 +41599,46 @@ export namespace Prisma {
     update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutVinculacionInput, ColaboradorUpdateWithoutVinculacionInput>, ColaboradorUncheckedUpdateWithoutVinculacionInput>
   }
 
+  export type ColaboradorCreateNestedOneWithoutEnlacesRegistroFacialInput = {
+    create?: XOR<ColaboradorCreateWithoutEnlacesRegistroFacialInput, ColaboradorUncheckedCreateWithoutEnlacesRegistroFacialInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutEnlacesRegistroFacialInput
+    connect?: ColaboradorWhereUniqueInput
+  }
+
+  export type ColaboradorUpdateOneRequiredWithoutEnlacesRegistroFacialNestedInput = {
+    create?: XOR<ColaboradorCreateWithoutEnlacesRegistroFacialInput, ColaboradorUncheckedCreateWithoutEnlacesRegistroFacialInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutEnlacesRegistroFacialInput
+    upsert?: ColaboradorUpsertWithoutEnlacesRegistroFacialInput
+    connect?: ColaboradorWhereUniqueInput
+    update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutEnlacesRegistroFacialInput, ColaboradorUpdateWithoutEnlacesRegistroFacialInput>, ColaboradorUncheckedUpdateWithoutEnlacesRegistroFacialInput>
+  }
+
+  export type ColaboradorCreateNestedOneWithoutConstanciasBiometricasInput = {
+    create?: XOR<ColaboradorCreateWithoutConstanciasBiometricasInput, ColaboradorUncheckedCreateWithoutConstanciasBiometricasInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutConstanciasBiometricasInput
+    connect?: ColaboradorWhereUniqueInput
+  }
+
+  export type EnumDecisionBiometricaFieldUpdateOperationsInput = {
+    set?: $Enums.DecisionBiometrica
+  }
+
+  export type EnumOrigenConstanciaFieldUpdateOperationsInput = {
+    set?: $Enums.OrigenConstancia
+  }
+
+  export type NullableBoolFieldUpdateOperationsInput = {
+    set?: boolean | null
+  }
+
+  export type ColaboradorUpdateOneRequiredWithoutConstanciasBiometricasNestedInput = {
+    create?: XOR<ColaboradorCreateWithoutConstanciasBiometricasInput, ColaboradorUncheckedCreateWithoutConstanciasBiometricasInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutConstanciasBiometricasInput
+    upsert?: ColaboradorUpsertWithoutConstanciasBiometricasInput
+    connect?: ColaboradorWhereUniqueInput
+    update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutConstanciasBiometricasInput, ColaboradorUpdateWithoutConstanciasBiometricasInput>, ColaboradorUncheckedUpdateWithoutConstanciasBiometricasInput>
+  }
+
   export type ColaboradorCreateNestedOneWithoutContratosInput = {
     create?: XOR<ColaboradorCreateWithoutContratosInput, ColaboradorUncheckedCreateWithoutContratosInput>
     connectOrCreate?: ColaboradorCreateOrConnectWithoutContratosInput
@@ -39424,6 +42232,53 @@ export namespace Prisma {
     _max?: NestedEnumTipoVinculacionFilter<$PrismaModel>
   }
 
+  export type NestedEnumDecisionBiometricaFilter<$PrismaModel = never> = {
+    equals?: $Enums.DecisionBiometrica | EnumDecisionBiometricaFieldRefInput<$PrismaModel>
+    in?: $Enums.DecisionBiometrica[]
+    notIn?: $Enums.DecisionBiometrica[]
+    not?: NestedEnumDecisionBiometricaFilter<$PrismaModel> | $Enums.DecisionBiometrica
+  }
+
+  export type NestedEnumOrigenConstanciaFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenConstancia | EnumOrigenConstanciaFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenConstancia[]
+    notIn?: $Enums.OrigenConstancia[]
+    not?: NestedEnumOrigenConstanciaFilter<$PrismaModel> | $Enums.OrigenConstancia
+  }
+
+  export type NestedBoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
+  export type NestedEnumDecisionBiometricaWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.DecisionBiometrica | EnumDecisionBiometricaFieldRefInput<$PrismaModel>
+    in?: $Enums.DecisionBiometrica[]
+    notIn?: $Enums.DecisionBiometrica[]
+    not?: NestedEnumDecisionBiometricaWithAggregatesFilter<$PrismaModel> | $Enums.DecisionBiometrica
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumDecisionBiometricaFilter<$PrismaModel>
+    _max?: NestedEnumDecisionBiometricaFilter<$PrismaModel>
+  }
+
+  export type NestedEnumOrigenConstanciaWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenConstancia | EnumOrigenConstanciaFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenConstancia[]
+    notIn?: $Enums.OrigenConstancia[]
+    not?: NestedEnumOrigenConstanciaWithAggregatesFilter<$PrismaModel> | $Enums.OrigenConstancia
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOrigenConstanciaFilter<$PrismaModel>
+    _max?: NestedEnumOrigenConstanciaFilter<$PrismaModel>
+  }
+
+  export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
   export type NestedEnumTipoContratoFilter<$PrismaModel = never> = {
     equals?: $Enums.TipoContrato | EnumTipoContratoFieldRefInput<$PrismaModel>
     in?: $Enums.TipoContrato[]
@@ -39512,6 +42367,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -39529,6 +42385,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutEmpresaInput = {
@@ -39543,6 +42401,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     horarioId?: string | null
@@ -39560,6 +42419,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutEmpresaInput = {
@@ -39950,6 +42811,7 @@ export namespace Prisma {
     salarioMensual?: FloatFilter<"Colaborador"> | number
     rostroDescriptor?: JsonNullableFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
+    rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
@@ -40729,6 +43591,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -40746,6 +43609,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutHorarioInput = {
@@ -40761,6 +43626,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -40777,6 +43643,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutHorarioInput = {
@@ -41429,6 +44297,70 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type EnlaceRegistroFacialCreateWithoutColaboradorInput = {
+    id?: string
+    tokenHash: string
+    venceEn: Date | string
+    usadoEn?: Date | string | null
+    anuladoEn?: Date | string | null
+    intentosCedula?: number
+    usuarioId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput = {
+    id?: string
+    tokenHash: string
+    venceEn: Date | string
+    usadoEn?: Date | string | null
+    anuladoEn?: Date | string | null
+    intentosCedula?: number
+    usuarioId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type EnlaceRegistroFacialCreateOrConnectWithoutColaboradorInput = {
+    where: EnlaceRegistroFacialWhereUniqueInput
+    create: XOR<EnlaceRegistroFacialCreateWithoutColaboradorInput, EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type EnlaceRegistroFacialCreateManyColaboradorInputEnvelope = {
+    data: EnlaceRegistroFacialCreateManyColaboradorInput | EnlaceRegistroFacialCreateManyColaboradorInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ConstanciaBiometricaCreateWithoutColaboradorInput = {
+    id?: string
+    decision: $Enums.DecisionBiometrica
+    origen: $Enums.OrigenConstancia
+    texto: string
+    mayorDeEdad?: boolean | null
+    usuarioId?: string | null
+    enlaceId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput = {
+    id?: string
+    decision: $Enums.DecisionBiometrica
+    origen: $Enums.OrigenConstancia
+    texto: string
+    mayorDeEdad?: boolean | null
+    usuarioId?: string | null
+    enlaceId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput = {
+    where: ConstanciaBiometricaWhereUniqueInput
+    create: XOR<ConstanciaBiometricaCreateWithoutColaboradorInput, ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type ConstanciaBiometricaCreateManyColaboradorInputEnvelope = {
+    data: ConstanciaBiometricaCreateManyColaboradorInput | ConstanciaBiometricaCreateManyColaboradorInput[]
+    skipDuplicates?: boolean
+  }
+
   export type EmpresaUpsertWithoutColaboradoresInput = {
     update: XOR<EmpresaUpdateWithoutColaboradoresInput, EmpresaUncheckedUpdateWithoutColaboradoresInput>
     create: XOR<EmpresaCreateWithoutColaboradoresInput, EmpresaUncheckedCreateWithoutColaboradoresInput>
@@ -41742,6 +44674,68 @@ export namespace Prisma {
     colaboradorId?: StringFilter<"ColaboradorSede"> | string
     sedeId?: StringFilter<"ColaboradorSede"> | string
     creadoEn?: DateTimeFilter<"ColaboradorSede"> | Date | string
+  }
+
+  export type EnlaceRegistroFacialUpsertWithWhereUniqueWithoutColaboradorInput = {
+    where: EnlaceRegistroFacialWhereUniqueInput
+    update: XOR<EnlaceRegistroFacialUpdateWithoutColaboradorInput, EnlaceRegistroFacialUncheckedUpdateWithoutColaboradorInput>
+    create: XOR<EnlaceRegistroFacialCreateWithoutColaboradorInput, EnlaceRegistroFacialUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type EnlaceRegistroFacialUpdateWithWhereUniqueWithoutColaboradorInput = {
+    where: EnlaceRegistroFacialWhereUniqueInput
+    data: XOR<EnlaceRegistroFacialUpdateWithoutColaboradorInput, EnlaceRegistroFacialUncheckedUpdateWithoutColaboradorInput>
+  }
+
+  export type EnlaceRegistroFacialUpdateManyWithWhereWithoutColaboradorInput = {
+    where: EnlaceRegistroFacialScalarWhereInput
+    data: XOR<EnlaceRegistroFacialUpdateManyMutationInput, EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorInput>
+  }
+
+  export type EnlaceRegistroFacialScalarWhereInput = {
+    AND?: EnlaceRegistroFacialScalarWhereInput | EnlaceRegistroFacialScalarWhereInput[]
+    OR?: EnlaceRegistroFacialScalarWhereInput[]
+    NOT?: EnlaceRegistroFacialScalarWhereInput | EnlaceRegistroFacialScalarWhereInput[]
+    id?: StringFilter<"EnlaceRegistroFacial"> | string
+    colaboradorId?: StringFilter<"EnlaceRegistroFacial"> | string
+    tokenHash?: StringFilter<"EnlaceRegistroFacial"> | string
+    venceEn?: DateTimeFilter<"EnlaceRegistroFacial"> | Date | string
+    usadoEn?: DateTimeNullableFilter<"EnlaceRegistroFacial"> | Date | string | null
+    anuladoEn?: DateTimeNullableFilter<"EnlaceRegistroFacial"> | Date | string | null
+    intentosCedula?: IntFilter<"EnlaceRegistroFacial"> | number
+    usuarioId?: StringNullableFilter<"EnlaceRegistroFacial"> | string | null
+    creadoEn?: DateTimeFilter<"EnlaceRegistroFacial"> | Date | string
+  }
+
+  export type ConstanciaBiometricaUpsertWithWhereUniqueWithoutColaboradorInput = {
+    where: ConstanciaBiometricaWhereUniqueInput
+    update: XOR<ConstanciaBiometricaUpdateWithoutColaboradorInput, ConstanciaBiometricaUncheckedUpdateWithoutColaboradorInput>
+    create: XOR<ConstanciaBiometricaCreateWithoutColaboradorInput, ConstanciaBiometricaUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type ConstanciaBiometricaUpdateWithWhereUniqueWithoutColaboradorInput = {
+    where: ConstanciaBiometricaWhereUniqueInput
+    data: XOR<ConstanciaBiometricaUpdateWithoutColaboradorInput, ConstanciaBiometricaUncheckedUpdateWithoutColaboradorInput>
+  }
+
+  export type ConstanciaBiometricaUpdateManyWithWhereWithoutColaboradorInput = {
+    where: ConstanciaBiometricaScalarWhereInput
+    data: XOR<ConstanciaBiometricaUpdateManyMutationInput, ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorInput>
+  }
+
+  export type ConstanciaBiometricaScalarWhereInput = {
+    AND?: ConstanciaBiometricaScalarWhereInput | ConstanciaBiometricaScalarWhereInput[]
+    OR?: ConstanciaBiometricaScalarWhereInput[]
+    NOT?: ConstanciaBiometricaScalarWhereInput | ConstanciaBiometricaScalarWhereInput[]
+    id?: StringFilter<"ConstanciaBiometrica"> | string
+    colaboradorId?: StringFilter<"ConstanciaBiometrica"> | string
+    decision?: EnumDecisionBiometricaFilter<"ConstanciaBiometrica"> | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaFilter<"ConstanciaBiometrica"> | $Enums.OrigenConstancia
+    texto?: StringFilter<"ConstanciaBiometrica"> | string
+    mayorDeEdad?: BoolNullableFilter<"ConstanciaBiometrica"> | boolean | null
+    usuarioId?: StringNullableFilter<"ConstanciaBiometrica"> | string | null
+    enlaceId?: StringNullableFilter<"ConstanciaBiometrica"> | string | null
+    creadoEn?: DateTimeFilter<"ConstanciaBiometrica"> | Date | string
   }
 
   export type EmpresaCreateWithoutSedesInput = {
@@ -42068,6 +45062,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -42085,6 +45080,8 @@ export namespace Prisma {
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
     vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutSedesInput = {
@@ -42100,6 +45097,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     horarioId?: string | null
@@ -42116,6 +45114,8 @@ export namespace Prisma {
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutSedesInput = {
@@ -42181,6 +45181,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -42198,6 +45199,8 @@ export namespace Prisma {
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
     vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutSedesInput = {
@@ -42213,6 +45216,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42229,6 +45233,8 @@ export namespace Prisma {
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type SedeUpsertWithoutColaboradoresInput = {
@@ -42284,6 +45290,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -42301,6 +45308,8 @@ export namespace Prisma {
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
     vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutDiasEsperadosInput = {
@@ -42316,6 +45325,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     horarioId?: string | null
@@ -42332,6 +45342,8 @@ export namespace Prisma {
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutDiasEsperadosInput = {
@@ -42362,6 +45374,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -42379,6 +45392,8 @@ export namespace Prisma {
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
     vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutDiasEsperadosInput = {
@@ -42394,6 +45409,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42410,6 +45426,8 @@ export namespace Prisma {
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateWithoutRegistrosInput = {
@@ -42424,6 +45442,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -42441,6 +45460,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutRegistrosInput = {
@@ -42456,6 +45477,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     horarioId?: string | null
@@ -42472,6 +45494,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutRegistrosInput = {
@@ -42644,6 +45668,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -42661,6 +45686,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutRegistrosInput = {
@@ -42676,6 +45703,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42692,6 +45720,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type SedeUpsertWithoutRegistrosInput = {
@@ -42834,6 +45864,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -42851,6 +45882,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutPermisosInput = {
@@ -42866,6 +45899,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     horarioId?: string | null
@@ -42882,6 +45916,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutPermisosInput = {
@@ -42971,6 +46007,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -42988,6 +46025,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutPermisosInput = {
@@ -43003,6 +46042,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43019,6 +46059,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type RegistroUpsertWithoutNovedadesInput = {
@@ -44446,6 +47488,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -44463,6 +47506,8 @@ export namespace Prisma {
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutVinculacionInput = {
@@ -44478,6 +47523,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     horarioId?: string | null
@@ -44494,6 +47540,8 @@ export namespace Prisma {
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutVinculacionInput = {
@@ -44524,6 +47572,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -44541,6 +47590,8 @@ export namespace Prisma {
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutVinculacionInput = {
@@ -44556,6 +47607,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44572,6 +47624,312 @@ export namespace Prisma {
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorCreateWithoutEnlacesRegistroFacialInput = {
+    id?: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    horario?: HorarioCreateNestedOneWithoutColaboradoresInput
+    registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorUncheckedCreateWithoutEnlacesRegistroFacialInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    horarioId?: string | null
+    modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorCreateOrConnectWithoutEnlacesRegistroFacialInput = {
+    where: ColaboradorWhereUniqueInput
+    create: XOR<ColaboradorCreateWithoutEnlacesRegistroFacialInput, ColaboradorUncheckedCreateWithoutEnlacesRegistroFacialInput>
+  }
+
+  export type ColaboradorUpsertWithoutEnlacesRegistroFacialInput = {
+    update: XOR<ColaboradorUpdateWithoutEnlacesRegistroFacialInput, ColaboradorUncheckedUpdateWithoutEnlacesRegistroFacialInput>
+    create: XOR<ColaboradorCreateWithoutEnlacesRegistroFacialInput, ColaboradorUncheckedCreateWithoutEnlacesRegistroFacialInput>
+    where?: ColaboradorWhereInput
+  }
+
+  export type ColaboradorUpdateToOneWithWhereWithoutEnlacesRegistroFacialInput = {
+    where?: ColaboradorWhereInput
+    data: XOR<ColaboradorUpdateWithoutEnlacesRegistroFacialInput, ColaboradorUncheckedUpdateWithoutEnlacesRegistroFacialInput>
+  }
+
+  export type ColaboradorUpdateWithoutEnlacesRegistroFacialInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
+    registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorUncheckedUpdateWithoutEnlacesRegistroFacialInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorCreateWithoutConstanciasBiometricasInput = {
+    id?: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    horario?: HorarioCreateNestedOneWithoutColaboradoresInput
+    registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorUncheckedCreateWithoutConstanciasBiometricasInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    apellido: string
+    cedula: string
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    horarioId?: string | null
+    modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorCreateOrConnectWithoutConstanciasBiometricasInput = {
+    where: ColaboradorWhereUniqueInput
+    create: XOR<ColaboradorCreateWithoutConstanciasBiometricasInput, ColaboradorUncheckedCreateWithoutConstanciasBiometricasInput>
+  }
+
+  export type ColaboradorUpsertWithoutConstanciasBiometricasInput = {
+    update: XOR<ColaboradorUpdateWithoutConstanciasBiometricasInput, ColaboradorUncheckedUpdateWithoutConstanciasBiometricasInput>
+    create: XOR<ColaboradorCreateWithoutConstanciasBiometricasInput, ColaboradorUncheckedCreateWithoutConstanciasBiometricasInput>
+    where?: ColaboradorWhereInput
+  }
+
+  export type ColaboradorUpdateToOneWithWhereWithoutConstanciasBiometricasInput = {
+    where?: ColaboradorWhereInput
+    data: XOR<ColaboradorUpdateWithoutConstanciasBiometricasInput, ColaboradorUncheckedUpdateWithoutConstanciasBiometricasInput>
+  }
+
+  export type ColaboradorUpdateWithoutConstanciasBiometricasInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
+    registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorUncheckedUpdateWithoutConstanciasBiometricasInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateWithoutContratosInput = {
@@ -44586,6 +47944,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -44603,6 +47962,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutContratosInput = {
@@ -44618,6 +47979,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     horarioId?: string | null
@@ -44634,6 +47996,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutContratosInput = {
@@ -44694,6 +48058,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -44711,6 +48076,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutContratosInput = {
@@ -44726,6 +48093,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44742,6 +48110,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ProrrogaContratoUpsertWithWhereUniqueWithoutContratoInput = {
@@ -44886,6 +48256,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     horarioId?: string | null
@@ -45027,6 +48398,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -45044,6 +48416,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutEmpresaInput = {
@@ -45058,6 +48432,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45075,6 +48450,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateManyWithoutEmpresaInput = {
@@ -45089,6 +48466,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45402,6 +48780,7 @@ export namespace Prisma {
     salarioMensual: number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
     modalidad?: $Enums.ModalidadTrabajo
@@ -45459,6 +48838,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -45476,6 +48856,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutHorarioInput = {
@@ -45491,6 +48873,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -45507,6 +48890,8 @@ export namespace Prisma {
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateManyWithoutHorarioInput = {
@@ -45522,6 +48907,7 @@ export namespace Prisma {
     salarioMensual?: FloatFieldUpdateOperationsInput | number
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
@@ -45626,6 +49012,28 @@ export namespace Prisma {
 
   export type ColaboradorSedeCreateManyColaboradorInput = {
     sedeId: string
+    creadoEn?: Date | string
+  }
+
+  export type EnlaceRegistroFacialCreateManyColaboradorInput = {
+    id?: string
+    tokenHash: string
+    venceEn: Date | string
+    usadoEn?: Date | string | null
+    anuladoEn?: Date | string | null
+    intentosCedula?: number
+    usuarioId?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type ConstanciaBiometricaCreateManyColaboradorInput = {
+    id?: string
+    decision: $Enums.DecisionBiometrica
+    origen: $Enums.OrigenConstancia
+    texto: string
+    mayorDeEdad?: boolean | null
+    usuarioId?: string | null
+    enlaceId?: string | null
     creadoEn?: Date | string
   }
 
@@ -45917,6 +49325,72 @@ export namespace Prisma {
 
   export type ColaboradorSedeUncheckedUpdateManyWithoutColaboradorInput = {
     sedeId?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EnlaceRegistroFacialUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    venceEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    anuladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    intentosCedula?: IntFieldUpdateOperationsInput | number
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EnlaceRegistroFacialUncheckedUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    venceEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    anuladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    intentosCedula?: IntFieldUpdateOperationsInput | number
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tokenHash?: StringFieldUpdateOperationsInput | string
+    venceEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    usadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    anuladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    intentosCedula?: IntFieldUpdateOperationsInput | number
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConstanciaBiometricaUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    decision?: EnumDecisionBiometricaFieldUpdateOperationsInput | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaFieldUpdateOperationsInput | $Enums.OrigenConstancia
+    texto?: StringFieldUpdateOperationsInput | string
+    mayorDeEdad?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    enlaceId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConstanciaBiometricaUncheckedUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    decision?: EnumDecisionBiometricaFieldUpdateOperationsInput | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaFieldUpdateOperationsInput | $Enums.OrigenConstancia
+    texto?: StringFieldUpdateOperationsInput | string
+    mayorDeEdad?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    enlaceId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    decision?: EnumDecisionBiometricaFieldUpdateOperationsInput | $Enums.DecisionBiometrica
+    origen?: EnumOrigenConstanciaFieldUpdateOperationsInput | $Enums.OrigenConstancia
+    texto?: StringFieldUpdateOperationsInput | string
+    mayorDeEdad?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    enlaceId?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -46657,6 +50131,14 @@ export namespace Prisma {
      * @deprecated Use VinculacionEventoDefaultArgs instead
      */
     export type VinculacionEventoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VinculacionEventoDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use EnlaceRegistroFacialDefaultArgs instead
+     */
+    export type EnlaceRegistroFacialArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = EnlaceRegistroFacialDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ConstanciaBiometricaDefaultArgs instead
+     */
+    export type ConstanciaBiometricaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ConstanciaBiometricaDefaultArgs<ExtArgs>
     /**
      * @deprecated Use ContratoDefaultArgs instead
      */
