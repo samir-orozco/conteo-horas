@@ -1,35 +1,32 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = reporteRoutes;
-const date_fns_tz_1 = require("date-fns-tz");
-const date_fns_1 = require("date-fns");
 const prisma_1 = require("../prisma");
-const horasColombiana_1 = require("../utils/horasColombiana");
 const vigencias_1 = require("../utils/vigencias");
 const tardanzas_1 = require("../utils/tardanzas");
 const fechas_1 = require("../utils/fechas");
-const horasColombiana_2 = require("../utils/horasColombiana");
+const horasColombiana_1 = require("../utils/horasColombiana");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
 const diasEsperados_1 = require("../utils/diasEsperados");
-const ajusteJornada_1 = require("../utils/ajusteJornada");
-const almuerzo_1 = require("../utils/almuerzo");
-const TZ = 'America/Bogota';
-function semanaKey(fecha) {
-    const z = (0, date_fns_tz_1.toZonedTime)(fecha, TZ);
-    return `${(0, date_fns_1.getISOWeekYear)(z)}-W${String((0, date_fns_1.getISOWeek)(z)).padStart(2, '0')}`;
-}
-function claveDiaBogota(d) {
-    const z = (0, date_fns_tz_1.toZonedTime)(d, TZ);
-    return `${z.getFullYear()}-${z.getMonth()}-${z.getDate()}`;
-}
-// Minutos de almuerzo a descontar de un registro: solo si el horario tiene
-// almuerzo y la franja de ESE día lo aplica (ej. el sábado corto no).
-function almuerzoDelRegistro(horario, fecha) {
-    if (!horario || !horario.almuerzoMin)
-        return 0;
-    const z = (0, date_fns_tz_1.toZonedTime)(fecha, TZ);
-    const franja = (0, tardanzas_1.franjaDelDia)(horario, tardanzas_1.DIAS_SEMANA[z.getDay()]);
-    return franja && franja.tieneAlmuerzo ? horario.almuerzoMin : 0;
+const sedesDeReporte_1 = require("../utils/sedesDeReporte");
+const sedesDeEmpresa_1 = require("../utils/sedesDeEmpresa");
+const liquidarRegistros_1 = require("../utils/liquidarRegistros");
+const columnasDeColaborador_1 = require("../utils/columnasDeColaborador");
+// Lo que devuelven los dos resúmenes que se filtran por sede. El filtro decide
+// QUIÉN aparece; el resumen se arma siempre con todas las filas, así que no cambia
+// según la sede que se mire. Las reglas viven en utils/sedesDeReporte.ts: esto
+// solo las junta, y cambia en cada fila los ids de sus lugares por sus nombres.
+//
+// Los lugares ya traen la sede que se le atribuye al leer a un presencial (12 de
+// septiembre de 2026): cuenta en la línea de su sede, entra en el filtro de su
+// sede, y en la fila va con `porDefecto` para que la pantalla lo diga.
+function responderPorSede(filas, claves, sedes, sedeId) {
+    return {
+        colaboradores: filas
+            .filter(f => (0, sedesDeReporte_1.apareceConFiltro)(f.lugares, sedeId))
+            .map(({ lugares, porDefecto, ...fila }) => ({ ...fila, sedes: (0, sedesDeReporte_1.nombrarLugares)(lugares, sedes, porDefecto) })),
+        resumen: (0, sedesDeReporte_1.resumirPorSede)(filas, claves, sedes),
+    };
 }
 function agrupar(filas) {
     const mapa = new Map();
@@ -40,120 +37,24 @@ function agrupar(filas) {
     }
     return mapa;
 }
-// Núcleo del cálculo de liquidación de UN colaborador en un período: recorre sus
-// registros agrupados por semana ISO (el tope de 42h/sem se resetea cada semana),
-// aplica el motor de horas colombianas registro por registro, y opcionalmente
-// arma el desglose día a día (para el drill-down de "Extras y recargos").
-function liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, salarioMensual, horasMes, incluirDetalle, 
-// Días materializados del rango: de ahí sale la hora de salida programada para
-// la tolerancia. Si no llegan, la tolerancia sencillamente no se aplica.
-diasEsperados = []) {
-    const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
-    // El almuerzo se resuelve por DÍA, no por registro: la regla nueva mira todos
-    // los tramos del día a la vez para saber cuánto de la ventana estuvo la
-    // persona marcada. Se precalcula aquí y luego se descuenta una sola vez.
-    const almuerzoPorDia = new Map();
-    const tramosPorDia = new Map();
-    for (const r of registros) {
-        if (!r.entrada || !r.salida)
-            continue;
-        const k = claveDiaBogota(r.entrada);
-        if (!tramosPorDia.has(k))
-            tramosPorDia.set(k, []);
-        // Los tramos van YA AJUSTADOS por la tolerancia de salida, igual que los que
-        // entran al motor de horas más abajo. Con los crudos, el solape del almuerzo
-        // se mediría sobre minutos que la liquidación ya recortó: quien sale 12:10
-        // teniendo salida programada a las 12:00 y tolerancia de 15 pagaría 10
-        // minutos de almuerzo de un tiempo que no se le está contando.
-        const d = diaPorClave.get(k);
-        const t = d ? (0, ajusteJornada_1.ajustarAJornada)(r.entrada, r.salida, d) : { entrada: r.entrada, salida: r.salida };
-        tramosPorDia.get(k).push({ entrada: t.entrada, salida: t.salida });
-    }
-    for (const [k, tramos] of tramosPorDia) {
-        const d = diaPorClave.get(k);
-        if (!d)
-            continue;
-        almuerzoPorDia.set(k, (0, almuerzo_1.minutosAlmuerzoADescontar)(tramos, d));
-    }
-    const porSemana = new Map();
-    for (const reg of registros) {
-        const key = semanaKey(reg.fecha);
-        if (!porSemana.has(key))
-            porSemana.set(key, []);
-        porSemana.get(key).push(reg);
-    }
-    const acumulado = {};
-    const diasConAlmuerzo = new Set();
-    const detalleRegistros = [];
-    for (const [, regsDeUnaSemana] of porSemana) {
-        const jornadaSemanal = (0, vigencias_1.jornadaVigente)(regsDeUnaSemana[0].fecha, jornadas);
-        let minutosOrdSemana = 0;
-        for (const registro of regsDeUnaSemana) {
-            if (!registro.entrada || !registro.salida)
-                continue;
-            const claveDia = claveDiaBogota(registro.entrada);
-            // Tolerancia de jornada: los minutos sueltos que alguien trabaja fuera de
-            // su horario sin orden previa no se pagan como extra. Se aplica ANTES del
-            // motor de horas para que la clasificación (ordinaria/extra/nocturna) se
-            // haga sobre la jornada ya ajustada.
-            const diaDelRegistro = diaPorClave.get(claveDia);
-            const { entrada, salida } = diaDelRegistro
-                ? (0, ajusteJornada_1.ajustarAJornada)(registro.entrada, registro.salida, diaDelRegistro)
-                : { entrada: registro.entrada, salida: registro.salida };
-            const tiposDelDia = (0, vigencias_1.tiposVigentes)(registro.fecha, tiposHoraTodos);
-            const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(entrada, salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana, extraConfig);
-            let ordDelRegistro = minutosOrdinariosTrabajados;
-            // Sin fila del día no hay ventana ni almuerzo congelado: se cae al
-            // horario vigente, igual que antes de existir `DiaEsperado`.
-            const conVentana = !!diaDelRegistro?.almuerzoInicio && !!diaDelRegistro?.almuerzoFin;
-            const almuerzo = diaDelRegistro
-                ? (almuerzoPorDia.get(claveDia) ?? 0)
-                : almuerzoDelRegistro(horario, registro.entrada);
-            if (almuerzo > 0 && !diasConAlmuerzo.has(claveDia)) {
-                const { descontado } = conVentana
-                    ? (0, horasColombiana_1.descontarAlmuerzoOrdinarias)(resultado, almuerzo)
-                    : (0, horasColombiana_1.descontarAlmuerzo)(resultado, almuerzo);
-                if (descontado > 0) {
-                    diasConAlmuerzo.add(claveDia);
-                    ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
-                }
-            }
-            minutosOrdSemana += ordDelRegistro;
-            if (incluirDetalle) {
-                // Solo lo que genera pago adicional (excluye HOD, que ya está en el salario)
-                const filas = (0, horasColombiana_1.calcularLiquidacion)(salarioMensual, horasMes, resultado)
-                    .filter(l => l.codigo !== 'HOD' && l.horas > 0)
-                    .map(l => ({ codigo: l.codigo, nombre: l.nombre, horas: l.horas, subtotal: l.subtotal }));
-                if (filas.length > 0) {
-                    detalleRegistros.push({ id: registro.id, fecha: registro.fecha, entrada: registro.entrada, salida: registro.salida, filas });
-                }
-            }
-            for (const p of resultado) {
-                if (!acumulado[p.codigo])
-                    acumulado[p.codigo] = { ...p };
-                else
-                    acumulado[p.codigo].minutos += p.minutos;
-            }
-        }
-    }
-    const horasPorTipo = Object.values(acumulado);
-    const liquidacion = (0, horasColombiana_1.calcularLiquidacion)(salarioMensual, horasMes, horasPorTipo);
-    const totalAdicional = liquidacion.reduce((s, l) => s + l.subtotal, 0);
-    const totalRecargos = liquidacion.filter(l => !l.esExtra).reduce((s, l) => s + l.subtotal, 0);
-    const totalExtra = liquidacion.filter(l => l.esExtra).reduce((s, l) => s + l.subtotal, 0);
-    // Minutos ORDINARIOS del período (ya netos de almuerzo), para comparar contra
-    // las horas que el horario exigía. Se suman los códigos no extra del acumulado
-    // —no el contador semanal interno— porque ese excluye domingos y festivos, y
-    // aquí sí queremos contarlos: si alguien trabajó un domingo, ese tiempo lo
-    // trabajó. Las extra quedan fuera a propósito: se pagan aparte con su recargo.
-    //
-    // Se toman los MINUTOS crudos, no las horas de `liquidacion`: esas vienen
-    // redondeadas a 2 decimales y al multiplicarlas por 60 reaparecen colas de
-    // coma flotante (167.33h → 10039.8 min en vez de 10040).
-    const minutosOrdinarios = horasPorTipo
-        .filter(t => !horasColombiana_2.CODIGOS_EXTRA.has(t.codigo))
-        .reduce((s, t) => s + t.minutos, 0);
-    return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont: registros.length, detalleRegistros, minutosOrdinarios };
+// Las filas con las que los dos resúmenes deciden DÓNDE trabajó cada persona: todas
+// las del período, de la empresa entera, en una sola consulta.
+//
+// Todas quiere decir también las abiertas y las que el auto-cierre dejó sin hora de
+// salida. La regla b) de la atribución (utils/sedePrincipal.ts) busca la fila de ese
+// mismo día con sede probada, y puede ser justo la que sigue abierta: /extras-resumen
+// le pasaba solo las filas que liquida, que son las cerradas, y ponía en su sede por
+// defecto a quien llegadas tarde ponía en la sede donde marcó (revisión del 12 de
+// septiembre de 2026). Ahora los dos leen estas mismas filas. Qué se liquida no
+// cambia: extras sigue calculando el dinero con su propia consulta.
+//
+// Liviana a propósito: sin fotos ni horas de salida. Va por el índice
+// (colaboradorId, fecha) de `registros` (CLAUDE.md 8.4).
+function filasParaLugares(empresaId, desdeF, finExclusivo) {
+    return prisma_1.prisma.registro.findMany({
+        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: { colaboradorId: true, fecha: true, entrada: true, sedeId: true, sedeSalidaId: true },
+    });
 }
 async function reporteRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
@@ -161,17 +62,23 @@ async function reporteRoutes(app) {
         const { colaboradorId, desde, hasta } = request.query;
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
         const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosRango, diasMaterializados] = await Promise.all([
+            // El colaborador viaja entero en la respuesta, pero sin sus fotos ni su descriptor facial,
+            // que es un dato biométrico: se mandaban al navegador y ninguna pantalla los lee de aquí,
+            // solo el nombre y el apellido (13 de septiembre de 2026).
             prisma_1.prisma.colaborador.findFirst({
                 where: { id: colaboradorId, empresaId: request.empresaId },
-                include: { horario: { include: { franjas: true } } },
+                select: { ...columnasDeColaborador_1.COLABORADOR_SIN_FOTOS, horario: { include: { franjas: true } } },
             }),
             // `select` explícito: sin él vienen también `fotoEntrada` y `fotoSalida`,
             // que son base64 de cientos de KB cada una. Un mes de marcaciones se
             // convertía en decenas de MB cargados en memoria para no usarlos. Las
             // fotos se piden aparte, una a una, con `GET /registros/:id/fotos`.
+            //
+            // También las abiertas: no se liquidan, pero la entrada de una puede ser el regreso
+            // de una pausa, y sin ella la pausa se cobraba entera (utils/liquidarRegistros.ts).
             prisma_1.prisma.registro.findMany({
-                where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null } },
-                select: { id: true, fecha: true, entrada: true, salida: true },
+                where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
+                select: { id: true, fecha: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
                 orderBy: { fecha: 'asc' },
             }),
             prisma_1.prisma.diaFestivo.findMany({
@@ -183,9 +90,11 @@ async function reporteRoutes(app) {
             prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } } }),
             // Solo los permisos que tocan el rango: un permiso que terminó antes de
             // `desde` o empieza después del corte no afecta este período.
+            // Con las horas: la novedad de una salida temprana solo excusa su tramo, y
+            // sin ellas el saldo la leería de día completo.
             prisma_1.prisma.permiso.findMany({
                 where: { colaboradorId, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
-                select: { fechaInicio: true, fechaFin: true, tipo: true },
+                select: { fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true },
             }),
             // Lo que el horario exigía ESE día, congelado cuando se materializó. Es lo
             // que impide que editar un horario hoy mueva la liquidación de julio.
@@ -195,6 +104,7 @@ async function reporteRoutes(app) {
                     fecha: true, programado: true, horaEntrada: true, horaSalida: true,
                     toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
                     toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+                    descansos: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
@@ -219,7 +129,7 @@ async function reporteRoutes(app) {
         // lo que impide que cambiar un horario reescriba la clasificación de extras
         // de un período ya liquidado.
         const extraConfig = (0, tardanzas_1.construirExtraConfig)(modoExtra, horario, diasEsperados);
-        const r = liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados);
+        const r = (0, liquidarRegistros_1.liquidarRegistros)(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados);
         // Saldo de tiempo no remunerado: lo que el horario exigía contra lo que
         // realmente trabajó. Va en su propio campo y NUNCA dentro de `liquidacion`,
         // porque ese array alimenta totalRecargos/totalAdicional y una fila
@@ -227,7 +137,7 @@ async function reporteRoutes(app) {
         const politica = (0, saldoTiempo_1.parsearPoliticaPermisos)(cfgPermisos?.valor);
         const sinHorario = !horario || !horario.activo;
         const esperadas = (0, saldoTiempo_1.calcularHorasEsperadas)(desdeF, finExclusivo, diasEsperados, festivosDates, permisosRango, politica, (fecha) => (0, vigencias_1.jornadaVigente)(fecha, jornadas));
-        const saldo = (0, saldoTiempo_1.armarSaldo)(esperadas, r.minutosOrdinarios, (0, horasColombiana_2.calcularValorHora)(colaborador.salarioMensual, horasMes), sinHorario);
+        const saldo = (0, saldoTiempo_1.armarSaldo)(esperadas, r.minutosOrdinarios, (0, horasColombiana_1.calcularValorHora)(colaborador.salarioMensual, horasMes), sinHorario);
         return {
             colaborador, desde, hasta, liquidacion: r.liquidacion,
             salarioBase: colaborador.salarioMensual,
@@ -250,24 +160,31 @@ async function reporteRoutes(app) {
         // no remunerado no se calcula aquí a propósito: es un descuento sobre el
         // salario y vive en /liquidacion, donde el salario está a la vista. Dejarlo
         // fuera evita además traer los permisos de toda la empresa en cada consulta.
-        const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, diasTodosEsp] = await Promise.all([
+        const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, diasTodosEsp, sedes, defectoDe, filasDeLugar] = await Promise.all([
+            // Solo lo que usa este resumen. Sin `select` venían todas las columnas de cada persona
+            // activa, también `foto`, `fotoMini` y `rostroDescriptor` (13 de septiembre de 2026).
             prisma_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
-                include: { horario: { include: { franjas: true } } },
+                select: {
+                    id: true, nombre: true, apellido: true, salarioMensual: true, modalidad: true,
+                    horario: { include: { franjas: true } },
+                },
                 orderBy: { nombre: 'asc' },
             }),
             // Igual que en /liquidacion, pero aquí pesa más: son los registros de
             // TODA la empresa. Sin el select, las fotos de un mes entero viajaban a
             // memoria en cada carga del reporte.
             prisma_1.prisma.registro.findMany({
-                // El filtro por sede va sobre DÓNDE se marcó (`Registro.sedeId`), no
-                // sobre la sede asignada al colaborador: quien rota entre locales
-                // aparece en el reporte del local donde realmente trabajó ese día.
-                where: {
-                    colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo }, salida: { not: null },
-                    ...(sedeId ? { sedeId } : {}),
+                // Sin filtro de sede, A PROPÓSITO: cada persona se liquida con todos sus
+                // turnos y la sede solo decide quién aparece (ver `responderPorSede`).
+                // Filtrando aquí, el tope semanal se medía sobre la parte de la semana
+                // que quedaba: quien repartió la semana entre dos sedes tenía $0 de
+                // extras en cada una. También las abiertas, por lo mismo que en /liquidacion.
+                where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+                select: {
+                    id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, sedeId: true, sedeSalidaId: true,
+                    salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true,
                 },
-                select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true },
                 orderBy: { fecha: 'asc' },
             }),
             prisma_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
@@ -284,9 +201,21 @@ async function reporteRoutes(app) {
                     colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
                     horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
                     toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+                    descansos: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
+            // Todas las sedes, también las desactivadas: desactivar una sede no borra lo
+            // que se trabajó ahí, y el resumen tiene que poder nombrarla.
+            prisma_1.prisma.sede.findMany({ where: { empresaId }, select: { id: true, nombre: true, activa: true } }),
+            // La sede por defecto de cada persona, para atribuírsela al leer a un
+            // presencial cuyas marcas no la probaron (utils/sedePrincipal.ts). En lote:
+            // dos consultas para toda la empresa, no una por persona.
+            (0, sedesDeEmpresa_1.sedesPorDefecto)(prisma_1.prisma, empresaId),
+            // Dónde trabajó cada uno se decide con TODAS las filas del período, las mismas
+            // que lee llegadas tarde, y no con las cerradas que se liquidan arriba (ver
+            // `filasParaLugares`, 12 de septiembre de 2026).
+            filasParaLugares(empresaId, desdeF, finExclusivo),
         ]);
         const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
         const festivosDates = festivos.map(f => new Date(f.fecha));
@@ -294,25 +223,29 @@ async function reporteRoutes(app) {
         const horasMes = (0, vigencias_1.horasMesDeJornada)(jornadaCierre);
         const porColaborador = agrupar(registrosTodos);
         const porColDiasEsp = agrupar(diasTodosEsp);
+        const porColLugares = agrupar(filasDeLugar);
         const resultado = colaboradores.map(col => {
             const horario = col.horario;
             const registros = porColaborador.get(col.id) ?? [];
             const dias = (0, diasEsperados_1.combinarDiasEsperados)(desdeF, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
             const extraConfig = (0, tardanzas_1.construirExtraConfig)(modoExtra, horario, dias);
-            const r = liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias);
+            const r = (0, liquidarRegistros_1.liquidarRegistros)(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias);
             return {
                 colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
                 totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
+                ...(0, sedesDeReporte_1.lugaresConAtribucion)(porColLugares.get(col.id) ?? [], { modalidad: col.modalidad, sedePorDefecto: defectoDe(col.id) }),
             };
         });
-        return { desde, hasta, colaboradores: resultado };
+        return { desde, hasta, ...responderPorSede(resultado, ['totalRecargos', 'totalExtra', 'totalAdicional'], sedes, sedeId) };
     });
     // Llegadas tarde de un colaborador según su horario asignado
     app.get('/tardanzas', auth, async (request, reply) => {
         const { colaboradorId, desde, hasta } = request.query;
+        // Solo lo que usa este reporte: si existe, su horario y su salario. Sin `select` venían todas
+        // las columnas, también `foto`, `fotoMini` y `rostroDescriptor` (13 de septiembre de 2026).
         const colaborador = await prisma_1.prisma.colaborador.findFirst({
             where: { id: colaboradorId, empresaId: request.empresaId },
-            include: { horario: { include: { franjas: true } } },
+            select: { salarioMensual: true, horario: { include: { franjas: true } } },
         });
         if (!colaborador)
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
@@ -321,11 +254,15 @@ async function reporteRoutes(app) {
         }
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
         const [registros, festivos, permisos, jornadas, diasMaterializados] = await Promise.all([
+            // Solo la entrada: es lo único que lee `calcularTardanzas`. Sin `select`
+            // venían también las fotos de cada marcación del período (ver /liquidacion).
             prisma_1.prisma.registro.findMany({
                 where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
+                select: { entrada: true },
             }),
             prisma_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
-            prisma_1.prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
+            // Con las horas: la novedad de una salida temprana no excusa la llegada de esa mañana.
+            prisma_1.prisma.permiso.findMany({ where: { colaboradorId, aprobado: true }, select: { fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, aprobado: true, colaboradorId: true } }),
             prisma_1.prisma.jornadaVigencia.findMany(),
             // La hora exigida y la tolerancia de cada día, congeladas. Sin esto,
             // adelantar la entrada del horario llenaba de tardanzas los meses cerrados.
@@ -335,6 +272,7 @@ async function reporteRoutes(app) {
                     fecha: true, programado: true, horaEntrada: true, horaSalida: true,
                     toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
                     toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+                    descansos: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
@@ -344,7 +282,7 @@ async function reporteRoutes(app) {
         // Valor del tiempo llegado tarde, a la tarifa base. Es INFORMATIVO: el
         // descuento real sale del saldo del período (ver /liquidacion), que ya
         // incluye estos minutos. Sumar ambos cobraría la tardanza dos veces.
-        const valorHora = (0, horasColombiana_2.calcularValorHora)(colaborador.salarioMensual, (0, vigencias_1.horasMesDeJornada)((0, vigencias_1.jornadaVigente)(new Date(hasta), jornadas)));
+        const valorHora = (0, horasColombiana_1.calcularValorHora)(colaborador.salarioMensual, (0, vigencias_1.horasMesDeJornada)((0, vigencias_1.jornadaVigente)(new Date(hasta), jornadas)));
         return {
             sinHorario: false, horario: colaborador.horario, ...resultado,
             valorHora: parseFloat(valorHora.toFixed(2)),
@@ -357,22 +295,31 @@ async function reporteRoutes(app) {
         const { desde, hasta, sedeId } = request.query;
         const empresaId = request.empresaId;
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
-        const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas, diasTodos] = await Promise.all([
+        const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas, diasTodos, sedes, defectoDe] = await Promise.all([
+            // Solo lo que usa este resumen, igual que /extras-resumen: sin `select` venían todas las
+            // columnas de cada persona activa, también sus fotos y su descriptor facial.
             prisma_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
-                include: { horario: { include: { franjas: true } } },
+                select: {
+                    id: true, nombre: true, apellido: true, salarioMensual: true, modalidad: true,
+                    horario: { include: { franjas: true } },
+                },
                 orderBy: { nombre: 'asc' },
             }),
-            prisma_1.prisma.registro.findMany({
-                where: {
-                    colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo },
-                    ...(sedeId ? { sedeId } : {}),
-                },
-            }),
+            // Sin filtro de sede, por lo mismo que en /extras-resumen: la primera entrada
+            // del día sale de TODOS los turnos. Filtrando aquí, quien entraba a tiempo en
+            // una sede y regresaba del almuerzo en otra aparecía tarde en la segunda.
+            //
+            // Son las filas de `filasParaLugares`, sin fotos: aquí se usan la entrada (la
+            // tardanza), el colaborador (para agrupar), y la fecha y las sedes (dónde
+            // trabajó, con la sede que se le atribuye a un presencial, y quién aparece con
+            // el filtro). Las mismas con las que extras decide dónde trabajó cada uno.
+            filasParaLugares(empresaId, desdeF, finExclusivo),
             prisma_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
+            // Con las horas, igual que en /tardanzas: una salida temprana no excusa la llegada.
             prisma_1.prisma.permiso.findMany({
                 where: { colaborador: { empresaId }, aprobado: true },
-                select: { fechaInicio: true, fechaFin: true, tipo: true, aprobado: true, colaboradorId: true },
+                select: { fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, aprobado: true, colaboradorId: true },
             }),
             prisma_1.prisma.jornadaVigencia.findMany(),
             // Los días de TODA la empresa en una sola consulta; se agrupan abajo. Uno
@@ -383,9 +330,14 @@ async function reporteRoutes(app) {
                     colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
                     horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
                     toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+                    descansos: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
+            // Todas las sedes, también las desactivadas (ver /extras-resumen).
+            prisma_1.prisma.sede.findMany({ where: { empresaId }, select: { id: true, nombre: true, activa: true } }),
+            // La sede por defecto de cada persona, en lote (ver /extras-resumen).
+            (0, sedesDeEmpresa_1.sedesPorDefecto)(prisma_1.prisma, empresaId),
         ]);
         const porColRegistros = agrupar(registrosTodos);
         const porColPermisos = agrupar(permisosTodos);
@@ -393,31 +345,21 @@ async function reporteRoutes(app) {
         // Mismo divisor para todos: la jornada vigente al cierre del período.
         const horasMes = (0, vigencias_1.horasMesDeJornada)((0, vigencias_1.jornadaVigente)(new Date(hasta), jornadas));
         const resultado = colaboradores.map(col => {
+            const donde = (0, sedesDeReporte_1.lugaresConAtribucion)(porColRegistros.get(col.id) ?? [], { modalidad: col.modalidad, sedePorDefecto: defectoDe(col.id) });
             if (!col.horario || !col.horario.activo) {
-                return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: true, diasTarde: 0, totalMinutos: 0, montoTardanzas: 0 };
+                return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: true, diasTarde: 0, totalMinutos: 0, montoTardanzas: 0, ...donde };
             }
-            const r = (0, tardanzas_1.calcularTardanzas)((porColRegistros.get(col.id) ?? []), (0, diasEsperados_1.combinarDiasEsperados)(desdeF, finExclusivo, porColDias.get(col.id) ?? [], col.horario), festivos, (porColPermisos.get(col.id) ?? []));
+            const r = (0, tardanzas_1.calcularTardanzas)(porColRegistros.get(col.id) ?? [], (0, diasEsperados_1.combinarDiasEsperados)(desdeF, finExclusivo, porColDias.get(col.id) ?? [], col.horario), festivos, (porColPermisos.get(col.id) ?? []));
             // Valor informativo (ver la nota en /tardanzas): el descuento efectivo
             // viaja en el saldo del período, no aquí.
-            const monto = (r.totalMinutos / 60) * (0, horasColombiana_2.calcularValorHora)(col.salarioMensual, horasMes);
+            const monto = (r.totalMinutos / 60) * (0, horasColombiana_1.calcularValorHora)(col.salarioMensual, horasMes);
             return {
                 colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: false,
                 diasTarde: r.diasTarde, totalMinutos: r.totalMinutos,
                 montoTardanzas: parseFloat(monto.toFixed(2)),
+                ...donde,
             };
         });
-        return { desde, hasta, colaboradores: resultado };
-    });
-    app.get('/asistencia', auth, async (request) => {
-        const { desde, hasta } = request.query;
-        const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
-        return prisma_1.prisma.registro.findMany({
-            where: {
-                colaborador: { empresaId: request.empresaId },
-                fecha: { gte: desdeF, lt: finExclusivo },
-            },
-            include: { colaborador: true },
-            orderBy: { fecha: 'desc' },
-        });
+        return { desde, hasta, ...responderPorSede(resultado, ['diasTarde', 'totalMinutos', 'montoTardanzas'], sedes, sedeId) };
     });
 }

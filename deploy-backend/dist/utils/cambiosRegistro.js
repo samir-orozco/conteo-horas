@@ -34,6 +34,7 @@ const CAMPOS = [
     { clave: 'tipo', formato: (v) => v ?? 'sin tipo' },
     { clave: 'observacion', formato: (v) => v || 'sin observación' },
     { clave: 'salidaAlmuerzo', formato: (v) => (v ? 'sí' : 'no') },
+    { clave: 'salidaDescanso', formato: (v) => (v ? 'sí' : 'no') },
 ];
 // Compara el estado guardado contra los campos que trae la edición.
 // Solo mira lo que viene: el PUT admite cambios parciales, y lo que no llega no

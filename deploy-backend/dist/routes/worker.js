@@ -16,12 +16,15 @@ const kioscoConfig_1 = require("../utils/kioscoConfig");
 const modalidad_1 = require("../utils/modalidad");
 const cierreTurnos_1 = require("../utils/cierreTurnos");
 const almuerzo_1 = require("../utils/almuerzo");
+const descansos_1 = require("../utils/descansos");
 const tardanzas_1 = require("../utils/tardanzas");
 const cierreAlmuerzo_1 = require("../utils/cierreAlmuerzo");
 const materializarDias_1 = require("../utils/materializarDias");
 const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
-const minutosDe = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
+// Un token de kiosco dura 12 horas y sigue siendo válido aunque la persona ya no
+// exista: pasa cuando el super admin elimina la empresa con una sesión abierta.
+const SESION_INVALIDA = 'Tu sesión ya no es válida. Vuelve a identificarte en el kiosco.';
 const TIPOS_NOVEDAD = new Set([
     'VACACIONES', 'INCAPACIDAD_EPS', 'INCAPACIDAD_ARL', 'LICENCIA_MATERNIDAD', 'LICENCIA_PATERNIDAD',
     'LICENCIA_LUTO', 'CALAMIDAD', 'MEDICO', 'PERSONAL', 'NO_REMUNERADO', 'OTRO',
@@ -91,23 +94,76 @@ function fotoValida(foto) {
 // `fechaAncla` es la del turno abierto, no la de hoy: un turno nocturno que
 // almuerza a la 01:00 pertenece al día en que ENTRÓ, y su ventana vive en la
 // fila de ese día.
-async function almuerzoDelTurno(colaboradorId, fechaAncla) {
+//
+// Las dos preguntas salen de una sola lectura del día: si puede salir a almorzar, y
+// a CUÁL descanso le toca salir ahora (12 de septiembre de 2026).
+//
+//  - El almuerzo se cuenta como en producción: una salida a almorzar en las
+//    últimas 18 horas ya lo gastó.
+//  - Los descansos se cuentan por el DÍA DEL TURNO, no por 18 horas: el descanso
+//    de la tarde de ayer no puede gastar el de la mañana de hoy. Las filas de una
+//    jornada del kiosco comparten `fecha`, y la consulta va por el índice
+//    (colaboradorId, fecha) de `registros` (CLAUDE.md §8.4).
+//
+// Nada de esto puede lanzar con una lista rota: `/estado` corre antes de abrir la
+// sesión del kiosco, y si se cae nadie entra a marcar. La lista se lee con
+// `leerDescansos`, que nunca lanza.
+async function pausasDelTurno(colaboradorId, fechaAncla, ahora) {
     const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(fechaAncla);
-    const [dia, marcados] = await Promise.all([
+    const [dia, almuerzos, salidasAlDescanso] = await Promise.all([
         // Por rango y no por clave exacta: MySQL puede devolver la fecha con
         // milisegundos y una fila así quedaría huérfana sin que nadie se entere.
         prisma_1.prisma.diaEsperado.findFirst({
             where: { colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
             // `fecha` hace falta para saber si la persona está DENTRO de la ventana
-            // ahora mismo: la de un turno nocturno cae en la madrugada siguiente.
-            select: { fecha: true, almuerzoInicio: true, almuerzoFin: true },
+            // ahora mismo: la de un turno nocturno cae en la madrugada siguiente. La
+            // entrada, para ordenar los descansos desde ella.
+            select: { fecha: true, horaEntrada: true, almuerzoInicio: true, almuerzoFin: true, descansos: true },
         }),
         prisma_1.prisma.registro.count({
-            where: { colaboradorId, salidaAlmuerzo: true, salida: { gte: new Date(Date.now() - cierreTurnos_1.VENTANA_TURNO_MS) } },
+            where: { colaboradorId, salidaAlmuerzo: true, salida: { gte: new Date(ahora.getTime() - cierreTurnos_1.VENTANA_TURNO_MS) } },
+        }),
+        prisma_1.prisma.registro.findMany({
+            where: { colaboradorId, fecha: { gte: inicioDia, lt: finDia }, salidaDescanso: true, salida: { not: null } },
+            select: { salida: true, descansoVentana: true },
+            orderBy: { salida: 'asc' },
         }),
     ]);
-    const yaAlmorzo = marcados > 0;
-    return { ventana: dia, yaAlmorzo, puede: (0, almuerzo_1.puedeSalirAAlmorzar)(dia, yaAlmorzo) };
+    const tomadas = dia
+        ? (0, descansos_1.ventanasTomadas)(dia, salidasAlDescanso.map(s => ({ salida: s.salida, descansoVentana: s.descansoVentana })))
+        : [];
+    return {
+        dia,
+        puedeAlmorzar: (0, almuerzo_1.puedeSalirAAlmorzar)(dia, almuerzos > 0),
+        // null si el día no tiene descansos o ya los tomó todos: entonces el kiosco no
+        // ofrece descanso y una salida pedida como descanso es una salida normal.
+        descanso: dia ? (0, descansos_1.descansoQueToca)(ahora, dia, tomadas) : null,
+    };
+}
+// ¿La última salida fue a una pausa que todavía espera su regreso? La preguntan `/estado`
+// y `/marcar`, y las dos tienen que responder lo mismo: si el kiosco dijera «estás en tu
+// descanso» y la marca lo tomara como una entrada nueva, la persona vería una cosa y
+// quedaría otra (12 de septiembre de 2026).
+//
+//  - El almuerzo, como en producción: cualquier salida a almorzar de las últimas 18
+//    horas, que es lo que ya filtra la consulta de la última salida.
+//  - El descanso, además, solo hasta el fin del turno del día de SU fila con la gracia, o si
+//    salió más tarde, hasta la hora a la que le tocaba volver de ESE descanso con la
+//    gracia (`descansoSigueEsperandoRegreso`). Pasado eso, la entrada es una entrada
+//    normal, con su llegada tarde. El día se lee por el índice (colaboradorId, fecha).
+async function pausaQueEsperaRegreso(colaboradorId, ultima, ahora) {
+    if (!ultima?.salida)
+        return null;
+    if (ultima.salidaAlmuerzo)
+        return ultima;
+    if (!ultima.salidaDescanso)
+        return null;
+    const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(ultima.fecha);
+    const dia = await prisma_1.prisma.diaEsperado.findFirst({
+        where: { colaboradorId, fecha: { gte: inicioDia, lt: finDia } },
+        select: { fecha: true, horaEntrada: true, horaSalida: true },
+    });
+    return (0, cierreAlmuerzo_1.descansoSigueEsperandoRegreso)(ultima.salida, dia, ahora, (0, descansos_1.leerVentana)(ultima.descansoVentana)) ? ultima : null;
 }
 // Deja una novedad pendiente de aprobación y avisa al administrador. La usan el
 // endpoint propio y la salida temprana, que la guarda junto con la marca: en dos
@@ -120,7 +176,11 @@ async function almuerzoDelTurno(colaboradorId, fechaAncla) {
 // No sirve identificarlas por colaborador y día: un día puede tener varias
 // novedades legítimas (cita médica en la mañana, una urgencia en la tarde), así
 // que el vínculo tiene que ser explícito.
-async function crearNovedad(colaboradorId, tipo, descripcion, registroId) {
+//
+// `ventana` también viene de la salida temprana: el tramo que la novedad excusa,
+// desde que se fue hasta el fin de su franja. Sin ella la novedad queda de día
+// completo, y al aprobarla el saldo excusaba también las horas que sí trabajó.
+async function crearNovedad(colaboradorId, tipo, descripcion, registroId, ventana) {
     const { inicioDia } = (0, fechas_1.rangoDiaBogota)();
     const permiso = await prisma_1.prisma.permiso.create({
         data: {
@@ -131,6 +191,7 @@ async function crearNovedad(colaboradorId, tipo, descripcion, registroId) {
             fechaFin: inicioDia,
             aprobado: false,
             ...(registroId ? { registroId } : {}),
+            ...(ventana ?? {}),
         },
     });
     const quien = await prisma_1.prisma.colaborador.findUnique({
@@ -378,26 +439,40 @@ async function workerRoutes(app) {
                     salida: { not: null, gte: new Date(Date.now() - cierreTurnos_1.VENTANA_TURNO_MS) },
                 },
                 orderBy: { salida: 'desc' },
-                select: { salida: true, salidaAlmuerzo: true },
+                select: { fecha: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
             }),
         ]);
-        // La ventana se ancla al turno abierto; sin turno abierto, al día de hoy.
-        const almuerzo = await almuerzoDelTurno(payload.id, abierto?.fecha ?? inicioDia);
-        const enAlmuerzo = !abierto && ultimoCerrado?.salidaAlmuerzo === true;
+        // Las ventanas se anclan al turno abierto; sin turno abierto, al día de hoy.
+        const ahora = new Date();
+        const pausas = await pausasDelTurno(payload.id, abierto?.fecha ?? inicioDia, ahora);
+        // Un descanso sin regreso deja de estar en curso al terminar el turno de su día más la
+        // gracia; el almuerzo sigue con las 18 horas (`pausaQueEsperaRegreso`).
+        const pausaEnCurso = abierto ? null : await pausaQueEsperaRegreso(payload.id, ultimoCerrado, ahora);
+        const enAlmuerzo = pausaEnCurso?.salidaAlmuerzo === true;
+        const enDescanso = pausaEnCurso?.salidaDescanso === true;
         // ¿Se le pasó la hora de volver? Si sí, el kiosco le pregunta a qué hora
         // regresó en vez de abrirle el turno a esta hora: quien marca a las 17:00 el
         // regreso de un almuerzo de las 12:00 perdería la tarde entera.
+        //
+        // El descanso se mide contra la ventana A LA QUE SALIÓ, guardada en la
+        // marcación: el día tiene varios y el del día no dice cuál era. Sin ventana
+        // guardada no se propone nada (12 de septiembre de 2026).
         let regresoSugerido = null;
-        if (enAlmuerzo && ultimoCerrado?.salida) {
-            const diaDelAlmuerzo = await prisma_1.prisma.diaEsperado.findFirst({
+        if (enDescanso && ultimoCerrado?.salida) {
+            const p = (0, cierreAlmuerzo_1.descansoSinRegreso)(ultimoCerrado.salida, (0, fechas_1.rangoDiaBogota)(ultimoCerrado.fecha).inicioDia, (0, descansos_1.leerVentana)(ultimoCerrado.descansoVentana), ahora);
+            if (p.vencido)
+                regresoSugerido = p.finVentana;
+        }
+        else if (enAlmuerzo && ultimoCerrado?.salida) {
+            const diaDeLaPausa = await prisma_1.prisma.diaEsperado.findFirst({
                 where: {
                     colaboradorId: payload.id,
                     fecha: { gte: (0, fechas_1.rangoDiaBogota)(ultimoCerrado.salida).inicioDia, lt: (0, fechas_1.rangoDiaBogota)(ultimoCerrado.salida).finDia },
                 },
                 select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true },
             });
-            if (diaDelAlmuerzo) {
-                const p = (0, cierreAlmuerzo_1.almuerzoSinRegreso)(ultimoCerrado.salida, diaDelAlmuerzo, new Date());
+            if (diaDeLaPausa) {
+                const p = (0, cierreAlmuerzo_1.almuerzoSinRegreso)(ultimoCerrado.salida, diaDeLaPausa, ahora);
                 if (p.vencido)
                     regresoSugerido = p.finVentana;
             }
@@ -406,21 +481,29 @@ async function workerRoutes(app) {
             entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
             dentroAhora: !!abierto,
             turnoCerradoHoy: cerradoHoy ? { entrada: cerradoHoy.entrada, salida: cerradoHoy.salida } : null,
-            // Solo se manda la ventana cuando de verdad se puede usar: el kiosco
+            // Solo se manda cada ventana cuando de verdad se puede usar: el kiosco
             // pregunta exactamente cuando el servidor va a creerle.
-            almuerzo: almuerzo.puede
+            almuerzo: pausas.puedeAlmorzar
                 ? {
-                    inicio: almuerzo.ventana.almuerzoInicio,
-                    fin: almuerzo.ventana.almuerzoFin,
+                    inicio: pausas.dia.almuerzoInicio,
+                    fin: pausas.dia.almuerzoFin,
                     // Estando dentro, el kiosco lo ofrece en el botón grande en vez de
                     // esconderlo detrás de "Registrar Salida". Lo decide el servidor, que
                     // es quien tiene la fecha del turno: la ventana de un nocturno cae en
                     // la madrugada del día siguiente al que ancla su fila.
-                    ahora: (0, almuerzo_1.dentroDeLaVentana)(new Date(), almuerzo.ventana),
+                    ahora: (0, almuerzo_1.dentroDeLaVentana)(ahora, pausas.dia),
                 }
+                : null,
+            // El descanso que TOCA a esta hora, con la misma forma de siempre: la tableta
+            // no elige a cuál sale, solo muestra el que el servidor le va a anotar. `ahora`
+            // dice si está dentro de esa ventana (12 de septiembre de 2026).
+            descanso: pausas.dia && pausas.descanso
+                ? { ...pausas.descanso, ahora: (0, almuerzo_1.estaDentroDe)(ahora, { fecha: pausas.dia.fecha, ...pausas.descanso }) }
                 : null,
             enAlmuerzo,
             salidaAlmuerzo: enAlmuerzo ? ultimoCerrado.salida : null,
+            enDescanso,
+            salidaDescanso: enDescanso ? ultimoCerrado.salida : null,
             // Con hora: se le pregunta a qué hora volvió. Sin ella: está a tiempo.
             regresoSugerido,
         };
@@ -437,12 +520,13 @@ async function workerRoutes(app) {
         }
         marcandoAhora.add(payload.id);
         try {
-            const { foto, lat, lng, almuerzo, regresoA } = (request.body ?? {});
+            const { foto, lat, lng, almuerzo, descanso, regresoA } = (request.body ?? {});
             const fotoGuardar = fotoValida(foto) ? foto : null;
             const pidioAlmuerzo = almuerzo === true;
-            // Hora de regreso del almuerzo que la propia persona confirma en el
-            // kiosco cuando se le olvidó marcarla. Solo se acepta un instante válido;
-            // más abajo se comprueba además que caiga donde debe.
+            const pidioDescanso = descanso === true;
+            // Hora de regreso de la pausa —almuerzo o descanso— que la propia persona
+            // confirma en el kiosco cuando se le olvidó marcarla. Solo se acepta un
+            // instante válido; más abajo se comprueba además que caiga donde debe.
             const regresoPedido = typeof regresoA === 'string' && !Number.isNaN(Date.parse(regresoA))
                 ? new Date(regresoA) : null;
             // El colaborador se lee ANTES de decidir sobre la ubicación, y ese orden
@@ -452,9 +536,13 @@ async function workerRoutes(app) {
                 where: { id: payload.id },
                 include: { horario: { include: { franjas: true } } },
             });
-            // Si el colaborador no aparece, se trata como PRESENCIAL: ante la duda, la
-            // opción segura es la que valida, no la que deja pasar.
-            const modalidad = col?.modalidad ?? modalidad_1.MODALIDAD_POR_DEFECTO;
+            // Si el colaborador no aparece, la sesión es de alguien que ya no existe (se
+            // eliminó su empresa con el kiosco abierto). Seguir de largo terminaba en un
+            // 500 contra la llave foránea al escribir la marca: se corta aquí, antes de
+            // escribir nada, con un mensaje que la persona entienda.
+            if (!col)
+                return reply.code(401).send({ error: SESION_INVALIDA });
+            const modalidad = col.modalidad ?? modalidad_1.MODALIDAD_POR_DEFECTO;
             // ===== Dónde está marcando =====
             //
             // A un REMOTO no se le pide ni se le mira la ubicación, así que ni siquiera
@@ -505,6 +593,12 @@ async function workerRoutes(app) {
                 },
             });
             const tipo = festHoy ? 'FESTIVO' : 'NORMAL';
+            // El motivo que manda el kiosco cuando el servidor lo pidió: al salir antes
+            // de hora o al llegar tarde. Solo se aceptan los tipos conocidos.
+            const novedad = (request.body ?? {});
+            const tipoNovedad = typeof novedad.novedadTipo === 'string' && TIPOS_NOVEDAD.has(novedad.novedadTipo)
+                ? novedad.novedadTipo : null;
+            const descripcionNovedad = typeof novedad.novedadDescripcion === 'string' ? novedad.novedadDescripcion : '';
             if (abierto) {
                 // Entrada y salida en el MISMO sitio. Si abrió turno en El Poblado no
                 // puede cerrarlo en Laureles: el turno pertenece a una sede, y permitir
@@ -515,28 +609,65 @@ async function workerRoutes(app) {
                 // Solo aplica a PRESENCIAL. A un HIBRIDO esta regla lo bloquearía justo a
                 // la hora de irse —abrió en El Poblado y cierra desde la casa— y quedaría
                 // con el turno atrapado sin poder cerrarlo desde ningún lado, que es
-                // exactamente lo que la modalidad viene a evitar. Lo que se pierde es
-                // fidelidad, no dinero: el registro sigue diciendo dónde se ABRIÓ, porque
-                // la actualización de la salida nunca escribe `sedeId`.
-                if (modalidad === 'PRESENCIAL' && abierto.sedeId && sedeDeLaMarca && abierto.sedeId !== sedeDeLaMarca) {
+                // exactamente lo que la modalidad viene a evitar.
+                //
+                // Tampoco aplica a quien tiene `puedeCerrarEnOtraSede`: el supervisor que
+                // recorre varias sedes en el mismo turno. Aun con el permiso, la salida
+                // tiene que marcarse DENTRO de una de sus sedes, porque la geocerca ya se
+                // decidió más arriba. La decisión vive en `puedeCerrarAqui`
+                // (utils/modalidad.ts), con sus pruebas.
+                //
+                // Lo que antes se perdía ya no: la salida guarda dónde se cerró en
+                // `sedeSalidaId`, así que un turno que cruza sedes se ve entero.
+                const cierraAqui = (0, modalidad_1.puedeCerrarAqui)({
+                    modalidad,
+                    // `=== true` y no un truthy: si el colaborador no apareció, falla
+                    // cerrado, que es la regla de siempre.
+                    puedeCerrarEnOtraSede: col?.puedeCerrarEnOtraSede === true,
+                    sedeDelTurno: abierto.sedeId,
+                    sedeDeLaMarca,
+                });
+                if (!cierraAqui) {
                     const sedeEntrada = sedesDelTrabajador.find(s => s.id === abierto.sedeId);
+                    // El mensaje dice QUÉ HACER y no solo qué pasó: quien lo lee está
+                    // frente al kiosco con el turno abierto y sin forma de cerrarlo.
                     return reply.code(403).send({
-                        error: `Abriste el turno en ${sedeEntrada?.nombre ?? 'otra sede'}. La salida debe marcarse en la misma sede.`,
+                        error: `Abriste el turno en ${sedeEntrada?.nombre ?? 'otra sede'}. Marca la salida allí, o pide a tu administrador que te permita cerrar en otra sede.`,
                         codigo: 'SEDE_DISTINTA',
                     });
                 }
-                // Salida a almorzar: se valida contra el día congelado y contra si ya
-                // almorzó. Que lo diga el cliente no basta — el flag decide cómo se lee
-                // el día después, y nadie debería poder inventarlo desde el navegador.
-                const esAlmuerzo = pidioAlmuerzo && (await almuerzoDelTurno(payload.id, abierto.fecha)).puede;
+                // Salida a una pausa —almuerzo o descanso no remunerado—: se valida contra
+                // el día congelado y contra si ya la tomó. Que lo diga el cliente no basta:
+                // el flag decide cómo se lee el día después, y nadie debería poder
+                // inventarlo desde el navegador. Si llegaran las dos, manda el almuerzo.
+                //
+                // A CUÁL descanso sale lo decide el servidor por la hora, no la tableta
+                // (`descansoQueToca`). Si no le queda ninguno pendiente, es una salida
+                // normal: nunca un error que deje a alguien sin poder salir.
+                const pausas = pidioAlmuerzo || pidioDescanso ? await pausasDelTurno(payload.id, abierto.fecha, ahora) : null;
+                const esAlmuerzo = pidioAlmuerzo && !!pausas?.puedeAlmorzar;
+                const descansoAsignado = !esAlmuerzo && pidioDescanso ? pausas?.descanso ?? null : null;
+                const esDescanso = descansoAsignado !== null;
+                // El horario puede pedir que en el descanso no se guarde la foto. La cara se
+                // reconoce igual para marcar; lo que no queda es la imagen.
+                const fotoDeLaSalida = esDescanso && col?.horario?.fotoEnDescanso === false ? null : fotoGuardar;
                 // ¿Se va antes de que termine su franja? Se resuelve ANTES de escribir
-                // nada. Irse a su descanso no es irse temprano: ahí no se pregunta.
+                // nada. Irse a su almuerzo o a su descanso no es irse temprano: ahí no se
+                // pregunta.
+                //
+                // Si se va temprano, la novedad guarda qué tramo excusa: desde ahora hasta
+                // el fin de su franja. Sin eso quedaba de día completo, y al aprobarla el
+                // saldo excusaba también las horas que sí trabajó y la tardanza de la
+                // mañana desaparecía.
                 let salidaTemprana = false;
+                let ventanaNovedad = null;
                 const horario = col?.horario;
-                if (!esAlmuerzo && horario && horario.activo && !festHoy) {
+                if (!esAlmuerzo && !esDescanso && horario && horario.activo && !festHoy) {
                     const franja = horario.franjas.find(f => (f.dias ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
                     if (franja)
                         salidaTemprana = (0, tardanzas_1.salidaAntesDeHora)(ahoraBog, franja, horario.toleranciaMin ?? 0);
+                    if (franja && salidaTemprana)
+                        ventanaNovedad = (0, tardanzas_1.ventanaDeSalidaTemprana)(ahoraBog, franja);
                 }
                 // Sin motivo no se cierra la jornada.
                 //
@@ -545,9 +676,6 @@ async function workerRoutes(app) {
                 // como la salida ya estaba escrita, quien se equivocaba de botón no tenía
                 // forma de volver atrás. Ahora no se escribe nada hasta que haya motivo,
                 // y por eso cancelar es posible: no hay nada que deshacer.
-                const novedad = (request.body ?? {});
-                const tipoNovedad = typeof novedad.novedadTipo === 'string' && TIPOS_NOVEDAD.has(novedad.novedadTipo)
-                    ? novedad.novedadTipo : null;
                 if (salidaTemprana && !tipoNovedad) {
                     return reply.code(409).send({
                         codigo: 'REQUIERE_MOTIVO',
@@ -563,56 +691,103 @@ async function workerRoutes(app) {
                         // este turno" se quedaba pegado sobre una salida real.
                         salidaEstimada: false,
                         ...(esAlmuerzo ? { salidaAlmuerzo: true } : {}),
-                        ...(fotoGuardar ? { fotoSalida: fotoGuardar } : {}),
+                        ...(esDescanso ? { salidaDescanso: true } : {}),
+                        // A cuál descanso salió, y va SIEMPRE, por la misma razón que la sede de
+                        // salida: saltarse el null dejaría viva la ventana de una salida anterior
+                        // en un turno que un administrador reabrió (12 de septiembre de 2026).
+                        descansoVentana: descansoAsignado ? (0, descansos_1.claveDeVentana)(descansoAsignado) : null,
+                        // Dónde se CERRÓ, con la misma regla que la entrada: donde ocurrió la
+                        // marca. Se escribe para todos, también para un híbrido, que así
+                        // recupera la fidelidad que antes perdía. Sin sede identificada va
+                        // null, que es «no se sabe», nunca la sede de la entrada. Y va SIEMPRE:
+                        // saltarse el null dejaba viva la sede de una salida anterior en un
+                        // turno que un administrador había reabierto.
+                        sedeSalidaId: sedeDeLaMarca,
+                        ...(fotoDeLaSalida ? { fotoSalida: fotoDeLaSalida } : {}),
                         ...(0, metodoMarcacion_1.camposDeAutenticacion)(payload, 'salida'),
                     },
                 });
                 // La novedad viaja con la marca, no en una llamada aparte: si esa segunda
                 // llamada fallaba, la salida quedaba registrada y el motivo se perdía.
                 if (tipoNovedad) {
-                    await crearNovedad(payload.id, tipoNovedad, typeof novedad.novedadDescripcion === 'string' ? novedad.novedadDescripcion : '', updated.id)
+                    await crearNovedad(payload.id, tipoNovedad, descripcionNovedad, updated.id, ventanaNovedad)
                         .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la salida temprana'));
                 }
-                return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo };
+                // `descanso` es la ventana a la que se anotó la salida, para que la tableta
+                // lo diga: una tableta que no la conoce la ignora.
+                return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo, salidaDescanso: esDescanso, descanso: descansoAsignado };
             }
             else {
                 // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
                 const entradasPrevias = await prisma_1.prisma.registro.count({
                     where: { colaboradorId: payload.id, fecha: { gte: inicioDia, lt: finDia }, entrada: { not: null } },
                 });
-                // Volver del almuerzo es la MISMA jornada, así que el tramo pertenece al
-                // día en que se entró, no al día en que se vuelve. Solo se nota en un
-                // turno nocturno, donde el almuerzo cae después de medianoche: sin esto
-                // el regreso quedaba anclado al día siguiente, la jornada se partía en
-                // dos días y el reporte contaba media noche en cada uno. En el turno de
-                // día `fecha` es la misma y esto no cambia nada.
-                const volviendoDeAlmorzar = await prisma_1.prisma.registro.findFirst({
+                // Volver de una pausa —almuerzo o descanso— es la MISMA jornada, así que
+                // el tramo pertenece al día en que se entró, no al día en que se vuelve.
+                // Solo se nota en un turno nocturno, donde la pausa cae después de
+                // medianoche: sin esto el regreso quedaba anclado al día siguiente, la
+                // jornada se partía en dos días y el reporte contaba media noche en cada
+                // uno. En el turno de día `fecha` es la misma y esto no cambia nada.
+                //
+                // Cuenta solo si la ÚLTIMA salida fue a una pausa. Antes valía cualquier
+                // salida a almorzar de las últimas 18 horas, así que quien almorzó, cerró
+                // su jornada y volvía de madrugada a otro turno entraba como si volviera
+                // de almorzar: colgado del día anterior y sin medirle la llegada tarde.
+                const ultimaSalida = await prisma_1.prisma.registro.findFirst({
                     where: {
                         colaboradorId: payload.id,
-                        salidaAlmuerzo: true,
                         salida: { not: null, gte: new Date(ahora.getTime() - cierreTurnos_1.VENTANA_TURNO_MS) },
                     },
                     orderBy: { salida: 'desc' },
-                    select: { fecha: true, salida: true },
+                    select: { fecha: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
                 });
-                // Regreso del almuerzo con hora corregida por la propia persona. Se
-                // valida contra la ventana de SU día, no contra lo que mande el cliente:
-                // tiene que estar después de la salida a almorzar, no puede ser futura,
-                // y no puede pasarse del fin de su ventana. Así lo peor que alguien
-                // puede conseguir manipulando el navegador es declarar que volvió a la
-                // hora a la que le tocaba, que es exactamente lo que el kiosco propone.
+                // Y un descanso, solo hasta el fin del turno de su día más la gracia: la entrada de
+                // la mañana siguiente a un descanso sin regreso no es su regreso, es la de hoy, con
+                // su fecha y su llegada tarde (12 de septiembre de 2026).
+                const volviendoDePausa = await pausaQueEsperaRegreso(payload.id, ultimaSalida, ahora);
+                // ¿Llega tarde a su primera entrada del día? Se resuelve ANTES de escribir
+                // nada, igual que la salida temprana: sin motivo no se marca la entrada.
+                // Volver de una pausa no es llegar tarde, aunque en un turno nocturno sea
+                // la primera marca del día calendario.
+                // La decisión vive en `llegadaTarde` (utils/tardanzas.ts), con sus pruebas.
+                const tardanza = (0, tardanzas_1.llegadaTarde)(ahoraBog, {
+                    esPrimeraEntrada: entradasPrevias === 0,
+                    vuelveDeUnaPausa: !!volviendoDePausa,
+                    esFestivo: !!festHoy,
+                    horario: col?.horario,
+                });
+                if (tardanza && !tipoNovedad) {
+                    return reply.code(409).send({
+                        codigo: 'REQUIERE_MOTIVO_TARDANZA',
+                        error: 'Llegaste tarde. Cuéntanos por qué.',
+                    });
+                }
+                // Regreso de la pausa con hora corregida por la propia persona. Se valida
+                // contra la ventana de SU día y de ESA pausa, no contra lo que mande el
+                // cliente: tiene que estar después de la salida, no puede ser futura, y
+                // no puede pasarse del fin de su ventana. Así lo peor que alguien puede
+                // conseguir manipulando el navegador es declarar que volvió a la hora a
+                // la que le tocaba, que es exactamente lo que el kiosco propone.
                 let entradaReal = ahora;
                 let esRegresoEstimado = false;
-                if (regresoPedido && volviendoDeAlmorzar?.salida) {
-                    const rango = (0, fechas_1.rangoDiaBogota)(volviendoDeAlmorzar.fecha);
-                    const diaAlm = await prisma_1.prisma.diaEsperado.findFirst({
-                        where: { colaboradorId: payload.id, fecha: { gte: rango.inicioDia, lt: rango.finDia } },
-                        select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true },
-                    });
-                    const p = diaAlm ? (0, cierreAlmuerzo_1.almuerzoSinRegreso)(volviendoDeAlmorzar.salida, diaAlm, ahora) : null;
-                    const tope = p?.finVentana;
+                if (regresoPedido && volviendoDePausa?.salida) {
+                    const rango = (0, fechas_1.rangoDiaBogota)(volviendoDePausa.fecha);
+                    let tope = null;
+                    if (volviendoDePausa.salidaDescanso) {
+                        // El tope del descanso es la hora a la que le tocaba volver del descanso
+                        // AL QUE SALIÓ: el fin de su ventana si salió dentro de ella, y si no, la
+                        // salida más lo que dura ese descanso (12 de septiembre de 2026).
+                        tope = (0, cierreAlmuerzo_1.descansoSinRegreso)(volviendoDePausa.salida, rango.inicioDia, (0, descansos_1.leerVentana)(volviendoDePausa.descansoVentana), ahora).finVentana;
+                    }
+                    else {
+                        const diaDeLaPausa = await prisma_1.prisma.diaEsperado.findFirst({
+                            where: { colaboradorId: payload.id, fecha: { gte: rango.inicioDia, lt: rango.finDia } },
+                            select: { fecha: true, almuerzoMin: true, almuerzoInicio: true, almuerzoFin: true },
+                        });
+                        tope = diaDeLaPausa ? (0, cierreAlmuerzo_1.almuerzoSinRegreso)(volviendoDePausa.salida, diaDeLaPausa, ahora).finVentana : null;
+                    }
                     const dentro = tope
-                        && regresoPedido > volviendoDeAlmorzar.salida
+                        && regresoPedido > volviendoDePausa.salida
                         && regresoPedido <= ahora
                         && regresoPedido <= tope;
                     if (dentro) {
@@ -622,17 +797,20 @@ async function workerRoutes(app) {
                         esRegresoEstimado = true;
                     }
                 }
+                // El horario puede pedir que en el descanso no se guarde la foto, y eso
+                // vale también para la marca del regreso.
+                const fotoDeLaEntrada = volviendoDePausa?.salidaDescanso && col?.horario?.fotoEnDescanso === false ? null : fotoGuardar;
                 const nuevo = await prisma_1.prisma.registro.create({
                     data: {
                         colaboradorId: payload.id,
-                        fecha: volviendoDeAlmorzar?.fecha ?? inicioDia,
+                        fecha: volviendoDePausa?.fecha ?? inicioDia,
                         entrada: entradaReal,
                         ...(esRegresoEstimado ? { entradaEstimada: true } : {}),
                         tipo: tipo,
                         // Queda guardado DÓNDE marcó, no dónde debía: el filtro por sede de
                         // los reportes tiene que reflejar la realidad.
                         ...(sedeDeLaMarca ? { sedeId: sedeDeLaMarca } : {}),
-                        ...(fotoGuardar ? { fotoEntrada: fotoGuardar } : {}),
+                        ...(fotoDeLaEntrada ? { fotoEntrada: fotoDeLaEntrada } : {}),
                         ...(0, metodoMarcacion_1.camposDeAutenticacion)(payload, 'entrada'),
                     },
                 });
@@ -641,24 +819,24 @@ async function workerRoutes(app) {
                 // reescribible: cambiar el horario mañana le movería este día. La
                 // creación manual de registros ya lo hacía; el kiosco no.
                 await (0, materializarDias_1.asegurarDiaSinFallar)(payload.id, nuevo.fecha, app.log);
-                // Alerta de llegada tarde por Telegram (primera entrada del día, día laboral)
-                const horarioE = col?.horario;
-                if (entradasPrevias === 0 && col && !festHoy && horarioE?.activo) {
-                    const franja = horarioE.franjas.find(f => (f.dias ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
-                    if (franja) {
-                        const entradaMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
-                        const tarde = entradaMin - (minutosDe(franja.horaEntrada) + (horarioE.toleranciaMin ?? 0));
-                        if (tarde > 0) {
-                            alertarTardanzaTelegram(col.empresaId, `${col.nombre} ${col.apellido}`, ahoraBog, tarde).catch(() => { });
-                            const tardeTxt = tarde >= 60 ? `${Math.floor(tarde / 60)}h ${tarde % 60}min` : `${tarde} min`;
-                            (0, notificaciones_1.notificar)(col.empresaId, {
-                                tipo: 'LLEGADA_TARDE',
-                                titulo: `${col.nombre} ${col.apellido} llegó tarde`,
-                                cuerpo: `Marcó entrada con ${tardeTxt} de retraso.`,
-                                entidad: 'colaborador', entidadId: col.id,
-                            });
-                        }
-                    }
+                // La novedad de la llegada tarde viaja con la marca, igual que la de la
+                // salida temprana: en una llamada aparte, un fallo dejaba la entrada
+                // escrita y el motivo perdido.
+                if (tardanza && tipoNovedad) {
+                    await crearNovedad(payload.id, tipoNovedad, descripcionNovedad, nuevo.id, (0, tardanzas_1.ventanaDeLlegadaTarde)(ahoraBog, tardanza.franja))
+                        .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la llegada tarde'));
+                }
+                // Alerta de llegada tarde por Telegram y en la campana.
+                if (tardanza && col) {
+                    const tarde = tardanza.minutos;
+                    alertarTardanzaTelegram(col.empresaId, `${col.nombre} ${col.apellido}`, ahoraBog, tarde).catch(() => { });
+                    const tardeTxt = tarde >= 60 ? `${Math.floor(tarde / 60)}h ${tarde % 60}min` : `${tarde} min`;
+                    (0, notificaciones_1.notificar)(col.empresaId, {
+                        tipo: 'LLEGADA_TARDE',
+                        titulo: `${col.nombre} ${col.apellido} llegó tarde`,
+                        cuerpo: `Marcó entrada con ${tardeTxt} de retraso.`,
+                        entidad: 'colaborador', entidadId: col.id,
+                    });
                 }
                 return { accion: 'ENTRADA', registro: nuevo, hora: entradaReal, regresoEstimado: esRegresoEstimado };
             }
@@ -676,6 +854,10 @@ async function workerRoutes(app) {
         const { tipo, descripcion } = (request.body ?? {});
         if (!tipo || !TIPOS_NOVEDAD.has(tipo))
             return reply.code(400).send({ error: 'Motivo inválido' });
+        // Igual que al marcar: sin esto, crear la novedad reventaba contra la llave foránea.
+        const existe = await prisma_1.prisma.colaborador.findUnique({ where: { id: payload.id }, select: { id: true } });
+        if (!existe)
+            return reply.code(401).send({ error: SESION_INVALIDA });
         const permiso = await crearNovedad(payload.id, tipo, descripcion ?? '');
         return reply.code(201).send({ ok: true, id: permiso.id });
     });

@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MODALIDAD_POR_DEFECTO = exports.MODALIDADES = void 0;
 exports.normalizarModalidad = normalizarModalidad;
 exports.decidirUbicacionDeMarca = decidirUbicacionDeMarca;
+exports.puedeCerrarAqui = puedeCerrarAqui;
+exports.normalizarPermisoOtraSede = normalizarPermisoOtraSede;
 const geo_1 = require("./geo");
 const sedes_1 = require("./sedes");
 // Cómo trabaja una persona, y qué implica eso para su ubicación al marcar.
@@ -74,4 +76,27 @@ function decidirUbicacionDeMarca(ctx) {
         }
     }
     return PASA_SIN_SEDE;
+}
+function puedeCerrarAqui(ctx) {
+    if (ctx.modalidad !== 'PRESENCIAL')
+        return true;
+    if (ctx.puedeCerrarEnOtraSede)
+        return true;
+    if (!ctx.sedeDelTurno || !ctx.sedeDeLaMarca)
+        return true;
+    return ctx.sedeDelTurno === ctx.sedeDeLaMarca;
+}
+// Lo que llega del cuerpo al crear o editar un colaborador.
+//
+// AUSENTE devuelve undefined, que Prisma lee como «no tocar». Si ausente fuera
+// false, un formulario que no manda el campo le quitaría el permiso a un
+// supervisor en silencio al corregirle cualquier otro dato.
+//
+// Y lo que no es un booleano devuelve null, para responder 400: POST y PUT pasan
+// el cuerpo a Prisma sin lista blanca, así que un "true" en texto llegaría crudo
+// y saldría como un 500 sin explicación.
+function normalizarPermisoOtraSede(v) {
+    if (v === undefined)
+        return undefined;
+    return typeof v === 'boolean' ? v : null;
 }

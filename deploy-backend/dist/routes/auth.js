@@ -11,6 +11,7 @@ const suscripcion_1 = require("../utils/suscripcion");
 const planes_1 = require("../utils/planes");
 const correo_1 = require("../utils/correo");
 const afiliados_1 = require("../utils/afiliados");
+const sedesDeEmpresa_1 = require("../utils/sedesDeEmpresa");
 const DIA_MS = 24 * 60 * 60 * 1000;
 // Vencimiento de la sesión del panel (el kiosco usa su propio token de 12h)
 const SESION = '7d';
@@ -76,6 +77,8 @@ async function authRoutes(app) {
             await tx.suscripcion.create({
                 data: { empresaId: emp.id, estado: 'PRUEBA', finPrueba: new Date(Date.now() + suscripcion_1.DIAS_PRUEBA * DIA_MS) },
             });
+            // Quien trabaja presencial siempre tiene sede, así que la empresa nace con una.
+            await (0, sedesDeEmpresa_1.crearSedePrincipal)(tx, emp.id);
             const user = await tx.usuario.create({
                 data: {
                     email, password: hash, nombre, rol: 'ADMIN', empresaId: emp.id,

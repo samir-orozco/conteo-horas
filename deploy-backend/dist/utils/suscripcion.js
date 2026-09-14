@@ -13,7 +13,9 @@ exports.accesoPermitido = accesoPermitido;
 exports.calcularCobro = calcularCobro;
 exports.aplicarPagoAprobado = aplicarPagoAprobado;
 exports.causarComisionAfiliado = causarComisionAfiliado;
+exports.aplicarPlanDelPago = aplicarPlanDelPago;
 const planes_1 = require("./planes");
+const wompi_1 = require("./wompi");
 exports.DIAS_PRUEBA = 7;
 exports.DIAS_GRACIA_MORA = 5;
 const DIA_MS = 24 * 60 * 60 * 1000;
@@ -220,4 +222,16 @@ async function causarComisionAfiliado(prisma, empresaId, pago) {
             ? []
             : [prisma.empresa.update({ where: { id: empresaId }, data: { primerPagoComisionEn: fechaPago } })]),
     ]);
+}
+// Un pago de cambio de plan trae el plan destino en su referencia
+// (HP-<empresaId>-U<PLAN>-P<vencimiento>). Lo aplican los dos caminos por los que
+// entra un pago de Wompi, /suscripcion/confirmar y el webhook. Antes solo lo hacía
+// el primero, y quien pagaba el cambio con PSE o Nequi y cerraba la pestaña antes
+// de volver al sitio quedaba cobrado y en el plan viejo. Devuelve el plan aplicado.
+async function aplicarPlanDelPago(prisma, empresaId, referencia) {
+    const plan = (0, wompi_1.planDeReferencia)(referencia);
+    if (!plan || !(0, planes_1.esPlan)(plan))
+        return null;
+    await prisma.suscripcion.update({ where: { empresaId }, data: { plan } });
+    return plan;
 }

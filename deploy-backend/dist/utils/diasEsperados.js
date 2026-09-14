@@ -5,6 +5,7 @@ exports.combinarDiasEsperados = combinarDiasEsperados;
 const date_fns_tz_1 = require("date-fns-tz");
 const tardanzas_1 = require("./tardanzas");
 const saldoTiempo_1 = require("./saldoTiempo");
+const descansos_1 = require("./descansos");
 const TZ = 'America/Bogota';
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
 // Medianoche de Bogotá del día al que pertenece un instante.
@@ -44,6 +45,7 @@ function calcularDiasEsperados(desde, finExclusivo, horario) {
                 ajustaEntrada: horario?.ajustaEntrada ?? false,
                 almuerzoInicio: null,
                 almuerzoFin: null,
+                descansos: null,
             });
         }
         else {
@@ -56,6 +58,13 @@ function calcularDiasEsperados(desde, finExclusivo, horario) {
             const almuerzo = franja.tieneAlmuerzo
                 ? (conVentana ? (0, saldoTiempo_1.duracionFranjaMin)(ini, fin) : (horario.almuerzoMin ?? 0))
                 : 0;
+            // Los descansos no remunerados: la lista se congela en el orden de la jornada
+            // y la UNIÓN de sus ventanas sale de lo exigido. No dependen de `tieneAlmuerzo`
+            // (el sábado corto sin almuerzo puede tener descansos) ni tienen minutos fijos
+            // de respaldo. Una lista rota en la franja no revienta: el día queda sin
+            // descansos, como `leerDescansos` promete (12 de septiembre de 2026).
+            const ventanas = (0, descansos_1.ventanasEnOrden)(franja.horaEntrada, (0, descansos_1.leerDescansos)(franja.descansos));
+            const descanso = (0, descansos_1.minutosDeLaUnion)(franja.horaEntrada, ventanas);
             const bruto = (0, saldoTiempo_1.duracionFranjaMin)(franja.horaEntrada, franja.horaSalida);
             salida.push({
                 fecha: cursor,
@@ -64,7 +73,7 @@ function calcularDiasEsperados(desde, finExclusivo, horario) {
                 horaSalida: franja.horaSalida,
                 toleranciaMin: horario.toleranciaMin ?? 0,
                 almuerzoMin: almuerzo,
-                minutosEsperados: Math.max(0, bruto - almuerzo),
+                minutosEsperados: Math.max(0, bruto - almuerzo - descanso),
                 toleranciaSalidaMin: horario.toleranciaSalidaMin ?? 0,
                 ajustaEntrada: horario.ajustaEntrada ?? false,
                 // La ventana solo aplica si esta franja descuenta almuerzo. Ya NO depende
@@ -72,6 +81,7 @@ function calcularDiasEsperados(desde, finExclusivo, horario) {
                 // minutos que la ventana venía a reemplazar.
                 almuerzoInicio: franja.tieneAlmuerzo && conVentana ? ini : null,
                 almuerzoFin: franja.tieneAlmuerzo && conVentana ? fin : null,
+                descansos: (0, descansos_1.escribirDescansos)(ventanas),
             });
         }
         cursor = new Date(cursor.getTime() + UN_DIA_MS);

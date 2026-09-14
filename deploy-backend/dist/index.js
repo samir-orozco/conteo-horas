@@ -35,7 +35,8 @@ const cierreTurnos_1 = require("./utils/cierreTurnos");
 const contratos_2 = require("./routes/contratos");
 const cierreAlmuerzo_1 = require("./utils/cierreAlmuerzo");
 const materializarDias_1 = require("./utils/materializarDias");
-const suscripcion_2 = require("./utils/suscripcion");
+const accesoEmpresa_1 = require("./utils/accesoEmpresa");
+const respuestaDeError_1 = require("./utils/respuestaDeError");
 const esProduccion = process.env.NODE_ENV === 'production';
 // En producción los secretos NO pueden venir de valores por defecto del código
 if (esProduccion && !process.env.JWT_SECRET) {
@@ -89,15 +90,9 @@ app.decorate('requireEmpresa', async (request, reply) => {
         prisma_1.prisma.empresa.findUnique({ where: { id: payload.empresaId } }),
         prisma_1.prisma.suscripcion.findUnique({ where: { empresaId: payload.empresaId } }),
     ]);
-    if (!empresa?.activa) {
-        return reply.status(403).send({ error: 'Empresa inactiva' });
-    }
-    if (!empresa.exentaPago && suscripcion && !(0, suscripcion_2.accesoPermitido)((0, suscripcion_2.estadoEfectivo)(suscripcion))) {
-        return reply.status(402).send({
-            error: 'Suscripción suspendida por falta de pago. Contacta a HoraPro.',
-            codigo: 'SUSCRIPCION_SUSPENDIDA',
-        });
-    }
+    const negado = (0, accesoEmpresa_1.decidirAccesoEmpresa)(empresa, suscripcion);
+    if (negado)
+        return reply.status(negado.status).send(negado.cuerpo);
     request.empresaId = payload.empresaId;
     request.usuarioId = payload.id;
     request.usuarioNombre = payload.nombre;
@@ -128,6 +123,9 @@ app.decorate('requireAfiliado', async (request, reply) => {
     }
     request.afiliadoId = payload.afiliadoId;
 });
+// Lo que ninguna ruta atajó sale con un texto fijo y sin el mensaje interno; los 4xx salen como
+// siempre. Va antes de registrar las rutas para que lo hereden todas. Ver utils/respuestaDeError.ts.
+app.setErrorHandler(respuestaDeError_1.manejarError);
 app.register(auth_1.default, { prefix: '/api/auth' });
 app.register(colaboradores_1.default, { prefix: '/api/colaboradores' });
 app.register(registros_1.default, { prefix: '/api/registros' });
@@ -198,8 +196,8 @@ const start = async () => {
         // Almuerzos que quedaron sin regreso. No se cierran solos: la evidencia de
         // quien volvió y no marcó es idéntica a la de quien se fue para la casa, así
         // que darle la tarde por buena sería fabricar horas pagadas. Se avisa.
-        (0, cierreAlmuerzo_1.avisarAlmuerzosSinRegreso)(app.log);
-        setInterval(() => (0, cierreAlmuerzo_1.avisarAlmuerzosSinRegreso)(app.log), 24 * 60 * 60 * 1000);
+        (0, cierreAlmuerzo_1.avisarPausasSinRegreso)(app.log);
+        setInterval(() => (0, cierreAlmuerzo_1.avisarPausasSinRegreso)(app.log), 24 * 60 * 60 * 1000);
         // Vencimientos de contratos. Antes esto solo corría cuando alguien abría el
         // tablero, así que la empresa que no entraba no se enteraba. Al arrancar y
         // cada 24h, como los demás: en un hosting que duerme la app, el arranque es

@@ -10,40 +10,8 @@ const saldoTiempo_1 = require("../utils/saldoTiempo");
 // exactamente lo que el comentario de cabecera de documentos.ts dice que se
 // quiso evitar. Ahora las dos usan la misma función.
 const documentos_1 = require("../utils/documentos");
-// Campos que la empresa puede enviar (evita pasar basura a Prisma).
-//
-// Devuelve el motivo en vez de los datos cuando la evidencia no se acepta: la
-// ruta lo convierte en un 400. Antes se descartaba sin decir nada y la novedad
-// se guardaba sin el adjunto que la persona creía haber subido.
-function limpiarPermiso(data, esNuevo) {
-    const out = {};
-    if (esNuevo)
-        out.colaboradorId = data.colaboradorId;
-    if (data.tipo !== undefined)
-        out.tipo = data.tipo;
-    if (data.descripcion !== undefined)
-        out.descripcion = data.descripcion || null;
-    if (data.fechaInicio !== undefined)
-        out.fechaInicio = data.fechaInicio;
-    if (data.fechaFin !== undefined)
-        out.fechaFin = data.fechaFin;
-    if (data.aprobado !== undefined)
-        out.aprobado = data.aprobado;
-    const cambio = (0, documentos_1.cambioDeDocumento)(data.evidencia, data.evidenciaNombre);
-    if (cambio.accion === 'rechazar')
-        return { ok: false, motivo: cambio.motivo };
-    if (cambio.accion === 'quitar') {
-        out.evidencia = null;
-        out.evidenciaTipo = null;
-        out.evidenciaNombre = null;
-    }
-    else if (cambio.accion === 'guardar') {
-        out.evidencia = cambio.documento;
-        out.evidenciaTipo = cambio.tipo;
-        out.evidenciaNombre = cambio.nombre;
-    }
-    return { ok: true, datos: out };
-}
+// Los campos que la empresa puede enviar, revisados antes de pasárselos a Prisma.
+const cuerpoDePermiso_1 = require("../utils/cuerpoDePermiso");
 // El listado NO trae la evidencia (base64 pesado); solo el tipo/nombre para saber que existe.
 const SELECT_LISTA = {
     id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, tipo: true,
@@ -84,7 +52,7 @@ async function permisoRoutes(app) {
     app.post('/', auth, async (request, reply) => {
         const data = request.body;
         const col = await prisma_1.prisma.colaborador.findFirst({
-            where: { id: data.colaboradorId, empresaId: request.empresaId },
+            where: { id: data.colaboradorId, empresaId: request.empresaId }, select: { id: true },
         });
         if (!col)
             return reply.status(404).send({ error: 'Colaborador no encontrado' });
@@ -93,9 +61,10 @@ async function permisoRoutes(app) {
             if (!cap.features.evidencia)
                 return reply.status(403).send({ error: 'Adjuntar evidencia está disponible en el plan Profesional.', codigo: 'FUNCION_PLAN', funcion: 'evidencia' });
         }
-        const limpio = limpiarPermiso(data, true);
+        const limpio = (0, cuerpoDePermiso_1.limpiarPermiso)(data, true);
         if (!limpio.ok)
             return reply.status(400).send({ error: limpio.motivo });
+        // Al crear, limpiarPermiso ya exigió la persona, el tipo y las dos fechas.
         const permiso = await prisma_1.prisma.permiso.create({ data: limpio.datos });
         return reply.status(201).send(permiso);
     });
@@ -107,7 +76,7 @@ async function permisoRoutes(app) {
         if (!existente)
             return reply.status(404).send({ error: 'Permiso no encontrado' });
         const data = request.body;
-        const limpio = limpiarPermiso(data, false);
+        const limpio = (0, cuerpoDePermiso_1.limpiarPermiso)(data, false);
         if (!limpio.ok)
             return reply.status(400).send({ error: limpio.motivo });
         return prisma_1.prisma.permiso.update({ where: { id }, data: limpio.datos });

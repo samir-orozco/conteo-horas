@@ -156,11 +156,10 @@ async function suscripcionRoutes(app) {
             metodo: 'LINK_WOMPI',
             wompiTransaccionId: tx.id,
         });
-        // Si era un pago de cambio de plan, aplica el plan destino
-        const planUpg = (0, wompi_1.planDeReferencia)(tx.reference);
-        if (planUpg && (0, planes_1.esPlan)(planUpg)) {
-            await prisma_1.prisma.suscripcion.update({ where: { empresaId }, data: { plan: planUpg } });
-        }
+        // Si era un pago de cambio de plan, aplica el plan destino. Es la misma regla
+        // que usa el webhook, en utils/suscripcion.ts.
+        if (pago)
+            await (0, suscripcion_1.aplicarPlanDelPago)(prisma_1.prisma, empresaId, tx.reference);
         return { estado: 'APPROVED', pago };
     });
     // Verifica el pago por referencia (para cuando Wompi no pudo redirigir,

@@ -7,17 +7,11 @@ const prisma_1 = require("../prisma");
 const horasColombiana_1 = require("../utils/horasColombiana");
 const vigencias_1 = require("../utils/vigencias");
 const tardanzas_1 = require("../utils/tardanzas");
+const liquidarRegistros_1 = require("../utils/liquidarRegistros");
+const almuerzo_1 = require("../utils/almuerzo");
 const TZ = 'America/Bogota';
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
-// Minutos de almuerzo del registro: solo si la franja de ese día lo aplica.
-function almuerzoDelRegistro(horario, fecha) {
-    if (!horario || !horario.almuerzoMin)
-        return 0;
-    const z = (0, date_fns_tz_1.toZonedTime)(fecha, TZ);
-    const franja = (0, tardanzas_1.franjaDelDia)(horario, DIAS[z.getDay()]);
-    return franja && franja.tieneAlmuerzo ? horario.almuerzoMin : 0;
-}
 function claveDia(d) {
     const z = (0, date_fns_tz_1.toZonedTime)(d, TZ);
     return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
@@ -62,7 +56,7 @@ async function dashboardRoutes(app) {
             prisma_1.prisma.tipoHora.findMany(),
             prisma_1.prisma.permiso.findMany({
                 where: { aprobado: true, colaborador: { empresaId }, fechaInicio: { lte: finDia }, fechaFin: { gte: inicioDia } },
-                select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
+                select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
                     colaborador: { select: { nombre: true, apellido: true } } },
             }),
         ]);
@@ -75,8 +69,8 @@ async function dashboardRoutes(app) {
         const SEL_REG = {
             id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, tipo: true,
             // Sin esto el dashboard no puede distinguir a quien se fue a su casa de
-            // quien salió a almorzar, y los pintaba a los dos como "salida de hoy".
-            salidaAlmuerzo: true,
+            // quien salió a una pausa, y los pintaba a los dos como "salida de hoy".
+            salidaAlmuerzo: true, salidaDescanso: true,
             colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
         };
         const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto] = await Promise.all([
@@ -92,7 +86,7 @@ async function dashboardRoutes(app) {
             }),
             prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: { in: colIds }, fecha: { gte: inicioSemanaMes, lte: finDia }, salida: { not: null } },
-                select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true },
+                select: { id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, salidaAlmuerzo: true },
                 orderBy: { fecha: 'asc' },
             }),
             // IDs de las salidas de hoy que tienen foto de verificación (para el ícono de cámara)
@@ -118,12 +112,12 @@ async function dashboardRoutes(app) {
             cargo: r.colaborador.cargo,
             desde: r.entrada,
         }));
-        // ===== En descanso ahora (salió a almorzar y todavía no vuelve) =====
+        // ===== En una pausa ahora (salió a almorzar o a su descanso y no vuelve) =====
         //
         // Antes esta gente caía en "Salidas de hoy", en rojo, como quien se fue a su
-        // casa —y desaparecía del tablero mientras almorzaba—. Una salida al
-        // descanso no cierra la jornada: es la misma regla que `marcacionQueCierra`
-        // aplica en la columna de Salida, y el dashboard no puede contradecirla.
+        // casa —y desaparecía del tablero mientras almorzaba—. Una salida a una pausa
+        // no cierra la jornada: es la misma regla que `marcacionQueCierra` aplica en
+        // la columna de Salida, y el dashboard no puede contradecirla.
         const porColaborador = new Map();
         for (const r of registrosHoy) {
             const lista = porColaborador.get(r.colaboradorId);
@@ -139,20 +133,23 @@ async function dashboardRoutes(app) {
             if (enOrden.some(m => m.entrada && !m.salida))
                 continue;
             const ultima = [...enOrden].reverse().find(m => m.salida);
-            if (!ultima?.salidaAlmuerzo)
+            if (!ultima || (!ultima.salidaAlmuerzo && !ultima.salidaDescanso))
                 continue;
             enDescanso.push({
                 id: ultima.colaborador.id,
                 nombre: `${ultima.colaborador.nombre} ${ultima.colaborador.apellido}`,
                 cargo: ultima.colaborador.cargo,
+                // A cuál de las dos pausas salió: el tablero dice "almorzando" o "en su
+                // descanso", no una etiqueta que sirva para las dos.
+                pausa: ultima.salidaDescanso ? 'DESCANSO' : 'ALMUERZO',
                 desde: ultima.salida,
             });
         }
         // ===== Salidas de hoy (colaboradores que marcaron salida) =====
-        // Sin el filtro del descanso, quien salió a almorzar aparecía aquí como que
-        // había terminado su jornada.
+        // Sin el filtro de las pausas, quien salió a almorzar o a su descanso
+        // aparecía aquí como que había terminado su jornada.
         const salidasRecientes = registrosHoy
-            .filter(r => r.salida && !r.salidaAlmuerzo)
+            .filter(r => r.salida && !r.salidaAlmuerzo && !r.salidaDescanso)
             .sort((a, b) => b.salida.getTime() - a.salida.getTime())
             .map(r => ({
             registroId: r.id,
@@ -194,8 +191,9 @@ async function dashboardRoutes(app) {
                 continue;
             const entrada = primeraEntradaHoy.get(c.id);
             if (entrada) {
-                // Llegó tarde: la tardanza solo aplica si no tiene novedad que justifique el día
-                if (novedadHoyTipo.has(c.id))
+                // Llegó tarde: la tardanza solo aplica si no tiene una novedad que la
+                // justifique, con la misma regla del reporte de tardanzas.
+                if (permisosHoy.some(p => p.colaboradorId === c.id && (0, tardanzas_1.excusaLaTardanza)(p, ahora, franjaHoy.horaEntrada)))
                     continue;
                 const z = (0, date_fns_tz_1.toZonedTime)(entrada, TZ);
                 const llegadaMin = z.getHours() * 60 + z.getMinutes();
@@ -240,9 +238,21 @@ async function dashboardRoutes(app) {
         let minutosExtraMes = 0;
         let minutosTrabajadosSemana = 0;
         const claveSemanaActual = semanaKey(ahora);
-        // Horario de cada colaborador (para descontar almuerzo) + control 1 vez/día
+        // Horario de cada colaborador, para descontar el almuerzo. Lo que ya se cobró de cada
+        // día lo lleva `cobroDePausas`, la misma cuenta de la liquidación: la copia de aquí
+        // daba el día por cobrado con la primera fila que pagara algo (12 de septiembre de 2026).
         const horarioPorCol = new Map(colaboradores.map(c => [c.id, c.horario]));
-        const diasConAlmuerzo = new Set();
+        const cobrarAlmuerzo = (0, liquidarRegistros_1.cobroDePausas)();
+        // Cuánto almuerzo debe cada día de cada persona, con la regla de utils/almuerzo.ts: lo
+        // fijado menos lo que se tomó marcado. El panel no lee días congelados, así que lo fijado
+        // es el almuerzo del horario vigente, como siempre. El día es el de la fecha de la jornada.
+        const filasPorColDia = new Map();
+        for (const r of registrosMes) {
+            const k = `${r.colaboradorId}|${claveDia(r.fecha)}`;
+            filasPorColDia.set(k, [...(filasPorColDia.get(k) ?? []), r]);
+        }
+        const almuerzoPorColDia = new Map([...filasPorColDia].map(([k, filas]) => [k,
+            (0, almuerzo_1.minutosAlmuerzoADescontar)(filas, { almuerzoMin: (0, liquidarRegistros_1.almuerzoDelRegistro)(horarioPorCol.get(filas[0].colaboradorId), filas[0].fecha) })]));
         // Modo de horas extra (mismo criterio que el reporte de liquidación)
         const cfgModo = await prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } });
         const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
@@ -259,17 +269,9 @@ async function dashboardRoutes(app) {
                     continue;
                 const tiposDelDia = (0, vigencias_1.tiposVigentes)(r.fecha, tiposHoraTodos);
                 const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(r.entrada, r.salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana, extraConfigPorCol.get(r.colaboradorId));
-                let ordDelRegistro = minutosOrdinariosTrabajados;
-                const claveColDia = `${r.colaboradorId}|${claveDia(r.entrada)}`;
-                const almuerzo = almuerzoDelRegistro(horarioPorCol.get(r.colaboradorId), r.entrada);
-                if (almuerzo > 0 && !diasConAlmuerzo.has(claveColDia)) {
-                    const { descontado } = (0, horasColombiana_1.descontarAlmuerzo)(resultado, almuerzo);
-                    if (descontado > 0) {
-                        diasConAlmuerzo.add(claveColDia);
-                        ordDelRegistro = Math.max(0, ordDelRegistro - descontado);
-                    }
-                }
-                minutosOrdSemana += ordDelRegistro;
+                const claveColDia = `${r.colaboradorId}|${claveDia(r.fecha)}`;
+                const almuerzoCobrado = cobrarAlmuerzo(claveColDia, almuerzoPorColDia.get(claveColDia) ?? 0, m => (0, horasColombiana_1.descontarAlmuerzo)(resultado, m));
+                minutosOrdSemana += Math.max(0, minutosOrdinariosTrabajados - almuerzoCobrado);
                 for (const p of resultado) {
                     if (CODIGOS_EXTRA.has(p.codigo))
                         minutosExtraMes += p.minutos;

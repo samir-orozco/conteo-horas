@@ -32,9 +32,12 @@ function medianocheBogotaDe(d) {
 // Genera los días de UN colaborador en un rango. `respetarPasado` evita pisar lo
 // ya congelado: solo escribe donde no había fila.
 async function materializarColaborador(colaboradorId, desde, finExclusivo, opciones = {}) {
+    // Solo el horario y su id, que es lo que se escribe en cada día. Sin `select` venían todas las
+    // columnas de la persona, también sus fotos y su descriptor facial, en cada materialización
+    // (13 de septiembre de 2026).
     const colaborador = await prisma_1.prisma.colaborador.findUnique({
         where: { id: colaboradorId },
-        include: { horario: { include: { franjas: true } } },
+        select: { horarioId: true, horario: { include: { franjas: true } } },
     });
     if (!colaborador)
         return 0;
@@ -65,6 +68,7 @@ async function materializarColaborador(colaboradorId, desde, finExclusivo, opcio
                 toleranciaMin: d.toleranciaMin, almuerzoMin: d.almuerzoMin,
                 minutosEsperados: d.minutosEsperados, toleranciaSalidaMin: d.toleranciaSalidaMin,
                 ajustaEntrada: d.ajustaEntrada, almuerzoInicio: d.almuerzoInicio, almuerzoFin: d.almuerzoFin,
+                descansos: d.descansos,
                 // `origen` NO se toca al actualizar: es el único marcador que puede
                 // proteger un día ajustado a mano, y reescribirlo a AUTO lo borraría.
                 horarioId: colaborador.horarioId,
@@ -75,6 +79,7 @@ async function materializarColaborador(colaboradorId, desde, finExclusivo, opcio
                 toleranciaMin: d.toleranciaMin, almuerzoMin: d.almuerzoMin,
                 minutosEsperados: d.minutosEsperados, toleranciaSalidaMin: d.toleranciaSalidaMin,
                 ajustaEntrada: d.ajustaEntrada, almuerzoInicio: d.almuerzoInicio, almuerzoFin: d.almuerzoFin,
+                descansos: d.descansos,
                 horarioId: colaborador.horarioId, origen: 'AUTO',
             },
         });

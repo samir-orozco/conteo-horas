@@ -1,15 +1,8 @@
 "use strict";
-// Carga masiva de colaboradores desde el formato de Excel.
-//
-// La validación vive aquí, en el servidor, y NO en el navegador. La pantalla la
-// usa en seco (soloValidar) para pintar la vista previa, pero quien decide es
-// este archivo: un formulario se puede saltar, una ruta no.
-//
-// Todo se valida antes de crear nada. Con 40 filas y un error en la 37, crear
-// las 36 primeras deja a la empresa sin saber qué quedó y qué no.
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.COLUMNAS_FORMATO = void 0;
 exports.validarImportacion = validarImportacion;
+const largoDeColumna_1 = require("./largoDeColumna");
 // Las columnas del archivo, en orden. Es la misma lista que genera el formato
 // que se descarga, para que el que se baja y el que se valida no se separen.
 exports.COLUMNAS_FORMATO = [
@@ -122,6 +115,14 @@ function validarImportacion(filas, ctx) {
         };
         const horarioId = elegir(CLAVE_HORARIO, ctx.horariosValidos, 'jornada');
         const sedeId = elegir(CLAVE_SEDE, ctx.sedesValidas, 'sede');
+        // Lo que no cabe en su columna se dice aquí, en su celda. Antes pasaba la
+        // vista previa y MySQL rechazaba la transacción entera al crear. Cuánto cabe
+        // y cómo se cuenta está en largoDeColumna.ts, igual que para el alta.
+        for (const clave of Object.keys(largoDeColumna_1.TEXTOS_DEL_COLABORADOR)) {
+            const largo = (0, largoDeColumna_1.caracteres)(v(clave));
+            if (largo > largoDeColumna_1.MAX_CARACTERES)
+                err(clave, `Es muy largo: tiene ${largo} caracteres y caben ${largoDeColumna_1.MAX_CARACTERES}.`);
+        }
         if (rota)
             return;
         validas.push({
