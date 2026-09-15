@@ -38,8 +38,9 @@ export default function Marcador() {
   // que se lo pregunten.
   const [omitioUbicacion, setOmitioUbicacion] = useState(false);
 
-  // Estado del login/UI
-  const [modoRostro, setModoRostro] = useState(false);
+  // Estado del login/UI. Abre en el rostro aunque la empresa permita la cédula, que queda como
+  // segunda opción (decisión del dueño del 15 de septiembre de 2026).
+  const [modoRostro, setModoRostro] = useState(true);
   const [capturaKey, setCapturaKey] = useState(0);
   const [fotoRostro, setFotoRostro] = useState<string | null>(null);
   const [cedula, setCedula] = useState('');
@@ -81,7 +82,7 @@ export default function Marcador() {
     setOmitioUbicacion(false);
     setCedula('');
     setErrorLogin('');
-    setModoRostro(!permiteCedula); // si solo hay rostro, vuelve a la cámara
+    setModoRostro(true); // vuelve a la cámara, aunque quien marcó haya entrado con la cédula
     setFotoRostro(null);
     setCapturaKey(k => k + 1);
   };

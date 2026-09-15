@@ -24,7 +24,8 @@ type Props = {
   loading: boolean;
 };
 
-// Login por cédula o rostro (con pestañas si la empresa permite ambos).
+// Login por rostro o cédula (con pestañas si la empresa permite ambos). El rostro va primero y la
+// cédula es la segunda opción (decisión del dueño del 15 de septiembre de 2026).
 export default function PantallaLogin(p: Props) {
   return (
     <div className="min-h-screen bg-ink flex items-center justify-center p-4">
@@ -37,13 +38,13 @@ export default function PantallaLogin(p: Props) {
         {p.permiteCedula ? (
           <div className="flex justify-center mb-6">
             <div className="inline-flex bg-white/5 border border-white/10 rounded-full p-1">
-              <button type="button" onClick={p.onModoCedula}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${!p.modoRostro ? 'bg-white text-ink' : 'text-white/50 hover:text-white/80'}`}>
-                Cédula
-              </button>
               <button type="button" onClick={p.onModoRostro}
                 className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5 ${p.modoRostro ? 'bg-white text-ink' : 'text-white/50 hover:text-white/80'}`}>
                 <ScanFace size={15} /> Rostro
+              </button>
+              <button type="button" onClick={p.onModoCedula}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors ${!p.modoRostro ? 'bg-white text-ink' : 'text-white/50 hover:text-white/80'}`}>
+                Cédula
               </button>
             </div>
           </div>
