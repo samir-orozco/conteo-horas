@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = sedeRoutes;
 const prisma_1 = require("../prisma");
 const capacidades_1 = require("../utils/capacidades");
+const ubicacionDeSede_1 = require("../utils/ubicacionDeSede");
 const sedePrincipal_1 = require("../utils/sedePrincipal");
 // Coordenada válida o null. Una sede sin coordenadas no exige ubicación, que es
 // una configuración legítima (oficina sin GPS, o sede recién creada).
@@ -39,23 +40,34 @@ async function sedeRoutes(app) {
         const principal = (0, sedePrincipal_1.sedePrincipal)(sedes);
         return sedes.map(s => ({ ...s, principal: s.id === principal }));
     });
+    // Ponerle ubicación a una sede, moverla o cambiarle el radio exige el permiso de GPS del plan
+    // (15 de septiembre de 2026): una sede con ubicación activa la geocerca en el kiosco. Qué cuenta como
+    // cambio lo decide cambiaLaGeocerca, con sus pruebas.
+    const SIN_GPS = {
+        error: 'Tu plan no incluye la marcación por GPS. Puedes quitarle la ubicación a la sede, pero no ponérsela ni moverla.',
+        codigo: 'FUNCION_PLAN', funcion: 'gps',
+    };
     app.post('/', auth, async (request, reply) => {
         const body = (request.body ?? {});
         const nombre = body.nombre?.trim();
         if (!nombre)
             return reply.status(400).send({ error: 'El nombre de la sede es obligatorio' });
+        const campos = camposSede(body);
         const existentes = await prisma_1.prisma.sede.count({ where: { empresaId: request.empresaId, activa: true } });
-        if (existentes >= 1) {
+        const conGeocerca = (0, ubicacionDeSede_1.cambiaLaGeocerca)(null, campos);
+        if (existentes >= 1 || conGeocerca) {
             const cap = await (0, capacidades_1.capacidadesEmpresa)(request.empresaId);
-            if (!cap.features.multiSede) {
+            if (existentes >= 1 && !cap.features.multiSede) {
                 return reply.status(403).send({
                     error: 'Tu plan permite una sola sede. Sube a Empresarial para manejar varias.',
                     codigo: 'FUNCION_PLAN', funcion: 'multiSede',
                 });
             }
+            if (conGeocerca && !cap.features.gps)
+                return reply.status(403).send(SIN_GPS);
         }
         const sede = await prisma_1.prisma.sede.create({
-            data: { empresaId: request.empresaId, nombre, ...camposSede(body) },
+            data: { empresaId: request.empresaId, nombre, ...campos },
         });
         return reply.status(201).send(sede);
     });
@@ -68,7 +80,11 @@ async function sedeRoutes(app) {
         const nombre = body.nombre?.trim();
         if (!nombre)
             return reply.status(400).send({ error: 'El nombre de la sede es obligatorio' });
-        return prisma_1.prisma.sede.update({ where: { id }, data: { nombre, ...camposSede(body) } });
+        const campos = camposSede(body);
+        if ((0, ubicacionDeSede_1.cambiaLaGeocerca)(existente, campos) && !(await (0, capacidades_1.capacidadesEmpresa)(request.empresaId)).features.gps) {
+            return reply.status(403).send(SIN_GPS);
+        }
+        return prisma_1.prisma.sede.update({ where: { id }, data: { nombre, ...campos } });
     });
     // Se desactiva en vez de borrarse: los registros ya marcados apuntan a ella y
     // el reporte histórico tiene que poder seguir diciendo dónde ocurrió cada

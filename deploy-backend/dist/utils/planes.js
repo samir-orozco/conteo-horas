@@ -16,7 +16,9 @@ exports.FEATURES = [
     { key: 'multiDispositivo', label: 'Varios dispositivos de kiosco' },
     { key: 'multiHorario', label: 'Varios horarios' },
     { key: 'multiSede', label: 'Varias sedes' },
-    { key: 'siigo', label: 'Integración Siigo' },
+    // Siigo todavía no existe (decisión del dueño del 15 de septiembre de 2026): las pantallas del super
+    // admin la muestran como «Próximamente» y sin casilla que marcar.
+    { key: 'siigo', label: 'Integración Siigo', proximamente: true },
 ];
 const F = (on) => {
     const base = {};
