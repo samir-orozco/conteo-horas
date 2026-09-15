@@ -11,6 +11,9 @@ import Landing from './Landing';
 vi.mock('../lib/api', () => ({ default: { get: vi.fn(() => new Promise(() => {})) } }));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ usuario: null }) }));
 vi.mock('../components/VideoVSL', () => ({ default: () => <div>Video de HoraPro</div> }));
+// El scroll suave necesita un navegador de verdad (jsdom no trae ResizeObserver); se prueba aparte en
+// useScrollSuave.test.ts.
+vi.mock('../features/landing/useScrollSuave', () => ({ useScrollSuave: () => {} }));
 vi.mock('virtual:blog-recientes', () => ({
   default: [
     { slug: 'viejo', titulo: 'Artículo viejo', descripcion: 'Resumen viejo', categoria: 'Guías', fecha: '2026-08-01', imagen: '/blog/img/viejo.jpg', imagenAlt: 'Foto vieja' },

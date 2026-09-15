@@ -47,8 +47,10 @@ export default function MenuMovil({ abierto, onCerrar, conSesion, panelUrl, dias
 
   if (!abierto) return null;
 
+  // data-lenis-prevent: con el menú abierto, la rueda del mouse no mueve la página de atrás. El scroll
+  // suave de la landing (useScrollSuave) no mira el overflow del body que la frena.
   return (
-    <div id="menu-movil" role="dialog" aria-modal="true" aria-label="Menú" className="fixed inset-0 z-[60] flex flex-col bg-white">
+    <div id="menu-movil" role="dialog" aria-modal="true" aria-label="Menú" data-lenis-prevent className="fixed inset-0 z-[60] flex flex-col bg-white">
       <div className="h-16 px-5 flex items-center justify-between">
         {/* La P recortada y no la del círculo blanco: sobre el blanco el círculo no se ve, y la P
             quedaba chica y corrida a la derecha. */}

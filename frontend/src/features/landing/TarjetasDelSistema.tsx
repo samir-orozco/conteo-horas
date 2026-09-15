@@ -46,7 +46,7 @@ const PARTES = [
 
 export default function TarjetasDelSistema() {
   return (
-    <section id="funciones" aria-labelledby="titulo-funciones" className="bg-ink text-white">
+    <section id="funciones" aria-labelledby="titulo-funciones" className="bg-ink text-white scroll-mt-16">
       <div className="max-w-6xl mx-auto px-5 py-16 md:py-24">
         <div className="mb-12 hp-reveal">
           <h2 id="titulo-funciones" className="isolate text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">

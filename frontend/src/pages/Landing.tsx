@@ -6,7 +6,7 @@ import {
   Quote, Star, PlayCircle, Users, MessageCircle, Menu,
 } from 'lucide-react';
 import logoNegro from '../assets/logo-completo-negro.svg';
-import logoP from '../assets/logo-simplificado.svg';
+import logoPRecortada from '../assets/logo-p.svg';
 import MenuMovil from '../features/landing/MenuMovil';
 import imagenPortada from '../assets/landing/home-horapro.webp';
 import VideoVSL from '../components/VideoVSL';
@@ -17,6 +17,8 @@ import { Resaltado, Tachado } from '../features/landing/Marcas';
 import TarjetasDelSistema from '../features/landing/TarjetasDelSistema';
 import BlogReciente from '../features/landing/BlogReciente';
 import PieDePagina from '../features/landing/PieDePagina';
+import { useScrollSuave } from '../features/landing/useScrollSuave';
+import { useProgresoAlBajar } from '../features/landing/useProgresoAlBajar';
 
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
@@ -75,7 +77,7 @@ const PLANES_LANDING = [
   {
     id: 'EMPRESARIAL', nombre: 'Empresarial', mensual: 299900, anual: 2999000, limite: 150, destacado: false,
     para: 'Para operaciones grandes',
-    incluye: ['Hasta 150 colaboradores', 'Todo lo de Profesional', 'Integración Siigo (pronto)', 'Soporte prioritario'],
+    incluye: ['Hasta 150 colaboradores', 'Todo lo de Profesional', 'Integración Siigo (próximamente)', 'Soporte prioritario'],
   },
 ];
 const WPP_LANDING = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
@@ -94,20 +96,37 @@ export default function Landing() {
   // Estable: el menú la usa en un efecto, y una función nueva en cada render lo volvería a correr.
   const cerrarMenu = useCallback(() => setMenuAbierto(false), []);
   useReveal();
+  useScrollSuave();
+  const encabezado = useProgresoAlBajar<HTMLElement>();
 
   useEffect(() => { api.get('/auth/precios').then(r => setPrecios(r.data)).catch(() => {}); }, []);
 
   const dias = precios?.diasPrueba ?? 7;
   const panelUrl = usuario?.rol === 'SUPER_ADMIN' ? '/admin' : '/app';
 
+  // overflow-x-clip y no overflow-x-hidden: los dos evitan que la página se desborde de lado en el
+  // celular, pero hidden convierte este div en una caja con scroll propio y el encabezado sticky se
+  // pegaba a ella y no a la ventana, así que se iba con la página desde el 10 de julio de 2026. Visto el
+  // 15 de septiembre al probar el scroll suave; el dueño decidió que se quede fijo.
   return (
-    <div className="min-h-screen bg-white text-ink overflow-x-hidden">
+    <div className="min-h-screen bg-white text-ink overflow-x-clip">
       {/* Header, sobre el amarillo de la portada. En el celular no cabe entero: quedan la P de
           HoraPro, el botón de ingresar y un menú que tapa toda la pantalla (decisión del dueño del
           14 de septiembre de 2026). */}
-      <header className="sticky top-0 z-40 bg-primary/95 backdrop-blur border-b border-ink/10">
+      <header ref={encabezado} className="sticky top-0 z-40 backdrop-blur">
+        {/* Pasa de amarillo a un degradado blanco a la par del scroll: amarillo del todo solo arriba,
+            sobre la portada (decisiones del dueño del 15 de septiembre de 2026). El avance lo escribe
+            useProgresoAlBajar en --progreso, sin que React vuelva a pintar en cada cuadro. El blanco va
+            siempre debajo y lo que se desvanece es el amarillo de encima: cruzando las dos opacidades,
+            a mitad de camino el encabezado se transparentaba. Sin borde abajo: la línea gris no combinaba. */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-white via-white/95 to-white/80" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-primary"
+          style={{ opacity: 'calc(1 - var(--progreso, 0))' }} />
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
-          <img src={logoP} alt="HoraPro" className="h-9 w-9 md:hidden" />
+          {/* En el celular, la misma P recortada sobre el amarillo y sobre el blanco (decisión del dueño
+              del 15 de septiembre de 2026). La del círculo blanco no servía para los dos: sobre el blanco
+              el círculo no se ve y la P queda chica, como ya pasaba en el menú. */}
+          <img src={logoPRecortada} alt="HoraPro" className="h-8 w-auto md:hidden" />
           <img src={logoNegro} alt="HoraPro" className="hidden md:block h-8" />
           <nav className="flex items-center gap-2 sm:gap-3">
             <a href="#funciones" className="hidden lg:block text-sm font-medium text-ink/70 hover:text-ink px-3 py-2">Funciones</a>
@@ -121,7 +140,9 @@ export default function Landing() {
               <Link to={panelUrl} className="text-sm font-bold bg-ink hover:bg-ink/90 text-white px-4 py-2 rounded-xl">Ir a mi panel</Link>
             ) : (
               <>
-                <Link to="/login" className="text-sm font-bold md:font-semibold bg-ink md:bg-transparent text-white md:text-ink hover:bg-ink/90 md:hover:bg-white/40 px-4 py-2 rounded-xl">
+                {/* El hover oscurece un poco en vez de aclarar: sobre el encabezado blanco, un blanco
+                    translúcido no se veía. */}
+                <Link to="/login" className="text-sm font-bold md:font-semibold bg-ink md:bg-transparent text-white md:text-ink hover:bg-ink/90 md:hover:bg-ink/5 px-4 py-2 rounded-xl">
                   <span className="md:hidden">Ingresar</span><span className="hidden md:inline">Iniciar sesión</span>
                 </Link>
                 <Link to="/registro" className="hidden md:block text-sm font-bold bg-ink hover:bg-ink/90 text-white px-4 py-2 rounded-xl">Prueba gratis</Link>
@@ -129,7 +150,7 @@ export default function Landing() {
             )}
             <button type="button" onClick={() => setMenuAbierto(true)} aria-label="Abrir menú"
               aria-expanded={menuAbierto} aria-controls="menu-movil"
-              className="md:hidden -mr-2 p-2 rounded-xl text-ink hover:bg-white/40">
+              className="md:hidden -mr-2 p-2 rounded-xl text-ink hover:bg-ink/5">
               <Menu size={26} />
             </button>
           </nav>
@@ -232,7 +253,7 @@ export default function Landing() {
       </section>
 
       {/* Cómo funciona */}
-      <section id="como" className="bg-ink text-white">
+      <section id="como" className="bg-ink text-white scroll-mt-16">
         <div className="max-w-6xl mx-auto px-5 py-16 md:py-24">
           <div className="text-center max-w-xl mx-auto mb-12 hp-reveal">
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Tres pasos, cero enredos</h2>
@@ -284,7 +305,7 @@ export default function Landing() {
       </section>
 
       {/* Precios */}
-      <section id="precios" className="max-w-6xl mx-auto px-5 py-16 md:py-24">
+      <section id="precios" className="max-w-6xl mx-auto px-5 py-16 md:py-24 scroll-mt-16">
         <div className="text-center mb-8 hp-reveal">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Un plan para cada tamaño</h2>
           <p className="text-muted mt-3">Pagas por empresa, no por empleado. {dias} días gratis, sin tarjeta.</p>

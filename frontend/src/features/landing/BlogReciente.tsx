@@ -27,7 +27,7 @@ export default function BlogReciente() {
   };
 
   return (
-    <section id="blog" aria-labelledby="titulo-blog" className="bg-primary">
+    <section id="blog" aria-labelledby="titulo-blog" className="bg-primary scroll-mt-16">
       <div className="max-w-6xl mx-auto py-14 md:py-20">
         <div className="px-5 mb-8 flex items-end justify-between gap-4 hp-reveal">
           <div>
@@ -48,7 +48,9 @@ export default function BlogReciente() {
           </div>
         </div>
 
-        <ul ref={fila} aria-label="Artículos recientes"
+        {/* data-lenis-prevent-horizontal: al deslizar de lado con el trackpad, la fila se corre con el
+            scroll del navegador y el scroll suave de la página (useScrollSuave) no se la lleva hacia abajo. */}
+        <ul ref={fila} aria-label="Artículos recientes" data-lenis-prevent-horizontal
           className="hp-tabs-scroll flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-px-5 px-5 pb-3">
           {recientes.map(a => (
             <li key={a.slug} className="snap-start shrink-0 w-[250px] sm:w-[280px]">
