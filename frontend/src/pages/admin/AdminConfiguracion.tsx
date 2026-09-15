@@ -7,7 +7,7 @@ const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
 type PlanDef = { id: string; nombre: string; precioMensual: number; precioAnual: number; limite: number; features: Record<string, boolean> };
-type Data = { planes: Record<string, PlanDef>; funciones: { key: string; label: string }[]; orden: string[] };
+type Data = { planes: Record<string, PlanDef>; funciones: { key: string; label: string; proximamente?: boolean }[]; orden: string[] };
 
 // Editor de planes de la plataforma (precio, límite y funciones). Los cambios
 // aplican de inmediato al gating, la landing y los cobros nuevos.
@@ -84,10 +84,19 @@ export default function AdminConfiguracion() {
               <p className="text-xs font-semibold uppercase tracking-wide text-muted mt-5 mb-2">Funciones incluidas</p>
               <div className="space-y-1.5">
                 {data.funciones.map(f => (
-                  <label key={f.key} className="flex items-center gap-2.5 text-sm text-ink cursor-pointer">
-                    <input type="checkbox" checked={!!p.features[f.key]} onChange={e => setFeature(id, f.key, e.target.checked)} className="rounded" />
-                    {f.label}
-                  </label>
+                  // Lo que todavía no existe se ve, pero no se puede marcar (Siigo, 15 de septiembre de 2026).
+                  f.proximamente ? (
+                    <label key={f.key} className="flex items-center gap-2.5 text-sm text-muted cursor-not-allowed">
+                      <input type="checkbox" checked={false} disabled className="rounded" />
+                      {f.label}
+                      <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded-full">PRÓXIMAMENTE</span>
+                    </label>
+                  ) : (
+                    <label key={f.key} className="flex items-center gap-2.5 text-sm text-ink cursor-pointer">
+                      <input type="checkbox" checked={!!p.features[f.key]} onChange={e => setFeature(id, f.key, e.target.checked)} className="rounded" />
+                      {f.label}
+                    </label>
+                  )
                 ))}
               </div>
             </div>

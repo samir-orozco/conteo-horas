@@ -6,7 +6,7 @@ export type FeatureKey =
   | 'gps' | 'telegram' | 'evidencia' | 'exportar'
   | 'multiDispositivo' | 'multiHorario' | 'siigo' | 'multiSede';
 
-export const FEATURES: { key: FeatureKey; label: string }[] = [
+export const FEATURES: { key: FeatureKey; label: string; proximamente?: boolean }[] = [
   { key: 'gps', label: 'Marcación por GPS / geocerca' },
   { key: 'telegram', label: 'Alertas por Telegram' },
   { key: 'evidencia', label: 'Evidencia en novedades' },
@@ -14,7 +14,9 @@ export const FEATURES: { key: FeatureKey; label: string }[] = [
   { key: 'multiDispositivo', label: 'Varios dispositivos de kiosco' },
   { key: 'multiHorario', label: 'Varios horarios' },
   { key: 'multiSede', label: 'Varias sedes' },
-  { key: 'siigo', label: 'Integración Siigo' },
+  // Siigo todavía no existe (decisión del dueño del 15 de septiembre de 2026): las pantallas del super
+  // admin la muestran como «Próximamente» y sin casilla que marcar.
+  { key: 'siigo', label: 'Integración Siigo', proximamente: true },
 ];
 
 export type PlanId = 'ESENCIAL' | 'PROFESIONAL' | 'EMPRESARIAL';

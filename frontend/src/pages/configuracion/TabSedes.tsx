@@ -35,6 +35,9 @@ export default function TabSedes() {
   // La segunda sede en adelante exige plan Empresarial. La primera ya viene con la
   // empresa (la Sede principal), así que en un plan de una sola sede se edita esa.
   const bloqueado = !!plan && !plan.features.multiSede && sedes.length >= 1;
+  // Sin el permiso de GPS la ubicación de una sede se puede quitar, pero no poner ni mover (15 de
+  // septiembre de 2026): una sede con ubicación activa la geocerca en el kiosco. El servidor lo exige igual.
+  const sinGps = !!plan && !plan.features.gps;
 
   const abrir = (s?: Sede) => {
     setEditando(s ?? null);
@@ -205,12 +208,25 @@ export default function TabSedes() {
                         : 'Podrán marcar desde cualquier lugar.'}
                     </p>
                   </div>
-                  <button type="button" role="switch" aria-checked={form.exigeUbicacion}
+                  {/* Sin GPS se puede apagar, para quitarle la ubicación a la sede que ya la tenía, pero no prender. */}
+                  <button type="button" role="switch" aria-checked={form.exigeUbicacion} aria-label="Exigir ubicación para marcar"
+                    disabled={sinGps && !form.exigeUbicacion}
                     onClick={() => setForm(p => ({ ...p, exigeUbicacion: !p.exigeUbicacion }))}
-                    className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${form.exigeUbicacion ? 'bg-primary' : 'bg-gray-200'}`}>
+                    className={`relative w-12 h-7 rounded-full transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${form.exigeUbicacion ? 'bg-primary' : 'bg-gray-200'}`}>
                     <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${form.exigeUbicacion ? 'left-6' : 'left-1'}`} />
                   </button>
                 </div>
+
+                {sinGps && (
+                  <p className="text-xs text-muted flex items-start gap-1.5">
+                    <Lock size={13} className="mt-0.5 shrink-0" />
+                    <span>
+                      Tu plan no incluye la marcación por GPS: puedes quitarle la ubicación a la sede, pero no ponérsela ni moverla.{' '}
+                      <button type="button" onClick={() => navigate('/app/configuracion?tab=suscripcion')}
+                        className="font-semibold text-ink underline">Sube de plan</button>
+                    </span>
+                  </p>
+                )}
 
                 {form.exigeUbicacion && (
                   <div className="border-t border-gray-100 pt-3 space-y-3">
@@ -225,7 +241,8 @@ export default function TabSedes() {
                       </p>
                     </div>
 
-                    <button type="button" onClick={usarMiUbicacion} disabled={ubicando}
+                    {/* Sin GPS la ubicación que ya tenía se ve, pero no se mueve ni se le cambia el radio. */}
+                    <button type="button" onClick={usarMiUbicacion} disabled={ubicando || sinGps}
                       className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-ink bg-gray-100 hover:bg-gray-200 px-2.5 py-2 rounded-lg disabled:opacity-60">
                       <Crosshair size={13} /> {ubicando ? 'Buscando...' : 'Usar mi ubicación actual'}
                     </button>
@@ -234,12 +251,14 @@ export default function TabSedes() {
                       <div>
                         <label className="block text-xs font-medium text-muted mb-1">Latitud</label>
                         <input value={form.lat} onChange={e => setForm(p => ({ ...p, lat: e.target.value }))} placeholder="6.208700"
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" />
+                          disabled={sinGps}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono disabled:bg-gray-50 disabled:text-muted" />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted mb-1">Longitud</label>
                         <input value={form.lng} onChange={e => setForm(p => ({ ...p, lng: e.target.value }))} placeholder="-75.567400"
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono" />
+                          disabled={sinGps}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono disabled:bg-gray-50 disabled:text-muted" />
                       </div>
                     </div>
 
@@ -247,7 +266,8 @@ export default function TabSedes() {
                       <label className="block text-xs font-medium text-muted mb-1">Radio permitido (metros)</label>
                       <input type="number" min={20} max={5000} value={form.radio}
                         onChange={e => setForm(p => ({ ...p, radio: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                        disabled={sinGps}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50 disabled:text-muted" />
                       <p className="text-[11px] text-muted mt-1">
                         Recomendado <b>100–150 m</b>. Ni el mejor GPS es exacto, y un radio muy corto deja a
                         gente honesta sin poder marcar.

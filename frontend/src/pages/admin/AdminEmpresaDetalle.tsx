@@ -9,6 +9,7 @@ import { copiarTexto } from '../../lib/clipboard';
 import { descargarReciboPDF } from '../../lib/recibo';
 import VistaDeAdjunto from '../../components/VistaDeAdjunto';
 import { tipoDeDataUri } from '../../lib/archivos';
+import { funcionesDelPlan, funcionesExtra, cupoExtra, type CatalogoDePlanes } from '../../features/admin/planDeEmpresa';
 
 const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -34,21 +35,6 @@ type Empresa = {
     plan: string; cicloPago: string; limiteOverride: number | null;
   } | null;
 };
-
-const PLANES_OPC = [
-  { id: 'ESENCIAL', nombre: 'Esencial', limite: 10 },
-  { id: 'PROFESIONAL', nombre: 'Profesional', limite: 30 },
-  { id: 'EMPRESARIAL', nombre: 'Empresarial', limite: 150 },
-];
-const FEATURES = [
-  { key: 'gps', label: 'Marcación por GPS / geocerca' },
-  { key: 'telegram', label: 'Alertas por Telegram' },
-  { key: 'evidencia', label: 'Evidencia en novedades' },
-  { key: 'exportar', label: 'Exportar reportes' },
-  { key: 'multiDispositivo', label: 'Varios dispositivos de kiosco' },
-  { key: 'multiHorario', label: 'Varios horarios' },
-  { key: 'siigo', label: 'Integración Siigo' },
-];
 
 const ESTADO_CHIP: Record<string, string> = {
   PRUEBA: 'bg-primary/40 text-ink',
@@ -76,6 +62,9 @@ export default function AdminEmpresaDetalle() {
   const [feats, setFeats] = useState<Record<string, boolean>>({});
   const [guardandoPlan, setGuardandoPlan] = useState(false);
   const [verificando, setVerificando] = useState('');
+  // Los planes con su cupo, precio y funciones como están en «Precios», y la lista de funciones, salen
+  // del servidor (15 de septiembre de 2026). Antes iban copiados aquí y se habían quedado atrás.
+  const [catalogo, setCatalogo] = useState<CatalogoDePlanes | null>(null);
 
   const cargar = useCallback(() => {
     if (id) api.get(`/admin/empresas/${id}`).then(r => {
@@ -88,20 +77,14 @@ export default function AdminEmpresaDetalle() {
     });
   }, [id]);
   useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { api.get('/admin/planes').then(r => setCatalogo(r.data)); }, []);
 
-  // Defaults por plan (deben coincidir con el backend)
-  const PLAN_FEATS: Record<string, string[]> = {
-    ESENCIAL: [],
-    PROFESIONAL: ['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario'],
-    EMPRESARIAL: ['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo'],
-  };
-  // Al cambiar de plan, se reinician funciones y límite a lo que trae ese plan
+  // Al cambiar de plan, el cupo y las funciones vuelven a lo que trae ese plan.
   const cambiarPlan = (nuevo: string) => {
     setPlan(nuevo);
-    const opc = PLANES_OPC.find(p => p.id === nuevo);
-    setLimite(opc?.limite ?? 30);
-    const on = new Set(PLAN_FEATS[nuevo] ?? []);
-    setFeats(Object.fromEntries(FEATURES.map(f => [f.key, on.has(f.key)])));
+    if (!catalogo) return;
+    setLimite(catalogo.planes[nuevo]?.limite ?? limite);
+    setFeats(funcionesDelPlan(catalogo, nuevo));
   };
 
   const verificarUsuario = async (usuarioId: string) => {
@@ -117,20 +100,14 @@ export default function AdminEmpresaDetalle() {
   };
 
   const guardarPlan = async () => {
-    if (!id) return;
+    if (!id || !catalogo) return;
     setGuardandoPlan(true);
-    const opc = PLANES_OPC.find(p => p.id === plan);
-    const defaultOn = new Set(PLAN_FEATS[plan] ?? []);
-    // Solo mandamos como override lo que difiere del plan
-    const funcionesOverride: Record<string, boolean> = {};
-    for (const f of FEATURES) {
-      if (!!feats[f.key] !== defaultOn.has(f.key)) funcionesOverride[f.key] = !!feats[f.key];
-    }
     try {
+      // Solo va como «a la medida» lo que difiere del plan tal como está en «Precios».
       await api.put(`/admin/empresas/${id}/plan`, {
         plan, cicloPago: ciclo,
-        limiteOverride: limite === (opc?.limite ?? 30) ? null : limite,
-        funcionesOverride: Object.keys(funcionesOverride).length ? funcionesOverride : null,
+        limiteOverride: cupoExtra(catalogo, plan, limite),
+        funcionesOverride: funcionesExtra(catalogo, plan, feats),
       });
       setToast('Plan actualizado');
       cargar();
@@ -230,7 +207,10 @@ export default function AdminEmpresaDetalle() {
                 <label className="block text-xs font-medium text-muted mb-1">Plan</label>
                 <select value={plan} onChange={e => cambiarPlan(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                  {PLANES_OPC.map(p => <option key={p.id} value={p.id}>{p.nombre} · {cop((p.id === 'ESENCIAL' ? 99900 : p.id === 'PROFESIONAL' ? 169900 : 299900))}/mes</option>)}
+                  {(catalogo?.orden ?? [plan]).map(idPlan => {
+                    const p = catalogo?.planes[idPlan];
+                    return <option key={idPlan} value={idPlan}>{p ? `${p.nombre} · ${cop(p.precioMensual)}/mes` : idPlan}</option>;
+                  })}
                 </select>
               </div>
               <div>
@@ -250,9 +230,20 @@ export default function AdminEmpresaDetalle() {
 
             <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Funciones activas</p>
             <div className="grid sm:grid-cols-2 gap-2 mb-5">
-              {FEATURES.map(f => {
+              {!catalogo && <p className="text-sm text-muted">Cargando planes...</p>}
+              {catalogo?.funciones.map(f => {
+                // Lo que todavía no existe se ve, pero no se puede marcar (Siigo, 15 de septiembre de 2026).
+                if (f.proximamente) {
+                  return (
+                    <label key={f.key} className="flex items-center gap-2.5 rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-muted cursor-not-allowed">
+                      <input type="checkbox" checked={false} disabled className="rounded" />
+                      <span className="flex-1">{f.label}</span>
+                      <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded-full">PRÓXIMAMENTE</span>
+                    </label>
+                  );
+                }
                 const activa = !!feats[f.key];
-                const extra = activa && !(PLAN_FEATS[plan] ?? []).includes(f.key);
+                const extra = activa && !funcionesDelPlan(catalogo, plan)[f.key];
                 return (
                   <label key={f.key} className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 cursor-pointer text-sm ${activa ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'}`}>
                     <input type="checkbox" checked={activa} onChange={e => setFeats(p => ({ ...p, [f.key]: e.target.checked }))} className="rounded" />

@@ -10,7 +10,7 @@ type CheckoutData = { url: string; publicKey: string; currency: string; amountIn
 const PLANES_UI = [
   { id: 'ESENCIAL', nombre: 'Esencial', mensual: 99900, limite: 10, incluye: ['Hasta 10 colaboradores', 'Rostro o cédula', 'Liquidación y reportes'] },
   { id: 'PROFESIONAL', nombre: 'Profesional', mensual: 169900, limite: 30, incluye: ['Hasta 30 colaboradores', 'GPS + Telegram', 'Evidencia y exportar'] },
-  { id: 'EMPRESARIAL', nombre: 'Empresarial', mensual: 299900, limite: 150, incluye: ['Hasta 150 colaboradores', 'Todo lo Profesional', 'Siigo (pronto) + prioritario'] },
+  { id: 'EMPRESARIAL', nombre: 'Empresarial', mensual: 299900, limite: 150, incluye: ['Hasta 150 colaboradores', 'Todo lo Profesional', 'Siigo (próximamente) + prioritario'] },
 ];
 const WPP_150 = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
 

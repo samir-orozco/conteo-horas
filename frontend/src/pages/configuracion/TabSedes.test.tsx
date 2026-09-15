@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../../lib/api', () => ({ default: { get: vi.fn(), delete: vi.fn(), post: vi.fn(), put: vi.fn() } }));
 import api from '../../lib/api';
+import { invalidarMiPlan } from '../../lib/plan';
 import TabSedes from './TabSedes';
 
 // LO QUE DICE LA PESTAÑA DE SEDES SOBRE LA SEDE PRINCIPAL.
@@ -64,5 +65,52 @@ describe('TabSedes y la Sede principal', () => {
     montar();
     expect(await screen.findByTitle('Quien trabaja presencial y no tiene ninguna sede elegida se cuenta en esta'))
       .toHaveTextContent('PRINCIPAL');
+  });
+});
+
+// SIN EL PERMISO DE GPS (15 de septiembre de 2026). Una sede con ubicación activa la geocerca en el
+// kiosco, así que ponérsela o moverla es parte de la marcación por GPS del plan. Quitarla sí se puede.
+// El servidor lo exige igual (routes/sedes.gps.test.ts); aquí se prueba que la pantalla no lo ofrezca.
+describe('TabSedes sin el permiso de GPS', () => {
+  const conPlan = (features: Record<string, boolean>, sedes: object[] = SEDES) => {
+    invalidarMiPlan();
+    get.mockImplementation((url: string) => {
+      if (url === '/sedes') return Promise.resolve({ data: sedes });
+      if (url === '/suscripcion/mi-plan') {
+        return Promise.resolve({ data: { plan: 'ESENCIAL', nombrePlan: 'Esencial', ilimitado: false, limite: 10, features } });
+      }
+      return Promise.reject(new Error('url inesperada: ' + url));
+    });
+  };
+
+  it('una sede nueva no puede exigir ubicación, y la pantalla dice por qué', async () => {
+    conPlan({ multiSede: true, gps: false });
+    const u = userEvent.setup();
+    montar();
+    await u.click(await screen.findByRole('button', { name: /nueva sede/i }));
+    expect(await screen.findByText(/tu plan no incluye la marcación por gps/i)).toBeInTheDocument();
+    expect(screen.getByRole('switch')).toBeDisabled();
+  });
+
+  it('a la sede que ya tenía ubicación se la puede quitar, pero no mover', async () => {
+    conPlan({ multiSede: false, gps: false }, [{ ...SEDES[1], lat: 6.2087, lng: -75.5674 }]);
+    const u = userEvent.setup();
+    montar();
+    await u.click(await screen.findByRole('button', { name: 'Editar' }));
+    expect(await screen.findByText(/tu plan no incluye la marcación por gps/i)).toBeInTheDocument();
+    expect(screen.getByRole('switch')).toBeEnabled();
+    expect(screen.getByPlaceholderText('6.208700')).toBeDisabled();
+    expect(screen.getByPlaceholderText('-75.567400')).toBeDisabled();
+    expect(screen.getByRole('button', { name: /usar mi ubicación actual/i })).toBeDisabled();
+    expect(screen.getByRole('spinbutton')).toBeDisabled();
+  });
+
+  it('con el permiso de GPS, la ubicación se puede poner', async () => {
+    conPlan({ multiSede: true, gps: true });
+    const u = userEvent.setup();
+    montar();
+    await u.click(await screen.findByRole('button', { name: /nueva sede/i }));
+    await u.click(screen.getByRole('switch'));
+    expect(screen.getByPlaceholderText('6.208700')).toBeEnabled();
   });
 });
