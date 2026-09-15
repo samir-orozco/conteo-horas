@@ -1,5 +1,6 @@
 import { AUTOR, SITIO } from './articulos/index.mjs';
 import { PRIVACIDAD } from './legal/privacidad.mjs';
+import { REDES } from './redes.mjs';
 
 const esc = (s = '') => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -296,9 +297,11 @@ function pie() {
   // El enlace a la política sale solo cuando deja de ser borrador. Un documento
   // legal a medias, enlazado desde todas las páginas, es peor que no tenerlo.
   const privacidad = PRIVACIDAD.borrador ? '' : ` · <a href="${PRIVACIDAD.ruta}">Privacidad</a>`;
+  // Las redes de HoraPro (14 de septiembre de 2026), de la misma lista que el pie de la landing.
+  const redes = REDES.map(r => ` · <a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.nombre)}</a>`).join('');
   return `<footer class="pie"><div class="env">
     <span>© ${anio} HoraPro · Un producto de Krumlab</span>
-    <span><a href="/">Inicio</a> · <a href="/#precios">Precios</a> · <a href="/calculadoras/">Calculadoras</a> · <a href="/blog/">Blog</a>${privacidad}</span>
+    <span><a href="/">Inicio</a> · <a href="/#precios">Precios</a> · <a href="/calculadoras/">Calculadoras</a> · <a href="/blog/">Blog</a>${privacidad}${redes}</span>
   </div></footer>`;
 }
 

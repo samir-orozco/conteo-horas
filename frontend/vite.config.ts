@@ -2,11 +2,32 @@
 // más la sección `test`. Con el de vite, tsc rechaza `test` como propiedad
 // desconocida, y este proyecto compila con `tsc -b`, que es estricto.
 import { defineConfig } from 'vitest/config'
+import type { Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { ARTICULOS } from './blog/articulos/index.mjs'
+
+// Lo que la landing muestra del blog (14 de septiembre de 2026), sacado de los mismos
+// artículos con los que scripts/generar-blog.mjs arma las páginas. Va como módulo
+// virtual para que al paquete de la landing llegue solo la portada de cada artículo y
+// no su cuerpo, que son decenas de kilobytes de HTML. Un artículo nuevo aparece al
+// volver a compilar o al reiniciar el servidor de desarrollo.
+function blogRecientes(): Plugin {
+  const id = 'virtual:blog-recientes'
+  return {
+    name: 'horapro-blog-recientes',
+    resolveId: fuente => (fuente === id ? `\0${id}` : null),
+    load: cual => {
+      if (cual !== `\0${id}`) return null
+      const portadas = ARTICULOS.map(({ slug, titulo, descripcion, categoria, fecha, imagen, imagenAlt }) =>
+        ({ slug, titulo, descripcion, categoria, fecha, imagen, imagenAlt }))
+      return `export default ${JSON.stringify(portadas)};`
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), blogRecientes()],
   test: {
     // jsdom y no el entorno de Node: aquí se prueban componentes, y sin un DOM
     // no hay dónde montarlos.

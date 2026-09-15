@@ -1,18 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calculator, ScanFace, CalendarCheck, AlarmClock,
-  ArrowRight, Check, ChevronDown, ShieldCheck, MapPin, MonitorSmartphone, Sparkles,
-  Send, Quote, Star, PlayCircle, Users,
+  ArrowRight, Check, ChevronDown, ShieldCheck, MonitorSmartphone, Sparkles,
+  Quote, Star, PlayCircle, Users, MessageCircle, Menu,
 } from 'lucide-react';
-import logoCompleto from '../assets/logo-completo.svg';
-import GeoArt from '../components/GeoArt';
-import CreditoKrumlab from '../components/CreditoKrumlab';
-import { POLITICA_PRIVACIDAD } from '../lib/legal';
+import logoNegro from '../assets/logo-completo-negro.svg';
+import logoP from '../assets/logo-simplificado.svg';
+import MenuMovil from '../features/landing/MenuMovil';
+import imagenPortada from '../assets/landing/home-horapro.webp';
 import VideoVSL from '../components/VideoVSL';
 import BotonWhatsApp from '../components/BotonWhatsApp';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { Resaltado, Tachado } from '../features/landing/Marcas';
+import TarjetasDelSistema from '../features/landing/TarjetasDelSistema';
+import BlogReciente from '../features/landing/BlogReciente';
+import PieDePagina from '../features/landing/PieDePagina';
 
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
@@ -30,15 +34,6 @@ function useReveal() {
     return () => io.disconnect();
   }, []);
 }
-
-const BENEFICIOS = [
-  { icon: Calculator, titulo: 'Liquidación automática', texto: 'Recargos nocturnos, dominicales, festivos y horas extra según la Ley 2466. Cero errores de cálculo, cero horas en Excel.' },
-  { icon: ScanFace, titulo: 'Marcación con rostro', texto: 'Marcan con la cara, no con un código que se presta. Cada registro guarda la foto de quien marcó, y tú decides desde qué dispositivo y desde qué ubicación se puede marcar.' },
-  { icon: MapPin, titulo: 'Marcación por GPS', texto: 'Deja que marquen desde su propio celular, pero solo estando dentro de la ubicación de la empresa (geocerca).' },
-  { icon: AlarmClock, titulo: 'Control en tiempo real', texto: 'Quién está en planta, quién llegó tarde y quién no ha marcado, al instante y desde tu celular.' },
-  { icon: Send, titulo: 'Alertas por Telegram', texto: 'Recibe un aviso apenas alguien llega tarde. Enterarte deja de depender de que te avisen.' },
-  { icon: CalendarCheck, titulo: 'Ley y festivos al día', texto: 'Jornada de 42h, recargos de la reforma laboral y festivos colombianos, siempre actualizados por nosotros.' },
-];
 
 // Testimonios de clientes (van con nombre y empresa reales)
 const TESTIMONIOS = [
@@ -85,15 +80,19 @@ const PLANES_LANDING = [
 ];
 const WPP_LANDING = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
 
-function Cuenta({ children }: { children: React.ReactNode }) {
-  return <span className="tabular-nums">{children}</span>;
-}
+// Las ondas de la portada (14 de septiembre de 2026), como la franja del ejemplo de Weav: cierran el
+// amarillo contra la franja de confianza, y la franja contra el blanco, sin un corte recto. Las dos usan
+// el mismo trazo a todo el ancho, así que van paralelas y la franja queda del mismo grueso.
+const ONDAS = `M0 56 V28 ${Array.from({ length: 12 }, (_, i) => `Q ${i * 100 + 50} ${i % 2 ? 56 : 0} ${(i + 1) * 100} 28`).join(' ')} V56 Z`;
 
 export default function Landing() {
   const { usuario } = useAuth();
   const [precios, setPrecios] = useState<Precios | null>(null);
   const [faqAbierto, setFaqAbierto] = useState<number | null>(0);
   const [anual, setAnual] = useState(false);
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  // Estable: el menú la usa en un efecto, y una función nueva en cada render lo volvería a correr.
+  const cerrarMenu = useCallback(() => setMenuAbierto(false), []);
   useReveal();
 
   useEffect(() => { api.get('/auth/precios').then(r => setPrecios(r.data)).catch(() => {}); }, []);
@@ -103,130 +102,132 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-white text-ink overflow-x-hidden">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
+      {/* Header, sobre el amarillo de la portada. En el celular no cabe entero: quedan la P de
+          HoraPro, el botón de ingresar y un menú que tapa toda la pantalla (decisión del dueño del
+          14 de septiembre de 2026). */}
+      <header className="sticky top-0 z-40 bg-primary/95 backdrop-blur border-b border-ink/10">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
-          <img src={logoCompleto} alt="HoraPro" className="h-8" />
+          <img src={logoP} alt="HoraPro" className="h-9 w-9 md:hidden" />
+          <img src={logoNegro} alt="HoraPro" className="hidden md:block h-8" />
           <nav className="flex items-center gap-2 sm:gap-3">
-            <a href="#precios" className="hidden sm:block text-sm font-medium text-muted hover:text-ink px-3 py-2">Precios</a>
+            <a href="#funciones" className="hidden lg:block text-sm font-medium text-ink/70 hover:text-ink px-3 py-2">Funciones</a>
+            <a href="#precios" className="hidden md:block text-sm font-medium text-ink/70 hover:text-ink px-3 py-2">Precios</a>
             {/* <a> y no <Link>: el blog y las calculadoras son páginas estáticas
                 fuera de la SPA, así que necesitan una navegación real del
                 navegador. */}
-            <a href="/calculadoras/" className="hidden md:block text-sm font-medium text-muted hover:text-ink px-3 py-2">Calculadoras</a>
-            <a href="/blog/" className="hidden sm:block text-sm font-medium text-muted hover:text-ink px-3 py-2">Blog</a>
+            <a href="/calculadoras/" className="hidden md:block text-sm font-medium text-ink/70 hover:text-ink px-3 py-2">Calculadoras</a>
+            <a href="/blog/" className="hidden md:block text-sm font-medium text-ink/70 hover:text-ink px-3 py-2">Blog</a>
             {usuario ? (
-              <Link to={panelUrl} className="text-sm font-bold bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl">Ir a mi panel</Link>
+              <Link to={panelUrl} className="text-sm font-bold bg-ink hover:bg-ink/90 text-white px-4 py-2 rounded-xl">Ir a mi panel</Link>
             ) : (
               <>
-                <Link to="/login" className="text-sm font-semibold text-ink px-4 py-2 rounded-xl hover:bg-gray-100">Iniciar sesión</Link>
-                <Link to="/registro" className="text-sm font-bold bg-primary hover:bg-primary-dark text-ink px-4 py-2 rounded-xl">Prueba gratis</Link>
+                <Link to="/login" className="text-sm font-bold md:font-semibold bg-ink md:bg-transparent text-white md:text-ink hover:bg-ink/90 md:hover:bg-white/40 px-4 py-2 rounded-xl">
+                  <span className="md:hidden">Ingresar</span><span className="hidden md:inline">Iniciar sesión</span>
+                </Link>
+                <Link to="/registro" className="hidden md:block text-sm font-bold bg-ink hover:bg-ink/90 text-white px-4 py-2 rounded-xl">Prueba gratis</Link>
               </>
             )}
+            <button type="button" onClick={() => setMenuAbierto(true)} aria-label="Abrir menú"
+              aria-expanded={menuAbierto} aria-controls="menu-movil"
+              className="md:hidden -mr-2 p-2 rounded-xl text-ink hover:bg-white/40">
+              <Menu size={26} />
+            </button>
           </nav>
         </div>
       </header>
+      <MenuMovil abierto={menuAbierto} onCerrar={cerrarMenu} conSesion={!!usuario} panelUrl={panelUrl} dias={dias} />
 
-      {/* Hero */}
-      <section className="relative max-w-6xl mx-auto px-5 pt-12 pb-16 md:pt-20 md:pb-24 grid md:grid-cols-2 gap-10 items-center">
-        <div className="relative z-10">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide bg-primary/30 text-ink px-3 py-1.5 rounded-full mb-5">
-            <Sparkles size={13} /> Hecho para Colombia
-          </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold leading-[1.08] tracking-tight">
-            Control de horarios y <span className="relative sm:whitespace-nowrap">
-              <span className="relative z-10">liquidación de nómina</span>
-              <span className="absolute left-0 bottom-1 h-3 w-full bg-primary/60 -z-0" />
-            </span> sin hacer cuentas.
-          </h1>
-          <p className="text-lg text-muted mt-5 max-w-md">
-            HoraPro hace la <b className="text-ink">liquidación de nómina automática</b> de recargos, horas extra, dominicales y festivos, según la Ley 2466. Cero errores, cero horas en Excel.
-          </p>
-          <div className="flex flex-wrap items-center gap-3 mt-8">
-            {usuario ? (
-              <Link to={panelUrl} className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold px-6 py-3.5 rounded-xl text-base">
-                Ir a mi panel <ArrowRight size={18} />
-              </Link>
-            ) : (
-              <Link to="/registro" className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-ink font-bold px-6 py-3.5 rounded-xl text-base">
-                Prueba gratis {dias} días <ArrowRight size={18} />
-              </Link>
-            )}
-            <a href="#como" className="font-semibold text-ink px-5 py-3.5 rounded-xl hover:bg-gray-100">Ver cómo funciona</a>
-          </div>
-          {!usuario && <p className="text-xs text-muted mt-3">Sin tarjeta · cancela cuando quieras · <b className="text-ink">precio por empresa, no por empleado</b> · soporte por WhatsApp</p>}
-
-          {/* Prueba visual también en móvil (en desktop se muestra la tarjeta flotante) */}
-          <div className="md:hidden mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-5">
-            <p className="text-xs text-muted flex items-center gap-1.5"><Calculator size={13} /> Total a pagar · junio</p>
-            <p className="text-3xl font-extrabold mt-1"><Cuenta>{cop(2101591)}</Cuenta></p>
-            <div className="mt-3 space-y-1.5 text-xs">
-              <div className="flex justify-between"><span className="text-muted">Recargos</span><span className="font-medium">{cop(101818)}</span></div>
-              <div className="flex justify-between"><span className="text-muted">Horas extra</span><span className="font-medium">{cop(249773)}</span></div>
-              <div className="flex justify-between border-t border-gray-100 pt-1.5"><span className="text-muted">Salario base</span><span className="font-medium">{cop(1750000)}</span></div>
+      {/* Hero, en amarillo y con el celular (decisión del dueño del 14 de septiembre de 2026) */}
+      <section className="relative bg-primary overflow-hidden">
+        <div className="relative z-10 max-w-6xl mx-auto px-5 pt-10 md:pt-16 grid md:grid-cols-[1.3fr_1fr] gap-4 md:gap-8 items-end">
+          <div className="pb-2 md:pb-32">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide bg-white/60 text-ink px-3 py-1.5 rounded-full mb-5">
+              <Sparkles size={13} /> Hecho para Colombia
+            </span>
+            <h1 className="isolate text-4xl md:text-5xl xl:text-6xl font-extrabold leading-[1.05] tracking-tight text-ink">
+              Control de horarios y <Resaltado tono="blanco">liquidación de nómina</Resaltado> sin hacer cuentas.
+            </h1>
+            {/* Menos texto (decisión del dueño del 14 de septiembre de 2026): el párrafo va sin la ley, y
+                debajo de los botones queda solo para quién es. La línea de «sin tarjeta · precio por
+                empresa · soporte por WhatsApp» se quitó porque la franja de abajo dice lo mismo. */}
+            <p className="text-lg text-ink/80 mt-6 max-w-lg">
+              HoraPro hace la <b className="text-ink">liquidación de nómina automática</b>: recargos, horas extra, dominicales y festivos, sin errores y sin Excel.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 mt-8">
+              {usuario ? (
+                <Link to={panelUrl} className="flex items-center gap-2 bg-ink hover:bg-ink/90 text-white font-bold px-6 py-3.5 rounded-xl text-base">
+                  Ir a mi panel <ArrowRight size={18} />
+                </Link>
+              ) : (
+                <Link to="/registro" className="flex items-center gap-2 bg-ink hover:bg-ink/90 text-white font-bold px-6 py-3.5 rounded-xl text-base">
+                  Prueba gratis {dias} días <ArrowRight size={18} />
+                </Link>
+              )}
+              <a href="#como" className="font-semibold text-ink px-5 py-3.5 rounded-xl bg-white/50 hover:bg-white/70">Ver cómo funciona</a>
             </div>
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-green-700 font-medium"><Check size={13} /> Calculado automáticamente</div>
+            {/* Para quién es (ICP) */}
+            <p className="text-sm text-ink/75 mt-5">
+              Ideal para <b className="text-ink">restaurantes, tiendas, clínicas, obras, vigilancia y call centers</b>.
+            </p>
           </div>
-
-          {/* Para quién es (ICP) */}
-          <p className="text-sm text-muted mt-8">
-            Control de horarios de trabajadores ideal para <b className="text-ink">restaurantes, tiendas, clínicas, obras, vigilancia, call centers</b> y todo negocio con turnos.
-          </p>
-        </div>
-        {/* La composición animada solo en pantallas medianas+: en móvil ocupaba media pantalla */}
-        <div className="relative hidden md:block md:h-96">
-          <GeoArt className="absolute inset-0" />
-          {/* Tarjeta flotante de muestra */}
-          <div className="hp-float absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl border border-gray-100 p-5 w-64">
-            <p className="text-xs text-muted flex items-center gap-1.5"><Calculator size={13} /> Total a pagar · junio</p>
-            <p className="text-3xl font-extrabold mt-1"><Cuenta>{cop(2101591)}</Cuenta></p>
-            <div className="mt-3 space-y-1.5 text-xs">
-              <div className="flex justify-between"><span className="text-muted">Recargos</span><span className="font-medium">{cop(101818)}</span></div>
-              <div className="flex justify-between"><span className="text-muted">Horas extra</span><span className="font-medium">{cop(249773)}</span></div>
-              <div className="flex justify-between border-t border-gray-100 pt-1.5"><span className="text-muted">Salario base</span><span className="font-medium">{cop(1750000)}</span></div>
-            </div>
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-green-700 font-medium"><Check size={13} /> Calculado automáticamente</div>
+          {/* La foto nueva (14 de septiembre de 2026) tiene el brazo cortado solo por abajo: se apoya en
+              el borde inferior de la portada y el corte queda escondido bajo la onda. La anterior salía
+              cortada por la derecha y había que pegarla al borde de la pantalla; esta ya no. */}
+          <div className="flex justify-end">
+            {/* Recortada a lo que se ve: con el aire transparente alrededor, el celular salía chico para
+                el espacio que ocupaba (el dueño lo pidió más grande el 14 de septiembre de 2026). */}
+            <img src={imagenPortada} alt="Celular con HoraPro en la mano" width={906} height={1373} fetchPriority="high"
+              className="w-[270px] sm:w-[330px] md:w-[420px] lg:w-[500px] h-auto" />
           </div>
         </div>
+        {/* Delante de la foto (z-20 contra el z-10 del contenido): el brazo sale cortado en recto por
+            el borde de la imagen, y así se hunde en la onda en vez de mostrar el corte. */}
+        <svg aria-hidden="true" viewBox="0 0 1200 56" preserveAspectRatio="none" className="absolute bottom-0 left-0 z-20 w-full h-8 md:h-12">
+          <path d={ONDAS} fill="#f6f6f4" />
+        </svg>
       </section>
 
-      {/* Franja de confianza */}
-      <section className="border-y border-gray-100 bg-[#f6f6f4]">
-        <div className="max-w-6xl mx-auto px-5 py-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-muted">
+      {/* Franja de confianza, cerrada abajo con la misma onda de la portada (decisión del dueño del 14 de
+          septiembre de 2026). La cresta de la onda queda a 3/4 de su alto, así que con el relleno igual a
+          esos 3/4 los textos casi la tocaban (el dueño pidió más aire abajo ese mismo día). Ahora sobra un
+          cuarto de onda más, y el aire bajo los textos es el mismo que queda sobre ellos hasta el valle de
+          la onda amarilla. «Datos en Colombia» se quitó ese mismo día: la política de privacidad publicada
+          dice que los datos están en servidores de Estados Unidos. */}
+      <section className="relative bg-[#f6f6f4] pb-8 md:pb-12">
+        <div className="max-w-6xl mx-auto px-5 py-3 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm text-muted">
           <span className="flex items-center gap-1.5"><ShieldCheck size={15} className="text-ink" /> Ley 2466 al día</span>
           <span className="flex items-center gap-1.5"><ScanFace size={15} className="text-ink" /> Marcación con rostro</span>
-          <span className="flex items-center gap-1.5"><MapPin size={15} className="text-ink" /> Datos en Colombia</span>
+          <span className="flex items-center gap-1.5"><MessageCircle size={15} className="text-ink" /> Soporte por WhatsApp</span>
           <span className="flex items-center gap-1.5"><MonitorSmartphone size={15} className="text-ink" /> Sin instalar nada</span>
           <span className="flex items-center gap-1.5"><Users size={15} className="text-ink" /> No cobramos por empleado</span>
           <span className="flex items-center gap-1.5"><CalendarCheck size={15} className="text-ink" /> {dias} días gratis</span>
         </div>
+        <svg aria-hidden="true" viewBox="0 0 1200 56" preserveAspectRatio="none" className="absolute bottom-0 left-0 w-full h-8 md:h-12">
+          <path d={ONDAS} fill="#ffffff" />
+        </svg>
       </section>
 
+      {/* El problema y la solución, con tachado y resaltado */}
+      <section className="max-w-4xl mx-auto px-5 py-16 md:py-24 text-center">
+        <h2 className="hp-reveal isolate text-3xl md:text-5xl font-bold tracking-tight leading-tight text-ink">
+          Tu nómina no necesita otra <Tachado>hoja de Excel</Tachado>. Necesita un <Resaltado>sistema.</Resaltado>
+        </h2>
+        {/* Un párrafo y no dos (el dueño pidió menos texto el 14 de septiembre de 2026). */}
+        <p className="hp-reveal text-lg text-muted mt-8 max-w-2xl mx-auto">
+          Sumar horas a mano y calcular recargos en Excel deja errores que salen cuando un trabajador reclama.
+          Con HoraPro la marcación es la prueba, el horario es la regla y la liquidación sale sola.
+        </p>
+      </section>
+
+      <TarjetasDelSistema />
+
       {/* Video VSL */}
-      <section className="max-w-3xl mx-auto px-5 pt-4 pb-8 md:pb-12">
+      <section className="max-w-3xl mx-auto px-5 py-16 md:py-20">
         <p className="text-center text-sm font-semibold text-muted mb-4 flex items-center justify-center gap-2 hp-reveal">
           <PlayCircle size={17} className="text-ink" /> Míralo en 90 segundos
         </p>
         <div className="hp-reveal">
           <VideoVSL videoId="09HUubwVicU" />
-        </div>
-      </section>
-
-      {/* Beneficios */}
-      <section className="max-w-6xl mx-auto px-5 pt-8 pb-16 md:pt-12 md:pb-24">
-        <div className="text-center max-w-xl mx-auto mb-12 hp-reveal">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Todo el control horario, resuelto</h2>
-          <p className="text-muted mt-3">Deja las hojas de cálculo. HoraPro se encarga del cálculo y tú de tu negocio.</p>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {BENEFICIOS.map((b, i) => (
-            <div key={b.titulo} className="hp-reveal bg-white border border-gray-200 rounded-2xl p-6" style={{ animationDelay: `${i * 80}ms` }}>
-              <div className="bg-primary/30 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
-                <b.icon size={22} className="text-ink" />
-              </div>
-              <h3 className="font-bold text-lg">{b.titulo}</h3>
-              <p className="text-sm text-muted mt-1.5">{b.texto}</p>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -239,7 +240,7 @@ export default function Landing() {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { n: '1', icon: ScanFace, t: 'Marca', d: 'El colaborador registra entrada y salida con su rostro o su cédula en el kiosco.' },
+              { n: '1', icon: ScanFace, t: 'Marca', d: 'El colaborador marca entrada y salida con su rostro o su cédula.' },
               { n: '2', icon: AlarmClock, t: 'Controla', d: 'Ves en tiempo real quién está en planta, tardanzas y novedades del día.' },
               { n: '3', icon: Calculator, t: 'Liquida', d: 'HoraPro calcula recargos y horas extra listos para tu nómina.' },
             ].map((p, i) => (
@@ -286,10 +287,7 @@ export default function Landing() {
       <section id="precios" className="max-w-6xl mx-auto px-5 py-16 md:py-24">
         <div className="text-center mb-8 hp-reveal">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Un plan para cada tamaño</h2>
-          <p className="text-muted mt-3">
-            Pagas por tu empresa, no por cada empleado: si contratas a alguien más, tu cuenta no sube.
-            Empieza con {dias} días gratis, sin tarjeta.
-          </p>
+          <p className="text-muted mt-3">Pagas por empresa, no por empleado. {dias} días gratis, sin tarjeta.</p>
           {/* Toggle mensual / anual */}
           <div className="inline-flex items-center gap-1 bg-gray-100 rounded-full p-1 mt-6 text-sm font-semibold">
             <button onClick={() => setAnual(false)} className={`px-4 py-1.5 rounded-full transition-colors ${!anual ? 'bg-white shadow text-ink' : 'text-muted'}`}>Mensual</button>
@@ -299,14 +297,17 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-5 items-start">
+        {/* En el celular y la tablet, una columna de ancho fijo y centrada: a todo el ancho cada plan
+            quedaba exageradamente grande (decisión del dueño del 14 de septiembre de 2026). Las tres
+            columnas esperan a los 1024 px: a 820 el precio y el botón ya se partían en dos líneas. */}
+        <div className="grid gap-5 items-start max-w-sm mx-auto lg:max-w-none lg:grid-cols-3">
           {PLANES_LANDING.map((p, i) => {
             const pd = precios?.planes?.find(x => x.id === p.id);
             const mensual = pd?.precioMensual ?? p.mensual;
             const anualTotal = pd?.precioAnual ?? p.anual;
             const mesEfectivo = anual ? Math.round(anualTotal / 12) : mensual;
             return (
-              <div key={p.id} className={`hp-reveal rounded-3xl p-7 flex flex-col ${p.destacado ? 'bg-ink text-white shadow-xl md:-mt-3 md:mb-3' : 'bg-white border border-gray-200'}`} style={{ animationDelay: `${i * 80}ms` }}>
+              <div key={p.id} className={`hp-reveal rounded-3xl p-7 flex flex-col ${p.destacado ? 'bg-ink text-white shadow-xl lg:-mt-3 lg:mb-3' : 'bg-white border border-gray-200'}`} style={{ animationDelay: `${i * 80}ms` }}>
                 {p.destacado && <span className="self-start text-[11px] font-bold bg-primary text-ink px-2.5 py-1 rounded-full mb-3">{p.para}</span>}
                 {!p.destacado && <span className="text-xs font-semibold text-muted mb-1">{p.para}</span>}
                 <h3 className={`text-xl font-extrabold ${p.destacado ? 'text-white' : 'text-ink'}`}>{p.nombre}</h3>
@@ -340,8 +341,10 @@ export default function Landing() {
         </p>
       </section>
 
+      <BlogReciente />
+
       {/* FAQ */}
-      <section className="max-w-2xl mx-auto px-5 pb-16 md:pb-24">
+      <section className="max-w-2xl mx-auto px-5 py-16 md:py-24">
         <h2 className="text-3xl font-extrabold tracking-tight text-center mb-10 hp-reveal">Preguntas frecuentes</h2>
         <div className="space-y-3">
           {FAQ.map((f, i) => (
@@ -370,33 +373,7 @@ export default function Landing() {
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <img src={logoCompleto} alt="HoraPro" className="h-7" />
-          <div className="text-center">
-            <p className="text-xs text-muted">© {new Date().getFullYear()} HoraPro · Control de horas para Colombia</p>
-            <CreditoKrumlab className="mt-0.5" />
-          </div>
-          <div className="flex flex-wrap justify-center gap-4 text-sm">
-            <a href="/blog/" className="text-muted hover:text-ink">Blog</a>
-            {/* Aparece sola el día que la política deje de ser borrador. El
-                interruptor vive en blog/legal/privacidad.mjs y `legal.test.ts`
-                impide que las dos copias se separen. */}
-            {POLITICA_PRIVACIDAD.publicada && (
-              <a href={POLITICA_PRIVACIDAD.ruta} className="text-muted hover:text-ink">Privacidad</a>
-            )}
-            {usuario ? (
-              <Link to={panelUrl} className="font-semibold text-ink">Ir a mi panel</Link>
-            ) : (
-              <>
-                <Link to="/login" className="text-muted hover:text-ink">Iniciar sesión</Link>
-                <Link to="/registro" className="font-semibold text-ink">Prueba gratis</Link>
-              </>
-            )}
-          </div>
-        </div>
-      </footer>
+      <PieDePagina conSesion={!!usuario} panelUrl={panelUrl} />
 
       <BotonWhatsApp />
     </div>
