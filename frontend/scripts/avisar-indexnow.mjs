@@ -14,13 +14,15 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PUNTO_FINAL, CLAVE, urlsParaAvisar, cuerpoIndexNow, explicarRespuesta } from './indexnow.mjs';
+import { diaEnBogota } from './fechas.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const bandera = n => args.includes(`--${n}`);
 const valor = n => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : null; };
 
-const hoy = new Date().toISOString().slice(0, 10);
+// El mismo día que generar-blog.mjs escribe en el sitemap: el de Bogotá (ver fechas.mjs).
+const hoy = diaEnBogota(new Date());
 const opciones = bandera('todas') ? { todas: true } : { desde: valor('desde') ?? hoy };
 
 // Del sitemap compilado, que es la única lista que refleja lo que de verdad se

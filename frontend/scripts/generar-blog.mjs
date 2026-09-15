@@ -18,6 +18,7 @@ import calculadoraHorasExtra from '../blog/calculadoras/horas-extra.mjs';
 import calculadoraJornada42 from '../blog/calculadoras/jornada-42-horas.mjs';
 import calculadoraLiquidacion from '../blog/calculadoras/liquidacion.mjs';
 import { PRIVACIDAD } from '../blog/legal/privacidad.mjs';
+import { diaEnBogota } from './fechas.mjs';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(raiz, 'dist');
@@ -30,7 +31,8 @@ const escribir = async (ruta, contenido) => {
   console.log(`  ${ruta.padEnd(52)} ${kb.padStart(6)} kB`);
 };
 
-const hoy = new Date().toISOString().slice(0, 10);
+// El día de Bogotá y no el de UTC, que de noche ya es mañana (ver fechas.mjs).
+const hoy = diaEnBogota(new Date());
 
 // Una imagen declarada cuyo archivo todavía no existe se descarta aquí, y el
 // artículo sale con el degradado de marca. Es la diferencia entre publicar una
