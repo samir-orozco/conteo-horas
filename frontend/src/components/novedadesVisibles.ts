@@ -6,7 +6,7 @@
 
 // Lote de novedades que se está mostrando. Subirla hace que vuelvan a aparecer,
 // salvo a quien pidió no verlas más.
-export const VERSION = '2026-09';
+export const VERSION = '2026-09-14';
 
 export const vistaKey = (id: string) => `horapro_novedades_${VERSION}_${id}`;
 export const apagadoKey = (id: string) => `horapro_novedades_off_${id}`;

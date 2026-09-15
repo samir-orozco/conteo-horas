@@ -23,17 +23,22 @@ const avanzar = async (veces: number) => {
 };
 
 describe('Novedades', () => {
-  it('se abre sola y arranca por lo que más le cuesta al cliente si lo ignora', () => {
-    // Un contrato a término fijo sin preaviso se prorroga solo, por ley. Va
-    // primero porque es lo único de la lista que tiene consecuencia jurídica.
+  it('se abre sola y arranca por lo más reciente', () => {
+    // Decisión del dueño del 14 de septiembre de 2026: lo nuevo va primero y lo
+    // anterior se queda detrás, en vez de reemplazarse.
     render(<Novedades />);
     expect(screen.getByText('Novedades de HoraPro')).toBeInTheDocument();
-    expect(screen.getByText(/tus contratos avisan antes de vencerse/i)).toBeInTheDocument();
+    expect(screen.getByText(/registra su rostro desde su celular/i)).toBeInTheDocument();
   });
 
-  it('cuenta las cinco novedades del lote', async () => {
+  it('cuenta las diez novedades: las de los últimos despliegues primero y las de antes detrás', async () => {
     render(<Novedades />);
     const titulos = [
+      /registra su rostro desde su celular/i,
+      /te dice hacia dónde girar/i,
+      /hasta tres descansos/i,
+      /jornada completa de un solo paso/i,
+      /el detalle de la jornada, parte por parte/i,
       /tus contratos avisan/i,
       /quien trabaja desde la casa/i,
       /sube todo tu equipo con un excel/i,
@@ -46,6 +51,13 @@ describe('Novedades', () => {
     }
     // En la última el botón deja de invitar a seguir.
     expect(screen.getByRole('button', { name: /listo/i })).toBeInTheDocument();
+  });
+
+  it('quien ya vio el lote de septiembre las vuelve a ver, porque hay novedades nuevas', () => {
+    // La llave del lote anterior, escrita tal cual la guardaba el navegador.
+    localStorage.setItem(`horapro_novedades_2026-09_${usuario.id}`, '1');
+    render(<Novedades />);
+    expect(screen.getByText('Novedades de HoraPro')).toBeInTheDocument();
   });
 
   it('al cerrarlas quedan como vistas, para no repetirlas en cada pantalla', async () => {

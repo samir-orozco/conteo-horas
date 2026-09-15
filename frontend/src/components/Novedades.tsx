@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  X, ChevronRight, FileSignature, Laptop, FileSpreadsheet, History, ListFilter,
+  X, ChevronRight, FileSignature, Laptop, FileSpreadsheet, History, ListFilter, ScanFace, ArrowLeftRight, Coffee,
+  Clock, LogIn,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import giraIzquierda from '../assets/rostro/gira-izquierda.svg';
 import { debeMostrarNovedades, vistaKey, apagadoKey, guiaKey } from './novedadesVisibles';
 
 // Novedades de la versión: se muestran UNA vez por usuario al entrar.
 //
-// El lote se REEMPLAZA, no se acumula: quien está adentro ya vio el anterior, y
-// repetírselo entierra lo que de verdad es nuevo. La decisión de mostrarlas y
-// las llaves de localStorage viven en novedadesVisibles.ts, que sí tiene pruebas.
+// Lo nuevo va PRIMERO y lo anterior se queda detrás: decisión del dueño del 14 de
+// septiembre de 2026 (antes el lote se reemplazaba). Al agregar novedades hay que
+// subir VERSION en novedadesVisibles.ts, o quien vio el lote anterior no ve lo
+// nuevo. La decisión de mostrarlas y las llaves de localStorage viven en ese
+// archivo, que sí tiene pruebas.
 
 type Novedad = {
   icono: typeof FileSignature;
@@ -28,6 +32,132 @@ const Chip = ({ tono, children }: { tono: string; children: React.ReactNode }) =
 );
 
 const NOVEDADES: Novedad[] = [
+  // Despliegue del 14 de septiembre de 2026.
+  {
+    icono: ScanFace,
+    titulo: 'Cada persona registra su rostro desde su celular',
+    texto: 'Desde la ficha creas un enlace, copias el mensaje y se lo mandas por WhatsApp o por correo. Dura una hora: la persona confirma su cédula, lee la autorización y decide si registra su rostro o no. Lo que decida queda guardado con la fecha y el texto que leyó, y en la lista de colaboradores ves quién ya lo registró y quién no autorizó.',
+    enlace: { texto: 'Crear un enlace desde una ficha', a: '/app/colaboradores' },
+    vista: (
+      <div className="w-full max-w-[250px] rounded-xl bg-white/95 border border-gray-200 shadow-sm p-3">
+        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-ink mb-2">
+          <ScanFace size={12} className="text-ink/70" /> Reconocimiento facial
+        </p>
+        <div className="flex flex-col gap-1.5">
+          {[
+            { n: 'Ana Giraldo', chip: 'Rostro registrado', tono: 'bg-green-100 text-green-800' },
+            { n: 'Julián Torres', chip: 'No autorizó', tono: 'bg-gray-200 text-gray-700' },
+          ].map(x => (
+            <div key={x.n} className="flex items-center gap-2 rounded-lg bg-white border border-gray-200 px-2.5 py-1.5">
+              <span className="text-[11px] text-ink font-medium truncate">{x.n}</span>
+              <span className="ml-auto shrink-0"><Chip tono={x.tono}>{x.chip}</Chip></span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 rounded-lg border-2 border-gray-200 px-2 py-1 text-center text-[10px] font-semibold text-ink">
+          Crear enlace de registro facial
+        </div>
+      </div>
+    ),
+  },
+  {
+    icono: ArrowLeftRight,
+    titulo: 'El registro del rostro te dice hacia dónde girar',
+    texto: 'Cada paso muestra un dibujo de la pose, y en los giros una flecha sobre la cámara indica hacia dónde girar la cabeza. Ya no hay que adivinar qué es derecha o izquierda frente a una imagen que se ve como en un espejo.',
+    vista: (
+      <div className="flex items-center gap-3 w-full max-w-[250px]">
+        <img src={giraIzquierda} alt="" width={88} height={99} className="w-[88px] h-[99px] shrink-0 rounded-lg shadow-sm" />
+        <div className="flex flex-col items-start gap-1.5">
+          <Chip tono="bg-green-100 text-green-700">Frente</Chip>
+          <Chip tono="bg-white text-ink ring-2 ring-ink">Giro ←</Chip>
+          <Chip tono="bg-white/80 text-muted">Giro →</Chip>
+        </div>
+      </div>
+    ),
+  },
+  // Despliegue del 13 de septiembre de 2026.
+  {
+    icono: Coffee,
+    titulo: 'Pon hasta tres descansos en cada horario',
+    texto: 'Además del almuerzo, cada franja del horario puede tener hasta 3 descansos, cada uno con su hora de inicio y de fin. No se pagan: cuestan su tiempo aunque los tomen a otra hora, igual que el almuerzo. En el kiosco la persona marca «Salgo a mi descanso» y «Volví de mi descanso».',
+    enlace: { texto: 'Configurar mi horario', a: '/app/configuracion?tab=horario' },
+    vista: (
+      <div className="w-full max-w-[250px] rounded-xl bg-white/95 border border-gray-200 shadow-sm p-3 text-[10px]">
+        <p className="text-[9px] font-semibold uppercase text-muted mb-1">Lunes a viernes · 8:00 a 17:00</p>
+        {[['Descanso 1', '09:30', '09:45'], ['Almuerzo', '12:00', '13:00'], ['Descanso 2', '15:30', '15:45']].map(([n, desde, hasta]) => (
+          <div key={n} className="flex items-center gap-2 py-1 border-t border-gray-100">
+            <Coffee size={11} className="text-ink/60 shrink-0" />
+            <span className="text-ink font-medium">{n}</span>
+            <span className="ml-auto font-mono text-gray-600">{desde}–{hasta}</span>
+          </div>
+        ))}
+        <p className="text-[9px] font-semibold text-ink text-center border-t border-gray-100 mt-1 pt-1.5">+ Agregar descanso</p>
+      </div>
+    ),
+  },
+  {
+    icono: Clock,
+    titulo: 'Carga la jornada completa de un solo paso',
+    texto: 'Con «Agregar manual» registras en una sola ventana la entrada, la salida, el almuerzo y hasta 3 descansos. El botón «Traer su horario» llena las horas con el horario de ese día, y tú solo corriges lo que cambió. La pausa que no marcó se deja vacía.',
+    enlace: { texto: 'Ir a Registros', a: '/app/registros' },
+    vista: (
+      <div className="w-full max-w-[260px] rounded-xl bg-white/95 border border-gray-200 shadow-sm p-3 text-[10px]">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <p className="text-[11px] font-semibold text-ink">Nuevo registro</p>
+          <span className="flex items-center gap-1 bg-primary rounded-md px-2 py-0.5 text-[9px] font-semibold text-ink">
+            <Clock size={10} /> Traer su horario
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5 mb-2">
+          {[['Entrada', '08:00'], ['Salida', '17:00']].map(([rotulo, hora]) => (
+            <div key={rotulo} className="rounded-md border border-gray-200 px-2 py-1">
+              <p className="text-[8px] uppercase text-muted">{rotulo}</p>
+              <p className="font-mono text-ink">{hora}</p>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-lg bg-blue-50 px-2 py-1.5">
+          {[['Almuerzo', '12:00', '13:00'], ['Descanso 1', '15:30', '15:45']].map(([n, salida, regreso]) => (
+            <div key={n} className="flex items-center justify-between py-0.5">
+              <span className="text-ink">{n}</span>
+              <span className="font-mono text-gray-600">{salida}–{regreso}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    icono: LogIn,
+    titulo: 'El detalle de la jornada, parte por parte',
+    texto: 'Al abrir una marcación ves a qué hora entró y si llegó tarde, a qué hora salió, sus pausas, y cuánto se contó ese día frente a lo que pedía su horario. Las fotos van separadas en entrada y salida, almuerzo y descanso. Y si la jornada sigue abierta, lo dice.',
+    enlace: { texto: 'Ver las marcaciones', a: '/app/registros' },
+    vista: (
+      <div className="w-full max-w-[260px] flex flex-col gap-1.5 text-[10px]">
+        <div className="grid grid-cols-3 gap-1.5">
+          {[['Entró', '08:04', 'a tiempo'], ['Salió', '17:02', ''], ['Almuerzo', '58 min', '']].map(([rotulo, valor, nota]) => (
+            <div key={rotulo} className="rounded-lg bg-white/95 border border-gray-200 px-2 py-1.5 shadow-sm">
+              <p className="text-[8px] uppercase text-muted">{rotulo}</p>
+              <p className="font-semibold text-ink tabular-nums">{valor}</p>
+              {nota && <p className="text-[8px] text-green-700">{nota}</p>}
+            </div>
+          ))}
+        </div>
+        <div className="rounded-lg bg-white/95 border border-primary px-2.5 py-1.5 shadow-sm">
+          <div className="flex items-end justify-between gap-2">
+            <div>
+              <p className="text-[8px] text-muted">Contado ese día</p>
+              <p className="text-sm font-bold text-ink tabular-nums">7 h 55 min</p>
+            </div>
+            <p className="text-[9px] text-gray-600">el horario pedía 8 h</p>
+          </div>
+          <div className="h-1 bg-gray-100 rounded-full mt-1 overflow-hidden">
+            <div className="h-full w-[98%] bg-primary rounded-full" />
+          </div>
+        </div>
+      </div>
+    ),
+  },
   {
     icono: FileSignature,
     titulo: 'Tus contratos avisan antes de vencerse',
