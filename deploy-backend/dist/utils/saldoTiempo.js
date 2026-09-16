@@ -4,6 +4,7 @@ exports.PERMISOS_CONFIGURABLES_POR_DEFECTO = exports.CLAVE_PERMISOS_REMUNERADOS 
 exports.parsearPoliticaPermisos = parsearPoliticaPermisos;
 exports.normalizarPoliticaPermisos = normalizarPoliticaPermisos;
 exports.esPermisoRemunerado = esPermisoRemunerado;
+exports.claveDia = claveDia;
 exports.calcularHorasEsperadas = calcularHorasEsperadas;
 exports.armarSaldo = armarSaldo;
 const date_fns_tz_1 = require("date-fns-tz");
@@ -68,6 +69,9 @@ function esPermisoRemunerado(tipo, politica) {
 function claveZonificada(z) {
     return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
 }
+// Exportada para que el reporte de nómina cuente los días de una novedad con ESTA misma clave
+// (15 de septiembre de 2026). Quedan otras tres copias privadas del mismo cálculo, en tardanzas.ts,
+// liquidarRegistros.ts y diasEsperados.ts, y ni siquiera dan todas el mismo formato.
 function claveDia(d) {
     return claveZonificada((0, date_fns_tz_1.toZonedTime)(d, TZ));
 }
