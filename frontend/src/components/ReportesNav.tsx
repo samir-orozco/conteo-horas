@@ -1,12 +1,13 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FileBarChart2, Clock3, AlarmClock, ChevronRight } from 'lucide-react';
+import { FileBarChart2, Clock3, AlarmClock, ChevronRight, FileSpreadsheet } from 'lucide-react';
 
 const OPCIONES = [
   { to: '/app/reportes', label: 'Reporte diario', desc: 'Liquidación día a día de un colaborador.', icon: FileBarChart2 },
   { to: '/app/reportes/extras', label: 'Extras y recargos', desc: 'Valor a pagar por colaborador, con desglose.', icon: Clock3 },
   { to: '/app/reportes/llegadas-tarde', label: 'Llegadas tarde', desc: 'Tardanzas por colaborador, con desglose.', icon: AlarmClock },
+  { to: '/app/reportes/nomina', label: 'Nómina del período', desc: 'Todos los colaboradores, para pasar a tu programa de nómina.', icon: FileSpreadsheet },
 ];
 
 // Ítem "Reportes" del menú: no navega directo, abre un panel anclado a este mismo

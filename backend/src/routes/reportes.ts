@@ -13,6 +13,7 @@ import {
 } from '../utils/sedesDeReporte';
 import { sedesPorDefecto } from '../utils/sedesDeEmpresa';
 import { liquidarRegistros } from '../utils/liquidarRegistros';
+import { novedadesDelPeriodo } from '../utils/novedadesDelPeriodo';
 import { COLABORADOR_SIN_FOTOS } from '../utils/columnasDeColaborador';
 
 
@@ -165,7 +166,10 @@ export default async function reporteRoutes(app: FastifyInstance) {
       salarioBase: colaborador.salarioMensual,
       totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
       totalPagar: r.totalAdicional, // compat: ahora es lo adicional al salario
+      // Los dos: `registrosCont` son marcaciones CERRADAS y `diasCont` son días con marcación. La
+      // cabecera de la pantalla mostraba el primero llamándolo días (15 de septiembre de 2026).
       registrosCont: r.registrosCont,
+      diasCont: r.diasCont,
       detalleRegistros: r.detalleRegistros,
       jornadaSemanal: jornadaCierre, horasMes,
       saldo,
@@ -400,5 +404,110 @@ export default async function reporteRoutes(app: FastifyInstance) {
     });
 
     return { desde, hasta, ...responderPorSede(resultado, ['diasTarde', 'totalMinutos', 'montoTardanzas'] as const, sedes, sedeId) };
+  });
+
+  // Nómina del período de TODOS los colaboradores activos (15 de septiembre de 2026): el desglose por
+  // concepto de cada uno, su salario como base y sus novedades. Es el reporte que se descarga en el
+  // formato de HoraPro y, encima, en el de cada ERP.
+  //
+  // Persona por persona usa EL MISMO cálculo de /liquidacion: liquidarRegistros con los días
+  // congelados del período. No hay una segunda cuenta del dinero, así que el detalle de una persona
+  // tiene que dar exactamente lo mismo que este resumen.
+  //
+  // El salario viaja como base, no como total a pagar: en una quincena, el salario del mes completo
+  // no es lo que se paga, y ese módulo todavía no existe.
+  app.get('/nomina', auth, async (request) => {
+    const { desde, hasta, sedeId } = request.query as { desde: string; hasta: string; sedeId?: string };
+    const empresaId = request.empresaId!;
+    const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
+
+    const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosTodos, diasTodosEsp, sedes, defectoDe, filasDeLugar] = await Promise.all([
+      // Solo lo que usa este reporte. La cédula y el cargo van para el archivo del ERP, que
+      // identifica a cada persona por su documento.
+      prisma.colaborador.findMany({
+        where: { empresaId, activo: true },
+        select: {
+          id: true, nombre: true, apellido: true, cedula: true, cargo: true,
+          salarioMensual: true, modalidad: true, horario: { include: { franjas: true } },
+        },
+        orderBy: { nombre: 'asc' },
+      }),
+      // Sin filtro de sede y también las abiertas, por lo mismo que en /extras-resumen: cada persona
+      // se liquida con todos sus turnos y la sede solo decide quién aparece.
+      prisma.registro.findMany({
+        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: {
+          id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, sedeId: true, sedeSalidaId: true,
+          salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true,
+        },
+        orderBy: { fecha: 'asc' },
+      }),
+      prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
+      prisma.tipoHora.findMany(),
+      prisma.jornadaVigencia.findMany(),
+      prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
+      prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: CLAVE_PERMISOS_REMUNERADOS } } }),
+      // Solo las novedades que tocan el rango, con sus horas: una de parte del día no es un día.
+      prisma.permiso.findMany({
+        where: { colaborador: { empresaId }, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
+        select: { colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true },
+      }),
+      prisma.diaEsperado.findMany({
+        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+        select: {
+          colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
+          horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
+          toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
+          descansos: true,
+        },
+        orderBy: { fecha: 'asc' },
+      }),
+      prisma.sede.findMany({ where: { empresaId }, select: { id: true, nombre: true, activa: true } }),
+      sedesPorDefecto(prisma, empresaId),
+      filasParaLugares(empresaId, desdeF, finExclusivo),
+    ]);
+
+    const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
+    const festivosDates = festivos.map(f => new Date(f.fecha));
+    const jornadaCierre = jornadaVigente(new Date(hasta), jornadas);
+    const horasMes = horasMesDeJornada(jornadaCierre);
+    const politica = parsearPoliticaPermisos(cfgPermisos?.valor);
+    const porColaborador = agrupar(registrosTodos);
+    const porColDiasEsp = agrupar(diasTodosEsp);
+    const porColPermisos = agrupar(permisosTodos);
+    const porColLugares = agrupar(filasDeLugar);
+
+    const resultado = colaboradores.map(col => {
+      const horario = col.horario as HorarioConFranjas | null;
+      const dias = combinarDiasEsperados(desdeF, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
+      const extraConfig = construirExtraConfig(modoExtra, horario, dias);
+      // Solo las columnas que lee el motor de horas: las demás de la fila (colaborador, sedes) son
+      // para saber dónde trabajó, y pasarlas enteras obligaba a un `as any`.
+      const suyos = (porColaborador.get(col.id) ?? []).map(reg => ({
+        id: reg.id, fecha: reg.fecha, entrada: reg.entrada, salida: reg.salida,
+        salidaAlmuerzo: reg.salidaAlmuerzo, salidaDescanso: reg.salidaDescanso, descansoVentana: reg.descansoVentana,
+      }));
+      const r = liquidarRegistros(
+        suyos, horario, extraConfig, festivosDates,
+        tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias,
+      );
+      return {
+        colaboradorId: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,
+        salarioMensual: col.salarioMensual,
+        valorHora: parseFloat(calcularValorHora(col.salarioMensual, horasMes).toFixed(2)),
+        registrosCont: r.registrosCont,
+        diasCont: r.diasCont,
+        minutosOrdinarios: r.minutosOrdinarios,
+        liquidacion: r.liquidacion,
+        totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
+        novedades: novedadesDelPeriodo(porColPermisos.get(col.id) ?? [], desdeF, finExclusivo, politica),
+        ...lugaresConAtribucion(porColLugares.get(col.id) ?? [], { modalidad: col.modalidad, sedePorDefecto: defectoDe(col.id) }),
+      };
+    });
+
+    return {
+      desde, hasta, horasMes, jornadaSemanal: jornadaCierre,
+      ...responderPorSede(resultado, ['totalRecargos', 'totalExtra', 'totalAdicional'] as const, sedes, sedeId),
+    };
   });
 }

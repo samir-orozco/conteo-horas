@@ -20,6 +20,7 @@ import Festivos from './pages/Festivos';
 import Reportes from './pages/Reportes';
 import ReporteExtras from './pages/ReporteExtras';
 import ReporteLlegadasTarde from './pages/ReporteLlegadasTarde';
+import ReporteNomina from './pages/ReporteNomina';
 import Configuracion from './pages/Configuracion';
 import AutoLogin from './pages/AutoLogin';
 import Marcador from './pages/Marcador';
@@ -108,6 +109,7 @@ export default function App() {
             <Route path="reportes" element={<Reportes />} />
             <Route path="reportes/extras" element={<ReporteExtras />} />
             <Route path="reportes/llegadas-tarde" element={<ReporteLlegadasTarde />} />
+            <Route path="reportes/nomina" element={<ReporteNomina />} />
             <Route path="configuracion" element={<Configuracion />} />
             <Route path="suscripcion" element={<Suscripcion />} />
           </Route>

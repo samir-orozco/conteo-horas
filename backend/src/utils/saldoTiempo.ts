@@ -75,7 +75,10 @@ export function esPermisoRemunerado(tipo: string, politica: Set<string>): boolea
 function claveZonificada(z: Date): string {
   return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
 }
-function claveDia(d: Date): string {
+// Exportada para que el reporte de nómina cuente los días de una novedad con ESTA misma clave
+// (15 de septiembre de 2026). Quedan otras tres copias privadas del mismo cálculo, en tardanzas.ts,
+// liquidarRegistros.ts y diasEsperados.ts, y ni siquiera dan todas el mismo formato.
+export function claveDia(d: Date): string {
   return claveZonificada(toZonedTime(d, TZ));
 }
 
