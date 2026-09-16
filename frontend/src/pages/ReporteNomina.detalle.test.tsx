@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ReporteNomina from './ReporteNomina';
@@ -65,6 +65,39 @@ const abrirElDetalleDeAna = async () => {
   await usuario.click(await screen.findByRole('button', { name: /Ana Gómez/ }));
   return { usuario, dialogo: await screen.findByRole('dialog') };
 };
+
+// Abre el detalle con una respuesta de `/registros` que decide la prueba: una que nunca llega, o una
+// que falla. Sirve para mirar el modal ANTES de que tenga los datos.
+const abrirConRegistros = async (respuesta: () => Promise<{ data: unknown }>) => {
+  const usuario = userEvent.setup();
+  get.mockImplementation((url: string) => {
+    if (url === '/sedes') return Promise.resolve({ data: [] });
+    if (url === '/reportes/nomina') {
+      return Promise.resolve({ data: { desde: '2026-09-01', hasta: '2026-09-15', colaboradores: [ANA, LUIS] } });
+    }
+    if (url === '/registros') return respuesta();
+    if (url === '/permisos') return Promise.resolve({ data: PERMISOS_DE_ANA });
+    return Promise.reject(new Error('url inesperada: ' + url));
+  });
+  render(<ReporteNomina />);
+  await usuario.click(await screen.findByRole('button', { name: /Ana Gómez/ }));
+  return await screen.findByRole('dialog');
+};
+
+// EL RELOJ VA FIJO, O ESTAS PRUEBAS CAMBIAN DE RESULTADO CADA DÍA.
+//
+// La pantalla arranca con el rango «del día 1 del mes hasta HOY», así que el período que pide al
+// servidor depende de la fecha en que se corran. Pasó de verdad: se escribieron el 15 de septiembre
+// de 2026 y a la medianoche siguiente dos empezaron a fallar solas, sin que nadie tocara el código,
+// porque `hasta` pasó de 2026-09-15 a 2026-09-16. Una prueba que depende del calendario no protege
+// nada: el día que falla, nadie sabe si fue el código o el almanaque.
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  // Mediodía UTC: con las pruebas corriendo en América/Los_Ángeles (vite.config.ts), cualquier hora
+  // cercana a la medianoche caería en el día anterior.
+  vi.setSystemTime(new Date('2026-09-15T12:00:00Z'));
+});
+afterEach(() => { vi.useRealTimers(); });
 
 describe('el detalle de una persona en el reporte de nómina', () => {
   it('la tabla ofrece un ojo por fila, con el nombre de quién es, en vez de la columna de novedades', async () => {
@@ -144,6 +177,29 @@ describe('el detalle de una persona en el reporte de nómina', () => {
     const { dialogo } = await abrirElDetalleDeAna();
     await within(dialogo).findAllByRole('listitem');
     expect(within(dialogo).getByRole('group', { name: 'Marcaciones cerradas' })).toHaveTextContent('3');
+  });
+
+  // Visto en pantalla el 15 de septiembre de 2026, con el servidor local: al abrir el modal, la
+  // tarjeta decía «Días con marcación 0» hasta que llegaban los registros, y recién ahí pasaba a 5.
+  // Es el mismo cero engañoso que estuvimos quitando de tres sitios, y si la petición falla se queda
+  // puesto. Un número que todavía no se sabe no se muestra.
+  it('mientras carga no enseña un cero: todavía no sabe cuántos días son', async () => {
+    const dialogo = await abrirConRegistros(() => new Promise(() => {}));
+    expect(within(dialogo).getByRole('group', { name: 'Días con marcación' })).not.toHaveTextContent('0');
+  });
+
+  it('si las asistencias no cargan, tampoco inventa un cero', async () => {
+    const dialogo = await abrirConRegistros(() => Promise.reject(new Error('sin red')));
+    await within(dialogo).findByText(/No pudimos cargar/);
+    expect(within(dialogo).getByRole('group', { name: 'Días con marcación' })).not.toHaveTextContent('0');
+  });
+
+  // Decía «Del Martes, 1 de septiembre al Martes, 15 de septiembre»: el día de la semana no aporta
+  // nada en un rango, y la mayúscula en mitad de la frase está mal escrita.
+  it('el período se lee como una frase, sin el día de la semana', async () => {
+    const { dialogo } = await abrirElDetalleDeAna();
+    expect(dialogo).toHaveTextContent('Del 1 de septiembre al 15 de septiembre de 2026');
+    expect(dialogo).not.toHaveTextContent('Del Martes');
   });
 
   it('sin marcaciones en el período lo dice, en vez de una lista vacía', async () => {

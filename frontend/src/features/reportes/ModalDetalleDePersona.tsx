@@ -19,14 +19,22 @@ const horas = (min: number) => `${Math.floor(min / 60)}h ${String(Math.round(min
 const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 const nombreDeNovedad = (tipo: string) => TIPO_PERMISO_LABEL[tipo] ?? tipo.toLowerCase().replace(/_/g, ' ');
 
-// «Jueves 10 de septiembre», con mayúscula solo al principio. El día llega como «2026-09-10», y se
-// ancla al mediodía UTC a propósito: a medianoche, cualquier zona al occidente pinta el día anterior.
+// El día llega como «2026-09-10» y se ancla al MEDIODÍA UTC a propósito: a medianoche, cualquier
+// zona al occidente de Colombia pintaría el día anterior.
+const enBogota = (dia: string, formato: Intl.DateTimeFormatOptions) =>
+  new Date(`${dia}T12:00:00Z`).toLocaleDateString('es-CO', { timeZone: TZ, ...formato });
+
+// «Jueves, 10 de septiembre», con mayúscula al principio: encabeza cada línea de la lista.
 const fechaDelDia = (dia: string) => {
-  const texto = new Date(`${dia}T12:00:00Z`).toLocaleDateString('es-CO', {
-    timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long',
-  });
+  const texto = enBogota(dia, { weekday: 'long', day: 'numeric', month: 'long' });
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 };
+
+// «1 de septiembre», para el rango de la cabecera. Sin el día de la semana, que en un rango no dice
+// nada, y sin mayúscula: va en mitad de una frase. Decía «Del Martes, 1 de septiembre al Martes, 15
+// de septiembre», visto en pantalla el 15 de septiembre de 2026.
+const fechaDelRango = (dia: string, conAnio = false) =>
+  enBogota(dia, { day: 'numeric', month: 'long', ...(conAnio ? { year: 'numeric' } : {}) });
 
 // El mismo rótulo con su valor de las tarjetas del detalle de la jornada. Va como `group` con el
 // rótulo por nombre: así cada tarjeta se puede encontrar por lo que dice ser, y una prueba que
@@ -83,7 +91,7 @@ export default function ModalDetalleDePersona({ persona, periodo, onCerrar }: Pr
             </h3>
             <p className="text-sm text-muted truncate">
               {persona.cargo && `${persona.cargo} · `}
-              Del {fechaDelDia(periodo.desde)} al {fechaDelDia(periodo.hasta)}
+              Del {fechaDelRango(periodo.desde)} al {fechaDelRango(periodo.hasta, true)}
             </p>
           </div>
           <button type="button" onClick={onCerrar} aria-label="Cerrar"
@@ -100,7 +108,12 @@ export default function ModalDetalleDePersona({ persona, periodo, onCerrar }: Pr
               tarjeta de arriba contradecía a la lista de abajo dentro del mismo modal. El número del
               motor sigue a la vista, con su nombre, porque es el que sostiene el pago. */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <Tarjeta rotulo="Días con marcación" Icono={CalendarDays} valor={String(dias.length)} />
+            {/* Mientras no hayan llegado los registros, esta tarjeta NO muestra un número: con
+                `dias.length` enseñaba «0» hasta que cargaba y recién ahí pasaba al valor bueno, y si
+                la petición falla se queda puesto. Es el mismo cero engañoso que se quitó de los otros
+                sitios, visto en pantalla el 15 de septiembre de 2026. */}
+            <Tarjeta rotulo="Días con marcación" Icono={CalendarDays}
+              valor={registros ? String(dias.length) : '···'} />
             <Tarjeta rotulo="Marcaciones cerradas" Icono={LogOut} valor={String(persona.registrosCont)}
               nota="las que el motor liquida" />
             <Tarjeta rotulo="Horas ordinarias" Icono={LogIn} valor={horas(persona.minutosOrdinarios)} />
