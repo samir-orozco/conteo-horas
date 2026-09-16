@@ -26,7 +26,9 @@ type SaldoTiempo = {
 type Reporte = {
   colaborador: Colaborador; desde: string; hasta: string; liquidacion: LineaLiquidacion[];
   salarioBase: number; totalRecargos: number; totalExtra: number; totalAdicional: number;
-  totalPagar: number; registrosCont: number; saldo?: SaldoTiempo;
+  // `registrosCont` son marcaciones CERRADAS, no días: una jornada partida por el almuerzo suma de a
+  // dos y quien no marca la salida no suma nada. `diasCont` son los días con marcación.
+  totalPagar: number; registrosCont: number; diasCont?: number; saldo?: SaldoTiempo;
 };
 type Novedad = { id: string; tipo: string; descripcion?: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; evidenciaTipo?: string | null; evidenciaNombre?: string | null; remunerado?: boolean };
 type RegistroDia = { id: string; fecha: string; entrada: string | null; salida: string | null; tipo: string; minutosTarde: number | null; observacion?: string | null };
@@ -212,7 +214,13 @@ export default function Reportes() {
             <div>
               <h3 className="font-bold text-xl text-gray-800">{reporte.colaborador.nombre} {reporte.colaborador.apellido}</h3>
               <p className="text-sm text-gray-500 mt-0.5">
-                {format(fechaLocal(reporte.desde), 'dd/MM/yyyy')} — {format(fechaLocal(reporte.hasta), 'dd/MM/yyyy')} · {reporte.registrosCont} días con marcación
+                {/* Los dos números, por decisión del dueño (15 de septiembre de 2026). Esta línea decía
+                    «{registrosCont} días con marcación», y ese contador son marcaciones CERRADAS: con
+                    los datos reales daba 11 días a quien trabajó 5, y 0 a quien trabajó 2 sin marcar
+                    nunca la salida. `diasCont` es opcional porque un servidor anterior no lo manda. */}
+                {format(fechaLocal(reporte.desde), 'dd/MM/yyyy')} — {format(fechaLocal(reporte.hasta), 'dd/MM/yyyy')}
+                {reporte.diasCont !== undefined && ` · ${reporte.diasCont} ${reporte.diasCont === 1 ? 'día' : 'días'} con marcación`}
+                {' · '}{reporte.registrosCont} {reporte.registrosCont === 1 ? 'marcación cerrada' : 'marcaciones cerradas'}
               </p>
             </div>
             {plan && !plan.features.exportar ? (
