@@ -130,6 +130,52 @@ describe('liquidarRegistros: la pausa cuesta siempre el tiempo fijado (12 de sep
   });
 });
 
+// LOS DÍAS CON MARCACIÓN NO SON LAS MARCACIONES CERRADAS (15 de septiembre de 2026).
+//
+// `registrosCont` es `registros.filter(r => r.salida).length`: cuenta marcaciones CERRADAS. La
+// pantalla del reporte por persona lo rotulaba «días con marcación», y medido contra la base del
+// dueño decía 11 días para quien trabajó 5 (sus jornadas se parten por el almuerzo) y 0 días para
+// quien trabajó 2 sin marcar nunca la salida. El dinero nunca estuvo mal: lo que engañaba era el
+// texto. Decisión del dueño: mostrar los dos números, así que el motor tiene que dar los dos.
+//
+// `registrosCont` NO se toca: alimenta otras cosas. Esto agrega un contador aparte.
+describe('liquidarRegistros: los días con marcación no son las marcaciones cerradas', () => {
+  // El martes siguiente, en hora de Bogotá (CLAUDE.md 8.1: UTC explícito).
+  const martes = (h: number, min = 0) => new Date(Date.UTC(2026, 8, 8, h + 5, min, 0));
+  const MARTES = martes(0);
+  const DIA_MARTES = { ...DIA, fecha: MARTES };
+
+  it('varias marcaciones del mismo día son UN día', () => {
+    // Quien sale a almorzar y vuelve marca dos veces el mismo día. Contando marcaciones, una
+    // quincena de 10 días trabajados puede pasar de 15, que es lo que se veía.
+    const r = liquidar([fila('a', [7, 0], [12, 0], { salidaAlmuerzo: true }), fila('b', [13, 0], [16, 0])], [DIA]);
+    expect([r.registrosCont, r.diasCont]).toEqual([2, 1]);
+  });
+
+  it('un día trabajado sin marcar la salida es un día, aunque no sea una marcación cerrada', () => {
+    // El caso real: una persona con jornadas abiertas salía con «0 días con marcación» habiendo
+    // trabajado. Que no cerrara el turno no borra el día.
+    const abierta = { id: 'abierta', fecha: LUNES, entrada: lunes(7, 0), salida: null };
+    expect([liquidar([abierta], [DIA]).registrosCont, liquidar([abierta], [DIA]).diasCont]).toEqual([0, 1]);
+  });
+
+  it('dos días distintos son dos días', () => {
+    const delMartes = { id: 'mar', fecha: MARTES, entrada: martes(7, 0), salida: martes(16, 0) };
+    const r = liquidar([fila('lun', [7, 0], [16, 0]), delMartes], [DIA, DIA_MARTES]);
+    expect([r.registrosCont, r.diasCont]).toEqual([2, 2]);
+  });
+
+  it('una fila sin hora de entrada no es una marcación, así que no hace día', () => {
+    const sinEntrada = { id: 'vacia', fecha: MARTES, entrada: null, salida: null };
+    const r = liquidar([fila('lun', [7, 0], [16, 0]), sinEntrada], [DIA, DIA_MARTES]);
+    expect(r.diasCont).toBe(1);
+  });
+
+  it('sin marcaciones, ningún día', () => {
+    expect(liquidar([], [DIA]).diasCont).toBe(0);
+  });
+});
+
 describe('liquidarRegistros: dice lo mismo que la tabla de Registros', () => {
   it('volvió del descanso y sigue trabajando: su regreso está en una marcación todavía abierta', () => {
     // La tabla lo ve y no le descuenta nada; la liquidación, sin la marcación abierta, lo daba

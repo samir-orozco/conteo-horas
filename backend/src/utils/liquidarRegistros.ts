@@ -236,5 +236,12 @@ export function liquidarRegistros(
 
   // Las abiertas viajan solo para medir las pausas: el conteo sigue siendo el de las cerradas.
   const registrosCont = registros.filter(r => r.salida).length;
-  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, detalleRegistros, minutosOrdinarios };
+
+  // Los DÍAS con marcación, que no son lo mismo (15 de septiembre de 2026). Quien sale a almorzar y
+  // vuelve marca dos veces el mismo día, y quien nunca marca la salida no suma ninguna cerrada
+  // aunque haya trabajado. Medido contra la base del dueño: 11 cerradas en 5 días, y otra persona
+  // con 0 cerradas y 2 días trabajados. Un día sin hora de entrada no es una marcación.
+  const diasCont = new Set(registros.filter(r => r.entrada).map(r => claveDiaBogota(r.fecha))).size;
+
+  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios };
 }
