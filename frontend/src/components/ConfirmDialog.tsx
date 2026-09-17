@@ -17,7 +17,11 @@ export default function ConfirmDialog({
   if (!abierto) return null;
   return (
     <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-[60] p-4" onClick={onCancelar}>
-      <div className="hp-pop bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+      {/* Es un diálogo y hay que decirlo: sin `role`, un lector de pantalla lo anuncia como un
+          bloque de texto cualquiera y quien confirma un borrado no sabe que está en un modal
+          (16 de septiembre de 2026). El título le da el nombre accesible. */}
+      <div role="dialog" aria-modal="true" aria-label={titulo}
+        className="hp-pop bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
         <div className={`mx-auto mb-4 w-12 h-12 rounded-full flex items-center justify-center ${peligro ? 'bg-red-100' : 'bg-primary/40'}`}>
           <AlertTriangle size={22} className={peligro ? 'text-red-600' : 'text-ink'} />
         </div>
