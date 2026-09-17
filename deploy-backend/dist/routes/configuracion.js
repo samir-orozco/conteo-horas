@@ -1,6 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = configuracionRoutes;
+const node_crypto_1 = __importDefault(require("node:crypto"));
 const prisma_1 = require("../prisma");
 const vigencias_1 = require("../utils/vigencias");
 const telegram_1 = require("../utils/telegram");
@@ -143,6 +147,38 @@ async function configuracionRoutes(app) {
         });
         return { ...empresa, soloDispositivos: soloDispositivos?.valor === '1' };
     });
+    // Cambiar el link del kiosco (16 de septiembre de 2026).
+    //
+    // No existía forma de hacerlo: el `marcadorToken` se creaba con la empresa y no se podía
+    // tocar, así que quien se llevara la URL podía abrir el kiosco para siempre. Con el QR
+    // impreso eso pasa de hipótesis a probable.
+    //
+    // Al cambiarlo se caen TODOS los dispositivos vinculados, y no es un efecto secundario que
+    // se pueda evitar: la tablet guarda su autorización en `hp_kiosco_<token>` (localStorage,
+    // useVinculoDispositivo.ts), así que con el token nuevo no la encuentra y vuelve a pedir
+    // código. Se borran de la base para que la lista no muestre autorizaciones que ya no sirven.
+    app.post('/marcador-link/regenerar', auth, async (request) => {
+        const marcadorToken = node_crypto_1.default.randomBytes(18).toString('base64url');
+        const revocados = await prisma_1.prisma.dispositivoKiosco.deleteMany({ where: { empresaId: request.empresaId } });
+        await prisma_1.prisma.empresa.update({ where: { id: request.empresaId }, data: { marcadorToken } });
+        return { marcadorToken, dispositivosRevocados: revocados.count };
+    });
+    // Lo que de verdad está pasando con el kiosco, para que la pantalla no muestre solo texto
+    // fijo: cuánta gente tiene el rostro registrado y cuándo fue la última marcación. Sin esto,
+    // una tablet colgada desde ayer se ve igual que una funcionando.
+    app.get('/kiosco-estado', auth, async (request) => {
+        const empresaId = request.empresaId;
+        const [activos, conRostro, ultima] = await Promise.all([
+            prisma_1.prisma.colaborador.count({ where: { empresaId, activo: true } }),
+            prisma_1.prisma.colaborador.count({ where: { empresaId, activo: true, rostroEnroladoEn: { not: null } } }),
+            prisma_1.prisma.registro.findFirst({
+                where: { colaborador: { empresaId }, entrada: { not: null } },
+                orderBy: { entrada: 'desc' },
+                select: { entrada: true },
+            }),
+        ]);
+        return { activos, conRostro, ultimaMarcacion: ultima?.entrada ?? null };
+    });
     // ===== Dispositivos autorizados del kiosco =====
     app.get('/dispositivos', auth, async (request) => {
         return prisma_1.prisma.dispositivoKiosco.findMany({
@@ -159,7 +195,10 @@ async function configuracionRoutes(app) {
                 return reply.status(403).send({ error: 'Tu plan permite un solo dispositivo de kiosco. Elimina el actual o sube de plan para vincular más.', codigo: 'FUNCION_PLAN', funcion: 'multiDispositivo' });
             }
         }
-        const codigo = String(Math.floor(100000 + Math.random() * 900000));
+        // `crypto.randomInt` y no `Math.random()`: esto es una llave, y `Math.random` es
+        // predecible si se conoce el estado del generador. Con 10 minutos de vida y un solo uso
+        // el riesgo era bajo, pero la línea cuesta lo mismo.
+        const codigo = String(node_crypto_1.default.randomInt(100000, 1000000));
         const valor = JSON.stringify({ codigo, expira: Date.now() + 10 * 60 * 1000 });
         await prisma_1.prisma.configuracion.upsert({
             where: { empresaId_clave: { empresaId: request.empresaId, clave: 'CODIGO_KIOSCO' } },
