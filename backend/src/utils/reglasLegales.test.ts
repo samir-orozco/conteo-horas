@@ -53,6 +53,15 @@ const PERIODOS_SEED = [
   { desde: '2027-07-01', hasta: null, inicioNocturna: 19, recargoDom: 1.0 },
 ];
 
+// Las vigencias del auxilio, copiadas del seed igual que las de arriba. Se agregaron al seed el 17
+// de septiembre de 2026, cuando el auxilio salió del salario y pasó a tener tabla propia. Hasta ese
+// día el seed no tenía auxilio y no había nada que cotejar; desde entonces sí, y sin esta copia la
+// cifra del sitio podía separarse de la que liquida el producto sin que nada fallara.
+const AUXILIOS_SEED = [
+  { desde: '2025-01-01', valor: 200_000, tope: 2_847_000 },   // Decreto 1573 de 2024
+  { desde: '2026-01-01', valor: 249_095, tope: 3_501_810 },   // Decreto 1470 de 2025
+];
+
 type Tipo = { codigo: string; nombre: string; horaInicio: number; horaFin: number; recargo: number };
 
 describe('las reglas que publica el sitio son las que cobra el producto', () => {
@@ -200,6 +209,18 @@ describe('cifras de 2026 fijadas por decreto', () => {
     expect(TOPE_AUXILIO).toBe(3_501_810);
     expect(tieneAuxilio(TOPE_AUXILIO)).toBe(true);
     expect(tieneAuxilio(TOPE_AUXILIO + 1)).toBe(false);
+  });
+
+  // El sitio publica UNA cifra, la que rige hoy; el seed guarda la historia. Lo que hay que atar es
+  // que la del sitio sea la vigencia más nueva del seed: si en enero se agrega la de 2027 a la base
+  // y nadie toca el blog, esta prueba falla antes de que salga publicado un número que ya no se paga.
+  it('el auxilio que publica el sitio es la vigencia más nueva del seed', () => {
+    const ultima = AUXILIOS_SEED[AUXILIOS_SEED.length - 1];
+    expect(AUXILIO_TRANSPORTE).toBe(ultima.valor);
+    expect(TOPE_AUXILIO).toBe(ultima.tope);
+    // Y el tope del seed tiene que ser dos mínimos, que es como lo define la ley: si alguien sube
+    // el salario mínimo y deja el tope viejo, la incoherencia sale aquí y no en una liquidación.
+    expect(ultima.tope).toBe(2 * SMLMV);
   });
 });
 
