@@ -6,6 +6,7 @@ import { jornadaVigente, horasMesDeJornada } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { esListaDescriptoresValida, cuantasMuestras } from '../utils/rostro';
 import { normalizarModalidad, normalizarPermisoOtraSede } from '../utils/modalidad';
+import { normalizarAuxilio, AUXILIO_INVALIDO } from '../utils/auxilioDeLaFicha';
 import { fotoPerfilValida, fotoParaEnrolar, miniValida } from '../utils/fotoPerfil';
 import { resumenDeContrato } from '../utils/estadoContratoResumen';
 import { validarImportacion, COLUMNAS_FORMATO } from '../utils/importarColaboradores';
@@ -196,6 +197,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     }
     if ('modalidad' in data) data.modalidad = normalizarModalidad(data.modalidad);
     if ('puedeCerrarEnOtraSede' in data) data.puedeCerrarEnOtraSede = normalizarPermisoOtraSede(data.puedeCerrarEnOtraSede);
+    // El auxilio llega crudo del formulario: vacío es «el del decreto», 0 es «esta empresa no lo
+    // paga», y cualquier otra cosa tiene que rebotar antes de llegar a Prisma.
+    if ('auxilioTransporte' in data) data.auxilioTransporte = normalizarAuxilio(data.auxilioTransporte);
     return data;
   }
 
@@ -341,6 +345,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   app.post('/', auth, async (request, reply) => {
     const { sedeIds, ...cuerpo } = request.body as any;
     const data = normalizar(cuerpo);
+    if (data.auxilioTransporte === AUXILIO_INVALIDO) {
+      return reply.status(400).send({ error: 'El auxilio de transporte tiene que ser un número de cero en adelante, o quedar vacío para usar el del decreto' });
+    }
     if (!(await horarioValido(data.horarioId, request.empresaId!))) {
       return reply.status(400).send({ error: 'Horario inválido' });
     }
@@ -431,6 +438,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
     const { empresaId: _ignorar, horario: _rel, sedeIds, ...rest } = request.body as any;
     const data = normalizar(rest);
+    if (data.auxilioTransporte === AUXILIO_INVALIDO) {
+      return reply.status(400).send({ error: 'El auxilio de transporte tiene que ser un número de cero en adelante, o quedar vacío para usar el del decreto' });
+    }
     if (!(await horarioValido(data.horarioId, request.empresaId!))) {
       return reply.status(400).send({ error: 'Horario inválido' });
     }

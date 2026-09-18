@@ -14,7 +14,9 @@ const ANA: PersonaDeNomina = {
   colaboradorId: 'c1', cedula: '1020345678', nombre: 'Ana', apellido: 'Giraldo', cargo: 'Cajera',
   // Ana parte sus jornadas con el almuerzo: 13 marcaciones cerradas en 7 días. Los dos números
   // tienen que ser distintos, o la prueba pasaría con una columna puesta en lugar de la otra.
-  salarioMensual: 1_750_000, valorHora: 9_114.58, registrosCont: 13, diasCont: 7, minutosOrdinarios: 6_240,
+  // El auxilio llega ya prorrateado por el servidor: 7 días de 30 sobre los 249.095 de 2026.
+  salarioMensual: 1_750_000, valorHora: 9_114.58, registrosCont: 13, diasCont: 7,
+  auxilioTransporte: 58_122.17, minutosOrdinarios: 6_240,
   liquidacion: [
     { codigo: 'HOD', nombre: 'Hora Ordinaria Diurna', horas: 104, valorHora: 9_114.58, recargo: 1, esExtra: false, factorPagado: 0, subtotal: 0 },
     { codigo: 'HON', nombre: 'Hora Ordinaria Nocturna', horas: 6, valorHora: 9_114.58, recargo: 1.35, esExtra: false, factorPagado: 0.35, subtotal: 19_140.62 },
@@ -31,7 +33,9 @@ const LUIS: PersonaDeNomina = {
   colaboradorId: 'c2', cedula: '1030405060', nombre: 'Luis', apellido: 'Pérez', cargo: null,
   // Luis trabajó dos días y nunca marcó la salida: cero marcaciones cerradas. Es el caso real que
   // apareció en la base del dueño, donde con un solo número salía como si no hubiera trabajado.
-  salarioMensual: 1_600_000, valorHora: 8_333.33, registrosCont: 0, diasCont: 2, minutosOrdinarios: 0,
+  // En cero a propósito: esta empresa no paga auxilio, y un cero explícito no es «sin dato».
+  salarioMensual: 1_600_000, valorHora: 8_333.33, registrosCont: 0, diasCont: 2,
+  auxilioTransporte: 0, minutosOrdinarios: 0,
   liquidacion: [],
   totalRecargos: 0, totalExtra: 0, totalAdicional: 0,
   novedades: [{ tipo: 'MEDICO', remunerado: false, dias: 0, parciales: 1 }],
@@ -61,6 +65,21 @@ describe('hojasDeNomina', () => {
   // local el 15 de septiembre de 2026: una persona con 12 marcaciones repartidas en 5 días daba 11,
   // y otra que trabajó dos días sin marcar nunca la salida daba 0. Llamar a esa columna «Días con
   // marcación» le pone al contador un número que no es el que promete.
+  // El auxilio de transporte NO es salario y no entra en el valor de la hora, pero sí es plata que
+  // la persona recibe: sin columna propia, el Excel no cuadra con lo que se le paga. Va prorrateado
+  // por los días en que efectivamente viajó al trabajo, que es lo que calcula el servidor.
+  it('el resumen trae el auxilio de transporte en su propia columna, aparte del salario', () => {
+    const r = hoja([ANA, LUIS], 'Resumen');
+    const col = (fila: number, titulo: string) => r.filas[fila][r.columnas.indexOf(titulo)];
+    expect(r.columnas).toContain('Auxilio de transporte');
+    // Ana: 7 días de 30 sobre el auxilio de 2026.
+    expect(col(0, 'Auxilio de transporte')).toBe(58_122.17);
+    // Luis no lo recibe: su empresa no lo paga.
+    expect(col(1, 'Auxilio de transporte')).toBe(0);
+    // Y no se mezcla con el salario, que sigue siendo el básico.
+    expect(col(0, 'Salario mensual')).toBe(1_750_000);
+  });
+
   it('el resumen trae los dos números, los días y las marcaciones cerradas, cada uno con su nombre', () => {
     const r = hoja([ANA, LUIS], 'Resumen');
     const col = (fila: number, titulo: string) => r.filas[fila][r.columnas.indexOf(titulo)];

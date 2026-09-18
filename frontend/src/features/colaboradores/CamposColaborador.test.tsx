@@ -11,7 +11,15 @@ import CamposColaborador from './CamposColaborador';
 const horarios = [{ id: 'h1', nombre: 'Oficina', franjas: [{ dias: ['LUNES'], horaEntrada: '08:00', horaSalida: '17:00' }] }];
 const sedes = [{ id: 's1', nombre: 'El Poblado' }];
 
-const montar = (valores = {}, foto?: Parameters<typeof CamposColaborador>[0]['foto']) => {
+// El auxilio vigente llega desde el servidor (GET /configuracion/legales). Decretos 1469 y 1470 de
+// 2025, que rigen en 2026: mínimo 1.750.905, auxilio 249.095, tope de dos mínimos.
+const AUXILIO_2026 = { valor: 249_095, tope: 3_501_810 };
+
+const montar = (
+  valores = {},
+  foto?: Parameters<typeof CamposColaborador>[0]['foto'],
+  auxilio: { valor: number; tope: number } | null = AUXILIO_2026,
+) => {
   const onCambio = vi.fn();
   render(
     <CamposColaborador
@@ -21,15 +29,58 @@ const montar = (valores = {}, foto?: Parameters<typeof CamposColaborador>[0]['fo
       sedes={sedes}
       resumenFranjas={() => 'L-V 08:00-17:00'}
       foto={foto}
+      auxilio={auxilio}
     />,
   );
   return onCambio;
 };
 
+// EL AUXILIO SE PROPONE SOLO (17 de septiembre de 2026).
+//
+// El campo nace vacío y vacío significa «el del decreto», pero el administrador no tiene por qué
+// saberse de memoria ni el valor ni el tope de dos mínimos. La ficha se lo muestra.
+//
+// Lo que se MUESTRA no es lo que se GUARDA: con el campo vacío se enseña el valor del decreto y se
+// guarda null. Si se escribiera de verdad, en enero ese número quedaría congelado y habría que
+// volver a tocar la ficha de cada persona, que es justo lo que la tabla de vigencias evita.
+describe('el auxilio de transporte que propone la ficha', () => {
+  it('con salario mínimo muestra el del decreto y dice de dónde sale', () => {
+    montar({ salarioMensual: 1_750_905, auxilioTransporte: null });
+    expect(screen.getByLabelText(/auxilio de transporte/i)).toHaveValue('249.095');
+    // «del decreto» a secas también está en la descripción fija del campo: se busca el texto que
+    // solo tiene el aviso.
+    expect(screen.getByText(/del decreto vigente/i)).toBeInTheDocument();
+  });
+
+  it('por encima de dos mínimos propone cero y avisa que la ley no obliga', () => {
+    montar({ salarioMensual: 5_000_000, auxilioTransporte: null });
+    expect(screen.getByLabelText(/auxilio de transporte/i)).toHaveValue('0');
+    expect(screen.getByText(/no obliga/i)).toBeInTheDocument();
+  });
+
+  it('mostrarlo no es guardarlo: abrir la ficha no escribe nada', () => {
+    const onCambio = montar({ salarioMensual: 1_750_905, auxilioTransporte: null });
+    expect(onCambio).not.toHaveBeenCalled();
+  });
+
+  it('un valor escrito a mano manda sobre la propuesta, aunque supere el tope', () => {
+    // Decisión del dueño: por encima del tope se avisa, pero no se fuerza. Pagarlo es legal.
+    montar({ salarioMensual: 5_000_000, auxilioTransporte: 2_000 });
+    expect(screen.getByLabelText(/auxilio de transporte/i)).toHaveValue('2.000');
+  });
+
+  it('sin vigencia del servidor no propone ningún número', () => {
+    montar({ salarioMensual: 1_750_905, auxilioTransporte: null }, undefined, null);
+    expect(screen.getByLabelText(/auxilio de transporte/i)).toHaveValue('');
+  });
+});
+
 describe('CamposColaborador', () => {
   it('ofrece todos los campos, cada uno alcanzable por su rótulo', () => {
     montar();
-    for (const rotulo of [/cédula/i, /cargo/i, /fecha de nacimiento/i, /horario de trabajo/i, /salario mensual/i]) {
+    // «Salario básico» y no «Salario mensual»: el auxilio de transporte va en su propio campo, y
+    // meterlo dentro del salario encarece cada hora extra y cada recargo un 14,2% en el mínimo.
+    for (const rotulo of [/cédula/i, /cargo/i, /fecha de nacimiento/i, /horario de trabajo/i, /salario básico/i, /auxilio de transporte/i]) {
       expect(screen.getByLabelText(rotulo)).toBeInTheDocument();
     }
     // Los que son grupo de varios controles se anuncian como grupo.

@@ -5,6 +5,7 @@ import SelectorFoto from './SelectorFoto';
 import { normalizarModalidad } from './modalidad';
 import { formatearMiles, parsearMiles } from '../../lib/dinero';
 import type { DosFotos } from './foto';
+import { auxilioSugerido } from './auxilioSugerido';
 
 // Los campos de un colaborador, compartidos por los DOS formularios que lo
 // editan: el de la lista y el de su ficha.
@@ -24,7 +25,11 @@ export type HorarioOpcion = { id: string; nombre: string; franjas: Franja[] };
 export type ValoresColaborador = {
   nombre?: string; apellido?: string; cedula?: string; cargo?: string;
   email?: string; telefono?: string; fechaNacimiento?: string;
-  salarioMensual?: number; horarioId?: string | null;
+  // El salario BÁSICO, sin auxilio: es la base del valor de la hora.
+  salarioMensual?: number;
+  // Vacío (null) = el del decreto si su básico da derecho. 0 = esta empresa no lo paga.
+  auxilioTransporte?: number | null;
+  horarioId?: string | null;
   sedeIds?: string[]; modalidad?: string; foto?: string | null;
   // Opcional y SIN valor por defecto a propósito: si el formulario lo inicializara
   // en false cuando no llega, guardar cualquier otro dato le quitaría el permiso
@@ -41,17 +46,25 @@ const CORTO = 'sm:max-w-[13rem]';   // cédula, fecha, salario
 const MEDIO = 'sm:max-w-[26rem]';   // cargo
 
 export default function CamposColaborador({
-  valores, onCambio, horarios, sedes, resumenFranjas, foto,
+  valores, onCambio, horarios, sedes, resumenFranjas, foto, auxilio = null,
 }: {
   valores: ValoresColaborador;
   onCambio: (parcial: Record<string, unknown>) => void;
   horarios: HorarioOpcion[];
   sedes: SedeOpcion[];
   resumenFranjas: (f: Franja[]) => string;
+  // El auxilio que rige hoy, como lo manda el servidor (GET /configuracion/legales). Sirve para
+  // PROPONER: nadie tiene por qué saberse de memoria el valor del decreto ni el tope de dos
+  // mínimos. Null mientras no haya llegado, y entonces no se propone nada.
+  auxilio?: { valor: number; tope: number } | null;
   // Solo en el formulario de la lista. En la ficha la foto se cambia desde el
   // círculo de la cabecera, que es donde se está viendo.
   foto?: { onCambio: (fotos: DosFotos | null) => void; onError: (m: string) => void };
 }) {
+  // Qué auxilio propone la ficha con el salario que hay escrito en este momento. Solo PROPONE: lo
+  // que se guarda sigue siendo lo que quede en el campo.
+  const sugerido = auxilioSugerido(valores.salarioMensual ?? 0, auxilio);
+
   const modalidad = normalizarModalidad(valores.modalidad);
   const iniciales = `${valores.nombre?.[0] ?? ''}${valores.apellido?.[0] ?? ''}`.toUpperCase();
 
@@ -91,14 +104,56 @@ export default function CamposColaborador({
         )}
       </CampoFormulario>
 
-      <CampoFormulario rotulo="Salario mensual"
-        descripcion="Con esto se calcula su hora extra y sus recargos." obligatorio>
+      {/* «Básico» y no «mensual»: el auxilio de transporte NO es salario y no entra en el valor de
+          la hora. Quien lo sumaba aquí para que apareciera en algún lado encarecía cada hora extra
+          y cada recargo un 14,2% en el salario mínimo. */}
+      <CampoFormulario rotulo="Salario básico"
+        descripcion="Sin el auxilio de transporte, que va en el campo de abajo. Con esto se calcula su hora extra y sus recargos." obligatorio>
         {id => (
           <div className={`relative ${CORTO}`}>
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">$</span>
             <input id={id} type="text" inputMode="numeric" required placeholder="1.750.000"
               value={formatearMiles(valores.salarioMensual ?? 0)} className={`${ENTRADA} pl-7`}
               onChange={e => onCambio({ salarioMensual: parsearMiles(e.target.value) })} />
+          </div>
+        )}
+      </CampoFormulario>
+
+      <CampoFormulario rotulo="Auxilio de transporte"
+        descripcion="Déjalo vacío y se aplica el del decreto si su salario da derecho. Escribe 0 si tu empresa no lo paga.">
+        {id => (
+          <div className={CORTO}>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">$</span>
+              {/* Lo que se MUESTRA no es lo que se GUARDA. Con el campo vacío se enseña el valor que
+                  propone el decreto, pero lo guardado sigue siendo null: si se escribiera de verdad,
+                  en enero ese número quedaría congelado y habría que volver a tocar cada ficha, que
+                  es justo lo que la tabla de vigencias evita.
+
+                  Y vacío no es cero: vacío es «que lo ponga el decreto», cero es «aquí no se paga».
+
+                  El cero se escribe a mano y no con `formatearMiles`, que para el cero devuelve
+                  cadena vacía. Un campo vacío ahí diría «que lo ponga el decreto», justo lo
+                  contrario de lo que se está proponiendo, y contradiría al aviso de al lado. */}
+              <input id={id} type="text" inputMode="numeric" placeholder="Automático"
+                value={valores.auxilioTransporte != null
+                  ? (valores.auxilioTransporte === 0 ? '0' : formatearMiles(valores.auxilioTransporte))
+                  : sugerido.valor == null ? '' : sugerido.valor === 0 ? '0' : formatearMiles(sugerido.valor)}
+                className={`${ENTRADA} pl-7`}
+                onChange={e => onCambio({
+                  auxilioTransporte: e.target.value.trim() === '' ? null : parsearMiles(e.target.value),
+                })} />
+            </div>
+            {/* Por qué es ese número. Solo cuando el campo está vacío: si alguien escribió un valor,
+                manda el suyo y explicarle el del decreto solo confunde. */}
+            {valores.auxilioTransporte == null && sugerido.motivo === 'DECRETO' && (
+              <p className="text-xs text-muted mt-1">Del decreto vigente. Puedes cambiarlo o poner 0.</p>
+            )}
+            {valores.auxilioTransporte == null && sugerido.motivo === 'SUPERA_TOPE' && (
+              <p className="text-xs text-amber-700 mt-1">
+                Su salario supera dos mínimos, así que la ley no obliga a pagarlo. Si tu empresa lo paga igual, escríbelo.
+              </p>
+            )}
           </div>
         )}
       </CampoFormulario>

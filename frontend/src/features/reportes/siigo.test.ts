@@ -32,6 +32,34 @@ const linea = (codigo: string, horas: number) =>
 
 const PERIODO = { desde: '2026-09-01', hasta: '2026-09-15' };
 
+// EL AUXILIO DE TRANSPORTE VA A SIIGO COMO MONTO, NO COMO HORAS NI DÍAS (17 de septiembre de 2026).
+//
+// En el catálogo de la propia plantilla, el concepto 02 declara su unidad como «Valor $», a
+// diferencia del 26 («Horas») o el 31 («Dias»). O sea que la cantidad que espera Siigo es la plata,
+// ya prorrateada, y no un número de días.
+//
+// Y no encaja en ninguno de los dos bucles que ya existen: no es una línea de liquidación ni una
+// novedad, es un monto de la persona.
+describe('el auxilio de transporte en el archivo de Siigo', () => {
+  it('usa el concepto 02 y la unidad de valor, no de horas ni de días', () => {
+    expect(CONCEPTOS_SIIGO.AUXILIO_TRANSPORTE).toMatchObject({ codigo: 2, unidad: 'Valor $' });
+  });
+
+  it('manda el monto del período, ya prorrateado', () => {
+    const filas = filasParaSiigo([persona(ANA_CEDULA, 'Ana', { auxilioTransporte: 58_122.17 })], PERIODO);
+    expect(filas).toHaveLength(1);
+    expect(filas[0]).toMatchObject({ concepto: 2, cantidad: 58_122.17, unidad: 'Valor $' });
+  });
+
+  it('quien no lo recibe no ocupa una fila', () => {
+    expect(filasParaSiigo([persona(ANA_CEDULA, 'Ana', { auxilioTransporte: 0 })], PERIODO)).toEqual([]);
+  });
+
+  it('un servidor que todavía no lo manda tampoco genera fila', () => {
+    expect(filasParaSiigo([persona(ANA_CEDULA, 'Ana')], PERIODO)).toEqual([]);
+  });
+});
+
 describe('CONCEPTOS_SIIGO', () => {
   it('manda cada concepto de horas al código de Siigo que le toca', () => {
     expect(CONCEPTOS_SIIGO.HED).toMatchObject({ codigo: 10, unidad: 'Horas' });

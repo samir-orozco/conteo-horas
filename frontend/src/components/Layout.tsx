@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import BloqueoPago from './BloqueoPago';
 import VerificarCorreo from './VerificarCorreo';
 import GuiaBienvenida from './GuiaBienvenida';
+import RevisionAuxilio from './RevisionAuxilio';
 import Novedades from './Novedades';
 import CampanaNav from '../features/notificaciones/CampanaNav';
 import ReportesNav from './ReportesNav';
@@ -194,6 +195,10 @@ export default function Layout() {
       {/* Bloqueo total del panel cuando la suscripción está vencida */}
       {!esSuperAdmin && <BloqueoPago />}
       {!esSuperAdmin && <VerificarCorreo />}
+      {/* Va DESPUÉS del bloqueo de pago y de la verificación de correo, que tienen prioridad, y
+          ANTES de la guía: una empresa con el auxilio metido dentro del salario está pagando de más
+          cada hora extra, y eso pesa más que darle la bienvenida. Se calla sola si ya revisó. */}
+      {!esSuperAdmin && <RevisionAuxilio />}
       {!esSuperAdmin && (
         <GuiaBienvenida
           key={`guia-${ayuda?.que === 'guia' ? ayuda.n : 0}`}

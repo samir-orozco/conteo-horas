@@ -48,6 +48,22 @@ async function main() {
     });
   }
 
+  // ===== Auxilio de transporte — Ley 15 de 1959, valor por decreto cada enero =====
+  // El tope es dos salarios mínimos del año. Cuando salga el decreto de 2027 se agrega una fila
+  // más aquí y en el SQL de producción: las anteriores NO se tocan, para que los reportes viejos
+  // sigan mostrando el valor que regía entonces.
+  const auxilios = [
+    { vigenteDesde: fbog(2025, 1, 1), valor: 200_000, tope: 2_847_000 }, // Decreto 1573 de 2024
+    { vigenteDesde: fbog(2026, 1, 1), valor: 249_095, tope: 3_501_810 }, // Decreto 1470 de 2025
+  ];
+  for (const a of auxilios) {
+    await prisma.auxilioVigencia.upsert({
+      where: { vigenteDesde: a.vigenteDesde },
+      update: { valor: a.valor, tope: a.tope },
+      create: a,
+    });
+  }
+
   // ===== Tipos de hora con vigencias — CST + Ley 2466 de 2025 =====
   // Hasta 24/dic/2025: nocturna desde las 21:00, dominical 80% (desde jul/2025)
   // 25/dic/2025: nocturna desde las 19:00

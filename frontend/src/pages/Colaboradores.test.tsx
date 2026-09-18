@@ -55,7 +55,7 @@ async function llenarAltaNueva() {
   await u.type(screen.getByLabelText('Nombre'), 'Ana');
   await u.type(screen.getByLabelText('Apellido'), 'Giraldo');
   await u.type(screen.getByLabelText(/cédula/i), '1020304050');
-  await u.type(screen.getByLabelText(/salario mensual/i), '1750000');
+  await u.type(screen.getByLabelText(/salario básico/i), '1750000');
   return u;
 }
 

@@ -16,13 +16,17 @@ import type { PersonaDeNomina, Periodo } from './nominaDelPeriodo';
 //  - La incapacidad de EPS va al concepto del 66%, que es el de los días 3 al 90, el caso corriente.
 //    El concepto queda escrito en el archivo para poder cambiarlo antes de subirlo.
 //  - Los permisos remunerados (médico, calamidad, personal) van a licencia remunerada.
-export type ConceptoSiigo = { codigo: number; unidad: 'Horas' | 'Dias' };
+// «Valor $» es la unidad que el propio catálogo de Siigo declara para el auxilio de transporte
+// (concepto 02): la cantidad que espera es la PLATA, ya prorrateada, no un número de días.
+export type UnidadSiigo = 'Horas' | 'Dias' | 'Valor $';
+
+export type ConceptoSiigo = { codigo: number; unidad: UnidadSiigo };
 
 export type FilaSiigo = {
   cedula: string;
   concepto: number;
   cantidad: number;
-  unidad: 'Horas' | 'Dias';
+  unidad: UnidadSiigo;
   desde: string;
   hasta: string;
 };
@@ -32,7 +36,7 @@ export type FilaEscrita = {
   cedula: string;
   nombre: string;
   concepto: string;
-  unidad: 'Horas' | 'Dias';
+  unidad: UnidadSiigo;
   cantidad: number;
   desde: string;
   hasta: string;
@@ -66,6 +70,10 @@ export const CONCEPTOS_SIIGO: Record<string, ConceptoSiigo> = {
   CALAMIDAD: { codigo: 22, unidad: 'Dias' },
   PERSONAL: { codigo: 22, unidad: 'Dias' },
   NO_REMUNERADO: { codigo: 38, unidad: 'Dias' }, // Licencia no remunerada (deducción)
+
+  // Plata, no tiempo. No sale de la liquidación ni de las novedades: es un monto de la persona, ya
+  // prorrateado por los días en que viajó al trabajo.
+  AUXILIO_TRANSPORTE: { codigo: 2, unidad: 'Valor $' },
 };
 
 // Siigo pide las fechas como DD/MM/AAAA. Las del período vienen como AAAA-MM-DD.
@@ -94,6 +102,17 @@ export function filasParaSiigo(personas: PersonaDeNomina[], periodo: Periodo): F
       // Las de parte del día no son un día: van en el reporte de HoraPro, no en la nómina del ERP.
       if (!concepto || concepto.unidad !== 'Dias' || novedad.dias <= 0) continue;
       filas.push({ cedula: p.cedula, concepto: concepto.codigo, cantidad: novedad.dias, unidad: 'Dias', desde, hasta });
+    }
+
+    // El auxilio va aparte de los dos bucles: no es una línea de liquidación ni una novedad. Viaja
+    // como monto porque así lo pide el catálogo de Siigo, y solo si hay algo que pagar: un cero
+    // ocuparía una fila del archivo para decir que no se paga nada.
+    const auxilio = CONCEPTOS_SIIGO.AUXILIO_TRANSPORTE;
+    if (p.auxilioTransporte && p.auxilioTransporte > 0) {
+      filas.push({
+        cedula: p.cedula, concepto: auxilio.codigo, cantidad: p.auxilioTransporte,
+        unidad: auxilio.unidad, desde, hasta,
+      });
     }
   }
   return filas;

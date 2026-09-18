@@ -30,6 +30,11 @@ export type PersonaDeNomina = {
   // no lo manda.
   registrosCont: number;
   diasCont?: number;
+  // El auxilio de transporte del período, YA prorrateado por el servidor: no es salario, no entra en
+  // el valor de la hora, y se paga por los días en que la persona efectivamente viajó al trabajo.
+  // Opcional porque un servidor anterior no lo manda, y en ese caso la celda va vacía: un cero diría
+  // «no recibe auxilio», que es una afirmación distinta a «aquí todavía no se calcula».
+  auxilioTransporte?: number;
   minutosOrdinarios: number;
   liquidacion: LineaDeLiquidacion[];
   totalRecargos: number;
@@ -66,13 +71,13 @@ export function hojasDeNomina(personas: PersonaDeNomina[], periodo: Periodo): Ho
       // Los dos números, cada uno con su nombre (decisión del dueño, 15 de septiembre de 2026). Antes
       // iba uno solo rotulado «Días con marcación» que en realidad eran marcaciones cerradas: medido
       // contra la base, 11 para quien trabajó 5 días y 0 para quien trabajó 2 sin marcar la salida.
-      'Cédula', 'Nombre', 'Cargo', 'Salario mensual', 'Valor hora',
+      'Cédula', 'Nombre', 'Cargo', 'Salario mensual', 'Valor hora', 'Auxilio de transporte',
       'Días con marcación', 'Marcaciones cerradas', 'Horas ordinarias',
       ...COLUMNAS_DE_CONCEPTO.map(c => c.titulo),
       'Recargos', 'Extras', 'Total adicional',
     ],
     filas: personas.map(p => [
-      p.cedula ?? '', nombreDe(p), p.cargo ?? '', p.salarioMensual, p.valorHora,
+      p.cedula ?? '', nombreDe(p), p.cargo ?? '', p.salarioMensual, p.valorHora, p.auxilioTransporte ?? '',
       p.diasCont ?? '', p.registrosCont,
       horasDe(p, ORDINARIA),
       ...COLUMNAS_DE_CONCEPTO.map(c => horasDe(p, c.codigo)),

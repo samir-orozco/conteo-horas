@@ -10,3 +10,7 @@ ios/
 # Originales de las fotos del blog: pesan megas y solo sirven para volver a
 # recortar. Lo que se publica son las versiones de public/blog/img/.
 frontend/blog/originales/
+
+# Caché incremental de TypeScript. Se regenera solo en cada compilación y cambia
+# en cada build, así que versionarlo es ruido en todos los diffs.
+backend/tsconfig.tsbuildinfo

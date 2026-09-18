@@ -29,6 +29,8 @@ type Reporte = {
   // `registrosCont` son marcaciones CERRADAS, no días: una jornada partida por el almuerzo suma de a
   // dos y quien no marca la salida no suma nada. `diasCont` son los días con marcación.
   totalPagar: number; registrosCont: number; diasCont?: number; saldo?: SaldoTiempo;
+  // El auxilio del período, ya prorrateado por el servidor. No es salario y NO entra en el total.
+  auxilioTransporte?: number;
 };
 type Novedad = { id: string; tipo: string; descripcion?: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; evidenciaTipo?: string | null; evidenciaNombre?: string | null; remunerado?: boolean };
 type RegistroDia = { id: string; fecha: string; entrada: string | null; salida: string | null; tipo: string; minutosTarde: number | null; observacion?: string | null };
@@ -150,6 +152,11 @@ export default function Reportes() {
       liqFilas.push(['', `Saldo pendiente (${fmtMin(reporte.saldo!.minutosSaldo)} sin reponer)`, '', '', '', -Math.round(descuentoSaldo)]);
     }
     liqFilas.push(['', 'TOTAL A PAGAR', '', '', '', Math.round(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)]);
+    // Debajo del total y fuera de él: el auxilio no es salario, y ese total suma el salario del mes
+    // completo a cualquier rango (defecto conocido, pendiente del módulo de período de pago).
+    if (reporte.auxilioTransporte && reporte.auxilioTransporte > 0) {
+      liqFilas.push(['', 'Auxilio de transporte del período (se paga aparte)', '', '', '', Math.round(reporte.auxilioTransporte)]);
+    }
 
     // Hoja 2: Novedades del período
     const novFilas = novedades.map(n => [
@@ -395,6 +402,15 @@ export default function Reportes() {
               <span className="font-bold text-ink">Total a pagar</span>
               <span className="font-bold text-ink text-lg">{fmt(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)}</span>
             </div>
+            {/* DEBAJO del total y fuera de él, a propósito. El auxilio no es salario: no entra en la
+                base de las horas extra ni de los recargos. Y ponerlo encima invitaría a sumarlo a un
+                total que no lo incluye. */}
+            {reporte.auxilioTransporte !== undefined && reporte.auxilioTransporte > 0 && (
+              <div className="flex justify-between border-t border-gray-100 pt-2">
+                <span className="text-muted">Auxilio de transporte del período<br /><span className="text-xs">se paga aparte del salario</span></span>
+                <span className="text-ink font-medium">{fmt(reporte.auxilioTransporte)}</span>
+              </div>
+            )}
           </div>
 
           {reporte.liquidacion.length === 0 && (

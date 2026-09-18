@@ -18,8 +18,9 @@ import CamposColaborador, { type ValoresColaborador } from '../features/colabora
 import { payloadColaborador } from '../features/colaboradores/payloadColaborador';
 import { ETIQUETA_MODALIDAD, TONO_MODALIDAD, normalizarModalidad } from '../features/colaboradores/modalidad';
 import EtiquetaBiometrica from '../features/colaboradores/EtiquetaBiometrica';
+import { useLegales } from '../lib/legales';
 
-type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null; modalidad?: string; puedeCerrarEnOtraSede?: boolean; foto?: string | null; rostroEnroladoEn?: string | null; rostroRechazadoEn?: string | null };
+type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; auxilioTransporte?: number | null; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null; modalidad?: string; puedeCerrarEnOtraSede?: boolean; foto?: string | null; rostroEnroladoEn?: string | null; rostroRechazadoEn?: string | null };
 // Los colores del chip de contrato. Se quedan en la pantalla y no en la regla:
 // qué es urgente lo decide estadoContrato.ts, cómo se ve lo decide esto.
 const TONO_CHIP: Record<string, string> = {
@@ -39,7 +40,9 @@ type Retirado = { id: string; nombre: string; apellido: string; cedula: string; 
 // lee «no vino» como apagado, así que el alta queda igual. Mandarlo en cada alta
 // hacía fallar el alta contra un backend anterior, que es justo el que queda
 // corriendo si hay que devolver el despliegue.
-const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, horarioId: '', sedeIds: [], modalidad: 'PRESENCIAL', foto: null, fotoMini: null };
+// `auxilioTransporte: null` de entrada: quien da de alta a alguien sin tocar ese campo deja que el
+// decreto decida, que es lo correcto para la mayoría.
+const EMPTY: FormData = { nombre: '', apellido: '', cedula: '', cargo: '', email: '', telefono: '', fechaNacimiento: '', salarioMensual: 0, auxilioTransporte: null, horarioId: '', sedeIds: [], modalidad: 'PRESENCIAL', foto: null, fotoMini: null };
 
 // La fecha viene del backend como ISO; el input date necesita "YYYY-MM-DD"
 export const soloFecha = (s?: string | null) => (s ? new Date(s).toISOString().slice(0, 10) : '');
@@ -96,6 +99,9 @@ function TextoSede({ col, sedes }: { col: { activo: boolean; sedeIds?: string[];
 export default function Colaboradores() {
   const navigate = useNavigate();
   const { plan, recargar: recargarPlan } = useMiPlan();
+  // El auxilio vigente, para que la ficha lo proponga sola en vez de obligar a saberse de memoria
+  // el valor del decreto y el tope de dos mínimos.
+  const legales = useLegales();
   const { usuario } = useAuth();
   const [lista, setLista] = useState<Colaborador[]>([]);
   const [modal, setModal] = useState(false);
@@ -153,7 +159,7 @@ export default function Colaboradores() {
     setEditando(col || null);
     setErrorForm('');
     setFotoTocada(false);
-    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [], modalidad: normalizarModalidad(col.modalidad), puedeCerrarEnOtraSede: col.puedeCerrarEnOtraSede, foto: col.fotoMini ?? null, fotoMini: col.fotoMini ?? null } : EMPTY);
+    setForm(col ? { nombre: col.nombre, apellido: col.apellido, cedula: col.cedula, cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '', fechaNacimiento: soloFecha(col.fechaNacimiento), salarioMensual: col.salarioMensual, auxilioTransporte: col.auxilioTransporte ?? null, horarioId: col.horarioId || '', sedeIds: col.sedeIds ?? [], modalidad: normalizarModalidad(col.modalidad), puedeCerrarEnOtraSede: col.puedeCerrarEnOtraSede, foto: col.fotoMini ?? null, fotoMini: col.fotoMini ?? null } : EMPTY);
     setModal(true);
   };
 
@@ -462,6 +468,7 @@ export default function Colaboradores() {
                   horarios={horarios}
                   sedes={sedes}
                   resumenFranjas={resumenFranjas}
+                  auxilio={legales?.auxilio ?? null}
                   foto={{
                     onCambio: fotos => { setFotoTocada(true); setForm(p => ({ ...p, foto: fotos?.foto ?? null, fotoMini: fotos?.mini ?? null })); },
                     onError: setErrorForm,

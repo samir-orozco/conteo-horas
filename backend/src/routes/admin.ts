@@ -10,11 +10,40 @@ import { comprobanteAGuardar } from '../utils/comprobantes';
 import { decidirEliminacion } from '../utils/eliminarEmpresa';
 import { borrarEmpresaEnCascada } from '../utils/borrarEmpresaEnCascada';
 import { crearSedePrincipal } from '../utils/sedesDeEmpresa';
+import { normalizarVigencia, VIGENCIA_INVALIDA } from '../utils/vigenciaDelAuxilio';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
 export default async function adminRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireSuperAdmin] };
+
+  // ===== Auxilio de transporte: las vigencias del decreto =====
+  //
+  // Cada enero el gobierno fija el salario mínimo y el auxilio. Hasta hoy vivían en el `seed`, así
+  // que actualizarlos exigía un despliegue completo; ahora se agregan desde la pantalla de la
+  // plataforma.
+  //
+  // Se AGREGA una fila por año y las anteriores no se tocan. Editar la vieja reescribiría la
+  // historia: un reporte de diciembre pasaría a liquidarse con el decreto de enero. El upsert va por
+  // fecha, así que reenviar la misma fecha corrige esa fila (una digitación mal puesta) y una fecha
+  // nueva es un año nuevo.
+  app.get('/auxilios', auth, async () => {
+    return prisma.auxilioVigencia.findMany({ orderBy: { vigenteDesde: 'desc' } });
+  });
+
+  app.post('/auxilios', auth, async (request, reply) => {
+    const vigencia = normalizarVigencia((request.body ?? {}) as Record<string, unknown>);
+    if (vigencia === VIGENCIA_INVALIDA) {
+      return reply.status(400).send({
+        error: 'Revisa los datos: la fecha va como AAAA-MM-DD, el auxilio no puede ser negativo y el tope tiene que ser mayor que el auxilio.',
+      });
+    }
+    return prisma.auxilioVigencia.upsert({
+      where: { vigenteDesde: vigencia.vigenteDesde },
+      update: { valor: vigencia.valor, tope: vigencia.tope },
+      create: vigencia,
+    });
+  });
 
   // Empresa con su estado real de suscripción y tarifa actual
   async function empresaConEstado(empresaId: string) {
@@ -184,7 +213,9 @@ export default async function adminRoutes(app: FastifyInstance) {
     const hash = await bcrypt.hash(admin.password, 10);
     try {
       const empresa = await prisma.$transaction(async (tx) => {
-        const emp = await tx.empresa.create({ data: { nombre, nit, email, telefono } });
+        // Nace revisada, igual que en el registro: sus colaboradores se capturan con el salario
+        // básico y el auxilio ya separados, así que no tiene nada que corregir.
+        const emp = await tx.empresa.create({ data: { nombre, nit, email, telefono, auxilioRevisadoEn: new Date() } });
         await tx.suscripcion.create({
           data: { empresaId: emp.id, estado: 'PRUEBA', finPrueba: new Date(Date.now() + DIAS_PRUEBA * DIA_MS) },
         });

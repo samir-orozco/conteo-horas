@@ -16,8 +16,13 @@ import Reportes from './Reportes';
 // prueba, así que ese texto no lo vigilaba nadie.
 
 vi.mock('../lib/api', () => ({ default: { get: vi.fn() } }));
+// El exportador se simula para poder mirar las filas que se le pasan: el Excel de esta pantalla no
+// lo cubría ninguna prueba, y borrarle la fila del auxilio no rompía nada (visto con una mutación).
+vi.mock('../lib/exportar', () => ({ descargarExcelHojas: vi.fn() }));
 import api from '../lib/api';
+import { descargarExcelHojas } from '../lib/exportar';
 const get = api.get as unknown as ReturnType<typeof vi.fn>;
+const exportar = descargarExcelHojas as unknown as ReturnType<typeof vi.fn>;
 
 const JULIAN = { id: 'c-julian', nombre: 'Julián', apellido: 'Torres' };
 const SOFIA = { id: 'c-sofia', nombre: 'Sofía', apellido: 'Ramos' };
@@ -29,6 +34,8 @@ const reporteDe = (quien: typeof JULIAN, diasCont: number | undefined, registros
   liquidacion: [], salarioBase: 1_750_000,
   totalRecargos: 0, totalExtra: 0, totalAdicional: 0, totalPagar: 0,
   registrosCont, diasCont, detalleRegistros: [],
+  // Ya prorrateado por el servidor: 7 días de 30 sobre los 249.095 de 2026.
+  auxilioTransporte: 58_122.17,
 });
 
 function montar(reporte: ReturnType<typeof reporteDe>) {
@@ -59,6 +66,51 @@ const calcularPara = async (reporte: ReturnType<typeof reporteDe>, quien: typeof
 // El texto de la cabecera, con los espacios normalizados: Intl y el JSX meten espacios duros.
 const cabecera = (titulo: HTMLElement) =>
   (titulo.parentElement?.textContent ?? '').replace(/\s+/g, ' ').trim();
+
+// EL AUXILIO SE MUESTRA, PERO FUERA DEL TOTAL (17 de septiembre de 2026).
+//
+// El «Total a pagar» de esta pantalla suma el salario MENSUAL completo a cualquier rango: pidiendo
+// del 1 al 15 muestra un salario entero de más. Es un defecto conocido desde el 2 de septiembre y
+// el dueño decidió posponerlo hasta que exista el módulo de período de pago.
+//
+// Por eso el auxilio va en su propia línea DEBAJO del total y marcado como que se paga aparte:
+// meterlo dentro sería apilar una cifra correcta sobre una equivocada, y ponerlo encima invitaría a
+// sumarlo mentalmente a un total que no lo incluye.
+describe('el auxilio de transporte en el reporte por persona', () => {
+  // Con `totalAdicional` en cero, el total a pagar valdría lo mismo que el salario y la prueba no
+  // podría distinguir un total que suma el auxilio de uno que no. Se le da un valor propio.
+  const conAdicional = (r: ReturnType<typeof reporteDe>) => ({ ...r, totalAdicional: 200_000, totalExtra: 200_000 });
+
+  it('se muestra como línea propia, con su valor del período', async () => {
+    await calcularPara(conAdicional(reporteDe(JULIAN, 5, 11)), JULIAN);
+    expect(screen.getByText(/auxilio de transporte del período/i)).toBeInTheDocument();
+    // El monto del auxilio, con el espacio duro que mete Intl normalizado.
+    const montos = screen.getAllByText(/58\.122/).map(e => (e.textContent ?? '').replace(/\s+/g, ' '));
+    expect(montos.length).toBeGreaterThan(0);
+  });
+
+  it('el Excel lleva su fila, y el TOTAL A PAGAR de la hoja tampoco lo incluye', async () => {
+    const usuario = userEvent.setup();
+    await calcularPara(conAdicional(reporteDe(JULIAN, 5, 11)), JULIAN);
+    await usuario.click(screen.getByRole('button', { name: /Descargar Excel/i }));
+
+    const hojas = exportar.mock.calls[0][1] as { nombre: string; filas: (string | number)[][] }[];
+    const liquidacion = hojas.find(h => h.nombre === 'Liquidación')!;
+    const fila = (etiqueta: string) => liquidacion.filas.find(f => String(f[1]).includes(etiqueta));
+
+    expect(fila('Auxilio de transporte del período')?.[5]).toBe(58_122);
+    // 1.750.000 de salario + 200.000 de adicional. Si el auxilio se colara, serían 2.008.122.
+    expect(fila('TOTAL A PAGAR')?.[5]).toBe(1_950_000);
+  });
+
+  it('no se suma al total a pagar: 1.750.000 más 200.000, sin los 58.122 del auxilio', async () => {
+    await calcularPara(conAdicional(reporteDe(JULIAN, 5, 11)), JULIAN);
+    const textos = screen.getAllByText(/\$/).map(e => (e.textContent ?? '').replace(/\s+/g, ' '));
+    expect(textos).toContain('$ 1.950.000');
+    // Lo que saldría si el auxilio se hubiera colado dentro del total.
+    expect(textos).not.toContain('$ 2.008.122');
+  });
+});
 
 describe('la cabecera del reporte por persona', () => {
   it('dice los días trabajados, no las marcaciones cerradas', async () => {

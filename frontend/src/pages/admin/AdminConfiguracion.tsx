@@ -8,6 +8,8 @@ const cop = (n: number) =>
 
 type PlanDef = { id: string; nombre: string; precioMensual: number; precioAnual: number; limite: number; features: Record<string, boolean> };
 type Data = { planes: Record<string, PlanDef>; funciones: { key: string; label: string; proximamente?: boolean }[]; orden: string[] };
+// Una vigencia del auxilio de transporte, tal como la fija el decreto de cada enero.
+type Vigencia = { id: string; vigenteDesde: string; valor: number; tope: number };
 
 // Editor de planes de la plataforma (precio, límite y funciones). Los cambios
 // aplican de inmediato al gating, la landing y los cobros nuevos.
@@ -16,7 +18,34 @@ export default function AdminConfiguracion() {
   const [guardando, setGuardando] = useState(false);
   const [ok, setOk] = useState(false);
 
+  // Las vigencias del auxilio de transporte: una fila por decreto, la más reciente primero.
+  const [auxilios, setAuxilios] = useState<Vigencia[]>([]);
+  const [nueva, setNueva] = useState({ vigenteDesde: '', valor: '', tope: '' });
+  const [errorAux, setErrorAux] = useState('');
+
   useEffect(() => { api.get('/admin/planes').then(r => setData(r.data)); }, []);
+  useEffect(() => { api.get('/admin/auxilios').then(r => setAuxilios(r.data)).catch(() => setAuxilios([])); }, []);
+
+  // Agrega una vigencia. NO edita las anteriores: si se cambiara la del año pasado, un reporte de
+  // diciembre pasaría a liquidarse con el decreto de enero y la historia dejaría de cuadrar con lo
+  // que se pagó. Reenviar la misma fecha sí corrige esa fila, para una digitación mal puesta.
+  const agregarVigencia = async () => {
+    setErrorAux('');
+    try {
+      await api.post('/admin/auxilios', {
+        vigenteDesde: nueva.vigenteDesde.trim(),
+        valor: Number(nueva.valor),
+        tope: Number(nueva.tope),
+      });
+      const r = await api.get('/admin/auxilios');
+      setAuxilios(r.data);
+      setNueva({ vigenteDesde: '', valor: '', tope: '' });
+    } catch (err) {
+      // El mensaje del servidor explica cuál de los tres datos está mal; el nuestro es el respaldo.
+      const delServidor = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      setErrorAux(delServidor ?? 'No pudimos guardar la vigencia.');
+    }
+  };
 
   const setPlan = (id: string, cambio: Partial<PlanDef>) =>
     setData(d => d ? { ...d, planes: { ...d.planes, [id]: { ...d.planes[id], ...cambio } } } : d);
@@ -107,6 +136,54 @@ export default function AdminConfiguracion() {
       <p className="text-xs text-muted">
         Nota: el precio de un cliente puntual se ajusta en su ficha de empresa (precio y funciones "a la medida"), sin cambiar el plan base.
       </p>
+
+      {/* El auxilio de transporte lo fija un decreto cada enero. Antes vivía en el `seed` y cambiarlo
+          exigía un despliegue; ahora se agrega aquí, y cada año es una fila nueva. */}
+      <section aria-label="Auxilio de transporte" className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+        <div>
+          <h2 className="font-semibold text-ink">Auxilio de transporte</h2>
+          <p className="text-sm text-muted">
+            El valor y el tope que fija el decreto cada enero. Se <b>agrega</b> una vigencia por año: las
+            anteriores no se tocan, para que un reporte viejo siga mostrando lo que se pagó entonces.
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          {auxilios.length === 0 ? (
+            <p className="text-sm text-muted">Todavía no hay ninguna vigencia cargada.</p>
+          ) : auxilios.map(v => (
+            <div key={v.id} className="flex flex-wrap items-baseline gap-x-4 text-sm bg-gray-50 rounded-lg px-3 py-2">
+              <span className="font-medium text-ink tabular-nums">{v.vigenteDesde.slice(0, 10)}</span>
+              <span className="text-muted">auxilio <b className="text-ink">{formatearMiles(v.valor)}</b></span>
+              <span className="text-muted">tope <b className="text-ink">{formatearMiles(v.tope)}</b></span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3 border-t border-gray-100 pt-4">
+          <label className="text-sm">
+            <span className="block text-xs text-muted mb-1">Rige desde</span>
+            <input value={nueva.vigenteDesde} placeholder="2027-01-01" className={`${input} w-40`}
+              onChange={e => setNueva(n => ({ ...n, vigenteDesde: e.target.value }))} />
+          </label>
+          <label className="text-sm">
+            <span className="block text-xs text-muted mb-1">Auxilio</span>
+            <input value={nueva.valor} inputMode="numeric" placeholder="270000" className={`${input} w-36`}
+              onChange={e => setNueva(n => ({ ...n, valor: e.target.value }))} />
+          </label>
+          <label className="text-sm">
+            <span className="block text-xs text-muted mb-1">Tope</span>
+            <input value={nueva.tope} inputMode="numeric" placeholder="3800000" className={`${input} w-36`}
+              onChange={e => setNueva(n => ({ ...n, tope: e.target.value }))} />
+          </label>
+          <button onClick={agregarVigencia}
+            className="bg-primary hover:bg-primary-dark text-ink font-semibold px-4 py-2 rounded-xl text-sm">
+            Agregar vigencia
+          </button>
+        </div>
+
+        {errorAux && <p role="alert" className="text-sm text-red-600">{errorAux}</p>}
+      </section>
     </div>
   );
 }

@@ -36,6 +36,7 @@ import { useAuth } from '../context/AuthContext';
 import { copiarTexto } from '../lib/clipboard';
 import EtiquetaBiometrica from '../features/colaboradores/EtiquetaBiometrica';
 import { mensajeDelEnlace, horaConPunto } from '../features/colaboradores/biometria';
+import { useLegales } from '../lib/legales';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
 type Colaborador = {
@@ -92,6 +93,8 @@ export default function ColaboradorDetalle() {
   const navigate = useNavigate();
 
   const { plan, recargar: recargarPlan } = useMiPlan();
+  // El auxilio vigente, igual que en la lista: la ficha lo propone sola.
+  const legales = useLegales();
   const [col, setCol] = useState<Colaborador | null>(null);
   // La historia vive aquí y no dentro del componente porque la tarjeta de
   // retiro necesita los mismos eventos para calcular cuánto estuvo. Pedirlos
@@ -839,6 +842,7 @@ export default function ColaboradorDetalle() {
                   horarios={horarios}
                   sedes={sedes}
                   resumenFranjas={resumenFranjas}
+                  auxilio={legales?.auxilio ?? null}
                 />
               </div>
               {/* Fuera de la zona que se desplaza: con el formulario largo, abajo

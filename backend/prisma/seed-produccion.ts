@@ -50,6 +50,27 @@ async function main() {
     await prisma.jornadaVigencia.upsert({ where: { vigenteDesde: j.vigenteDesde }, update: { horasSemanales: j.horasSemanales }, create: j });
   }
 
+  // ===== Auxilio de transporte — Ley 15 de 1959, valor por decreto cada enero =====
+  //
+  // Tiene que estar IGUAL que en `seed.ts` y que en `sql/auxilio-transporte.sql`. Sin estas filas
+  // nada revienta, y ese es el problema: `auxilioVigente` devuelve null, el auxilio se liquida en
+  // cero y no aparece un solo error en el log. Una instalación nueva pagaría de menos en silencio.
+  //
+  // El tope es dos salarios mínimos del año. Cuando salga el decreto de 2027 se agrega una fila más
+  // en los tres sitios: las anteriores NO se tocan, para que un reporte viejo siga mostrando el
+  // valor que regía entonces.
+  const auxilios = [
+    { vigenteDesde: fbog(2025, 1, 1), valor: 200_000, tope: 2_847_000 }, // Decreto 1573 de 2024
+    { vigenteDesde: fbog(2026, 1, 1), valor: 249_095, tope: 3_501_810 }, // Decreto 1470 de 2025
+  ];
+  for (const a of auxilios) {
+    await prisma.auxilioVigencia.upsert({
+      where: { vigenteDesde: a.vigenteDesde },
+      update: { valor: a.valor, tope: a.tope },
+      create: a,
+    });
+  }
+
   // ===== Tipos de hora con vigencias — CST + Ley 2466 de 2025 =====
   const periodos = [
     tiposDelPeriodo({ vigenteDesde: fbog(2025, 7, 1), vigenteHasta: fbog(2025, 12, 25), inicioNocturna: 21, recargoDom: 0.8 }),
