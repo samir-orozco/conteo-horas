@@ -6,6 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = configuracionRoutes;
 const node_crypto_1 = __importDefault(require("node:crypto"));
 const prisma_1 = require("../prisma");
+const auxilioTransporte_1 = require("../utils/auxilioTransporte");
+const salarioSospechoso_1 = require("../utils/salarioSospechoso");
+const revisionPendiente_1 = require("../utils/revisionPendiente");
 const vigencias_1 = require("../utils/vigencias");
 const telegram_1 = require("../utils/telegram");
 const capacidades_1 = require("../utils/capacidades");
@@ -118,17 +121,23 @@ async function configuracionRoutes(app) {
     app.get('/legales', auth, async (request) => {
         const { fecha } = request.query;
         const ref = fecha ? new Date(fecha) : new Date();
-        const [jornadas, tipos] = await Promise.all([
+        const [jornadas, tipos, auxilios] = await Promise.all([
             prisma_1.prisma.jornadaVigencia.findMany({ orderBy: { vigenteDesde: 'asc' } }),
             prisma_1.prisma.tipoHora.findMany({ orderBy: [{ codigo: 'asc' }, { vigenteDesde: 'asc' }] }),
+            prisma_1.prisma.auxilioVigencia.findMany({ orderBy: { vigenteDesde: 'asc' } }),
         ]);
         const jornada = (0, vigencias_1.jornadaVigente)(ref, jornadas);
+        // El auxilio vigente, para que la ficha de una persona pueda proponerlo sola en vez de
+        // obligar al administrador a saberse de memoria el valor del decreto y el tope.
+        const auxilio = (0, auxilioTransporte_1.auxilioVigente)(ref, auxilios);
         return {
             fechaReferencia: ref,
             jornadaSemanal: jornada,
             horasMes: (0, vigencias_1.horasMesDeJornada)(jornada),
             tiposHoraVigentes: (0, vigencias_1.tiposVigentes)(ref, tipos),
             calendarioJornadas: jornadas,
+            // null si todavía no hay ninguna vigencia sembrada: sin dato, la ficha no propone nada.
+            auxilio: auxilio && { valor: auxilio.valor, tope: auxilio.tope, vigenteDesde: auxilio.vigenteDesde },
         };
     });
     // Compat: lista de tipos de hora vigentes hoy
@@ -166,6 +175,49 @@ async function configuracionRoutes(app) {
     // Lo que de verdad está pasando con el kiosco, para que la pantalla no muestre solo texto
     // fijo: cuánta gente tiene el rostro registrado y cuándo fue la última marcación. Sin esto,
     // una tablet colgada desde ayer se ve igual que una funcionando.
+    // ===== Revisión de salarios al separar el auxilio de transporte (17 de septiembre de 2026) =====
+    //
+    // Las empresas que ya existían capturaron el salario en UN solo campo, así que algunas tienen el
+    // auxilio sumado dentro del básico. Cuando es así, cada hora extra y cada recargo de esa persona
+    // se pagan un 14,2% de más y nada en pantalla lo delata.
+    //
+    // Esta ruta dice si la empresa todavía tiene que revisarlo y le entrega su gente. La marca
+    // `pareceIncluirAuxilio` NO adivina: solo señala la aritmética exacta (básico menos auxilio igual
+    // al mínimo). El resto se lista sin marcar, para que la marca siga significando algo.
+    app.get('/auxilio-pendiente', auth, async (request) => {
+        const empresaId = request.empresaId;
+        const [empresa, colaboradores, vigencias] = await Promise.all([
+            prisma_1.prisma.empresa.findUnique({ where: { id: empresaId }, select: { auxilioRevisadoEn: true } }),
+            prisma_1.prisma.colaborador.findMany({
+                where: { empresaId, activo: true },
+                select: { id: true, nombre: true, apellido: true, cedula: true, cargo: true, salarioMensual: true, auxilioTransporte: true },
+                orderBy: { nombre: 'asc' },
+            }),
+            prisma_1.prisma.auxilioVigencia.findMany(),
+        ]);
+        const vigencia = (0, auxilioTransporte_1.auxilioVigente)(new Date(), vigencias);
+        return {
+            // Sin gente activa no hay nada que revisar, y bloquear ahí es pedirle a alguien que revise un
+            // conjunto vacío. La decisión sale a función pura porque esta ruta no tiene pruebas de
+            // integración: dentro del `return` no la protegería nada (§8.2).
+            pendiente: (0, revisionPendiente_1.revisionPendiente)(empresa?.auxilioRevisadoEn ?? null, colaboradores.length),
+            auxilio: vigencia && { valor: vigencia.valor, tope: vigencia.tope },
+            colaboradores: colaboradores.map(c => ({
+                ...c,
+                pareceIncluirAuxilio: (0, salarioSospechoso_1.pareceIncluirAuxilio)(c.salarioMensual, vigencia),
+            })),
+        };
+    });
+    // Dar por revisada la empresa. Solo pone la marca: los sueldos se corrigen uno a uno con
+    // `PUT /colaboradores/:id`, que ya valida el auxilio y tiene sus guardas. Abrir aquí un segundo
+    // camino de escritura masiva sobre salarios duplicaría el riesgo sin ganar nada.
+    app.post('/auxilio-revisado', auth, async (request) => {
+        await prisma_1.prisma.empresa.update({
+            where: { id: request.empresaId },
+            data: { auxilioRevisadoEn: new Date() },
+        });
+        return { ok: true };
+    });
     app.get('/kiosco-estado', auth, async (request) => {
         const empresaId = request.empresaId;
         const [activos, conRostro, ultima] = await Promise.all([

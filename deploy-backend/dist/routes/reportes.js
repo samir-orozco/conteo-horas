@@ -6,6 +6,7 @@ const vigencias_1 = require("../utils/vigencias");
 const tardanzas_1 = require("../utils/tardanzas");
 const fechas_1 = require("../utils/fechas");
 const horasColombiana_1 = require("../utils/horasColombiana");
+const auxilioTransporte_1 = require("../utils/auxilioTransporte");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
 const diasEsperados_1 = require("../utils/diasEsperados");
 const sedesDeReporte_1 = require("../utils/sedesDeReporte");
@@ -62,7 +63,7 @@ async function reporteRoutes(app) {
     app.get('/liquidacion', auth, async (request, reply) => {
         const { colaboradorId, desde, hasta } = request.query;
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
-        const [colaborador, registros, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosRango, diasMaterializados] = await Promise.all([
+        const [colaborador, registros, festivos, tiposHoraTodos, jornadas, auxilios, cfgModo, cfgPermisos, permisosRango, diasMaterializados] = await Promise.all([
             // El colaborador viaja entero en la respuesta, pero sin sus fotos ni su descriptor facial,
             // que es un dato biométrico: se mandaban al navegador y ninguna pantalla los lee de aquí,
             // solo el nombre y el apellido (13 de septiembre de 2026).
@@ -87,6 +88,7 @@ async function reporteRoutes(app) {
             }),
             prisma_1.prisma.tipoHora.findMany(),
             prisma_1.prisma.jornadaVigencia.findMany(),
+            prisma_1.prisma.auxilioVigencia.findMany(),
             prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
             prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: request.empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } } }),
             // Solo los permisos que tocan el rango: un permiso que terminó antes de
@@ -120,6 +122,10 @@ async function reporteRoutes(app) {
         // Valor hora con el divisor de la jornada vigente al final del período
         const jornadaCierre = (0, vigencias_1.jornadaVigente)(new Date(hasta), jornadas);
         const horasMes = (0, vigencias_1.horasMesDeJornada)(jornadaCierre);
+        // El auxilio se elige con el ÚLTIMO INSTANTE del período: `new Date(hasta)` es medianoche UTC,
+        // y un reporte que termina el 1 de enero caería antes de las 05:00 (medianoche de Bogotá) y
+        // pagaría con el decreto del año anterior.
+        const vigenciaDelAuxilio = (0, auxilioTransporte_1.auxilioVigente)(new Date(finExclusivo.getTime() - 1), auxilios);
         // Los días materializados mandan; los que todavía no lo están (backfill a
         // medias, colaborador anterior a la función) caen al horario vigente, que es
         // lo que el sistema hacía siempre. Así nadie ve números nuevos por sorpresa.
@@ -148,6 +154,13 @@ async function reporteRoutes(app) {
             // cabecera de la pantalla mostraba el primero llamándolo días (15 de septiembre de 2026).
             registrosCont: r.registrosCont,
             diasCont: r.diasCont,
+            // El auxilio no toca el valor de la hora: va aparte y prorrateado por los días en que la
+            // persona efectivamente viajó al trabajo.
+            auxilioTransporte: parseFloat((0, auxilioTransporte_1.auxilioDelPeriodo)({
+                salarioBasico: colaborador.salarioMensual,
+                auxilioPersona: colaborador.auxilioTransporte,
+                diasConDesplazamiento: r.diasCont,
+            }, vigenciaDelAuxilio).toFixed(2)),
             detalleRegistros: r.detalleRegistros,
             jornadaSemanal: jornadaCierre, horasMes,
             saldo,
@@ -380,14 +393,14 @@ async function reporteRoutes(app) {
         const { desde, hasta, sedeId } = request.query;
         const empresaId = request.empresaId;
         const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
-        const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, cfgPermisos, permisosTodos, diasTodosEsp, sedes, defectoDe, filasDeLugar] = await Promise.all([
+        const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, auxilios, cfgModo, cfgPermisos, permisosTodos, diasTodosEsp, sedes, defectoDe, filasDeLugar] = await Promise.all([
             // Solo lo que usa este reporte. La cédula y el cargo van para el archivo del ERP, que
             // identifica a cada persona por su documento.
             prisma_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
                 select: {
                     id: true, nombre: true, apellido: true, cedula: true, cargo: true,
-                    salarioMensual: true, modalidad: true, horario: { include: { franjas: true } },
+                    salarioMensual: true, auxilioTransporte: true, modalidad: true, horario: { include: { franjas: true } },
                 },
                 orderBy: { nombre: 'asc' },
             }),
@@ -404,6 +417,7 @@ async function reporteRoutes(app) {
             prisma_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
             prisma_1.prisma.tipoHora.findMany(),
             prisma_1.prisma.jornadaVigencia.findMany(),
+            prisma_1.prisma.auxilioVigencia.findMany(),
             prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
             prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: saldoTiempo_1.CLAVE_PERMISOS_REMUNERADOS } } }),
             // Solo las novedades que tocan el rango, con sus horas: una de parte del día no es un día.
@@ -434,6 +448,10 @@ async function reporteRoutes(app) {
         const porColDiasEsp = agrupar(diasTodosEsp);
         const porColPermisos = agrupar(permisosTodos);
         const porColLugares = agrupar(filasDeLugar);
+        // La vigencia del auxilio se elige con el ÚLTIMO INSTANTE del período, no con `new Date(hasta)`:
+        // esa fecha es medianoche UTC, así que un reporte que termina el 1 de enero caería ANTES de las
+        // 05:00 (medianoche de Bogotá) y pagaría con el decreto del año anterior.
+        const vigenciaDelAuxilio = (0, auxilioTransporte_1.auxilioVigente)(new Date(finExclusivo.getTime() - 1), auxilios);
         const resultado = colaboradores.map(col => {
             const horario = col.horario;
             const dias = (0, diasEsperados_1.combinarDiasEsperados)(desdeF, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
@@ -449,6 +467,13 @@ async function reporteRoutes(app) {
                 colaboradorId: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,
                 salarioMensual: col.salarioMensual,
                 valorHora: parseFloat((0, horasColombiana_1.calcularValorHora)(col.salarioMensual, horasMes).toFixed(2)),
+                // El auxilio NO entra en el valor de la hora: se paga aparte y se prorratea por los días en
+                // que la persona efectivamente viajó al trabajo, que son los que tienen marcación.
+                auxilioTransporte: parseFloat((0, auxilioTransporte_1.auxilioDelPeriodo)({
+                    salarioBasico: col.salarioMensual,
+                    auxilioPersona: col.auxilioTransporte,
+                    diasConDesplazamiento: r.diasCont,
+                }, vigenciaDelAuxilio).toFixed(2)),
                 registrosCont: r.registrosCont,
                 diasCont: r.diasCont,
                 minutosOrdinarios: r.minutosOrdinarios,

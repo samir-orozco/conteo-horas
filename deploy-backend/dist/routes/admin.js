@@ -12,9 +12,36 @@ const comprobantes_1 = require("../utils/comprobantes");
 const eliminarEmpresa_1 = require("../utils/eliminarEmpresa");
 const borrarEmpresaEnCascada_1 = require("../utils/borrarEmpresaEnCascada");
 const sedesDeEmpresa_1 = require("../utils/sedesDeEmpresa");
+const vigenciaDelAuxilio_1 = require("../utils/vigenciaDelAuxilio");
 const DIA_MS = 24 * 60 * 60 * 1000;
 async function adminRoutes(app) {
     const auth = { preHandler: [app.requireSuperAdmin] };
+    // ===== Auxilio de transporte: las vigencias del decreto =====
+    //
+    // Cada enero el gobierno fija el salario mínimo y el auxilio. Hasta hoy vivían en el `seed`, así
+    // que actualizarlos exigía un despliegue completo; ahora se agregan desde la pantalla de la
+    // plataforma.
+    //
+    // Se AGREGA una fila por año y las anteriores no se tocan. Editar la vieja reescribiría la
+    // historia: un reporte de diciembre pasaría a liquidarse con el decreto de enero. El upsert va por
+    // fecha, así que reenviar la misma fecha corrige esa fila (una digitación mal puesta) y una fecha
+    // nueva es un año nuevo.
+    app.get('/auxilios', auth, async () => {
+        return prisma_1.prisma.auxilioVigencia.findMany({ orderBy: { vigenteDesde: 'desc' } });
+    });
+    app.post('/auxilios', auth, async (request, reply) => {
+        const vigencia = (0, vigenciaDelAuxilio_1.normalizarVigencia)((request.body ?? {}));
+        if (vigencia === vigenciaDelAuxilio_1.VIGENCIA_INVALIDA) {
+            return reply.status(400).send({
+                error: 'Revisa los datos: la fecha va como AAAA-MM-DD, el auxilio no puede ser negativo y el tope tiene que ser mayor que el auxilio.',
+            });
+        }
+        return prisma_1.prisma.auxilioVigencia.upsert({
+            where: { vigenteDesde: vigencia.vigenteDesde },
+            update: { valor: vigencia.valor, tope: vigencia.tope },
+            create: vigencia,
+        });
+    });
     // Empresa con su estado real de suscripción y tarifa actual
     async function empresaConEstado(empresaId) {
         const [precios, planes] = await Promise.all([(0, suscripcion_1.obtenerPrecios)(prisma_1.prisma), (0, planes_1.obtenerPlanes)(prisma_1.prisma)]);
@@ -177,7 +204,9 @@ async function adminRoutes(app) {
         const hash = await bcryptjs_1.default.hash(admin.password, 10);
         try {
             const empresa = await prisma_1.prisma.$transaction(async (tx) => {
-                const emp = await tx.empresa.create({ data: { nombre, nit, email, telefono } });
+                // Nace revisada, igual que en el registro: sus colaboradores se capturan con el salario
+                // básico y el auxilio ya separados, así que no tiene nada que corregir.
+                const emp = await tx.empresa.create({ data: { nombre, nit, email, telefono, auxilioRevisadoEn: new Date() } });
                 await tx.suscripcion.create({
                     data: { empresaId: emp.id, estado: 'PRUEBA', finPrueba: new Date(Date.now() + suscripcion_1.DIAS_PRUEBA * DIA_MS) },
                 });

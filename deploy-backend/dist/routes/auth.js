@@ -72,6 +72,10 @@ async function authRoutes(app) {
                 data: {
                     nombre: empresa, nit, email, telefono,
                     afiliadoId: afiliado?.id, atribuidoEn: afiliado ? new Date() : undefined,
+                    // Nace revisada: sus colaboradores se van a capturar con el salario básico y el auxilio
+                    // ya separados, así que no tiene nada que corregir. Solo las empresas anteriores al
+                    // cambio quedan en null y ven el aviso.
+                    auxilioRevisadoEn: new Date(),
                 },
             });
             await tx.suscripcion.create({
