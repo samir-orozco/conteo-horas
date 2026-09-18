@@ -131,6 +131,7 @@ exports.Prisma.EmpresaScalarFieldEnum = {
   marcadorToken: 'marcadorToken',
   exentaPago: 'exentaPago',
   activa: 'activa',
+  auxilioRevisadoEn: 'auxilioRevisadoEn',
   creadoEn: 'creadoEn',
   actualizadoEn: 'actualizadoEn',
   afiliadoId: 'afiliadoId',
@@ -187,6 +188,13 @@ exports.Prisma.JornadaVigenciaScalarFieldEnum = {
   id: 'id',
   vigenteDesde: 'vigenteDesde',
   horasSemanales: 'horasSemanales'
+};
+
+exports.Prisma.AuxilioVigenciaScalarFieldEnum = {
+  id: 'id',
+  vigenteDesde: 'vigenteDesde',
+  valor: 'valor',
+  tope: 'tope'
 };
 
 exports.Prisma.TipoHoraScalarFieldEnum = {
@@ -247,6 +255,7 @@ exports.Prisma.ColaboradorScalarFieldEnum = {
   telefono: 'telefono',
   fechaNacimiento: 'fechaNacimiento',
   salarioMensual: 'salarioMensual',
+  auxilioTransporte: 'auxilioTransporte',
   rostroDescriptor: 'rostroDescriptor',
   rostroEnroladoEn: 'rostroEnroladoEn',
   rostroRechazadoEn: 'rostroRechazadoEn',
@@ -660,6 +669,7 @@ exports.Prisma.ModelName = {
   Pago: 'Pago',
   ConfiguracionPlataforma: 'ConfiguracionPlataforma',
   JornadaVigencia: 'JornadaVigencia',
+  AuxilioVigencia: 'AuxilioVigencia',
   TipoHora: 'TipoHora',
   Horario: 'Horario',
   FranjaHorario: 'FranjaHorario',

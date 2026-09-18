@@ -21,6 +21,16 @@ model Empresa {
   // Acceso ilimitado (cortesía): nunca se le cobra ni se bloquea
   exentaPago           Boolean             @default(false)
   activa               Boolean             @default(true)
+  // Cuándo esta empresa revisó los salarios al separar el auxilio de transporte (17 de septiembre
+  // de 2026). Null = todavía no, y el panel le pide revisarlos antes de seguir.
+  //
+  // Vive en el servidor y por EMPRESA, no en localStorage por usuario como la guía de bienvenida:
+  // limpiar el navegador o entrar desde otro equipo no puede hacer que el aviso reaparezca, ni que
+  // una persona lo descarte y el resto de la empresa nunca se entere de que los datos están mal.
+  //
+  // Las empresas NUEVAS nacen con fecha puesta: su salario ya se capturó con los dos campos
+  // separados, así que no tienen nada que revisar y no hace falta clavar una fecha de corte.
+  auxilioRevisadoEn    DateTime?
   creadoEn             DateTime            @default(now())
   actualizadoEn        DateTime            @updatedAt
   usuarios             Usuario[]
@@ -114,6 +124,22 @@ model JornadaVigencia {
   horasSemanales Float
 
   @@map("jornadas_vigencia")
+}
+
+// Auxilio de transporte — Ley 15 de 1959, valor por decreto cada enero.
+//
+// Va en una tabla de vigencias y no en una constante por la misma razón que la jornada legal: un
+// reporte de diciembre tiene que seguir mostrando el valor de diciembre. Si el número viviera en el
+// código, el decreto de enero reescribiría la historia de todos los reportes anteriores.
+model AuxilioVigencia {
+  id           String   @id @default(cuid())
+  vigenteDesde DateTime @unique
+  valor        Float
+  // Salario máximo con derecho: dos salarios mínimos de ese año. Se guarda en vez de calcularse
+  // para no tener que guardar también el mínimo, que este producto no usa para nada más.
+  tope         Float
+
+  @@map("auxilios_vigencia")
 }
 
 // Tipos de hora y recargos — CST + Ley 2466 de 2025, con vigencias por fecha
@@ -217,7 +243,16 @@ model Colaborador {
   email                  String?
   telefono               String?
   fechaNacimiento        DateTime?
+  // El salario BÁSICO, sin auxilio de transporte. Es la base del valor de la hora, y por lo tanto
+  // de cada hora extra y cada recargo: meterle el auxilio los encarece un 14,2% en el mínimo.
   salarioMensual         Float
+  // Auxilio de transporte de ESTA persona (17 de septiembre de 2026). No es salario: se paga aparte
+  // y no toca el valor de la hora.
+  //   null  = el que fija el decreto, si su básico da derecho. Es el caso normal, y el que evita
+  //           tener que actualizar 250 fichas cada enero.
+  //   0     = esta empresa no lo paga (da ruta propia, por ejemplo).
+  //   otro  = un valor pactado, por encima o por debajo del decreto.
+  auxilioTransporte      Float?
   // Reconocimiento facial: descriptor matemático (128 floats). El descriptor no
   // es una imagen y no se puede volver a convertir en una.
   rostroDescriptor       Json?

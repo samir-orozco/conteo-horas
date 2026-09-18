@@ -39,6 +39,11 @@ export type ConfiguracionPlataforma = $Result.DefaultSelection<Prisma.$Configura
  */
 export type JornadaVigencia = $Result.DefaultSelection<Prisma.$JornadaVigenciaPayload>
 /**
+ * Model AuxilioVigencia
+ * 
+ */
+export type AuxilioVigencia = $Result.DefaultSelection<Prisma.$AuxilioVigenciaPayload>
+/**
  * Model TipoHora
  * 
  */
@@ -577,6 +582,16 @@ export class PrismaClient<
     * ```
     */
   get jornadaVigencia(): Prisma.JornadaVigenciaDelegate<ExtArgs>;
+
+  /**
+   * `prisma.auxilioVigencia`: Exposes CRUD operations for the **AuxilioVigencia** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more AuxilioVigencias
+    * const auxilioVigencias = await prisma.auxilioVigencia.findMany()
+    * ```
+    */
+  get auxilioVigencia(): Prisma.AuxilioVigenciaDelegate<ExtArgs>;
 
   /**
    * `prisma.tipoHora`: Exposes CRUD operations for the **TipoHora** model.
@@ -1253,6 +1268,7 @@ export namespace Prisma {
     Pago: 'Pago',
     ConfiguracionPlataforma: 'ConfiguracionPlataforma',
     JornadaVigencia: 'JornadaVigencia',
+    AuxilioVigencia: 'AuxilioVigencia',
     TipoHora: 'TipoHora',
     Horario: 'Horario',
     FranjaHorario: 'FranjaHorario',
@@ -1291,7 +1307,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato"
+      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "auxilioVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1622,6 +1638,72 @@ export namespace Prisma {
           count: {
             args: Prisma.JornadaVigenciaCountArgs<ExtArgs>
             result: $Utils.Optional<JornadaVigenciaCountAggregateOutputType> | number
+          }
+        }
+      }
+      AuxilioVigencia: {
+        payload: Prisma.$AuxilioVigenciaPayload<ExtArgs>
+        fields: Prisma.AuxilioVigenciaFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.AuxilioVigenciaFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AuxilioVigenciaPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.AuxilioVigenciaFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AuxilioVigenciaPayload>
+          }
+          findFirst: {
+            args: Prisma.AuxilioVigenciaFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AuxilioVigenciaPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.AuxilioVigenciaFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AuxilioVigenciaPayload>
+          }
+          findMany: {
+            args: Prisma.AuxilioVigenciaFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AuxilioVigenciaPayload>[]
+          }
+          create: {
+            args: Prisma.AuxilioVigenciaCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AuxilioVigenciaPayload>
+          }
+          createMany: {
+            args: Prisma.AuxilioVigenciaCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.AuxilioVigenciaDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AuxilioVigenciaPayload>
+          }
+          update: {
+            args: Prisma.AuxilioVigenciaUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AuxilioVigenciaPayload>
+          }
+          deleteMany: {
+            args: Prisma.AuxilioVigenciaDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.AuxilioVigenciaUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.AuxilioVigenciaUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AuxilioVigenciaPayload>
+          }
+          aggregate: {
+            args: Prisma.AuxilioVigenciaAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateAuxilioVigencia>
+          }
+          groupBy: {
+            args: Prisma.AuxilioVigenciaGroupByArgs<ExtArgs>
+            result: $Utils.Optional<AuxilioVigenciaGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.AuxilioVigenciaCountArgs<ExtArgs>
+            result: $Utils.Optional<AuxilioVigenciaCountAggregateOutputType> | number
           }
         }
       }
@@ -3768,6 +3850,7 @@ export namespace Prisma {
     marcadorToken: string | null
     exentaPago: boolean | null
     activa: boolean | null
+    auxilioRevisadoEn: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
     afiliadoId: string | null
@@ -3784,6 +3867,7 @@ export namespace Prisma {
     marcadorToken: string | null
     exentaPago: boolean | null
     activa: boolean | null
+    auxilioRevisadoEn: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
     afiliadoId: string | null
@@ -3800,6 +3884,7 @@ export namespace Prisma {
     marcadorToken: number
     exentaPago: number
     activa: number
+    auxilioRevisadoEn: number
     creadoEn: number
     actualizadoEn: number
     afiliadoId: number
@@ -3818,6 +3903,7 @@ export namespace Prisma {
     marcadorToken?: true
     exentaPago?: true
     activa?: true
+    auxilioRevisadoEn?: true
     creadoEn?: true
     actualizadoEn?: true
     afiliadoId?: true
@@ -3834,6 +3920,7 @@ export namespace Prisma {
     marcadorToken?: true
     exentaPago?: true
     activa?: true
+    auxilioRevisadoEn?: true
     creadoEn?: true
     actualizadoEn?: true
     afiliadoId?: true
@@ -3850,6 +3937,7 @@ export namespace Prisma {
     marcadorToken?: true
     exentaPago?: true
     activa?: true
+    auxilioRevisadoEn?: true
     creadoEn?: true
     actualizadoEn?: true
     afiliadoId?: true
@@ -3939,6 +4027,7 @@ export namespace Prisma {
     marcadorToken: string
     exentaPago: boolean
     activa: boolean
+    auxilioRevisadoEn: Date | null
     creadoEn: Date
     actualizadoEn: Date
     afiliadoId: string | null
@@ -3972,6 +4061,7 @@ export namespace Prisma {
     marcadorToken?: boolean
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
     afiliadoId?: boolean
@@ -4001,6 +4091,7 @@ export namespace Prisma {
     marcadorToken?: boolean
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
     afiliadoId?: boolean
@@ -4047,6 +4138,7 @@ export namespace Prisma {
       marcadorToken: string
       exentaPago: boolean
       activa: boolean
+      auxilioRevisadoEn: Date | null
       creadoEn: Date
       actualizadoEn: Date
       afiliadoId: string | null
@@ -4440,6 +4532,7 @@ export namespace Prisma {
     readonly marcadorToken: FieldRef<"Empresa", 'String'>
     readonly exentaPago: FieldRef<"Empresa", 'Boolean'>
     readonly activa: FieldRef<"Empresa", 'Boolean'>
+    readonly auxilioRevisadoEn: FieldRef<"Empresa", 'DateTime'>
     readonly creadoEn: FieldRef<"Empresa", 'DateTime'>
     readonly actualizadoEn: FieldRef<"Empresa", 'DateTime'>
     readonly afiliadoId: FieldRef<"Empresa", 'String'>
@@ -8805,6 +8898,865 @@ export namespace Prisma {
 
 
   /**
+   * Model AuxilioVigencia
+   */
+
+  export type AggregateAuxilioVigencia = {
+    _count: AuxilioVigenciaCountAggregateOutputType | null
+    _avg: AuxilioVigenciaAvgAggregateOutputType | null
+    _sum: AuxilioVigenciaSumAggregateOutputType | null
+    _min: AuxilioVigenciaMinAggregateOutputType | null
+    _max: AuxilioVigenciaMaxAggregateOutputType | null
+  }
+
+  export type AuxilioVigenciaAvgAggregateOutputType = {
+    valor: number | null
+    tope: number | null
+  }
+
+  export type AuxilioVigenciaSumAggregateOutputType = {
+    valor: number | null
+    tope: number | null
+  }
+
+  export type AuxilioVigenciaMinAggregateOutputType = {
+    id: string | null
+    vigenteDesde: Date | null
+    valor: number | null
+    tope: number | null
+  }
+
+  export type AuxilioVigenciaMaxAggregateOutputType = {
+    id: string | null
+    vigenteDesde: Date | null
+    valor: number | null
+    tope: number | null
+  }
+
+  export type AuxilioVigenciaCountAggregateOutputType = {
+    id: number
+    vigenteDesde: number
+    valor: number
+    tope: number
+    _all: number
+  }
+
+
+  export type AuxilioVigenciaAvgAggregateInputType = {
+    valor?: true
+    tope?: true
+  }
+
+  export type AuxilioVigenciaSumAggregateInputType = {
+    valor?: true
+    tope?: true
+  }
+
+  export type AuxilioVigenciaMinAggregateInputType = {
+    id?: true
+    vigenteDesde?: true
+    valor?: true
+    tope?: true
+  }
+
+  export type AuxilioVigenciaMaxAggregateInputType = {
+    id?: true
+    vigenteDesde?: true
+    valor?: true
+    tope?: true
+  }
+
+  export type AuxilioVigenciaCountAggregateInputType = {
+    id?: true
+    vigenteDesde?: true
+    valor?: true
+    tope?: true
+    _all?: true
+  }
+
+  export type AuxilioVigenciaAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AuxilioVigencia to aggregate.
+     */
+    where?: AuxilioVigenciaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AuxilioVigencias to fetch.
+     */
+    orderBy?: AuxilioVigenciaOrderByWithRelationInput | AuxilioVigenciaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: AuxilioVigenciaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AuxilioVigencias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AuxilioVigencias.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned AuxilioVigencias
+    **/
+    _count?: true | AuxilioVigenciaCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: AuxilioVigenciaAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: AuxilioVigenciaSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: AuxilioVigenciaMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: AuxilioVigenciaMaxAggregateInputType
+  }
+
+  export type GetAuxilioVigenciaAggregateType<T extends AuxilioVigenciaAggregateArgs> = {
+        [P in keyof T & keyof AggregateAuxilioVigencia]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateAuxilioVigencia[P]>
+      : GetScalarType<T[P], AggregateAuxilioVigencia[P]>
+  }
+
+
+
+
+  export type AuxilioVigenciaGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AuxilioVigenciaWhereInput
+    orderBy?: AuxilioVigenciaOrderByWithAggregationInput | AuxilioVigenciaOrderByWithAggregationInput[]
+    by: AuxilioVigenciaScalarFieldEnum[] | AuxilioVigenciaScalarFieldEnum
+    having?: AuxilioVigenciaScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: AuxilioVigenciaCountAggregateInputType | true
+    _avg?: AuxilioVigenciaAvgAggregateInputType
+    _sum?: AuxilioVigenciaSumAggregateInputType
+    _min?: AuxilioVigenciaMinAggregateInputType
+    _max?: AuxilioVigenciaMaxAggregateInputType
+  }
+
+  export type AuxilioVigenciaGroupByOutputType = {
+    id: string
+    vigenteDesde: Date
+    valor: number
+    tope: number
+    _count: AuxilioVigenciaCountAggregateOutputType | null
+    _avg: AuxilioVigenciaAvgAggregateOutputType | null
+    _sum: AuxilioVigenciaSumAggregateOutputType | null
+    _min: AuxilioVigenciaMinAggregateOutputType | null
+    _max: AuxilioVigenciaMaxAggregateOutputType | null
+  }
+
+  type GetAuxilioVigenciaGroupByPayload<T extends AuxilioVigenciaGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<AuxilioVigenciaGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof AuxilioVigenciaGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], AuxilioVigenciaGroupByOutputType[P]>
+            : GetScalarType<T[P], AuxilioVigenciaGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type AuxilioVigenciaSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    vigenteDesde?: boolean
+    valor?: boolean
+    tope?: boolean
+  }, ExtArgs["result"]["auxilioVigencia"]>
+
+
+  export type AuxilioVigenciaSelectScalar = {
+    id?: boolean
+    vigenteDesde?: boolean
+    valor?: boolean
+    tope?: boolean
+  }
+
+
+  export type $AuxilioVigenciaPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "AuxilioVigencia"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      vigenteDesde: Date
+      valor: number
+      tope: number
+    }, ExtArgs["result"]["auxilioVigencia"]>
+    composites: {}
+  }
+
+  type AuxilioVigenciaGetPayload<S extends boolean | null | undefined | AuxilioVigenciaDefaultArgs> = $Result.GetResult<Prisma.$AuxilioVigenciaPayload, S>
+
+  type AuxilioVigenciaCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<AuxilioVigenciaFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: AuxilioVigenciaCountAggregateInputType | true
+    }
+
+  export interface AuxilioVigenciaDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['AuxilioVigencia'], meta: { name: 'AuxilioVigencia' } }
+    /**
+     * Find zero or one AuxilioVigencia that matches the filter.
+     * @param {AuxilioVigenciaFindUniqueArgs} args - Arguments to find a AuxilioVigencia
+     * @example
+     * // Get one AuxilioVigencia
+     * const auxilioVigencia = await prisma.auxilioVigencia.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends AuxilioVigenciaFindUniqueArgs>(args: SelectSubset<T, AuxilioVigenciaFindUniqueArgs<ExtArgs>>): Prisma__AuxilioVigenciaClient<$Result.GetResult<Prisma.$AuxilioVigenciaPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one AuxilioVigencia that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {AuxilioVigenciaFindUniqueOrThrowArgs} args - Arguments to find a AuxilioVigencia
+     * @example
+     * // Get one AuxilioVigencia
+     * const auxilioVigencia = await prisma.auxilioVigencia.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends AuxilioVigenciaFindUniqueOrThrowArgs>(args: SelectSubset<T, AuxilioVigenciaFindUniqueOrThrowArgs<ExtArgs>>): Prisma__AuxilioVigenciaClient<$Result.GetResult<Prisma.$AuxilioVigenciaPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first AuxilioVigencia that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AuxilioVigenciaFindFirstArgs} args - Arguments to find a AuxilioVigencia
+     * @example
+     * // Get one AuxilioVigencia
+     * const auxilioVigencia = await prisma.auxilioVigencia.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends AuxilioVigenciaFindFirstArgs>(args?: SelectSubset<T, AuxilioVigenciaFindFirstArgs<ExtArgs>>): Prisma__AuxilioVigenciaClient<$Result.GetResult<Prisma.$AuxilioVigenciaPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first AuxilioVigencia that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AuxilioVigenciaFindFirstOrThrowArgs} args - Arguments to find a AuxilioVigencia
+     * @example
+     * // Get one AuxilioVigencia
+     * const auxilioVigencia = await prisma.auxilioVigencia.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends AuxilioVigenciaFindFirstOrThrowArgs>(args?: SelectSubset<T, AuxilioVigenciaFindFirstOrThrowArgs<ExtArgs>>): Prisma__AuxilioVigenciaClient<$Result.GetResult<Prisma.$AuxilioVigenciaPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more AuxilioVigencias that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AuxilioVigenciaFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all AuxilioVigencias
+     * const auxilioVigencias = await prisma.auxilioVigencia.findMany()
+     * 
+     * // Get first 10 AuxilioVigencias
+     * const auxilioVigencias = await prisma.auxilioVigencia.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const auxilioVigenciaWithIdOnly = await prisma.auxilioVigencia.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends AuxilioVigenciaFindManyArgs>(args?: SelectSubset<T, AuxilioVigenciaFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AuxilioVigenciaPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a AuxilioVigencia.
+     * @param {AuxilioVigenciaCreateArgs} args - Arguments to create a AuxilioVigencia.
+     * @example
+     * // Create one AuxilioVigencia
+     * const AuxilioVigencia = await prisma.auxilioVigencia.create({
+     *   data: {
+     *     // ... data to create a AuxilioVigencia
+     *   }
+     * })
+     * 
+     */
+    create<T extends AuxilioVigenciaCreateArgs>(args: SelectSubset<T, AuxilioVigenciaCreateArgs<ExtArgs>>): Prisma__AuxilioVigenciaClient<$Result.GetResult<Prisma.$AuxilioVigenciaPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many AuxilioVigencias.
+     * @param {AuxilioVigenciaCreateManyArgs} args - Arguments to create many AuxilioVigencias.
+     * @example
+     * // Create many AuxilioVigencias
+     * const auxilioVigencia = await prisma.auxilioVigencia.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends AuxilioVigenciaCreateManyArgs>(args?: SelectSubset<T, AuxilioVigenciaCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a AuxilioVigencia.
+     * @param {AuxilioVigenciaDeleteArgs} args - Arguments to delete one AuxilioVigencia.
+     * @example
+     * // Delete one AuxilioVigencia
+     * const AuxilioVigencia = await prisma.auxilioVigencia.delete({
+     *   where: {
+     *     // ... filter to delete one AuxilioVigencia
+     *   }
+     * })
+     * 
+     */
+    delete<T extends AuxilioVigenciaDeleteArgs>(args: SelectSubset<T, AuxilioVigenciaDeleteArgs<ExtArgs>>): Prisma__AuxilioVigenciaClient<$Result.GetResult<Prisma.$AuxilioVigenciaPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one AuxilioVigencia.
+     * @param {AuxilioVigenciaUpdateArgs} args - Arguments to update one AuxilioVigencia.
+     * @example
+     * // Update one AuxilioVigencia
+     * const auxilioVigencia = await prisma.auxilioVigencia.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends AuxilioVigenciaUpdateArgs>(args: SelectSubset<T, AuxilioVigenciaUpdateArgs<ExtArgs>>): Prisma__AuxilioVigenciaClient<$Result.GetResult<Prisma.$AuxilioVigenciaPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more AuxilioVigencias.
+     * @param {AuxilioVigenciaDeleteManyArgs} args - Arguments to filter AuxilioVigencias to delete.
+     * @example
+     * // Delete a few AuxilioVigencias
+     * const { count } = await prisma.auxilioVigencia.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends AuxilioVigenciaDeleteManyArgs>(args?: SelectSubset<T, AuxilioVigenciaDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more AuxilioVigencias.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AuxilioVigenciaUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many AuxilioVigencias
+     * const auxilioVigencia = await prisma.auxilioVigencia.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends AuxilioVigenciaUpdateManyArgs>(args: SelectSubset<T, AuxilioVigenciaUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one AuxilioVigencia.
+     * @param {AuxilioVigenciaUpsertArgs} args - Arguments to update or create a AuxilioVigencia.
+     * @example
+     * // Update or create a AuxilioVigencia
+     * const auxilioVigencia = await prisma.auxilioVigencia.upsert({
+     *   create: {
+     *     // ... data to create a AuxilioVigencia
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the AuxilioVigencia we want to update
+     *   }
+     * })
+     */
+    upsert<T extends AuxilioVigenciaUpsertArgs>(args: SelectSubset<T, AuxilioVigenciaUpsertArgs<ExtArgs>>): Prisma__AuxilioVigenciaClient<$Result.GetResult<Prisma.$AuxilioVigenciaPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of AuxilioVigencias.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AuxilioVigenciaCountArgs} args - Arguments to filter AuxilioVigencias to count.
+     * @example
+     * // Count the number of AuxilioVigencias
+     * const count = await prisma.auxilioVigencia.count({
+     *   where: {
+     *     // ... the filter for the AuxilioVigencias we want to count
+     *   }
+     * })
+    **/
+    count<T extends AuxilioVigenciaCountArgs>(
+      args?: Subset<T, AuxilioVigenciaCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], AuxilioVigenciaCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a AuxilioVigencia.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AuxilioVigenciaAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends AuxilioVigenciaAggregateArgs>(args: Subset<T, AuxilioVigenciaAggregateArgs>): Prisma.PrismaPromise<GetAuxilioVigenciaAggregateType<T>>
+
+    /**
+     * Group by AuxilioVigencia.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AuxilioVigenciaGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends AuxilioVigenciaGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: AuxilioVigenciaGroupByArgs['orderBy'] }
+        : { orderBy?: AuxilioVigenciaGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, AuxilioVigenciaGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetAuxilioVigenciaGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the AuxilioVigencia model
+   */
+  readonly fields: AuxilioVigenciaFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for AuxilioVigencia.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__AuxilioVigenciaClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the AuxilioVigencia model
+   */ 
+  interface AuxilioVigenciaFieldRefs {
+    readonly id: FieldRef<"AuxilioVigencia", 'String'>
+    readonly vigenteDesde: FieldRef<"AuxilioVigencia", 'DateTime'>
+    readonly valor: FieldRef<"AuxilioVigencia", 'Float'>
+    readonly tope: FieldRef<"AuxilioVigencia", 'Float'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * AuxilioVigencia findUnique
+   */
+  export type AuxilioVigenciaFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AuxilioVigencia
+     */
+    select?: AuxilioVigenciaSelect<ExtArgs> | null
+    /**
+     * Filter, which AuxilioVigencia to fetch.
+     */
+    where: AuxilioVigenciaWhereUniqueInput
+  }
+
+  /**
+   * AuxilioVigencia findUniqueOrThrow
+   */
+  export type AuxilioVigenciaFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AuxilioVigencia
+     */
+    select?: AuxilioVigenciaSelect<ExtArgs> | null
+    /**
+     * Filter, which AuxilioVigencia to fetch.
+     */
+    where: AuxilioVigenciaWhereUniqueInput
+  }
+
+  /**
+   * AuxilioVigencia findFirst
+   */
+  export type AuxilioVigenciaFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AuxilioVigencia
+     */
+    select?: AuxilioVigenciaSelect<ExtArgs> | null
+    /**
+     * Filter, which AuxilioVigencia to fetch.
+     */
+    where?: AuxilioVigenciaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AuxilioVigencias to fetch.
+     */
+    orderBy?: AuxilioVigenciaOrderByWithRelationInput | AuxilioVigenciaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AuxilioVigencias.
+     */
+    cursor?: AuxilioVigenciaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AuxilioVigencias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AuxilioVigencias.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AuxilioVigencias.
+     */
+    distinct?: AuxilioVigenciaScalarFieldEnum | AuxilioVigenciaScalarFieldEnum[]
+  }
+
+  /**
+   * AuxilioVigencia findFirstOrThrow
+   */
+  export type AuxilioVigenciaFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AuxilioVigencia
+     */
+    select?: AuxilioVigenciaSelect<ExtArgs> | null
+    /**
+     * Filter, which AuxilioVigencia to fetch.
+     */
+    where?: AuxilioVigenciaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AuxilioVigencias to fetch.
+     */
+    orderBy?: AuxilioVigenciaOrderByWithRelationInput | AuxilioVigenciaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AuxilioVigencias.
+     */
+    cursor?: AuxilioVigenciaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AuxilioVigencias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AuxilioVigencias.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AuxilioVigencias.
+     */
+    distinct?: AuxilioVigenciaScalarFieldEnum | AuxilioVigenciaScalarFieldEnum[]
+  }
+
+  /**
+   * AuxilioVigencia findMany
+   */
+  export type AuxilioVigenciaFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AuxilioVigencia
+     */
+    select?: AuxilioVigenciaSelect<ExtArgs> | null
+    /**
+     * Filter, which AuxilioVigencias to fetch.
+     */
+    where?: AuxilioVigenciaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AuxilioVigencias to fetch.
+     */
+    orderBy?: AuxilioVigenciaOrderByWithRelationInput | AuxilioVigenciaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing AuxilioVigencias.
+     */
+    cursor?: AuxilioVigenciaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AuxilioVigencias from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AuxilioVigencias.
+     */
+    skip?: number
+    distinct?: AuxilioVigenciaScalarFieldEnum | AuxilioVigenciaScalarFieldEnum[]
+  }
+
+  /**
+   * AuxilioVigencia create
+   */
+  export type AuxilioVigenciaCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AuxilioVigencia
+     */
+    select?: AuxilioVigenciaSelect<ExtArgs> | null
+    /**
+     * The data needed to create a AuxilioVigencia.
+     */
+    data: XOR<AuxilioVigenciaCreateInput, AuxilioVigenciaUncheckedCreateInput>
+  }
+
+  /**
+   * AuxilioVigencia createMany
+   */
+  export type AuxilioVigenciaCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many AuxilioVigencias.
+     */
+    data: AuxilioVigenciaCreateManyInput | AuxilioVigenciaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * AuxilioVigencia update
+   */
+  export type AuxilioVigenciaUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AuxilioVigencia
+     */
+    select?: AuxilioVigenciaSelect<ExtArgs> | null
+    /**
+     * The data needed to update a AuxilioVigencia.
+     */
+    data: XOR<AuxilioVigenciaUpdateInput, AuxilioVigenciaUncheckedUpdateInput>
+    /**
+     * Choose, which AuxilioVigencia to update.
+     */
+    where: AuxilioVigenciaWhereUniqueInput
+  }
+
+  /**
+   * AuxilioVigencia updateMany
+   */
+  export type AuxilioVigenciaUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update AuxilioVigencias.
+     */
+    data: XOR<AuxilioVigenciaUpdateManyMutationInput, AuxilioVigenciaUncheckedUpdateManyInput>
+    /**
+     * Filter which AuxilioVigencias to update
+     */
+    where?: AuxilioVigenciaWhereInput
+  }
+
+  /**
+   * AuxilioVigencia upsert
+   */
+  export type AuxilioVigenciaUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AuxilioVigencia
+     */
+    select?: AuxilioVigenciaSelect<ExtArgs> | null
+    /**
+     * The filter to search for the AuxilioVigencia to update in case it exists.
+     */
+    where: AuxilioVigenciaWhereUniqueInput
+    /**
+     * In case the AuxilioVigencia found by the `where` argument doesn't exist, create a new AuxilioVigencia with this data.
+     */
+    create: XOR<AuxilioVigenciaCreateInput, AuxilioVigenciaUncheckedCreateInput>
+    /**
+     * In case the AuxilioVigencia was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<AuxilioVigenciaUpdateInput, AuxilioVigenciaUncheckedUpdateInput>
+  }
+
+  /**
+   * AuxilioVigencia delete
+   */
+  export type AuxilioVigenciaDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AuxilioVigencia
+     */
+    select?: AuxilioVigenciaSelect<ExtArgs> | null
+    /**
+     * Filter which AuxilioVigencia to delete.
+     */
+    where: AuxilioVigenciaWhereUniqueInput
+  }
+
+  /**
+   * AuxilioVigencia deleteMany
+   */
+  export type AuxilioVigenciaDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AuxilioVigencias to delete
+     */
+    where?: AuxilioVigenciaWhereInput
+  }
+
+  /**
+   * AuxilioVigencia without action
+   */
+  export type AuxilioVigenciaDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AuxilioVigencia
+     */
+    select?: AuxilioVigenciaSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Model TipoHora
    */
 
@@ -12578,10 +13530,12 @@ export namespace Prisma {
 
   export type ColaboradorAvgAggregateOutputType = {
     salarioMensual: number | null
+    auxilioTransporte: number | null
   }
 
   export type ColaboradorSumAggregateOutputType = {
     salarioMensual: number | null
+    auxilioTransporte: number | null
   }
 
   export type ColaboradorMinAggregateOutputType = {
@@ -12595,6 +13549,7 @@ export namespace Prisma {
     telefono: string | null
     fechaNacimiento: Date | null
     salarioMensual: number | null
+    auxilioTransporte: number | null
     rostroEnroladoEn: Date | null
     rostroRechazadoEn: Date | null
     foto: string | null
@@ -12621,6 +13576,7 @@ export namespace Prisma {
     telefono: string | null
     fechaNacimiento: Date | null
     salarioMensual: number | null
+    auxilioTransporte: number | null
     rostroEnroladoEn: Date | null
     rostroRechazadoEn: Date | null
     foto: string | null
@@ -12647,6 +13603,7 @@ export namespace Prisma {
     telefono: number
     fechaNacimiento: number
     salarioMensual: number
+    auxilioTransporte: number
     rostroDescriptor: number
     rostroEnroladoEn: number
     rostroRechazadoEn: number
@@ -12667,10 +13624,12 @@ export namespace Prisma {
 
   export type ColaboradorAvgAggregateInputType = {
     salarioMensual?: true
+    auxilioTransporte?: true
   }
 
   export type ColaboradorSumAggregateInputType = {
     salarioMensual?: true
+    auxilioTransporte?: true
   }
 
   export type ColaboradorMinAggregateInputType = {
@@ -12684,6 +13643,7 @@ export namespace Prisma {
     telefono?: true
     fechaNacimiento?: true
     salarioMensual?: true
+    auxilioTransporte?: true
     rostroEnroladoEn?: true
     rostroRechazadoEn?: true
     foto?: true
@@ -12710,6 +13670,7 @@ export namespace Prisma {
     telefono?: true
     fechaNacimiento?: true
     salarioMensual?: true
+    auxilioTransporte?: true
     rostroEnroladoEn?: true
     rostroRechazadoEn?: true
     foto?: true
@@ -12736,6 +13697,7 @@ export namespace Prisma {
     telefono?: true
     fechaNacimiento?: true
     salarioMensual?: true
+    auxilioTransporte?: true
     rostroDescriptor?: true
     rostroEnroladoEn?: true
     rostroRechazadoEn?: true
@@ -12850,6 +13812,7 @@ export namespace Prisma {
     telefono: string | null
     fechaNacimiento: Date | null
     salarioMensual: number
+    auxilioTransporte: number | null
     rostroDescriptor: JsonValue | null
     rostroEnroladoEn: Date | null
     rostroRechazadoEn: Date | null
@@ -12896,6 +13859,7 @@ export namespace Prisma {
     telefono?: boolean
     fechaNacimiento?: boolean
     salarioMensual?: boolean
+    auxilioTransporte?: boolean
     rostroDescriptor?: boolean
     rostroEnroladoEn?: boolean
     rostroRechazadoEn?: boolean
@@ -12935,6 +13899,7 @@ export namespace Prisma {
     telefono?: boolean
     fechaNacimiento?: boolean
     salarioMensual?: boolean
+    auxilioTransporte?: boolean
     rostroDescriptor?: boolean
     rostroEnroladoEn?: boolean
     rostroRechazadoEn?: boolean
@@ -12990,6 +13955,7 @@ export namespace Prisma {
       telefono: string | null
       fechaNacimiento: Date | null
       salarioMensual: number
+      auxilioTransporte: number | null
       rostroDescriptor: Prisma.JsonValue | null
       rostroEnroladoEn: Date | null
       rostroRechazadoEn: Date | null
@@ -13393,6 +14359,7 @@ export namespace Prisma {
     readonly telefono: FieldRef<"Colaborador", 'String'>
     readonly fechaNacimiento: FieldRef<"Colaborador", 'DateTime'>
     readonly salarioMensual: FieldRef<"Colaborador", 'Float'>
+    readonly auxilioTransporte: FieldRef<"Colaborador", 'Float'>
     readonly rostroDescriptor: FieldRef<"Colaborador", 'Json'>
     readonly rostroEnroladoEn: FieldRef<"Colaborador", 'DateTime'>
     readonly rostroRechazadoEn: FieldRef<"Colaborador", 'DateTime'>
@@ -31509,6 +32476,7 @@ export namespace Prisma {
     marcadorToken: 'marcadorToken',
     exentaPago: 'exentaPago',
     activa: 'activa',
+    auxilioRevisadoEn: 'auxilioRevisadoEn',
     creadoEn: 'creadoEn',
     actualizadoEn: 'actualizadoEn',
     afiliadoId: 'afiliadoId',
@@ -31582,6 +32550,16 @@ export namespace Prisma {
   export type JornadaVigenciaScalarFieldEnum = (typeof JornadaVigenciaScalarFieldEnum)[keyof typeof JornadaVigenciaScalarFieldEnum]
 
 
+  export const AuxilioVigenciaScalarFieldEnum: {
+    id: 'id',
+    vigenteDesde: 'vigenteDesde',
+    valor: 'valor',
+    tope: 'tope'
+  };
+
+  export type AuxilioVigenciaScalarFieldEnum = (typeof AuxilioVigenciaScalarFieldEnum)[keyof typeof AuxilioVigenciaScalarFieldEnum]
+
+
   export const TipoHoraScalarFieldEnum: {
     id: 'id',
     nombre: 'nombre',
@@ -31652,6 +32630,7 @@ export namespace Prisma {
     telefono: 'telefono',
     fechaNacimiento: 'fechaNacimiento',
     salarioMensual: 'salarioMensual',
+    auxilioTransporte: 'auxilioTransporte',
     rostroDescriptor: 'rostroDescriptor',
     rostroEnroladoEn: 'rostroEnroladoEn',
     rostroRechazadoEn: 'rostroRechazadoEn',
@@ -32200,6 +33179,7 @@ export namespace Prisma {
     marcadorToken?: StringFilter<"Empresa"> | string
     exentaPago?: BoolFilter<"Empresa"> | boolean
     activa?: BoolFilter<"Empresa"> | boolean
+    auxilioRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableFilter<"Empresa"> | string | null
@@ -32227,6 +33207,7 @@ export namespace Prisma {
     marcadorToken?: SortOrder
     exentaPago?: SortOrder
     activa?: SortOrder
+    auxilioRevisadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrderInput | SortOrder
@@ -32257,6 +33238,7 @@ export namespace Prisma {
     telefono?: StringNullableFilter<"Empresa"> | string | null
     exentaPago?: BoolFilter<"Empresa"> | boolean
     activa?: BoolFilter<"Empresa"> | boolean
+    auxilioRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableFilter<"Empresa"> | string | null
@@ -32284,6 +33266,7 @@ export namespace Prisma {
     marcadorToken?: SortOrder
     exentaPago?: SortOrder
     activa?: SortOrder
+    auxilioRevisadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrderInput | SortOrder
@@ -32306,6 +33289,7 @@ export namespace Prisma {
     marcadorToken?: StringWithAggregatesFilter<"Empresa"> | string
     exentaPago?: BoolWithAggregatesFilter<"Empresa"> | boolean
     activa?: BoolWithAggregatesFilter<"Empresa"> | boolean
+    auxilioRevisadoEn?: DateTimeNullableWithAggregatesFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableWithAggregatesFilter<"Empresa"> | string | null
@@ -32636,6 +33620,55 @@ export namespace Prisma {
     horasSemanales?: FloatWithAggregatesFilter<"JornadaVigencia"> | number
   }
 
+  export type AuxilioVigenciaWhereInput = {
+    AND?: AuxilioVigenciaWhereInput | AuxilioVigenciaWhereInput[]
+    OR?: AuxilioVigenciaWhereInput[]
+    NOT?: AuxilioVigenciaWhereInput | AuxilioVigenciaWhereInput[]
+    id?: StringFilter<"AuxilioVigencia"> | string
+    vigenteDesde?: DateTimeFilter<"AuxilioVigencia"> | Date | string
+    valor?: FloatFilter<"AuxilioVigencia"> | number
+    tope?: FloatFilter<"AuxilioVigencia"> | number
+  }
+
+  export type AuxilioVigenciaOrderByWithRelationInput = {
+    id?: SortOrder
+    vigenteDesde?: SortOrder
+    valor?: SortOrder
+    tope?: SortOrder
+  }
+
+  export type AuxilioVigenciaWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    vigenteDesde?: Date | string
+    AND?: AuxilioVigenciaWhereInput | AuxilioVigenciaWhereInput[]
+    OR?: AuxilioVigenciaWhereInput[]
+    NOT?: AuxilioVigenciaWhereInput | AuxilioVigenciaWhereInput[]
+    valor?: FloatFilter<"AuxilioVigencia"> | number
+    tope?: FloatFilter<"AuxilioVigencia"> | number
+  }, "id" | "vigenteDesde">
+
+  export type AuxilioVigenciaOrderByWithAggregationInput = {
+    id?: SortOrder
+    vigenteDesde?: SortOrder
+    valor?: SortOrder
+    tope?: SortOrder
+    _count?: AuxilioVigenciaCountOrderByAggregateInput
+    _avg?: AuxilioVigenciaAvgOrderByAggregateInput
+    _max?: AuxilioVigenciaMaxOrderByAggregateInput
+    _min?: AuxilioVigenciaMinOrderByAggregateInput
+    _sum?: AuxilioVigenciaSumOrderByAggregateInput
+  }
+
+  export type AuxilioVigenciaScalarWhereWithAggregatesInput = {
+    AND?: AuxilioVigenciaScalarWhereWithAggregatesInput | AuxilioVigenciaScalarWhereWithAggregatesInput[]
+    OR?: AuxilioVigenciaScalarWhereWithAggregatesInput[]
+    NOT?: AuxilioVigenciaScalarWhereWithAggregatesInput | AuxilioVigenciaScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"AuxilioVigencia"> | string
+    vigenteDesde?: DateTimeWithAggregatesFilter<"AuxilioVigencia"> | Date | string
+    valor?: FloatWithAggregatesFilter<"AuxilioVigencia"> | number
+    tope?: FloatWithAggregatesFilter<"AuxilioVigencia"> | number
+  }
+
   export type TipoHoraWhereInput = {
     AND?: TipoHoraWhereInput | TipoHoraWhereInput[]
     OR?: TipoHoraWhereInput[]
@@ -32953,6 +33986,7 @@ export namespace Prisma {
     telefono?: StringNullableFilter<"Colaborador"> | string | null
     fechaNacimiento?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     salarioMensual?: FloatFilter<"Colaborador"> | number
+    auxilioTransporte?: FloatNullableFilter<"Colaborador"> | number | null
     rostroDescriptor?: JsonNullableFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
@@ -32990,6 +34024,7 @@ export namespace Prisma {
     telefono?: SortOrderInput | SortOrder
     fechaNacimiento?: SortOrderInput | SortOrder
     salarioMensual?: SortOrder
+    auxilioTransporte?: SortOrderInput | SortOrder
     rostroDescriptor?: SortOrderInput | SortOrder
     rostroEnroladoEn?: SortOrderInput | SortOrder
     rostroRechazadoEn?: SortOrderInput | SortOrder
@@ -33031,6 +34066,7 @@ export namespace Prisma {
     telefono?: StringNullableFilter<"Colaborador"> | string | null
     fechaNacimiento?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     salarioMensual?: FloatFilter<"Colaborador"> | number
+    auxilioTransporte?: FloatNullableFilter<"Colaborador"> | number | null
     rostroDescriptor?: JsonNullableFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
@@ -33068,6 +34104,7 @@ export namespace Prisma {
     telefono?: SortOrderInput | SortOrder
     fechaNacimiento?: SortOrderInput | SortOrder
     salarioMensual?: SortOrder
+    auxilioTransporte?: SortOrderInput | SortOrder
     rostroDescriptor?: SortOrderInput | SortOrder
     rostroEnroladoEn?: SortOrderInput | SortOrder
     rostroRechazadoEn?: SortOrderInput | SortOrder
@@ -33103,6 +34140,7 @@ export namespace Prisma {
     telefono?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     fechaNacimiento?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     salarioMensual?: FloatWithAggregatesFilter<"Colaborador"> | number
+    auxilioTransporte?: FloatNullableWithAggregatesFilter<"Colaborador"> | number | null
     rostroDescriptor?: JsonNullableWithAggregatesFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     rostroRechazadoEn?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
@@ -34699,6 +35737,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -34725,6 +35764,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -34751,6 +35791,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34777,6 +35818,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34803,6 +35845,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -34819,6 +35862,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34834,6 +35878,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -35204,6 +36249,55 @@ export namespace Prisma {
     horasSemanales?: FloatFieldUpdateOperationsInput | number
   }
 
+  export type AuxilioVigenciaCreateInput = {
+    id?: string
+    vigenteDesde: Date | string
+    valor: number
+    tope: number
+  }
+
+  export type AuxilioVigenciaUncheckedCreateInput = {
+    id?: string
+    vigenteDesde: Date | string
+    valor: number
+    tope: number
+  }
+
+  export type AuxilioVigenciaUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    vigenteDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    valor?: FloatFieldUpdateOperationsInput | number
+    tope?: FloatFieldUpdateOperationsInput | number
+  }
+
+  export type AuxilioVigenciaUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    vigenteDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    valor?: FloatFieldUpdateOperationsInput | number
+    tope?: FloatFieldUpdateOperationsInput | number
+  }
+
+  export type AuxilioVigenciaCreateManyInput = {
+    id?: string
+    vigenteDesde: Date | string
+    valor: number
+    tope: number
+  }
+
+  export type AuxilioVigenciaUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    vigenteDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    valor?: FloatFieldUpdateOperationsInput | number
+    tope?: FloatFieldUpdateOperationsInput | number
+  }
+
+  export type AuxilioVigenciaUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    vigenteDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    valor?: FloatFieldUpdateOperationsInput | number
+    tope?: FloatFieldUpdateOperationsInput | number
+  }
+
   export type TipoHoraCreateInput = {
     id?: string
     nombre: string
@@ -35548,6 +36642,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -35584,6 +36679,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -35618,6 +36714,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35654,6 +36751,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35689,6 +36787,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -35715,6 +36814,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35741,6 +36841,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -37535,17 +38636,6 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
-  export type DateTimeFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[]
-    notIn?: Date[] | string[]
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
-  }
-
   export type DateTimeNullableFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | null
@@ -37555,6 +38645,17 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type DateTimeFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[]
+    notIn?: Date[] | string[]
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
   export type UsuarioListRelationFilter = {
@@ -37671,6 +38772,7 @@ export namespace Prisma {
     marcadorToken?: SortOrder
     exentaPago?: SortOrder
     activa?: SortOrder
+    auxilioRevisadoEn?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrder
@@ -37687,6 +38789,7 @@ export namespace Prisma {
     marcadorToken?: SortOrder
     exentaPago?: SortOrder
     activa?: SortOrder
+    auxilioRevisadoEn?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrder
@@ -37703,6 +38806,7 @@ export namespace Prisma {
     marcadorToken?: SortOrder
     exentaPago?: SortOrder
     activa?: SortOrder
+    auxilioRevisadoEn?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrder
@@ -37752,20 +38856,6 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
-  export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[]
-    notIn?: Date[] | string[]
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedDateTimeFilter<$PrismaModel>
-    _max?: NestedDateTimeFilter<$PrismaModel>
-  }
-
   export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | null
@@ -37778,6 +38868,20 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[]
+    notIn?: Date[] | string[]
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
   export type EnumEstadoSuscripcionFilter<$PrismaModel = never> = {
@@ -38180,6 +39284,37 @@ export namespace Prisma {
   export type JornadaVigenciaSumOrderByAggregateInput = {
     horasSemanales?: SortOrder
   }
+
+  export type AuxilioVigenciaCountOrderByAggregateInput = {
+    id?: SortOrder
+    vigenteDesde?: SortOrder
+    valor?: SortOrder
+    tope?: SortOrder
+  }
+
+  export type AuxilioVigenciaAvgOrderByAggregateInput = {
+    valor?: SortOrder
+    tope?: SortOrder
+  }
+
+  export type AuxilioVigenciaMaxOrderByAggregateInput = {
+    id?: SortOrder
+    vigenteDesde?: SortOrder
+    valor?: SortOrder
+    tope?: SortOrder
+  }
+
+  export type AuxilioVigenciaMinOrderByAggregateInput = {
+    id?: SortOrder
+    vigenteDesde?: SortOrder
+    valor?: SortOrder
+    tope?: SortOrder
+  }
+
+  export type AuxilioVigenciaSumOrderByAggregateInput = {
+    valor?: SortOrder
+    tope?: SortOrder
+  }
   export type JsonFilter<$PrismaModel = never> = 
     | PatchUndefined<
         Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
@@ -38409,6 +39544,17 @@ export namespace Prisma {
     ultimoUso?: SortOrder
   }
 
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
   export type EnumModalidadTrabajoFilter<$PrismaModel = never> = {
     equals?: $Enums.ModalidadTrabajo | EnumModalidadTrabajoFieldRefInput<$PrismaModel>
     in?: $Enums.ModalidadTrabajo[]
@@ -38524,6 +39670,7 @@ export namespace Prisma {
     telefono?: SortOrder
     fechaNacimiento?: SortOrder
     salarioMensual?: SortOrder
+    auxilioTransporte?: SortOrder
     rostroDescriptor?: SortOrder
     rostroEnroladoEn?: SortOrder
     rostroRechazadoEn?: SortOrder
@@ -38542,6 +39689,7 @@ export namespace Prisma {
 
   export type ColaboradorAvgOrderByAggregateInput = {
     salarioMensual?: SortOrder
+    auxilioTransporte?: SortOrder
   }
 
   export type ColaboradorMaxOrderByAggregateInput = {
@@ -38555,6 +39703,7 @@ export namespace Prisma {
     telefono?: SortOrder
     fechaNacimiento?: SortOrder
     salarioMensual?: SortOrder
+    auxilioTransporte?: SortOrder
     rostroEnroladoEn?: SortOrder
     rostroRechazadoEn?: SortOrder
     foto?: SortOrder
@@ -38581,6 +39730,7 @@ export namespace Prisma {
     telefono?: SortOrder
     fechaNacimiento?: SortOrder
     salarioMensual?: SortOrder
+    auxilioTransporte?: SortOrder
     rostroEnroladoEn?: SortOrder
     rostroRechazadoEn?: SortOrder
     foto?: SortOrder
@@ -38598,6 +39748,23 @@ export namespace Prisma {
 
   export type ColaboradorSumOrderByAggregateInput = {
     salarioMensual?: SortOrder
+    auxilioTransporte?: SortOrder
+  }
+
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type EnumModalidadTrabajoWithAggregatesFilter<$PrismaModel = never> = {
@@ -38618,17 +39785,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel>
     _max?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel>
-  }
-
-  export type FloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
 
   export type SedeCountOrderByAggregateInput = {
@@ -38680,22 +39836,6 @@ export namespace Prisma {
     lat?: SortOrder
     lng?: SortOrder
     radio?: SortOrder
-  }
-
-  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type ColaboradorRelationFilter = {
@@ -39957,12 +41097,12 @@ export namespace Prisma {
     set?: boolean
   }
 
-  export type DateTimeFieldUpdateOperationsInput = {
-    set?: Date | string
-  }
-
   export type NullableDateTimeFieldUpdateOperationsInput = {
     set?: Date | string | null
+  }
+
+  export type DateTimeFieldUpdateOperationsInput = {
+    set?: Date | string
   }
 
   export type UsuarioUpdateManyWithoutEmpresaNestedInput = {
@@ -40635,6 +41775,14 @@ export namespace Prisma {
     connect?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
   }
 
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type EnumModalidadTrabajoFieldUpdateOperationsInput = {
     set?: $Enums.ModalidadTrabajo
   }
@@ -40931,14 +42079,6 @@ export namespace Prisma {
     connectOrCreate?: RegistroCreateOrConnectWithoutSedeSalidaInput | RegistroCreateOrConnectWithoutSedeSalidaInput[]
     createMany?: RegistroCreateManySedeSalidaInputEnvelope
     connect?: RegistroWhereUniqueInput | RegistroWhereUniqueInput[]
-  }
-
-  export type NullableFloatFieldUpdateOperationsInput = {
-    set?: number | null
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type EmpresaUpdateOneRequiredWithoutSedesNestedInput = {
@@ -41750,17 +42890,6 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
-  export type NestedDateTimeFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[]
-    notIn?: Date[] | string[]
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
-  }
-
   export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | null
@@ -41770,6 +42899,17 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type NestedDateTimeFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[]
+    notIn?: Date[] | string[]
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
   export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
@@ -41836,20 +42976,6 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
-  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[]
-    notIn?: Date[] | string[]
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedDateTimeFilter<$PrismaModel>
-    _max?: NestedDateTimeFilter<$PrismaModel>
-  }
-
   export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | null
@@ -41862,6 +42988,20 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[]
+    notIn?: Date[] | string[]
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
   export type NestedEnumEstadoSuscripcionFilter<$PrismaModel = never> = {
@@ -42043,6 +43183,22 @@ export namespace Prisma {
     not?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel> | $Enums.MotivoRetiro | null
   }
 
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+
   export type NestedEnumModalidadTrabajoWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.ModalidadTrabajo | EnumModalidadTrabajoFieldRefInput<$PrismaModel>
     in?: $Enums.ModalidadTrabajo[]
@@ -42061,22 +43217,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel>
     _max?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel>
-  }
-
-  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | null
-    notIn?: number[] | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumTipoRegistroFilter<$PrismaModel = never> = {
@@ -42365,6 +43505,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -42399,6 +43540,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -42809,6 +43951,7 @@ export namespace Prisma {
     telefono?: StringNullableFilter<"Colaborador"> | string | null
     fechaNacimiento?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     salarioMensual?: FloatFilter<"Colaborador"> | number
+    auxilioTransporte?: FloatNullableFilter<"Colaborador"> | number | null
     rostroDescriptor?: JsonNullableFilter<"Colaborador">
     rostroEnroladoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
@@ -43148,6 +44291,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -43173,6 +44317,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -43256,6 +44401,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -43281,6 +44427,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43501,6 +44648,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -43526,6 +44674,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -43589,6 +44738,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -43624,6 +44774,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -43677,6 +44828,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -43702,6 +44854,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43846,6 +44999,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -43871,6 +45025,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -43912,6 +45067,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -43937,6 +45093,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43962,6 +45119,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -43987,6 +45145,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -44381,6 +45540,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -44406,6 +45566,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44747,6 +45908,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -44772,6 +45934,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -44961,6 +46124,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -44986,6 +46150,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45060,6 +46225,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -45095,6 +46261,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -45179,6 +46346,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45214,6 +46382,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45288,6 +46457,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -45323,6 +46493,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -45372,6 +46543,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45407,6 +46579,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45440,6 +46613,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -45475,6 +46649,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -45666,6 +46841,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45701,6 +46877,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45862,6 +47039,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -45897,6 +47075,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -46005,6 +47184,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46040,6 +47220,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46137,6 +47318,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -46162,6 +47344,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -46203,6 +47386,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46228,6 +47412,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46253,6 +47438,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -46278,6 +47464,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -46319,6 +47506,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46344,6 +47532,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46369,6 +47558,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -46394,6 +47584,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -46435,6 +47626,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46460,6 +47652,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46485,6 +47678,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -46510,6 +47704,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -46598,6 +47793,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46623,6 +47819,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46743,6 +47940,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -46768,6 +47966,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -46902,6 +48101,7 @@ export namespace Prisma {
     marcadorToken?: StringFilter<"Empresa"> | string
     exentaPago?: BoolFilter<"Empresa"> | boolean
     activa?: BoolFilter<"Empresa"> | boolean
+    auxilioRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableFilter<"Empresa"> | string | null
@@ -47012,6 +48212,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -47037,6 +48238,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -47168,6 +48370,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47193,6 +48396,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47486,6 +48690,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -47521,6 +48726,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -47570,6 +48776,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47605,6 +48812,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47638,6 +48846,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -47673,6 +48882,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -47722,6 +48932,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47757,6 +48968,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47790,6 +49002,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -47825,6 +49038,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -47874,6 +49088,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47909,6 +49124,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47942,6 +49158,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -47977,6 +49194,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -48056,6 +49274,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48091,6 +49310,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48254,6 +49474,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -48396,6 +49617,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48430,6 +49652,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48464,6 +49687,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48778,6 +50002,7 @@ export namespace Prisma {
     telefono?: string | null
     fechaNacimiento?: Date | string | null
     salarioMensual: number
+    auxilioTransporte?: number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: Date | string | null
     rostroRechazadoEn?: Date | string | null
@@ -48836,6 +50061,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48871,6 +50097,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48905,6 +50132,7 @@ export namespace Prisma {
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
     fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
     rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
     rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -49751,6 +50979,7 @@ export namespace Prisma {
     marcadorToken?: string
     exentaPago?: boolean
     activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -49836,6 +51065,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -49861,6 +51091,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -49886,6 +51117,7 @@ export namespace Prisma {
     marcadorToken?: StringFieldUpdateOperationsInput | string
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -50055,6 +51287,10 @@ export namespace Prisma {
      * @deprecated Use JornadaVigenciaDefaultArgs instead
      */
     export type JornadaVigenciaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = JornadaVigenciaDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use AuxilioVigenciaDefaultArgs instead
+     */
+    export type AuxilioVigenciaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = AuxilioVigenciaDefaultArgs<ExtArgs>
     /**
      * @deprecated Use TipoHoraDefaultArgs instead
      */
