@@ -61,6 +61,32 @@ npm run build
 ```
 Sube el contenido de `frontend/dist/` a **`~/horapro.co/`** (el docroot real del subdominio, incluida la carpeta `models/` con los pesos del reconocimiento facial). En deploys posteriores: `cp -R ~/horapro-repo/frontend/dist/. ~/horapro.co/` (no borres `.htaccess`, `models/` ni `api/`).
 
+> ⚠️ **El `git fetch` va SIEMPRE en el mismo bloque que el `checkout`.** El clon de
+> `~/horapro-repo` guarda su propia copia de `origin/frontend-build`, y si no se
+> actualiza, `git checkout -f -B frontend-build origin/frontend-build` se queda en el
+> artefacto **anterior** informando «Your branch is up to date». El `cp` entonces copia
+> lo viejo sobre lo viejo: no da error, no rompe nada, y el sitio no cambia. Pasó el
+> 17 de septiembre de 2026 publicando el artículo del auxilio.
+>
+> ```bash
+> cd ~/horapro-repo && git fetch origin && git checkout -f -B frontend-build origin/frontend-build && git log -1 --oneline
+> ```
+>
+> Y el `cp` se entrega con candado, para que la puerta no dependa de que alguien lea el
+> hash en pantalla:
+>
+> ```bash
+> cd ~/horapro-repo && [ "$(git rev-parse --short HEAD)" = "<hash esperado>" ] && cp -R ~/horapro-repo/frontend/dist/. ~/horapro.co/ && echo copiado || echo "PARA: el repo no esta en <hash esperado>"
+> ```
+>
+> Comprobación final: `grep -o 'assets/index-[A-Za-z0-9_-]*\.js' ~/horapro.co/index.html`
+> tiene que decir el hash NUEVO. Si dice el de antes, la copia no llegó.
+>
+> Ojo con algo que parece raro y es correcto: al desplegar **solo** contenido del blog,
+> el paquete de la aplicación cambia de hash igualmente, porque `vite.config.ts` inyecta
+> la lista de artículos en el módulo virtual del carrusel de la landing. Si NO cambiara,
+> es que el artículo no entró.
+
 > **No borres `assets/` antes de copiar.** La instrucción anterior empezaba con
 > `rm -rf ~/horapro.co/assets`, y eso elimina bundles que las pestañas ya
 > abiertas siguen pidiendo. La app carga tres módulos bajo demanda —`xlsx` al

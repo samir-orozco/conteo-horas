@@ -597,3 +597,103 @@ En este mismo despliegue, la primera compilación barrió trabajo SIN COMMITEAR 
 dueño (una ruta de borrado en cascada de empresas sobre 20 tablas) y lo habría
 mandado a producción. Se caza compilando en un `git worktree` sobre `HEAD` y
 comprobando el artefacto con un `grep` de algo que NO debería estar.
+
+---
+
+## 12. Un comando puede informar éxito y no haber hecho nada (17 de septiembre de 2026)
+
+En un solo día, cuatro veces. Cuatro mecanismos distintos, ninguno produjo un
+fallo visible, y los cuatro se habrían colado si la comprobación hubiera sido
+«el comando no se quejó».
+
+| Qué se corrió | Qué informó | Qué pasó de verdad |
+|---|---|---|
+| `git restore --staged <rutas>` | un error que parecía salida normal | **el comando no existe en este git**: nada se quitó del índice, y cinco archivos que el dueño pidió excluir quedaron preparados para el commit |
+| `git push origin "$P:refs/heads/rama"` | `src refspec ... does not match any` | **zsh leyó `:r` como modificador suyo** y se comió dos caracteres; el refspec llegó deformado y los tres push fallaron |
+| un bloque con el patrón `*.jpeg` | nada, silencio | **zsh aborta el comando entero** cuando un patrón no encuentra nada, así que la parte que medía nunca corrió y el silencio se leyó como «no hay resultados» |
+| `git checkout -f -B rama origin/rama` | `Your branch is up to date` | la referencia `origin/rama` del clon estaba **cacheada** en el hash anterior: se desplegó el artefacto viejo sobre el viejo, sin error y sin efecto |
+
+Dos más del mismo día y de la misma familia: un `grep` sobre `docs/DESPLIEGUE.md`
+con `2>/dev/null` devolvió vacío porque **el archivo no existe en esa ruta** (el
+real está en la raíz), y se leyó como «no menciona el seed»; y un
+`git status --ignored=no` falló por una bandera inexistente, y la rama `||` del
+comando imprimió un tranquilizador «correcto».
+
+Esto no es nuevo en este proyecto. La sección **9.5** ya documenta un
+`npm install` respondiendo «up to date» con una versión distinta en disco. Es la
+misma forma de fallo, y por eso conviene tratarla como una sola regla y no como
+anécdotas sueltas.
+
+### 12.1 Se comprueba el EFECTO, no la salida del comando
+
+Un comando dice lo que intentó, no lo que consiguió. La comprobación válida mira
+el estado del mundo después:
+
+- Después de un `push`, leer `origin` (`git rev-parse origin/<rama>`), no lo que
+  imprimió el push.
+- Después de quitar algo del índice, listar lo preparado **por nombre**:
+  `git diff --cached --name-only | grep -E '<lo que no puede entrar>'`.
+- Después de un `cp` a producción, hacer `grep` en el DESTINO de algo que solo
+  exista en la versión nueva.
+- Antes de usar una cadena construida (un refspec, una ruta, un `host:puerto`),
+  imprimirla.
+
+### 12.2 Un resultado vacío no es un resultado negativo
+
+Una salida vacía puede significar cuatro cosas distintas: que no hubo
+coincidencias, que el archivo no existe, que el comando no existe, o que el
+intérprete abortó antes de llegar. **Nunca se concluye «no hay» a partir de un
+vacío.** Se afirma en positivo lo que sí se encontró, o se comprueba primero que
+la ruta y el comando existen.
+
+Y en un chequeo, `2>/dev/null` está prohibido: es exactamente lo que convierte
+un error en un vacío indistinguible.
+
+### 12.3 La puerta va en el guion, no en la atención de quien mira
+
+Si la seguridad de un paso depende de que alguien lea un hash en pantalla y
+decida parar, ese paso no está protegido. Se codifica:
+
+```bash
+# Un commit que se niega a existir si entró algo que no debía
+if git diff --cached --name-only | grep -E 'launch\.json|PLAYBOOK'; then
+  echo "*** ABORTO ***"; exit 1
+fi
+```
+
+```bash
+# Un cp que no se ejecuta si el repo no está en el artefacto esperado
+[ "$(git rev-parse --short HEAD)" = "<hash>" ] && cp -R <origen>/. <destino>/ || echo "PARA"
+```
+
+Las dos salvaron un despliegue el 17 de septiembre. La primera cazó lo que el
+`git restore` fallido había dejado preparado.
+
+### 12.4 El inventario: este git es viejo y zsh no es bash
+
+| No funciona aquí | Equivalente que sí |
+|---|---|
+| `git restore --staged <ruta>` | `git reset HEAD <ruta>` |
+| `git restore <ruta>` | `git checkout -- <ruta>` |
+| `git branch --show-current` | `git rev-parse --abbrev-ref HEAD` |
+| `git status --ignored=no` | `--ignored` sola, o no usarla |
+| `git worktree remove` | borrar la carpeta y `git worktree prune` |
+| `git rev-parse --short A B C` | una revisión por llamada |
+| `git add -i`, `git rebase -i` | no hay: un commit no se puede preparar por trozos |
+| `cat -A` | es de GNU; en macOS no existe |
+
+Y de zsh, dos que muerden en silencio:
+
+- **`"$VAR:texto"` no es concatenación.** `:r`, `:h`, `:t` y `:e` pegados a una
+  variable son modificadores de zsh, incluso entre comillas dobles. Se escribe
+  `"${VAR}:texto"` con llaves.
+- **Un patrón sin coincidencias aborta el comando entero**, en vez de pasar de
+  largo como haría bash. Va junto con lo que ya dice la regla de correr los
+  guiones con `bash` y no pegándolos en la terminal.
+
+### 12.5 Antes de `checkout` de una referencia remota, `git fetch`
+
+El caso del despliegue merece su propia línea porque el clon del servidor la
+tiene cacheada y no avisa. `git fetch` va **en el mismo bloque** que el
+`checkout`, nunca en un paso anterior que se pueda olvidar. Está también en
+`DESPLIEGUE.md`, en la sección del frontend.
