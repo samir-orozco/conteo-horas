@@ -134,6 +134,7 @@ RewriteRule . /index.html [L]
 | `UV_THREADPOOL_SIZE` | `2` (ver 6.1) |
 | `WOMPI_*` | llaves de **producción** (ver sección 7) |
 | `SMTP_*` | buzón creado en el paso 5 |
+| `LOG_FILE` | `/home/<usuario>/horapro-co-api/logs/api.log`. Sin ella la app imprime a stdout y **cPanel lo descarta**: durante dos meses no quedó rastro de nada (ver 6.2) |
 
 ### 6.1 ⚠️ Prisma en Banahosting: por qué estas variables son obligatorias, no opcionales
 
@@ -160,6 +161,32 @@ sin poder ni entrar a arreglarlo.
 **Aplica las cuatro en cualquier app Node de esta cuenta que use Prisma** — no
 solo en `horapro-co-api`. Si hay una app vieja corriendo en paralelo (ver nota del
 dominio, arriba) y usa Prisma, confirma que también las tenga.
+
+### 6.2 ⚠️ Cómo se agrega una variable al `.env` del servidor
+
+El `.env` de producción puede no terminar en salto de línea. Si se le agrega algo
+con `cat >>` o `echo >>` a secas, lo nuevo se pega al final de la última línea y
+se rompen **dos** variables de un golpe: la que se quería agregar no existe, y la
+anterior queda corrupta. Pasó el 19/09/2026 al activar `LOG_FILE`: se fusionó con
+`TELEGRAM_WEBHOOK_URL`, la app registró en Telegram una URL con basura pegada, y
+Telegram **la aceptó** sin error. Contado entero en `CLAUDE.md`, sección 12.6.
+
+Siempre así, con respaldo antes y el salto de línea por delante:
+
+```bash
+cp ~/horapro-co-api/.env ~/horapro-co-api/.env.bak-$(date +%Y%m%d)
+```
+
+```bash
+printf '\nLOG_FILE="/home/<usuario>/horapro-co-api/logs/api.log"\n' >> ~/horapro-co-api/.env
+```
+
+```bash
+grep -n 'LA_VARIABLE_ANTERIOR\|^LOG_FILE' ~/horapro-co-api/.env   # tienen que salir en DOS líneas
+```
+
+Y después de `touch tmp/restart.txt` se comprueba el **efecto**, no el comando:
+que exista `~/horapro-co-api/logs/api.log` y tenga contenido.
 
 ## 7. Wompi en producción
 

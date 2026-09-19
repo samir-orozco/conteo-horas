@@ -697,3 +697,67 @@ El caso del despliegue merece su propia línea porque el clon del servidor la
 tiene cacheada y no avisa. `git fetch` va **en el mismo bloque** que el
 `checkout`, nunca en un paso anterior que se pueda olvidar. Está también en
 `DESPLIEGUE.md`, en la sección del frontend.
+
+### 12.6 Un `>>` a un archivo sin salto de línea final fusiona dos variables (19 de septiembre de 2026)
+
+Para activar el archivo de log en producción había que agregar una variable al
+`.env` del servidor, y se hizo con `cat >>`. El `.env` **no terminaba en salto
+de línea**, así que lo agregado se pegó al final de la última línea:
+
+```
+TELEGRAM_WEBHOOK_URL=https://horapro.co/api/telegram/webhookLOG_FILE="/home/.../api.log"
+```
+
+Dos daños de un solo comando, y ninguno se quejó:
+
+- **`LOG_FILE` nunca existió.** La app siguió imprimiendo a la consola que cPanel
+  descarta, que es exactamente lo que debe hacer cuando la variable falta. El
+  despliegue parecía roto y el código estaba bien.
+- **`TELEGRAM_WEBHOOK_URL` quedó corrupta**, y al reiniciar la app registró esa
+  URL en Telegram, que **la aceptó** (`"ok":true`). El webhook de entrada, por el
+  que una empresa vincula su chat, quedó muerto hasta que se corrigió. La salida
+  (`sendMessage`) no pasa por ahí y no se vio afectada.
+
+El `cat >>` devolvió 0, la app se comportó bien y Telegram respondió que todo en
+orden. Con esas tres señales verdes se perdió media hora persiguiendo una
+hipótesis falsa (el orden de carga de `dotenv`, que era correcto) en vez de leer
+la línea.
+
+**La regla:** una variable se agrega a un `.env` con el salto de línea por
+delante, y se comprueba leyendo la nueva Y LA ANTERIOR por nombre.
+
+```bash
+printf '\nLOG_FILE="/ruta/al/log"\n' >> ~/app/.env
+grep -n 'LA_DE_ANTES\|^LOG_FILE' ~/app/.env    # tienen que salir en DOS líneas
+```
+
+### 12.7 Un `push` de un hash no mueve la rama local, y leerla en local miente
+
+Los artefactos se publican con `git push origin <hash>:refs/heads/backend-build`.
+Eso actualiza `origin/backend-build` y **deja la rama local donde estaba**. El
+mismo día del caso anterior, las tres ramas de artefacto estaban atrasadas:
+
+| rama | local | origin (lo desplegado) |
+|---|---|---|
+| `backend-build` | `8a1f6e6`, de tres días antes | `4cb7eee` |
+| `frontend-build` | `feff730` | `9d56f9b` |
+| `prisma-build` | `6cff438` | `8842cac` |
+
+Con eso, `git show backend-build:<archivo>` lee **el artefacto viejo**. Y encima
+la ruta dentro del artefacto no es la que uno escribe de memoria: el `dist/`
+compilado vive en `deploy-backend/dist/`, no en `dist/`.
+
+Las dos causas producen la misma salida y son indistinguibles: `git show` manda
+«path does not exist» a `stderr` y un `grep -c` por la tubería devuelve `0`, que
+se lee igual que «el cambio no llegó al artefacto». Pasó dos veces seguidas en la
+misma sesión, después de escrita la sección 12.2, y la segunda vez el ref ya
+estaba bien: era solo la ruta.
+
+**La regla:** un artefacto se inspecciona por `origin/<rama>` después de un
+`fetch`, o se alinea el ref local antes de leerlo. Y una comprobación sobre un
+artefacto empieza por listar la ruta, no por buscar dentro de ella:
+
+```bash
+git fetch origin backend-build && git update-ref refs/heads/backend-build "$(git rev-parse origin/backend-build)"
+git ls-tree -r --name-only backend-build | grep '<el archivo>'   # primero existe
+```
