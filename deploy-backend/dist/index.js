@@ -36,6 +36,8 @@ const cierreTurnos_1 = require("./utils/cierreTurnos");
 const contratos_2 = require("./routes/contratos");
 const cierreAlmuerzo_1 = require("./utils/cierreAlmuerzo");
 const materializarDias_1 = require("./utils/materializarDias");
+const programarDiario_1 = require("./utils/programarDiario");
+const opcionesDeLog_1 = require("./utils/opcionesDeLog");
 const accesoEmpresa_1 = require("./utils/accesoEmpresa");
 const respuestaDeError_1 = require("./utils/respuestaDeError");
 const esProduccion = process.env.NODE_ENV === 'production';
@@ -49,7 +51,10 @@ if (esProduccion && !process.env.JWT_SECRET) {
 // app se monta en <dominio>/api, algunas configuraciones entregan la URL sin el
 // prefijo. Todas nuestras rutas viven bajo /api, así que lo reponemos si falta.
 const app = (0, fastify_1.default)({
-    logger: true,
+    // Con LOG_FILE escribe a ese archivo y calla el registro de cada petición; sin ella, a consola
+    // como siempre. Ver utils/opcionesDeLog.ts: cPanel descarta lo que la app imprime a stdout, así
+    // que en producción sin esta variable no queda rastro de nada.
+    ...(0, opcionesDeLog_1.opcionesDeLog)(process.env.LOG_FILE),
     bodyLimit: 10 * 1024 * 1024,
     rewriteUrl(req) {
         const url = req.url ?? '/';
@@ -149,8 +154,18 @@ app.register(dashboard_1.default, { prefix: '/api/dashboard' });
 app.register(telegram_1.default, { prefix: '/api/telegram' });
 app.register(notificaciones_1.default, { prefix: '/api/notificaciones' });
 app.get('/api/health', async () => ({ status: 'ok' }));
-// Retención de fotos de verificación facial: 2 meses. Corre al arrancar y cada 24h
-// para que las imágenes base64 no crezcan sin límite en la base de datos.
+// Retención de fotos de verificación facial: 2 meses. Corre al arrancar y cada día
+// a las 3 de la madrugada de Bogotá (ver utils/programarDiario.ts), para que las
+// imágenes base64 no crezcan sin límite en la base de datos.
+//
+// PENDIENTE (19 de septiembre de 2026): es el único de los cuatro barridos que vive
+// dentro de este archivo en vez de en su propio módulo, y captura `app.log` en lugar
+// de recibirlo. Eso lo deja fuera del alcance de las pruebas: los otros tres se pueden
+// ejercitar sin levantar el servidor y este no. Sacarlo a `utils/` es pequeño y no
+// bloquea nada, pero mientras siga aquí su `catch` interno tampoco se puede comprobar.
+// Hora de Bogotá a la que corren los barridos diarios. La madrugada es cuando
+// menos gente marca, así que una consulta pesada no compite con el kiosco.
+const HORA_BARRIDOS = 3;
 const DOS_MESES_MS = 60 * 24 * 60 * 60 * 1000;
 async function limpiarFotosAntiguas() {
     try {
@@ -174,8 +189,13 @@ const start = async () => {
         // '::' escucha IPv6 e IPv4 (dual-stack); localhost puede resolver a ::1
         await app.listen({ port: Number(process.env.PORT) || 3001, host: '::' });
         console.log('HoraPro API corriendo en puerto 3001');
-        limpiarFotosAntiguas();
-        setInterval(limpiarFotosAntiguas, 24 * 60 * 60 * 1000);
+        // Los cuatro barridos diarios van anclados al reloj de Bogotá y no al arranque
+        // del proceso (19 de septiembre de 2026). Ver utils/programarDiario.ts y la
+        // sección 8.3 del CLAUDE.md: con `setInterval` desde el arranque, la hora a la
+        // que corrían era la hora del último despliegue, y una pasada vacía no dejaba
+        // rastro. `cerrarTurnosOlvidados` se queda aparte: ya corre cada hora, que es
+        // su propia cura al mismo problema.
+        (0, programarDiario_1.programarDiario)('fotos-antiguas', HORA_BARRIDOS, limpiarFotosAntiguas, app.log);
         // Cierra turnos que quedaron sin salida (marca "No marcó salida" para revisar).
         //
         // Cada HORA, no cada 24: un turno olvidado solo se vuelve elegible a la
@@ -199,21 +219,18 @@ const start = async () => {
         // Almuerzos que quedaron sin regreso. No se cierran solos: la evidencia de
         // quien volvió y no marcó es idéntica a la de quien se fue para la casa, así
         // que darle la tarde por buena sería fabricar horas pagadas. Se avisa.
-        (0, cierreAlmuerzo_1.avisarPausasSinRegreso)(app.log);
-        setInterval(() => (0, cierreAlmuerzo_1.avisarPausasSinRegreso)(app.log), 24 * 60 * 60 * 1000);
+        (0, programarDiario_1.programarDiario)('pausas-sin-regreso', HORA_BARRIDOS, () => (0, cierreAlmuerzo_1.avisarPausasSinRegreso)(app.log), app.log);
         // Vencimientos de contratos. Antes esto solo corría cuando alguien abría el
         // tablero, así que la empresa que no entraba no se enteraba. Al arrancar y
         // cada 24h, como los demás: en un hosting que duerme la app, el arranque es
         // lo que de verdad garantiza el barrido, porque cualquier petición la
         // despierta (incluida una marcación del kiosco).
-        (0, contratos_2.avisarContratosDeTodas)(app.log);
-        setInterval(() => (0, contratos_2.avisarContratosDeTodas)(app.log), 24 * 60 * 60 * 1000);
+        (0, programarDiario_1.programarDiario)('contratos-por-vencer', HORA_BARRIDOS, () => (0, contratos_2.avisarContratosDeTodas)(app.log), app.log);
         // Materializa el día esperado de cada colaborador para hoy y las próximas
         // semanas. Sin esto la tabla se queda vacía y todo se resuelve con el
         // horario VIGENTE, que es justo lo que reescribía el pasado.
         // Es idempotente y solo escribe donde falta, así que correr de más no daña.
-        (0, materializarDias_1.mantenerVentana)(app.log);
-        setInterval(() => (0, materializarDias_1.mantenerVentana)(app.log), 24 * 60 * 60 * 1000);
+        (0, programarDiario_1.programarDiario)('ventana-dias-esperados', HORA_BARRIDOS, () => (0, materializarDias_1.mantenerVentana)(app.log), app.log);
         // Registra el webhook del bot de Telegram (si hay URL configurada)
         if (process.env.TELEGRAM_WEBHOOK_URL)
             (0, telegram_2.configurarWebhook)(process.env.TELEGRAM_WEBHOOK_URL);
