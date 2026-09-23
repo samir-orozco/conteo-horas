@@ -15,8 +15,7 @@ import { descansoQueToca, ventanasTomadas, leerVentana, claveDeVentana, type Ven
 import { salidaAntesDeHora, ventanaDeSalidaTemprana, ventanaDeLlegadaTarde, llegadaTarde } from '../utils/tardanzas';
 import { almuerzoSinRegreso, descansoSinRegreso, descansoSigueEsperandoRegreso } from '../utils/cierreAlmuerzo';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
-
-const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+import { DIAS_SEMANA } from '../utils/diasDeLaSemana';
 
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
 // Un token de kiosco dura 12 horas y sigue siendo válido aunque la persona ya no

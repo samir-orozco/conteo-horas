@@ -6,10 +6,10 @@ import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 // disparaban las tareas diarias contra la base de desarrollo.
 import { prisma } from '../prisma';
 import { franjaDelDia } from './tardanzas';
+import { DIAS_SEMANA } from './diasDeLaSemana';
 import { notificar } from './notificaciones';
 
 const TZ = 'America/Bogota';
-const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const minutosDe = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
 
 // Cuánto tiempo el kiosco sigue aceptando la salida de un turno abierto. Es la

@@ -28,9 +28,22 @@ Tres reglas que gobiernan esto y no se tocan sin pensarlo:
 
 ## Current State
 
-Todo el trabajo está en `master` (`c8d570e`), con `develop` alineada. Árbol
-limpio. **225 pruebas en verde** · `tsc` limpio en backend y frontend · ESLint en
-78 (sin regresión) · diferencial de jornadas sobre datos reales sin descuadres.
+**Actualizado el 23 de septiembre de 2026, con las ramas medidas después de un
+`git fetch` y no leídas de memoria.** Lo que decía antes este párrafo («todo en
+`master` (`c8d570e`), árbol limpio, 225 pruebas») llevaba semanas siendo falso en
+los cuatro datos.
+
+`develop` va **dos commits por delante de `master`** (`1bc2620`) y **sin subir a
+`origin`**, que sigue en `f0dbe33`. Su punta es el commit del módulo de turnos.
+
+| | backend | frontend |
+|---|---|---|
+| pruebas | **82 archivos / 1438** | **119 archivos / 1190** |
+| tipos | `tsc --noEmit` limpio | `tsc -b` limpio |
+| lint | 173, en su tope | 65 errores / 6 avisos, la línea base |
+
+El árbol **no** está limpio: quedan cinco archivos fuera a propósito (ver
+*Archivos sueltos*).
 
 ### Producción
 
@@ -41,6 +54,12 @@ PUT /registros/jornada/x  → 401                   ✓ el lote de jornadas est�
 ```
 
 ### Lo único pendiente de desplegar
+
+> **ESTA SECCIÓN ESTÁ DESACTUALIZADA y no se borró porque puede seguir
+> importando.** Dice que falta desplegar `04787ce`, pero medido el 23 de
+> septiembre de 2026 `backend-build` está en **`4cb7eee`**, del 19/09, o sea más
+> adelante. **No se comprobó** si esos dos arreglos llegaron a producción: hay que
+> verificarlo contra el servidor antes de darlos por desplegados o por pendientes.
 
 `backend-build` (`04787ce`) tiene **dos arreglos compilados y subidos que
 producción todavía no corre**. Los dos tocan dinero:
@@ -56,39 +75,62 @@ producción todavía no corre**. Los dos tocan dinero:
 
 ### Repositorio
 
-| rama | commit | qué es |
-|---|---|---|
-| `master` | `584cc0f` | la política publicada; **le falta todo el lote del 10 de septiembre** |
-| `develop` | `584cc0f` | igual que master |
-| `mejoras/rostro-vida-y-consentimiento` | `67d6fe6` | el lote biométrico entero, desplegado |
-| `frontend-build` | `dd9a3cd` | **desplegado el 10 de septiembre de 2026** |
-| `backend-build` | `25f6516` | **desplegado el 10 de septiembre de 2026** |
-| `prisma-build` | `e3aeb52` | **desplegado**, y se me olvidó en el primer intento: tumbó el kiosco |
+**Medido el 23 de septiembre de 2026 después de `git fetch origin`.** La tabla
+anterior estaba mal en las CINCO filas, y no por poco: ninguno de los seis hashes
+que listaba existe ya como punta de su rama. Por eso se mide y no se recuerda.
 
-Todas subidas a `origin`. **`master` y `develop` están atrás y hay que fundir el
-lote ahora que está desplegado y comprobado.**
+| rama | local | origin | qué es |
+|---|---|---|---|
+| `master` | `1bc2620` | `1bc2620` | al día con origin |
+| `develop` | *(la punta, ver abajo)* | `f0dbe33` | **el módulo de turnos, commiteado y SIN SUBIR** |
+| `backend-build` | `4cb7eee` | `4cb7eee` | compilado el 19/09 (los barridos a hora fija) |
+| `frontend-build` | `9d56f9b` | `9d56f9b` | compilado el 17/09 (auxilio de transporte) |
+| `prisma-build` | `8842cac` | `8842cac` | compilado el 17/09 (cliente con auxilio) |
 
-**Ojo con `master`:** la rama de la política está desplegada y verificada en
-producción, pero todavía no se fundió en `master`. Según la sección 3 del
-CLAUDE.md, ese es justo el momento en que `master` debe avanzar. Está pendiente
-de aprobación del dueño.
+Los **2 commits** que `develop` le lleva a `master` son el de documentación
+(`f0dbe33`) y el del módulo de turnos, que es la punta.
 
-**Ojo con `develop`:** quedó atrás de `master`. Hay que alinearla.
+**Por qué la punta de `develop` NO lleva su hash escrito aquí.** Este archivo va
+DENTRO de ese commit, y un documento no puede citar el hash del commit que lo
+contiene: cambiar el documento cambia el hash. Se escribió una vez, se enmendó el
+commit para corregir esta misma sección, y la cita quedó apuntando a un commit que
+ya no existía. La punta se lee con `git log -1`, que no se desactualiza nunca.
+
+**Los tres artefactos son del 17 y el 19 de septiembre, o sea ANTERIORES a todo el
+módulo de turnos.** Dicho de otro modo: lo que se acaba de commitear no está
+compilado ni desplegado, y cuando toque hacerlo serán **cuatro ramas** porque
+`schema.prisma` cambió (CLAUDE.md §11).
 
 ### Archivos sueltos en la raíz (no versionados, no míos)
 
-Sin tocar; decidir qué hacer: `ARRANQUE-PROYECTO-WEB.md`,
-`PLAYBOOK-BANAHOSTING.md`, `PLAYBOOK-BANAHOSTING-PHP.md` —documentación de
-Krumlab, no de HoraPro— y `WhatsApp Video 2026-07-17 at 15.22.42.mp4` (1,5 MB),
-que no debería acabar en git.
+**Revisado el 23 de septiembre de 2026.** Son cinco, y se dejaron FUERA del commit
+del módulo de turnos a propósito:
+
+- `ARRANQUE-PROYECTO-WEB.md`
+- `PLAYBOOK-BANAHOSTING.md`
+- `PLAYBOOK-BANAHOSTING-PHP.md`
+- `PLAYBOOK-CRM-MENSAJERIA.md` (nuevo desde la última vez que se miró)
+- `.claude/launch.json`, **modificado**, no sin seguimiento
+
+Los cuatro primeros son documentación de Krumlab, no de HoraPro. El dueño decide
+si van a este repo, a otro, o a ninguno.
+
+El `WhatsApp Video 2026-07-17 at 15.22.42.mp4` que este párrafo listaba **ya no
+está** en la raíz: comprobado, no supuesto.
 
 ---
 
 ## Files in flight
 
-Ninguno. Todo commiteado.
+Ninguno del módulo de turnos: **todo commiteado el 23 de septiembre de 2026** en
+la punta de `develop`, 91 archivos y 10.977 líneas nuevas. Quedan fuera solo los
+cinco de *Archivos sueltos*, a propósito.
 
-Los que concentran el cambio:
+**Ese commit NO está subido.** Vive únicamente en el disco de esta máquina. Si le
+pasa algo a la carpeta, se pierde entero.
+
+La lista de abajo es de un lote ANTERIOR (el de jornadas) y se conserva porque
+sigue describiendo dónde vive esa lógica:
 
 - `backend/src/utils/jornada.ts` — `partirDiaEnJornadas`, `agruparEnJornadas`,
   `marcacionQueCierra`, `tramoQueChoca`, `instantesDeJornada`, `minutosVentana`,
@@ -674,3 +716,533 @@ cd frontend && npm audit --json | python3 -c "import json,sys; d=json.load(sys.s
 **De la lista de tareas, sin empezar:** novedades de parte del día. `horaInicio`
 y `horaFin` ya existen en el modelo `Permiso` y el detalle las muestra, pero nada
 las usa para liquidar.
+
+---
+
+### Los tres regímenes de jornada, y cuál soporta hoy el motor
+
+**Verificado el 21 de septiembre de 2026 a petición del dueño**, contra el texto
+del artículo 161 del CST y fuentes secundarias. **Esto no es concepto jurídico:**
+antes de que cualquiera de estos números liquide dinero de un trabajador, lo
+valida un abogado laboral.
+
+| régimen | tope | recargos | ¿lo soporta el motor? |
+|---|---|---|---|
+| Ordinaria / flexible (art. 161) | 42 h/semana desde el 15 de julio de 2026; entre 4 y **9** horas diarias, repartidas en 5 o 6 días, con día de descanso obligatorio | los normales | **sí**, es lo único que hay |
+| Turnos sucesivos de 36 h (art. 161) | 6 h/día y 36 h/semana, operación continua los 7 días, por acuerdo expreso | **ninguno**: ni nocturno, ni dominical, ni festivo, ni extras. El día de descanso remunerado se sigue debiendo | **no** |
+| Salud, sector **público** (Ley 269 de 1996, art. 2) | hasta 12 h/día sin pasar de 66 h/semana, para personal asistencial con más de una vinculación al Estado | los del régimen público | **no**, y probablemente no aplica: los clientes de HoraPro son empresas privadas |
+
+**El número que hay que corregir:** la jornada flexible permite hasta **nueve**
+horas diarias sin recargo por trabajo suplementario, no diez. Una fuente
+secundaria decía diez; el articulado dice nueve. A partir de la décima hay extra.
+
+**Lo que NO se pudo confirmar, y por eso no entra al motor.** El dueño recordaba
+que un turno de 12 horas obliga a dar **dos días de descanso seguidos**. Tres
+búsquedas y dos lecturas del articulado no lo encuentran. Lo que sí existe y se
+le parece son dos reglas distintas:
+
+- entre el fin de un turno y el comienzo del siguiente deben mediar **12 horas de
+  descanso** (aparece en la regulación de turnos de entidades públicas);
+- los turnos de 12 horas del sector **público** de salud (Ley 269 de 1996).
+
+Parece ser esas dos juntas. Mientras no aparezca la norma con su número y año, no
+se implementa.
+
+Fuentes: [art. 161 CST](https://leyes.co/codigo_sustantivo_del_trabajo/161.htm) ·
+[el límite al trabajo suplementario en salud, ACHC](https://revistahospitalaria.org/nos-preguntan/el-limite-al-trabajo-suplementario-en-el-sector-salud/) ·
+[jornada laboral 2026, actualícese](https://actualicese.com/jornada-laboral/)
+
+---
+
+### Los factores de recargo ya son datos, y les falta una pantalla
+
+**Pedido por el dueño el 21 de septiembre de 2026**, después de una falsa alarma
+mía: creí que el 90% del artículo 179 estaba horneado en el código y no lo está.
+
+**Estado real, medido:** `tipos_hora` **no tiene `empresaId`** (es una tabla
+global, no una por empresa) y lleva `vigenteDesde` / `vigenteHasta`. La escalera
+del artículo 179 ya está escrita entera, incluida la fila que todavía no rige:
+
+| codigo | factor | desde | hasta | |
+|---|---|---|---|---|
+| HDD | 1,8 | 2025-07-01 | 2025-12-25 | 80% |
+| HDD | 1,8 | 2025-12-25 | 2026-07-01 | 80%, y `horaFin` pasa de 21 a 19 (ventana nocturna, Ley 2466 de 2025) |
+| HDD | **1,9** | **2026-07-01** | **2027-07-01** | **90%, la vigente hoy** |
+| HDD | 2,0 | 2027-07-01 | sin fin | 100%, ya cargada |
+
+O sea que el 1 de julio de 2027 **no hay que tocar nada**: la fila ya existe y el
+motor la va a tomar sola por fecha.
+
+**Lo que falta es la pantalla, no el dato.** Hoy esos factores solo se cambian
+por SQL. Va en el superadministrador, con una fila por vigencia.
+
+**NO se haga con variable de entorno**, aunque fue la primera idea. Una variable
+es un valor único sin fechas: al cambiarla se reescribiría también el pasado, que
+es exactamente lo que el día congelado existe para impedir (ver la tercera regla
+del *Goal*). El valor de esta tabla es que tiene vigencias; una env var las
+perdería.
+
+**La trampa al construir esa pantalla:** editar una fila ya vencida cambia
+liquidaciones viejas. La pantalla tiene que dejar **agregar** vigencias nuevas
+con facilidad y hacer difícil (o imposible) editar una cuyo rango ya pasó.
+
+---
+
+### Turnos rotativos: el motor está completo y verificado hasta el dinero
+
+**22 de septiembre de 2026. SIN COMMITEAR**, a la espera de que el dueño pruebe.
+
+Antes de esto, `ROTATIVO` era un valor de enum sin nada detrás: `esDescansoObligatorio`
+tenía su rama y **los cinco llamadores le pasaban `null`**, así que un rotativo
+descansaba el domingo igual que todo el mundo. Es el mismo patrón que ya está
+anotado en *Failed attempts* nº 5 con `origen: 'MANUAL'`: mecanismo declarado y
+vacío.
+
+**Lo que hay ahora, en cuatro piezas:**
+
+| pieza | qué hace | respaldo |
+|---|---|---|
+| la celda | un día programado por el horario muestra **su nombre**, no «Sin asignar» | `rotuloDeCelda`, 7 pruebas, 4 mutaciones rojas |
+| 1 | `descansoDeLaSemana` y `rangoSemanaBogota` (el backend no tenía noción de semana), más `diaValido` extraída a `diasDeLaSemana` | 11+8+7 pruebas, 9 mutaciones rojas |
+| 2 | pintar un día **reescribe la semana**: poner el descanso en miércoles apaga el domingo | `reescrituraDeSemana`, 10 pruebas, 4 mutaciones rojas |
+| 3 | la materialización **consulta el plan**, así guardar un horario ya no lo deshace | `descansosPlanificadosPorSemana`, 9 pruebas, 3 mutaciones rojas |
+
+La pieza 1 incluye una deuda que salió al paso: `diaValido` estaba escrita **tres
+veces** (en `descansoObligatorio`, en `cuerpoDeRespuestaDescanso`, y una tercera
+SIN NOMBRE, inline dentro de `revisionDescanso`, que no aparecía buscando el
+nombre y la cazó el grep del PATRÓN). Las tres migradas en el mismo commit, como
+pide §9.3; hoy queda una sola definición en todo el backend.
+
+**20 mutaciones en total, 20 rojas, cero sobrevivientes.** Puertas al cerrar:
+`tsc` limpio, **78 archivos / 1381 pruebas** en el backend, lint en **173 con
+cero errores** (sin subir el tope), frontend en 110 archivos / 1086 pruebas.
+
+**La verificación que cierra la garantía** (`8.6`, guion en el scratchpad: crea el
+caso, corre la función de verdad, compara y borra lo que creó). Misma persona,
+misma semana, misma jornada de 08:00 a 16:00, y como control el día siguiente:
+
+| día | horas | código | factorPagado | subtotal |
+|---|---|---|---|---|
+| miércoles con descanso pintado | 8 | HDD | 0,9 | **$78.857** |
+| jueves (control) | 7 | HOD | 0 | $0 |
+
+Y regenerar la semana con `pisarExistentes` —lo que corre al guardar un horario—
+la dejó **idéntica**: escribió 6 filas de 7 y se saltó el miércoles por estar
+marcado `MANUAL`.
+
+**Decisiones tomadas con el dueño, para no volver a discutirlas:**
+
+- **NO se agrega `Horario.tipo`.** `descansoTipo` (PRESUMIDO/FIJO/ROTATIVO) ya
+  distingue los dos escenarios, y una segunda copia del mismo hecho es el error
+  que este trabajo vino a quitar.
+- **Un día EN BLANCO no se asume como descanso.** El olvido de planificar y la
+  decisión de dejar libre producen el mismo dato, así que asumir dejaría de pagar
+  un recargo por deducción propia. El planificador debe PROPONER cuando sobre
+  exactamente un día, y una persona confirma.
+- **Cero o más de un descanso en la semana ⇒ se cae al domingo.** Es la dirección
+  segura: un turno pintado puede agregar un recargo, nunca quitarlo.
+
+**Lo que queda abierto, y conviene decidirlo antes de seguir:**
+
+1. **El almuerzo de un descanso trabajado no se descuenta.** Por eso el miércoles
+   cuenta 8 horas y el jueves 7. La causa está leída, no supuesta: un turno de
+   descanso llega sin ventana de almuerzo, `liquidarRegistros:217` cae entonces a
+   `descontarAlmuerzo`, y esa función **solo resta de HOD** (`horasColombiana:244`),
+   mientras el día solo tiene HDD. La otra (`descontarAlmuerzoOrdinarias`) sí sabe
+   restar de HDD. **Es decisión de producto, no defecto:** ¿ocho horas u ocho menos
+   el almuerzo?
+2. **Planificar después de que pasó el domingo deja la semana con DOS descansos**,
+   porque el domingo ya está congelado y no se toca. Paga de más, nunca de menos,
+   pero se ve raro en pantalla.
+3. ~~Falta la pantalla que propone~~ **HECHA el 22 de septiembre de 2026, con una
+   verificación pendiente.** Cuando una semana rotativa queda con seis turnos
+   pintados y **exactamente un día en blanco**, el resumen ofrece
+   «¿Descansa el jueves?» y un clic lo confirma pintando el turno de descanso del
+   catálogo. Cuatro estados, cada uno con su mensaje (`propuestaDeDescanso`, 11
+   pruebas, 4 mutaciones rojas):
+
+   | estado | qué se ve |
+   |---|---|
+   | `PROPUESTA` | el botón con el día, o —si el catálogo no tiene turno de descanso— el aviso de que falta, sin botón muerto |
+   | `RESUELTA` | nada: el calendario ya la muestra pintada |
+   | `SIN_DESCANSO` | «Sin descanso asignado: se está tomando el domingo» |
+   | `AMBIGUA` | «Hay dos descansos esta semana», distinto a propósito del anterior |
+   | `NO_APLICA` | nada: sin acuerdo escrito, pintar no mueve el descanso de nadie |
+
+   La ruta la resuelve **solo cuando el rango pedido es una semana** (sobre tres
+   semanas, un único valor diría «ambigua» sobre dos que están claras) y manda la
+   FECHA ya resuelta, para que la pantalla no haga aritmética de días. La pantalla
+   conserva **un solo** camino de escritura (`pintarEn`): el selector de la celda
+   y el botón de la propuesta lo comparten.
+
+   **LO QUE FALTA VERIFICAR, y no es menor:** la costura de la ruta contra datos
+   reales. Se montó el escenario (persona ROTATIVA, seis días pintados, jueves en
+   blanco) pero la sesión del navegador había caducado y no se consulta la ruta
+   sin iniciar sesión. La base quedó restaurada y verificada. Para retomarlo, con
+   la sesión abierta:
+
+   ```
+   npx tsx <scratchpad>/escenario-propuesta.ts montar
+   # pedir /api/turnos/calendario?desde=…&hasta=… y comprobar propuesta.fecha
+   npx tsx <scratchpad>/escenario-propuesta.ts restaurar
+   ```
+
+   Las dos cosas que esa prueba cubriría y que hoy solo están respaldadas por
+   `tsc`: que `plantilla.esDescanso` llegue de verdad desde la consulta, y que
+   `JUEVES` se traduzca a la fecha correcta. Una fecha mal resuelta pintaría el
+   descanso en el día equivocado, y eso mueve un recargo.
+4. **El modal del descanso trabajado: BACKEND HECHO el 22 de septiembre de 2026,
+   falta la pantalla.** Decidido con el dueño: editable y libre (no se le bloquea
+   corregir un error), advirtiendo qué tipo de cambio es y dejando rastro.
+
+   **TOCA EL ESQUEMA, así que el despliegue lleva CUATRO ramas y no tres**, con
+   `prisma-build` antes del backend (§11, la regla que salió de tumbar el kiosco).
+   SQL en `sql/descanso-trabajado.sql`, ya aplicado y comprobado en local: las dos
+   tablas existen, la clave del colaborador es RESTRICT, la de cambios CASCADE, y
+   el índice único va `(colaboradorId, fecha)` EN ESE ORDEN, que es de lo que
+   depende que MySQL use las dos partes (§8.4).
+
+   **DOS DIVERGENCIAS que `prisma migrate diff` propuso y que se EXCLUYERON a
+   propósito**, porque no son de este cambio y las dos revierten decisiones
+   tomadas. Medidas contra la base, no deducidas:
+
+   | lo que proponía | lo que hay de verdad | por qué se excluyó |
+   |---|---|---|
+   | `dias_esperados.plantillaId` FK a `ON DELETE SET NULL` | la base tiene **RESTRICT** | se puso RESTRICT a propósito (ver `dia-esperado-plantilla.sql`); el desfasado es el esquema |
+   | `MODIFY plantillas_turno.descansos VARCHAR(191)` | la base tiene **text** | habría TRUNCADO cualquier lista de más de 191 caracteres |
+
+   **RESUELTO el 22 de septiembre de 2026, y sin tocar la base.** No hacía falta
+   ningún SQL: la base ya tenía `RESTRICT` y `text`, el desfasado era el esquema.
+   Se le declaró `onDelete: Restrict` a la relación y `@db.Text` a la columna.
+
+   La prueba es que `prisma migrate diff` pasó a devolver **«This is an empty
+   migration»**: ya no propone esas dos cosas, y además esquema y base coinciden
+   por completo.
+
+   **La lección, que es lo que conviene no perder:** el `onDelete` estaba escrito
+   solo en un COMENTARIO («RESTRICT a propósito»), al lado de una relación que no
+   lo declaraba. Cualquiera que leyera el comentario habría creído que estaba
+   resuelto. Un comentario no es una garantía; hay que declararla.
+
+   **Dato del repaso que se hizo después, sin consecuencia hoy:** 22 de las 35
+   relaciones con clave foránea no declaran `onDelete` y viven del valor por
+   defecto de Prisma (`Restrict` si el campo es obligatorio, `SetNull` si es
+   opcional). El `migrate diff` vacío prueba que la base coincide con todos, así
+   que no hay nada roto. Ninguna otra tiene un comentario que prometa una regla
+   que el esquema no declare: eso sí se comprobó.
+
+   **Lo construido, todo puro, probado y mutado:**
+
+   | módulo | qué decide | pruebas | mutaciones |
+   |---|---|---|---|
+   | `descansoCompensatorio` | qué opciones caben según la clase, si hay que revisar una decisión vieja, y las dos guardas que LEEN de la base | 20 | 8 rojas |
+   | `cuerpoDeDecisionDeDescanso` | el único camino de escritura: valida el cuerpo que llega de la red | 12 | 5 rojas |
+   | `cambiosDeDescansoTrabajado` | qué cambió, para el rastro (calcado de `cambiosRegistro`) | 10 | 3 rojas |
+
+   Ruta: `GET /turnos/descanso-trabajado` (lo que el modal necesita para abrirse,
+   incluido el historial) y `PUT` (guarda y anota). `claseAlDecidir` **la escribe
+   el servidor**, nunca el cuerpo: si la mandara el cliente, cualquiera podría
+   declarar «era ocasional» para justificar una decisión que no correspondía.
+
+   **La ley, ya citada en el código:** art. 179 §1 (hasta 2 ocasional, 3 o más
+   habitual, por mes calendario), art. 180 (siendo ocasional elige EL TRABAJADOR)
+   y art. 181 (siendo habitual van los dos, «sin perjuicio de»).
+
+   **LA PANTALLA, hecha el 22 de septiembre de 2026.** La celda de un descanso
+   trabajado es su PROPIO botón y abre el modal. No cuelga del botón de pintar, y
+   ese fue el hallazgo que definió el diseño: la rejilla solo envuelve en botón lo
+   que cumple `sePuedePintar` (hoy o futuro), pero un descanso trabajado es por
+   definición pasado o de hoy, porque alguien ya marcó. Colgándolo de ahí, casi
+   ninguno habría sido alcanzable. Decidir la compensación de un día pasado es
+   legítimo; repintarlo no.
+
+   El modal muestra lo que la ley obliga (ocasional: dos opciones y «elige el
+   trabajador»; habitual: sin elección, el día va «sin perjuicio de» el dinero),
+   exige el día antes de guardar un compensatorio, avisa cuando el mes cambió de
+   clase, y lista el rastro.
+
+   **Y LA CELDA AVISA LO QUE FALTA**, pedido del dueño el 22 de septiembre de
+   2026: un descanso trabajado sin decidir muestra «Pendiente» en la propia
+   rejilla, sin abrir nada. Antes había que abrir el modal uno por uno para
+   saberlo.
+
+   La regla que lo gobierna es `decisionDelDia` (4 pruebas, 2 mutaciones rojas) y
+   no es obvia: **un descanso trabajado SIN fila guardada está pendiente**. La
+   fila nace al decidir, así que su ausencia ES el pendiente. Confundirla con «no
+   aplica» escondería justo los días que falta atender. Un día ya decidido no dice
+   nada extra: la ausencia de la palabra es la señal de que está atendido, y poner
+   también un «resuelto» haría que «pendiente» dejara de saltar a la vista.
+
+   En total 12 pruebas de pantalla para esta pieza, y 24 en `descansoCompensatorio`
+   con 10 mutaciones rojas.
+
+   **LO QUE NO ESTÁ VERIFICADO, y conviene no perderlo de vista:**
+
+   - **La costura HTTP de la ruta no se ha ejercitado nunca.** Necesita sesión
+     abierta en el navegador, el mismo bloqueo que la propuesta de la pieza
+     anterior. Todo lo que la respalda hoy es `tsc` y las pruebas de los módulos
+     puros. Sin esa prueba no está comprobado que el `upsert`, el rastro y el
+     alcance por empresa hagan lo que se cree.
+   - **El camino de error del modal** (la consulta que falla al abrirlo) no tiene
+     prueba: está marcado así en el propio código.
+
+   **Y SIGUE SIN RESOLVER** la pregunta jurídica: si un mes que cruza a habitual
+   reabre las decisiones anteriores. El sistema NO elige: guarda la clase con la
+   que se decidió y avisa cuando la actual ya no coincide. Reabrir hacia atrás es
+   un interruptor, no un rediseño.
+
+### El panel de la celda: el modal pasó a ser un panel anclado
+
+Pedido del dueño del 22 de septiembre de 2026, con dos maquetas. Cuatro puntos;
+tres están hechos y el cuarto (día / semana / mes) está empezado.
+
+**Lo que cambió, en una frase:** hacer clic en una jornada ya no abre un modal que
+tapa la rejilla, sino un panel pegado a la celda que además **cuenta las reglas de
+ese día**.
+
+**El backend manda ahora las reglas del día** en `GET /turnos/calendario`:
+`toleranciaMin`, `toleranciaSalidaMin`, `ajustaEntrada`, `almuerzoMin`,
+`almuerzoInicio`, `almuerzoFin` y `descansos`. **No costó ni una consulta más**:
+esas columnas ya se consultaban desde antes y `combinarDiasEsperados` las calcula
+del horario para los días sin fila. Viajan ahora y no antes porque hasta hoy no
+había quién las leyera. Los descansos salen ya convertidos a `{inicio, fin}[]` con
+`leerDescansos`, igual que hace `franjaParaResponder`: el formato de la columna es
+cosa de la base, no de la pantalla.
+
+Salen de la **fila del día** y no del horario vigente, por la misma razón que
+`horarioNombre`: son las reglas con las que ESE día se liquida.
+
+**Tres módulos puros, todos probados antes de existir y todos mutados:**
+
+| módulo | qué decide | pruebas | mutaciones |
+|---|---|---|---|
+| `lib/posicionDePanel.ts` | dónde cabe un panel sin salirse de la pantalla | 8 | 4 rojas |
+| `pages/turnos/detalleDeJornada.ts` | cómo se le redactan las reglas a una persona | 13 | 6 rojas |
+| `CalendarioDeTurnos.panel.test.tsx` | el panel, desde la pantalla | 11 | 4 rojas |
+
+`posicionDePanel` vive en `lib/` a propósito: el dueño lo pidió para **toda** esta
+clase de elementos («no deben de ocultarse con la pantalla, que se acomode al
+espacio»), no solo para este panel. Es una decisión pura porque el defecto solo
+aparece en los bordes —el domingo es la última columna y la última persona la
+última fila—, o sea justo donde nadie prueba a mano. Su parte delicada es el
+**orden del ajuste**: se ajusta contra el tope y DESPUÉS contra el margen; al
+revés, un panel más alto que la ventana termina en coordenada negativa, cortado
+por arriba y sin forma de llegar a su primer control.
+
+`detalleDeJornada` existe porque los números crudos mienten por omisión: una
+tolerancia de cero no se escribe «0 minutos» sino «sin tolerancia», un almuerzo
+sin ventana no puede inventarse una, y «1 descansos» delata que nadie pensó en el
+caso de uno.
+
+**Un panel y no un modal, y la diferencia se afirma en la prueba:** el panel no
+lleva `aria-modal`, no oscurece la rejilla, se cierra con Escape y con un clic
+afuera. Se está comparando días entre sí; taparlos para elegir un turno obliga a
+cerrar y volver a abrir para mirar el de al lado.
+
+**El hueco** (punto 4): donde no hay nada, la raya `—` pasó a ser un recuadro gris
+punteado con un `+` y la palabra «Agregar». **Solo donde de verdad se puede
+pintar**: un día pasado también llega a esa rama, y ofrecerle un «+» sería prometer
+un clic que el servidor rechaza con un 400.
+
+**CUATRO de las once pruebas de pantalla nacieron VERDES**, y hay que saber cuáles:
+tres son guardas de regresión legítimas (el panel abre, ofrece el catálogo, elegir
+pinta: lo que el modal ya hacía). La cuarta, «un día sin horas no inventa reglas»,
+era el defecto del §9.1 —una aserción sobre la ausencia de algo que aún no
+existía—; queda respaldada por la mutación C1, que hace que el panel se invente
+horas y la pone roja.
+
+**Trampa encontrada en los fixtures, y sigue viva:** `montar` recibe `unknown[]` a
+propósito (así se puede probar que un payload viejo al que le falta un campo no
+tumba la pantalla), y el precio es que **TypeScript no tipa ningún fixture**.
+Agregar campos a la respuesta no rompe `tsc`: las pruebas siguen verdes
+ejercitando un día que no existe. Ya había pasado: `horarioNombre` y `decision` se
+agregaron a la respuesta y el fixture de `planificar` se quedó sin ellos. Los tres
+fixtures están ahora al día y con el aviso escrito encima.
+
+**Puertas:** frontend 115 archivos / 1139 pruebas, `tsc -b` limpio, lint 65/6 (sin
+moverse). Backend 82 archivos / 1438 pruebas, `tsc` limpio, lint 173 (en el tope,
+sin subirlo).
+
+**LO QUE NO ESTÁ VERIFICADO:**
+
+- **Nada de esto se ha visto en un navegador.** La sesión del navegador está
+  vencida y no se va a iniciar sesión por el dueño. Es un cambio de diseño: la
+  posición real del panel, los colores y el recuadro gris solo están respaldados
+  por pruebas de comportamiento, no por haberlos mirado.
+- **La costura HTTP de los campos nuevos** no se ha ejercitado. Que viajan lo
+  respalda `tsc` contra `DiaEsperadoCalculado`, y nada más.
+- En jsdom todos los rectángulos miden cero, así que **la geometría no se prueba
+  desde la pantalla**: se prueba en `posicionDePanel` y punto.
+
+### Día, semana y mes en el calendario
+
+El cuarto punto del pedido del 22 de septiembre: «que la parte de arriba quede
+así, que podamos ver día, Semana y Mes». Hecho y en verde.
+
+**El mes cabe, y no hizo falta inventar otro diseño.** El backend acepta hasta 62
+días por consulta (`DIAS_MAXIMOS`, una guarda de tamaño y no una regla de
+negocio), y la rejilla ya tenía `overflow-x-auto` con la columna de la persona
+fija (`sticky left-0`), así que 31 columnas se recorren a lo ancho sin perder de
+vista de quién es cada fila.
+
+**Dos decisiones puras más, probadas antes de existir y mutadas:**
+
+| módulo | qué decide | pruebas | mutaciones |
+|---|---|---|---|
+| `vistaDelCalendario.ts` | qué rango, qué días y qué rótulo lleva cada modo | 15 | 6 rojas |
+| `inicialDeDia` (en `semana.ts`) | la inicial de una columna, sacada de la fecha | 3 | 3 rojas |
+| `CalendarioDeTurnos.vista.test.tsx` | que la pantalla los aplica | 9 | 4 rojas |
+
+**La simplificación que sostiene todo lo demás:** el ancla es CUALQUIER día dentro
+del período, no su primer día. Con eso «Hoy» es siempre `hoy` en los tres modos,
+cambiar de modo no obliga a recalcular nada por fuera, y «¿estoy viendo el período
+actual?» es preguntar si `hoy` está entre los días mostrados.
+
+**EL DEFECTO QUE ESTE TRABAJO CASI INTRODUCE, y cómo se cazó.** El tope legal es
+de 42 horas **semanales**, y se comparaba contra él en **TRES** sitios: la tarjeta
+del promedio, la fila de la rejilla y la del resumen. En la vista de mes cualquier
+persona pasa de 42 horas, así que la pantalla habría pintado a la empresa entera
+en ámbar diciendo que se pasaron del tope: un número plausible y falso, que es la
+forma exacta en que este producto se rompe según la cabecera de su CLAUDE.md.
+
+De memoria yo había contado **dos** de los tres. Aparecieron buscando el patrón
+`tope * 60` en vez del nombre, que es lo que manda el §9.3. Ahora los tres miran
+la misma bandera, `topeAplica`.
+
+Lo mismo con los **rótulos que mienten**: «en la semana», «Resumen de la semana»,
+«Total semanal» y las flechas «Semana anterior / siguiente» estaban escritos fijos
+y son falsos en cuanto se muestra un mes. Salen de una tabla `PERIODO` con un caso
+por modo, porque el español tampoco deja resolverlo con un ternario: es «de la
+semana» pero «del mes».
+
+**UNA MUTACIÓN SOBREVIVIÓ, y el hueco era de la prueba.** `moverVista` en modo mes
+se mutó a «sumar 31 días» y la suite siguió verde. Hacia adelante esa mutación es
+código equivalente (desde el día 1, sumar 31 siempre cae en el mes siguiente);
+hacia atrás no lo es, pero el único caso que yo había escrito iba de **enero a
+diciembre, y diciembre tiene 31 días**. Había elegido justo el mes que no
+distingue. Se agregó el caso de marzo a febrero (y el de un año bisiesto), y con
+eso la mutación muere. El arreglo fue completar la prueba, no ablandar la
+mutación.
+
+**Y OTRA TRAMPA DEL MISMO TIPO, más sutil:** las 8 pruebas de pantalla que nacieron
+rojas fallaban TODAS en el mismo punto, al no encontrar el botón «Mes». Ninguna
+llegó nunca a su propia aserción, así que la del tope —la que protege el número
+falso— nunca se había visto roja por su motivo. Lo arregla la mutación W1, que
+quita la bandera y la pone roja de verdad.
+
+**Puertas:** 117 archivos / 1166 pruebas (antes de esta pieza, 116 / 1157: la
+cuenta cuadra exacta y no desapareció ninguna), `tsc -b` limpio, lint 65/6.
+
+**Herramienta, para la próxima:** en `perl -pi -e "s/.../.../"` una barra **en el
+patrón** cierra el delimitador antes de que `\Q` cite nada, así que mutar JSX
+(`<Celda ... />`) falla con `syntax error near "/>"`. Se usa `s|...|...|`. Lo cazó
+la puerta del guion —exigir que la cadena vieja DESAPAREZCA— y no la lectura: sin
+ella, perl falla, el archivo queda intacto, la prueba pasa y la mutación se anota
+como «roja» sin haber mutado nada, o sea una cobertura inventada.
+
+### El encabezado con la maqueta, y la vista de día en horas
+
+Dos pedidos más del dueño el mismo 22 de septiembre, con maqueta: el encabezado
+con esa distribución, y la vista de día en horas. **Los dos hechos, y esta vez
+SÍ verificados en el navegador**, porque apareció un servidor de vista previa
+corriendo con sesión abierta. Hasta entonces todo lo de esta pieza estaba
+respaldado solo por pruebas.
+
+**El encabezado**: título grande a la izquierda, el selector `Mes · Semana · Día`
+centrado sobre una pista gris, y `‹ Hoy ›` agrupado a la derecha. El orden del
+selector es de MAYOR a menor, como la maqueta, y no al revés como estaba.
+
+Tres columnas (`sm:grid-cols-[1fr_auto_1fr]`) y no `justify-between`: con
+`between` el selector se corre de sitio cada vez que el título cambia de largo,
+y de «Septiembre de 2026» a «28 de septiembre al 4 de octubre» hay bastante.
+
+**«Hoy» va siempre, y entre las dos flechas.** Antes solo aparecía cuando hoy no
+estaba a la vista, y eso tiene un costo que no se ve hasta que se usa: un botón
+que aparece y desaparece EMPUJA a las flechas de sitio justo mientras se hace
+clic repetido en ellas.
+
+**El rótulo pasó a empezar con mayúscula** («Septiembre de 2026», no «septiembre
+de 2026»). El español escribe los meses en minúscula dentro de una oración, pero
+esto es un título, y al agrandarlo la minúscula se leía como descuido.
+
+**La columna de persona** se llevaba un tercio de la pantalla para un nombre
+corto. Con `w-px` + `whitespace-nowrap` se ajusta al contenido, con un tope de
+180 px para que un nombre larguísimo no vuelva a robársela. **Medido en el
+navegador: 162 px, el 18 % de la tabla.**
+
+**LA VISTA DE DÍA EN HORAS.** La rejilla deja de tener una columna por día y pasa
+a tener un eje de horas, con la jornada de cada quien dibujada como una barra del
+color de su turno, del ancho de su rango.
+
+| módulo | qué decide | pruebas | mutaciones |
+|---|---|---|---|
+| `ejeDeHoras.ts` | qué horas se muestran y dónde va cada barra | 17 | 6 rojas |
+| `CalendarioDeTurnos.dia.test.tsx` | que la pantalla lo aplica | 7 | 4 rojas |
+
+**LA DECISIÓN QUE SE ROMPE SOLA SI SE ESCRIBE A OJO: EL TURNO NOCTURNO.** Este
+producto tiene guardas de 22:00 a 06:00. Esa jornada cruza la medianoche, y se
+dibuja como **UNA barra continua**, con el eje estirado más allá de las 24 horas
+y los rótulos de después rotulados 00, 01, 02. Partida en dos se leería como si
+la persona trabajara dos veces ese día, y el segundo pedazo aparecería a la
+IZQUIERDA del primero, antes de haber entrado.
+
+**El eje se calcula con las jornadas de TODAS las personas del día**, no una por
+fila: con un eje por fila, dos barras del mismo largo significarían horarios
+distintos y la pantalla dejaría de poder compararse de un vistazo, que es para
+lo que sirve.
+
+**UN DEFECTO REAL que la prueba cazó:** la barra salió como un `div` y con eso la
+vista de día se quedó **sin clic** (ni panel, ni pintar). La salida no fue
+envolverla en otro botón —eso habría dejado los tres casos de una celda escritos
+dos veces—, sino que las dos vistas pasen por el MISMO envoltorio con otro
+contenido. De paso, el tono de color se sacó de `Celda` a `tonoDeJornada`, porque
+la barra tiene que llevar exactamente el mismo color que la celda de la semana.
+
+**DOS RÓTULOS FALSOS MÁS, que la primera búsqueda no cazó:**
+
+- El encabezado de la columna de totales decía `Semana` fijo, también en la vista
+  de día. Se encontró **midiendo los anchos de las columnas en el navegador**, no
+  leyendo: la búsqueda anterior había buscado «Total semanal» y «Resumen de la
+  semana», y este es un «Semana» pelado que no coincidía con ninguno.
+- `const COLUMNAS = 9` («la persona + los siete días + el total»), usado en dos
+  `colSpan`. Con un día son 3 y con un mes 33.
+
+**Puertas:** 119 archivos / 1190 pruebas, `tsc -b` limpio, lint 65/6.
+
+**VERIFICADO EN EL NAVEGADOR, y esto es lo nuevo:** la vista de mes con datos
+reales muestra a una persona con 154,6 h **sin ninguna alarma ámbar**, que es
+exactamente el defecto del tope semanal que se evitó. Y en la vista de día se
+midió que la regla de horas y la pista de cada fila comparten caja
+(`mismaCaja: true`, 463 px de origen y 207 de ancho), con el rótulo `10` en
+27,27 % y el `16` en 81,82 %, que es (10−7)/11 y (16−7)/11.
+
+**Tres instrumentos propios que midieron otra cosa, el mismo día:** un
+`if grep -q ... | head -1` que lee el código de salida de `head` y siempre dice
+que sí; un ayudante de prueba que esperaba por un nombre que su propio fixture no
+tenía, con lo que dos pruebas fallaban sin llegar a su aserción; y un
+`querySelector('div[style*="left"]')` que agarró la primera guía de hora en vez
+de la barra. Ninguno de los tres dio un error: los tres dieron un número
+equivocado con cara de bueno.
+
+(Y un cuarto, del mismo día: un `grep` que buscaba `'no corre el detector'` sobre
+un nombre de prueba que dice `NO` en mayúscula. `grep` distingue mayúsculas, así
+que devolvió vacío. No se leyó como «no existe» solo porque el guion tenía la
+guarda de no concluir nada desde un vacío.)
+
+### Una prueba INESTABLE que no es de este trabajo
+
+**`frontend/src/pages/RevisionMarcaciones.test.tsx:271`**, «el barrido NO corre el
+detector hasta que se le pide, aunque las fotos ya estén».
+
+Falló **una vez** en una pasada de la suite completa el 22 de septiembre de 2026,
+en medio del trabajo de turnos, y conviene saber que no tiene nada que ver:
+
+- El archivo está **limpio en git**: ni modificado ni nuevo. Es código commiteado
+  el **10 de septiembre**, del barrido de revisión facial (`20a355c`, `1a8fbf0`,
+  `fe25466`, `9f75523`).
+- **Aislada pasa 4 de 4** (22 pruebas cada vez).
+- La suite completa, antes y después de ese fallo, dio **1190 de 1190 en verde**.
+
+Tardó 1021 ms, que es cara de espera agotada: bajo la carga de la suite entera se
+le acaba el tiempo. **No está diagnosticada**, solo acotada. Si vuelve a salir en
+rojo, el sitio donde mirar es cómo espera esa prueba, no el módulo de turnos.

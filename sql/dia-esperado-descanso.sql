@@ -1,0 +1,79 @@
+-- Congelar qué día era el descanso obligatorio (20 de septiembre de 2026)
+--
+-- UNA COLUMNA NUEVA en `dias_esperados`, con valor por defecto. El código que corre hoy no la
+-- conoce y la ignora, así que se puede correr ANTES de desplegar el backend y no cambia nada.
+--
+-- Va junto con `sql/dia-de-descanso.sql`, que agrega las tres columnas de `colaboradores`. Este es
+-- el otro lado: allá se declara qué día descansa una persona, y aquí queda CONGELADO qué día le
+-- aplicó a cada fecha concreta.
+--
+-- POR QUÉ CONGELARLO. Es la razón de existir de toda esta tabla: si el recargo dominical se
+-- calculara con la declaración de HOY, cambiarle el día de descanso a alguien reescribiría los
+-- meses ya liquidados. Se guarda la RESPUESTA («ese día era su descanso: sí o no») y no los
+-- ingredientes, igual que `minutosEsperados` guarda el número y no la fórmula.
+--
+-- LA COLUMNA ES ANULABLE, Y ESO ES LO IMPORTANTE. Hay que poder distinguir dos cosas que no son
+-- iguales:
+--
+--   0     = esta fila dice que ese día NO era su descanso           ← un dato
+--   NULL  = esta fila es anterior a la función y nunca lo calculó   ← la ausencia de un dato
+--
+-- La primera versión de este archivo la puso `NOT NULL DEFAULT 0`. Con eso, todas las filas ya
+-- existentes afirmarían que sus domingos eran días ordinarios, y al conectar el motor cada domingo
+-- trabajado del pasado habría perdido su recargo del 90%, hacia atrás y en silencio. Se cazó antes
+-- de conectarlo: en la base local eran 276 domingos, 7 de ellos con marcación real.
+--
+-- Con NULL el motor cae al estado declarado de la persona, que hoy es PRESUMIDO para todo el mundo,
+-- o sea el domingo: exactamente lo que ya se calcula. El backend nuevo escribe 0 o 1 solo en los
+-- días que materialice de aquí en adelante; los días pasados NO se tocan nunca, que es la regla de
+-- esta tabla.
+--
+-- OJO al leer esto más adelante: mientras el planificador no exista, una persona ROTATIVA se
+-- congela con el domingo, porque no hay semana planificada que consultar. Cuando el planificador
+-- llegue, esas filas viejas seguirán diciendo domingo y no se reescriben. No es un error: es lo que
+-- aplicó ese día.
+--
+-- ============================================================================
+-- ANTES DE CORRER NADA
+-- ============================================================================
+-- 1. Copia de seguridad de la base desde cPanel (Backup → Download a MySQL Database Backup).
+-- 2. Entra a la base `ewyfwxbg_horapro` en phpMyAdmin ANTES de enviar. Aun así todos los nombres
+--    van con la base escrita, que es la guarda de verdad (#1109 del 13 de septiembre de 2026).
+-- 3. Este SQL va ANTES del backend nuevo, y DESPUÉS hay que actualizar `prisma-build`: el esquema
+--    cambió, así que el despliegue lleva CUATRO ramas y no tres (CLAUDE.md §11).
+--
+-- ============================================================================
+-- CUIDADO: `dias_esperados` NO es una tabla pequeña
+-- ============================================================================
+-- Crece con cada colaborador por cada día, 60 días hacia adelante. Por eso el ALTER lleva
+-- ALGORITHM=INSTANT escrito: es una columna nueva al final, sin llave y sin índice, que es el caso
+-- que MariaDB resuelve sin copiar la tabla. Si diera error, NO se le quita el ALGORITHM para que
+-- pase: se para y se avisa, porque sin él esto copia la tabla entera y bloquea al kiosco.
+--
+-- El tiempo de espera del candado va con SET STATEMENT ... FOR y no con SET SESSION: en phpMyAdmin
+-- un SET SESSION no llegó a la sentencia siguiente ni dentro del mismo envío (13/09/2026).
+
+SET STATEMENT lock_wait_timeout=10 FOR
+ALTER TABLE `ewyfwxbg_horapro`.`dias_esperados`
+  ADD COLUMN `esDescanso` tinyint(1) DEFAULT NULL,
+  ALGORITHM=INSTANT;
+
+-- ============================================================================
+-- COMPROBACIÓN (no es opcional: un comando puede informar éxito y no haber hecho nada)
+-- ============================================================================
+-- Tiene que devolver UNA fila, tinyint(1), con IS_NULLABLE = YES y default NULL. Si sale NO, el
+-- ALTER se corrió con la versión vieja de este archivo y hay que arreglarlo ANTES de desplegar:
+-- SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+--   FROM information_schema.COLUMNS
+--  WHERE TABLE_SCHEMA = 'ewyfwxbg_horapro' AND TABLE_NAME = 'dias_esperados'
+--    AND COLUMN_NAME = 'esDescanso';
+--
+-- Y TODO tiene que quedar en NULL, que es lo que garantiza que no cambió ningún cálculo. Una sola
+-- fila en 0 o en 1 aquí significaría que algo ya la escribió:
+-- SELECT esDescanso, COUNT(*) FROM `ewyfwxbg_horapro`.`dias_esperados` GROUP BY esDescanso;
+
+-- ============================================================================
+-- PARA REVERTIR
+-- ============================================================================
+-- Sin riesgo: nada lee esta columna hasta que el backend nuevo esté arriba.
+-- ALTER TABLE `ewyfwxbg_horapro`.`dias_esperados` DROP COLUMN `esDescanso`;

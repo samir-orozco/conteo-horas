@@ -4,6 +4,9 @@ import { prisma } from '../prisma';
 import { auxilioVigente } from '../utils/auxilioTransporte';
 import { pareceIncluirAuxilio } from '../utils/salarioSospechoso';
 import { revisionPendiente } from '../utils/revisionPendiente';
+import { preguntasDeDescanso, revisionDescansoPendiente } from '../utils/revisionDescanso';
+import { limpiarRespuestasDeDescanso } from '../utils/cuerpoDeRespuestaDescanso';
+import { rangoDiaBogota } from '../utils/fechas';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
 import { enviarTelegram, telegramConfigurado } from '../utils/telegram';
 import { capacidadesEmpresa } from '../utils/capacidades';
@@ -226,6 +229,126 @@ export default async function configuracionRoutes(app: FastifyInstance) {
       where: { id: request.empresaId! },
       data: { auxilioRevisadoEn: new Date() },
     });
+    return { ok: true };
+  });
+
+  // QUÉ DÍA DESCANSA LA GENTE DE ESTA EMPRESA (21 de septiembre de 2026).
+  //
+  // La ley presume el domingo SALVO acuerdo escrito. Hasta hoy nadie podía declarar otro día, así
+  // que la presunción se cumplía sola; desde que el motor lee la declaración, hay que preguntarla.
+  //
+  // Se pregunta por HORARIO y no por persona: quienes comparten horario comparten el patrón de
+  // días, y preguntarle a cada uno sería pedir treinta y cinco veces la misma respuesta.
+  //
+  // Y NO se le pregunta a todo el mundo, al revés que con el auxilio. Un horario que no cubre el
+  // domingo ya está respondido por la ley, y el motor hace hoy exactamente eso. Quién ve el aviso
+  // lo decide `preguntasDeDescanso`, que es pura y tiene sus pruebas: aquí solo queda la plomería.
+  app.get('/descanso-pendiente', auth, async (request) => {
+    const empresaId = request.empresaId!;
+    const [empresa, horarios] = await Promise.all([
+      prisma.empresa.findUnique({ where: { id: empresaId }, select: { descansoRevisadoEn: true } }),
+      prisma.horario.findMany({
+        where: { empresaId, activo: true },
+        select: {
+          id: true, nombre: true,
+          franjas: { select: { dias: true } },
+          // Los ACTIVOS, contados a mano y NO con `_count`: el conteo de la relación incluye a los
+          // retirados. Medido el 21 de septiembre de 2026, el horario «Turno diurno» daba _count=1
+          // con cero activos, así que el modal habría preguntado por un horario que no cumple nadie
+          // y habría dicho «afecta a 1 persona».
+          colaboradores: { where: { activo: true }, select: { id: true } },
+        },
+        orderBy: { nombre: 'asc' },
+      }),
+    ]);
+
+    const preguntas = preguntasDeDescanso(horarios.map(h => ({
+      id: h.id, nombre: h.nombre, franjas: h.franjas, personas: h.colaboradores.length,
+    })));
+
+    return {
+      pendiente: revisionDescansoPendiente(empresa?.descansoRevisadoEn ?? null, preguntas.length),
+      horarios: preguntas,
+    };
+  });
+
+  // Guardar la declaración del día de descanso, horario por horario.
+  //
+  // ES EL ÚNICO CAMINO DE ESCRITURA sobre `descansoTipo`, `descansoDia` y `descansoAcuerdoEn`. Se
+  // comprobó antes de escribirlo que no hubiera otro. Esa última columna es la afirmación de que
+  // existe un acuerdo escrito con el trabajador, y es lo único que autoriza a mover el descanso
+  // fuera del domingo y con él a dejar de pagar el recargo dominical.
+  app.post('/descanso-revisado', auth, async (request, reply) => {
+    const empresaId = request.empresaId!;
+
+    // El ALCANCE se recalcula aquí y no se toma del cuerpo: quién puede responder por qué horarios
+    // no lo puede decidir quien manda la petición.
+    const horarios = await prisma.horario.findMany({
+      where: { empresaId, activo: true },
+      select: {
+        id: true, nombre: true,
+        franjas: { select: { dias: true } },
+        colaboradores: { where: { activo: true }, select: { id: true } },
+      },
+    });
+    const preguntas = preguntasDeDescanso(horarios.map(h => ({
+      id: h.id, nombre: h.nombre, franjas: h.franjas, personas: h.colaboradores.length,
+    })));
+
+    const cuerpo = request.body as { respuestas?: unknown } | null;
+    const limpio = limpiarRespuestasDeDescanso(cuerpo?.respuestas, preguntas.map(p => p.id));
+    if (!limpio.ok) return reply.status(400).send({ error: limpio.motivo });
+
+    const ahora = new Date();
+    // Medianoche de Bogotá de HOY: la frontera entre lo que se congela y lo que sigue a la
+    // declaración nueva. El día de hoy cuenta como futuro, igual que en `materializarDias`.
+    const { inicioDia } = rangoDiaBogota(ahora);
+    const porHorario = new Map(horarios.map(h => [h.id, h.colaboradores.map(c => c.id)]));
+
+    await prisma.$transaction(async (tx) => {
+      for (const respuesta of limpio.datos) {
+        const ids = porHorario.get(respuesta.horarioId) ?? [];
+        if (ids.length === 0) continue;
+        const marcas = ids.map(() => '?').join(',');
+
+        // 1. CONGELAR EL PASADO, ANTES de declarar nada.
+        //
+        // Las filas de `DiaEsperado` anteriores a la columna tienen `esDescanso` en NULL, que
+        // significa «esta fila nunca lo calculó». El motor las resuelve cayendo al respaldo, que es
+        // la declaración de HOY. Sin este paso, declarar «descansan el miércoles» reescribiría
+        // todos sus domingos pasados como días ordinarios y les quitaría el recargo del 90% de
+        // forma retroactiva y silenciosa.
+        //
+        // Se congela lo que la regla decía ANTES, que para todo el mundo era la presunción legal:
+        // el domingo. `DAYOFWEEK(fecha) = 1` es domingo, y NO se da por supuesto: se comprobó
+        // contra las filas reales el 21 de septiembre de 2026 cotejándolo con `getUTCDay()`.
+        //
+        // El plan de esta consulta se midió a volumen de producción, no sobre la base local: con
+        // 1.048.576 filas usa `Index range scan` sobre (colaboradorId, fecha), coste 99. En la
+        // tabla local de 1.969 filas el optimizador elige `Table scan`, que es lo que §8.4 avisa
+        // que pasa al medir en pequeño.
+        await tx.$executeRawUnsafe(
+          `UPDATE dias_esperados SET esDescanso = (DAYOFWEEK(fecha) = 1)
+           WHERE colaboradorId IN (${marcas}) AND esDescanso IS NULL AND fecha < ?`,
+          ...ids, inicioDia,
+        );
+
+        // 2. Ahora sí, la declaración. Solo a los ACTIVOS: cambiarle la declaración a alguien
+        // retirado movería la lectura de su historial, y su liquidación ya está entregada.
+        await tx.colaborador.updateMany({
+          where: { id: { in: ids } },
+          data: { descansoTipo: respuesta.tipo, descansoDia: respuesta.dia, descansoAcuerdoEn: ahora },
+        });
+      }
+
+      await tx.empresa.update({ where: { id: empresaId }, data: { descansoRevisadoEn: ahora } });
+    }, {
+      // Por encima de los 5 segundos por defecto: una empresa grande son decenas de miles de filas
+      // que congelar, y que la transacción se corte a la mitad dejaría a unos horarios declarados y
+      // a otros no, con la empresa marcada como respondida.
+      timeout: 30_000,
+    });
+
     return { ok: true };
   });
 

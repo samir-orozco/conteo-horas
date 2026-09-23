@@ -1,0 +1,49 @@
+import { esDescansoObligatorio, type EstadoDescanso } from './descansoObligatorio';
+
+// LO QUE EL CALENDARIO DE TURNOS PINTA EN CADA CELDA (20 de septiembre de 2026).
+//
+// Dos decisiones puras, separadas de la ruta a propósito (CLAUDE.md §8.2): la ruta es plomería
+// —consultas, alcance por empresa— y esto es lo que decide qué ve una persona. Solo esto tiene
+// que pasar del 80%.
+
+// El `esDescanso` de un día, uniendo lo congelado con la regla vigente.
+//
+// Es la MISMA doctrina de `combinarDiasEsperados` aplicada a una sola columna: donde hay dato
+// manda el dato, donde no lo hay se cae a la regla de hoy. Y existe porque `DiaEsperadoCalculado`
+// no lleva `esDescanso`, así que al combinar los días el campo se perdería.
+//
+// La distinción que esta función protege, y que es la razón de que la columna sea anulable:
+//
+//   true / false  la fila lo calculó. Es un dato, y manda.
+//   null          la fila es anterior a la función y nunca lo calculó. Es la AUSENCIA de un dato.
+//   undefined     ese día no tiene fila; lo rellenó el horario vigente.
+//
+// Tratar `false` como si fuera `null` sería el defecto: un domingo congelado como día ordinario
+// volvería a leerse como descanso y el día cambiaría de sentido cada vez que se relee.
+export function descansoDelDia(
+  congelado: boolean | null | undefined,
+  diaSemana: string,
+  estado: EstadoDescanso,
+): boolean {
+  if (typeof congelado === 'boolean') return congelado;
+  // Sin planificador todavía, el día planificado va en `null`: un ROTATIVO cae al domingo, que es
+  // la dirección segura. Cuando el planificador llegue, ese tercer argumento es su gancho.
+  return esDescansoObligatorio(diaSemana, estado, null);
+}
+
+// Lo que se pinta en la celda. Son cuatro estados y no dos booleanos sueltos por lo que dice
+// CLAUDE.md §9.4: la pregunta «de qué tipo es este día» se responde con un caso por valor, no con
+// un `? :` que supone que todo lo que no es una cosa es la otra.
+export type EstadoDelDia =
+  | 'TRABAJA'             // turno normal
+  | 'DESCANSO'            // su descanso obligatorio, sin turno encima
+  | 'DESCANSO_TRABAJADO'  // le tocaba descansar y tiene turno: el día que cuesta dinero
+  | 'SIN_TURNO';          // ni turno ni descanso obligatorio
+
+// `DESCANSO` y `SIN_TURNO` se separan a propósito, y no es cosmético: alguien de lunes a viernes
+// tiene DOS días sin trabajar y solo uno es su descanso obligatorio. Pintarlos iguales afirmaría
+// que el sábado también lo es, que es exactamente el error que el producto viene a quitar.
+export function estadoDelDia(dia: { programado: boolean; esDescanso: boolean }): EstadoDelDia {
+  if (dia.esDescanso) return dia.programado ? 'DESCANSO_TRABAJADO' : 'DESCANSO';
+  return dia.programado ? 'TRABAJA' : 'SIN_TURNO';
+}

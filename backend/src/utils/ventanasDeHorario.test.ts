@@ -146,6 +146,37 @@ describe('franjasConVentanaImposible — descansos no remunerados', () => {
   });
 });
 
+// ENCONTRADO EL 19 DE SEPTIEMBRE DE 2026, probando a romper el catálogo de turnos a propósito. El
+// defecto es de ESTE archivo, que ya está desplegado, y lo alcanza `PUT /api/horarios/:id`.
+//
+// Una franja con 500 descansos hace que se comparen todos contra todos: 124.751 avisos de cruce.
+// Después `franjasConVentanaImposible` los esparce como argumentos de `push`, y eso revienta la
+// pila. La ruta lo devuelve como un 500 en vez de un 400 con su motivo, y con 300 descansos no
+// lanza pero ya construye 44.851 cadenas para nada.
+//
+// La pantalla topa en tres, así que hay que armar el cuerpo a mano; pero el servidor no puede
+// confiar en que la pantalla sea la única que le habla.
+describe('una lista de descansos absurdamente larga', () => {
+  const muchos = (n: number) => Array.from({ length: n }, () => V('08:00', '08:15'));
+
+  it('no lanza: se rechaza como cualquier otro cuerpo malo', () => {
+    expect(() => franjasConVentanaImposible([franja({ descansos: muchos(500) })])).not.toThrow();
+  });
+
+  it('da UN motivo, el de haberse pasado del máximo, sin comparar 124.751 parejas antes', () => {
+    const malas = franjasConVentanaImposible([franja({ descansos: muchos(500) })]);
+    expect(malas).toHaveLength(1);
+    expect(malas[0]).toContain('500');
+    expect(malas[0]).toContain('máximo es 3');
+  });
+
+  // El caso normal no cambia: con tres o menos se siguen revisando los cruces uno por uno.
+  it('con tres descansos que sí se cruzan, el aviso del cruce sigue saliendo', () => {
+    const malas = franjasConVentanaImposible([franja({ descansos: [V('09:00', '09:30'), V('09:15', '09:45')] })]);
+    expect(malas.some(m => m.includes('se cruzan'))).toBe(true);
+  });
+});
+
 describe('franjaParaGuardar', () => {
   it('guarda el almuerzo completo y la lista de descansos ordenada desde la entrada', () => {
     const f = franjaParaGuardar(franja({

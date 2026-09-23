@@ -22,6 +22,8 @@ import wompiRoutes from './routes/wompi';
 import suscripcionRoutes from './routes/suscripcion';
 import horarioRoutes from './routes/horarios';
 import sedeRoutes from './routes/sedes';
+import plantillaTurnoRoutes from './routes/plantillasTurno';
+import turnoRoutes from './routes/turnos';
 import dashboardRoutes from './routes/dashboard';
 import telegramRoutes from './routes/telegram';
 import notificacionRoutes from './routes/notificaciones';
@@ -163,6 +165,8 @@ app.register(afiliadoPanelRoutes, { prefix: '/api/afiliado' });
 app.register(wompiRoutes, { prefix: '/api/wompi' });
 app.register(suscripcionRoutes, { prefix: '/api/suscripcion' });
 app.register(horarioRoutes, { prefix: '/api/horarios' });
+app.register(plantillaTurnoRoutes, { prefix: '/api/plantillas-turno' });
+app.register(turnoRoutes, { prefix: '/api/turnos' });
 app.register(dashboardRoutes, { prefix: '/api/dashboard' });
 app.register(telegramRoutes, { prefix: '/api/telegram' });
 app.register(notificacionRoutes, { prefix: '/api/notificaciones' });
@@ -203,7 +207,11 @@ const start = async () => {
   try {
     // '::' escucha IPv6 e IPv4 (dual-stack); localhost puede resolver a ::1
     await app.listen({ port: Number(process.env.PORT) || 3001, host: '::' });
-    console.log('HoraPro API corriendo en puerto 3001');
+    // El puerto REAL, no uno escrito a mano: decía siempre «3001» aunque estuviera escuchando en
+    // otro, y el 19 de septiembre de 2026 mandó un diagnóstico por el camino equivocado (se creyó
+    // que había dos backends vivos). Un mensaje que afirma algo que no consultó es de la misma
+    // familia del CLAUDE.md §12.
+    console.log(`HoraPro API corriendo en puerto ${Number(process.env.PORT) || 3001}`);
     // Los cuatro barridos diarios van anclados al reloj de Bogotá y no al arranque
     // del proceso (19 de septiembre de 2026). Ver utils/programarDiario.ts y la
     // sección 8.3 del CLAUDE.md: con `setInterval` desde el arranque, la hora a la

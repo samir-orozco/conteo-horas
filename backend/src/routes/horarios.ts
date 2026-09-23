@@ -5,7 +5,7 @@ import { capacidadesEmpresa } from '../utils/capacidades';
 import { regenerarDiasDeHorario, regenerarDiasDeVarios } from '../utils/materializarDias';
 import {
   FranjaConVentanas, franjasConVentanaImposible, franjaParaGuardar, franjaBasicaValida,
-  franjaParaResponder, pantallaViejaBorraDescansos,
+  franjaParaResponder, pantallaViejaBorraDescansos, mensajeVentanasImposibles,
 } from '../utils/ventanasDeHorario';
 
 // Cada franja: al menos un día y horas de verdad. La regla vive en
@@ -15,10 +15,6 @@ function validarFranjas(franjas: unknown): franjas is FranjaConVentanas[] {
   if (!Array.isArray(franjas) || franjas.length === 0) return false;
   return franjas.every(franjaBasicaValida);
 }
-
-const mensajeVentanasImposibles = (imposibles: string[]) =>
-  `El almuerzo o los descansos no caben dentro de la jornada: ${imposibles.join(', ')}. ` +
-  'Revisa que cada hora de inicio sea anterior a la de fin, que ninguna pausa se cruce con otra y que no haya más de 3 descansos por franja.';
 
 // Horarios de trabajo de la empresa (se asignan a cada colaborador). Un horario
 // agrupa varias franjas: ej. "Oficina" = L-V 08:00-17:00 + Sáb 08:00-12:00.

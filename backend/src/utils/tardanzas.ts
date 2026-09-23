@@ -1,9 +1,12 @@
 import { Registro, Horario, FranjaHorario, DiaFestivo } from '@prisma/client';
 import { toZonedTime } from 'date-fns-tz';
 import type { ExtraConfig, FranjaDeExtra } from './horasColombiana';
+// Vivía aquí, y de aquí la importaban otros cuatro archivos. Se mudó a su propio módulo sin
+// dependencias el 20 de septiembre de 2026: este archivo importa de `horasColombiana`, así que
+// tenerla aquí cerraba un ciclo en cuanto `horasColombiana` necesitó preguntar por el descanso.
+import { DIAS_SEMANA } from './diasDeLaSemana';
 
 const TZ = 'America/Bogota';
-export const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 
 export type HorarioConFranjas = Horario & { franjas: FranjaHorario[] };
 

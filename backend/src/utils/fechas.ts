@@ -19,14 +19,26 @@ export function medianocheBogota(fecha: string): Date {
   return new Date(Date.UTC(a, m - 1, d, 5, 0, 0));
 }
 
+// El día calendario de Bogotá de un instante, como "YYYY-MM-DD".
+//
+// Se empareja por DÍA y no por instante a propósito: MySQL puede devolver una fecha con
+// milisegundos, y una fila que no empareje por unos milisegundos quedaría huérfana — en el caso de
+// `DiaEsperado`, el día caería al horario actual y nadie se enteraría.
+//
+// Estaba escrita tres veces (`diasEsperados.ts`, `routes/dashboard.ts` y `hoyEnBogota` aquí mismo)
+// antes de que el calendario de turnos necesitara la cuarta. CLAUDE.md §9.3.
+export function claveDiaBogota(d: Date): string {
+  const z = toZonedTime(d, TZ);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${z.getFullYear()}-${dos(z.getMonth() + 1)}-${dos(z.getDate())}`;
+}
+
 // Hoy en Bogotá como "YYYY-MM-DD". Existe porque `new Date().toISOString()` da
 // la fecha UTC, y entre las 7 p.m. y la medianoche de Bogotá esa fecha ya es la
 // de mañana: un retiro registrado a las 8 p.m. quedaría fechado al día
 // siguiente.
 export function hoyEnBogota(ahora: Date = new Date()): string {
-  const b = toZonedTime(ahora, TZ);
-  const dos = (n: number) => String(n).padStart(2, '0');
-  return `${b.getFullYear()}-${dos(b.getMonth() + 1)}-${dos(b.getDate())}`;
+  return claveDiaBogota(ahora);
 }
 
 // Rango de un reporte a partir de dos fechas "YYYY-MM-DD".
@@ -44,4 +56,30 @@ export function rangoReporte(desde: string, hasta: string): { desdeF: Date; finE
     desdeF: medianocheBogota(desde),
     finExclusivo: new Date(medianocheBogota(hasta).getTime() + 24 * 60 * 60 * 1000),
   };
+}
+
+// La semana a la que pertenece un día, de LUNES a domingo, en fechas de Bogotá.
+//
+// Hace falta para los turnos rotativos: «cuál de estos siete días lleva el descanso» es una
+// pregunta de la SEMANA, y hasta hoy el backend no tenía ninguna noción de semana. La única que
+// existía era de presentación, en `frontend/src/pages/turnos/semana.ts`.
+//
+// LUNES PRIMERO, igual que esa pantalla: el domingo tiene que quedar al FINAL de la semana que lo
+// generó. Con semanas de domingo a sábado, el descanso dominical quedaría separado de los seis días
+// que lo produjeron y el tope de 42 horas se mediría partido en dos.
+//
+// La entrada es una fecha YA anclada a medianoche de Bogotá (`DiaEsperado.fecha`, `Registro.fecha`,
+// o la salida de `medianocheBogota`). Se lee con `getUTCDay()` y NO con `getDay()` por lo mismo que
+// `diaSemanaDeFechaBogota`: `getDay()` usa el reloj de la máquina, y al occidente de Colombia —o en
+// la suite, que corre fijada en América/Los Ángeles a propósito— devolvería el día anterior
+// (CLAUDE.md §8.1).
+//
+// La aritmética de días fijos vale porque Colombia es UTC-5 todo el año, sin horario de verano: es
+// la misma razón por la que `medianocheBogota` puede escribir las 05:00 a secas.
+export function rangoSemanaBogota(fecha: Date): { lunes: Date; finExclusivo: Date } {
+  const UN_DIA = 24 * 60 * 60 * 1000;
+  const diaSemana = fecha.getUTCDay(); // 0 = domingo
+  const haciaAtras = diaSemana === 0 ? 6 : diaSemana - 1;
+  const lunes = new Date(fecha.getTime() - haciaAtras * UN_DIA);
+  return { lunes, finExclusivo: new Date(lunes.getTime() + 7 * UN_DIA) };
 }

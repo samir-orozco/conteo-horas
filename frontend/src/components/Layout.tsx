@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Clock, Users, Calendar, Settings, BarChart2, FileBarChart2, Bell, LogOut, Menu, X, HelpCircle, PlayCircle, Sparkles,
   Building2, CreditCard, LayoutDashboard, AlertTriangle, Home, Handshake,
-  ScanFace,
+  ScanFace, CalendarRange,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,7 @@ import BloqueoPago from './BloqueoPago';
 import VerificarCorreo from './VerificarCorreo';
 import GuiaBienvenida from './GuiaBienvenida';
 import RevisionAuxilio from './RevisionAuxilio';
+import RevisionDescanso from './RevisionDescanso';
 import Novedades from './Novedades';
 import CampanaNav from '../features/notificaciones/CampanaNav';
 import ReportesNav from './ReportesNav';
@@ -29,6 +30,8 @@ const navEmpresa: NavSection[] = [
       { label: 'Notificaciones', icon: Bell, panel: true },
       { to: '/app/kiosco', label: 'Marcador', icon: Clock },
       { to: '/app/colaboradores', label: 'Colaboradores', icon: Users },
+      // En General y no en Herramientas: es una pantalla de todos los días, no una utilidad.
+      { to: '/app/turnos', label: 'Turnos', icon: CalendarRange },
       { to: '/app/registros', label: 'Registros', icon: BarChart2 },
       { to: '/app/revision', label: 'Revisión', icon: ScanFace },
     ],
@@ -199,6 +202,13 @@ export default function Layout() {
           ANTES de la guía: una empresa con el auxilio metido dentro del salario está pagando de más
           cada hora extra, y eso pesa más que darle la bienvenida. Se calla sola si ya revisó. */}
       {!esSuperAdmin && <RevisionAuxilio />}
+      {/* Va DESPUÉS del auxilio y no antes, aunque los dos sean datos mal capturados: el auxilio
+          metido dentro del salario infla CADA hora extra y CADA recargo de esa persona, mientras
+          que el día de descanso solo mueve los domingos de quien tiene un horario que los cubre.
+          Se arregla primero lo que toca todos los cálculos.
+          Y se calla sola dos veces: si la empresa ya respondió, y si ninguno de sus horarios cubre
+          el domingo, que es la mayoría (9 de 10 horarios medidos el 21 de septiembre de 2026). */}
+      {!esSuperAdmin && <RevisionDescanso />}
       {!esSuperAdmin && (
         <GuiaBienvenida
           key={`guia-${ayuda?.que === 'guia' ? ayuda.n : 0}`}

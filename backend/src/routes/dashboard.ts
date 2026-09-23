@@ -2,20 +2,21 @@ import { FastifyInstance } from 'fastify';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear, startOfISOWeek } from 'date-fns';
 import { prisma } from '../prisma';
-import { calcularHorasTrabajadas, descontarAlmuerzo } from '../utils/horasColombiana';
+import { calcularHorasTrabajadas, descontarAlmuerzo, claveDeDescanso, type DescansoConfig } from '../utils/horasColombiana';
+// La guarda legal, igual que en reportes.ts: un día declarado SIN acuerdo escrito no vale.
+import { estadoDescansoDe } from '../utils/descansoObligatorio';
 import { jornadaVigente, tiposVigentes } from '../utils/vigencias';
 import { franjaDelDia, HorarioConFranjas, construirExtraConfig, excusaLaTardanza } from '../utils/tardanzas';
 import { almuerzoDelRegistro, cobroDePausas } from '../utils/liquidarRegistros';
 import { minutosAlmuerzoADescontar } from '../utils/almuerzo';
+// Con el nombre de siempre: la copia local salió a `utils/fechas.ts` y ninguna línea de uso cambia.
+import { claveDiaBogota as claveDia } from '../utils/fechas';
+
+import { DIAS_SEMANA as DIAS } from '../utils/diasDeLaSemana';
 
 const TZ = 'America/Bogota';
-const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
 
-function claveDia(d: Date): string {
-  const z = toZonedTime(d, TZ);
-  return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
-}
 function semanaKey(fecha: Date): string {
   const z = toZonedTime(fecha, TZ);
   return `${getISOWeekYear(z)}-W${String(getISOWeek(z)).padStart(2, '0')}`;
@@ -48,6 +49,9 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         where: { empresaId, activo: true },
         select: {
           id: true, nombre: true, apellido: true, cargo: true, fechaNacimiento: true,
+          // Las tres del descanso: sin ellas el panel no puede saber qué día descansa cada quien y
+          // sus horas de la semana discreparían de las del reporte para la misma gente.
+          descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
           horario: { select: { id: true, activo: true, nombre: true, toleranciaMin: true, almuerzoMin: true,
             franjas: { select: { dias: true, horaEntrada: true, horaSalida: true, tieneAlmuerzo: true } } } },
         },
@@ -78,7 +82,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       salidaAlmuerzo: true, salidaDescanso: true,
       colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
     };
-    const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto] = await Promise.all([
+    const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados] = await Promise.all([
       prisma.registro.findMany({
         where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia } },
         select: SEL_REG,
@@ -98,6 +102,13 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       prisma.registro.findMany({
         where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia }, fotoSalida: { not: null } },
         select: { id: true },
+      }),
+      // Si cada día del rango era el descanso obligatorio de esa persona, congelado. MISMO rango que
+      // `registrosMes` de arriba, para que no haya un día con marcación y sin su respuesta. Van solo
+      // tres columnas: el panel no necesita el resto del día, solo saber si llevaba recargo.
+      prisma.diaEsperado.findMany({
+        where: { colaboradorId: { in: colIds }, fecha: { gte: inicioSemanaMes, lte: finDia } },
+        select: { colaboradorId: true, fecha: true, esDescanso: true },
       }),
     ]);
     const conFotoSalida = new Set(salidasConFoto.map(r => r.id));
@@ -263,10 +274,25 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     // Modo de horas extra (mismo criterio que el reporte de liquidación)
     const cfgModo = await prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } });
     const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
-    // Sin días congelados: el panel mira la semana en curso y se queda con el
-    // respaldo por día de semana, que es como se ha comportado siempre. La
-    // corrección por fecha vive donde se liquida, que es donde mueve plata.
+    // El `ExtraConfig` sigue sin días congelados: el panel mira la semana en curso y se queda con el
+    // respaldo por día de semana, que es como se ha comportado siempre.
     const extraConfigPorCol = new Map(colaboradores.map(c => [c.id, construirExtraConfig(modoExtra, (c as any).horario, [])]));
+
+    // El DESCANSO sí se conecta (20 de septiembre de 2026), y es un cambio de criterio respecto de
+    // lo que decía aquí antes. La razón: el panel y el reporte cuentan las horas de la MISMA semana
+    // para la MISMA gente, así que si uno respeta el día de descanso pactado y el otro no, muestran
+    // dos cifras distintas de lo mismo. Eso es peor que no mostrarlo.
+    //
+    // Donde hay fila congelada manda la fila; donde no la hay, el estado declarado hoy. Un `null`
+    // NO entra al mapa: es la ausencia del dato, no un `false`.
+    const descansoPorCol = new Map<string, DescansoConfig>(
+      colaboradores.map(c => [c.id, { porFecha: {} as Record<string, boolean>, estado: estadoDescansoDe(c) }]),
+    );
+    for (const d of diasCongelados) {
+      if (typeof d.esDescanso !== 'boolean') continue;
+      const cfg = descansoPorCol.get(d.colaboradorId);
+      if (cfg?.porFecha) cfg.porFecha[claveDeDescanso(d.fecha)] = d.esDescanso;
+    }
 
     for (const [clave, regs] of porColSemana) {
       const jornadaSemanal = jornadaVigente(regs[0].fecha, jornadas);
@@ -276,7 +302,8 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         if (!r.entrada || !r.salida) continue;
         const tiposDelDia = tiposVigentes(r.fecha, tiposHoraTodos);
         const { resultado, minutosOrdinariosTrabajados } = calcularHorasTrabajadas(
-          r.entrada, r.salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfigPorCol.get(r.colaboradorId)
+          r.entrada, r.salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfigPorCol.get(r.colaboradorId),
+          descansoPorCol.get(r.colaboradorId)
         );
         const claveColDia = `${r.colaboradorId}|${claveDia(r.fecha)}`;
         const almuerzoCobrado = cobrarAlmuerzo(claveColDia, almuerzoPorColDia.get(claveColDia) ?? 0, m => descontarAlmuerzo(resultado, m));

@@ -1,8 +1,10 @@
 import { toZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear } from 'date-fns';
-import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo, descontarAlmuerzoOrdinarias, CODIGOS_EXTRA } from './horasColombiana';
+import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo, descontarAlmuerzoOrdinarias, CODIGOS_EXTRA, claveDeDescanso, type DescansoConfig } from './horasColombiana';
+import type { EstadoDescanso } from './descansoObligatorio';
 import { jornadaVigente, tiposVigentes } from './vigencias';
-import { franjaDelDia, DIAS_SEMANA, HorarioConFranjas, construirExtraConfig } from './tardanzas';
+import { franjaDelDia, HorarioConFranjas, construirExtraConfig } from './tardanzas';
+import { DIAS_SEMANA } from './diasDeLaSemana';
 import type { DiaEsperadoCalculado } from './diasEsperados';
 import { ajustarAJornada } from './ajusteJornada';
 import { minutosAlmuerzoADescontar, minutosEnLaVentana, ventanaDeAlmuerzo } from './almuerzo';
@@ -89,8 +91,30 @@ export function liquidarRegistros(
   // Días materializados del rango: de ahí sale la hora de salida programada para
   // la tolerancia. Si no llegan, la tolerancia sencillamente no se aplica.
   diasEsperados: DiaEsperadoCalculado[] = [],
+  // Lo que la persona tiene declarado HOY, con la guarda legal ya aplicada (`estadoDescansoDe`).
+  // Es el respaldo para las fechas sin fila congelada. Ausente = PRESUMIDO, o sea el domingo, que
+  // es lo que el sistema calculó siempre: por eso los llamadores que no lo pasen no ven cambio.
+  estadoDescanso?: EstadoDescanso,
 ) {
   const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
+
+  // EL CABLE ENTRE EL DÍA CONGELADO Y EL MOTOR DE HORAS (20 de septiembre de 2026).
+  //
+  // Hasta hoy el motor decidía el recargo dominical con su propio respaldo (el domingo) para todo
+  // el mundo, porque nadie le contaba qué decía la fila de ese día.
+  //
+  // La clave se arma con `claveDeDescanso`, la MISMA función que el motor usa para consultarla, y
+  // no con el `claveDiaBogota` local de este archivo: ese tiene otro formato (mes en base cero, sin
+  // relleno) y la búsqueda fallaría en silencio, cayendo al respaldo sin que nada se quejara.
+  //
+  // Solo entran los días que de verdad lo calcularon. Un `null` es la AUSENCIA del dato, no un
+  // `false`: meterlo como `false` afirmaría que ese domingo no era descanso y le quitaría el
+  // recargo a todo el historial anterior a la columna.
+  const porFecha: Record<string, boolean> = {};
+  for (const d of diasEsperados) {
+    if (typeof d.esDescanso === 'boolean') porFecha[claveDeDescanso(d.fecha)] = d.esDescanso;
+  }
+  const descansoConfig: DescansoConfig = { porFecha, estado: estadoDescanso };
 
   // Las pausas se miden por DÍA, el de la FECHA de la jornada: el regreso de la madrugada
   // de un nocturno es del mismo día que su salida, y contado por el día de su entrada su
@@ -184,7 +208,8 @@ export function liquidarRegistros(
 
       const tiposDelDia = tiposVigentes(registro.fecha, tiposHoraTodos);
       const { resultado, minutosOrdinariosTrabajados } = calcularHorasTrabajadas(
-        entrada, salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfig
+        entrada, salida, festivosDates, tiposDelDia as any, jornadaSemanal, minutosOrdSemana, extraConfig,
+        descansoConfig
       );
       // Lo que esta fila debe de cada pausa, hasta ella (arriba). El almuerzo de un día sin
       // ventana sale solo de las diurnas ordinarias, como siempre; el de uno con ventana y

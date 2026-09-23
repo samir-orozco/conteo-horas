@@ -31,6 +31,21 @@ model Empresa {
   // Las empresas NUEVAS nacen con fecha puesta: su salario ya se capturó con los dos campos
   // separados, así que no tienen nada que revisar y no hace falta clavar una fecha de corte.
   auxilioRevisadoEn    DateTime?
+  // Cuándo esta empresa respondió qué día descansa su gente (21 de septiembre de 2026). Null =
+  // todavía no. Misma doctrina que la de arriba: en el servidor y por empresa, no en localStorage.
+  //
+  // A diferencia del auxilio, NO se le pregunta a todo el mundo. La ley presume el domingo, así que
+  // una empresa cuyos horarios no cubren el domingo ya está respondida sin preguntar nada: quién ve
+  // el aviso lo decide `revisionDescansoPendiente` mirando los días de cada horario. Preguntar de
+  // más es lo que enseña a cerrar los avisos sin leerlos.
+  //
+  // Las empresas NUEVAS nacen en null, AL REVÉS que con el auxilio, y la diferencia no es un
+  // descuido. Allá la puerta es «tiene colaboradores», que acaba siendo cierta siempre, así que sin
+  // marcarlas al nacer verían un aviso que no les toca. Aquí la puerta es «tiene un horario que la
+  // ley no resuelve sola», que es exactamente la condición que debe disparar la pregunta el día que
+  // se cumpla. Marcarlas al nacer haría que una empresa que mañana crea un horario de siete días no
+  // se enterara nunca, y sus domingos se liquidarían con la presunción sin que nadie lo decidiera.
+  descansoRevisadoEn   DateTime?
   creadoEn             DateTime            @default(now())
   actualizadoEn        DateTime            @updatedAt
   usuarios             Usuario[]
@@ -40,6 +55,7 @@ model Empresa {
   suscripcion          Suscripcion?
   horarios             Horario[]
   sedes                Sede[]
+  plantillasTurno      PlantillaTurno[]
   dispositivos         DispositivoKiosco[]
   notificaciones       Notificacion[]
   // Afiliado que trajo a esta empresa (programa de referidos)
@@ -218,6 +234,68 @@ model FranjaHorario {
   @@map("franjas_horario")
 }
 
+// EL CATÁLOGO DE TURNOS DE LA EMPRESA (19 de septiembre de 2026, turnos rotativos).
+//
+// Una plantilla es una FRANJA SIN DÍAS: «Mañana 06:00-14:00», «Noche 22:00-06:00»,
+// «Descanso». Los días se los pone el planificador al pintar el calendario, y por eso la
+// misma plantilla sirve para cualquier persona en cualquier fecha. Esa es toda la
+// diferencia con `FranjaHorario`, que lleva sus días dentro.
+//
+// El reparto con `Horario` es deliberado: aquí vive lo de la FRANJA (horas, ventana de
+// almuerzo, descansos) y allá lo de POLÍTICA (tolerancias, `ajustaEntrada`), que es de la
+// empresa y no del turno. Así una plantilla sirve para cualquier persona y la política
+// vive en un solo sitio.
+//
+// La revisión de las ventanas es LA MISMA de las franjas y vive en
+// `utils/ventanasDeHorario.ts`: que el almuerzo quepa, que los tres descansos no se
+// crucen y la forma canónica con que se guardan. No hay una segunda copia (CLAUDE.md §9.3).
+model PlantillaTurno {
+  id             String   @id @default(cuid())
+  empresaId      String
+  empresa        Empresa  @relation(fields: [empresaId], references: [id])
+  nombre         String
+  // Clave de una paleta CERRADA (utils/cuerpoDePlantilla.ts), no un hex: el color se pinta
+  // en una celda de la rejilla con texto encima y tiene que garantizar contraste, y con la
+  // clave la paleta se retoca sin migrar datos.
+  color          String   @default("grafito")
+  // Un día libre. Va como plantilla y no como novedad (decisión del dueño del 18 de
+  // septiembre de 2026): el planificador lo pinta igual que un turno, y en el día congelado
+  // `programado = false` ya da el comportamiento correcto, que se comprobó antes de
+  // decidirlo (sin deuda, sin tardanza, y lo que se trabaje cuenta entero como extra).
+  esDescanso     Boolean  @default(false)
+  // Un descanso NO lleva horas: son NULL a propósito, no «todavía sin configurar».
+  horaEntrada    String? // "06:00" hora local Bogotá
+  horaSalida     String? // "14:00" (puede cruzar medianoche, ej. "22:00"→"06:00")
+  tieneAlmuerzo  Boolean  @default(true)
+  almuerzoInicio String?
+  almuerzoFin    String?
+  // Misma forma y mismas reglas que `FranjaHorario.descansos`, y se lee con el mismo
+  // `leerDescansos`. NULL = sin descansos, nunca "[]".
+  //
+  // `@db.Text` declarado el 22 de septiembre de 2026, no porque haga falta cambiar la base sino
+  // porque la base YA es `text` y el esquema decía otra cosa. Sin esta línea, `prisma migrate diff`
+  // proponía un `MODIFY ... VARCHAR(191)` que habría TRUNCADO cualquier lista de descansos de más
+  // de 191 caracteres, en silencio y sin que nada se quejara.
+  descansos      String?  @db.Text
+  // Sede en la que se cumple este turno, cuando la empresa tiene varias. Es la PLANEADA:
+  // dónde marcó de verdad sigue viviendo en `Registro.sedeId`, y no se mezclan
+  // (la sede deducida no es la sede probada).
+  sedeId         String?
+  sede           Sede?    @relation(fields: [sedeId], references: [id])
+  // Se desactiva en vez de borrarse: los días ya planificados apuntan a ella y el
+  // calendario histórico tiene que poder seguir diciendo qué turno se pintó.
+  activa         Boolean  @default(true)
+  creadoEn       DateTime @default(now())
+  actualizadoEn  DateTime @updatedAt
+  // Los días que se pintaron con este turno. Prisma exige declarar el lado inverso de la relación;
+  // sin esto el esquema no valida. Hoy está siempre vacía: el planificador todavía no existe.
+  diasEsperados  DiaEsperado[]
+
+  @@index([empresaId])
+  @@index([sedeId])
+  @@map("plantillas_turno")
+}
+
 // Dispositivos autorizados para abrir el kiosco de marcación.
 // Evita que un colaborador copie el link y marque desde su casa.
 model DispositivoKiosco {
@@ -269,6 +347,28 @@ model Colaborador {
   // al vuelo porque la lista la pide para TODOS: mandar la grande son cientos
   // de kilobytes por carga, y en un plan de 150 personas son megas.
   fotoMini         String?             @db.LongText
+  // EL DÍA DE DESCANSO OBLIGATORIO (20 de septiembre de 2026).
+  //
+  // La ley presume el domingo SALVO acuerdo escrito. Hasta hoy el motor lo tenía escrito a mano
+  // (`esDomingo` en horasColombiana.ts) y acertaba por una razón frágil: nadie podía registrar otro
+  // día, así que la presunción se cumplía sola. Medido en producción: 22 horarios activos incluyen
+  // el domingo, y en 10 de ellos se trabajan los SIETE días (26 personas).
+  //
+  // Es UN campo con tres estados y no dos mecanismos separados (fijo contra rotativo), porque el
+  // acuerdo escrito hace falta en los dos casos y partirlo lo duplicaría o lo perdería. El tercer
+  // valor además evita tener que marcar aparte quién es rotativo: ya lo dice él.
+  //
+  // Texto y no enum, siguiendo a `DiaEsperado.origen` y a `Suscripcion.plan`: agregar un cuarto
+  // valor a un enum obliga a un ALTER de esta tabla, que tiene gente.
+  descansoTipo      String             @default("PRESUMIDO") // PRESUMIDO | FIJO | ROTATIVO
+  descansoDia       String? // solo con FIJO: "MIERCOLES". NULL en los otros dos.
+  // Cuándo se firmó el acuerdo escrito. NULL = no hay acuerdo, y entonces FIJO y ROTATIVO se tratan
+  // como PRESUMIDO: se le sigue pagando el recargo del domingo. El error puede equivocarse hacia
+  // pagar de más, nunca hacia pagar de menos.
+  descansoAcuerdoEn DateTime?
+  // Las decisiones sobre sus días de descanso trabajados. Prisma exige declarar este lado de la
+  // relación; sin él el esquema no valida.
+  descansosTrabajados DescansoTrabajado[]
   horarioId        String?
   horario          Horario?            @relation(fields: [horarioId], references: [id])
   // No admite null a propósito: un null sería un cuarto estado que significa
@@ -338,6 +438,8 @@ model Sede {
   actualizadoEn DateTime @updatedAt
 
   colaboradores ColaboradorSede[]
+  // Turnos del catálogo que se cumplen en esta sede (turnos rotativos).
+  plantillas    PlantillaTurno[]
   // Dos relaciones con Registro, y Prisma exige nombrarlas cuando van al mismo
   // modelo: la sede donde se ABRIÓ el turno y la sede donde se CERRÓ.
   registros         Registro[] @relation("SedeDeEntrada")
@@ -394,8 +496,49 @@ model DiaEsperado {
   // `FranjaHorario.descansos` (12 de septiembre de 2026), por lo mismo que el
   // almuerzo: cambiarla mañana no puede mover lo ya liquidado. NULL = sin descansos.
   descansos           String?
+  // Si ESE día era el descanso obligatorio de esta persona (20 de septiembre de 2026).
+  //
+  // Se congela la RESPUESTA, no los ingredientes, igual que `minutosEsperados` guarda el número y
+  // no la fórmula. El motor solo necesita saber si ese día llevaba recargo; reconstruirlo después
+  // desde el tipo y el acuerdo de hoy sería justo lo que esta tabla existe para impedir.
+  //
+  // ANULABLE, y esto es lo importante de la columna. Hay que poder distinguir dos cosas que no son
+  // iguales:
+  //
+  //   false = esta fila dice que ese día NO era su descanso           ← un dato
+  //   null  = esta fila es anterior a la función y nunca lo calculó   ← la ausencia de un dato
+  //
+  // La primera versión la puso `NOT NULL DEFAULT false`, y eso habría dejado las 1956 filas ya
+  // existentes afirmando que sus domingos eran días ordinarios. Al conectar el motor, cada domingo
+  // trabajado del pasado habría perdido su recargo del 90%, en silencio y sin que ninguna prueba se
+  // pusiera roja. Se cazó antes de conectarlo, midiendo qué filas se reclasificarían.
+  //
+  // Con `null` el motor cae al estado declarado de la persona, que para todo el mundo es PRESUMIDO,
+  // o sea el domingo: exactamente lo que se calcula hoy. `true` y `false` solo los escribe el
+  // código nuevo, hacia adelante.
+  //
+  // OJO al leer esto más adelante: mientras el planificador no exista, una persona ROTATIVA se
+  // congela con el domingo, porque no hay semana planificada que consultar. Cuando el planificador
+  // llegue, esas filas viejas seguirán diciendo domingo y NO se reescriben. No es un error: es lo
+  // que aplicó ese día.
+  esDescanso          Boolean?
   // De qué horario salió, solo informativo: el horario puede cambiar después.
   horarioId           String?
+  // Con qué turno del CATÁLOGO se pintó este día (21 de septiembre de 2026).
+  //
+  // La escribe el planificador (`pintarDiaDeColaborador`), junto con `origen = MANUAL`. NULL
+  // significa «a este día no lo pintó ningún turno», que es lo normal.
+  //
+  // RESTRICT a propósito: una plantilla que ya pintó días no se borra dejándolos apuntando al
+  // vacío. El catálogo ya desactiva en vez de borrar, justo por esto.
+  //
+  // EL `onDelete` ESTABA SOLO EN EL COMENTARIO hasta el 22 de septiembre de 2026, y esa es la
+  // lección: la base tenía RESTRICT (puesto a mano por `sql/dia-esperado-plantilla.sql`) pero el
+  // esquema no lo declaraba, así que Prisma asumía su valor por defecto para una relación opcional,
+  // que es SetNull. `prisma migrate diff` proponía entonces REVERTIR el RESTRICT, y el comentario
+  // de al lado hacía creer que estaba resuelto. Un comentario no es una garantía: se declara.
+  plantillaId         String?
+  plantilla           PlantillaTurno? @relation(fields: [plantillaId], references: [id], onDelete: Restrict)
   // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)
   origen              String      @default("AUTO")
   creadoEn            DateTime    @default(now())
@@ -789,6 +932,75 @@ model RegistroCambio {
 
   @@index([registroId, creadoEn])
   @@map("registro_cambios")
+}
+
+// QUÉ SE DECIDIÓ SOBRE UN DÍA DE DESCANSO QUE SE TRABAJÓ (22 de septiembre de 2026).
+//
+// Antes de esto no existía NINGÚN registro de estas decisiones: el sistema sabía que alguien había
+// trabajado su descanso (y le pagaba el recargo) pero no qué se acordó hacer al respecto. En un
+// reclamo laboral eso deja a la empresa sin con qué contestar.
+//
+// NO es un `Permiso`, aunque se le parezca. Esa tabla clasifica ausencias por QUIÉN PAGA
+// (remunerado por ley / nunca / según política de la empresa, ver `saldoTiempo.ts`) y un día
+// compensatorio no es ninguna de las tres: ya está pagado, porque el recargo se pagó cuando se
+// trabajó el descanso. Meterlo ahí corrompería una clasificación que decide dinero.
+//
+// ESTA TABLA NO PUEDE QUITAR PLATA, y es lo que permite que el modal se pueda editar libremente,
+// como pidió el dueño. El recargo sale de `DiaEsperado.esDescanso`, que esto no toca: aquí solo
+// vive la decisión de compensación.
+model DescansoTrabajado {
+  id                 String      @id @default(cuid())
+  colaboradorId      String
+  colaborador        Colaborador @relation(fields: [colaboradorId], references: [id])
+  // El día de descanso que se trabajó, a medianoche de Bogotá (05:00 UTC), la misma convención que
+  // `DiaEsperado.fecha` y `Registro.fecha`.
+  fecha              DateTime
+  // PENDIENTE | DINERO | COMPENSATORIO.
+  //
+  // Texto y no enum, por la MISMA razón que `Colaborador.descansoTipo`: un cuarto valor obligaría a
+  // un ALTER de una tabla con datos. Y aquí ese cuarto valor es plausible de verdad, no teórico: la
+  // pregunta de si un mes que pasa a habitual reabre las decisiones anteriores está sin resolver, y
+  // su respuesta podría traer un estado nuevo.
+  decision           String      @default("PENDIENTE")
+  // El día libre asignado. Solo con COMPENSATORIO; NULL en los otros dos.
+  fechaCompensatorio DateTime?
+  // OCASIONAL | HABITUAL en el momento de decidir, CONGELADA. Es la mitad del mecanismo que el
+  // dueño eligió el 22 de septiembre de 2026: el sistema no decide si un mes que cruza a habitual
+  // reabre lo ya decidido, lo AVISA. Sin este dato no habría con qué comparar, y reabrir hacia
+  // atrás dejaría de ser un interruptor para volverse un rediseño.
+  claseAlDecidir     String?
+  nota               String?     @db.Text
+  // Quién decidió. `usuarioId` ya viaja en el request y otras rutas lo usan para firmar cambios.
+  decididoPor        String?
+  decididoNombre     String?
+  decididoEn         DateTime?
+  creadoEn           DateTime    @default(now())
+  actualizadoEn      DateTime    @updatedAt
+  cambios            DescansoTrabajadoCambio[]
+
+  // Una sola decisión por persona y día. Da además el índice compuesto que la pantalla necesita
+  // (igualdad primero, rango después), así que NO lleva un `@@index` encima: sería el mismo índice
+  // escrito dos veces.
+  @@unique([colaboradorId, fecha])
+  @@map("descansos_trabajados")
+}
+
+// EL RASTRO DE QUIÉN CAMBIÓ QUÉ. Copia deliberada de `RegistroCambio`, incluido el borrado en
+// cascada: es el patrón de auditoría que este producto ya tiene, y un segundo patrón para lo mismo
+// sería una forma de que los dos se separen.
+model DescansoTrabajadoCambio {
+  id                  String            @id @default(cuid())
+  descansoTrabajadoId String
+  descansoTrabajado   DescansoTrabajado @relation(fields: [descansoTrabajadoId], references: [id], onDelete: Cascade)
+  campo               String
+  antes               String            @db.Text
+  despues             String            @db.Text
+  usuarioId           String?
+  usuarioNombre       String?
+  creadoEn            DateTime          @default(now())
+
+  @@index([descansoTrabajadoId, creadoEn])
+  @@map("descansos_trabajados_cambios")
 }
 
 // Historia de la vinculación de una persona con la empresa.

@@ -1,5 +1,7 @@
 import { toZonedTime } from 'date-fns-tz';
-import { franjaDelDia, DIAS_SEMANA, HorarioConFranjas } from './tardanzas';
+import { franjaDelDia, HorarioConFranjas } from './tardanzas';
+import { DIAS_SEMANA } from './diasDeLaSemana';
+import { claveDiaBogota } from './fechas';
 import { duracionFranjaMin } from './saldoTiempo';
 import { leerDescansos, ventanasEnOrden, minutosDeLaUnion, escribirDescansos } from './descansos';
 
@@ -31,21 +33,24 @@ export type DiaEsperadoCalculado = {
   // Los descansos no remunerados de ESE día, congelados como texto con el formato de
   // utils/descansos.ts. NULL = sin descansos (12 de septiembre de 2026).
   descansos: string | null;
+  // Si ESE día era el descanso obligatorio de la persona (20 de septiembre de 2026).
+  //
+  // OPCIONAL, y los tres valores significan cosas distintas:
+  //   true/false  la fila lo calculó. Es un dato y manda sobre lo que la persona declare hoy.
+  //   null        la fila es anterior a la columna y nunca lo calculó. Es la AUSENCIA del dato.
+  //   undefined   ese día no tiene fila; lo está resolviendo el horario vigente.
+  //
+  // `calcularDiasEsperados` NUNCA lo llena, y no es un olvido: esta función solo conoce el horario,
+  // y quién descansa cuándo depende de la declaración de la persona y de su acuerdo escrito, que
+  // viven en `colaboradores`. Lo llena quien materializa. `combinarDiasEsperados` lo deja pasar
+  // solo porque copia la fila congelada entera.
+  esDescanso?: boolean | null;
 };
 
 // Medianoche de Bogotá del día al que pertenece un instante.
 function medianocheBogotaDe(d: Date): Date {
   const z = toZonedTime(d, TZ);
   return new Date(Date.UTC(z.getFullYear(), z.getMonth(), z.getDate(), 5, 0, 0));
-}
-
-// Clave de día calendario Bogotá ("2026-07-01"). Se empareja por día y no por
-// instante a propósito: MySQL puede devolver la fecha con milisegundos, y una
-// fila que no empareje por unos milisegundos quedaría huérfana y el día caería
-// al horario actual sin que nadie se entere.
-function claveDiaBogota(d: Date): string {
-  const z = toZonedTime(d, TZ);
-  return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
 }
 
 export function calcularDiasEsperados(

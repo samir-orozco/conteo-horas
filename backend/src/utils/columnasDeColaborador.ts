@@ -14,6 +14,11 @@ export const COLABORADOR_SIN_FOTOS = {
   telefono: true, fechaNacimiento: true, salarioMensual: true, auxilioTransporte: true, rostroEnroladoEn: true, rostroRechazadoEn: true, horarioId: true,
   modalidad: true, puedeCerrarEnOtraSede: true, activo: true, fechaRetiro: true, motivoRetiro: true,
   retiroProgramado: true, creadoEn: true, actualizadoEn: true,
+  // El día de descanso obligatorio (20 de septiembre de 2026). Viajan a propósito y no por inercia:
+  // `reportes.ts` usa esta misma lista para la liquidación, y sin estas tres el motor no puede ver
+  // la declaración de la persona y no podría decidir si su domingo lleva recargo. La ficha además
+  // las necesita para declararlas. No son datos sensibles: no hay razón para dejarlas fuera.
+  descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
 } satisfies Prisma.ColaboradorSelect;
 
 // Lo que devuelven la ficha y las rutas que crean, editan, retiran o reingresan a una persona: las
