@@ -10,7 +10,7 @@ import type { Prisma } from '@prisma/client';
 // función en vista previa del esquema. La prueba de al lado la compara con las columnas que
 // declara el cliente, así que una columna nueva no se queda afuera sin que nadie lo note.
 export const COLABORADOR_SIN_FOTOS = {
-  id: true, empresaId: true, nombre: true, apellido: true, cedula: true, cargo: true, email: true,
+  id: true, empresaId: true, nombre: true, apellido: true, cedula: true, numeroContrato: true, cargo: true, email: true,
   telefono: true, fechaNacimiento: true, salarioMensual: true, auxilioTransporte: true, rostroEnroladoEn: true, rostroRechazadoEn: true, horarioId: true,
   modalidad: true, puedeCerrarEnOtraSede: true, activo: true, fechaRetiro: true, motivoRetiro: true,
   retiroProgramado: true, creadoEn: true, actualizadoEn: true,

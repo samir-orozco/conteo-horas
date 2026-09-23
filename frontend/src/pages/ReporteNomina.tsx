@@ -104,7 +104,10 @@ export default function ReporteNomina() {
       const sinCedula = r.sinCedula.length
         ? ` Quedaron por fuera, porque no tienen cédula en HoraPro y Siigo identifica por documento: ${r.sinCedula.join(', ')}.`
         : '';
-      setAviso(`Listo: ${r.filasEscritas.length} novedad(es) en el formato de Siigo.${sinCedula}`);
+      // El contrato es lo único que HoraPro no puede adivinar: Siigo le pone la cédula con un «-1» al
+      // segundo contrato de una persona, y rechaza esas filas. Quien lo reporte se corrige en su ficha.
+      setAviso(`Listo: ${r.filasEscritas.length} novedad(es) en el formato de Siigo.${sinCedula}`
+        + ' Si al subirlo Siigo dice que el contrato de alguien no existe, escribe su «Número de contrato» en la ficha de esa persona.');
     } catch (err) {
       setError((err as Error).message ?? 'No pudimos armar el archivo de Siigo');
     } finally {

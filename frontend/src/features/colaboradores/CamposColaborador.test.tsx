@@ -80,7 +80,7 @@ describe('CamposColaborador', () => {
     montar();
     // «Salario básico» y no «Salario mensual»: el auxilio de transporte va en su propio campo, y
     // meterlo dentro del salario encarece cada hora extra y cada recargo un 14,2% en el mínimo.
-    for (const rotulo of [/cédula/i, /cargo/i, /fecha de nacimiento/i, /horario de trabajo/i, /salario básico/i, /auxilio de transporte/i]) {
+    for (const rotulo of [/cédula/i, /número de contrato/i, /cargo/i, /fecha de nacimiento/i, /horario de trabajo/i, /salario básico/i, /auxilio de transporte/i]) {
       expect(screen.getByLabelText(rotulo)).toBeInTheDocument();
     }
     // Los que son grupo de varios controles se anuncian como grupo.
@@ -93,6 +93,18 @@ describe('CamposColaborador', () => {
     expect(screen.getByText(/la que digita para marcar en el kiosco/i)).toBeInTheDocument();
     expect(screen.getByText(/llegadas tarde, extras y pausas/i)).toBeInTheDocument();
     expect(screen.getByText(/se calcula su hora extra/i)).toBeInTheDocument();
+  });
+
+  // Siigo identifica a cada persona por su número de contrato, que casi siempre es la cédula. Cuando
+  // alguien tiene un segundo contrato le pone la cédula con un «-1», y con la cédula sola rechaza sus
+  // filas al importar las novedades. Por eso el campo existe, y por eso va vacío casi siempre.
+  it('el número de contrato es opcional y dice que vacío significa la cédula', async () => {
+    const onCambio = montar();
+    const campo = screen.getByLabelText(/número de contrato/i);
+    expect(campo).not.toBeRequired();
+    expect(screen.getByText(/déjalo vacío si en tu software de nómina el contrato es la cédula/i)).toBeInTheDocument();
+    await userEvent.type(campo, '1');
+    expect(onCambio).toHaveBeenCalledWith({ numeroContrato: '1' });
   });
 
   it('avisa del cambio sin pisar el resto del formulario', async () => {

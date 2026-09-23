@@ -462,7 +462,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
         select: {
-          id: true, nombre: true, apellido: true, cedula: true, cargo: true,
+          id: true, nombre: true, apellido: true, cedula: true, numeroContrato: true, cargo: true,
           salarioMensual: true, auxilioTransporte: true, modalidad: true, horario: { include: { franjas: true } },
           // Las tres del descanso, por lo mismo que en los otros dos reportes: este es el archivo
           // que se sube al ERP, así que es el que no puede discrepar de la liquidación.
@@ -540,7 +540,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, estadoDescansoDe(col),
       );
       return {
-        colaboradorId: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,
+        colaboradorId: col.id, cedula: col.cedula, numeroContrato: col.numeroContrato, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,
         salarioMensual: col.salarioMensual,
         valorHora: parseFloat(calcularValorHora(col.salarioMensual, horasMes).toFixed(2)),
         // El auxilio NO entra en el valor de la hora: se paga aparte y se prorratea por los días en

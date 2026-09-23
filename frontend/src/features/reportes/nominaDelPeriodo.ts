@@ -18,6 +18,10 @@ export type NovedadDeNomina = { tipo: string; remunerado: boolean; dias: number;
 export type PersonaDeNomina = {
   colaboradorId: string;
   cedula: string | null;
+  // El número con el que el software de nómina del cliente identifica su contrato. Vacío significa que
+  // es la cédula, que es el caso normal: Siigo solo lo cambia cuando la persona tiene un segundo
+  // contrato, y ahí le pone la cédula con un «-1» al final.
+  numeroContrato?: string | null;
   nombre: string;
   apellido: string;
   cargo: string | null;

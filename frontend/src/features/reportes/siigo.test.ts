@@ -1,25 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { filasParaSiigo, llenarPlantillaSiigo, CONCEPTOS_SIIGO } from './siigo';
+import { filasParaSiigo, CONCEPTOS_SIIGO } from './siigo';
 import type { PersonaDeNomina } from './nominaDelPeriodo';
 
 // El archivo de novedades para Siigo (15 de septiembre de 2026).
 //
-// Se llena LA PLANTILLA del cliente, la que él descarga de su Siigo, porque ahí vienen sus empleados
-// con su número de contrato. HoraPro no los inventa: busca a cada persona por su cédula y, si no está
-// en la plantilla, la deja fuera y lo dice.
+// Siigo identifica a cada persona por su NÚMERO DE CONTRATO, que casi siempre es la cédula. Cuando
+// alguien tiene un segundo contrato, Siigo le pone la cédula con un «-1» al final, y con la cédula sola
+// rechaza esas filas («el contrato no pertenece a la nómina o no existe», medido el 23/09/2026). Por eso
+// la ficha del colaborador tiene «Número de contrato»: vacío significa «es la cédula».
 //
 // El mapa de conceptos sale del catálogo de la propia plantilla (hoja «datos»). La hora ordinaria no
 // se manda: esa ya la paga el salario. Las decisiones que el dueño confirmó el 15 de septiembre:
 // los domingos y festivos van a los conceptos de RECARGO (25 y 27), y la incapacidad de EPS al 66%.
 
-// El fixture es la plantilla real que el dueño descargó de su Siigo.
-const plantilla = () => readFileSync(join(process.cwd(), 'src', 'pruebas', 'fixtures', 'siigo-novedades.xlsx'));
-
-// Cédulas que existen en esa plantilla.
 const ANA_CEDULA = '1001414194';
-const IVAN_CEDULA = '1001471760';
 
 const persona = (cedula: string, nombre: string, extra: Partial<PersonaDeNomina> = {}): PersonaDeNomina => ({
   colaboradorId: 'c-' + cedula, cedula, nombre, apellido: 'De Prueba', cargo: null,
@@ -92,8 +86,8 @@ describe('filasParaSiigo', () => {
       liquidacion: [linea('HOD', 104), linea('HON', 6), linea('HED', 4)],
     })], PERIODO);
     expect(filas).toEqual([
-      { cedula: ANA_CEDULA, concepto: 26, cantidad: 6, unidad: 'Horas', desde: '01/09/2026', hasta: '15/09/2026' },
-      { cedula: ANA_CEDULA, concepto: 10, cantidad: 4, unidad: 'Horas', desde: '01/09/2026', hasta: '15/09/2026' },
+      { contrato: ANA_CEDULA, cedula: ANA_CEDULA, concepto: 26, cantidad: 6, unidad: 'Horas', desde: '01/09/2026', hasta: '15/09/2026' },
+      { contrato: ANA_CEDULA, cedula: ANA_CEDULA, concepto: 10, cantidad: 4, unidad: 'Horas', desde: '01/09/2026', hasta: '15/09/2026' },
     ]);
   });
 
@@ -112,7 +106,7 @@ describe('filasParaSiigo', () => {
       ],
     })], PERIODO);
     expect(filas).toEqual([
-      { cedula: ANA_CEDULA, concepto: 31, cantidad: 3, unidad: 'Dias', desde: '01/09/2026', hasta: '15/09/2026' },
+      { contrato: ANA_CEDULA, cedula: ANA_CEDULA, concepto: 31, cantidad: 3, unidad: 'Dias', desde: '01/09/2026', hasta: '15/09/2026' },
     ]);
   });
 
@@ -124,65 +118,23 @@ describe('filasParaSiigo', () => {
   });
 });
 
-describe('llenarPlantillaSiigo', () => {
-  it('escribe las novedades debajo de los empleados, respetando el contrato de la plantilla', async () => {
-    const personas = [persona(ANA_CEDULA, 'Ana', { liquidacion: [linea('HON', 6)] })];
-    const r = await llenarPlantillaSiigo(plantilla(), personas, PERIODO);
-    expect(r.fueraDeLaPlantilla).toEqual([]);
-    const escrita = r.filasEscritas[0];
-    expect(escrita).toMatchObject({
-      contrato: ANA_CEDULA, cedula: ANA_CEDULA, nombre: 'ANA SOFIA GIRALDO TOBON',
-      concepto: '26- Recargo nocturno- Ingreso', unidad: 'Horas', cantidad: 6,
-      desde: '01/09/2026', hasta: '15/09/2026', diasNoHabiles: 0,
-    });
+describe('el número de contrato', () => {
+  it('cuando la persona no lo tiene, el contrato es su cédula', () => {
+    const filas = filasParaSiigo([persona(ANA_CEDULA, 'Ana', { liquidacion: [linea('HON', 6)] })], PERIODO);
+    expect(filas[0].contrato).toBe(ANA_CEDULA);
   });
 
-  it('el archivo que devuelve sigue teniendo las tres hojas, el encabezado y los empleados de Siigo', async () => {
-    const r = await llenarPlantillaSiigo(plantilla(), [persona(ANA_CEDULA, 'Ana', { liquidacion: [linea('HON', 6)] })], PERIODO);
-    const XLSX = await import('xlsx');
-    const wb = XLSX.read(r.archivo, { type: 'array' });
-    expect(wb.SheetNames).toEqual(['Novedades', 'Conceptos creados por usuario', 'datos']);
-    const hoja = wb.Sheets['Novedades'];
-    expect(hoja['A5'].v).toBe('#Contrato del empleado');
-    expect(hoja['C6'].v).toBe('ANA SOFIA GIRALDO TOBON');
-    // El catálogo de conceptos viaja intacto: Siigo lo lee al subir el archivo.
-    expect(XLSX.utils.sheet_to_json(wb.Sheets['datos'], { header: 1, blankrows: false })).toHaveLength(198);
+  it('cuando lo tiene, manda ese y no la cédula: es el segundo contrato de esa persona en Siigo', () => {
+    const filas = filasParaSiigo([persona(ANA_CEDULA, 'Ana', {
+      numeroContrato: `${ANA_CEDULA}-1`, liquidacion: [linea('HON', 6)],
+    })], PERIODO);
+    expect(filas[0]).toMatchObject({ contrato: `${ANA_CEDULA}-1`, cedula: ANA_CEDULA });
   });
 
-  it('escribe el número de contrato de la plantilla, no la cédula', async () => {
-    // Fixture derivado del real: a Ana le pusieron un contrato distinto de su cédula, que es la razón
-    // por la que el dueño eligió llenar SU plantilla en vez de generar un archivo nuevo.
-    const conContrato = readFileSync(join(process.cwd(), 'src', 'pruebas', 'fixtures', 'siigo-novedades-contrato-distinto.xlsx'));
-    const r = await llenarPlantillaSiigo(conContrato, [persona(ANA_CEDULA, 'Ana', { liquidacion: [linea('HON', 6)] })], PERIODO);
-    expect(r.filasEscritas[0]).toMatchObject({ contrato: 'CT-8801', cedula: ANA_CEDULA });
-  });
-
-  it('escribe debajo del último empleado, sin pisar a los que trae la plantilla', async () => {
-    const r = await llenarPlantillaSiigo(plantilla(), [persona(ANA_CEDULA, 'Ana', { liquidacion: [linea('HON', 6)] })], PERIODO);
-    const XLSX = await import('xlsx');
-    const hoja = XLSX.read(r.archivo, { type: 'array' }).Sheets['Novedades'];
-    // Los 14 empleados de la plantilla siguen tal cual, del 6 al 19. La cédula viene como texto en el
-    // archivo de Siigo, no como número: así la guarda su plantilla.
-    expect(String(hoja['A6'].v)).toBe(ANA_CEDULA);
-    expect(hoja['C19'].v).toBe('TATIANA RESTREPO GALLEGO');
-    // Y la novedad quedó en la primera fila libre, la 20.
-    expect(hoja['D20'].v).toBe('26- Recargo nocturno- Ingreso');
-    expect(hoja['F20'].v).toBe(6);
-  });
-
-  it('a quien no está en la plantilla lo deja por fuera y lo dice', async () => {
-    const personas = [
-      persona(ANA_CEDULA, 'Ana', { liquidacion: [linea('HON', 6)] }),
-      persona('9999999999', 'Nadie', { liquidacion: [linea('HED', 2)] }),
-    ];
-    const r = await llenarPlantillaSiigo(plantilla(), personas, PERIODO);
-    expect(r.fueraDeLaPlantilla).toEqual([{ cedula: '9999999999', nombre: 'Nadie De Prueba' }]);
-    expect(r.filasEscritas).toHaveLength(1);
-  });
-
-  it('sin cédula no se puede identificar a nadie en Siigo', async () => {
-    const r = await llenarPlantillaSiigo(plantilla(), [persona(IVAN_CEDULA, 'Iván', { cedula: null, liquidacion: [linea('HED', 2)] })], PERIODO);
-    expect(r.fueraDeLaPlantilla).toEqual([{ cedula: null, nombre: 'Iván De Prueba' }]);
-    expect(r.filasEscritas).toEqual([]);
+  it('un campo escrito con espacios de más no rompe el archivo', () => {
+    const filas = filasParaSiigo([persona(ANA_CEDULA, 'Ana', {
+      numeroContrato: '  ', liquidacion: [linea('HON', 6)],
+    })], PERIODO);
+    expect(filas[0].contrato).toBe(ANA_CEDULA);
   });
 });

@@ -317,6 +317,11 @@ model Colaborador {
   nombre           String
   apellido         String
   cedula           String // marcación en kiosco por cédula
+  // Con el que el software de nómina del cliente identifica su contrato (23 de septiembre de 2026).
+  // Vacío es lo normal y significa que es la cédula: Siigo solo lo cambia cuando la persona tiene un
+  // segundo contrato, y ahí le pone la cédula con un «-1» al final. Sin este dato, Siigo rechaza las
+  // filas de esas personas al importar las novedades.
+  numeroContrato   String?
   cargo            String?
   email            String?
   telefono         String?

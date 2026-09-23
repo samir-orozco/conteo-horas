@@ -24,6 +24,8 @@ export type HorarioOpcion = { id: string; nombre: string; franjas: Franja[] };
 
 export type ValoresColaborador = {
   nombre?: string; apellido?: string; cedula?: string; cargo?: string;
+  // El del software de nómina del cliente. Vacío significa que es la cédula.
+  numeroContrato?: string;
   email?: string; telefono?: string; fechaNacimiento?: string;
   // El salario BÁSICO, sin auxilio: es la base del valor de la hora.
   salarioMensual?: number;
@@ -94,6 +96,17 @@ export default function CamposColaborador({
         {id => (
           <input id={id} value={valores.cedula ?? ''} inputMode="numeric" required className={`${ENTRADA} ${CORTO}`}
             onChange={e => onCambio({ cedula: e.target.value })} />
+        )}
+      </CampoFormulario>
+
+      {/* El número con el que el software de nómina identifica el contrato. Casi siempre es la cédula y
+          por eso va vacío; Siigo solo lo cambia cuando la persona tiene un segundo contrato, y ahí le
+          pone la cédula con un «-1» al final. Sin él, Siigo rechaza las novedades de esas personas. */}
+      <CampoFormulario rotulo="Número de contrato"
+        descripcion="Déjalo vacío si en tu software de nómina el contrato es la cédula. Solo se escribe cuando la nómina dice que el contrato no existe.">
+        {id => (
+          <input id={id} value={valores.numeroContrato ?? ''} placeholder="Ej.: 1070806026-1" className={`${ENTRADA} ${CORTO}`}
+            onChange={e => onCambio({ numeroContrato: e.target.value })} />
         )}
       </CampoFormulario>
 

@@ -40,7 +40,7 @@ import { useLegales } from '../lib/legales';
 
 type Horario = { id: string; nombre: string; toleranciaMin: number; franjas: Franja[] };
 type Colaborador = {
-  id: string; nombre: string; apellido: string; cedula: string; cargo?: string;
+  id: string; nombre: string; apellido: string; cedula: string; numeroContrato?: string | null; cargo?: string;
   email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; activo: boolean;
   horarioId?: string | null; horario?: Horario | null; rostroEnroladoEn?: string | null; foto?: string | null;
   sedeIds?: string[];
@@ -421,6 +421,7 @@ export default function ColaboradorDetalle() {
         onEditar={() => {
           setFormEdit({
             nombre: col.nombre, apellido: col.apellido, cedula: col.cedula,
+            numeroContrato: col.numeroContrato || '',
             cargo: col.cargo || '', email: col.email || '', telefono: col.telefono || '',
             fechaNacimiento: col.fechaNacimiento ? new Date(col.fechaNacimiento).toISOString().slice(0, 10) : '',
             salarioMensual: col.salarioMensual, horarioId: col.horarioId || '',

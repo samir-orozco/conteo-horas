@@ -8,7 +8,8 @@ export const MAX_CARACTERES = 191;
 
 // Las columnas de texto, con el nombre que ve la persona.
 export const TEXTOS_DEL_COLABORADOR = {
-  nombre: 'Nombre', apellido: 'Apellido', cedula: 'Cédula', cargo: 'Cargo', email: 'Correo', telefono: 'Teléfono',
+  nombre: 'Nombre', apellido: 'Apellido', cedula: 'Cédula', numeroContrato: 'Número de contrato',
+  cargo: 'Cargo', email: 'Correo', telefono: 'Teléfono',
 } as const;
 
 export const caracteres = (valor: string) => Array.from(valor).length;

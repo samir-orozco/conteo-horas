@@ -30,7 +30,7 @@ const linea = (codigo: string, horas: number) =>
 const PERIODO = { desde: '2026-09-01', hasta: '2026-09-15' };
 const leer = async (archivo: Uint8Array) => {
   const XLSX = await import('xlsx');
-  return XLSX.read(archivo, { type: 'array' });
+  return XLSX.read(archivo, { type: 'array', cellDates: true });
 };
 
 describe('la plantilla que HoraPro lleva adentro', () => {
@@ -77,7 +77,9 @@ describe('archivoParaSiigo', () => {
     expect(hoja['C6'].v).toBe('Ana Gómez');
     expect(hoja['D6'].v).toBe('26- Recargo nocturno- Ingreso');
     expect(hoja['F6'].v).toBe(6);
-    expect(hoja['G6'].v).toBe('01/09/2026');
+    // La fecha va como fecha, no como texto: así la trae el archivo que Siigo acepta.
+    expect(hoja['G6'].t).toBe('d');
+    expect((hoja['G6'].v as Date).toISOString().slice(0, 10)).toBe('2026-09-01');
   });
 
   it('las novedades van en días y las de parte del día no', async () => {
@@ -103,5 +105,39 @@ describe('archivoParaSiigo', () => {
   it('quien no tuvo nada en el período no ocupa una fila', async () => {
     const r = await archivoParaSiigo([persona('1020345678', 'Ana')], PERIODO);
     expect(r.filasEscritas).toEqual([]);
+  });
+});
+
+// Lo que hace que Siigo acepte el archivo (23 de septiembre de 2026): no se rearma, se le cambian los
+// valores por dentro a la plantilla. Un archivo rearmado lo rechaza con un 500 aunque los datos estén
+// bien, y eso no se ve mirando las celdas: se ve mirando qué piezas del archivo cambiaron.
+describe('el archivo conserva la plantilla de Siigo', () => {
+  it('solo cambia la hoja de novedades y el catálogo de textos', async () => {
+    const { unzipSync } = await import('fflate');
+    const r = await archivoParaSiigo([persona('1020345678', 'Ana', { liquidacion: [linea('HON', 6)] })], PERIODO);
+    const antes = unzipSync(new Uint8Array(plantillaDelSistema()));
+    const despues = unzipSync(r.archivo);
+    expect(Object.keys(despues).sort()).toEqual(Object.keys(antes).sort());
+    const cambiadas = Object.keys(antes).filter(p => String(antes[p]) !== String(despues[p])).sort();
+    expect(cambiadas).toEqual(['xl/sharedStrings.xml', 'xl/worksheets/sheet1.xml']);
+  });
+
+  it('llena la columna oculta «Tipo», que es la que Siigo lee para saber si suma o descuenta', async () => {
+    const r = await archivoParaSiigo([persona('1020345678', 'Ana', {
+      liquidacion: [linea('HON', 6)], auxilioTransporte: 58_000,
+    })], PERIODO);
+    const hoja = (await leer(r.archivo)).Sheets['Novedades'];
+    expect(hoja['J6'].v).toBe('IngresoHoras');
+    expect(hoja['J7'].v).toBe('IngresoValor $');
+  });
+
+  it('escribe el número de contrato de la persona cuando lo tiene', async () => {
+    const r = await archivoParaSiigo([persona('1020345678', 'Ana', {
+      numeroContrato: '1020345678-1', liquidacion: [linea('HON', 6)],
+    })], PERIODO);
+    expect(r.filasEscritas[0].contrato).toBe('1020345678-1');
+    const hoja = (await leer(r.archivo)).Sheets['Novedades'];
+    expect(hoja['A6'].v).toBe('1020345678-1');
+    expect(hoja['B6'].v).toBe('1020345678');
   });
 });
