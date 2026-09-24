@@ -92,7 +92,7 @@ type Respuesta = { desde: string; hasta: string; horasSemanales: number; filas: 
 // Lo que el selector necesita de un turno del catálogo, y nada más. La ruta devuelve bastante más
 // (horas, ventana de almuerzo, descansos, sede), pero aquí solo se pinta un botón con su nombre y
 // su color: lo que ese turno EXIGE lo resuelve el backend al pintar, no esta pantalla.
-type TurnoDelCatalogo = { id: string; nombre: string; color: string; esDescanso: boolean };
+type TurnoDelCatalogo = { id: string; nombre: string; color: string };
 
 // LA PROPUESTA DE DESCANSO DE UNA SEMANA ROTATIVA. La decide el backend (`propuestaDeDescanso`,
 // pura y mutada) y aquí solo se muestra: es una regla que roza el dinero, y deducirla otra vez en
@@ -151,8 +151,8 @@ function Inicial({ nombre, apellido }: { nombre: string; apellido: string }) {
 // probado y mutado—. Aquí no se calcula ningún porcentaje, solo se pinta el que devuelve.
 //
 // Sin horas (un descanso, o un día que nadie programó): no hay barra que dibujar, y se cae a la
-// MISMA celda de la vista de semana, centrada en la pista. Así «Libre» sigue diciendo Libre y el
-// hueco sigue ofreciendo su recuadro gris con el «+», sin una segunda versión de esos tres casos.
+// MISMA celda de la vista de semana, centrada en la pista. Así el descanso sigue diciendo Descanso
+// y el hueco sigue ofreciendo su recuadro gris con el «+», sin una segunda versión de esos tres casos.
 function PistaDeLaFila({ fila, dia, eje, celda }: {
   fila: FilaDelCalendario;
   dia: DiaDelCalendario | undefined;
@@ -217,9 +217,9 @@ function Tarjeta({ icono: Icono, valor, titulo, nota, alerta }: {
   );
 }
 
-// La celda de un día. Cada estado se pinta distinto a propósito: «Libre» tiene que verse, porque
-// una celda vacía y un descanso obligatorio no son lo mismo (alguien de lunes a viernes tiene DOS
-// días sin trabajar y solo uno es su descanso).
+// La celda de un día. Cada estado se pinta distinto a propósito: el descanso tiene que VERSE, porque
+// una celda vacía y un descanso no son lo mismo (alguien de lunes a viernes tiene DOS días sin
+// trabajar y solo uno es su descanso).
 // DE DÓNDE SALE EL COLOR DE UNA JORNADA, en un solo sitio.
 //
 // Tabla por origen y no un ternario anidado: la decisión se extrajo a tres casos justamente para no
@@ -272,10 +272,14 @@ function Celda({ dia, sePuedeAgregar = false }: { dia: DiaDelCalendario; sePuede
     );
   }
 
+  // DICE «DESCANSO» Y NO «LIBRE» desde el 23 de septiembre de 2026, con esas palabras del dueño:
+  // «debería verse una tarjeta que diga descanso». Eran dos palabras para una sola cosa, y desde que
+  // el día se marca con un botón que dice «Marcar como descanso», el resultado tiene que llamarse
+  // igual que la acción: nadie debería tener que deducir que lo que pidió salió con otro nombre.
   if (dia.estado === 'DESCANSO') {
     return (
       <div className="rounded-lg border border-dashed border-gray-300 px-2 py-1.5 text-center text-[11px] font-medium text-muted">
-        Libre
+        Descanso
       </div>
     );
   }
@@ -338,7 +342,7 @@ function Celda({ dia, sePuedeAgregar = false }: { dia: DiaDelCalendario; sePuede
 //
 // DÓNDE SE DIBUJA lo decide `posicionDePanel`, que es pura y está probada y mutada aparte. Aquí no
 // se calcula nada: se mide el panel, se mide la ventana, y se pregunta.
-function PanelDeJornada({ ancla, titulo, subtitulo, dia, catalogo, ocupado, error, onElegir, onQuitar, onCerrar }: {
+function PanelDeJornada({ ancla, titulo, subtitulo, dia, catalogo, ocupado, error, onElegir, onDescanso, onQuitar, onCerrar }: {
   ancla: Rect;
   titulo: string;
   subtitulo: string;
@@ -347,6 +351,7 @@ function PanelDeJornada({ ancla, titulo, subtitulo, dia, catalogo, ocupado, erro
   ocupado: boolean;
   error: string;
   onElegir: (plantillaId: string) => void;
+  onDescanso: () => void;
   onQuitar: () => void;
   onCerrar: () => void;
 }) {
@@ -359,11 +364,24 @@ function PanelDeJornada({ ancla, titulo, subtitulo, dia, catalogo, ocupado, erro
   useLayoutEffect(() => {
     const el = caja.current;
     if (!el) return;
+    // `offsetWidth`/`offsetHeight` Y NO `getBoundingClientRect()`, y esto es todo el asunto
+    // (24 de septiembre de 2026).
+    //
+    // Este panel lleva la clase `hp-pop`, que es `animation: ... both`. Ese `both` aplica el PRIMER
+    // fotograma desde que el elemento existe, y el primer fotograma es `transform: scale(0)`.
+    // `getBoundingClientRect()` devuelve la caja YA TRANSFORMADA, así que aquí medía 0 por 0.
+    //
+    // Con cero, `posicionDePanel` contestaba lo correcto a una pregunta falsa: algo de 0 por 0 cabe
+    // en cualquier parte, así que ninguno de sus topes llegaba a actuar nunca. El panel se dibujaba
+    // pegado a la celda y, en la última columna, se salía de la pantalla. En una celda del medio se
+    // veía bien por casualidad, porque sobraba espacio.
+    //
+    // `offsetWidth` y `offsetHeight` dan la caja de maquetación e IGNORAN el transform, que es
+    // justo lo que hace falta: el tamaño que el panel va a tener cuando la animación termine.
     const acomodar = () => {
-      const r = el.getBoundingClientRect();
       setPos(posicionDePanel(
         ancla,
-        { ancho: r.width, alto: r.height },
+        { ancho: el.offsetWidth, alto: el.offsetHeight },
         { ancho: window.innerWidth, alto: window.innerHeight },
       ));
     };
@@ -434,6 +452,16 @@ function PanelDeJornada({ ancla, titulo, subtitulo, dia, catalogo, ocupado, erro
         {error && <p role="alert" className="text-sm text-red-600 mt-2.5">{error}</p>}
       </div>
 
+      {/* MARCAR EL DÍA COMO DESCANSO. Va al final y separado de los turnos a propósito: no es un
+          turno más de la lista, es otra cosa. Y no necesita que exista nada en el catálogo, que es
+          justo lo que antes lo hacía imposible. */}
+      <div className="px-4 py-3 border-t border-gray-100">
+        <button type="button" disabled={ocupado} onClick={onDescanso}
+          className="w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-[12px] font-semibold text-muted hover:text-ink hover:border-gray-400 disabled:opacity-60 transition-colors">
+          Marcar como descanso
+        </button>
+      </div>
+
       {/* Quitar solo aparece si hay algo que quitar: ofrecerlo en un día limpio sugeriría que hay
           algo que deshacer, y el servidor respondería que no. */}
       {dia.origen === 'MANUAL' && (
@@ -458,10 +486,9 @@ function PanelDeJornada({ ancla, titulo, subtitulo, dia, catalogo, ocupado, erro
 // Los cuatro estados se pintan DISTINTOS a propósito. `SIN_DESCANSO` y `AMBIGUA` caen las dos al
 // domingo, pero una es una omisión y la otra un error ya cometido: decirle «no hay descanso» a
 // quien planificó dos lo mandaría a buscar lo que no falta.
-function PropuestaDeSemana({ propuesta, turnoDeDescanso, onConfirmar, ocupado }: {
+function PropuestaDeSemana({ propuesta, onConfirmar, ocupado }: {
   propuesta: PropuestaDeDescanso | null;
-  turnoDeDescanso: TurnoDelCatalogo | undefined;
-  onConfirmar: (fecha: string, plantillaId: string) => void;
+  onConfirmar: (fecha: string) => void;
   ocupado: boolean;
 }) {
   // Sin propuesta, no rotativa, o ya resuelta: no hay nada que decir. Una semana resuelta no lleva
@@ -490,18 +517,18 @@ function PropuestaDeSemana({ propuesta, turnoDeDescanso, onConfirmar, ocupado }:
   // Confirmar PINTA el turno de descanso del catálogo. Sin ese turno no hay nada que pintar, así
   // que se dice en vez de ofrecer un botón que el servidor rechazaría con un error que quien mira
   // no podría explicar.
-  if (!turnoDeDescanso || !propuesta.fecha) {
-    return (
-      <span className="text-[11px] text-muted">
-        Falta un turno de descanso en el catálogo para asignar el {nombreDelDia(propuesta.dia).toLowerCase()}
-      </span>
-    );
-  }
+  // AQUÍ SE PEDÍA UN TURNO DE DESCANSO DEL CATÁLOGO, y si no existía este botón no aparecía nunca:
+  // decía «falta un turno de descanso en el catálogo». Medido contra la base antes de cambiarlo, de
+  // 10 empresas NINGUNA tenía uno, así que esta función estaba fuera del alcance de todo el mundo.
+  //
+  // Desde el 23 de septiembre de 2026 marcar un descanso es una acción sobre el día y no necesita
+  // catálogo, así que lo único que puede faltar ya es la fecha.
+  if (!propuesta.fecha) return null;
 
   const fecha = propuesta.fecha;
   return (
     <button type="button" disabled={ocupado}
-      onClick={() => onConfirmar(fecha, turnoDeDescanso.id)}
+      onClick={() => onConfirmar(fecha)}
       className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60">
       ¿Descansa el {nombreDelDia(propuesta.dia).toLowerCase()}?
     </button>
@@ -734,11 +761,19 @@ export default function CalendarioDeTurnos() {
   // que pintan: el selector de la celda y el botón que confirma la propuesta de la semana. Darle su
   // propia llamada al segundo habría abierto un segundo camino de escritura sobre la tabla que
   // alimenta la liquidación, que es justo lo que este trabajo vino a quitar.
-  const pintarEn = async (colaboradorId: string, fecha: string, plantillaId: string) => {
+  // `que` dice QUÉ se le pone al día: un turno del catálogo, o el descanso. Son dos cosas distintas
+  // y por eso es una unión y no un campo opcional: `{ plantillaId }` o `{ descanso: true }`, nunca
+  // las dos ni ninguna. Sigue habiendo UNA sola escritura hacia la ruta, que es lo que este módulo
+  // protege; un `api.put` aparte para el descanso habría abierto el segundo camino.
+  const pintarEn = async (
+    colaboradorId: string,
+    fecha: string,
+    que: { plantillaId: string } | { descanso: true },
+  ) => {
     setErrorPintado('');
     setGuardando(true);
     try {
-      await api.put('/turnos/dia', { colaboradorId, fecha, plantillaId });
+      await api.put('/turnos/dia', { colaboradorId, fecha, ...que });
       setEditando(null);
       setRecarga(n => n + 1);
     } catch (err) {
@@ -755,7 +790,15 @@ export default function CalendarioDeTurnos() {
   // repetir la llamada, para que siga habiendo UNA sola escritura hacia la ruta.
   const pintar = async (plantillaId: string) => {
     if (!editando) return;
-    await pintarEn(editando.fila.id, editando.dia.fecha, plantillaId);
+    await pintarEn(editando.fila.id, editando.dia.fecha, { plantillaId });
+  };
+
+  // MARCAR EL DÍA COMO DESCANSO (23 de septiembre de 2026, decisión del dueño). No lleva ningún
+  // identificador porque no hay nada que elegir: «descanso es siempre descanso». Antes había que
+  // crearse un turno de descanso en el catálogo, con nombre y color que nadie mostraba.
+  const marcarDescanso = async () => {
+    if (!editando) return;
+    await pintarEn(editando.fila.id, editando.dia.fecha, { descanso: true });
   };
 
   const quitar = async () => {
@@ -868,9 +911,14 @@ export default function CalendarioDeTurnos() {
           medio de lo que sobre», y se corre de sitio cada vez que el título cambia de largo (de
           «Septiembre de 2026» a «28 de septiembre al 4 de octubre» hay bastante diferencia). Con la
           rejilla, la columna del medio está centrada respecto a la pantalla y no se mueve nunca.
-          En pantalla angosta se apila con `flex-wrap`. */}
-      <div className="mb-5 flex flex-wrap items-center gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr]">
-        <h3 className="text-2xl sm:text-3xl font-light tracking-tight text-ink">{vista.rotulo}</h3>
+
+          EN PANTALLA ANGOSTA SE APILA Y SE CENTRA (24 de septiembre de 2026, pedido del dueño con
+          la pantalla estrecha delante). Antes era `flex-wrap`, que no es lo mismo: al envolver, el
+          título y el selector se quedaban juntos en la primera línea y la navegación caía sola a la
+          izquierda, alineada con nada. Apilar en columna pone las tres piezas una debajo de otra y
+          centradas, que es lo que se ve cuando no hay ancho para las tres en fila. */}
+      <div className="mb-5 flex flex-col items-center gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr]">
+        <h3 className="text-2xl sm:text-3xl font-light tracking-tight text-ink text-center sm:text-left">{vista.rotulo}</h3>
 
         {/* MES · SEMANA · DÍA. `aria-pressed` y no un `select`: son tres opciones fijas y la
             encendida tiene que verse sin abrir nada. */}
@@ -911,7 +959,12 @@ export default function CalendarioDeTurnos() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+      {/* UNA TARJETA POR FILA EN EL TELÉFONO (24 de septiembre de 2026, pedido del dueño).
+          Con dos columnas en pantalla angosta no cabía el rótulo: «Horas programadas», «Promedio
+          por persona» y «Trabajaron su descanso» se partían en dos y tres líneas, y la tarjeta
+          crecía a lo alto para sostener un texto que a lo ancho tenía sitio de sobra. A fila
+          completa cada rótulo entra en una línea. El corte es el mismo `sm` del encabezado. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <Tarjeta icono={Users} valor={String(filas.length)} titulo="Personas" />
         <Tarjeta icono={Clock} valor={horasDeMinutos(minutosTotales)} titulo="Horas programadas" nota={PERIODO[modo].enEl} />
         <Tarjeta icono={Scale} valor={horasDeMinutos(promedio)} titulo="Promedio por persona"
@@ -955,7 +1008,12 @@ export default function CalendarioDeTurnos() {
                 // que caigan exactamente sobre las mismas guías que la pista de cada fila. La
                 // inicial del día y su número NO van aquí: el título grande ya dice qué día es, y
                 // repetirlo quitaba el sitio a lo que el dueño sí quería ver.
-                <th className="px-3 py-3">
+                // `w-full` NO es decorativo: todo lo que lleva esta columna dentro está posicionado
+                // en absoluto, y un elemento absoluto no le aporta ancho a su padre. Sin esto, la
+                // tabla la trata como una columna de contenido CERO, le da lo mínimo, y el sobrante
+                // se lo lleva la columna del total: el eje quedaba aplastado en el cuarto izquierdo
+                // con un hueco enorme a la derecha. Con `w-full` reclama todo lo que sobre.
+                <th className="w-full px-3 py-3">
                   <div className="relative h-4">
                     {horasDelEje(eje).map(h => (
                       <span key={h.minuto} style={{ left: `${h.pct}%` }}
@@ -1018,7 +1076,14 @@ export default function CalendarioDeTurnos() {
                     </div>
                   </td>
                   {enDia && eje ? (
-                    <td className="px-3 py-2.5">
+                    // `w-full` por lo mismo que en el encabezado: la pista es puro posicionamiento
+                    // absoluto y sin esto la columna no reclama ancho. Las dos tienen que llevarlo,
+                    // o el encabezado y las barras dejarían de compartir caja.
+                    //
+                    // Y va con `//` y NO con `{/* */}`: esto cae dentro del paréntesis de un
+                    // ternario, o sea posición de EXPRESIÓN, no hijos de JSX. Ahí una llave abre un
+                    // objeto y el parser revienta con «Expected `,` or `)`».
+                    <td className="w-full px-3 py-2.5">
                       {/* LA PISTA DE HORAS DE UNA PERSONA. El contenedor es relativo y todo lo de
                           adentro se posiciona en PORCENTAJE, que es lo que hace que la barra caiga
                           justo debajo de su hora en el encabezado sin depender de píxeles. */}
@@ -1094,9 +1159,8 @@ export default function CalendarioDeTurnos() {
                             quedó la semana», que es la pregunta que la propuesta viene a cerrar. */}
                         <PropuestaDeSemana
                           propuesta={fila.propuesta}
-                          turnoDeDescanso={catalogo.find(t => t.esDescanso)}
                           ocupado={guardando}
-                          onConfirmar={(fecha, plantillaId) => pintarEn(fila.id, fecha, plantillaId)} />
+                          onConfirmar={fecha => pintarEn(fila.id, fecha, { descanso: true })} />
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         {fila.descansoHabitual.trabajados > 0 ? (
@@ -1146,6 +1210,7 @@ export default function CalendarioDeTurnos() {
             ocupado={guardando}
             error={errorPintado}
             onElegir={pintar}
+            onDescanso={marcarDescanso}
             onQuitar={quitar}
             onCerrar={() => setEditando(null)} />
         </>

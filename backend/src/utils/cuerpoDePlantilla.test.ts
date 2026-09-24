@@ -40,7 +40,77 @@ const MANANA_GUARDADA = {
   almuerzoInicio: '10:00',
   almuerzoFin: '10:30',
   descansos: '[{"inicio":"08:00","fin":"08:15"}]',
+  // Las tres sobrescrituras de tolerancia, VACÍAS porque `MANANA` no las manda: este turno hereda
+  // la política de quien lo tenga puesto (23 de septiembre de 2026).
+  toleranciaMin: null,
+  toleranciaSalidaMin: null,
+  ajustaEntrada: null,
 };
+
+// LAS TOLERANCIAS DEL TURNO (23 de septiembre de 2026). Cambian la regla anterior: hasta hoy la
+// tolerancia era solo del horario y el turno no podía tocarla.
+//
+// VACÍO significa «la del horario», y por eso no mandar el campo tiene que dar `null` y no un cero:
+// un cero es «sin tolerancia», que es lo contrario de heredar.
+//
+// Y un valor MANDADO pero basura se RECHAZA, no se cae a vacío. Caer a vacío escondería un error
+// del cliente detrás de un comportamiento plausible, y esto decide si a alguien le cuentan una
+// tardanza. El color sí cae a un valor por defecto, pero el color no mueve dinero.
+describe('limpiarPlantilla: las tolerancias que sobrescriben al horario', () => {
+  const con = (extra: Record<string, unknown>) => limpiarPlantilla({ ...MANANA, ...extra });
+
+  it('si no se mandan, se guardan vacías: el turno hereda', () => {
+    const r = con({});
+    expect(r.ok && r.datos.toleranciaMin).toBeNull();
+    expect(r.ok && r.datos.toleranciaSalidaMin).toBeNull();
+    expect(r.ok && r.datos.ajustaEntrada).toBeNull();
+  });
+
+  it('se guardan los valores que se manden', () => {
+    const r = con({ toleranciaMin: 3, toleranciaSalidaMin: 20, ajustaEntrada: true });
+    expect(r.ok && r.datos.toleranciaMin).toBe(3);
+    expect(r.ok && r.datos.toleranciaSalidaMin).toBe(20);
+    expect(r.ok && r.datos.ajustaEntrada).toBe(true);
+  });
+
+  it('CERO se guarda como cero, no como vacío', () => {
+    // «Sin tolerancia» y «la que diga el horario» son cosas distintas y no pueden guardarse igual.
+    const r = con({ toleranciaMin: 0 });
+    expect(r.ok && r.datos.toleranciaMin).toBe(0);
+    expect(r.ok && r.datos.toleranciaMin).not.toBeNull();
+  });
+
+  it('`ajustaEntrada` en false se guarda como false, no como vacío', () => {
+    const r = con({ ajustaEntrada: false });
+    expect(r.ok && r.datos.ajustaEntrada).toBe(false);
+  });
+
+  it('una tolerancia negativa se rechaza', () => {
+    expect(con({ toleranciaMin: -5 }))
+      .toEqual({ ok: false, motivo: 'La tolerancia de entrada tiene que ser un número de minutos entre 0 y 240.' });
+  });
+
+  it('una tolerancia que no es un número entero se rechaza', () => {
+    // Mandada y basura: se rechaza en vez de caer a vacío, que dejaría al turno heredando sin que
+    // nadie se enterara de que el cliente mandó cualquier cosa.
+    expect(con({ toleranciaSalidaMin: 'diez' }).ok).toBe(false);
+    expect(con({ toleranciaMin: 7.5 }).ok).toBe(false);
+  });
+
+  it('una tolerancia absurda se rechaza', () => {
+    // Cuatro horas de gracia ya no es una tolerancia, es otro horario.
+    expect(con({ toleranciaSalidaMin: 241 }).ok).toBe(false);
+    expect(con({ toleranciaSalidaMin: 240 }).ok).toBe(true);
+  });
+
+  it('un día de DESCANSO también guarda sus tolerancias', () => {
+    // La rama del descanso sale antes y hay que acordarse de llevarlas: `diaDesdePlantilla` copia
+    // la política también en un día libre.
+    const r = limpiarPlantilla({ nombre: 'Libre', esDescanso: true, toleranciaMin: 3 });
+    expect(r.ok && r.datos.esDescanso).toBe(true);
+    expect(r.ok && r.datos.toleranciaMin).toBe(3);
+  });
+});
 
 describe('limpiarPlantilla: el turno de trabajo', () => {
   it('lo que manda la pantalla se guarda, con los descansos en su forma canónica', () => {
@@ -115,6 +185,8 @@ describe('limpiarPlantilla: el turno de trabajo', () => {
         nombre: 'Turno', color: COLOR_POR_DEFECTO, esDescanso: false, sedeId: null,
         horaEntrada: '08:00', horaSalida: '17:00', tieneAlmuerzo: true,
         almuerzoInicio: null, almuerzoFin: null, descansos: null,
+        // Vacías: este cuerpo pelado no manda tolerancias, así que el turno hereda las del horario.
+        toleranciaMin: null, toleranciaSalidaMin: null, ajustaEntrada: null,
       },
     });
   });
@@ -163,6 +235,9 @@ describe('limpiarPlantilla: el descanso', () => {
         nombre: 'Descanso', color: 'grafito', esDescanso: true, sedeId: null,
         horaEntrada: null, horaSalida: null, tieneAlmuerzo: false,
         almuerzoInicio: null, almuerzoFin: null, descansos: null,
+        // Un descanso también las lleva, aunque vacías: la rama del descanso sale antes y tiene que
+        // acordarse de copiarlas, porque `diaDesdePlantilla` copia la política también en un día libre.
+        toleranciaMin: null, toleranciaSalidaMin: null, ajustaEntrada: null,
       },
     });
   });

@@ -62,8 +62,8 @@ const FILA = {
 };
 
 const CATALOGO = [
-  { id: 'p1', nombre: 'Mañana', color: 'esmeralda', esDescanso: false },
-  { id: 'p2', nombre: 'Noche', color: 'cobalto', esDescanso: false },
+  { id: 'p1', nombre: 'Mañana', color: 'esmeralda' },
+  { id: 'p2', nombre: 'Noche', color: 'cobalto' },
 ];
 
 const montar = (filas: unknown[] = [FILA]) => {
@@ -175,6 +175,49 @@ describe('el panel sigue sirviendo para pintar', () => {
   });
 });
 
+// MARCAR UN DÍA COMO DESCANSO (23 de septiembre de 2026, decisión del dueño).
+//
+// «Descanso es siempre descanso», así que dejó de ser un turno del catálogo que cada empresa tenía
+// que inventarse, con su nombre y su color que nadie mostraba, y pasó a ser una ACCIÓN sobre el día.
+//
+// LO QUE VIAJA ES LA ACCIÓN, no un identificador: `{ descanso: true }` y ningún `plantillaId`. Esa
+// es toda la diferencia con pintar un turno, y es lo que hace que no haya nada que crear antes.
+describe('marcar un día como descanso', () => {
+  it('el panel lo ofrece, sin que haya que crear ningún turno antes', async () => {
+    montar();
+    const { panel } = await abrirPanel();
+    expect(within(panel).getByRole('button', { name: /marcar como descanso/i })).toBeInTheDocument();
+  });
+
+  it('manda la acción y NINGÚN turno', async () => {
+    montar();
+    const { usuario, panel } = await abrirPanel();
+    put.mockResolvedValue({ data: { ok: true } });
+    await usuario.click(within(panel).getByRole('button', { name: /marcar como descanso/i }));
+    expect(put).toHaveBeenCalledWith('/turnos/dia', {
+      colaboradorId: 'c1', fecha: DOMINGO, descanso: true,
+    });
+  });
+
+  it('se ofrece aunque el catálogo esté vacío', async () => {
+    // El caso que prueba que ya no depende del catálogo. Antes, sin un turno de descanso creado a
+    // mano, no había forma de marcar un día libre: el popover solo listaba turnos de trabajo.
+    get.mockImplementation((url: string, cfg?: { params?: { desde: string; hasta: string } }) => {
+      if (url === '/turnos/calendario') {
+        const { desde, hasta } = cfg!.params!;
+        return Promise.resolve({ data: { desde, hasta, horasSemanales: 42, filas: [FILA] } });
+      }
+      if (url === '/plantillas-turno') return Promise.resolve({ data: [] });
+      return Promise.reject(new Error('url inesperada: ' + url));
+    });
+    render(<CalendarioDeTurnos />);
+    const usuario = userEvent.setup();
+    await usuario.click(await celdaDelDomingo());
+    const panel = await screen.findByRole('dialog');
+    expect(within(panel).getByRole('button', { name: /marcar como descanso/i })).toBeInTheDocument();
+  });
+});
+
 describe('cuando no hay nada, el hueco se ve y se puede llenar', () => {
   it('un día vacío muestra un recuadro para agregar, no una raya', async () => {
     // Pedido 4. La raya `—` decía «aquí no hay nada» sin decir que se podía poner algo: el hueco
@@ -188,5 +231,23 @@ describe('cuando no hay nada, el hueco se ve y se puede llenar', () => {
     const celda = await celdaDelDomingo();
     expect(within(celda).getByText('Agregar')).toBeInTheDocument();
     expect(celda).not.toHaveTextContent('—');
+  });
+
+  // LA OTRA MITAD DEL PEDIDO, con las palabras del dueño: «cuando yo le pongo en ese horario el
+  // descanso, me aparece el botón de agregar. Debería verse una tarjeta que diga descanso».
+  //
+  // El defecto que reportó estaba en el SERVIDOR —no devolvía el estado DESCANSO para gente FIJA ni
+  // PRESUMIDA, que es toda la suya—, y se arregló allá con `descansoPintado`. Esta prueba cubre
+  // este lado, que no tenía ninguna: que llegando DESCANSO, la celda lo diga y NO ofrezca agregar.
+  it('un día marcado como descanso muestra su tarjeta, y no el botón de agregar', async () => {
+    montar([{
+      ...FILA,
+      dias: FILA.dias.map(d => (d.fecha === DOMINGO
+        ? diaDe(d.fecha, { estado: 'DESCANSO', horaEntrada: null, horaSalida: null, minutosEsperados: 0, horarioNombre: null })
+        : d)),
+    }]);
+    const celda = await celdaDelDomingo();
+    expect(within(celda).getByText('Descanso')).toBeInTheDocument();
+    expect(within(celda).queryByText('Agregar')).toBeNull();
   });
 });

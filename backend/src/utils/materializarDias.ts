@@ -79,12 +79,16 @@ export async function materializarColaborador(
   const semanaIni = rangoSemanaBogota(calculados[0].fecha).lunes;
   const semanaFin = rangoSemanaBogota(calculados[calculados.length - 1].fecha).finExclusivo;
   const pintados = await prisma.diaEsperado.findMany({
-    where: { colaboradorId, fecha: { gte: semanaIni, lt: semanaFin }, plantillaId: { not: null } },
-    select: { fecha: true, plantilla: { select: { esDescanso: true } } },
+    where: { colaboradorId, fecha: { gte: semanaIni, lt: semanaFin }, descansoPintado: true },
+    select: { fecha: true },
   });
+  // La columna del día y ya no la plantilla (23 de septiembre de 2026). Antes esto preguntaba
+  // «¿este día se pintó con un turno cuyo `esDescanso` es true?», que obligaba a que el descanso
+  // fuera una fila del catálogo. Ahora el día lo dice por sí mismo, y la consulta es más corta: se
+  // filtra por la columna en vez de traer la relación para mirarla después.
   const planPorSemana = descansosPlanificadosPorSemana(pintados.map(p => ({
     fecha: p.fecha,
-    esDescansoDeTurno: p.plantilla?.esDescanso === true,
+    esDescansoDeTurno: true,
   })));
   // Una semana sin plan o ambigua no está en el mapa, y entonces va `null`: cae al domingo, que es
   // la dirección segura.
@@ -206,15 +210,15 @@ async function reescribirSemanaDe(colaboradorId: string, fecha: Date, ahora: Dat
   const { lunes, finExclusivo } = rangoSemanaBogota(fecha);
   const semana = await prisma.diaEsperado.findMany({
     where: { colaboradorId, fecha: { gte: lunes, lt: finExclusivo } },
-    // `plantilla.esDescanso` es lo que convierte un día pintado en EL descanso de la semana. Una
-    // sola columna de la relación: la celda no se pinta aquí.
-    select: { fecha: true, esDescanso: true, plantilla: { select: { esDescanso: true } } },
+    // `descansoPintado` es lo que convierte un día marcado en EL descanso de la semana. Desde el
+    // 23 de septiembre de 2026 es una columna del día y ya no una plantilla del catálogo: el
+    // descanso dejó de ser un turno que había que crear.
+    select: { fecha: true, esDescanso: true, descansoPintado: true },
   });
 
   const planificado = descansoDeLaSemana(semana.map(d => ({
     dia: diaSemanaDe(d.fecha),
-    // `=== true` y no un truthy: sin plantilla la relación viene `null`, y eso NO es un descanso.
-    esDescanso: d.plantilla?.esDescanso === true,
+    esDescanso: d.descansoPintado,
   })));
 
   const { inicioDia } = rangoDiaBogota(ahora);
@@ -280,6 +284,65 @@ export async function pintarDiaDeColaborador(
   return { ok: true };
 }
 
+// ───────── MARCAR UN DÍA COMO DESCANSO (23 de septiembre de 2026) ─────────
+//
+// Pedido del dueño: «descanso es siempre descanso», así que dejó de ser un turno del catálogo que
+// cada empresa tenía que inventarse y pasó a ser una ACCIÓN sobre el día.
+//
+// Es hermana de `pintarDiaDeColaborador` y no un caso raro dentro de ella: pintar un turno y
+// marcar un día libre son dos cosas distintas, y meterlas en la misma función obligaría a que la
+// plantilla fuera opcional en una firma donde hoy es obligatoria.
+//
+// LOS CAMPOS DE UN DÍA LIBRE NO SE ESCRIBEN AQUÍ: se piden a `diaDesdePlantilla`, que ya tiene esa
+// rama probada (sin horas, sin almuerzo, `programado: false`, y la política del horario copiada
+// igual que en un día generado). Con una copia, el día que cambie qué exige un día libre habría
+// dos versiones y solo una se acordaría de cambiar.
+export async function marcarDescansoDeColaborador(
+  colaboradorId: string,
+  fecha: Date,
+  ahora: Date = new Date(),
+): Promise<ResultadoDePintado> {
+  const impedimento = await diaTocable(colaboradorId, fecha, ahora);
+  if (impedimento) return { ok: false, motivo: impedimento };
+
+  const colaborador = await prisma.colaborador.findUnique({
+    where: { id: colaboradorId }, select: PARA_PINTAR,
+  });
+  if (!colaborador) return { ok: false, motivo: 'Colaborador no encontrado.' };
+
+  const campos = diaDesdePlantilla(
+    { esDescanso: true, horaEntrada: null, horaSalida: null, tieneAlmuerzo: false,
+      almuerzoInicio: null, almuerzoFin: null, descansos: null },
+    colaborador.horario,
+  );
+  // No puede pasar: la rama del descanso de `diaDesdePlantilla` nunca devuelve `null`. Se comprueba
+  // igual porque el tipo lo permite, y tragarse un `null` aquí escribiría un día vacío.
+  if (!campos) return { ok: false, motivo: 'No se pudo preparar el día de descanso.' };
+
+  const estado = estadoDescansoDe(colaborador);
+  const esDescansoDelDia = esDescansoObligatorio(diaSemanaDe(fecha), estado, null);
+
+  await prisma.diaEsperado.upsert({
+    where: { colaboradorId_fecha: { colaboradorId, fecha } },
+    update: {
+      ...campos, esDescanso: esDescansoDelDia,
+      // `descansoPintado` es el hecho nuevo; `plantillaId` se limpia porque este día ya no lo pinta
+      // ningún turno del catálogo, y dejar el anterior haría que la celda mostrara su nombre.
+      descansoPintado: true, plantillaId: null,
+      origen: 'MANUAL', horarioId: colaborador.horarioId,
+    },
+    create: {
+      colaboradorId, fecha, ...campos, esDescanso: esDescansoDelDia,
+      descansoPintado: true, plantillaId: null, origen: 'MANUAL', horarioId: colaborador.horarioId,
+    },
+  });
+
+  // DESPUÉS del upsert, igual que al pintar: la semana se lee de la base, así que el día que se
+  // acaba de marcar tiene que estar escrito para que cuente en el plan.
+  await reescribirSemanaDe(colaboradorId, fecha, ahora);
+  return { ok: true };
+}
+
 // Quitar el turno pintado y devolver el día a lo que su horario exige.
 //
 // No se borra la fila: se le quita el marcador y se vuelve a generar desde el horario con
@@ -298,7 +361,10 @@ export async function despintarDiaDeColaborador(
   // a propósito y no la regeneraría.
   const { count } = await prisma.diaEsperado.updateMany({
     where: { colaboradorId, fecha, origen: 'MANUAL' },
-    data: { origen: 'AUTO', plantillaId: null },
+    // `descansoPintado` también se limpia: quitar lo que hay en un día tiene que devolverlo a lo
+    // que su horario exige, y dejarlo en `true` lo mantendría libre para siempre y seguiría
+    // contando como el descanso de esa semana.
+    data: { origen: 'AUTO', plantillaId: null, descansoPintado: false },
   });
   if (count === 0) return { ok: false, motivo: 'Ese día no tiene ningún turno pintado.' };
 

@@ -65,9 +65,9 @@ const FILA = {
 };
 
 const CATALOGO = [
-  { id: 'p1', nombre: 'Mañana', color: 'esmeralda', esDescanso: false, horaEntrada: '06:00', horaSalida: '14:00' },
-  { id: 'p2', nombre: 'Noche', color: 'cobalto', esDescanso: false, horaEntrada: '22:00', horaSalida: '06:00' },
-  { id: 'p3', nombre: 'Libre', color: 'grafito', esDescanso: true, horaEntrada: null, horaSalida: null },
+  { id: 'p1', nombre: 'Mañana', color: 'esmeralda', horaEntrada: '06:00', horaSalida: '14:00' },
+  { id: 'p2', nombre: 'Noche', color: 'cobalto', horaEntrada: '22:00', horaSalida: '06:00' },
+  { id: 'p3', nombre: 'Libre', color: 'grafito', horaEntrada: null, horaSalida: null },
 ];
 
 const montar = (filas: unknown[] = [FILA]) => {

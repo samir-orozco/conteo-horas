@@ -25,9 +25,38 @@ function dentroDeLaVentana(preferido: number, tamanoPanel: number, tamanoVentana
   return Math.max(MARGEN_DE_PANTALLA, Math.min(preferido, tope));
 }
 
+// EL ANCHO, EN TRES CASOS (24 de septiembre de 2026). Los mismos tres que el alto y por la misma
+// razón: el lado preferido, el contrario, y pegarse dentro de la ventana como último recurso.
+//
+// ABRE A LA DERECHA, alineado al borde izquierdo de la celda. Si no cabe, ABRE A LA IZQUIERDA,
+// alineado a su borde derecho.
+//
+// POR QUÉ VOLTEAR Y NO SOLO CORRER HACIA ADENTRO, que es lo único que hacía antes: corrido, el
+// panel entra en la pantalla pero se DESPEGA de la celda. En el calendario, el del domingo
+// terminaba encima del miércoles y ya no se veía de qué día hablaba. Volteado sigue tocando la
+// celda que se abrió.
+//
+// Y POR QUÉ CONDICIONAL Y NO SIEMPRE AL REVÉS, que fue la primera idea: una rejilla de siete días
+// tiene DOS extremos. Abrir siempre hacia la izquierda arregla el domingo y rompe el lunes.
+//
+// AQUÍ SE COMPRUEBAN LOS DOS BORDES en cada caso y el alto solo comprueba uno. No es un descuido
+// de allá: `debajo` sale de SUMARLE algo a `ancla.y`, así que nunca cae por encima del margen
+// superior, mientras que `ancla.x` sí puede venir pegado al borde izquierdo de la ventana.
+function posicionHorizontal(ancla: Rect, panel: Tamano, ventana: Tamano): number {
+  const cabe = (x: number) =>
+    x >= MARGEN_DE_PANTALLA && x + panel.ancho <= ventana.ancho - MARGEN_DE_PANTALLA;
+
+  const haciaLaDerecha = ancla.x;
+  if (cabe(haciaLaDerecha)) return haciaLaDerecha;
+
+  const haciaLaIzquierda = ancla.x + ancla.ancho - panel.ancho;
+  if (cabe(haciaLaIzquierda)) return haciaLaIzquierda;
+
+  return dentroDeLaVentana(haciaLaDerecha, panel.ancho, ventana.ancho);
+}
+
 export function posicionDePanel(ancla: Rect, panel: Tamano, ventana: Tamano): { x: number; y: number } {
-  // Horizontal: alineado a la izquierda del botón, corrido lo justo si se saldría por la derecha.
-  const x = dentroDeLaVentana(ancla.x, panel.ancho, ventana.ancho);
+  const x = posicionHorizontal(ancla, panel, ventana);
 
   // Vertical: tres casos, y se escriben como tres casos y no como un ternario anidado, porque el
   // tercero no es «lo que sobra» sino una regla propia (CLAUDE.md §9.4).

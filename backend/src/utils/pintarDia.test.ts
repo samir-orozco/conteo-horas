@@ -31,6 +31,80 @@ const TURNO = {
 // La política de la empresa, que vive en el horario y no en el turno.
 const POLITICA = { toleranciaMin: 10, almuerzoMin: 60, toleranciaSalidaMin: 15, ajustaEntrada: true };
 
+// LA TOLERANCIA DEL TURNO SOBRESCRIBE LA DEL HORARIO (23 de septiembre de 2026).
+//
+// Pedido del dueño, y es un cambio de la regla anterior. Hasta hoy la tolerancia era SIEMPRE de la
+// persona: su horario la fijaba y pintarle un turno no se la tocaba. El caso que lo movió es real:
+// un turno nocturno puede merecer otra tolerancia que uno diurno, y eso es forma del turno, no
+// política de la empresa.
+//
+// Lo que NO se hizo, y conviene que quede dicho: mover la tolerancia al turno. Sigue viviendo en el
+// horario, y el turno solo puede sobrescribirla. VACÍO significa «la del horario», así que una
+// empresa que no quiera saber de esto no cambia nada.
+//
+// LOS DOS CASOS QUE SOSTIENEN TODO ESTO son el cero y el `false`. Son sobrescrituras legítimas, no
+// vacíos, y esa diferencia es exactamente la que se pierde escribiendo `||` en vez de `??`: un
+// turno que dice «sin tolerancia» heredaría los diez minutos del horario, y nadie lo vería hasta
+// que alguien llegara tarde y no le contara.
+describe('la tolerancia del turno sobrescribe la del horario', () => {
+  it('sin sobrescritura, sigue mandando el horario', () => {
+    const d = diaDesdePlantilla(TURNO, POLITICA);
+    expect(d?.toleranciaMin).toBe(10);
+    expect(d?.toleranciaSalidaMin).toBe(15);
+    expect(d?.ajustaEntrada).toBe(true);
+  });
+
+  it('el turno con tolerancia propia manda, y lo demás sigue del horario', () => {
+    const d = diaDesdePlantilla({ ...TURNO, toleranciaMin: 3 }, POLITICA);
+    expect(d?.toleranciaMin).toBe(3);
+    expect(d?.toleranciaSalidaMin).toBe(15);
+    expect(d?.ajustaEntrada).toBe(true);
+  });
+
+  it('CERO es una sobrescritura válida, no un vacío', () => {
+    // El caso que separa `??` de `||`. Un turno de cero tolerancia cuenta la tardanza desde el
+    // primer minuto; heredando los diez del horario, no la contaría.
+    const d = diaDesdePlantilla({ ...TURNO, toleranciaMin: 0 }, POLITICA);
+    expect(d?.toleranciaMin).toBe(0);
+  });
+
+  it('`ajustaEntrada` en false APAGA el true del horario', () => {
+    // El mismo caso con un booleano: `false || true` es `true`, y con eso el turno no podría quitar
+    // nunca esa política.
+    const d = diaDesdePlantilla({ ...TURNO, ajustaEntrada: false }, POLITICA);
+    expect(d?.ajustaEntrada).toBe(false);
+  });
+
+  it('cada una se sobrescribe por su lado', () => {
+    // Sobrescribir la de salida no puede arrastrar la de entrada: son tres decisiones, no una.
+    const d = diaDesdePlantilla({ ...TURNO, toleranciaSalidaMin: 0 }, POLITICA);
+    expect(d?.toleranciaSalidaMin).toBe(0);
+    expect(d?.toleranciaMin).toBe(10);
+  });
+
+  it('un día de DESCANSO también lleva la sobrescritura', () => {
+    // La política se copia también en la rama del descanso, igual que hace `calcularDiasEsperados`.
+    // Si aquí se perdiera, pintar un día libre devolvería a la persona a la tolerancia del horario
+    // sin que nada lo dijera.
+    const d = diaDesdePlantilla({ ...TURNO, esDescanso: true, toleranciaMin: 3 }, POLITICA);
+    expect(d?.programado).toBe(false);
+    expect(d?.toleranciaMin).toBe(3);
+  });
+
+  it('sin horario y sin sobrescritura, no hay tolerancia', () => {
+    // A esta persona nadie le asignó horario, que es un caso real.
+    const d = diaDesdePlantilla(TURNO, null);
+    expect(d?.toleranciaMin).toBe(0);
+    expect(d?.toleranciaSalidaMin).toBe(0);
+    expect(d?.ajustaEntrada).toBe(false);
+  });
+
+  it('sin horario pero con sobrescritura, manda la del turno', () => {
+    const d = diaDesdePlantilla({ ...TURNO, toleranciaMin: 5 }, null);
+    expect(d?.toleranciaMin).toBe(5);
+  });
+});
+
 describe('un turno de trabajo', () => {
   it('exige los minutos que dura, cuando no descuenta nada', () => {
     const d = diaDesdePlantilla(TURNO, POLITICA);

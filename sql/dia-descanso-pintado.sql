@@ -1,0 +1,49 @@
+-- UN DÍA MARCADO COMO DESCANSO DESDE EL PLANIFICADOR (23 de septiembre de 2026).
+--
+-- Pedido del dueño, y sale de un defecto que él vio y que se reprodujo contra la base antes de
+-- tocar nada: marcar descanso a alguien dejaba la celda mostrando el recuadro de «Agregar», como
+-- si ahí no hubiera nada.
+--
+-- LA CAUSA: `dias_esperados.esDescanso` significa «este era el descanso OBLIGATORIO de esta
+-- persona», no «alguien marcó este día como libre». Y la regla que lo calcula solo mira lo
+-- planificado cuando la persona es ROTATIVA; un FIJO usa su día pactado y un PRESUMIDO el domingo,
+-- siempre. Así que marcar un descanso a alguien FIJO dejaba la fila en
+-- `programado = 0, esDescanso = 0`, que es exactamente «sin turno».
+--
+-- Son dos hechos distintos y a partir de ahora se guardan por separado. Este es el segundo.
+--
+-- POR QUÉ `NOT NULL DEFAULT false` Y NO ANULABLE, al revés que su vecina `esDescanso`:
+--
+--   `esDescanso` tuvo que ser anulable porque un `DEFAULT false` habría afirmado sobre 1956 filas
+--   ya existentes que sus domingos NO eran descanso, quitándoles el recargo del 90 % en silencio.
+--   Ahí `false` reinterpretaba el pasado.
+--
+--   Aquí no hay pasado que reinterpretar: `false` significa «nadie marcó un descanso en este día»,
+--   y eso es cierto para todas las filas que existen hoy. Los días que ya estaban marcados con el
+--   turno de descanso del catálogo se migran aparte, con `prisma/migrar-descanso-pintado.ts`.
+--
+-- SALIÓ DE `prisma migrate diff`, no se escribió a mano. Y se le quitó una línea que el diff
+-- proponía y que NO es de este cambio:
+--
+--   ALTER TABLE `colaboradores` ADD COLUMN `numeroContrato` VARCHAR(191) NULL;
+--
+-- Esa es del trabajo de la plantilla de Siigo, que tocó el mismo `schema.prisma` en paralelo.
+--
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- ESTA ES LA SENTENCIA QUE SE EJECUTÓ DE VERDAD, no una versión mejorada después.
+--
+-- La primera versión llevaba `SET STATEMENT innodb_lock_wait_timeout = 60 FOR ...` y
+-- `ALGORITHM = INSTANT`, copiando el patrón de los ALTER de `registros`. Al aplicarla falló:
+--
+--   Error: You have an error in your SQL syntax ... near 'innodb_lock_wait_timeout = 60 FOR'
+--
+-- `SET STATEMENT ... FOR` es de MariaDB y NO existe en MySQL, y la base de desarrollo es
+-- **MySQL 9.7.1** (comprobado con `SELECT VERSION()`, no supuesto). Como producción sí es MariaDB,
+-- un archivo con esa cláusula se aplicaría allá y reventaría acá, o al revés, según quién lo corra.
+-- Se deja la forma portable, que es la que se probó.
+--
+-- Si al aplicarlo en producción la tabla ya fuera grande y el ALTER se notara, ahí sí conviene
+-- envolverlo; pero eso se decide midiendo contra esa base, no copiando un patrón de otra tabla.
+
+ALTER TABLE `dias_esperados`
+  ADD COLUMN `descansoPintado` BOOLEAN NOT NULL DEFAULT false;

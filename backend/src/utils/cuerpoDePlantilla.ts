@@ -15,6 +15,11 @@ import {
 //   - El HORARIO sigue llevando lo de política: tolerancias y `ajustaEntrada`, que son de la
 //     empresa y no del turno.
 //
+// MATIZ DEL 23 DE SEPTIEMBRE DE 2026, pedido del dueño: la política sigue siendo del horario, pero
+// la plantilla puede SOBRESCRIBIRLA dejando los campos vacíos para heredar. Un turno nocturno puede
+// merecer otra tolerancia que uno diurno, y eso sí es forma del turno. Lo que no cambió: quien no
+// llene esos campos sigue con la política de su horario, exactamente como antes.
+//
 // Y de ahí que aquí casi no haya código. Todo lo que revisa las pausas (que el almuerzo quepa,
 // que los tres descansos no se crucen, la forma canónica con que se guardan) ya existe en
 // `ventanasDeHorario` y se usa tal cual. Lo único nuevo es el nombre, el color y la regla de que
@@ -58,6 +63,12 @@ export type DatosDePlantilla = {
   almuerzoFin: string | null;
   // El texto canónico, igual que `FranjaHorario.descansos`. NULL es «sin descansos», nunca "[]".
   descansos: string | null;
+  // Las tres sobrescrituras de política. NULL es «la del horario», nunca «cero»: son cosas
+  // distintas y guardarlas igual haría que un turno sin tolerancia se comportara como uno que
+  // hereda diez minutos.
+  toleranciaMin: number | null;
+  toleranciaSalidaMin: number | null;
+  ajustaEntrada: boolean | null;
 };
 
 type PlantillaLimpia = { ok: true; datos: DatosDePlantilla } | { ok: false; motivo: string };
@@ -74,6 +85,32 @@ const colorDe = (v: unknown): ColorDePlantilla =>
 // día que se escribió esto, y ya estaba documentado en `cuerpoDePermiso.ts`.
 const LARGO_MAXIMO_DEL_NOMBRE = 191;
 
+// Cuatro horas de gracia ya no son una tolerancia, son otro horario. El tope existe para que un
+// dedazo no entre como política.
+const TOLERANCIA_MAXIMA_MIN = 240;
+
+type Revisado<T> = { ok: true; valor: T } | { ok: false; motivo: string };
+
+// Ausente o vacío = hereda del horario. Un valor MANDADO pero basura se RECHAZA, no cae a vacío:
+// caer a vacío escondería un error del cliente detrás de algo plausible, y esto decide si a alguien
+// le cuentan una tardanza. (El color sí cae a un valor por defecto, pero el color no mueve dinero.)
+function toleranciaValida(v: unknown, cual: string): Revisado<number | null> {
+  if (v === undefined || v === null || v === '') return { ok: true, valor: null };
+  if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > TOLERANCIA_MAXIMA_MIN) {
+    return {
+      ok: false,
+      motivo: `La tolerancia de ${cual} tiene que ser un número de minutos entre 0 y ${TOLERANCIA_MAXIMA_MIN}.`,
+    };
+  }
+  return { ok: true, valor: v };
+}
+
+function ajusteValido(v: unknown): Revisado<boolean | null> {
+  if (v === undefined || v === null || v === '') return { ok: true, valor: null };
+  if (typeof v !== 'boolean') return { ok: false, motivo: 'El ajuste de entrada temprana tiene que ser sí o no.' };
+  return { ok: true, valor: v };
+}
+
 export function limpiarPlantilla(data: Record<string, unknown>): PlantillaLimpia {
   const nombre = texto(data.nombre);
   if (!nombre) return { ok: false, motivo: 'Falta el nombre de la plantilla.' };
@@ -87,6 +124,21 @@ export function limpiarPlantilla(data: Record<string, unknown>): PlantillaLimpia
   const color = colorDe(data.color);
   const sedeId = texto(data.sedeId) || null;
 
+  // Se revisan ANTES de la rama del descanso, porque las dos salidas las llevan: `diaDesdePlantilla`
+  // copia la política también en un día libre, y perderlas ahí devolvería a la persona a la
+  // tolerancia de su horario sin que nada lo dijera.
+  const tolEntrada = toleranciaValida(data.toleranciaMin, 'entrada');
+  if (!tolEntrada.ok) return { ok: false, motivo: tolEntrada.motivo };
+  const tolSalida = toleranciaValida(data.toleranciaSalidaMin, 'salida');
+  if (!tolSalida.ok) return { ok: false, motivo: tolSalida.motivo };
+  const ajuste = ajusteValido(data.ajustaEntrada);
+  if (!ajuste.ok) return { ok: false, motivo: ajuste.motivo };
+  const politica = {
+    toleranciaMin: tolEntrada.valor,
+    toleranciaSalidaMin: tolSalida.valor,
+    ajustaEntrada: ajuste.valor,
+  };
+
   // Un día de descanso no tiene horas, y las que lleguen NO se miran: la pantalla las oculta al
   // marcar «descanso», así que si llegan son residuo de lo que el administrador había escrito
   // antes de cambiar de idea. Guardarlas dejaría una plantilla que el planificador pinta como
@@ -95,6 +147,7 @@ export function limpiarPlantilla(data: Record<string, unknown>): PlantillaLimpia
     return {
       ok: true,
       datos: {
+        ...politica,
         nombre, color, esDescanso: true, sedeId,
         horaEntrada: null, horaSalida: null, tieneAlmuerzo: false,
         almuerzoInicio: null, almuerzoFin: null, descansos: null,
@@ -131,6 +184,9 @@ export function limpiarPlantilla(data: Record<string, unknown>): PlantillaLimpia
 
   return {
     ok: true,
-    datos: { nombre, color, esDescanso: false, sedeId, horaEntrada, horaSalida, ...ventanasParaGuardar(tramo) },
+    datos: {
+      ...politica,
+      nombre, color, esDescanso: false, sedeId, horaEntrada, horaSalida, ...ventanasParaGuardar(tramo),
+    },
   };
 }

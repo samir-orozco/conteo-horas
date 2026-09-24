@@ -30,11 +30,6 @@ const TURNOS = [
     horaEntrada: '22:00', horaSalida: '06:00', tieneAlmuerzo: false,
     almuerzoInicio: null, almuerzoFin: null, descansos: [],
   },
-  {
-    id: 'p3', nombre: 'Descanso', color: 'grafito', esDescanso: true, sedeId: null,
-    horaEntrada: null, horaSalida: null, tieneAlmuerzo: false,
-    almuerzoInicio: null, almuerzoFin: null, descansos: [],
-  },
 ];
 
 const SEDES = [{ id: 's1', nombre: 'Norte' }, { id: 's2', nombre: 'Sur' }];
@@ -60,12 +55,24 @@ describe('el catálogo de turnos', () => {
     expect(screen.getByText(/22:00 a 06:00/)).toBeInTheDocument();
   });
 
-  // El día libre no tiene horario, y decirlo es parte de lo que la pantalla enseña: un turno sin
-  // horas en blanco se leería como «todavía sin configurar».
-  it('el día de descanso se ve como día libre, no como un turno sin horas', async () => {
+  // EL CATÁLOGO YA NO TIENE TURNOS DE DESCANSO (23 de septiembre de 2026, decisión del dueño).
+  //
+  // Aquí había una prueba que afirmaba que «el día de descanso se ve como día libre». Se borró
+  // porque el comportamiento que describía dejó de existir, no porque estorbara: un descanso ya no
+  // es un turno del catálogo.
+  //
+  // EL PORQUÉ, medido antes de decidirlo: un turno de descanso solo llevaba nombre y color, y la
+  // celda del calendario NO lee ninguno de los dos (pinta un recuadro fijo). Eran dos campos que el
+  // formulario pedía y que nadie mostraba jamás. Y marcarlo no hacía nada visible salvo para gente
+  // ROTATIVA: para un FIJO o un PRESUMIDO el día quedaba como «sin turno».
+  //
+  // Esta prueba es la guarda que reemplaza a la que se fue: sin ella, alguien devuelve la casilla
+  // mañana y nada se queja.
+  it('no ofrece marcar un turno como día de descanso', async () => {
+    const u = userEvent.setup();
     montar();
-    expect(await screen.findByText('Descanso')).toBeInTheDocument();
-    expect(screen.getByText(/día libre/i)).toBeInTheDocument();
+    await u.click(await screen.findByRole('button', { name: /nuevo turno/i }));
+    expect(screen.queryByRole('checkbox', { name: /día de descanso/i })).toBeNull();
   });
 
   it('sin turnos todavía, lo dice en vez de dejar el cuadro vacío', async () => {
@@ -86,34 +93,13 @@ describe('crear un turno', () => {
     expect(screen.getByLabelText(/hora de salida/i)).toBeInTheDocument();
   });
 
-  // ESTA ES LA DECISIÓN DE LA PANTALLA. Al marcar que es un día de descanso, el horario deja de
-  // tener sentido y desaparece: un día libre con hora de entrada es una contradicción que el
-  // administrador no debería poder escribir.
-  it('al marcar que es un día de descanso, el horario desaparece', async () => {
-    const u = userEvent.setup();
-    montar();
-    await u.click(await screen.findByRole('button', { name: /nuevo turno/i }));
-    expect(screen.getByLabelText(/hora de entrada/i)).toBeInTheDocument();
-    await u.click(screen.getByRole('checkbox', { name: /día de descanso/i }));
-    expect(screen.queryByLabelText(/hora de entrada/i)).toBeNull();
-  });
-
-  // Lo que se manda no puede contradecir lo que se marcó, aunque el servidor lo descarte igual.
-  it('un descanso se guarda sin ninguna hora', async () => {
-    const u = userEvent.setup();
-    montar();
-    await u.click(await screen.findByRole('button', { name: /nuevo turno/i }));
-    await u.type(screen.getByLabelText(/^nombre/i), 'Día libre');
-    await u.click(screen.getByRole('checkbox', { name: /día de descanso/i }));
-    await u.click(screen.getByRole('button', { name: /^guardar$/i }));
-
-    expect(post).toHaveBeenCalledWith('/plantillas-turno', expect.objectContaining({
-      nombre: 'Día libre', esDescanso: true,
-    }));
-    const cuerpo = post.mock.calls[0][1] as Record<string, unknown>;
-    expect(Object.keys(cuerpo)).not.toContain('horaEntrada');
-    expect(Object.keys(cuerpo)).not.toContain('horaSalida');
-  });
+  // AQUÍ HABÍA DOS PRUEBAS MÁS y se borraron el 23 de septiembre de 2026, por la misma razón que la
+  // de arriba: describían la casilla «es un día de descanso» y lo que se mandaba al marcarla. Ese
+  // camino ya no existe.
+  //
+  // Lo que ocupa su lugar NO está en este archivo: marcar un día como libre pasó a ser una acción
+  // sobre el día, en el calendario, y se prueba allá. Se deja dicho aquí para que nadie las eche de
+  // menos y las reponga.
 
   // El servidor es el que valida de verdad, así que su motivo tiene que llegar a la pantalla. Sin
   // esto, guardar algo imposible no hace nada y no dice nada.

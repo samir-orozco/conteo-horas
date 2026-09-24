@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { COLORES_DE_TURNO, COLOR_POR_DEFECTO, ETIQUETA_COLOR, CLASES_COLOR, normalizarColor } from './coloresDeTurno';
+import { COLORES_DE_TURNO, COLOR_POR_DEFECTO, ETIQUETA_COLOR, CLASES_COLOR, PUNTO_COLOR, normalizarColor } from './coloresDeTurno';
 
 // La paleta de los turnos del catálogo (19 de septiembre de 2026).
 //
@@ -41,6 +41,27 @@ describe('la paleta de turnos', () => {
   // lo que el color viene a resolver.
   it('no hay dos colores que pinten igual', () => {
     const pintados = COLORES_DE_TURNO.map(c => CLASES_COLOR[c]);
+    expect(new Set(pintados).size).toBe(COLORES_DE_TURNO.length);
+  });
+
+  // EL PUNTO SÓLIDO (23 de septiembre de 2026). El dueño pidió elegir el color del turno con
+  // «círculos del color y abajo su nombre», y para eso hace falta un relleno lleno.
+  //
+  // POR QUÉ NO SIRVE `CLASES_COLOR`: ese es un par fondo claro + texto oscuro, hecho para una
+  // etiqueta que lleva el nombre del turno ENCIMA, y el contraste lo da el texto. Un círculo vacío
+  // pintado con ese fondo claro se ve casi igual en los ocho colores, que es justo lo contrario de
+  // para lo que sirve un selector de color.
+  //
+  // Las mismas dos guardas que el mapa de al lado, por la misma razón: Tailwind purga lo que no
+  // encuentra escrito, y dos colores que pinten igual no son dos colores.
+  it('cada color tiene su punto sólido, en una clase completa', () => {
+    for (const color of COLORES_DE_TURNO) {
+      expect(PUNTO_COLOR[color], `punto de ${color}`).toMatch(/\bbg-[a-z]+-\d{2,3}\b/);
+    }
+  });
+
+  it('no hay dos puntos que pinten igual', () => {
+    const pintados = COLORES_DE_TURNO.map(c => PUNTO_COLOR[c]);
     expect(new Set(pintados).size).toBe(COLORES_DE_TURNO.length);
   });
 });

@@ -250,25 +250,25 @@ model FranjaHorario {
 // `utils/ventanasDeHorario.ts`: que el almuerzo quepa, que los tres descansos no se
 // crucen y la forma canónica con que se guardan. No hay una segunda copia (CLAUDE.md §9.3).
 model PlantillaTurno {
-  id             String   @id @default(cuid())
-  empresaId      String
-  empresa        Empresa  @relation(fields: [empresaId], references: [id])
-  nombre         String
+  id                  String        @id @default(cuid())
+  empresaId           String
+  empresa             Empresa       @relation(fields: [empresaId], references: [id])
+  nombre              String
   // Clave de una paleta CERRADA (utils/cuerpoDePlantilla.ts), no un hex: el color se pinta
   // en una celda de la rejilla con texto encima y tiene que garantizar contraste, y con la
   // clave la paleta se retoca sin migrar datos.
-  color          String   @default("grafito")
+  color               String        @default("grafito")
   // Un día libre. Va como plantilla y no como novedad (decisión del dueño del 18 de
   // septiembre de 2026): el planificador lo pinta igual que un turno, y en el día congelado
   // `programado = false` ya da el comportamiento correcto, que se comprobó antes de
   // decidirlo (sin deuda, sin tardanza, y lo que se trabaje cuenta entero como extra).
-  esDescanso     Boolean  @default(false)
+  esDescanso          Boolean       @default(false)
   // Un descanso NO lleva horas: son NULL a propósito, no «todavía sin configurar».
-  horaEntrada    String? // "06:00" hora local Bogotá
-  horaSalida     String? // "14:00" (puede cruzar medianoche, ej. "22:00"→"06:00")
-  tieneAlmuerzo  Boolean  @default(true)
-  almuerzoInicio String?
-  almuerzoFin    String?
+  horaEntrada         String? // "06:00" hora local Bogotá
+  horaSalida          String? // "14:00" (puede cruzar medianoche, ej. "22:00"→"06:00")
+  tieneAlmuerzo       Boolean       @default(true)
+  almuerzoInicio      String?
+  almuerzoFin         String?
   // Misma forma y mismas reglas que `FranjaHorario.descansos`, y se lee con el mismo
   // `leerDescansos`. NULL = sin descansos, nunca "[]".
   //
@@ -276,20 +276,37 @@ model PlantillaTurno {
   // porque la base YA es `text` y el esquema decía otra cosa. Sin esta línea, `prisma migrate diff`
   // proponía un `MODIFY ... VARCHAR(191)` que habría TRUNCADO cualquier lista de descansos de más
   // de 191 caracteres, en silencio y sin que nada se quejara.
-  descansos      String?  @db.Text
+  descansos           String?       @db.Text
+  // LA POLÍTICA QUE ESTE TURNO SOBRESCRIBE (23 de septiembre de 2026, pedido del dueño).
+  //
+  // NULL significa «la del horario», y NO cero: son cosas distintas. Un turno con
+  // `toleranciaMin = 0` cuenta la tardanza desde el primer minuto; uno con NULL hereda los
+  // minutos que tenga puestos el horario de cada persona. Guardarlas igual haría que «sin
+  // tolerancia» se comportara como «la de siempre», y eso no se ve en ninguna pantalla: se ve
+  // en una tardanza que no se contó.
+  //
+  // Por eso son anulables y no llevan `@default`: un valor por defecto aquí borraría la
+  // diferencia entre no haber elegido y haber elegido cero.
+  //
+  // El reparto general no cambió. La política SIGUE viviendo en `Horario`; esto solo deja que un
+  // turno la pise cuando de verdad haga falta, como un nocturno que merece otra tolerancia que
+  // uno diurno.
+  toleranciaMin       Int?
+  toleranciaSalidaMin Int?
+  ajustaEntrada       Boolean?
   // Sede en la que se cumple este turno, cuando la empresa tiene varias. Es la PLANEADA:
   // dónde marcó de verdad sigue viviendo en `Registro.sedeId`, y no se mezclan
   // (la sede deducida no es la sede probada).
-  sedeId         String?
-  sede           Sede?    @relation(fields: [sedeId], references: [id])
+  sedeId              String?
+  sede                Sede?         @relation(fields: [sedeId], references: [id])
   // Se desactiva en vez de borrarse: los días ya planificados apuntan a ella y el
   // calendario histórico tiene que poder seguir diciendo qué turno se pintó.
-  activa         Boolean  @default(true)
-  creadoEn       DateTime @default(now())
-  actualizadoEn  DateTime @updatedAt
+  activa              Boolean       @default(true)
+  creadoEn            DateTime      @default(now())
+  actualizadoEn       DateTime      @updatedAt
   // Los días que se pintaron con este turno. Prisma exige declarar el lado inverso de la relación;
   // sin esto el esquema no valida. Hoy está siempre vacía: el planificador todavía no existe.
-  diasEsperados  DiaEsperado[]
+  diasEsperados       DiaEsperado[]
 
   @@index([empresaId])
   @@index([sedeId])
@@ -311,47 +328,47 @@ model DispositivoKiosco {
 }
 
 model Colaborador {
-  id               String              @id @default(cuid())
-  empresaId        String
-  empresa          Empresa             @relation(fields: [empresaId], references: [id])
-  nombre           String
-  apellido         String
-  cedula           String // marcación en kiosco por cédula
+  id                     String                 @id @default(cuid())
+  empresaId              String
+  empresa                Empresa                @relation(fields: [empresaId], references: [id])
+  nombre                 String
+  apellido               String
+  cedula                 String // marcación en kiosco por cédula
   // Con el que el software de nómina del cliente identifica su contrato (23 de septiembre de 2026).
   // Vacío es lo normal y significa que es la cédula: Siigo solo lo cambia cuando la persona tiene un
   // segundo contrato, y ahí le pone la cédula con un «-1» al final. Sin este dato, Siigo rechaza las
   // filas de esas personas al importar las novedades.
-  numeroContrato   String?
-  cargo            String?
-  email            String?
-  telefono         String?
-  fechaNacimiento  DateTime?
+  numeroContrato         String?
+  cargo                  String?
+  email                  String?
+  telefono               String?
+  fechaNacimiento        DateTime?
   // El salario BÁSICO, sin auxilio de transporte. Es la base del valor de la hora, y por lo tanto
   // de cada hora extra y cada recargo: meterle el auxilio los encarece un 14,2% en el mínimo.
-  salarioMensual   Float
+  salarioMensual         Float
   // Auxilio de transporte de ESTA persona (17 de septiembre de 2026). No es salario: se paga aparte
   // y no toca el valor de la hora.
   //   null  = el que fija el decreto, si su básico da derecho. Es el caso normal, y el que evita
   //           tener que actualizar 250 fichas cada enero.
   //   0     = esta empresa no lo paga (da ruta propia, por ejemplo).
   //   otro  = un valor pactado, por encima o por debajo del decreto.
-  auxilioTransporte Float?
+  auxilioTransporte      Float?
   // Reconocimiento facial: descriptor matemático (128 floats). El descriptor no
   // es una imagen y no se puede volver a convertir en una.
-  rostroDescriptor Json?
-  rostroEnroladoEn DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
+  rostroDescriptor       Json?
+  rostroEnroladoEn       DateTime? // evidencia del consentimiento (dato biométrico, Ley 1581)
   // NO AUTORIZÓ EL USO DE SU ROSTRO (14 de septiembre de 2026). Lo dijo la propia persona desde su
   // enlace de registro; si tenía rostro registrado, se borró. Null = nunca lo dijo, y registrar el
   // rostro después lo vuelve a null. La constancia completa vive en `constancias_biometricas`.
-  rostroRechazadoEn DateTime?
+  rostroRechazadoEn      DateTime?
   // Foto de perfil (data URL). Es dato personal común, NO biométrico: sirve
   // para reconocer a quién se está mirando en la ficha, no para autenticar. Va
   // aparte del descriptor a propósito, para poder borrar una sin borrar la otra.
-  foto             String?             @db.LongText
+  foto                   String?                @db.LongText
   // La misma foto, chiquita, para las listas. Se guarda aparte y no se recorta
   // al vuelo porque la lista la pide para TODOS: mandar la grande son cientos
   // de kilobytes por carga, y en un plan de 150 personas son megas.
-  fotoMini         String?             @db.LongText
+  fotoMini               String?                @db.LongText
   // EL DÍA DE DESCANSO OBLIGATORIO (20 de septiembre de 2026).
   //
   // La ley presume el domingo SALVO acuerdo escrito. Hasta hoy el motor lo tenía escrito a mano
@@ -365,22 +382,22 @@ model Colaborador {
   //
   // Texto y no enum, siguiendo a `DiaEsperado.origen` y a `Suscripcion.plan`: agregar un cuarto
   // valor a un enum obliga a un ALTER de esta tabla, que tiene gente.
-  descansoTipo      String             @default("PRESUMIDO") // PRESUMIDO | FIJO | ROTATIVO
-  descansoDia       String? // solo con FIJO: "MIERCOLES". NULL en los otros dos.
+  descansoTipo           String                 @default("PRESUMIDO") // PRESUMIDO | FIJO | ROTATIVO
+  descansoDia            String? // solo con FIJO: "MIERCOLES". NULL en los otros dos.
   // Cuándo se firmó el acuerdo escrito. NULL = no hay acuerdo, y entonces FIJO y ROTATIVO se tratan
   // como PRESUMIDO: se le sigue pagando el recargo del domingo. El error puede equivocarse hacia
   // pagar de más, nunca hacia pagar de menos.
-  descansoAcuerdoEn DateTime?
+  descansoAcuerdoEn      DateTime?
   // Las decisiones sobre sus días de descanso trabajados. Prisma exige declarar este lado de la
   // relación; sin él el esquema no valida.
-  descansosTrabajados DescansoTrabajado[]
-  horarioId        String?
-  horario          Horario?            @relation(fields: [horarioId], references: [id])
+  descansosTrabajados    DescansoTrabajado[]
+  horarioId              String?
+  horario                Horario?               @relation(fields: [horarioId], references: [id])
   // No admite null a propósito: un null sería un cuarto estado que significa
   // PRESENCIAL igual, y siendo no-nulo el compilador avisa si una ruta con
   // `select` explícito olvida pedirlo (un undefined ahí bloquearía a un remoto
   // en silencio, tratándolo como presencial).
-  modalidad        ModalidadTrabajo    @default(PRESENCIAL)
+  modalidad              ModalidadTrabajo       @default(PRESENCIAL)
   // PUEDE CERRAR UN TURNO EN UNA SEDE DISTINTA DE LA QUE LO ABRIÓ.
   //
   // Existe por los supervisores que recorren varias sedes en el mismo turno.
@@ -393,27 +410,27 @@ model Colaborador {
   // siguiente edición. No admite null por la misma razón que `modalidad`: false
   // es la regla de siempre, y con el DEFAULT todos los que ya existen quedan
   // exactamente como estaban.
-  puedeCerrarEnOtraSede Boolean       @default(false)
-  activo           Boolean             @default(true)
+  puedeCerrarEnOtraSede  Boolean                @default(false)
+  activo                 Boolean                @default(true)
   // Retiro: cuándo salió y por qué. Antes solo quedaba `activo: false`, así que
   // se perdía la fecha, y esa fecha es justo la que se necesita para liquidar,
   // para un certificado laboral y para una inspección del Ministerio.
-  fechaRetiro      DateTime?
-  motivoRetiro     MotivoRetiro?
+  fechaRetiro            DateTime?
+  motivoRetiro           MotivoRetiro?
   // Resto del modelo de precio por colaborador: cuando el cobro dependía del
   // número de personas, el retiro se aplazaba a fin de mes para no regalar el
   // mes pagado. Hoy el precio es plano por plan y no mira cuántos hay, así que
   // aplazar no protege un peso: solo bloquea contratar al reemplazo. Se deja el
   // campo porque puede haber retiros programados sin aplicar en producción.
-  retiroProgramado DateTime?
-  creadoEn         DateTime            @default(now())
-  actualizadoEn    DateTime            @updatedAt
-  registros        Registro[]
-  permisos         Permiso[]
-  contratos        Contrato[]
-  vinculacion      VinculacionEvento[]
-  diasEsperados    DiaEsperado[]
-  sedes            ColaboradorSede[]
+  retiroProgramado       DateTime?
+  creadoEn               DateTime               @default(now())
+  actualizadoEn          DateTime               @updatedAt
+  registros              Registro[]
+  permisos               Permiso[]
+  contratos              Contrato[]
+  vinculacion            VinculacionEvento[]
+  diasEsperados          DiaEsperado[]
+  sedes                  ColaboradorSede[]
   enlacesRegistroFacial  EnlaceRegistroFacial[]
   constanciasBiometricas ConstanciaBiometrica[]
 
@@ -442,13 +459,13 @@ model Sede {
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  colaboradores ColaboradorSede[]
+  colaboradores     ColaboradorSede[]
   // Turnos del catálogo que se cumplen en esta sede (turnos rotativos).
-  plantillas    PlantillaTurno[]
+  plantillas        PlantillaTurno[]
   // Dos relaciones con Registro, y Prisma exige nombrarlas cuando van al mismo
   // modelo: la sede donde se ABRIÓ el turno y la sede donde se CERRÓ.
-  registros         Registro[] @relation("SedeDeEntrada")
-  registrosCerrados Registro[] @relation("SedeDeSalida")
+  registros         Registro[]        @relation("SedeDeEntrada")
+  registrosCerrados Registro[]        @relation("SedeDeSalida")
 
   @@index([empresaId])
   @@map("sedes")
@@ -479,20 +496,20 @@ model ColaboradorSede {
 // Se genera solo desde el horario asignado. Los días PASADOS no se vuelven a
 // tocar; al cambiar un horario solo se regeneran los días futuros.
 model DiaEsperado {
-  id                  String      @id @default(cuid())
+  id                  String          @id @default(cuid())
   colaboradorId       String
-  colaborador         Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  colaborador         Colaborador     @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
   fecha               DateTime // medianoche de Bogotá, igual convención que Registro.fecha
-  programado          Boolean     @default(false) // false = ese día no se trabajaba
+  programado          Boolean         @default(false) // false = ese día no se trabajaba
   horaEntrada         String? // "08:00"
   horaSalida          String? // "17:00"
-  toleranciaMin       Int         @default(0)
-  almuerzoMin         Int         @default(0) // el que aplica ESE día
-  minutosEsperados    Int         @default(0) // ya neto de almuerzo
+  toleranciaMin       Int             @default(0)
+  almuerzoMin         Int             @default(0) // el que aplica ESE día
+  minutosEsperados    Int             @default(0) // ya neto de almuerzo
   // La tolerancia de salida también se congela: es política de la empresa, y si
   // la cambian mañana no puede mover lo que ya se liquidó.
-  toleranciaSalidaMin Int         @default(0)
-  ajustaEntrada       Boolean     @default(false)
+  toleranciaSalidaMin Int             @default(0)
+  ajustaEntrada       Boolean         @default(false)
   // La ventana de almuerzo también se congela: cambiarla mañana no puede mover
   // lo ya liquidado. Vacía en todo lo anterior a la función.
   almuerzoInicio      String?
@@ -527,6 +544,22 @@ model DiaEsperado {
   // llegue, esas filas viejas seguirán diciendo domingo y NO se reescriben. No es un error: es lo
   // que aplicó ese día.
   esDescanso          Boolean?
+  // Si alguien MARCÓ este día como descanso desde el planificador (23 de septiembre de 2026).
+  //
+  // NO es lo mismo que `esDescanso`, y confundirlos es justo el defecto que esta columna viene a
+  // arreglar. El de arriba dice «este era el descanso OBLIGATORIO de esta persona» y arrastra
+  // dinero; este dice «un administrador marcó este día como libre», que es planificación.
+  //
+  // El defecto, reproducido contra la base antes de escribir esto: marcar descanso a alguien FIJO o
+  // PRESUMIDO dejaba la fila en `programado: false, esDescanso: false`, o sea SIN_TURNO, y la celda
+  // mostraba el recuadro de «Agregar» como si no hubiera nada. `esDescansoObligatorio` solo mira lo
+  // planificado cuando la persona es ROTATIVA.
+  //
+  // `@default(false)` Y NO ANULABLE, al revés que su vecina de arriba, y la diferencia tiene razón:
+  // allá `false` habría afirmado sobre 1956 filas viejas que sus domingos NO eran descanso,
+  // quitándoles el recargo del 90% en silencio. Aquí `false` significa «nadie pintó un descanso
+  // aquí», que es cierto para todas las filas que ya existen. No hay pasado que reinterpretar.
+  descansoPintado     Boolean         @default(false)
   // De qué horario salió, solo informativo: el horario puede cambiar después.
   horarioId           String?
   // Con qué turno del CATÁLOGO se pintó este día (21 de septiembre de 2026).
@@ -545,9 +578,9 @@ model DiaEsperado {
   plantillaId         String?
   plantilla           PlantillaTurno? @relation(fields: [plantillaId], references: [id], onDelete: Restrict)
   // AUTO = generado desde el horario · MANUAL = lo cambió el admin (turno rotativo)
-  origen              String      @default("AUTO")
-  creadoEn            DateTime    @default(now())
-  actualizadoEn       DateTime    @updatedAt
+  origen              String          @default("AUTO")
+  creadoEn            DateTime        @default(now())
+  actualizadoEn       DateTime        @updatedAt
 
   @@unique([colaboradorId, fecha])
   @@index([colaboradorId, fecha])
@@ -954,9 +987,9 @@ model RegistroCambio {
 // como pidió el dueño. El recargo sale de `DiaEsperado.esDescanso`, que esto no toca: aquí solo
 // vive la decisión de compensación.
 model DescansoTrabajado {
-  id                 String      @id @default(cuid())
+  id                 String                    @id @default(cuid())
   colaboradorId      String
-  colaborador        Colaborador @relation(fields: [colaboradorId], references: [id])
+  colaborador        Colaborador               @relation(fields: [colaboradorId], references: [id])
   // El día de descanso que se trabajó, a medianoche de Bogotá (05:00 UTC), la misma convención que
   // `DiaEsperado.fecha` y `Registro.fecha`.
   fecha              DateTime
@@ -966,7 +999,7 @@ model DescansoTrabajado {
   // un ALTER de una tabla con datos. Y aquí ese cuarto valor es plausible de verdad, no teórico: la
   // pregunta de si un mes que pasa a habitual reabre las decisiones anteriores está sin resolver, y
   // su respuesta podría traer un estado nuevo.
-  decision           String      @default("PENDIENTE")
+  decision           String                    @default("PENDIENTE")
   // El día libre asignado. Solo con COMPENSATORIO; NULL en los otros dos.
   fechaCompensatorio DateTime?
   // OCASIONAL | HABITUAL en el momento de decidir, CONGELADA. Es la mitad del mecanismo que el
@@ -974,13 +1007,13 @@ model DescansoTrabajado {
   // reabre lo ya decidido, lo AVISA. Sin este dato no habría con qué comparar, y reabrir hacia
   // atrás dejaría de ser un interruptor para volverse un rediseño.
   claseAlDecidir     String?
-  nota               String?     @db.Text
+  nota               String?                   @db.Text
   // Quién decidió. `usuarioId` ya viaja en el request y otras rutas lo usan para firmar cambios.
   decididoPor        String?
   decididoNombre     String?
   decididoEn         DateTime?
-  creadoEn           DateTime    @default(now())
-  actualizadoEn      DateTime    @updatedAt
+  creadoEn           DateTime                  @default(now())
+  actualizadoEn      DateTime                  @updatedAt
   cambios            DescansoTrabajadoCambio[]
 
   // Una sola decisión por persona y día. Da además el índice compuesto que la pantalla necesita

@@ -6,7 +6,6 @@ import type { ColorDeTurno } from '../../lib/coloresDeTurno';
 export type FormularioDePlantilla = {
   nombre: string;
   color: ColorDeTurno;
-  esDescanso: boolean;
   sedeId: string;
   horaEntrada: string;
   horaSalida: string;
@@ -14,6 +13,16 @@ export type FormularioDePlantilla = {
   almuerzoInicio: string;
   almuerzoFin: string;
   descansos: Ventana[];
+  // LA TOLERANCIA PROPIA DE ESTE TURNO (23 de septiembre de 2026).
+  //
+  // UN interruptor y no tres campos sueltos: `ajustaEntrada` es un sí/no, y un sí/no no sabe decir
+  // «hereda». Con una casilla suelta no habría forma de distinguir «que no ajuste» de «que mande el
+  // horario». Apagado, las tres heredan.
+  usaToleranciaPropia: boolean;
+  // En texto como todo lo demás del formulario: el vacío es la cadena vacía, no null.
+  toleranciaMin: string;
+  toleranciaSalidaMin: string;
+  ajustaEntrada: boolean;
 };
 
 // El cuerpo que se manda al guardar un turno del catálogo (19 de septiembre de 2026).
@@ -30,13 +39,32 @@ export type FormularioDePlantilla = {
 //    esta pantalla sí conoce los descansos. Y las filas a medias viajan como están, porque el
 //    servidor numera sus avisos («descanso 2: ...») contando la fila que ve el administrador;
 //    quitarlas aquí correría ese número.
-export function cuerpoDeLaPlantilla(p: FormularioDePlantilla) {
-  const comunes = { nombre: p.nombre, color: p.color, sedeId: p.sedeId || null };
-  if (p.esDescanso) return { ...comunes, esDescanso: true };
+// Un campo de minutos vacío es la cadena vacía. `=== ''` y NUNCA `||`: con `||`, un «0» escrito a
+// mano viajaría como null, o sea «la del horario», que es justo lo contrario de «sin tolerancia».
+// Es el mismo defecto que el `??` del backend, entrando por la puerta de atrás.
+const minutos = (v: string): number | null => (v.trim() === '' ? null : Number(v));
 
+export function cuerpoDeLaPlantilla(p: FormularioDePlantilla) {
+  // Las tolerancias van en `comunes` y NO en la rama del turno: el servidor las revisa antes de su
+  // propia rama de descanso, y `diaDesdePlantilla` copia la política también en un día libre.
+  //
+  // Con el interruptor apagado viajan las tres vacías, aunque hayan quedado números escritos: la
+  // pantalla solo los oculta, y mandarlos diría lo contrario de lo que la casilla muestra.
+  const comunes = {
+    nombre: p.nombre,
+    color: p.color,
+    sedeId: p.sedeId || null,
+    toleranciaMin: p.usaToleranciaPropia ? minutos(p.toleranciaMin) : null,
+    toleranciaSalidaMin: p.usaToleranciaPropia ? minutos(p.toleranciaSalidaMin) : null,
+    ajustaEntrada: p.usaToleranciaPropia ? p.ajustaEntrada : null,
+  };
+
+  // AQUÍ HABÍA UNA RAMA PARA EL DÍA DE DESCANSO y se retiró el 23 de septiembre de 2026, por
+  // decisión del dueño: «descanso es siempre descanso». Un turno de descanso solo llevaba nombre y
+  // color, y la celda del calendario no lee ninguno de los dos. Marcar un día como libre pasó a ser
+  // una acción sobre el DÍA, en el calendario, y no un turno que cada empresa tenía que crearse.
   return {
     ...comunes,
-    esDescanso: false,
     horaEntrada: p.horaEntrada,
     horaSalida: p.horaSalida,
     tieneAlmuerzo: p.tieneAlmuerzo,

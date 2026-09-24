@@ -4,7 +4,9 @@ import { rangoReporte, claveDiaBogota, medianocheBogota } from '../utils/fechas'
 // La ESCRITURA no vive en esta ruta: `materializarDias` es el único módulo que escribe en
 // `dias_esperados`, y abrir un segundo camino sobre la tabla que alimenta la liquidación
 // duplicaría el riesgo sin ganar nada.
-import { pintarDiaDeColaborador, despintarDiaDeColaborador } from '../utils/materializarDias';
+import {
+  pintarDiaDeColaborador, despintarDiaDeColaborador, marcarDescansoDeColaborador,
+} from '../utils/materializarDias';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 // Los descansos no remunerados se guardan como texto y viajan como `{ inicio, fin }[]`, igual que
 // los de una franja. El formato de la columna es cosa de la base y no de la pantalla.
@@ -100,6 +102,10 @@ export default async function turnoRoutes(app: FastifyInstance) {
           ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true, descansos: true,
           // Las que `DiaEsperadoCalculado` no lleva y que se unen aparte, más abajo.
           esDescanso: true, origen: true,
+          // Si alguien MARCÓ este día como libre, que no es lo mismo que que sea su descanso
+          // obligatorio (23 de septiembre de 2026). Sin esto, un descanso marcado a alguien FIJO o
+          // PRESUMIDO caía a SIN_TURNO y la celda mostraba el recuadro de «Agregar».
+          descansoPintado: true,
           // El horario con el que ESTE día quedó congelado, que no es necesariamente el que la
           // persona tiene hoy. La celda muestra su nombre cuando nadie pintó un turno encima, y
           // tomarlo del horario vigente sería poner el nombre de hoy junto a las horas de ayer:
@@ -239,7 +245,9 @@ export default async function turnoRoutes(app: FastifyInstance) {
         const esDescanso = descansoDelDia(extra?.esDescanso, diaSemanaDeFechaBogota(d.fecha), estado);
         // Se calcula UNA vez y se usa para dos cosas: lo que la celda pinta, y si ese día necesita
         // una decisión. Calcularlo dos veces permitiría que alguien cambiara una y dejara la otra.
-        const estadoDia = estadoDelDia({ programado: d.programado, esDescanso });
+        const estadoDia = estadoDelDia({
+          programado: d.programado, esDescanso, descansoPintado: extra?.descansoPintado === true,
+        });
         return {
           fecha: clave,
           estado: estadoDia,
@@ -393,10 +401,29 @@ export default async function turnoRoutes(app: FastifyInstance) {
 
   app.put('/dia', auth, async (request, reply) => {
     const empresaId = request.empresaId!;
-    const cuerpo = request.body as { colaboradorId?: string; fecha?: string; plantillaId?: string } | null;
+    const cuerpo = request.body as
+      { colaboradorId?: string; fecha?: string; plantillaId?: string; descanso?: boolean } | null;
     const fecha = fechaDelCuerpo(cuerpo?.fecha);
-    if (!cuerpo?.colaboradorId || !cuerpo?.plantillaId || !fecha) {
-      return reply.status(400).send({ error: 'Falta la persona, la fecha o el turno.' });
+    if (!cuerpo?.colaboradorId || !fecha) {
+      return reply.status(400).send({ error: 'Falta la persona o la fecha.' });
+    }
+
+    // MARCAR UN DÍA COMO DESCANSO (23 de septiembre de 2026). Es una acción sobre el día y no un
+    // turno del catálogo: «descanso es siempre descanso», así que no hay nada que configurarle ni
+    // ninguna plantilla que buscar. Se resuelve antes para no exigir un `plantillaId` que aquí no
+    // existe.
+    if (cuerpo.descanso === true) {
+      const quien = await prisma.colaborador.findFirst({
+        where: { id: cuerpo.colaboradorId, empresaId }, select: { id: true },
+      });
+      if (!quien) return reply.status(404).send({ error: 'Colaborador no encontrado.' });
+      const marcado = await marcarDescansoDeColaborador(quien.id, fecha);
+      if (!marcado.ok) return reply.status(400).send({ error: marcado.motivo });
+      return { ok: true };
+    }
+
+    if (!cuerpo.plantillaId) {
+      return reply.status(400).send({ error: 'Falta el turno.' });
     }
 
     // Las dos guardas de alcance se piden a la vez pero se responden por separado: si el turno no

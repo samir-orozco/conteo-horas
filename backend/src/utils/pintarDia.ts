@@ -17,6 +17,13 @@ import { duracionFranjaMin } from './tardanzas';
 //   la PLANTILLA lleva lo de la franja: horas, ventana de almuerzo, descansos.
 //   el HORARIO lleva lo de política: tolerancias, `ajustaEntrada`, y los minutos de almuerzo de
 //   respaldo para los turnos a los que nadie les puso ventana.
+//
+// CAMBIÓ EL 23 DE SEPTIEMBRE DE 2026, por pedido del dueño: la política sigue viviendo en el
+// horario, pero el turno ahora puede SOBRESCRIBIRLA. El caso que lo movió es real: un turno
+// nocturno puede merecer otra tolerancia que uno diurno, y eso es forma del turno.
+//
+// No es lo mismo que mudar la tolerancia al turno. Vacío sigue queriendo decir «la del horario»,
+// así que una empresa que no quiera saber de esto no cambia nada.
 
 // Lo que hace falta de un turno del catálogo. No se pide la plantilla entera a propósito: así la
 // función se puede probar sin fabricar una fila de Prisma.
@@ -28,6 +35,10 @@ export type PlantillaParaPintar = {
   almuerzoInicio: string | null;
   almuerzoFin: string | null;
   descansos: string | null;
+  // Las tres sobrescrituras de política. Ausente o `null` = la del horario; un valor = manda este.
+  toleranciaMin?: number | null;
+  toleranciaSalidaMin?: number | null;
+  ajustaEntrada?: boolean | null;
 };
 
 // La política de la empresa. `null` = a esta persona no se le asignó horario, que es un caso real:
@@ -64,10 +75,15 @@ export function diaDesdePlantilla(
   // La política se copia siempre, también en un día de descanso: es lo que hace
   // `calcularDiasEsperados` en su rama sin franja, y que los dos caminos difieran aquí sería una
   // diferencia invisible entre pintar un día y generarlo.
+  //
+  // `??` Y NUNCA `||`, y es lo único delicado de estas tres líneas: un CERO y un `false` son
+  // sobrescrituras legítimas, no vacíos. Con `||`, un turno que dice «sin tolerancia» heredaría
+  // los diez minutos del horario, y un turno con `ajustaEntrada: false` no podría apagar nunca el
+  // `true` de la empresa. Nadie lo vería hasta que a alguien no le contaran una tardanza.
   const politica = {
-    toleranciaMin: horario?.toleranciaMin ?? 0,
-    toleranciaSalidaMin: horario?.toleranciaSalidaMin ?? 0,
-    ajustaEntrada: horario?.ajustaEntrada ?? false,
+    toleranciaMin: plantilla.toleranciaMin ?? horario?.toleranciaMin ?? 0,
+    toleranciaSalidaMin: plantilla.toleranciaSalidaMin ?? horario?.toleranciaSalidaMin ?? 0,
+    ajustaEntrada: plantilla.ajustaEntrada ?? horario?.ajustaEntrada ?? false,
   };
 
   // Un día libre no tiene horas, y las que traiga NO se miran: la pantalla las oculta al marcar

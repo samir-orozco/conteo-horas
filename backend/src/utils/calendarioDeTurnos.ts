@@ -43,7 +43,26 @@ export type EstadoDelDia =
 // `DESCANSO` y `SIN_TURNO` se separan a propósito, y no es cosmético: alguien de lunes a viernes
 // tiene DOS días sin trabajar y solo uno es su descanso obligatorio. Pintarlos iguales afirmaría
 // que el sábado también lo es, que es exactamente el error que el producto viene a quitar.
-export function estadoDelDia(dia: { programado: boolean; esDescanso: boolean }): EstadoDelDia {
+// `descansoPintado` es OPCIONAL porque las filas anteriores a la columna no lo traen, y su ausencia
+// no puede cambiar ningún estado: sin él, esto se comporta exactamente como antes.
+export function estadoDelDia(
+  dia: { programado: boolean; esDescanso: boolean; descansoPintado?: boolean },
+): EstadoDelDia {
+  // EL ORDEN DE ESTAS TRES LÍNEAS ES LA REGLA, y la primera tiene que ir primera.
+  //
+  // `esDescanso` es el descanso OBLIGATORIO y arrastra dinero: trabajarlo paga recargo (art. 179 y
+  // siguientes). `descansoPintado` es «alguien marcó este día como libre», que es una decisión de
+  // planificación y no tiene consecuencia legal por sí sola. Si los dos coinciden manda el legal.
   if (dia.esDescanso) return dia.programado ? 'DESCANSO_TRABAJADO' : 'DESCANSO';
+
+  // Un día pintado como descanso se VE como descanso, que es lo que faltaba: antes caía a
+  // SIN_TURNO y la celda mostraba el recuadro de «Agregar», como si ahí no hubiera nada.
+  //
+  // Y solo cuando NO está programado. Un día pintado libre en el que además hay turno es una
+  // contradicción, y la salida segura es tratarlo como trabajo normal: devolver
+  // DESCANSO_TRABAJADO aquí pagaría el recargo del descanso obligatorio por un martes cualquiera
+  // que un administrador marcó libre. Nadie lo vería: saldría como un número más en la nómina.
+  if (!dia.programado && dia.descansoPintado === true) return 'DESCANSO';
+
   return dia.programado ? 'TRABAJA' : 'SIN_TURNO';
 }

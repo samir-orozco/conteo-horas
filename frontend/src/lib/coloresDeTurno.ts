@@ -46,6 +46,26 @@ export const CLASES_COLOR: Record<ColorDeTurno, string> = {
   ocre: 'bg-orange-200 text-orange-900',
 };
 
+// EL MISMO COLOR, RELLENO ENTERO, para el selector del modal (23 de septiembre de 2026): un círculo
+// del color con su nombre debajo, como lo pidió el dueño.
+//
+// Es un mapa aparte y no una variante de `CLASES_COLOR` porque los dos resuelven cosas distintas.
+// Aquel es un par fondo claro + texto oscuro, y el contraste lo da el NOMBRE DEL TURNO escrito
+// encima; un círculo vacío no lleva nada encima, así que pintado con ese fondo claro los ocho
+// colores se ven casi iguales, que es justo lo contrario de para lo que sirve elegir un color.
+//
+// Van literales por la misma razón que las de arriba: Tailwind purga lo que no encuentra escrito.
+export const PUNTO_COLOR: Record<ColorDeTurno, string> = {
+  grafito: 'bg-gray-500',
+  ambar: 'bg-amber-400',
+  indigo: 'bg-indigo-500',
+  esmeralda: 'bg-emerald-500',
+  rubi: 'bg-rose-500',
+  cobalto: 'bg-sky-500',
+  violeta: 'bg-violet-500',
+  ocre: 'bg-orange-500',
+};
+
 // Lo que llega del servidor puede ser de una versión anterior de la paleta, o de un turno cuyo color
 // se retiró. Pintar «nada» dejaría una celda invisible en el calendario, así que se cae al neutro,
 // igual que `normalizarModalidad` cae a PRESENCIAL.

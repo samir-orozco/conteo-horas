@@ -53,10 +53,11 @@ const FILA = {
   propuesta: null as unknown,
 };
 
-// El catálogo lleva un turno de descanso: es el que se pinta al confirmar.
+// El catálogo son turnos de TRABAJO y nada más. Desde el 23 de septiembre de 2026 confirmar el
+// descanso no pinta ninguno de estos: manda la acción y no hay nada que elegir.
 const CATALOGO = [
-  { id: 'p1', nombre: 'Mañana', color: 'esmeralda', esDescanso: false, horaEntrada: '06:00', horaSalida: '14:00' },
-  { id: 'pLibre', nombre: 'Libre', color: 'grafito', esDescanso: true, horaEntrada: null, horaSalida: null },
+  { id: 'p1', nombre: 'Mañana', color: 'esmeralda', horaEntrada: '06:00', horaSalida: '14:00' },
+  { id: 'p2', nombre: 'Noche', color: 'cobalto', horaEntrada: '22:00', horaSalida: '06:00' },
 ];
 
 const montar = (propuesta: unknown, catalogo: unknown[] = CATALOGO) => {
@@ -90,26 +91,33 @@ describe('cuando se puede proponer', () => {
     expect(await screen.findByRole('button', { name: /jueves/i })).toBeInTheDocument();
   });
 
-  it('confirmar pinta el turno de DESCANSO del catálogo en ese día', async () => {
-    // Lo que de verdad importa: que elija la plantilla con `esDescanso`, no la primera de la lista.
-    // Pintar «Mañana» ahí convertiría la confirmación del descanso en un turno de trabajo.
+  it('confirmar manda la ACCIÓN de descanso, y ningún turno', async () => {
+    // Lo que de verdad importa: que no viaje `plantillaId`. Cuando sí viajaba, era el de una
+    // plantilla marcada como descanso, y elegir mal —pintar «Mañana» ahí— convertía la
+    // confirmación del descanso en un turno de trabajo. Ese error ya no se puede cometer.
     const usuario = userEvent.setup();
     put.mockResolvedValue({ data: { ok: true } });
     montar(PROPUESTA);
     await usuario.click(await screen.findByRole('button', { name: /jueves/i }));
 
     expect(put).toHaveBeenCalledWith('/turnos/dia', {
-      colaboradorId: 'c1', fecha: JUEVES, plantillaId: 'pLibre',
+      colaboradorId: 'c1', fecha: JUEVES, descanso: true,
     });
   });
 
-  it('si el catálogo no tiene ningún turno de descanso, no ofrece un botón muerto', async () => {
-    // Confirmar necesita algo que pintar. Sin turno de descanso en el catálogo, el clic fallaría
-    // en el backend con un error que quien mira no podría explicar.
-    montar(PROPUESTA, [CATALOGO[0]]);
-    await esperarLaRejilla();
-    expect(screen.queryByRole('button', { name: /jueves/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/turno de descanso/i)).toBeInTheDocument();
+  it('y lo ofrece aunque el catálogo esté vacío', async () => {
+    // ESTA PRUEBA AFIRMABA LO CONTRARIO: sin un turno de descanso en el catálogo el botón no se
+    // dibujaba, y en su lugar salía «falta un turno de descanso en el catálogo». Sonaba a guarda
+    // prudente y era un botón que no existía para nadie, porque ninguna empresa se había inventado
+    // ese turno. Confirmar el descanso ya no depende del catálogo, así que se prueba al revés.
+    const usuario = userEvent.setup();
+    put.mockResolvedValue({ data: { ok: true } });
+    montar(PROPUESTA, []);
+    await usuario.click(await screen.findByRole('button', { name: /jueves/i }));
+
+    expect(put).toHaveBeenCalledWith('/turnos/dia', {
+      colaboradorId: 'c1', fecha: JUEVES, descanso: true,
+    });
   });
 });
 
