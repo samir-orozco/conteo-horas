@@ -428,6 +428,41 @@ números malos. Cada uno con su comprobación antes de tocarlo.
   pero son los más expuestos: si le cambian el horario, esos días se mueven
   enteros. Vale la pena averiguar por qué faltan.
 
+### Nada que toque cientos de filas puede ir en una sola petición
+
+**Anotado el 24 de septiembre de 2026 a petición del dueño**, mientras se diseñaba
+la programación masiva de turnos. Aplica a **dos** cosas: la asignación en bloque
+que está por construirse y **los reportes**, que ya existen.
+
+El tamaño real: 150 personas por 31 días son **4.650 jornadas**. Y cada jornada
+escrita no es un `INSERT` suelto: `pintarDiaDeColaborador` recalcula la semana de
+esa persona (`reescribirSemanaDe`), así que el costo por fila es varias consultas,
+no una.
+
+Lo que tiene que cumplir cualquier operación de ese tamaño:
+
+1. **Ir por bloques**, con su tamaño explícito, y no en una petición única. El
+   hosting es compartido y tiene límite de procesos (ver `cpanel-ops` y la sección
+   de las 4 vulnerabilidades: ahí ya se vio a ese servidor atragantarse).
+2. **Mostrar pantalla de carga con progreso real**, bloque N de M y cuántas
+   jornadas van. Una barra indeterminada durante treinta segundos se lee como
+   «se colgó», y quien mira recarga la página a la mitad.
+3. **Decir qué pasa si se corta.** Una escritura por bloques es parcial por
+   naturaleza: si se detiene en el bloque 7 de 10, esas 280 jornadas ya están
+   escritas. Eso NO es un error que ocultar, pero obliga a lo de abajo.
+4. **Marcar el lote.** Cada aplicación masiva deja su identificador en los días
+   que escribió, para poder revertir la operación entera con una sola acción. Sin
+   eso, un bloque a medias se corrige a mano fila por fila.
+
+**En los reportes el problema es el mismo pero al leer**, y ahí no hay lote que
+valga: lo que hace falta es paginar o transmitir por partes, y que la pantalla
+diga por dónde va en vez de quedarse en blanco.
+
+**Lo que NO está medido, y conviene medirlo antes de elegir el tamaño del bloque:**
+cuánto tarda hoy un reporte de un mes sobre la empresa más grande de producción, y
+cuántas filas por segundo aguanta el servidor escribiendo días esperados. El
+número 40 que usa la maqueta es una suposición, no una medición.
+
 ### Antes de tocar lo biométrico: lo que hay que arreglar primero
 
 **Anotado el 6 de septiembre de 2026, a peticion del dueno.** El trabajo de
