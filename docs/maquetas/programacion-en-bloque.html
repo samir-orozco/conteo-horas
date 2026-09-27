@@ -1,0 +1,2220 @@
+<title>Programación en bloque</title>
+<style>
+  :root {
+    --primary: #FFD85E;
+    --primary-dark: #F0C63F;
+    --primary-light: #FFE995;
+    --ink: #303030;
+    --muted: #717171;
+    --linea: #e6e6e6;
+    --linea-suave: #f0f0f0;
+    --fondo: #f6f6f7;
+    --blanco: #ffffff;
+    --alerta-fondo: #fffbeb;
+    --alerta-borde: #fde68a;
+    --alerta-texto: #92400e;
+    --peligro: #e11d48;
+    --ok: #059669;
+    --g-50: #fafafa;
+    --g-100: #f1f1f2;
+    --g-200: #e9e9ec;
+    --g-300: #d4d4d4;
+    --g-400: #c9c9c9;
+    --g-500: #b4b4b4;
+    --g-600: #a8a8a8;
+    --radio: 16px;
+    --fuente: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  body { background: var(--fondo); color: var(--ink); font-family: var(--fuente); -webkit-font-smoothing: antialiased; }
+  .envoltura { max-width: 1340px; margin: 0 auto; padding: 22px 16px 170px; }
+  .ico { display: block; flex: none; }
+
+  /* EL ANDAMIAJE DE LA MAQUETA, PLEGADO (26 de septiembre de 2026).
+     Medido antes de tocarlo: este recuadro ocupaba 203 px y el pie 281, o sea casi una cuarta parte
+     de la página, y la rejilla no empezaba hasta el píxel 554. Para juzgar cómo se ve la pantalla,
+     media pantalla de texto explicando la pantalla estorba. El texto no se borra, que documenta las
+     decisiones: se pliega, y queda una línea que sigue diciendo lo único que no puede faltar, que
+     esto no es la aplicación. */
+  .aviso {
+    background: var(--blanco); border: 1px solid var(--linea); border-left: 4px solid var(--primary);
+    border-radius: var(--radio); margin-bottom: 14px; font-size: 12px; color: var(--muted);
+  }
+  .aviso > summary {
+    padding: 9px 14px; cursor: pointer; list-style: none; display: flex; align-items: center;
+    gap: 8px; flex-wrap: wrap; line-height: 1.45;
+  }
+  .aviso > summary::-webkit-details-marker { display: none; }
+  .aviso > summary .mas {
+    margin-left: auto; font-size: 11px; font-weight: 700; color: var(--ink);
+    background: var(--primary-light); border-radius: 999px; padding: 2px 9px; white-space: nowrap;
+  }
+  .aviso[open] > summary { border-bottom: 1px solid var(--linea-suave); }
+  .aviso[open] > summary .mas::after { content: ' ·'; }
+  .aviso-cuerpo { padding: 11px 14px 13px; }
+  .aviso-cuerpo p { margin: 0 0 9px; line-height: 1.55; }
+  .aviso-cuerpo p:last-child { margin-bottom: 0; }
+  .aviso b { color: var(--ink); }
+
+  .cabecera {
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start;
+    justify-content: space-between; margin-bottom: 16px;
+  }
+  .cabecera h2 { margin: 0; font-size: 27px; font-weight: 800; letter-spacing: -0.02em; }
+  .cabecera .sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+  .derecha { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+  .fila-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .nav button {
+    font: inherit; cursor: pointer; background: var(--blanco); color: var(--ink);
+    border: 1px solid var(--linea); border-radius: 11px; transition: background .15s ease;
+  }
+  .nav { display: flex; align-items: center; gap: 8px; }
+  .nav button:hover { background: var(--g-50); border-color: var(--g-300); }
+  .nav .flecha { width: 38px; height: 38px; display: grid; place-items: center; }
+  .nav .rango { padding: 0 16px; height: 38px; font-size: 13px; font-weight: 700; min-width: 200px; }
+  .nav .hoy { padding: 0 18px; height: 38px; font-size: 13px; font-weight: 700; }
+
+  .segmentado { display: flex; gap: 3px; background: var(--g-200); border-radius: 12px; padding: 3px; }
+  .segmentado button {
+    font: inherit; font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+    background: transparent; color: var(--muted); border-radius: 9px; padding: 7px 16px;
+  }
+  .segmentado button[aria-pressed="true"] {
+    background: var(--blanco); color: var(--ink); font-weight: 800;
+    box-shadow: 0 1px 3px rgba(0,0,0,.09);
+  }
+  .etiqueta-periodo {
+    font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+  }
+  .etiqueta-periodo.actual { color: var(--alerta-texto); }
+
+  .herramientas {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    background: var(--blanco); border: 1px solid var(--linea);
+    border-radius: var(--radio); padding: 12px; margin-bottom: 14px;
+  }
+  .buscador { position: relative; flex: 2 1 240px; min-width: 200px; display: flex; align-items: center; }
+  .buscador .ico { position: absolute; left: 12px; color: var(--g-600); }
+  .buscador input {
+    font: inherit; font-size: 13px; width: 100%; color: var(--ink);
+    border: 1px solid var(--linea); border-radius: 11px; padding: 10px 12px 10px 37px; background: var(--blanco);
+  }
+  .buscador input::placeholder { color: var(--g-500); }
+  .buscador input:focus, .herramientas select:focus { outline: none; border-color: var(--primary-dark); }
+  .herramientas select {
+    font: inherit; font-size: 13px; color: var(--ink); background: var(--blanco);
+    border: 1px solid var(--linea); border-radius: 11px; padding: 10px 12px;
+    flex: 1 1 170px; min-width: 150px;
+  }
+  /* UN <select> NO ADMITE UN SVG DENTRO, así que el icono se coloca encima de su zona izquierda y
+     el campo se abre hueco con el padding, igual que el buscador. `pointer-events: none` para que
+     el icono no se coma el clic que debe abrir la lista. */
+  .campo-icono { position: relative; display: flex; align-items: center; flex: 1 1 190px; min-width: 165px; }
+  .campo-icono .ico { position: absolute; left: 12px; color: var(--g-600); pointer-events: none; }
+  .campo-icono select { width: 100%; flex: 1 1 auto; min-width: 0; padding-left: 37px; }
+  .nuevo {
+    display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: .06em;
+    background: var(--primary); color: var(--ink); border-radius: 999px; padding: 2px 6px; margin-left: 5px;
+  }
+
+  /* UNA TIRA Y NO CUATRO TARJETAS (26 de septiembre de 2026). Cuatro cajas de 229 px con un número
+     de 21 px cada una pesaban 85 px de alto y se leían como el asunto de la pantalla. No lo son: el
+     asunto es la rejilla. Los cuatro datos siguen estando, en una sola tira, separados por una línea
+     fina en vez de por cuatro bordes. Los `id` no se tocan, que son los que rellena `pintarResumen`. */
+  .resumen {
+    display: flex; flex-wrap: wrap; align-items: stretch; margin-bottom: 12px;
+    background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio);
+    padding: 4px 2px;
+  }
+  .tarjeta {
+    /* `box-sizing: border-box` EN ESTA CAJA, y hace falta decirlo porque en esta maqueta NO es
+       global: se puso solo en `.toast`, a propósito, para no mover anchos ya medidos. Sin él, una
+       base del 50% son 50% de CONTENIDO más los 20 px de relleno, así que dos hermanas suman más
+       que la fila y envuelven. Medido: en 390 px daban una tarjeta por fila y 223 px de alto. */
+    box-sizing: border-box;
+    flex: 1 1 190px; min-width: 0; padding: 7px 13px; display: flex; align-items: center; gap: 10px;
+  }
+  .tarjeta + .tarjeta { border-left: 1px solid var(--linea-suave); }
+  .tarjeta .icono { width: 28px; height: 28px; border-radius: 9px; flex: none; display: grid; place-items: center; }
+  .i-gente { background: #eef2ff; color: #4f46e5; }
+  .i-turnos { background: #ecfdf5; color: #059669; }
+  .i-descanso { background: var(--primary-light); color: #8a6d1f; }
+  .i-alerta { background: #fee2e2; color: #dc2626; }
+  .tarjeta .n { font-size: 16px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tarjeta .t { font-size: 11px; color: var(--muted); line-height: 1.25; margin-top: 1px; }
+
+  /* La leyenda va sin horarios: con ocho turnos, nombre y horario se pasaban a dos renglones. El
+     horario ya está en la pastilla del carril y en la propia celda, así que aquí sobraba. */
+  .leyenda { display: flex; flex-wrap: wrap; gap: 6px 15px; align-items: center; margin-bottom: 10px; padding: 0 3px; }
+  .leyenda span { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+  .leyenda i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+
+  .tabla-caja { background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio); overflow-x: auto; }
+  /* ANCHOS FIJOS, Y NO REPARTIDOS SEGÚN EL CONTENIDO (25 de septiembre de 2026, lo vio el dueño).
+     Antes la tabla repartía el espacio sobrante entre las columnas, y la de la persona se lo quedaba
+     casi entero: con la semana en blanco las celdas de día se encogían y quedaba un hueco grande a
+     la derecha del nombre. Con `table-layout: fixed` el ancho lo mandan estas reglas y no lo que
+     haya dentro, así que una celda vacía mide exactamente lo mismo que una con turno. */
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+  /* 840 Y NO 980. Con 980 la semana se desplazaba de lado en cualquier ventana por debajo de ese
+     ancho, y eso está mal: catorce o treinta y cinco días no caben y por eso quincena y mes sí se
+     desplazan, pero NUEVE COLUMNAS TIENEN QUE CABER. Medido en una caja de 951 px: con 980 sobraban
+     29 px por la derecha y había que arrastrar para ver el domingo. Ahora son 180 de la persona, 100
+     del total y siete días de 80, y el sobrante se reparte entre los días, así que donde hay sitio
+     los días salen MÁS ANCHOS que antes, no más estrechos. */
+  table.semana { min-width: 840px; }
+  /* La quincena usa la celda COMPLETA (nombre y horas), no la compacta del mes: con catorce días
+     todavía hay sitio para leerlas, y comprimirlas obligaría a inventar una tercera forma de celda. */
+  table.quincena { min-width: 1510px; }
+  table.mes { min-width: 1630px; }
+  /* 180 Y NO 230. Medido: la columna de Persona se llevaba 254 px reales, el 27% de la tabla de la
+     semana, para mostrar un nombre, el cargo y la sede. Cargo y sede tienen su propio filtro arriba,
+     así que en la fila son contexto y no el dato que se viene a buscar. Con 180 los siete días ganan
+     ese espacio, que es donde se hace el trabajo. */
+  th.persona, td.persona { width: 180px; }
+  th.total, td.total { width: 100px; }
+  th.semanal, td.semanal { width: 48px; }
+  th, td { padding: 0; }
+  thead th {
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    padding: 11px 6px; border-bottom: 1px solid var(--linea); text-align: center; white-space: nowrap;
+  }
+  thead th.persona { text-align: left; padding-left: 18px; font-size: 12px; }
+  thead th .num { display: block; font-size: 14px; font-weight: 800; color: var(--ink); margin-top: 1px; }
+  thead th.dia { cursor: pointer; user-select: none; }
+  thead th.dia:hover .num { color: var(--primary-dark); }
+  /* El día de hoy como píldora, igual que en la referencia. Es la única señal fuerte del encabezado,
+     así que el resto de los días se queda en voz baja. */
+  thead th.dia.hoy .num {
+    display: inline-block; background: var(--ink); color: var(--blanco);
+    border-radius: 999px; padding: 2px 10px; margin-top: 3px;
+  }
+  thead th.dia.pasado { opacity: .42; }
+  thead th.finde, td.finde { background: #fdf6f6; }
+  thead th.fuera, td.fuera { background: var(--g-50); }
+  thead th.fuera .num { color: var(--g-500); }
+  .corte { border-left: 2px solid var(--linea); }
+
+  tbody tr { border-bottom: 1px solid var(--linea-suave); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr.vacia td { padding: 30px 16px; font-size: 13px; color: var(--muted); text-align: center; }
+
+  td.persona { padding: 6px 8px 6px 14px; cursor: pointer; user-select: none; position: sticky; left: 0; background: var(--blanco); z-index: 2; }
+  .nombre, .cargo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  td.persona:hover { background: var(--g-50); }
+  thead th.persona { position: sticky; left: 0; background: var(--blanco); z-index: 3; }
+  .fila-persona { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--primary-light);
+    color: var(--ink); font-size: 11px; font-weight: 800; flex: none; display: grid; place-items: center;
+  }
+  .nombre { font-size: 13px; font-weight: 700; line-height: 1.25; }
+  /* El cargo y el chip comparten renglón. El cargo cede (`1 1 auto` con `min-width: 0`) y el chip no
+     (`flex: none`): si el espacio aprieta, se recorta «Recepción · Centro», que además está en los
+     filtros de arriba, y nunca la marca de que a esa persona le falta un descanso. */
+  /* `min-width: 0` TAMBIÉN AQUÍ, y esta es la caja que se me olvidó. Un hijo flexible no encoge por
+     debajo de su contenido salvo que se le diga, y como esto envuelve al nombre y a la línea del
+     cargo, sin la regla no cedía: medido, CINCO de los seis chips se salían por la derecha de la
+     celda de persona y quedaban encima de la columna del lunes. Es el mismo descuido que ya me pasó
+     con el carril de turnos: el desbordamiento se arregla en el PADRE, no en el hijo. */
+  .quien { flex: 1 1 auto; min-width: 0; }
+  .cargo-linea { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .cargo { flex: 1 1 auto; min-width: 0; font-size: 10px; color: var(--muted); line-height: 1.25; }
+  .cargo-linea .chip-mes, .cargo-linea .chip-sin { flex: none; margin-top: 0; margin-left: 0; }
+  /* El contador del mes. Gris cuando no hay ninguno, ámbar en ocasional y rojo en habitual, que es
+     donde compensar con tiempo deja de ser opcional. */
+  .chip-mes {
+    display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;
+    font-size: 9px; font-weight: 800; border-radius: 999px; padding: 1px 6px; line-height: 1.4;
+  }
+  /* «sin horario» va en voz baja y pegado al cargo: es un dato de contexto, no una alarma. Que
+     alguien no tenga horario no le quita su descanso obligatorio. */
+  .sin-horario {
+    margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+    background: var(--g-100); color: #6e6e6e; font-size: 9px; font-weight: 700;
+  }
+  .chip-ninguno { background: var(--g-100); color: #6e6e6e; }
+  .chip-ocasional { background: #fef3c7; color: #92400e; }
+  .chip-habitual { background: #fee2e2; color: #b91c1c; }
+
+  td.celda { padding: 3px 4px; }
+  table.mes td.celda { padding: 2px 2px; }
+  /* DENSIDAD DE LA FILA (26 de septiembre de 2026).
+     Medido antes de tocar: la fila pesaba 76 px y solo se veían CINCO personas en una pantalla de
+     portátil, en un módulo cuyo sentido es programar a mucha gente de una. La cuenta del alto era
+     46 de `min-height` + 16 de relleno + 3 de borde = 65 la celda, y 65 + 10 del `td` + 1 del borde
+     de la fila = 76.
+     Ojo con el 36: como `box-sizing` en esta maqueta es `content-box`, ese número es CONTENIDO, y la
+     celda termina midiendo 36 + 12 + 3 = 51. Caben los dos renglones del turno (nombre y horario).
+     Una celda con la línea del descanso obligatorio lleva un tercer renglón y crece sola, que es lo
+     correcto: ese dato no se recorta. */
+  .jornada {
+    position: relative; border-radius: 11px; padding: 6px 8px; font-size: 11px; line-height: 1.3;
+    border: 1.5px solid transparent; cursor: pointer; user-select: none; touch-action: none;
+    min-height: 36px; display: flex; flex-direction: column; justify-content: center;
+  }
+  table.mes .jornada {
+    min-height: 26px; border-radius: 8px; padding: 3px 2px;
+    align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
+  }
+  .jornada .cab { display: flex; align-items: center; gap: 6px; }
+  .jornada .punto { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .jornada .n { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* `nowrap` ES LA GUARDA, no un adorno: el horario en dos renglones es lo que engordaba la fila, y
+     sin esto cualquier turno con nombre largo que alguien cree mañana lo repetiría en silencio. Si
+     no cabe, se recorta con puntos suspensivos y se ve; envolver no se ve. */
+  .jornada .h {
+    font-variant-numeric: tabular-nums; opacity: .78; margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Los colores de cada turno NO están aquí: los genera `pintarPaletaDeTurnos` desde la tabla de
+     TURNOS, porque en el producto el catálogo lo crea el cliente y no se puede escribir a mano una
+     regla por turno. Aquí quedan solo los ESTADOS del día, que no son turnos del catálogo. */
+  .t-libre  { background: var(--g-100); color: #6b7280; align-items: center; }
+  /* DESCANSO: EL ICONO ARRIBA Y LA PALABRA DEBAJO (25 de septiembre de 2026, elección del dueño).
+     Una celda de turno ocupa dos líneas (nombre arriba, horas abajo) y la de descanso ocupaba una
+     sola, centrada, así que al lado de las demás se veía hueca y el renglón quedaba desparejo.
+     Apilados, las dos clases de celda tienen el mismo ritmo.
+     No hace falta acotarlo al mes: allí la celda de descanso lleva solo el icono, sin `.cab`. */
+  .jornada.t-libre .cab { flex-direction: column; gap: 3px; }
+  .jornada.t-libre .cab .ico { width: 15px; height: 15px; }
+  .t-vacio  { background: transparent; color: var(--g-400); border: 1.5px dashed var(--g-300); justify-content: center; align-items: center; }
+  .t-pasado { background: var(--g-100); color: var(--g-500); }
+  .t-pasado .punto { background: var(--g-400); }
+
+  /* EL DESCANSO OBLIGATORIO se marca distinto de un día libre cualquiera, porque no cuestan lo
+     mismo: pintarle un turno encima a este puede terminar en recargo y en compensatorio. */
+  /* EL DESCANSO OBLIGATORIO, MARCADO EN VOZ BAJA (25 de septiembre de 2026, lo vio el dueño: «se ve
+     horrible»). La versión anterior apilaba tres señales para un solo hecho: borde punteado, anillo
+     azul grisáceo por dentro y un rótulo en mayúsculas espaciadas. Junto, se leía como un error del
+     sistema y no como un dato. Quedó un fondo un punto más asentado y sin borde, y debajo una línea
+     discreta en minúscula.
+     ESA LÍNEA TAMBIÉN SE FUE (27 de septiembre de 2026, lo eligió el dueño). Era el tercer renglón
+     de la celda y estiraba la FILA ENTERA a 68 px frente a 58 las demás. Hoy la señal es solo el
+     fondo, más el motivo al pasar el puntero, que lo pone `pintar` leyendo el tipo EFECTIVO. */
+  .jornada.obligatorio {
+    background: #eceff4; color: #5b6472; border-color: transparent; border-style: solid;
+  }
+  /* SU DESCANSO, TRABAJADO. En el motor es DESCANSO_TRABAJADO y arrastra dinero, así que aquí no
+     puede verse como un turno normal. */
+  .t-trabajado { background: #fff7ed; color: #9a3412; box-shadow: inset 0 0 0 2px #fdba74; }
+  .t-trabajado .punto { background: #f97316; }
+
+  .jornada .tic {
+    position: absolute; top: 5px; right: 5px; width: 16px; height: 16px; border-radius: 5px;
+    background: var(--primary-dark); color: var(--ink); display: none; align-items: center; justify-content: center;
+  }
+  table.mes .jornada .tic { top: 2px; right: 2px; width: 13px; height: 13px; border-radius: 4px; }
+  .jornada.sel { border-color: var(--primary-dark); box-shadow: 0 0 0 2.5px rgba(240, 198, 63, .4); }
+  .jornada.sel .tic { display: flex; }
+  .jornada.t-vacio.sel, .jornada.t-libre.sel {
+    background: var(--primary-light); border-color: var(--primary-dark); color: #7a5f16;
+  }
+  /* El chulo, más grueso. Va por CSS y no por el atributo del SVG a propósito: así se cambia en un
+     solo sitio para todos los iconos de tic, sin tocar el generador. */
+  .jornada .tic svg { stroke-width: 3; }
+
+  /* UNA CELDA VACÍA MARCADA SE CONVIERTE EN LA CASILLA (25 de septiembre de 2026, pedido del dueño):
+     el `+` desaparece y el tic pasa al centro, grande. El `+` invita a agregar y el tic dice que ya
+     está agregada a la selección; tener los dos a la vez decía dos cosas distintas en la misma celda.
+     Solo en las vacías: en una celda con turno, centrar el tic taparía el nombre del turno, que es
+     justo el dato que hace falta para saber qué se va a sobrescribir. */
+  .jornada.t-vacio.sel .n { display: none; }
+  .jornada.t-vacio.sel .tic {
+    position: static; top: auto; right: auto;
+    width: 24px; height: 24px; border-radius: 7px;
+  }
+  .jornada.t-vacio.sel .tic svg { width: 16px; height: 16px; stroke-width: 3.2; }
+  table.mes .jornada.t-vacio.sel .tic { width: 18px; height: 18px; border-radius: 5px; }
+  table.mes .jornada.t-vacio.sel .tic svg { width: 12px; height: 12px; }
+  .jornada.bloqueada.sel { border-color: #ddd0a4; background: #faf6e8; box-shadow: none; opacity: .55; }
+  .jornada.bloqueada.sel .tic { background: #ddd0a4; }
+
+  td.total { padding: 9px 14px; text-align: right; white-space: nowrap; }
+  td.semanal { padding: 4px 6px; text-align: center; white-space: nowrap; background: var(--g-50); }
+  .total .h { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .total .h span { color: var(--muted); font-weight: 600; }
+  .total .exceso, .semanal .exceso {
+    display: inline-block; font-size: 10px; font-weight: 800;
+    background: #fee2e2; color: #b91c1c; border-radius: 999px; padding: 1px 6px;
+  }
+  .semanal .h { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .semanal .h.pasa { color: #b91c1c; }
+
+  .flotante {
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 40;
+    background: var(--blanco); border: 1px solid var(--linea); border-radius: 18px;
+    box-shadow: 0 14px 44px rgba(0, 0, 0, .17); padding: 12px 14px; display: none;
+    width: max-content; max-width: calc(100vw - 48px);
+  }
+  .flotante.abierta { display: flex; }
+  .flotante-dentro { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .cuenta { font-size: 14px; font-weight: 800; line-height: 1.2; }
+  .cuenta .detalle { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+  .opcion {
+    font: inherit; cursor: pointer; border: 1px solid transparent; border-radius: 11px;
+    padding: 7px 11px; text-align: left; line-height: 1.25;
+  }
+  .opcion .n { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; }
+  .opcion .h { font-size: 10px; opacity: .78; font-variant-numeric: tabular-nums; margin-top: 1px; }
+  .opcion .punto { width: 7px; height: 7px; border-radius: 50%; }
+  /* Igual que arriba: el color de cada pastilla `.o-<turno>` lo genera la paleta desde la tabla. */
+  .o-libre { background: var(--blanco); color: var(--ink); border-color: var(--linea); }
+
+  /* ---------- EL CARRIL DE TURNOS ----------
+     Pedido del dueño el 25 de septiembre de 2026: «puedo dejar fijo los de descanso, quitar turno y
+     cancelar y los otros con un scroll, que puede ser unas flechas para navegar por los demás».
+     La razón es de fondo: los turnos del catálogo son TANTOS COMO EL CLIENTE CREE, así que esa parte
+     no puede tener ancho fijo. Descanso, Quitar turno y Rotación no son del catálogo, son siempre
+     las mismas tres, y por eso se quedan quietas donde la mano ya las busca. */
+  .carril { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .pista {
+    display: flex; gap: 7px; overflow-x: auto; scroll-behavior: smooth;
+    max-width: 330px; scrollbar-width: none; padding: 2px;
+    /* `min-width: 0` NO ES DECORATIVO, y sin él el carril se sale de la tarjeta.
+       Un elemento flexible no se encoge por debajo de su contenido salvo que se le diga, y como las
+       pastillas llevan `flex: none`, ese mínimo es la suma de las ocho: 891 px. En escritorio no se
+       notaba porque el `max-width` de arriba lo tapaba, pero en pantalla chica, donde ese tope se
+       quita, el carril medía 726 px dentro de una tarjeta de 368 y las pastillas se dibujaban fuera
+       de la caja. No lo delata mirar la tarjeta (su rectángulo no crece con lo que se desborda) ni
+       el scroll de la página (la tarjeta es `fixed`): hay que medir el carril por dentro. */
+    min-width: 0;
+  }
+  .pista::-webkit-scrollbar { display: none; }
+  .pista .opcion { flex: none; }
+  .flecha-carril {
+    /* `font: inherit` FALTABA AQUÍ, y es el único control del archivo que se lo saltaba. Un botón
+       sin fuente declarada no hereda: el navegador le pone la suya, que midiendo resultó ser Arial
+       a 13.33 px, fuera de la escala y fuera de la familia del resto. No se veía porque dentro solo
+       hay un icono con medidas propias, y por eso conviene comprobarlo en vez de mirarlo. */
+    font: inherit;
+    flex: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+    background: var(--blanco); border: 1px solid var(--linea); color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .flecha-carril:hover { color: var(--ink); border-color: var(--g-400); }
+  .flecha-carril[disabled] { opacity: .3; cursor: default; }
+  /* Una raya que separa el catálogo (variable) de las acciones fijas, para que se lea que son dos
+     cosas distintas y no ocho botones seguidos. */
+  .fijos { display: flex; gap: 7px; padding-left: 11px; border-left: 1px solid var(--linea); }
+  /* EL ICONO ARRIBA Y EL TEXTO DEBAJO (25 de septiembre de 2026, pedido del dueño). Es la misma
+     decisión que ya se tomó en la celda de descanso del calendario: al lado de una pastilla de turno,
+     que ocupa dos renglones, una de un solo renglón con el icono al lado se veía desparejada. */
+  .opcion.apilada .n { flex-direction: column; gap: 3px; }
+  .o-quitar { background: var(--blanco); color: var(--peligro); border-color: #fecdd3; }
+  /* La rotación se separa de los cuatro de al lado con el amarillo de la marca: no escribe de una,
+     abre una ventana. Y se apaga cuando la selección tiene más de una persona, porque un ciclo
+     arranca en un día concreto de UNA persona. */
+  .o-rotar { background: var(--primary-light); color: #6f5608; border-color: #efd88a; font-weight: 800; }
+  .o-rotar[disabled] { opacity: .42; cursor: not-allowed; }
+  .acciones { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+
+  /* ---------- la ventana de rotación ---------- */
+  .grupo { margin-bottom: 16px; }
+  .grupo > .et { display: block; font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 7px; }
+  .patrones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .patron {
+    font: inherit; text-align: left; cursor: pointer; background: var(--blanco);
+    border: 1.5px solid var(--linea); border-radius: 12px; padding: 9px 11px; line-height: 1.3;
+  }
+  .patron .c { display: block; font-size: 14px; font-weight: 800; }
+  .patron .d { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .patron[aria-pressed="true"] { border-color: var(--primary-dark); background: var(--primary-light); }
+  .patron[aria-pressed="true"] .d { color: #6f5608; }
+  .turnitos { display: flex; flex-wrap: wrap; gap: 7px; }
+  .turnito {
+    font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; border-radius: 10px;
+    padding: 7px 11px; border: 1.5px solid transparent; display: flex; align-items: center; gap: 6px;
+  }
+  .turnito .punto { width: 8px; height: 8px; border-radius: 50%; }
+  .turnito[aria-pressed="true"] { border-color: var(--ink); }
+  /* La tira de previsualización: el periodo entero de esa persona, un cuadrito por día, para VER si
+     el ciclo cuadra con la semana antes de escribir nada. Los cortes marcan los lunes. */
+  .tira { display: flex; flex-wrap: wrap; gap: 3px; }
+  .tira .d {
+    width: 26px; border-radius: 6px; padding: 3px 0 4px; text-align: center; line-height: 1.15;
+    font-size: 9px; font-weight: 700; color: var(--muted); background: var(--fondo);
+  }
+  .tira .d .l { display: block; font-size: 9px; font-weight: 800; opacity: .65; }
+  .tira .d.lunes { box-shadow: inset 2px 0 0 var(--linea); }
+  .tira .d.libre { background: var(--g-200); color: #696969; }
+  .tira .d.manana { background: #d6f5e6; color: #12694a; }
+  .tira .d.tarde { background: #d9ecfe; color: #12557f; }
+  .tira .d.noche { background: #e6dffd; color: #4c1d95; }
+  .tira .d.pasado { opacity: .38; }
+  /* Un día que no está marcado no lo toca la rotación: se ve apagado para que la tira no prometa un
+     ciclo que la escritura no va a cumplir. */
+  .tira .d.fuera { opacity: .3; }
+  /* El veredicto del mes, que es la razón de ser de esta ventana. Verde o rojo, nunca a medias. */
+  .veredicto {
+    display: flex; align-items: flex-start; gap: 8px; border-radius: 11px; padding: 10px 12px;
+    font-size: 12px; font-weight: 700; line-height: 1.5; margin-top: 14px;
+  }
+  .veredicto.bien { background: #ecfdf5; color: #065f46; }
+  .veredicto.mal { background: #fef2f2; color: #b91c1c; }
+  .veredicto .cuerpo { min-width: 0; }
+  .veredicto .fino { display: block; font-weight: 500; margin-top: 2px; }
+  /* Marca en la fila de la persona: alguna semana del mes se queda sin descanso. Es el mismo hecho
+     que el veredicto, puesto donde se ve sin abrir nada. */
+  .chip-sin {
+    display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; margin-left: 4px;
+    font-size: 9px; font-weight: 800; border-radius: 999px; padding: 1px 6px; line-height: 1.4;
+    background: #fee2e2; color: #b91c1c;
+  }
+
+  .btn { font: inherit; font-size: 13px; font-weight: 700; border-radius: 11px; padding: 10px 16px; cursor: pointer; border: none; }
+  .btn-principal { background: var(--primary); color: var(--ink); }
+  .btn-principal:hover { background: var(--primary-dark); }
+  .btn-plano { background: none; color: var(--muted); }
+  .btn-plano:hover { color: var(--ink); }
+  .btn-peligro { background: none; color: var(--peligro); border: 1.5px solid #fecdd3; }
+
+  .telon { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 60; display: grid; place-items: center; padding: 16px; }
+  .modal { background: var(--blanco); border-radius: 18px; width: 100%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,.28); overflow: hidden; }
+  .modal header { padding: 18px 20px 12px; border-bottom: 1px solid var(--linea-suave); }
+  .modal h3 { margin: 0; font-size: 16px; font-weight: 800; }
+  .modal .sub { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+  .modal .cuerpo { padding: 16px 20px; max-height: 60vh; overflow-y: auto; }
+  .modal footer { padding: 0 20px 18px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+  .linea-dato { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 7px 0; font-size: 13px; border-bottom: 1px solid var(--linea-suave); }
+  .linea-dato:last-child { border-bottom: none; }
+  .linea-dato .v { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .linea-dato .k { color: var(--muted); }
+  .v-ok { color: var(--ok); }
+  .v-gris { color: var(--muted); }
+
+  .alerta { margin-top: 14px; background: var(--alerta-fondo); border: 1px solid var(--alerta-borde); border-radius: 11px; padding: 11px 13px; }
+  .alerta .t { font-size: 12px; font-weight: 800; color: var(--alerta-texto); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+  .alerta ul { margin: 0; padding-left: 17px; }
+  .alerta li { font-size: 12px; color: var(--alerta-texto); line-height: 1.6; }
+
+  /* ---------- la ventana de progreso ---------- */
+  .modal-carga .carga-cuerpo { padding: 20px 22px 16px; }
+  .carga-cabeza { display: flex; align-items: center; gap: 13px; margin-bottom: 18px; }
+  .carga-icono {
+    width: 44px; height: 44px; border-radius: 14px; flex: none; display: grid; place-items: center;
+    background: var(--primary-light); color: #8a6d1f; transition: background .3s ease, color .3s ease;
+  }
+  .carga-icono.hecho { background: #d1fae5; color: var(--ok); }
+  .carga-icono.cortada { background: #fee2e2; color: var(--peligro); }
+  .carga-cabeza h3 { margin: 0; font-size: 18px; font-weight: 800; }
+  .carga-cabeza .sub { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+  .carga-pct {
+    margin-left: auto; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums;
+    color: var(--muted); transition: color .3s ease;
+  }
+  .carga-pct.hecho { color: var(--ok); }
+
+  /* Los bloques como PASOS, igual que la referencia: un círculo por bloque, unidos por la línea que
+     se va llenando. Con más de diez bloques se esconden y manda la barra: cien circulitos no
+     informan de nada. */
+  .pasos { display: flex; align-items: center; margin-bottom: 16px; }
+  .paso-circ {
+    width: 27px; height: 27px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: var(--g-200); color: var(--g-600); font-size: 11px; font-weight: 800;
+    transition: background .25s ease, color .25s ease, box-shadow .25s ease;
+  }
+  .paso-circ.listo { background: var(--ok); color: var(--blanco); }
+  .paso-circ.activo { background: var(--primary); color: var(--ink); box-shadow: 0 0 0 4px rgba(255, 216, 94, .38); }
+  .paso-linea { flex: 1 1 auto; height: 4px; background: var(--g-200); transition: background .25s ease; }
+  .paso-linea.listo { background: var(--ok); }
+
+  .resumen-final {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px;
+  }
+  .resumen-final .caja {
+    background: var(--fondo); border-radius: 12px; padding: 11px 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .resumen-final .ic {
+    width: 32px; height: 32px; border-radius: 9px; flex: none; display: grid; place-items: center;
+    background: var(--blanco); color: var(--muted); box-shadow: 0 0 0 1px rgba(0, 0, 0, .05);
+  }
+  .resumen-final .n { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .resumen-final .t { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* LA BARRA SE PONE VERDE AL LLENARSE. Solo cuando terminó de verdad: si se detuvo a la mitad, el
+     verde diría «todo bien» sobre una escritura incompleta. */
+  .relleno.completo { background: var(--ok); }
+
+  .riel { height: 9px; background: var(--linea-suave); border-radius: 999px; overflow: hidden; margin: 4px 0 9px; }
+  .relleno { height: 100%; width: 0%; background: var(--primary); border-radius: 999px; transition: width .28s ease; }
+  .bloques { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+  .bloque { flex: 1 1 10px; height: 6px; border-radius: 3px; background: var(--linea-suave); transition: background .2s ease; }
+  .bloque.listo { background: var(--ok); }
+  .bloque.activo { background: var(--primary); }
+  .paso { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 10px; font-variant-numeric: tabular-nums; }
+  .porque { margin-top: 14px; font-size: 11px; color: var(--muted); line-height: 1.6; background: var(--fondo); border-radius: 10px; padding: 10px 12px; }
+
+  /* ---------- avisos flotantes (toasts) ----------
+     Abajo a la derecha, apilados, con su degradado de color a la izquierda como en la referencia.
+     Se desvanecen solos, PERO el reloj se para mientras el puntero está encima: este aviso lleva
+     dentro el botón de deshacer, que es la única marcha atrás de una escritura de cientos de filas,
+     y una red de seguridad que se va sola a los cinco segundos no es una red. */
+  .toasts {
+    position: fixed; right: 18px; bottom: 18px; z-index: 70;
+    display: flex; flex-direction: column-reverse; gap: 10px; align-items: flex-end;
+  }
+  .toast {
+    /* `box-sizing: border-box` NO es decoración: sin él, el relleno se SUMA al ancho. Medido en el
+       navegador, un `width: 370px` acababa midiendo 410 y el aviso se salía 6 px por la derecha.
+       Va solo aquí y no de forma global a propósito: un box-sizing general movería anchos de la
+       rejilla que ya están medidos y verificados (las celdas de 139 px, la columna de 230). */
+    box-sizing: border-box;
+    position: relative; display: flex; gap: 12px; align-items: flex-start; overflow: hidden;
+    background: var(--blanco); border-radius: 14px; box-shadow: 0 12px 34px rgba(0, 0, 0, .16);
+    padding: 13px 40px 13px 13px; width: 370px; max-width: calc(100vw - 36px);
+    animation: toast-entra .3s cubic-bezier(.2, .9, .3, 1.25) both;
+  }
+  .toast::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 150px;
+    background: linear-gradient(90deg, var(--tinte), transparent); opacity: .55; pointer-events: none;
+  }
+  .toast.sale { animation: toast-sale .3s ease forwards; }
+  @keyframes toast-entra { from { opacity: 0; transform: translateX(30px) scale(.97); } to { opacity: 1; transform: none; } }
+  @keyframes toast-sale { to { opacity: 0; transform: translateX(30px) scale(.97); } }
+  @media (prefers-reduced-motion: reduce) {
+    .toast, .toast.sale { animation-duration: .01ms; }
+  }
+  .toast .ic {
+    width: 38px; height: 38px; border-radius: 11px; background: var(--blanco); flex: none;
+    display: grid; place-items: center; box-shadow: 0 0 0 1px rgba(0, 0, 0, .06); position: relative;
+  }
+  .toast .tx { position: relative; min-width: 0; }
+  .toast .t { display: block; font-size: 13px; font-weight: 800; }
+  .toast .d { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+  .toast .accion {
+    position: relative; margin-top: 9px; font: inherit; font-size: 12px; font-weight: 800;
+    background: var(--blanco); color: var(--ink); border: 1px solid var(--linea);
+    border-radius: 9px; padding: 6px 11px; cursor: pointer;
+  }
+  .toast .accion:hover { border-color: var(--g-400); }
+  .toast .x {
+    position: absolute; top: 10px; right: 10px; background: none; border: none;
+    cursor: pointer; color: var(--g-500); padding: 2px; line-height: 0;
+  }
+  .toast .x:hover { color: var(--ink); }
+  .t-ok { --tinte: #b7f0d8; }
+  .t-ok .ic { color: var(--ok); }
+  .t-aviso { --tinte: #fde68a; }
+  .t-aviso .ic { color: #d97706; }
+
+  .pie { margin-top: 24px; font-size: 12px; color: var(--muted); line-height: 1.7; border-top: 1px solid var(--linea); padding-top: 16px; }
+  /* Cerrado por defecto: es documentación de las decisiones, no algo que haya que leer para usar la
+     pantalla. Plegado pasa de 281 px a un renglón. */
+  .pie > summary { cursor: pointer; font-weight: 700; color: var(--ink); font-size: 12px; }
+  .pie[open] > summary { margin-bottom: 10px; }
+  .pie b { color: var(--ink); }
+  .pie ol { padding-left: 18px; margin: 8px 0 0; }
+  .pie li { margin-bottom: 5px; }
+
+  @media (max-width: 640px) {
+    .envoltura { padding: 14px 12px 210px; }
+    /* LA TIRA DE RESUMEN, EN DOS COLUMNAS EN PANTALLA CHICA. Medido: con la base de 190 px solo
+       entraba UNA tarjeta por fila en 390 px, así que la tira medía 223 px de alto, más que las
+       cuatro tarjetas sueltas de antes. Y la raya divisoria, que separa bien cuando están en una
+       fila, al envolver queda colgando a la izquierda de la primera de cada fila nueva, marcando una
+       separación que ahí no significa nada. En dos columnas no hace falta: las contiene la caja. */
+    .tarjeta { flex: 1 1 calc(50% - 1px); padding: 7px 10px; }
+    .tarjeta + .tarjeta { border-left: none; }
+    .cabecera h2 { font-size: 22px; }
+    .derecha { align-items: stretch; }
+    /* EN PANTALLA CHICA LA TARJETA RESPIRA POR LOS LADOS (25 de septiembre de 2026, pedido del
+       dueño): 16 px de aire a cada lado y separada del borde de abajo, para que se lea como algo
+       que flota encima y no como una barra pegada al marco. */
+    .flotante { width: calc(100vw - 32px); bottom: 14px; padding: 12px; }
+    /* Y el contenido se apila centrado en vez de estirarse de borde a borde.
+       `width: 100%` y `min-width: 0` son los que sujetan el carril: sin ellos esta caja se dimensiona
+       por su contenido y sale más ancha que la tarjeta, y entonces la pista no tiene contra qué
+       encogerse por mucho `min-width: 0` que lleve ella. El desbordamiento se arregla en el PADRE. */
+    .flotante-dentro { flex-direction: column; align-items: center; gap: 10px; width: 100%; min-width: 0; }
+    .cuenta { text-align: center; }
+    .acciones { margin-left: 0; justify-content: center; width: 100%; }
+    /* El carril ocupa el ancho de la tarjeta y las tres fijas pasan debajo, centradas y sin la raya
+       vertical, que apilado no separa nada. */
+    .carril { width: 100%; min-width: 0; }
+    /* `flex: 1 1 0` y no `1 1 auto`: con base `auto` el tamaño de partida son los 891 px de las ocho
+       pastillas, y encogerse desde ahí depende de que el padre apriete. Con base 0 la pista parte de
+       cero y crece solo hasta donde le dejen, que es lo que se quiere de un carril. */
+    .pista { max-width: none; flex: 1 1 0; }
+    .fijos { padding-left: 0; border-left: none; justify-content: center; flex-wrap: wrap; }
+    .patrones { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="envoltura">
+
+  <details class="aviso">
+    <summary><b>Maqueta, no es la aplicación.</b> Datos de mentira, nada se guarda.
+      <span class="mas">Cómo funciona</span></summary>
+    <div class="aviso-cuerpo">
+      <p><b>La selección está siempre activa</b>: clic en una esquina y clic en la otra marca el
+        rango, y el segundo clic lo cierra. Arrastrar hace lo mismo. Con el rango cerrado, un clic
+        en una celda marcada la quita y doble clic deja solo esa.</p>
+      <p><b>El mes se dibuja con semanas completas</b>, del lunes anterior al día 1 al domingo
+        posterior al último. No es estético: pintar un día reescribe su semana entera, así que si el
+        mes se cortara a mitad de semana una escritura tocaría días que no están en pantalla.</p>
+      <p><b>Hay ocho turnos a propósito.</b> Con tres cabían todos en la tarjeta y no se veía el
+        problema de verdad: el catálogo lo crea cada cliente. Los turnos van en un carril que se
+        corre con las flechas, y <b>Descanso</b>, <b>Quitar turno</b> y <b>Rotación</b> se quedan
+        fijas, porque esas tres son siempre las mismas.</p>
+    </div>
+  </details>
+
+  <div class="cabecera">
+    <div>
+      <h2>Turnos</h2>
+      <p class="sub">Organiza y programa los turnos de tu equipo</p>
+    </div>
+    <div class="derecha">
+      <div class="fila-nav">
+        <div class="segmentado" role="group" aria-label="Período">
+          <button id="btnSemana" aria-pressed="true" onclick="verPeriodo('SEMANA')">Semana</button>
+          <button id="btnQuincena" aria-pressed="false" onclick="verPeriodo('QUINCENA')">Quincena</button>
+          <button id="btnMes" aria-pressed="false" onclick="verPeriodo('MES')">Mes</button>
+        </div>
+        <div class="nav">
+          <button class="flecha" onclick="mover(-1)" aria-label="Anterior" id="flechaIzq"></button>
+          <button class="rango" id="titulo" onclick="irHoy()">—</button>
+          <button class="flecha" onclick="mover(1)" aria-label="Siguiente" id="flechaDer"></button>
+          <button class="hoy" onclick="irHoy()">Hoy</button>
+        </div>
+      </div>
+      <div class="etiqueta-periodo" id="etiqueta"></div>
+    </div>
+  </div>
+
+  <div class="herramientas">
+    <div class="buscador" id="cajaBuscador">
+      <input id="f-buscar" type="search" placeholder="Buscar empleado..." oninput="filtrar()" aria-label="Buscar empleado">
+    </div>
+    <div class="campo-icono" id="cajaSede">
+      <select id="f-sede" onchange="filtrar()" aria-label="Sede">
+        <option value="">Todas las sedes</option>
+        <option value="Norte">Norte</option>
+        <option value="Centro">Centro</option>
+      </select>
+    </div>
+    <div class="campo-icono" id="cajaCargo">
+      <select id="f-cargo" onchange="filtrar()" aria-label="Cargo">
+        <option value="">Todos los cargos</option>
+        <option value="Guarda">Guarda</option>
+        <option value="Supervisor">Supervisor</option>
+        <option value="Recepción">Recepción</option>
+        <option value="Aseo">Aseo</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="resumen">
+    <div class="tarjeta"><span class="icono i-gente" id="ic1"></span>
+      <div><div class="n" id="r-gente">0</div><div class="t">personas en la lista</div></div></div>
+    <div class="tarjeta"><span class="icono i-turnos" id="ic2"></span>
+      <div><div class="n" id="r-turnos">0</div><div class="t" id="r-turnos-t">turnos programados</div></div></div>
+    <div class="tarjeta"><span class="icono i-descanso" id="ic3"></span>
+      <div><div class="n" id="r-descansos">0</div><div class="t">descansos marcados</div></div></div>
+    <div class="tarjeta"><span class="icono i-alerta" id="ic4"></span>
+      <div><div class="n" id="r-exceso">0</div><div class="t" id="r-exceso-t">semanas por encima de 42 h</div></div></div>
+  </div>
+
+  <!-- La leyenda también sale de la tabla de turnos. Escrita a mano, mentía en cuanto alguien
+       agregaba un turno, que es justo lo que acaba de pasar al pasar de tres a ocho. -->
+  <div class="leyenda" id="leyenda"></div>
+
+  <div class="tabla-caja">
+    <table id="tabla" class="semana">
+      <thead><tr id="encabezado"></tr></thead>
+      <tbody id="cuerpo"></tbody>
+    </table>
+  </div>
+
+  <details class="pie">
+    <summary>Sobre esta maqueta: qué pone a prueba y por qué</summary>
+    <b>Lo que esta maqueta pone a prueba:</b>
+    <ol>
+      <li>Que la selección siempre activa no estorbe, con la casilla dentro de la celda como única
+        señal de que algo está marcado.</li>
+      <li>Que en el mes la <b>semana siga siendo visible</b>, con su total al final de cada bloque de
+        siete días. Es el número que atrapa el «acabas de dejar a alguien en 56 horas», y en un mes
+        sin esa división desaparece.</li>
+      <li>Que antes de escribir se vea <b>qué se escribe y qué no</b>, y quién se pasa del tope, por
+        persona y por semana.</li>
+      <li>Que el guardado vaya <b>por bloques</b> y lo diga.</li>
+      <li>Que lo escrito quede como <b>un lote reversible</b>.</li>
+    </ol>
+    <p style="margin-top:12px">
+      <b>La rotación, que es la herramienta del mes.</b> El rectángulo sirve para una semana, pero
+      nadie pinta el mismo turno treinta días seguidos: rota. Con una sola persona marcada, el botón
+      <b>Rotación</b> pide tres cosas (patrón, turno y dónde arranca el ciclo) y antes de escribir
+      dice si por norma esa rotación le está dando su día de descanso <b>en todas las semanas del
+      mes</b>. Un 6x1 o un 5x2 duran siete días y dejan el descanso siempre en el mismo día; un 4x2
+      o un 2x2 no cuadran con la semana y lo corren, que es de donde salen los incumplimientos que
+      ninguna celda «pisada» delata.
+    </p>
+  </details>
+</div>
+
+<div class="telon" id="telonPrevia" style="display:none">
+  <div class="modal" role="dialog" aria-labelledby="tituloPrevia">
+    <header>
+      <h3 id="tituloPrevia">Antes de aplicar</h3>
+      <p class="sub" id="subPrevia"></p>
+    </header>
+    <div class="cuerpo">
+      <div class="linea-dato"><span class="k">Se escriben</span><span class="v v-ok" id="pvEscribe">0 jornadas</span></div>
+      <div class="linea-dato"><span class="k">Ya tenían ese mismo turno</span><span class="v v-gris" id="pvIguales">0</span></div>
+      <div class="linea-dato" id="filaPasadas"><span class="k">Bloqueadas porque el día ya pasó</span><span class="v v-gris" id="pvPasadas">0</span></div>
+      <div class="alerta" id="pvHabitual" style="border-color:#fca5a5;background:#fef2f2">
+        <div class="t" id="pvHabitualT" style="color:#b91c1c">Pasarían a descanso habitual este mes</div>
+        <ul id="pvListaHabitual"></ul>
+      </div>
+      <div class="alerta" id="pvDescansos" style="border-color:#fdba74;background:#fff7ed">
+        <div class="t" id="pvDescansosT" style="color:#9a3412">Pintarías sobre su descanso obligatorio</div>
+        <ul id="pvListaDescansos"></ul>
+      </div>
+      <div class="alerta" id="pvSinDescanso">
+        <div class="t" id="pvSinDescansoT">Semanas que quedarían sin ningún descanso</div>
+        <ul id="pvListaSinDescanso"></ul>
+      </div>
+      <div class="alerta" id="pvAlerta">
+        <div class="t" id="pvAlertaT">Pasarían del tope de 42 horas</div>
+        <ul id="pvLista"></ul>
+      </div>
+      <div class="porque">
+        El exceso se mide <b>por semana</b>, que es su unidad, no sobre el total de lo seleccionado.
+        Lo que ya pasó o ya tiene marcación no se toca nunca.
+      </div>
+    </div>
+    <footer>
+      <button class="btn btn-plano" onclick="cerrarPrevia()">Cancelar</button>
+      <button class="btn btn-principal" id="btnAplicar" onclick="aplicar()">Aplicar</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ───────── LA VENTANA DE ROTACIÓN ─────────
+     Pedido del dueño, con sus palabras: «si seleccionamos el nombre de la persona podamos poner en el
+     modal donde están los turnos de que se ponga el 6x1 o el 4x2 para que semanalmente se apliquen
+     los cambios, como que solo se seleccione el tipo de rotación, los días y el turno».
+     Los días son la selección que ya está hecha en la rejilla, así que aquí solo quedan tres
+     decisiones: el patrón, el turno que se trabaja, y en qué punto del ciclo arranca. -->
+<div class="telon" id="telonRotacion" style="display:none">
+  <div class="modal" role="dialog" aria-labelledby="rotTitulo">
+    <header>
+      <h3 id="rotTitulo">Rotación de <span id="rotQuien">—</span></h3>
+      <p class="sub">Se aplica sobre los días que tienes marcados, semana tras semana.</p>
+    </header>
+    <div class="cuerpo">
+      <div class="grupo">
+        <span class="et">TIPO DE ROTACIÓN</span>
+        <div class="patrones" id="rotPatrones"></div>
+        <p class="sub" id="rotNota" style="margin-top:7px"></p>
+      </div>
+      <div class="grupo">
+        <span class="et">TURNO QUE TRABAJA</span>
+        <div class="turnitos" id="rotTurnos"></div>
+      </div>
+      <div class="grupo">
+        <span class="et">DÓNDE ARRANCA EL CICLO</span>
+        <div class="carril">
+          <button class="flecha-carril" id="rotIzq" onclick="correrCiclo(-1)" aria-label="Correr un día atrás"></button>
+          <div class="tira" id="rotTira" style="flex:1 1 auto"></div>
+          <button class="flecha-carril" id="rotDer" onclick="correrCiclo(1)" aria-label="Correr un día adelante"></button>
+        </div>
+      </div>
+      <div class="veredicto" id="rotVeredicto"></div>
+      <div class="porque">
+        Un ciclo de <b>siete días</b> (6x1, 5x2) deja el descanso siempre en el mismo día. Uno de seis
+        o de cuatro (4x2, 2x2) lo corre cada semana, y por eso hay que mirar el mes entero: puede
+        dejar siete días seguidos de trabajo sin que ningún día «pisado» lo delate.
+      </div>
+    </div>
+    <footer>
+      <button class="btn btn-plano" onclick="cerrarRotacion()">Cancelar</button>
+      <button class="btn btn-principal" onclick="aplicarRotacion()">Ver antes de aplicar</button>
+    </footer>
+  </div>
+</div>
+
+<div class="telon" id="telonCarga" style="display:none">
+  <div class="modal modal-carga" role="dialog" aria-labelledby="cargaTitulo" style="max-width:460px">
+    <div class="carga-cuerpo">
+      <div class="carga-cabeza">
+        <span class="carga-icono" id="cargaIcono"></span>
+        <div>
+          <h3 id="cargaTitulo">Programando</h3>
+          <p class="sub" id="cargaSub">No cierres esta ventana.</p>
+        </div>
+        <span class="carga-pct" id="cargaPct">0%</span>
+      </div>
+
+      <div class="pasos" id="pasos"></div>
+
+      <div class="riel"><div class="relleno" id="relleno"></div></div>
+      <div class="paso" id="lineaPaso">
+        <span id="pasoTexto">Bloque 1</span>
+        <span id="pasoNum">0 de 0 jornadas</span>
+      </div>
+
+      <div class="resumen-final" id="resumenFinal" style="display:none">
+        <div class="caja">
+          <span class="ic" id="icFinJornadas"></span>
+          <span><span class="n" id="finEscritas">0</span><span class="t" style="display:block">jornadas escritas</span></span>
+        </div>
+        <div class="caja">
+          <span class="ic" id="icFinBloques"></span>
+          <span><span class="n" id="finBloques">0</span><span class="t" style="display:block">bloques enviados</span></span>
+        </div>
+      </div>
+
+      <div class="porque" id="porqueCarga">
+        Va por bloques a propósito. Cada jornada recalcula la semana de esa persona; mandarlas en una
+        sola petición tumba el servidor compartido. Si detienes, los bloques ya escritos se quedan y
+        se deshacen con el botón del lote.
+      </div>
+    </div>
+    <footer id="pieCarga"></footer>
+  </div>
+</div>
+
+<script>
+  // ---------- iconos de línea, los mismos trazos que usa la aplicación ----------
+  var ICONOS = {
+    gente: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    calendario: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/>',
+    luna: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+    alerta: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    visto: '<path d="M20 6 9 17l-5-5"/>',
+    cama: '<path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/>',
+    lupa: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    izq: '<path d="m15 18-6-6 6-6"/>',
+    der: '<path d="m9 18 6-6-6-6"/>',
+    equis: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    // Sede y cargo. El pin es el que la aplicación ya usa para sedes.
+    pin: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+    maletin: '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
+    capas: '<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+    rotar: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>'
+  };
+  function ico(n, t) {
+    return '<svg class="ico" width="' + (t || 16) + '" height="' + (t || 16) + '" viewBox="0 0 24 24"'
+      + ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"'
+      + ' stroke-linejoin="round" aria-hidden="true">' + ICONOS[n] + '</svg>';
+  }
+
+  // ───────── EL CATÁLOGO DE TURNOS DE LA EMPRESA ─────────
+  //
+  // OCHO Y NO TRES (25 de septiembre de 2026, lo preguntó el dueño: «si yo tengo varios turnos
+  // creados, cómo se va a ver en la card flotante?»). Con tres, la tarjeta cabía siempre y el
+  // desbordamiento no se podía ni ver. Ocho es lo que tiene una empresa de verdad, y obliga a
+  // resolverlo de una vez.
+  //
+  // Y EL COLOR VIVE AQUÍ, no en el CSS. Antes cada turno necesitaba tres reglas escritas a mano
+  // (`.t-manana`, `.o-manana`, el punto), lo que solo funciona con un catálogo fijo. En el producto
+  // los turnos los crea el cliente y salen de la base, así que el estilo se GENERA desde esta tabla:
+  // agregar un turno es agregar una línea aquí y nada más. Ver `pintarPaletaDeTurnos`.
+  //
+  // `libre` y `vacio` no llevan color a propósito: no son turnos del catálogo sino estados del día,
+  // y su estilo sigue escrito a mano porque tienen forma propia (el icono apilado, el borde punteado).
+  var TURNOS = {
+    // `cortas` es el horario COMO SE ESCRIBE EN LA CELDA, y `horas` como se escribe donde hay sitio
+    // (la pastilla del carril, la leyenda). Medido: «14:00 – 22:00» no cabe en los 75 px útiles de
+    // una celda y envolvía a DOS renglones, que eran 30 px de los 46 de contenido. De ahí salían los
+    // 73 px de fila y que solo se vieran cinco personas en un portátil. Un cuadro de turnos impreso
+    // se escribe así de corto por la misma razón.
+    manana:    { nombre: 'Mañana',    corto: 'M', horas: '7:00 – 15:00',  cortas: '7–15',    dur: 8, color: '#10b981', fondo: '#eafaf1', texto: '#12694a' },
+    tarde:     { nombre: 'Tarde',     corto: 'T', horas: '14:00 – 22:00', cortas: '14–22',   dur: 8, color: '#3b82f6', fondo: '#eaf4fe', texto: '#12557f' },
+    noche:     { nombre: 'Noche',     corto: 'N', horas: '22:00 – 6:00',  cortas: '22–6',    dur: 8, color: '#8b5cf6', fondo: '#f1edfe', texto: '#4c1d95' },
+    apertura:  { nombre: 'Apertura',  corto: 'A', horas: '6:00 – 14:00',  cortas: '6–14',    dur: 8, color: '#0891b2', fondo: '#e6f7fb', texto: '#0e5c6b' },
+    cierre:    { nombre: 'Cierre',    corto: 'C', horas: '15:00 – 23:00', cortas: '15–23',   dur: 8, color: '#e11d48', fondo: '#fdeaee', texto: '#8f1231' },
+    partido:   { nombre: 'Partido',   corto: 'P', horas: '8:00 – 12:00 y 16:00 – 20:00', cortas: '8–12 · 16–20', dur: 8, color: '#d97706', fondo: '#fdf3e3', texto: '#7c4a06' },
+    madrugada: { nombre: 'Madrugada', corto: 'D', horas: '0:00 – 8:00',   cortas: '0–8',     dur: 8, color: '#475569', fondo: '#eef1f5', texto: '#33404f' },
+    refuerzo:  { nombre: 'Refuerzo',  corto: 'R', horas: '11:00 – 15:00', cortas: '11–15',   dur: 4, color: '#65a30d', fondo: '#f0f7e2', texto: '#405c08' },
+    libre:     { nombre: 'Descanso',  corto: '·', horas: '', dur: 0 },
+    vacio:     { nombre: '',          corto: '+', horas: '', dur: 0 }
+  };
+  // Las claves de los turnos de verdad, en orden. Es lo que recorre el carril de la tarjeta, la
+  // leyenda y la paleta: un solo sitio del que salgan los tres.
+  function clavesDeTurno() {
+    return Object.keys(TURNOS).filter(function (k) { return !!TURNOS[k].color; });
+  }
+  // La clase de una celda o de una pastilla se DERIVA de la clave, no se guarda al lado. Guardada,
+  // podían dejar de coincidir sin que nada se quejara.
+  function claseDe(k) { return 't-' + k; }
+
+  // EL ESTILO DE LOS TURNOS, GENERADO. Un solo recorrido escribe las cuatro cosas que un turno
+  // necesita pintar: la celda del calendario, la pastilla de la tarjeta, la pastilla de la ventana de
+  // rotación y el cuadrito de la tira de previsualización.
+  function pintarPaletaDeTurnos() {
+    var css = '';
+    clavesDeTurno().forEach(function (k) {
+      var t = TURNOS[k];
+      css += '.t-' + k + '{background:' + t.fondo + ';color:' + t.texto + '}'
+        + '.t-' + k + ' .punto{background:' + t.color + '}'
+        + '.o-' + k + '{background:' + t.fondo + ';color:' + t.texto + '}'
+        + '.o-' + k + ' .punto{background:' + t.color + '}'
+        + '.turnito.x-' + k + '{background:' + t.fondo + ';color:' + t.texto + '}'
+        + '.turnito.x-' + k + ' .punto{background:' + t.color + '}'
+        + '.tira .d.x-' + k + '{background:' + t.fondo + ';color:' + t.texto + '}';
+    });
+    var hoja = document.createElement('style');
+    hoja.id = 'paletaDeTurnos';
+    hoja.textContent = css;
+    document.head.appendChild(hoja);
+  }
+  var TOPE = 42;
+  var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var LETRAS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+  // EL DESCANSO OBLIGATORIO DE CADA PERSONA, con los mismos tres casos del motor real:
+  //   PRESUMIDO  la ley presume el domingo, salvo acuerdo escrito
+  //   FIJO       el día pactado por escrito
+  //   ROTATIVO   el día que esa semana quede planificado como libre
+  //
+  // Y CON LA GUARDA QUE FALTABA (25 de septiembre de 2026): el tipo declarado NO VALE sin acuerdo
+  // escrito. En el motor, `estadoDescansoDe` comprueba `descansoAcuerdoEn` ANTES de mirar el tipo, y
+  // su comentario lo dice en plata: si alguien marca a un mesero como «descansa los miércoles» y no
+  // hay acuerdo, sus domingos siguen valiendo el 90% de recargo. `acuerdo: false` reproduce eso.
+  //
+  // Nada de esto depende del HORARIO: son columnas de la persona. Alguien sin horario asignado
+  // conserva su tipo, y el motor igual le genera una fila por día (sin programar), así que hay
+  // dónde guardar su descanso.
+  var GENTE = [
+    { n: 'Julián Torres',   c: 'Guarda',     s: 'Norte',  tipo: 'ROTATIVO',  dia: null,        acuerdo: true,  horario: true,  base: ['noche','noche','noche','noche','noche','libre','libre'] },
+    { n: 'María Gómez',     c: 'Supervisor', s: 'Norte',  tipo: 'FIJO',      dia: 'MIERCOLES', acuerdo: true,  horario: true,  base: ['manana','tarde','tarde','manana','manana','noche','libre'] },
+    { n: 'Sofía Ramos',     c: 'Recepción',  s: 'Centro', tipo: 'PRESUMIDO', dia: null,        acuerdo: false, horario: true,  base: ['tarde','tarde','libre','manana','tarde','tarde','libre'] },
+    { n: 'Andrés Quintero', c: 'Guarda',     s: 'Norte',  tipo: 'ROTATIVO',  dia: null,        acuerdo: true,  horario: false, base: ['tarde','tarde','tarde','tarde','libre','vacio','vacio'] },
+    { n: 'Paola Ruiz',      c: 'Guarda',     s: 'Centro', tipo: 'ROTATIVO',  dia: null,        acuerdo: true,  horario: true,  base: ['manana','manana','noche','libre','manana','manana','tarde'] },
+    { n: 'Camilo Prieto',   c: 'Guarda',     s: 'Centro', tipo: 'PRESUMIDO', dia: null,        acuerdo: false, horario: false, base: ['vacio','vacio','vacio','vacio','noche','vacio','vacio'] },
+    { n: 'Luisa Fernández', c: 'Aseo',       s: 'Norte',  tipo: 'FIJO',      dia: 'LUNES',     acuerdo: true,  horario: true,  base: ['vacio','vacio','apertura','vacio','refuerzo','vacio','vacio'] },
+    // DECLARADA FIJO PERO SIN ACUERDO: el motor la trata como PRESUMIDO, o sea que su descanso
+    // sigue siendo el domingo y sus domingos siguen llevando recargo. Es el caso que la maqueta
+    // pintaba mal hasta ahora.
+    { n: 'Jorge Medina',    c: 'Guarda',     s: 'Norte',  tipo: 'FIJO',      dia: 'JUEVES',    acuerdo: false, horario: true,  base: ['libre','manana','manana','tarde','vacio','vacio','vacio'] },
+    { n: 'Diana Cárdenas',  c: 'Recepción',  s: 'Centro', tipo: 'PRESUMIDO', dia: null,        acuerdo: false, horario: true,  base: ['cierre','libre','cierre','tarde','apertura','vacio','vacio'] },
+    { n: 'Óscar Peña',      c: 'Guarda',     s: 'Centro', tipo: 'ROTATIVO',  dia: null,        acuerdo: false, horario: false, base: ['noche','noche','noche','libre','noche','vacio','vacio'] },
+    { n: 'Marcela Ríos',    c: 'Aseo',       s: 'Norte',  tipo: 'PRESUMIDO', dia: null,        acuerdo: false, horario: true,  base: ['tarde','tarde','libre','tarde','tarde','vacio','vacio'] },
+    { n: 'Iván Salazar',    c: 'Guarda',     s: 'Centro', tipo: 'FIJO',      dia: 'SABADO',    acuerdo: true,  horario: true,  base: ['manana','manana','tarde','manana','manana','vacio','vacio'] }
+  ];
+  var DIAS_NOMBRE = ['LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO','DOMINGO'];
+  var DIAS_BONITO = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+
+  // DESCANSOS QUE YA TRABAJÓ ESTE MES, de días que YA PASARON. En el producto real este número NO
+  // sale del calendario: sale de que haya MARCACIONES ese día. El comentario del motor lo midió
+  // contra la base y las dos cosas resultaron disjuntas: había gente con tres descansos con turno
+  // programado y CERO marcados, y gente con cero programados y dos marcados. Aquí es un dato de
+  // ejemplo, porque la maqueta no tiene kiosco.
+  var YA_TRABAJADOS = [2, 0, 1, 2, 0, 0, 1, 0, 3, 1, 0, 0];
+
+  // ---------- fechas ----------
+  function soloFecha(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  var HOY = soloFecha(new Date());
+  function sumarDias(d, n) {
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() + n);
+    return x;
+  }
+  function lunesDe(d) { var w = d.getDay(); return sumarDias(d, w === 0 ? -6 : 1 - w); }
+  function claveDe(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function mismoDia(a, b) { return a.getTime() === b.getTime(); }
+
+  var VISTA = 'SEMANA';
+  var ancla = HOY;
+
+  // LAS COLUMNAS DEL PERÍODO. En mes son SEMANAS COMPLETAS: del lunes anterior al día 1 al domingo
+  // posterior al último. Pintar un día reescribe su semana entera, así que si la rejilla cortara una
+  // semana por la mitad, una escritura cambiaría días que no están a la vista.
+  function columnas() {
+    var out = [];
+    if (VISTA === 'SEMANA' || VISTA === 'QUINCENA') {
+      // LA QUINCENA SON DOS SEMANAS COMPLETAS, no del 1 al 15. Cada empresa planifica en su propio
+      // periodo (semanal, quincenal, mensual), pero la unidad que LIQUIDA no cambia: el tope de 42
+      // horas y el descanso obligatorio son semanales. Partir una semana por la mitad devolvería el
+      // problema de siempre, que una escritura toque días que no están en pantalla.
+      var l = lunesDe(ancla);
+      var cuantos = VISTA === 'SEMANA' ? 7 : 14;
+      for (var i = 0; i < cuantos; i++) out.push(sumarDias(l, i));
+      return out;
+    }
+    var primero = new Date(ancla.getFullYear(), ancla.getMonth(), 1);
+    var ultimo = new Date(ancla.getFullYear(), ancla.getMonth() + 1, 0);
+    var d = lunesDe(primero);
+    var fin = sumarDias(lunesDe(ultimo), 6);
+    while (d <= fin) { out.push(d); d = sumarDias(d, 1); }
+    return out;
+  }
+  function delMes(f) { return VISTA !== 'MES' || f.getMonth() === ancla.getMonth(); }
+  function bloqueada(f) { return f < HOY; }
+
+  // ---------- el plan, guardado POR FECHA ----------
+  // Antes eran arreglos de siete y eso ataba todo a la semana. Con la vista de mes, la clave es la
+  // fecha: las dos vistas leen y escriben el mismo sitio.
+  var PLAN = {};
+  var LUNES_HOY = lunesDe(HOY);
+  function claveDia(f, fecha) { return f + '|' + claveDe(fecha); }
+  function turnoDe(f, fecha) {
+    var k = claveDia(f, fecha);
+    if (PLAN[k] !== undefined) return PLAN[k];
+    // Lo ya vivido viene con su patrón; de la semana siguiente en adelante, en blanco. Es el caso
+    // real: se programa lo que está vacío, no lo que ya está resuelto.
+    if (fecha < sumarDias(LUNES_HOY, 7)) return GENTE[f].base[(fecha.getDay() + 6) % 7];
+    return 'vacio';
+  }
+  function ponerTurno(f, fecha, t) { PLAN[claveDia(f, fecha)] = t; }
+
+  // ───────── EL DESCANSO OBLIGATORIO: espejo de `esDescansoObligatorio` del backend ─────────
+  //
+  // Los dos «vuelve al domingo» están copiados a propósito, y en el motor están comentados con su
+  // razón: que un administrador olvide planificar no puede dejar a nadie SIN descanso obligatorio.
+  // El error cae siempre hacia pagar de más, nunca de menos.
+  // LA GUARDA VA PRIMERO, antes de mirar el tipo, igual que en `estadoDescansoDe`. Así no hay
+  // ninguna rama que pueda saltársela: sin acuerdo escrito, cualquier declaración cae a PRESUMIDO.
+  function tipoEfectivoDe(f) {
+    var p = GENTE[f];
+    if (!p.acuerdo) return 'PRESUMIDO';
+    if (p.tipo === 'FIJO' && DIAS_NOMBRE.indexOf(p.dia) === -1) return 'PRESUMIDO';
+    return p.tipo;
+  }
+  function indiceDescansoDe(f, lunes) {
+    var p = { tipo: tipoEfectivoDe(f), dia: GENTE[f].dia };
+    if (p.tipo === 'FIJO') {
+      var i = DIAS_NOMBRE.indexOf(p.dia);
+      return i === -1 ? 6 : i;                       // dato roto vuelve al domingo
+    }
+    if (p.tipo === 'ROTATIVO') {
+      for (var j = 0; j < 7; j++) {
+        if (turnoDe(f, sumarDias(lunes, j)) === 'libre') return j;
+      }
+      return 6;                                      // semana sin planificar vuelve al domingo
+    }
+    return 6;                                        // PRESUMIDO
+  }
+  function diaSemanaDe(fecha) { return (fecha.getDay() + 6) % 7; }
+  function esDescansoObligatorio(f, fecha) {
+    return diaSemanaDe(fecha) === indiceDescansoDe(f, lunesDe(fecha));
+  }
+  // El caso que cuesta dinero: su descanso obligatorio con un turno encima. En el motor esto es
+  // DESCANSO_TRABAJADO, y arrastra recargo y, a partir del tercero del mes, compensatorio obligado.
+  // ───────── EL CHEQUEO QUE PIDIÓ EL DUEÑO: LEER EL MES ENTERO, POR PERSONA ─────────
+  //
+  // «Que el sistema lea todo el mes y me diga que por norma no le estás dando el día de descanso.»
+  // Es UNA pregunta por persona y por semana, no un aviso por celda. Devuelve las semanas del mes
+  // que quedan sin ningún día de descanso, que es la forma en que un patrón mal cuadrado incumple.
+  //
+  // `conPendiente` proyecta lo que está a punto de aplicarse, para poder decirlo ANTES de escribir.
+  function semanasSinDescansoDelMes(f, conPendiente) {
+    var y = ancla.getFullYear(), m = ancla.getMonth();
+    var primero = new Date(y, m, 1);
+    var ultimo = new Date(y, m + 1, 0);
+    var malas = [];
+    for (var l = lunesDe(primero); l <= ultimo; l = sumarDias(l, 7)) {
+      var trabajados = 0, diasDelMes = 0;
+      for (var i = 0; i < 7; i++) {
+        var fecha = sumarDias(l, i);
+        if (fecha.getMonth() !== m) continue;     // solo se juzgan las semanas de ESTE mes
+        diasDelMes++;
+        var t = (conPendiente && sel[claveDia(f, fecha)] && pendiente && !bloqueada(fecha))
+          ? turnoPendienteEn(f, fecha) : turnoDe(f, fecha);
+        if (t !== 'libre' && t !== 'vacio') trabajados++;
+      }
+      // LA INFRACCIÓN ES TRABAJAR LOS SIETE DÍAS, y no «no tener ningún día marcado como descanso».
+      //
+      // La primera versión contaba solo las celdas con la etiqueta `libre`, y al medirla en pantalla
+      // marcó en rojo a tres personas que sí descansan: a Iván Salazar, que tiene el sábado pactado
+      // por escrito y ese día aparece simplemente SIN turno; a Luisa Fernández, que trabaja dos días
+      // a la semana; y a Camilo Prieto, que trabaja uno. Un día sin turno es un día que no trabaja,
+      // o sea descanso de hecho, aunque nadie haya puesto la etiqueta encima. Lo que la ley no
+      // admite es la semana completa trabajada.
+      //
+      // Y de paso resuelve lo de la semana vacía: sin nada programado, `trabajados` es cero.
+      if (diasDelMes === 7 && trabajados === 7) malas.push(l);
+    }
+    return malas;
+  }
+
+  function esDescansoTrabajado(f, fecha) {
+    var t = turnoDe(f, fecha);
+    return esDescansoObligatorio(f, fecha) && t !== 'libre' && t !== 'vacio';
+  }
+
+  // ───────── EL CONTADOR DEL MES, espejo de `clasificarDescansos` del backend ─────────
+  //
+  // Tres o más en el MES DE CALENDARIO es habitual. Y ojo con lo que eso significa, que está escrito
+  // en el motor: el recargo se paga igual con uno que con cinco. Lo que cambia al llegar a tres es
+  // que compensar con TIEMPO deja de ser opcional. Por eso esto es una alarma, no una cifra de plata.
+  // ───────── ROTACIONES ─────────
+  //
+  // Un patrón es un ciclo: tantos días de trabajo, tantos de descanso, y vuelta a empezar. Lo que
+  // decide todo es si el ciclo CUADRA con la semana:
+  //
+  //   6x1 y 5x2 duran 7 días, así que el descanso cae SIEMPRE en el mismo día de la semana.
+  //   4x2 dura 6 y 2x2 dura 4: no cuadran con la semana, así que el descanso SE CORRE cada semana.
+  //
+  // Ese corrimiento es la razón de ser del tipo ROTATIVO.
+  //
+  // UN DATO QUE SALIÓ AL MEDIRLO, y que conviene saber antes de leer el veredicto: con estos cuatro
+  // patrones el aviso NUNCA puede saltar por culpa de la rotación. Un ciclo de siete días o menos
+  // que tenga al menos un día de descanso deja siempre, como mínimo, un descanso dentro de cualquier
+  // ventana de siete días seguidos. O sea que 6x1, 5x2, 4x2 y 2x2 son legales por construcción.
+  //
+  // El chequeo del mes sigue ganándose el sueldo en los otros dos caminos, que son los que de verdad
+  // incumplen: pintar un mismo turno sobre una semana completa con el rectángulo, y aplicar la
+  // rotación a una SELECCIÓN PARCIAL, donde los días que quedan fuera conservan el turno que ya
+  // tenían y pueden completar los siete.
+  var ROTACIONES = {
+    '6x1': { trabaja: 6, descansa: 1, ciclo: 7,  nota: 'el descanso cae siempre el mismo día' },
+    '5x2': { trabaja: 5, descansa: 2, ciclo: 7,  nota: 'dos días fijos, tipo lunes a viernes' },
+    '4x2': { trabaja: 4, descansa: 2, ciclo: 6,  nota: 'el descanso se corre un día cada semana' },
+    '2x2': { trabaja: 2, descansa: 2, ciclo: 4,  nota: 'el descanso se corre tres días cada semana' }
+  };
+
+  // QUÉ TURNO LLEVA UN DÍA CON LO QUE ESTÁ A PUNTO DE APLICARSE.
+  //
+  // `pendiente` puede ser dos cosas: un turno suelto para todo lo marcado (una cadena), o una
+  // rotación (un objeto). Resolverlo AQUÍ y no en cada sitio es lo que hace que la rotación pase
+  // por la MISMA maquinaria que ya existe: los cuatro avisos, el conteo del mes y el guardado por
+  // bloques no se enteran de la diferencia, y sigue habiendo un solo camino de escritura.
+  function turnoPendienteEn(f, fecha) {
+    if (!pendiente) return null;
+    if (typeof pendiente === 'string') return pendiente;
+    // La posición en el ciclo se cuenta desde el PRIMER día del periodo, no desde la celda: así dos
+    // personas con el mismo desfase quedan alineadas entre sí, que es de lo que vive una rotación.
+    var base = columnas()[0];
+    var dias = Math.round((fecha - base) / 86400000);
+    var c = pendiente.ciclo;
+    var pos = ((dias + pendiente.desfase) % c + c) % c;
+    return pos < pendiente.trabaja ? pendiente.turno : 'libre';
+  }
+
+  var MINIMO_HABITUAL = 3;
+  function claseDeDescansos(n) {
+    // Un número imposible no puede producir una alarma: cae al lado silencioso, como en el motor.
+    if (!isFinite(n) || n <= 0) return 'NINGUNO';
+    return n >= MINIMO_HABITUAL ? 'HABITUAL' : 'OCASIONAL';
+  }
+  // Los del mes que se está mirando. Se cuentan en DOS mitades que no se pueden mezclar:
+  //   previos   días ya pasados, que en el producto real vienen de MARCACIONES
+  //   planeados días futuros cuyo plan pone un turno sobre su descanso obligatorio
+  // `conPendiente` proyecta además lo que está a punto de aplicarse, para poder avisar ANTES.
+  function descansosDelMes(f, conPendiente) {
+    var y = ancla.getFullYear(), m = ancla.getMonth();
+    var ultimo = new Date(y, m + 1, 0).getDate();
+    var planeados = 0;
+    for (var d = 1; d <= ultimo; d++) {
+      var fecha = new Date(y, m, d);
+      if (bloqueada(fecha)) continue;          // lo pasado ya está contado en `previos`
+      var t = (conPendiente && sel[claveDia(f, fecha)] && pendiente)
+        ? turnoPendienteEn(f, fecha) : turnoDe(f, fecha);
+      if (t !== 'libre' && t !== 'vacio' && esDescansoObligatorio(f, fecha)) planeados++;
+    }
+    var previos = YA_TRABAJADOS[f] || 0;
+    var total = previos + planeados;
+    return { previos: previos, planeados: planeados, total: total, clase: claseDeDescansos(total) };
+  }
+
+  var sel = {};
+  var arrastrando = false;
+  var inicio = null;
+  var pendiente = null;
+  var timer = null;
+  var detenido = false;
+  var antesDelLote = null;
+
+  function limpiaTexto(s) { return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  function visibles() {
+    var sede = document.getElementById('f-sede').value;
+    var cargo = document.getElementById('f-cargo').value;
+    var busca = limpiaTexto(document.getElementById('f-buscar').value.trim());
+    var lista = [];
+    GENTE.forEach(function (p, i) {
+      if (sede && p.s !== sede) return;
+      if (cargo && p.c !== cargo) return;
+      if (busca && limpiaTexto(p.n + ' ' + p.c).indexOf(busca) === -1) return;
+      lista.push(i);
+    });
+    return lista;
+  }
+
+  function iniciales(n) { var p = n.split(' '); return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
+  function jornadas(n) { return n + (n === 1 ? ' jornada' : ' jornadas'); }
+
+  // Las horas de UNA SEMANA de una persona. En mes se calcula por bloque de siete, no sobre el mes:
+  // el tope es semanal y sumarlo a treinta días no significaría nada.
+  function horasSemana(f, lunes) {
+    var t = 0;
+    for (var i = 0; i < 7; i++) {
+      var fecha = sumarDias(lunes, i);
+      var k = claveDia(f, fecha);
+      var cl = (sel[k] && pendiente && !bloqueada(fecha)) ? turnoPendienteEn(f, fecha) : turnoDe(f, fecha);
+      t += TURNOS[cl].dur;
+    }
+    return t;
+  }
+
+  function rotulo() {
+    var cols = columnas();
+    if (VISTA !== 'MES') {
+      var a = cols[0], b = cols[cols.length - 1];
+      return a.getDate() + ' ' + MESES[a.getMonth()].slice(0, 3) + ' – '
+        + b.getDate() + ' ' + MESES[b.getMonth()].slice(0, 3) + ' ' + b.getFullYear();
+    }
+    return MESES[ancla.getMonth()].charAt(0).toUpperCase() + MESES[ancla.getMonth()].slice(1)
+      + ' de ' + ancla.getFullYear();
+  }
+
+  function pintarEncabezado(cols) {
+    var tr = document.getElementById('encabezado');
+    tr.innerHTML = '<th class="persona">Persona</th>';
+    cols.forEach(function (f, i) {
+      var th = document.createElement('th');
+      var dow = (f.getDay() + 6) % 7;
+      th.className = 'dia'
+        + (dow >= 5 ? ' finde' : '')
+        + (delMes(f) ? '' : ' fuera')
+        + (f < HOY ? ' pasado' : '')
+        + (mismoDia(f, HOY) ? ' hoy' : '')
+        + (i % 7 === 0 && i > 0 ? ' corte' : '');
+      th.onclick = function () { seleccionarColumna(i); };
+      th.innerHTML = (VISTA === 'SEMANA' ? LETRAS[dow] : LETRAS[dow].charAt(0))
+        + '<span class="num">' + f.getDate() + '</span>';
+      tr.appendChild(th);
+      // El total POR SEMANA aparece en cuanto el periodo tiene más de una: es la unidad del tope y
+      // sin él, en una quincena o un mes, el guardia de las 42 horas desaparece de la vista.
+      if (VISTA !== 'SEMANA' && dow === 6) {
+        var ts = document.createElement('th');
+        ts.className = 'semanal';
+        ts.textContent = 'Sem';
+        tr.appendChild(ts);
+      }
+    });
+    if (VISTA === 'SEMANA') {
+      var tt = document.createElement('th');
+      tt.className = 'total';
+      tt.textContent = 'Total';
+      tr.appendChild(tt);
+    }
+    document.getElementById('titulo').textContent = rotulo();
+
+    var et = document.getElementById('etiqueta');
+    if (VISTA === 'SEMANA') {
+      var dif = Math.round((lunesDe(ancla) - LUNES_HOY) / 604800000);
+      et.textContent = dif === 0 ? 'Semana en curso' : dif === 1 ? 'Semana siguiente'
+        : dif === -1 ? 'Semana pasada' : dif > 0 ? 'En ' + dif + ' semanas' : 'Hace ' + (-dif) + ' semanas';
+      et.className = 'etiqueta-periodo' + (dif === 0 ? ' actual' : '');
+    } else {
+      var mismo = ancla.getMonth() === HOY.getMonth() && ancla.getFullYear() === HOY.getFullYear();
+      et.textContent = mismo ? 'Mes en curso · semanas completas' : 'Semanas completas';
+      et.className = 'etiqueta-periodo' + (mismo ? ' actual' : '');
+    }
+  }
+
+  function pintarResumen(lista, cols) {
+    var turnos = 0, descansos = 0, exceso = 0;
+    lista.forEach(function (f) {
+      cols.forEach(function (fecha) {
+        if (!delMes(fecha)) return;
+        var t = turnoDe(f, fecha);
+        if (t === 'libre') descansos++;
+        else if (t !== 'vacio') turnos++;
+      });
+      for (var i = 0; i < cols.length; i += 7) {
+        if (horasSemana(f, cols[i]) > TOPE) exceso++;
+      }
+    });
+    document.getElementById('r-gente').textContent = lista.length;
+    document.getElementById('r-turnos').textContent = turnos;
+    document.getElementById('r-descansos').textContent = descansos;
+    document.getElementById('r-exceso').textContent = exceso;
+    document.getElementById('r-turnos-t').innerHTML = 'turnos programados<br>en ' + (VISTA === 'SEMANA' ? 'la semana' : 'el mes');
+    document.getElementById('r-exceso-t').innerHTML = VISTA === 'SEMANA'
+      ? 'pasan de 42 h<br>esta semana' : 'semanas por encima<br>de 42 h';
+  }
+
+  function pintar() {
+    var cols = columnas();
+    document.getElementById('tabla').className =
+      VISTA === 'SEMANA' ? 'semana' : VISTA === 'QUINCENA' ? 'quincena' : 'mes';
+    pintarEncabezado(cols);
+
+    var cuerpo = document.getElementById('cuerpo');
+    cuerpo.innerHTML = '';
+    var lista = visibles();
+
+    if (!lista.length) {
+      var tr0 = document.createElement('tr');
+      tr0.className = 'vacia';
+      tr0.innerHTML = '<td colspan="' + (cols.length + 3) + '">Nadie cumple ese filtro.</td>';
+      cuerpo.appendChild(tr0);
+      pintarResumen(lista, cols);
+      tarjeta();
+      return;
+    }
+
+    lista.forEach(function (f, pos) {
+      var p = GENTE[f];
+      var tr = document.createElement('tr');
+
+      var tdP = document.createElement('td');
+      tdP.className = 'persona';
+      tdP.onclick = function () { seleccionarFila(f); };
+      // EL CONTADOR DEL MES, por persona. Va pegado al nombre y no en una columna aparte porque es
+      // una propiedad de la PERSONA en el mes, no de ninguno de los días que se ven al lado.
+      var cm = descansosDelMes(f, false);
+      var chip = cm.total > 0
+        ? '<span class="chip-mes chip-' + cm.clase.toLowerCase() + '" title="'
+          + cm.previos + ' ya trabajados (de marcaciones) y ' + cm.planeados + ' según el plan">'
+          + ico('alerta', 10) + cm.total + ' descanso' + (cm.total === 1 ? '' : 's')
+          + ' · ' + (cm.clase === 'HABITUAL' ? 'habitual' : 'ocasional') + '</span>'
+        : '';
+      // SIN HORARIO ASIGNADO. Se marca porque es la pregunta que se hace cualquiera al ver esto:
+      // «¿y de dónde sale su descanso si no tiene horario?». Sale de la PERSONA, no del horario, y
+      // por eso estas filas siguen mostrando su descanso obligatorio con normalidad. Medido contra
+      // la base real: 4 de 13 activos no tienen horario y los cuatro tienen sus días esperados
+      // escritos, con su `esDescanso` puesto.
+      var marca = GENTE[f].horario ? '' : '<span class="sin-horario">sin horario</span>';
+      // LA SEMANA SIN DESCANSO, VISTA SIN ABRIR NADA. Es el mismo hecho que el veredicto de la
+      // ventana de rotación, leído del mes que está en pantalla y sobre lo YA guardado (`false`).
+      // Va aquí porque es lo que el dueño quería ver de entrada: «que el sistema lea todo el mes y me
+      // diga que por norma no le está dando el día de descanso».
+      var malasYa = semanasSinDescansoDelMes(f, false);
+      var chipSin = malasYa.length
+        ? '<span class="chip-sin" title="Semana del '
+          + malasYa.map(function (l) { return l.getDate(); }).join(', semana del ')
+          + '">' + ico('alerta', 10) + malasYa.length
+          + (malasYa.length === 1 ? ' semana sin descanso' : ' semanas sin descanso') + '</span>'
+        : '';
+      tdP.innerHTML = '<div class="fila-persona"><span class="avatar">' + iniciales(p.n) + '</span>'
+        + '<span class="quien"><span class="nombre">' + p.n + '</span><br>'
+        // EL CHIP VA EN EL RENGLÓN DEL CARGO, no debajo. Medido: con el chip en su propia línea la
+        // celda de persona aportaba 72 px y la de día 68, así que en cuanto el día adelgaza, la
+        // persona pasa a mandar el alto de la fila y no se gana nada. En la misma línea, el cargo se
+        // recorta si hace falta y el chip, que es la alarma, nunca se recorta.
+        + '<span class="cargo-linea"><span class="cargo">' + p.c + ' · ' + p.s + marca + '</span>'
+        + chip + chipSin + '</span></span></div>';
+      tr.appendChild(tdP);
+
+      cols.forEach(function (fecha, i) {
+        var td = document.createElement('td');
+        var dow = (fecha.getDay() + 6) % 7;
+        td.className = 'celda' + (dow >= 5 ? ' finde' : '') + (delMes(fecha) ? '' : ' fuera')
+          + (i % 7 === 0 && i > 0 ? ' corte' : '');
+
+        var cl = turnoDe(f, fecha);
+        var t = TURNOS[cl];
+        var esVacio = cl === 'vacio';
+        var oblig = esDescansoObligatorio(f, fecha);
+        var trabajado = esDescansoTrabajado(f, fecha);
+        var clases = 'jornada ' + (bloqueada(fecha) && !esVacio ? 't-pasado'
+          : trabajado ? 't-trabajado' : claseDe(cl));
+        if (bloqueada(fecha)) clases += ' bloqueada';
+        if (oblig && !trabajado && !bloqueada(fecha)) clases += ' obligatorio';
+        if (sel[claveDia(f, fecha)]) clases += ' sel';
+
+        var div = document.createElement('div');
+        div.className = clases;
+        div.dataset.f = f;
+        div.dataset.fecha = claveDe(fecha);
+        // EL MOTIVO, AL PASAR EL PUNTERO. Sustituye a la línea que se quitó de la celda, y dice algo
+        // que la línea no decía: POR QUÉ ese día es el obligatorio. Sale del tipo EFECTIVO, que es el
+        // que aplica la guarda del acuerdo escrito, y no del declarado.
+        if (oblig) {
+          var tipoReal = tipoEfectivoDe(f);
+          div.title = 'Descanso obligatorio: '
+            + (tipoReal === 'FIJO' ? 'el día pactado por escrito'
+              : tipoReal === 'ROTATIVO' ? 'el día libre planificado esa semana'
+                : 'el domingo que presume la ley');
+        }
+        div.innerHTML = (VISTA === 'MES'
+          // LA «D» DEL MES ERA CÓDIGO MUERTO: se dibujaba aquí y la regla `table.mes .jornada .sello
+          // { display: none }` la escondía, así que nunca se vio. No se pierde nada al quitarla: en
+          // el mes, un día obligatorio vacío ya se distingue por el fondo de la clase `obligatorio`,
+          // y el motivo sale al pasar el puntero como en la semana.
+          ? (esVacio ? ''
+            : (cl === 'libre' ? ico('cama', 13)
+              : (trabajado ? ico('alerta', 13) : '<span>' + t.corto + '</span>')))
+          : (esVacio
+            ? (oblig
+              // SIN LA LÍNEA «obligatorio» (27 de septiembre de 2026, lo eligió el dueño). Era el
+              // tercer renglón de la celda: con el icono encima de la palabra «Descanso», que fue
+              // elección suya el 25, el sello dejaba esa celda en 46 px de contenido y estiraba la
+              // FILA ENTERA a 68, mientras las demás median 58. El dato no se pierde: la celda lleva
+              // su fondo más asentado por la clase `obligatorio`, y el motivo sale al pasar el
+              // puntero, un poco más abajo.
+              ? '<span class="cab">' + ico('cama', 13) + '<span class="n">Descanso</span></span>'
+              : '<span class="n">+</span>')
+            : (cl === 'libre'
+              ? '<span class="cab">' + ico('cama', 13) + '<span class="n">Descanso</span></span>'
+              : '<span class="cab">'
+                + (trabajado ? ico('alerta', 12) : '<span class="punto"></span>')
+                + '<span class="n">' + t.nombre + '</span></span>'
+                // EL SEGUNDO RENGLÓN DICE UNA COSA U OTRA, NUNCA LAS DOS.
+                //
+                // Antes, una celda de descanso trabajado llevaba TRES renglones (turno, horario y
+                // «su descanso»), y medido eso la dejaba en 67 px mientras las demás median 57: una
+                // sola celda así estiraba la fila ENTERA, y por eso en la semana convivían filas de
+                // 58 con filas de 68 sin motivo visible.
+                //
+                // Se reemplaza en vez de apretujarse al lado del horario, donde en los 75 px útiles
+                // de la celda se habría recortado a la mitad. En una celda marcada como descanso
+                // trabajado, el dato que hay que leer es ese; el rango horario está en la leyenda,
+                // en la pastilla del carril y en el propio nombre del turno.
+                // «descanso» a secas y no «su descanso»: medido, la versión larga se recortaba con
+                // puntos suspensivos en los 75 px útiles de la celda. La palabra sola cabe, y de
+                // quién es el descanso ya lo dice la fila en la que está.
+                + '<span class="h">' + (trabajado ? 'descanso' : (t.cortas || t.horas)) + '</span>')))
+          + '<span class="tic">' + ico('visto', 11) + '</span>';
+
+        div.onpointerdown = function (e) {
+          e.preventDefault();
+          if (div.hasPointerCapture && div.hasPointerCapture(e.pointerId)) div.releasePointerCapture(e.pointerId);
+          empezar(pos, i);
+        };
+        div.onpointerenter = function () { if (arrastrando || rangoAbierto) extender(pos, i); };
+        td.appendChild(div);
+        tr.appendChild(td);
+
+        if (VISTA !== 'SEMANA' && dow === 6) {
+          var h = horasSemana(f, cols[i - 6]);
+          var tds = document.createElement('td');
+          tds.className = 'semanal';
+          tds.innerHTML = '<div class="h' + (h > TOPE ? ' pasa' : '') + '">' + h + '</div>';
+          tr.appendChild(tds);
+        }
+      });
+
+      if (VISTA === 'SEMANA') {
+        var hs = horasSemana(f, cols[0]);
+        var tdT = document.createElement('td');
+        tdT.className = 'total';
+        tdT.innerHTML = '<div class="h">' + hs + ' <span>/ ' + TOPE + ' h</span></div>'
+          + (hs > TOPE ? '<div class="exceso">+' + (hs - TOPE) + ' h</div>' : '');
+        tr.appendChild(tdT);
+      }
+
+      cuerpo.appendChild(tr);
+    });
+
+    pintarResumen(lista, cols);
+    tarjeta();
+  }
+
+  // ---------- navegación ----------
+  function verPeriodo(v) {
+    VISTA = v;
+    document.getElementById('btnSemana').setAttribute('aria-pressed', v === 'SEMANA' ? 'true' : 'false');
+    document.getElementById('btnQuincena').setAttribute('aria-pressed', v === 'QUINCENA' ? 'true' : 'false');
+    document.getElementById('btnMes').setAttribute('aria-pressed', v === 'MES' ? 'true' : 'false');
+    limpiar();    antesDelLote = null;
+  }
+  function mover(n) {
+    ancla = VISTA === 'SEMANA' ? sumarDias(ancla, n * 7)
+      : VISTA === 'QUINCENA' ? sumarDias(ancla, n * 14)
+      : new Date(ancla.getFullYear(), ancla.getMonth() + n, 1);
+    limpiar();    antesDelLote = null;
+  }
+  function irHoy() {
+    ancla = HOY;
+    limpiar();    antesDelLote = null;
+  }
+
+  // ---------- selección ----------
+  // CUATRO GESTOS, Y CADA UNO TERMINA:
+  //   clic, clic   el primero abre el rango y el SEGUNDO LO CIERRA
+  //   arrastrar    lo mismo sin soltar; cierra al soltar
+  //   clic suelto  con el rango cerrado, sobre una marcada, la quita
+  //   doble clic   borra todo y deja solo esa
+  //
+  // DOS FALLOS REALES ESTÁN DETRÁS DE CÓMO ESTÁ ESCRITO, los dos medidos en el navegador:
+  //
+  // 1. `pintar()` recreaba las celdas en cada movimiento, así que el nodo del `pointerdown` quedaba
+  //    desconectado y el `pointerup` no llegaba a la escucha: el gesto no terminaba nunca. Por eso
+  //    durante el gesto solo se enciende y apaga la clase (`repintarMarcas`).
+  // 2. La tarjeta flotante escribía con `textContent` sobre un contenedor que tenía dentro otro
+  //    texto, lo borraba, y la segunda vez lanzaba excepción. La excepción ocurría DENTRO de
+  //    `extender()`, que corre dentro de `empezar()` justo antes de `cerrarRango()`, así que el
+  //    rango no se cerraba. Un fallo de texto que se veía como un fallo de selección.
+  var selBase = {};
+  var movido = false;
+  var rangoAbierto = false;
+  var ultimoToque = null;
+  var MS_DOBLE = 400;
+
+  function repintarMarcas() {
+    var celdas = document.querySelectorAll('#cuerpo .jornada');
+    for (var i = 0; i < celdas.length; i++) {
+      var el = celdas[i];
+      var marcada = Boolean(sel[el.dataset.f + '|' + el.dataset.fecha]);
+      if (marcada !== el.classList.contains('sel')) el.classList.toggle('sel', marcada);
+    }
+    tarjeta();
+  }
+  function cerrarRango() { rangoAbierto = false; arrastrando = false; inicio = null; }
+
+  function empezar(pos, i) {
+    var lista = visibles();
+    var cols = columnas();
+    var ahora = Date.now();
+
+    if (ultimoToque && ultimoToque.pos === pos && ultimoToque.i === i && ahora - ultimoToque.t < MS_DOBLE) {
+      ultimoToque = null;
+      cerrarRango();
+      soloEsta(lista[pos], cols[i]);
+      return;
+    }
+    ultimoToque = { pos: pos, i: i, t: ahora };
+
+    if (rangoAbierto) { extender(pos, i); cerrarRango(); return; }
+
+    arrastrando = true;
+    movido = false;
+    selBase = {};
+    Object.keys(sel).forEach(function (k) { selBase[k] = true; });
+    inicio = { pos: pos, i: i, yaEstaba: Boolean(sel[claveDia(lista[pos], cols[i])]) };
+    extender(pos, i);
+  }
+
+  function extender(pos, i) {
+    if (!inicio) return;
+    if (pos !== inicio.pos || i !== inicio.i) movido = true;
+    var lista = visibles();
+    var cols = columnas();
+    sel = {};
+    Object.keys(selBase).forEach(function (k) { sel[k] = true; });
+    var p1 = Math.min(inicio.pos, pos), p2 = Math.max(inicio.pos, pos);
+    var i1 = Math.min(inicio.i, i), i2 = Math.max(inicio.i, i);
+    for (var a = p1; a <= p2; a++) {
+      for (var b = i1; b <= i2; b++) sel[claveDia(lista[a], cols[b])] = true;
+    }
+    repintarMarcas();
+  }
+
+  window.addEventListener('pointerup', function () {
+    if (!arrastrando) return;
+    if (movido) { cerrarRango(); return; }
+    if (inicio && inicio.yaEstaba && !rangoAbierto) {
+      var lista = visibles(), cols = columnas();
+      if (lista[inicio.pos] !== undefined) delete sel[claveDia(lista[inicio.pos], cols[inicio.i])];
+      cerrarRango();
+      repintarMarcas();
+      return;
+    }
+    arrastrando = false;
+    rangoAbierto = true;
+  }, true);
+  window.addEventListener('pointercancel', function () { cerrarRango(); }, true);
+
+  function soloEsta(f, fecha) {
+    sel = {};
+    sel[claveDia(f, fecha)] = true;
+    selBase = {};
+    cerrarRango();
+    repintarMarcas();
+  }
+  function seleccionarFila(f) {
+    var cols = columnas();
+    var completa = cols.every(function (fe) { return sel[claveDia(f, fe)]; });
+    cols.forEach(function (fe) {
+      if (completa) delete sel[claveDia(f, fe)];
+      else sel[claveDia(f, fe)] = true;
+    });
+    cerrarRango();
+    repintarMarcas();
+  }
+  function seleccionarColumna(i) {
+    var lista = visibles(), cols = columnas();
+    var completa = lista.every(function (f) { return sel[claveDia(f, cols[i])]; });
+    lista.forEach(function (f) {
+      if (completa) delete sel[claveDia(f, cols[i])];
+      else sel[claveDia(f, cols[i])] = true;
+    });
+    cerrarRango();
+    repintarMarcas();
+  }
+  function limpiar() {
+    sel = {}; selBase = {}; pendiente = null; ultimoToque = null;
+    cerrarRango();
+    pintar();
+  }
+  function filtrar() { sel = {}; selBase = {}; cerrarRango(); pintar(); }
+
+  function contar() {
+    var personas = {}, dias = {}, total = 0, pasadas = 0;
+    Object.keys(sel).forEach(function (k) {
+      var p = k.split('|');
+      personas[p[0]] = true; dias[p[1]] = true; total++;
+      var t = p[1].split('-');
+      if (new Date(+t[0], +t[1] - 1, +t[2]) < HOY) pasadas++;
+    });
+    return {
+      personas: Object.keys(personas).length,
+      dias: Object.keys(dias).length,
+      total: total, pasadas: pasadas,
+      filas: Object.keys(personas).map(Number)
+    };
+  }
+
+  function tarjeta() {
+    var caja = document.getElementById('flotante');
+    var c = contar();
+    if (!c.total) { caja.classList.remove('abierta'); return; }
+    caja.classList.add('abierta');
+    document.getElementById('cuentaTexto').textContent = jornadas(c.total) + ' seleccionadas';
+    var detalle = (c.personas === 1 ? GENTE[c.filas[0]].n : c.personas + ' personas')
+      + ' · ' + c.dias + (c.dias === 1 ? ' día' : ' días');
+    if (c.pasadas) detalle += ' · ' + c.pasadas + ' ya pasaron y no se escriben';
+    document.getElementById('detalle').textContent = detalle;
+
+    // LA ROTACIÓN PIDE UNA SOLA PERSONA. No es una limitación técnica: un ciclo arranca en un día
+    // concreto, y el día que a una persona le toca descansar no es el mismo que a otra. Aplicar el
+    // mismo 4x2 con el mismo arranque a diez personas las deja a todas descansando el mismo día, que
+    // es justo lo contrario de para lo que existe una rotación.
+    var br = document.getElementById('btnRotar');
+    br.disabled = c.personas !== 1;
+    br.title = c.personas === 1
+      ? 'Aplicar un patrón 6x1, 4x2…'
+      : 'Marca a una sola persona: cada rotación arranca en su propio día.';
+
+    // Las flechas del carril se miden con la tarjeta ya abierta, no antes.
+    ajustarCarril();
+  }
+
+  // Las semanas que toca la selección, para medir el exceso donde de verdad se mide.
+  function semanasTocadas() {
+    var lunes = {};
+    Object.keys(sel).forEach(function (k) {
+      var t = k.split('|')[1].split('-');
+      var l = lunesDe(new Date(+t[0], +t[1] - 1, +t[2]));
+      lunes[claveDe(l)] = l;
+    });
+    return Object.keys(lunes).map(function (k) { return lunes[k]; });
+  }
+
+  // Cómo se llama en una línea lo que está a punto de escribirse. Es lo único que cambia entre un
+  // turno suelto y una rotación: de ahí para abajo la previa es la misma.
+  function textoDePendiente() {
+    if (typeof pendiente !== 'string') {
+      return 'Rotación ' + pendiente.nombre + ' con turno de ' + TURNOS[pendiente.turno].nombre.toLowerCase();
+    }
+    return pendiente === 'libre' ? 'Marcar como descanso'
+      : pendiente === 'vacio' ? 'Quitar el turno'
+        : 'Turno de ' + TURNOS[pendiente].nombre.toLowerCase();
+  }
+
+  function elegir(t) { pendiente = t; abrirPrevia(); }
+
+  // ───────── EL CARRIL DE TURNOS ─────────
+  // Las flechas se miden, no se suponen: si los turnos caben, no aparecen. Y se mide con la tarjeta
+  // YA ABIERTA, porque un elemento con `display:none` mide cero y las flechas saldrían siempre.
+  function correrCarril(d) {
+    var p = document.getElementById('pista');
+    p.scrollLeft += d * Math.max(130, p.clientWidth * 0.8);
+    setTimeout(ajustarCarril, 340);        // el desplazamiento es suave: se mide cuando ya terminó
+  }
+  function ajustarCarril() {
+    var p = document.getElementById('pista');
+    var izq = document.getElementById('carrilIzq');
+    var der = document.getElementById('carrilDer');
+    var hayDeMas = p.scrollWidth > p.clientWidth + 1;
+    izq.style.display = der.style.display = hayDeMas ? 'grid' : 'none';
+    izq.disabled = p.scrollLeft <= 1;
+    der.disabled = p.scrollLeft + p.clientWidth >= p.scrollWidth - 1;
+  }
+
+  // ───────── LA VENTANA DE ROTACIÓN ─────────
+  var rot = { tipo: '6x1', turno: 'manana', desfase: 0, persona: null };
+
+  function patronPendiente() {
+    var r = ROTACIONES[rot.tipo];
+    return {
+      nombre: rot.tipo, ciclo: r.ciclo, trabaja: r.trabaja, descansa: r.descansa,
+      turno: rot.turno, desfase: rot.desfase
+    };
+  }
+  // Mide algo CON la rotación puesta y deja `pendiente` como estaba. Es lo que permite que el
+  // veredicto use exactamente la misma función que la previa: si el veredicto tuviera su propia
+  // cuenta, serían dos reglas que pueden dejar de coincidir, y una diría que sí y la otra que no.
+  function conLaRotacion(fn) {
+    var antes = pendiente;
+    pendiente = patronPendiente();
+    try { return fn(); } finally { pendiente = antes; }
+  }
+
+  function abrirRotacion() {
+    var c = contar();
+    if (c.personas !== 1) return;          // el botón ya está apagado; esto es el cinturón
+    rot.persona = c.filas[0];
+    rot.desfase = 0;
+    document.getElementById('rotQuien').textContent = GENTE[rot.persona].n;
+    pintarRotacion();
+    document.getElementById('telonRotacion').style.display = 'grid';
+  }
+  function cerrarRotacion() { document.getElementById('telonRotacion').style.display = 'none'; }
+  function elegirPatron(t) { rot.tipo = t; rot.desfase = 0; pintarRotacion(); }
+  function elegirTurnoRot(k) { rot.turno = k; pintarRotacion(); }
+  function correrCiclo(d) {
+    var c = ROTACIONES[rot.tipo].ciclo;
+    rot.desfase = ((rot.desfase + d) % c + c) % c;
+    pintarRotacion();
+  }
+
+  function pintarRotacion() {
+    var f = rot.persona;
+    var marcar = function (sel2, attr, valor) {
+      Array.prototype.forEach.call(document.querySelectorAll(sel2), function (b) {
+        b.setAttribute('aria-pressed', String(b.dataset[attr] === valor));
+      });
+    };
+    marcar('#rotPatrones .patron', 'tipo', rot.tipo);
+    marcar('#rotTurnos .turnito', 'turno', rot.turno);
+    document.getElementById('rotNota').textContent = ROTACIONES[rot.tipo].nota;
+
+    // LA TIRA MUESTRA LO QUE DE VERDAD SE VA A ESCRIBIR, no el patrón en abstracto: un día que no
+    // está marcado, o que ya pasó, conserva lo que tiene. Si la tira pintara el ciclo completo,
+    // prometería una rotación que la escritura no va a cumplir.
+    var cols = columnas();
+    document.getElementById('rotTira').innerHTML = conLaRotacion(function () {
+      return cols.map(function (fecha) {
+        var entra = !!sel[claveDia(f, fecha)] && !bloqueada(fecha);
+        var k = entra ? turnoPendienteEn(f, fecha) : turnoDe(f, fecha);
+        var clase = 'd' + (diaSemanaDe(fecha) === 0 ? ' lunes' : '')
+          + (entra ? '' : ' fuera')
+          + (k === 'libre' ? ' libre' : k === 'vacio' ? '' : ' x-' + k);
+        return '<span class="' + clase + '"><span class="l">'
+          + LETRAS[diaSemanaDe(fecha)].charAt(0) + '</span>' + fecha.getDate() + '</span>';
+      }).join('');
+    });
+
+    // EL VEREDICTO DEL MES, que es la razón de ser de esta ventana: «que el sistema lea todo el mes y
+    // me diga que por norma no le está dando el día de descanso».
+    var malas = conLaRotacion(function () { return semanasSinDescansoDelMes(f, true); });
+    var v = document.getElementById('rotVeredicto');
+    var mes = MESES[ancla.getMonth()];
+    if (malas.length) {
+      v.className = 'veredicto mal';
+      v.innerHTML = '<span>' + ico('alerta', 17) + '</span><span class="cuerpo">'
+        + 'Por norma no le estarías dando el día de descanso en ' + malas.length
+        + (malas.length === 1 ? ' semana' : ' semanas') + ' de ' + mes
+        + '<span class="fino">Semana del '
+        + malas.map(function (l) { return l.getDate(); }).join(' · semana del ') + '</span></span>';
+    } else {
+      v.className = 'veredicto bien';
+      v.innerHTML = '<span>' + ico('visto', 17) + '</span><span class="cuerpo">'
+        + 'Cada semana de ' + mes + ' le queda con su día de descanso'
+        + '<span class="fino">' + ROTACIONES[rot.tipo].nota + '.</span></span>';
+    }
+  }
+
+  // No escribe: deja la rotación como pendiente y abre la MISMA previa que los turnos sueltos, con
+  // sus cuatro avisos y su guardado por bloques. Un segundo camino de escritura sería un segundo
+  // sitio donde equivocarse.
+  function aplicarRotacion() {
+    pendiente = patronPendiente();
+    cerrarRotacion();
+    abrirPrevia();
+  }
+
+  function abrirPrevia() {
+    var c = contar();
+    var iguales = 0, escribe = 0;
+    Object.keys(sel).forEach(function (k) {
+      var p = k.split('|'), q = p[1].split('-');
+      var fecha = new Date(+q[0], +q[1] - 1, +q[2]);
+      if (bloqueada(fecha)) return;
+      // Se compara contra lo que ESA celda va a recibir, no contra un turno único: en una rotación
+      // cada día recibe algo distinto, y sin esto todos los descansos del ciclo contarían como
+      // escrituras nuevas aunque el día ya estuviera libre.
+      if (turnoDe(+p[0], fecha) === turnoPendienteEn(+p[0], fecha)) iguales++; else escribe++;
+    });
+
+    document.getElementById('subPrevia').textContent = textoDePendiente()
+      + ' · ' + c.personas + (c.personas === 1 ? ' persona' : ' personas')
+      + ' · ' + c.dias + (c.dias === 1 ? ' día' : ' días');
+    document.getElementById('pvEscribe').textContent = jornadas(escribe);
+    document.getElementById('pvIguales').textContent = iguales;
+    document.getElementById('pvPasadas').textContent = c.pasadas;
+    document.getElementById('filaPasadas').style.display = c.pasadas ? 'flex' : 'none';
+
+    // EL EXCESO SE MIDE POR SEMANA, no sobre el total seleccionado: el tope es semanal.
+    var avisos = [];
+    var semanas = semanasTocadas();
+    c.filas.forEach(function (f) {
+      semanas.forEach(function (l) {
+        var h = horasSemana(f, l);
+        if (h > TOPE) {
+          avisos.push(GENTE[f].n + ' quedaría en <b>' + h + ' h</b> la semana del '
+            + l.getDate() + ' de ' + MESES[l.getMonth()]);
+        }
+      });
+    });
+    // ───────── LOS DOS AVISOS DEL DESCANSO, que es lo que de verdad mueve dinero ─────────
+    //
+    // Se separan a propósito del tope de horas y entre sí: pintar sobre el descanso OBLIGATORIO
+    // puede terminar en recargo y compensatorio, mientras que dejar una semana sin ningún descanso
+    // es otro problema distinto. Un solo aviso junto los volvería ruido.
+    var pisados = [];
+    Object.keys(sel).forEach(function (k) {
+      var p = k.split('|'), q = p[1].split('-');
+      var fecha = new Date(+q[0], +q[1] - 1, +q[2]);
+      if (bloqueada(fecha)) return;
+      var persona = +p[0];
+      // Ni `libre` ni `vacio` cuentan como pisar el descanso: marcar descanso ES el descanso, y
+      // quitar el turno deja el día en blanco, que tampoco es trabajarlo. La comprobación va POR
+      // CELDA y no una vez para todo, porque en una rotación la misma aplicación escribe turnos en
+      // unos días y descansos en otros.
+      var va = turnoPendienteEn(persona, fecha);
+      if (va === 'libre' || va === 'vacio') return;
+      if (esDescansoObligatorio(persona, fecha)) {
+        // EL TIPO EFECTIVO, no el declarado. Esta copia se había quedado atrás leyendo
+        // `GENTE[f].tipo` en crudo, así que a Jorge Medina (declarado FIJO y SIN acuerdo escrito) le
+        // decía «pactado por escrito» mientras el motor lo trata como PRESUMIDO. Es la misma regla
+        // que `tipoEfectivoDe` y no puede haber dos versiones de ella.
+        var tipo = tipoEfectivoDe(persona);
+        pisados.push(GENTE[persona].n + ' el <b>' + DIAS_BONITO[diaSemanaDe(fecha)] + ' '
+          + fecha.getDate() + '</b>'
+          + (tipo === 'FIJO' ? ' (pactado por escrito)'
+            : tipo === 'ROTATIVO' ? ' (rotativo)' : ' (domingo presumido)'));
+      }
+    });
+
+    // LAS SEMANAS QUE QUEDARÍAN SIN DESCANSO, LEYENDO EL MES ENTERO (25 de septiembre de 2026).
+    //
+    // Antes esto se deducía solo de las celdas pintadas y solo para un ROTATIVO, que es adivinar con
+    // media foto: una semana que YA venía sin descanso por lo que estaba guardado no aparecía, y el
+    // aviso solo salía si la escritura tocaba justo ese día. Ahora se lee el mes completo de cada
+    // persona de la selección, con lo pendiente proyectado encima. Es lo que pidió el dueño, y es la
+    // comprobación que de verdad hace legal a una rotación: un ciclo que no cuadra con la semana
+    // (4x2, 2x2) puede dejar siete días seguidos de trabajo sin que ninguna celda «pise» nada.
+    var sinDescanso = [];
+    c.filas.forEach(function (f) {
+      semanasSinDescansoDelMes(f, true).forEach(function (l) {
+        sinDescanso.push(GENTE[f].n + ', semana del <b>' + l.getDate() + ' de '
+          + MESES[l.getMonth()] + '</b>');
+      });
+    });
+    // QUIÉN CRUZA EL TERCERO CON ESTO. Es el aviso que de verdad cambia una obligación: hasta dos,
+    // compensar con tiempo es opcional; desde el tercero del mes, no. Se compara el antes contra el
+    // después proyectando lo que está a punto de aplicarse.
+    var cruzan = [];
+    c.filas.forEach(function (f) {
+      // A UN ROTATIVO ESTE AVISO NO LE APLICA EN LA PRÁCTICA, y lo señaló el dueño: el compensatorio
+      // es cosa de los turnos fijos. No es que la norma no exista para un rotativo, es que no se
+      // dispara mientras su rotación sí le dé descanso cada semana. Si deja una semana sin ninguno,
+      // eso sale por el otro aviso, que es el que de verdad le corresponde.
+      if (tipoEfectivoDe(f) === 'ROTATIVO') return;
+      var antes = descansosDelMes(f, false);
+      var despues = descansosDelMes(f, true);
+      if (despues.clase === 'HABITUAL' && antes.clase !== 'HABITUAL') {
+        cruzan.push(GENTE[f].n + ' pasaría de <b>' + antes.total + '</b> a <b>' + despues.total
+          + '</b> descansos trabajados este mes');
+      }
+    });
+    var cajaHabitual = document.getElementById('pvHabitual');
+    if (cruzan.length) {
+      cajaHabitual.style.display = 'block';
+      document.getElementById('pvHabitualT').innerHTML = ico('alerta', 13)
+        + 'Pasarían a descanso HABITUAL: compensar con tiempo deja de ser opcional';
+      document.getElementById('pvListaHabitual').innerHTML =
+        cruzan.map(function (a) { return '<li style="color:#b91c1c">' + a + '</li>'; }).join('');
+    } else {
+      cajaHabitual.style.display = 'none';
+    }
+
+    var cajaPisados = document.getElementById('pvDescansos');
+    if (pisados.length) {
+      cajaPisados.style.display = 'block';
+      document.getElementById('pvDescansosT').innerHTML = ico('alerta', 13)
+        + 'Pintarías sobre el descanso obligatorio de ' + pisados.length
+        + (pisados.length === 1 ? ' jornada' : ' jornadas');
+      document.getElementById('pvListaDescansos').innerHTML =
+        pisados.map(function (a) { return '<li style="color:#9a3412">' + a + '</li>'; }).join('');
+    } else {
+      cajaPisados.style.display = 'none';
+    }
+
+    var cajaSin = document.getElementById('pvSinDescanso');
+    if (sinDescanso.length) {
+      cajaSin.style.display = 'block';
+      document.getElementById('pvSinDescansoT').innerHTML = ico('alerta', 13)
+        + 'Por norma quedarían sin su día de descanso';
+      document.getElementById('pvListaSinDescanso').innerHTML =
+        sinDescanso.map(function (a) { return '<li>' + a + '</li>'; }).join('');
+    } else {
+      cajaSin.style.display = 'none';
+    }
+
+    var alerta = document.getElementById('pvAlerta');
+    if (avisos.length) {
+      alerta.style.display = 'block';
+      document.getElementById('pvAlertaT').innerHTML = ico('alerta', 13) + 'Pasarían del tope de 42 horas';
+      document.getElementById('btnAplicar').textContent = 'Aplicar de todas formas';
+      document.getElementById('pvLista').innerHTML = avisos.map(function (a) { return '<li>' + a + '</li>'; }).join('');
+    } else {
+      alerta.style.display = 'none';
+      document.getElementById('btnAplicar').textContent = 'Aplicar';
+    }
+    document.getElementById('telonPrevia').style.display = 'grid';
+    repintarMarcas();
+  }
+
+  function cerrarPrevia() {
+    document.getElementById('telonPrevia').style.display = 'none';
+    pendiente = null;
+    pintar();
+  }
+
+  var TAM_BLOQUE = 40;
+
+  function aplicar() {
+    document.getElementById('telonPrevia').style.display = 'none';
+    var c = contar();
+    var pendientes = c.total - c.pasadas;
+    antesDelLote = JSON.parse(JSON.stringify(PLAN));
+    // NADA QUE ESCRIBIR (todo lo marcado ya pasó). Pasa igual por `terminar` para que quede el aviso
+    // del lote, pero con los CUATRO argumentos: con dos, `nBloques` llegaba indefinido y el
+    // porcentaje salía NaN. La ventana de progreso no se llega a abrir en este caso, que es lo
+    // correcto: no hay nada que mirar avanzar.
+    if (!pendientes) { terminar(0, 0, 0, false); return; }
+
+    var nBloques = Math.max(1, Math.ceil(pendientes / TAM_BLOQUE));
+    detenido = false;
+
+    // Estado de ARRANQUE, explícito: la ventana se reutiliza entre corridas y si no se reinicia
+    // aquí, la segunda vez empezaría mostrando el «listo» de la primera.
+    document.getElementById('cargaIcono').className = 'carga-icono';
+    document.getElementById('cargaIcono').innerHTML = ico('calendario', 21);
+    document.getElementById('cargaTitulo').textContent = 'Programando';
+    document.getElementById('cargaSub').textContent = 'No cierres esta ventana.';
+    document.getElementById('cargaPct').className = 'carga-pct';
+    document.getElementById('cargaPct').textContent = '0%';
+    document.getElementById('resumenFinal').style.display = 'none';
+    document.getElementById('porqueCarga').style.display = 'block';
+    document.getElementById('lineaPaso').style.display = 'flex';
+    document.getElementById('relleno').style.width = '0%';
+    document.getElementById('relleno').classList.remove('completo');
+    document.getElementById('pieCarga').innerHTML =
+      '<button class="btn btn-peligro" onclick="detener()">Detener al terminar este bloque</button>';
+    pintarPasos(nBloques, 0);
+    document.getElementById('telonCarga').style.display = 'grid';
+
+    var hecho = 0, bloque = 0;
+    function siguiente() {
+      if (detenido) { terminar(hecho, bloque, nBloques, true); return; }
+      if (bloque >= nBloques) { terminar(hecho, bloque, nBloques, false); return; }
+      hecho += Math.min(TAM_BLOQUE, pendientes - hecho);
+      bloque++;
+      pintarPasos(nBloques, bloque);
+      var pct = Math.round(hecho / pendientes * 100);
+      document.getElementById('pasoTexto').textContent = 'Bloque ' + bloque + ' de ' + nBloques;
+      document.getElementById('pasoNum').textContent = hecho + ' de ' + jornadas(pendientes);
+      document.getElementById('relleno').style.width = pct + '%';
+      document.getElementById('cargaPct').textContent = pct + '%';
+      timer = setTimeout(siguiente, 420);
+    }
+    siguiente();
+  }
+
+  // Un círculo por bloque, unidos por la línea que se llena. Con más de diez se esconden: cien
+  // circulitos no dicen nada y la barra sí.
+  function pintarPasos(n, hechos) {
+    var cont = document.getElementById('pasos');
+    if (n > 10) { cont.style.display = 'none'; return; }
+    cont.style.display = 'flex';
+    var html = '';
+    for (var i = 0; i < n; i++) {
+      var estado = i < hechos ? 'listo' : (i === hechos ? 'activo' : '');
+      html += '<span class="paso-circ ' + estado + '">'
+        + (i < hechos ? ico('visto', 14) : (i + 1)) + '</span>';
+      if (i < n - 1) html += '<span class="paso-linea ' + (i < hechos ? 'listo' : '') + '"></span>';
+    }
+    cont.innerHTML = html;
+  }
+
+  function detener() { detenido = true; }
+
+  // AL TERMINAR, LA VENTANA SE QUEDA ABIERTA (25 de septiembre de 2026, pedido del dueño): antes se
+  // cerraba sola y el final se veía como un parpadeo, sin decir cuánto se escribió. Ahora cambia a
+  // estado «listo» con su resumen, y la cierra la persona.
+  function terminar(hecho, bloquesHechos, nBloques, cortado) {
+    clearTimeout(timer);
+
+    Object.keys(sel).forEach(function (k) {
+      var p = k.split('|'), q = p[1].split('-');
+      var fecha = new Date(+q[0], +q[1] - 1, +q[2]);
+      if (!bloqueada(fecha)) ponerTurno(+p[0], fecha, turnoPendienteEn(+p[0], fecha));
+    });
+
+    document.getElementById('cargaIcono').className = 'carga-icono ' + (cortado ? 'cortada' : 'hecho');
+    document.getElementById('cargaIcono').innerHTML = ico(cortado ? 'alerta' : 'visto', 22);
+    document.getElementById('cargaTitulo').textContent = cortado ? 'Se detuvo' : 'Listo';
+    document.getElementById('cargaSub').textContent = cortado
+      ? 'Lo que alcanzó a escribirse se quedó, y se puede deshacer entero.'
+      : 'Puedes cerrar esta ventana cuando quieras.';
+    document.getElementById('cargaPct').className = 'carga-pct' + (cortado ? '' : ' hecho');
+    document.getElementById('cargaPct').textContent = cortado
+      ? Math.round(bloquesHechos / nBloques * 100) + '%' : '100%';
+    pintarPasos(nBloques, cortado ? bloquesHechos : nBloques);
+
+    // SE QUITA LO REDUNDANTE (25 de septiembre de 2026, lo vio el dueño): «Bloque 1 de 1 · 15 de 15
+    // jornadas» decía exactamente lo mismo que las dos tarjetas de abajo, y con un solo bloque el
+    // círculo suelto no informaba de nada. Los círculos y esa línea se quedan para MIENTRAS CORRE,
+    // que es cuando sí dicen algo; al terminar mandan las tarjetas.
+    document.getElementById('pasos').style.display = 'none';
+    document.getElementById('lineaPaso').style.display = 'none';
+    document.getElementById('relleno').classList.toggle('completo', !cortado);
+
+    document.getElementById('icFinJornadas').innerHTML = ico('calendario', 16);
+    document.getElementById('icFinBloques').innerHTML = ico('capas', 16);
+    document.getElementById('finEscritas').textContent = hecho;
+    document.getElementById('finBloques').textContent = bloquesHechos + ' de ' + nBloques;
+    document.getElementById('resumenFinal').style.display = 'grid';
+    document.getElementById('porqueCarga').style.display = cortado ? 'block' : 'none';
+    document.getElementById('pieCarga').innerHTML =
+      '<button class="btn btn-plano" onclick="deshacerLote()">Deshacer esta programación</button>'
+      + '<button class="btn btn-principal" onclick="cerrarCarga()">Cerrar</button>';
+
+    avisar(
+      cortado ? 'aviso' : 'ok',
+      cortado ? 'Se detuvo la programación' : 'Programación aplicada',
+      jornadas(hecho) + (cortado
+        ? ' alcanzaron a escribirse. Lo demás quedó sin tocar.'
+        : ' escritas. Quedan marcadas como un lote, así que se revierten completas.'),
+      { texto: 'Deshacer esta programación', al: deshacerLote }
+    );
+
+    pendiente = null;
+    sel = {};
+    cerrarRango();
+    pintar();   // la rejilla de atrás ya muestra el resultado
+  }
+
+  function cerrarCarga() { document.getElementById('telonCarga').style.display = 'none'; }
+
+  // UN AVISO FLOTANTE. Se va solo, pero el reloj se PARA mientras el puntero esté encima: lleva
+  // dentro el «deshacer», y una marcha atrás que se evapora mientras la lees no sirve de nada.
+  var MS_AVISO = 10000;
+  function avisar(tipo, titulo, texto, accion) {
+    var cont = document.getElementById('toasts');
+    var el = document.createElement('div');
+    el.className = 'toast t-' + tipo;
+    el.innerHTML = '<span class="ic">' + ico(tipo === 'ok' ? 'visto' : 'alerta', 19) + '</span>'
+      + '<span class="tx"><span class="t">' + titulo + '</span>'
+      + '<span class="d">' + texto + '</span></span>'
+      + '<button class="x" aria-label="Cerrar aviso">' + ico('equis', 14) + '</button>';
+
+    var reloj;
+    function quitar() {
+      clearTimeout(reloj);
+      el.classList.add('sale');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
+    }
+    function contar2(ms) { clearTimeout(reloj); reloj = setTimeout(quitar, ms); }
+
+    el.querySelector('.x').onclick = quitar;
+    if (accion) {
+      var b = document.createElement('button');
+      b.className = 'accion';
+      b.textContent = accion.texto;
+      b.onclick = function () { accion.al(); quitar(); };
+      el.querySelector('.tx').appendChild(b);
+    }
+    el.onpointerenter = function () { clearTimeout(reloj); };
+    el.onpointerleave = function () { contar2(2500); };
+
+    cont.appendChild(el);
+    contar2(MS_AVISO);
+    return el;
+  }
+
+  function deshacerLote() {
+    if (antesDelLote) { PLAN = antesDelLote; antesDelLote = null; }
+    cerrarCarga();
+    pintar();
+    avisar('ok', 'Programación deshecha', 'La semana quedó como estaba antes de aplicar.');
+  }
+
+  // ---------- inyección de lo que lleva iconos ----------
+  document.getElementById('ic1').innerHTML = ico('gente', 15);
+  document.getElementById('ic2').innerHTML = ico('calendario', 15);
+  document.getElementById('ic3').innerHTML = ico('luna', 15);
+  document.getElementById('ic4').innerHTML = ico('alerta', 15);
+  document.getElementById('flechaIzq').innerHTML = ico('izq', 17);
+  document.getElementById('flechaDer').innerHTML = ico('der', 17);
+  document.getElementById('cajaBuscador').insertAdjacentHTML('afterbegin', ico('lupa', 15));
+  document.getElementById('cajaSede').insertAdjacentHTML('afterbegin', ico('pin', 15));
+  document.getElementById('cajaCargo').insertAdjacentHTML('afterbegin', ico('maletin', 15));
+
+  var caja = document.createElement('div');
+  caja.className = 'flotante';
+  caja.id = 'flotante';
+  function opcion(k) {
+    var t = TURNOS[k];
+    return '<button class="opcion o-' + k + '" onclick="elegir(\'' + k + '\')">'
+      + '<span class="n"><span class="punto"></span>' + t.nombre + '</span>'
+      + '<span class="h">' + t.horas + '</span></button>';
+  }
+  caja.innerHTML = '<div class="flotante-dentro">'
+    + '<span class="cuenta"><span id="cuentaTexto">0 jornadas</span>'
+    + '<span class="detalle" id="detalle"></span></span>'
+    // EL CATÁLOGO, en un carril que se corre. Son tantos como el cliente haya creado.
+    + '<span class="carril">'
+    + '<button class="flecha-carril" id="carrilIzq" onclick="correrCarril(-1)" aria-label="Turnos anteriores"></button>'
+    + '<span class="pista" id="pista">' + clavesDeTurno().map(opcion).join('') + '</span>'
+    + '<button class="flecha-carril" id="carrilDer" onclick="correrCarril(1)" aria-label="Más turnos"></button>'
+    + '</span>'
+    // LAS TRES FIJAS. No son turnos del catálogo, son siempre las mismas, y por eso no entran al
+    // carril: la mano las busca en el mismo sitio aunque la empresa tenga veinte turnos.
+    + '<span class="fijos">'
+    + '<button class="opcion o-libre apilada" onclick="elegir(\'libre\')"><span class="n">'
+    + ico('cama', 15) + 'Descanso</span></button>'
+    // «Quitar turno» y no «Quitar» a secas: el dueño lo leyó como «deseleccionar» y es lo contrario,
+    // porque esto ESCRIBE en los días marcados igual que los otros, dejándolos sin turno.
+    + '<button class="opcion o-quitar apilada" onclick="elegir(\'vacio\')"><span class="n">'
+    + ico('equis', 15) + 'Quitar turno</span></button>'
+    // LA ROTACIÓN VIVE AQUÍ, junto a los turnos, porque es lo que pidió el dueño con esas palabras:
+    // «en el modal donde están los turnos, que se ponga el 6x1 o el 4x2». No es un turno más, es un
+    // patrón que reparte varios turnos y descansos a lo largo del periodo, y por eso abre su propia
+    // ventana en vez de aplicarse de una.
+    + '<button class="opcion o-rotar apilada" id="btnRotar" onclick="abrirRotacion()"><span class="n">'
+    + ico('rotar', 15) + 'Rotación</span></button>'
+    + '</span>'
+    + '<span class="acciones"><button class="btn btn-plano" onclick="limpiar()">Cancelar</button></span>'
+    + '</div>';
+  document.body.appendChild(caja);
+  document.getElementById('carrilIzq').innerHTML = ico('izq', 14);
+  document.getElementById('carrilDer').innerHTML = ico('der', 14);
+
+  // La pila de avisos flotantes. Se crea aquí y no en el marcado de arriba por la misma razón que
+  // la tarjeta: es una capa que vive pegada a la ventana, no parte del contenido de la página.
+  var pilaAvisos = document.createElement('div');
+  pilaAvisos.className = 'toasts';
+  pilaAvisos.id = 'toasts';
+  document.body.appendChild(pilaAvisos);
+
+  pintarPaletaDeTurnos();
+  document.getElementById('leyenda').innerHTML =
+    clavesDeTurno().map(function (k) {
+      var t = TURNOS[k];
+      return '<span title="' + t.horas + '"><i style="background:' + t.color + '"></i> ' + t.nombre + '</span>';
+    }).join('') + '<span><i style="background:#d4d4d8"></i> Descanso</span>';
+
+  // Las dos listas de la ventana de rotación salen de sus tablas, por lo mismo que la leyenda.
+  document.getElementById('rotPatrones').innerHTML = Object.keys(ROTACIONES).map(function (t) {
+    return '<button class="patron" data-tipo="' + t + '" aria-pressed="false"'
+      + ' onclick="elegirPatron(\'' + t + '\')"><span class="c">' + t + '</span>'
+      + '<span class="d">' + ROTACIONES[t].trabaja + ' de trabajo, '
+      + ROTACIONES[t].descansa + ' de descanso</span></button>';
+  }).join('');
+  document.getElementById('rotTurnos').innerHTML = clavesDeTurno().map(function (k) {
+    return '<button class="turnito x-' + k + '" data-turno="' + k + '" aria-pressed="false"'
+      + ' onclick="elegirTurnoRot(\'' + k + '\')"><span class="punto"></span>'
+      + TURNOS[k].nombre + '</button>';
+  }).join('');
+  document.getElementById('rotIzq').innerHTML = ico('izq', 14);
+  document.getElementById('rotDer').innerHTML = ico('der', 14);
+  document.getElementById('pista').onscroll = ajustarCarril;
+
+  pintar();
+</script>
