@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { Prisma, ModalidadTrabajo } from '@prisma/client';
 import crypto from 'crypto';
 import { prisma } from '../prisma';
+import { registrarAcceso } from '../utils/registrarEvento';
 import { esDescriptorValido, identificarRostro } from '../utils/rostro';
 import { camposDeAutenticacion } from '../utils/metodoMarcacion';
 import { enviarTelegram } from '../utils/telegram';
@@ -329,7 +330,13 @@ export default async function workerRoutes(app: FastifyInstance) {
     const col = await prisma.colaborador.findFirst({
       where: { cedula, activo: true, empresaId: empresa.id },
     });
-    if (!col) return reply.code(401).send({ error: 'Cédula no registrada en esta empresa' });
+    if (!col) {
+      // Alguien probando cédulas en el kiosco de una empresa. Va al registro del sistema por la
+      // misma razón que el login de la plataforma, y con la misma regla: una cédula que existe se
+      // cuenta aparte, una inventada se suma a la fila de su IP.
+      registrarAcceso({ motivo: 'CREDENCIALES', email: cedula, correoConocido: false }, request);
+      return reply.code(401).send({ error: 'Cédula no registrada en esta empresa' });
+    }
 
     // `metodo` viaja DENTRO del token firmado y no en la respuesta: es la única
     // forma de que la marcación registre con qué se autenticó de verdad. Si el

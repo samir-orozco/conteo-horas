@@ -3,6 +3,7 @@ import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { ChevronLeft, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { rutaInicio } from '../lib/rutas';
+import { mensajeDeError } from '../lib/errores';
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
 import CreditoKrumlab from '../components/CreditoKrumlab';
@@ -29,8 +30,11 @@ export default function Login() {
       const usuario = await login(email, password);
       // replace: reemplaza /login en el historial, así "atrás" no regresa aquí
       navigate(rutaInicio(usuario.rol), { replace: true });
-    } catch {
-      setError('Email o contraseña incorrectos');
+    } catch (e) {
+      // Antes era un texto fijo, y decía "Email o contraseña incorrectos" también cuando el
+      // servidor no respondía. Con el backend caído eso manda a buscar el problema en la
+      // contraseña —que está bien— en lugar de en el servidor (CLAUDE.md §12.2).
+      setError(mensajeDeError(e, 'Email o contraseña incorrectos'));
     } finally {
       setLoading(false);
     }
@@ -54,13 +58,13 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="mt-7 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-muted mb-1">Correo electrónico</label>
-              <input className={input} type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="ana@miempresa.co" />
+              <label htmlFor="login-email" className="block text-xs font-medium text-muted mb-1">Correo electrónico</label>
+              <input id="login-email" className={input} type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="ana@miempresa.co" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted mb-1">Contraseña</label>
+              <label htmlFor="login-password" className="block text-xs font-medium text-muted mb-1">Contraseña</label>
               <div className="relative">
-                <input className={`${input} pr-10`} type={verPass ? 'text' : 'password'} required
+                <input id="login-password" className={`${input} pr-10`} type={verPass ? 'text' : 'password'} required
                   value={password} onChange={e => setPassword(e.target.value)} placeholder="Tu contraseña" />
                 <button type="button" onClick={() => setVerPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted">
                   {verPass ? <EyeOff size={16} /> : <Eye size={16} />}

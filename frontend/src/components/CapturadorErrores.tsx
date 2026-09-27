@@ -1,9 +1,15 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+import api from '../lib/api';
 
 // Captura TODO error (render de React + errores globales + promesas no manejadas)
-// y lo muestra EN PANTALLA en vez de dejar la página en blanco. Temporal, para
-// diagnosticar el crash del kiosco en Android: el usuario le toma foto al texto.
+// y lo muestra EN PANTALLA en vez de dejar la página en blanco. Nació temporal,
+// para diagnosticar el crash del kiosco en Android: el usuario le tomaba foto al
+// texto y lo mandaba.
+//
+// Desde el 23 de septiembre de 2026 además lo REPORTA al registro del sistema, así
+// que ya no hace falta que nadie avise. Lo de la pantalla se queda: quien lo sufre
+// tiene que poder leer qué pasó, y un reporte que no llegó no se ve en ninguna parte.
 
 type State = { error: string | null; tipo: 'render' | 'global' | null };
 
@@ -42,9 +48,31 @@ export default class CapturadorErrores extends Component<{ children: ReactNode }
     this.mostrar('global', `Promesa rechazada: ${r?.message ?? String(r)}${r?.stack ? `\n${r.stack}` : ''}`);
   };
 
+  // El último texto reportado. Sin esto, un error de render que vuelve a montarse manda el mismo
+  // reporte en cada intento; en el servidor se agruparían igual, pero serían peticiones de más
+  // desde un dispositivo que ya está en problemas.
+  ultimoReportado: string | null = null;
+
+  reportar(texto: string) {
+    if (this.ultimoReportado === texto) return;
+    this.ultimoReportado = texto;
+    try {
+      api.post('/eventos/navegador', {
+        // La primera línea es el mensaje; el resto, el rastro. El servidor recorta lo que no quepa:
+        // lo que manda un navegador no es de fiar.
+        mensaje: texto.split('\n')[0],
+        rastro: texto,
+        pantalla: window.location.pathname + window.location.search,
+      }).catch(() => {});
+    } catch {
+      // Que no se pueda reportar no puede tumbar la pantalla de quien ya está viendo un error.
+    }
+  }
+
   mostrar(tipo: 'render' | 'global', texto: string) {
     // No pisar un error de render (más grave) con uno global posterior
     if (this.state.tipo === 'render') return;
+    this.reportar(texto);
     this.setState({ tipo, error: texto });
   }
 
@@ -52,7 +80,11 @@ export default class CapturadorErrores extends Component<{ children: ReactNode }
     return { tipo: 'render', error: `${err?.message ?? String(err)}${err?.stack ? `\n${err.stack}` : ''}` };
   }
   componentDidCatch(err: Error, info: ErrorInfo) {
-    this.setState({ tipo: 'render', error: `${err?.message}${err?.stack ? `\n${err.stack}` : ''}\n\n-- componentes --${info.componentStack}` });
+    const texto = `${err?.message}${err?.stack ? `\n${err.stack}` : ''}\n\n-- componentes --${info.componentStack}`;
+    // Aquí y no en `getDerivedStateFromError`, que es estático y corre antes: sin instancia no hay
+    // dónde recordar lo ya reportado, y el mismo error se mandaría en cada intento de montar.
+    this.reportar(texto);
+    this.setState({ tipo: 'render', error: texto });
   }
 
   render() {

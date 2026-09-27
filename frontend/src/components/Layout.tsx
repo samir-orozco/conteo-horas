@@ -2,8 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Clock, Users, Calendar, Settings, BarChart2, FileBarChart2, Bell, LogOut, Menu, X, HelpCircle, PlayCircle, Sparkles,
   Building2, CreditCard, LayoutDashboard, AlertTriangle, Home, Handshake,
-  ScanFace, CalendarRange,
-} from 'lucide-react';
+  ScanFace, CalendarRange, ScrollText, UserCog } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import BloqueoPago from './BloqueoPago';
@@ -55,6 +54,8 @@ const navSuperAdmin: NavSection[] = [
       { to: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
       { to: '/admin/pagos', label: 'Pagos', icon: CreditCard },
       { to: '/admin/configuracion', label: 'Precios', icon: Settings },
+      { to: '/admin/registro', label: 'Registro', icon: ScrollText },
+      { to: '/admin/cuenta', label: 'Mi cuenta', icon: UserCog },
     ],
   },
 ];
@@ -141,15 +142,20 @@ export default function Layout() {
             </>
           )}
           <div className="flex items-center gap-3 px-2">
-            <div className="bg-primary/30 rounded-full w-9 h-9 flex items-center justify-center text-sm font-bold text-ink">
-              {usuario?.nombre?.[0] ?? '?'}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-ink truncate">{usuario?.nombre}</p>
-              <p className="text-xs text-muted truncate">
-                {esSuperAdmin ? 'Super Admin' : usuario?.empresaNombre ?? usuario?.email}
-              </p>
-            </div>
+            {/* El avatar lleva a la cuenta de cada quien: el super admin tiene su propia pantalla,
+                el resto la tiene dentro de Configuración. */}
+            <NavLink to={esSuperAdmin ? '/admin/cuenta' : '/app/configuracion'}
+              className="flex items-center gap-3 min-w-0 flex-1 rounded-lg hover:bg-gray-50 -mx-1 px-1 py-1 transition-colors">
+              <div className="bg-primary/30 rounded-full w-9 h-9 flex items-center justify-center text-sm font-bold text-ink shrink-0">
+                {usuario?.nombre?.[0] ?? '?'}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-ink truncate">{usuario?.nombre}</p>
+                <p className="text-xs text-muted truncate">
+                  {esSuperAdmin ? 'Super Admin' : usuario?.empresaNombre ?? usuario?.email}
+                </p>
+              </div>
+            </NavLink>
             <button onClick={() => setMenuAyuda(v => !v)} title="Ayuda y novedades"
               className={`relative z-40 transition-colors ${menuAyuda ? 'text-ink' : 'text-muted hover:text-ink'}`}>
               <HelpCircle size={17} />

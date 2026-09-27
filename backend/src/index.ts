@@ -35,7 +35,9 @@ import { mantenerVentana } from './utils/materializarDias';
 import { programarDiario } from './utils/programarDiario';
 import { opcionesDeLog } from './utils/opcionesDeLog';
 import { decidirAccesoEmpresa } from './utils/accesoEmpresa';
-import { manejarError } from './utils/respuestaDeError';
+import { esErrorInesperado, manejarError } from './utils/respuestaDeError';
+import { registrarError, registrarAuditoria, registrarAccesoPorRespuesta } from './utils/registrarEvento';
+import eventoRoutes, { eventosAdminRoutes } from './routes/eventos';
 
 // Reexportado por compatibilidad: media base de código hace `import { prisma }
 // from '../index'`. El cliente ahora vive en `./prisma` (ver el porqué allí).
@@ -63,6 +65,20 @@ if (esProduccion && !process.env.JWT_SECRET) {
 // app se monta en <dominio>/api, algunas configuraciones entregan la URL sin el
 // prefijo. Todas nuestras rutas viven bajo /api, así que lo reponemos si falta.
 const app = Fastify({
+  // La IP que se ve en el registro del sistema es la de quien de verdad llama, y no la del propio
+  // servidor (23 de septiembre de 2026). En este hosting la app Node corre detrás del proxy de
+  // cPanel, que la alcanza desde 127.0.0.1: sin esta opción, `request.ip` devuelve esa dirección
+  // para TODO el mundo y la columna de IP del módulo de accesos no valdría nada.
+  //
+  // 'loopback' y no `true`: solo se confía en la cabecera `X-Forwarded-For` cuando la conexión
+  // viene del propio equipo, que es el único caso en que la puso el proxy. Con `true`, cualquiera
+  // desde fuera podría mandar la cabecera y escribir la IP que quisiera en el registro, que es
+  // justo lo contrario de lo que se quiere de un registro de intentos de acceso.
+  //
+  // PENDIENTE DE COMPROBAR EN PRODUCCIÓN: falta ver que el proxy mande de verdad esa cabecera. Si
+  // no la manda, la IP seguirá siendo 127.0.0.1 y el registro lo dirá sin quejarse de nada. Se
+  // comprueba con un intento de login fallido desde fuera y leyendo la fila que quedó.
+  trustProxy: 'loopback',
   // Con LOG_FILE escribe a ese archivo y calla el registro de cada petición; sin ella, a consola
   // como siempre. Ver utils/opcionesDeLog.ts: cPanel descarta lo que la app imprime a stdout, así
   // que en producción sin esta variable no queda rastro de nada.
@@ -145,7 +161,20 @@ app.decorate('requireAfiliado', async (request: any, reply: any) => {
 
 // Lo que ninguna ruta atajó sale con un texto fijo y sin el mensaje interno; los 4xx salen como
 // siempre. Va antes de registrar las rutas para que lo hereden todas. Ver utils/respuestaDeError.ts.
-app.setErrorHandler(manejarError);
+app.setErrorHandler((error: Error & { statusCode?: number }, request, reply) => {
+  // Lo inesperado, además de responderse con el texto fijo, queda en el registro del sistema: es
+  // de donde sale la pantalla que responde "qué error está dando el producto y por qué".
+  if (esErrorInesperado(error)) registrarError(error, request);
+  return manejarError(error, request, reply);
+});
+
+// El enganche global del registro del sistema. En `onResponse` (ya se respondió) para no añadir
+// ni un milisegundo a lo que el usuario espera, y global para que una ruta escrita mañana quede
+// cubierta sin que nadie tenga que acordarse de nada.
+app.addHook('onResponse', async (request, reply) => {
+  registrarAccesoPorRespuesta(request, reply);
+  registrarAuditoria(request, reply);
+});
 
 app.register(authRoutes, { prefix: '/api/auth' });
 app.register(colaboradorRoutes, { prefix: '/api/colaboradores' });
@@ -170,6 +199,8 @@ app.register(turnoRoutes, { prefix: '/api/turnos' });
 app.register(dashboardRoutes, { prefix: '/api/dashboard' });
 app.register(telegramRoutes, { prefix: '/api/telegram' });
 app.register(notificacionRoutes, { prefix: '/api/notificaciones' });
+app.register(eventoRoutes, { prefix: '/api/eventos' });
+app.register(eventosAdminRoutes, { prefix: '/api/admin/eventos' });
 
 app.get('/api/health', async () => ({ status: 'ok' }));
 

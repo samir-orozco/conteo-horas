@@ -1230,3 +1230,72 @@ model ProrrogaContrato {
   @@index([contratoId])
   @@map("prorrogas_contrato")
 }
+
+// ============ Registro del sistema (23 de septiembre de 2026) ============
+
+// Lo que pasa en el producto y nadie ve: los errores, los intentos de entrar que no debieron pasar,
+// y quién hizo qué. Lo pidió el dueño para poder responder "qué error está dando el sistema y por
+// qué razón" sin tener que entrar al servidor a leer un archivo de texto.
+//
+// Tres decisiones que conviene entender antes de tocar esta tabla:
+//
+// 1. UNA tabla para las tres pestañas. El buscador, el exportar y el borrado por período se
+//    escriben una vez y sirven para las tres. Lo que cambia entre ellas es qué columnas se llenan.
+//
+// 2. `huella` + `veces` en vez de una fila por ocurrencia. Aquí NO hay borrado automático: lo
+//    decidió el dueño, que prefiere un botón de borrado y poder quitar períodos a mano. Lo que
+//    hace sostenible esa decisión es la agrupación: un bot que golpea diez mil veces deja una fila
+//    que dice diez mil. Es único, así que el `upsert` por huella incrementa en vez de insertar.
+//    En Auditoría la huella va NULL —cada acción es un hecho distinto que hay que poder ver
+//    suelto— y MySQL admite tantos NULL como haga falta en un índice único.
+//
+// 3. La empresa y el usuario van por id Y por nombre, SIN clave foránea. A propósito: el registro
+//    tiene que sobrevivir al borrado de la empresa, que es justo una de las cosas que se quiere
+//    poder auditar. Con una relación, borrar una empresa obligaría a borrar su rastro o a dejar
+//    filas huérfanas que ya no se pueden leer.
+model EventoSistema {
+  id            String       @id @default(cuid())
+  tipo          TipoEvento
+  origen        OrigenEvento @default(SERVIDOR)
+  huella        String?      @unique @db.VarChar(32)
+  veces         Int          @default(1)
+  primeraVez    DateTime     @default(now())
+  ultimaVez     DateTime     @default(now())
+  metodo        String?      @db.VarChar(10)
+  // La ruta real, con el id del recurso: es lo que permite reproducir el caso. Lo que se normaliza
+  // para agrupar es la huella, no esto.
+  ruta          String?      @db.VarChar(255)
+  estado        Int?
+  // Lo que se ve en la tabla.
+  mensaje       String       @db.VarChar(500)
+  // El rastro completo: la pila del error, o el cuerpo de la petición ya limpio de contraseñas y
+  // de fotos. Se guarda entero por decisión del dueño (23/09/2026), sabiendo que puede traer datos
+  // de la gente dentro de una consulta que falló. Solo lo ve el super admin.
+  detalle       String?      @db.Text
+  ip            String?      @db.VarChar(64)
+  navegador     String?      @db.VarChar(255)
+  usuarioId     String?      @db.VarChar(40)
+  usuarioEmail  String?      @db.VarChar(255)
+  usuarioNombre String?      @db.VarChar(255)
+  empresaId     String?      @db.VarChar(40)
+  empresaNombre String?      @db.VarChar(255)
+
+  // Los índices se ponen AHORA, con la tabla vacía: el ALTER es instantáneo con cero filas y caro
+  // con millones (CLAUDE.md §8.4). La pantalla siempre ordena por `ultimaVez` descendente y casi
+  // siempre filtra por pestaña, así que ese es el índice que de verdad se usa.
+  @@index([tipo, ultimaVez])
+  @@index([ultimaVez])
+  @@index([empresaId, ultimaVez])
+  @@map("eventos_sistema")
+}
+
+enum TipoEvento {
+  ERROR
+  ACCESO
+  AUDITORIA
+}
+
+enum OrigenEvento {
+  SERVIDOR
+  NAVEGADOR
+}

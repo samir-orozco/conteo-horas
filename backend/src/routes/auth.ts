@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { prisma } from '../prisma';
+import { registrarAcceso } from '../utils/registrarEvento';
 import { estadoEfectivo, sincronizarEstado, DIAS_PRUEBA, obtenerPrecios } from '../utils/suscripcion';
 import { obtenerPlanes, PLAN_IDS } from '../utils/planes';
 import { enviarCorreo, plantillaCorreo, correoConfigurado } from '../utils/correo';
@@ -231,6 +232,12 @@ export default async function authRoutes(app: FastifyInstance) {
       include: { empresa: { include: { suscripcion: true } } },
     });
     if (!usuario || !usuario.activo || !(await bcrypt.compare(password, usuario.password))) {
+      // Al registro del sistema, pestaña de Accesos. Se registra aquí y no en el enganche global
+      // porque este es el único punto que sabe DOS cosas: qué correo se probó, y si esa cuenta
+      // existe. Lo segundo decide cómo se agrupa —por cuenta si es real, solo por IP si es un
+      // correo inventado— y es lo que impide que un bot con diez mil correos al azar escriba diez
+      // mil filas. Ver `eventoDeAcceso.ts`. La contraseña probada no se pasa ni se guarda.
+      registrarAcceso({ motivo: 'CREDENCIALES', email, correoConocido: Boolean(usuario) }, request);
       return reply.status(401).send({ error: 'Credenciales inválidas' });
     }
     if (usuario.empresaId && !usuario.empresa?.activa) {

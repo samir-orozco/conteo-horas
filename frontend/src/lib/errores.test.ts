@@ -30,3 +30,36 @@ describe('qué mensaje se le muestra a la persona', () => {
     expect(mensajeDeError({ response: { data: { error: { campo: 'x' } } } }, 'Sin conexión.')).toBe('Sin conexión.');
   });
 });
+
+// Un servidor apagado NO es una contraseña equivocada (23 de septiembre de 2026).
+//
+// El formulario de login decía "Email o contraseña incorrectos" ante cualquier fallo, incluido que
+// no hubiera nadie al otro lado. Con el backend local caído, eso manda a buscar el problema en la
+// contraseña —que estaba bien— en vez de en el servidor. Es la misma forma de fallo de la que
+// avisa CLAUDE.md §12.2: un error disfrazado de otro cuesta media hora de hipótesis falsas.
+describe('mensajeDeError cuando el servidor no contestó', () => {
+  const errorDeRed = () => Object.assign(new Error('Network Error'), { isAxiosError: true, code: 'ERR_NETWORK', config: {} });
+
+  it('lo dice en castellano, no "Network Error"', () => {
+    const m = mensajeDeError(errorDeRed(), 'Email o contraseña incorrectos');
+    expect(m).toMatch(/conexión|servidor/i);
+    expect(m).not.toBe('Network Error');
+    expect(m).not.toBe('Email o contraseña incorrectos');
+  });
+
+  it('una petición cancelada tampoco se confunde con un rechazo del servidor', () => {
+    const cancelada = Object.assign(new Error('canceled'), { isAxiosError: true, code: 'ERR_CANCELED', config: {} });
+    expect(mensajeDeError(cancelada, 'algo')).toMatch(/conexión|servidor/i);
+  });
+
+  it('si el servidor SÍ contestó, manda lo que dijo, como siempre', () => {
+    const rechazo = Object.assign(new Error('Request failed with status code 401'), {
+      isAxiosError: true, config: {}, response: { status: 401, data: { error: 'Credenciales inválidas' } },
+    });
+    expect(mensajeDeError(rechazo, 'respaldo')).toBe('Credenciales inválidas');
+  });
+
+  it('un error del propio navegador sigue saliendo con su mensaje', () => {
+    expect(mensajeDeError(new Error('No se pudo leer el archivo'), 'respaldo')).toBe('No se pudo leer el archivo');
+  });
+});
