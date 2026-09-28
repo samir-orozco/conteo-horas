@@ -59,6 +59,11 @@ export type Horario = $Result.DefaultSelection<Prisma.$HorarioPayload>
  */
 export type FranjaHorario = $Result.DefaultSelection<Prisma.$FranjaHorarioPayload>
 /**
+ * Model PlantillaTurno
+ * 
+ */
+export type PlantillaTurno = $Result.DefaultSelection<Prisma.$PlantillaTurnoPayload>
+/**
  * Model DispositivoKiosco
  * 
  */
@@ -134,6 +139,16 @@ export type SolicitudRetiro = $Result.DefaultSelection<Prisma.$SolicitudRetiroPa
  */
 export type RegistroCambio = $Result.DefaultSelection<Prisma.$RegistroCambioPayload>
 /**
+ * Model DescansoTrabajado
+ * 
+ */
+export type DescansoTrabajado = $Result.DefaultSelection<Prisma.$DescansoTrabajadoPayload>
+/**
+ * Model DescansoTrabajadoCambio
+ * 
+ */
+export type DescansoTrabajadoCambio = $Result.DefaultSelection<Prisma.$DescansoTrabajadoCambioPayload>
+/**
  * Model VinculacionEvento
  * 
  */
@@ -158,6 +173,11 @@ export type Contrato = $Result.DefaultSelection<Prisma.$ContratoPayload>
  * 
  */
 export type ProrrogaContrato = $Result.DefaultSelection<Prisma.$ProrrogaContratoPayload>
+/**
+ * Model EventoSistema
+ * 
+ */
+export type EventoSistema = $Result.DefaultSelection<Prisma.$EventoSistemaPayload>
 
 /**
  * Enums
@@ -336,6 +356,23 @@ export const EstadoContrato: {
 
 export type EstadoContrato = (typeof EstadoContrato)[keyof typeof EstadoContrato]
 
+
+export const TipoEvento: {
+  ERROR: 'ERROR',
+  ACCESO: 'ACCESO',
+  AUDITORIA: 'AUDITORIA'
+};
+
+export type TipoEvento = (typeof TipoEvento)[keyof typeof TipoEvento]
+
+
+export const OrigenEvento: {
+  SERVIDOR: 'SERVIDOR',
+  NAVEGADOR: 'NAVEGADOR'
+};
+
+export type OrigenEvento = (typeof OrigenEvento)[keyof typeof OrigenEvento]
+
 }
 
 export type EstadoSuscripcion = $Enums.EstadoSuscripcion
@@ -409,6 +446,14 @@ export const TipoContrato: typeof $Enums.TipoContrato
 export type EstadoContrato = $Enums.EstadoContrato
 
 export const EstadoContrato: typeof $Enums.EstadoContrato
+
+export type TipoEvento = $Enums.TipoEvento
+
+export const TipoEvento: typeof $Enums.TipoEvento
+
+export type OrigenEvento = $Enums.OrigenEvento
+
+export const OrigenEvento: typeof $Enums.OrigenEvento
 
 /**
  * ##  Prisma Client ʲˢ
@@ -624,6 +669,16 @@ export class PrismaClient<
   get franjaHorario(): Prisma.FranjaHorarioDelegate<ExtArgs>;
 
   /**
+   * `prisma.plantillaTurno`: Exposes CRUD operations for the **PlantillaTurno** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PlantillaTurnos
+    * const plantillaTurnos = await prisma.plantillaTurno.findMany()
+    * ```
+    */
+  get plantillaTurno(): Prisma.PlantillaTurnoDelegate<ExtArgs>;
+
+  /**
    * `prisma.dispositivoKiosco`: Exposes CRUD operations for the **DispositivoKiosco** model.
     * Example usage:
     * ```ts
@@ -774,6 +829,26 @@ export class PrismaClient<
   get registroCambio(): Prisma.RegistroCambioDelegate<ExtArgs>;
 
   /**
+   * `prisma.descansoTrabajado`: Exposes CRUD operations for the **DescansoTrabajado** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DescansoTrabajados
+    * const descansoTrabajados = await prisma.descansoTrabajado.findMany()
+    * ```
+    */
+  get descansoTrabajado(): Prisma.DescansoTrabajadoDelegate<ExtArgs>;
+
+  /**
+   * `prisma.descansoTrabajadoCambio`: Exposes CRUD operations for the **DescansoTrabajadoCambio** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DescansoTrabajadoCambios
+    * const descansoTrabajadoCambios = await prisma.descansoTrabajadoCambio.findMany()
+    * ```
+    */
+  get descansoTrabajadoCambio(): Prisma.DescansoTrabajadoCambioDelegate<ExtArgs>;
+
+  /**
    * `prisma.vinculacionEvento`: Exposes CRUD operations for the **VinculacionEvento** model.
     * Example usage:
     * ```ts
@@ -822,6 +897,16 @@ export class PrismaClient<
     * ```
     */
   get prorrogaContrato(): Prisma.ProrrogaContratoDelegate<ExtArgs>;
+
+  /**
+   * `prisma.eventoSistema`: Exposes CRUD operations for the **EventoSistema** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more EventoSistemas
+    * const eventoSistemas = await prisma.eventoSistema.findMany()
+    * ```
+    */
+  get eventoSistema(): Prisma.EventoSistemaDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1272,6 +1357,7 @@ export namespace Prisma {
     TipoHora: 'TipoHora',
     Horario: 'Horario',
     FranjaHorario: 'FranjaHorario',
+    PlantillaTurno: 'PlantillaTurno',
     DispositivoKiosco: 'DispositivoKiosco',
     Colaborador: 'Colaborador',
     Sede: 'Sede',
@@ -1287,11 +1373,14 @@ export namespace Prisma {
     Comision: 'Comision',
     SolicitudRetiro: 'SolicitudRetiro',
     RegistroCambio: 'RegistroCambio',
+    DescansoTrabajado: 'DescansoTrabajado',
+    DescansoTrabajadoCambio: 'DescansoTrabajadoCambio',
     VinculacionEvento: 'VinculacionEvento',
     EnlaceRegistroFacial: 'EnlaceRegistroFacial',
     ConstanciaBiometrica: 'ConstanciaBiometrica',
     Contrato: 'Contrato',
-    ProrrogaContrato: 'ProrrogaContrato'
+    ProrrogaContrato: 'ProrrogaContrato',
+    EventoSistema: 'EventoSistema'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1307,7 +1396,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "auxilioVigencia" | "tipoHora" | "horario" | "franjaHorario" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato"
+      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "auxilioVigencia" | "tipoHora" | "horario" | "franjaHorario" | "plantillaTurno" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "descansoTrabajado" | "descansoTrabajadoCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato" | "eventoSistema"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1902,6 +1991,72 @@ export namespace Prisma {
           count: {
             args: Prisma.FranjaHorarioCountArgs<ExtArgs>
             result: $Utils.Optional<FranjaHorarioCountAggregateOutputType> | number
+          }
+        }
+      }
+      PlantillaTurno: {
+        payload: Prisma.$PlantillaTurnoPayload<ExtArgs>
+        fields: Prisma.PlantillaTurnoFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PlantillaTurnoFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PlantillaTurnoPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PlantillaTurnoFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PlantillaTurnoPayload>
+          }
+          findFirst: {
+            args: Prisma.PlantillaTurnoFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PlantillaTurnoPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PlantillaTurnoFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PlantillaTurnoPayload>
+          }
+          findMany: {
+            args: Prisma.PlantillaTurnoFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PlantillaTurnoPayload>[]
+          }
+          create: {
+            args: Prisma.PlantillaTurnoCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PlantillaTurnoPayload>
+          }
+          createMany: {
+            args: Prisma.PlantillaTurnoCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.PlantillaTurnoDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PlantillaTurnoPayload>
+          }
+          update: {
+            args: Prisma.PlantillaTurnoUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PlantillaTurnoPayload>
+          }
+          deleteMany: {
+            args: Prisma.PlantillaTurnoDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PlantillaTurnoUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.PlantillaTurnoUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PlantillaTurnoPayload>
+          }
+          aggregate: {
+            args: Prisma.PlantillaTurnoAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePlantillaTurno>
+          }
+          groupBy: {
+            args: Prisma.PlantillaTurnoGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PlantillaTurnoGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PlantillaTurnoCountArgs<ExtArgs>
+            result: $Utils.Optional<PlantillaTurnoCountAggregateOutputType> | number
           }
         }
       }
@@ -2895,6 +3050,138 @@ export namespace Prisma {
           }
         }
       }
+      DescansoTrabajado: {
+        payload: Prisma.$DescansoTrabajadoPayload<ExtArgs>
+        fields: Prisma.DescansoTrabajadoFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DescansoTrabajadoFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DescansoTrabajadoFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoPayload>
+          }
+          findFirst: {
+            args: Prisma.DescansoTrabajadoFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DescansoTrabajadoFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoPayload>
+          }
+          findMany: {
+            args: Prisma.DescansoTrabajadoFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoPayload>[]
+          }
+          create: {
+            args: Prisma.DescansoTrabajadoCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoPayload>
+          }
+          createMany: {
+            args: Prisma.DescansoTrabajadoCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.DescansoTrabajadoDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoPayload>
+          }
+          update: {
+            args: Prisma.DescansoTrabajadoUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoPayload>
+          }
+          deleteMany: {
+            args: Prisma.DescansoTrabajadoDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DescansoTrabajadoUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.DescansoTrabajadoUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoPayload>
+          }
+          aggregate: {
+            args: Prisma.DescansoTrabajadoAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDescansoTrabajado>
+          }
+          groupBy: {
+            args: Prisma.DescansoTrabajadoGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DescansoTrabajadoGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DescansoTrabajadoCountArgs<ExtArgs>
+            result: $Utils.Optional<DescansoTrabajadoCountAggregateOutputType> | number
+          }
+        }
+      }
+      DescansoTrabajadoCambio: {
+        payload: Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>
+        fields: Prisma.DescansoTrabajadoCambioFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DescansoTrabajadoCambioFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoCambioPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DescansoTrabajadoCambioFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoCambioPayload>
+          }
+          findFirst: {
+            args: Prisma.DescansoTrabajadoCambioFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoCambioPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DescansoTrabajadoCambioFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoCambioPayload>
+          }
+          findMany: {
+            args: Prisma.DescansoTrabajadoCambioFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoCambioPayload>[]
+          }
+          create: {
+            args: Prisma.DescansoTrabajadoCambioCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoCambioPayload>
+          }
+          createMany: {
+            args: Prisma.DescansoTrabajadoCambioCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.DescansoTrabajadoCambioDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoCambioPayload>
+          }
+          update: {
+            args: Prisma.DescansoTrabajadoCambioUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoCambioPayload>
+          }
+          deleteMany: {
+            args: Prisma.DescansoTrabajadoCambioDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DescansoTrabajadoCambioUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.DescansoTrabajadoCambioUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DescansoTrabajadoCambioPayload>
+          }
+          aggregate: {
+            args: Prisma.DescansoTrabajadoCambioAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDescansoTrabajadoCambio>
+          }
+          groupBy: {
+            args: Prisma.DescansoTrabajadoCambioGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DescansoTrabajadoCambioGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DescansoTrabajadoCambioCountArgs<ExtArgs>
+            result: $Utils.Optional<DescansoTrabajadoCambioCountAggregateOutputType> | number
+          }
+        }
+      }
       VinculacionEvento: {
         payload: Prisma.$VinculacionEventoPayload<ExtArgs>
         fields: Prisma.VinculacionEventoFieldRefs
@@ -3225,6 +3512,72 @@ export namespace Prisma {
           }
         }
       }
+      EventoSistema: {
+        payload: Prisma.$EventoSistemaPayload<ExtArgs>
+        fields: Prisma.EventoSistemaFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.EventoSistemaFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EventoSistemaPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.EventoSistemaFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EventoSistemaPayload>
+          }
+          findFirst: {
+            args: Prisma.EventoSistemaFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EventoSistemaPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.EventoSistemaFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EventoSistemaPayload>
+          }
+          findMany: {
+            args: Prisma.EventoSistemaFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EventoSistemaPayload>[]
+          }
+          create: {
+            args: Prisma.EventoSistemaCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EventoSistemaPayload>
+          }
+          createMany: {
+            args: Prisma.EventoSistemaCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.EventoSistemaDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EventoSistemaPayload>
+          }
+          update: {
+            args: Prisma.EventoSistemaUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EventoSistemaPayload>
+          }
+          deleteMany: {
+            args: Prisma.EventoSistemaDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.EventoSistemaUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.EventoSistemaUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$EventoSistemaPayload>
+          }
+          aggregate: {
+            args: Prisma.EventoSistemaAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateEventoSistema>
+          }
+          groupBy: {
+            args: Prisma.EventoSistemaGroupByArgs<ExtArgs>
+            result: $Utils.Optional<EventoSistemaGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.EventoSistemaCountArgs<ExtArgs>
+            result: $Utils.Optional<EventoSistemaCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -3392,6 +3745,7 @@ export namespace Prisma {
     configuracion: number
     horarios: number
     sedes: number
+    plantillasTurno: number
     dispositivos: number
     notificaciones: number
     comisiones: number
@@ -3404,6 +3758,7 @@ export namespace Prisma {
     configuracion?: boolean | EmpresaCountOutputTypeCountConfiguracionArgs
     horarios?: boolean | EmpresaCountOutputTypeCountHorariosArgs
     sedes?: boolean | EmpresaCountOutputTypeCountSedesArgs
+    plantillasTurno?: boolean | EmpresaCountOutputTypeCountPlantillasTurnoArgs
     dispositivos?: boolean | EmpresaCountOutputTypeCountDispositivosArgs
     notificaciones?: boolean | EmpresaCountOutputTypeCountNotificacionesArgs
     comisiones?: boolean | EmpresaCountOutputTypeCountComisionesArgs
@@ -3460,6 +3815,13 @@ export namespace Prisma {
    */
   export type EmpresaCountOutputTypeCountSedesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SedeWhereInput
+  }
+
+  /**
+   * EmpresaCountOutputType without action
+   */
+  export type EmpresaCountOutputTypeCountPlantillasTurnoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PlantillaTurnoWhereInput
   }
 
   /**
@@ -3556,10 +3918,42 @@ export namespace Prisma {
 
 
   /**
+   * Count Type PlantillaTurnoCountOutputType
+   */
+
+  export type PlantillaTurnoCountOutputType = {
+    diasEsperados: number
+  }
+
+  export type PlantillaTurnoCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    diasEsperados?: boolean | PlantillaTurnoCountOutputTypeCountDiasEsperadosArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * PlantillaTurnoCountOutputType without action
+   */
+  export type PlantillaTurnoCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurnoCountOutputType
+     */
+    select?: PlantillaTurnoCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * PlantillaTurnoCountOutputType without action
+   */
+  export type PlantillaTurnoCountOutputTypeCountDiasEsperadosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DiaEsperadoWhereInput
+  }
+
+
+  /**
    * Count Type ColaboradorCountOutputType
    */
 
   export type ColaboradorCountOutputType = {
+    descansosTrabajados: number
     registros: number
     permisos: number
     contratos: number
@@ -3571,6 +3965,7 @@ export namespace Prisma {
   }
 
   export type ColaboradorCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    descansosTrabajados?: boolean | ColaboradorCountOutputTypeCountDescansosTrabajadosArgs
     registros?: boolean | ColaboradorCountOutputTypeCountRegistrosArgs
     permisos?: boolean | ColaboradorCountOutputTypeCountPermisosArgs
     contratos?: boolean | ColaboradorCountOutputTypeCountContratosArgs
@@ -3590,6 +3985,13 @@ export namespace Prisma {
      * Select specific fields to fetch from the ColaboradorCountOutputType
      */
     select?: ColaboradorCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * ColaboradorCountOutputType without action
+   */
+  export type ColaboradorCountOutputTypeCountDescansosTrabajadosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DescansoTrabajadoWhereInput
   }
 
   /**
@@ -3655,12 +4057,14 @@ export namespace Prisma {
 
   export type SedeCountOutputType = {
     colaboradores: number
+    plantillas: number
     registros: number
     registrosCerrados: number
   }
 
   export type SedeCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     colaboradores?: boolean | SedeCountOutputTypeCountColaboradoresArgs
+    plantillas?: boolean | SedeCountOutputTypeCountPlantillasArgs
     registros?: boolean | SedeCountOutputTypeCountRegistrosArgs
     registrosCerrados?: boolean | SedeCountOutputTypeCountRegistrosCerradosArgs
   }
@@ -3681,6 +4085,13 @@ export namespace Prisma {
    */
   export type SedeCountOutputTypeCountColaboradoresArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ColaboradorSedeWhereInput
+  }
+
+  /**
+   * SedeCountOutputType without action
+   */
+  export type SedeCountOutputTypeCountPlantillasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PlantillaTurnoWhereInput
   }
 
   /**
@@ -3797,6 +4208,37 @@ export namespace Prisma {
 
 
   /**
+   * Count Type DescansoTrabajadoCountOutputType
+   */
+
+  export type DescansoTrabajadoCountOutputType = {
+    cambios: number
+  }
+
+  export type DescansoTrabajadoCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    cambios?: boolean | DescansoTrabajadoCountOutputTypeCountCambiosArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * DescansoTrabajadoCountOutputType without action
+   */
+  export type DescansoTrabajadoCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCountOutputType
+     */
+    select?: DescansoTrabajadoCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * DescansoTrabajadoCountOutputType without action
+   */
+  export type DescansoTrabajadoCountOutputTypeCountCambiosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DescansoTrabajadoCambioWhereInput
+  }
+
+
+  /**
    * Count Type ContratoCountOutputType
    */
 
@@ -3851,6 +4293,7 @@ export namespace Prisma {
     exentaPago: boolean | null
     activa: boolean | null
     auxilioRevisadoEn: Date | null
+    descansoRevisadoEn: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
     afiliadoId: string | null
@@ -3868,6 +4311,7 @@ export namespace Prisma {
     exentaPago: boolean | null
     activa: boolean | null
     auxilioRevisadoEn: Date | null
+    descansoRevisadoEn: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
     afiliadoId: string | null
@@ -3885,6 +4329,7 @@ export namespace Prisma {
     exentaPago: number
     activa: number
     auxilioRevisadoEn: number
+    descansoRevisadoEn: number
     creadoEn: number
     actualizadoEn: number
     afiliadoId: number
@@ -3904,6 +4349,7 @@ export namespace Prisma {
     exentaPago?: true
     activa?: true
     auxilioRevisadoEn?: true
+    descansoRevisadoEn?: true
     creadoEn?: true
     actualizadoEn?: true
     afiliadoId?: true
@@ -3921,6 +4367,7 @@ export namespace Prisma {
     exentaPago?: true
     activa?: true
     auxilioRevisadoEn?: true
+    descansoRevisadoEn?: true
     creadoEn?: true
     actualizadoEn?: true
     afiliadoId?: true
@@ -3938,6 +4385,7 @@ export namespace Prisma {
     exentaPago?: true
     activa?: true
     auxilioRevisadoEn?: true
+    descansoRevisadoEn?: true
     creadoEn?: true
     actualizadoEn?: true
     afiliadoId?: true
@@ -4028,6 +4476,7 @@ export namespace Prisma {
     exentaPago: boolean
     activa: boolean
     auxilioRevisadoEn: Date | null
+    descansoRevisadoEn: Date | null
     creadoEn: Date
     actualizadoEn: Date
     afiliadoId: string | null
@@ -4062,6 +4511,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: boolean
+    descansoRevisadoEn?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
     afiliadoId?: boolean
@@ -4074,6 +4524,7 @@ export namespace Prisma {
     suscripcion?: boolean | Empresa$suscripcionArgs<ExtArgs>
     horarios?: boolean | Empresa$horariosArgs<ExtArgs>
     sedes?: boolean | Empresa$sedesArgs<ExtArgs>
+    plantillasTurno?: boolean | Empresa$plantillasTurnoArgs<ExtArgs>
     dispositivos?: boolean | Empresa$dispositivosArgs<ExtArgs>
     notificaciones?: boolean | Empresa$notificacionesArgs<ExtArgs>
     afiliado?: boolean | Empresa$afiliadoArgs<ExtArgs>
@@ -4092,6 +4543,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: boolean
+    descansoRevisadoEn?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
     afiliadoId?: boolean
@@ -4107,6 +4559,7 @@ export namespace Prisma {
     suscripcion?: boolean | Empresa$suscripcionArgs<ExtArgs>
     horarios?: boolean | Empresa$horariosArgs<ExtArgs>
     sedes?: boolean | Empresa$sedesArgs<ExtArgs>
+    plantillasTurno?: boolean | Empresa$plantillasTurnoArgs<ExtArgs>
     dispositivos?: boolean | Empresa$dispositivosArgs<ExtArgs>
     notificaciones?: boolean | Empresa$notificacionesArgs<ExtArgs>
     afiliado?: boolean | Empresa$afiliadoArgs<ExtArgs>
@@ -4124,6 +4577,7 @@ export namespace Prisma {
       suscripcion: Prisma.$SuscripcionPayload<ExtArgs> | null
       horarios: Prisma.$HorarioPayload<ExtArgs>[]
       sedes: Prisma.$SedePayload<ExtArgs>[]
+      plantillasTurno: Prisma.$PlantillaTurnoPayload<ExtArgs>[]
       dispositivos: Prisma.$DispositivoKioscoPayload<ExtArgs>[]
       notificaciones: Prisma.$NotificacionPayload<ExtArgs>[]
       afiliado: Prisma.$AfiliadoPayload<ExtArgs> | null
@@ -4139,6 +4593,7 @@ export namespace Prisma {
       exentaPago: boolean
       activa: boolean
       auxilioRevisadoEn: Date | null
+      descansoRevisadoEn: Date | null
       creadoEn: Date
       actualizadoEn: Date
       afiliadoId: string | null
@@ -4491,6 +4946,7 @@ export namespace Prisma {
     suscripcion<T extends Empresa$suscripcionArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$suscripcionArgs<ExtArgs>>): Prisma__SuscripcionClient<$Result.GetResult<Prisma.$SuscripcionPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     horarios<T extends Empresa$horariosArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$horariosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HorarioPayload<ExtArgs>, T, "findMany"> | Null>
     sedes<T extends Empresa$sedesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$sedesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findMany"> | Null>
+    plantillasTurno<T extends Empresa$plantillasTurnoArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$plantillasTurnoArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "findMany"> | Null>
     dispositivos<T extends Empresa$dispositivosArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$dispositivosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DispositivoKioscoPayload<ExtArgs>, T, "findMany"> | Null>
     notificaciones<T extends Empresa$notificacionesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$notificacionesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NotificacionPayload<ExtArgs>, T, "findMany"> | Null>
     afiliado<T extends Empresa$afiliadoArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$afiliadoArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
@@ -4533,6 +4989,7 @@ export namespace Prisma {
     readonly exentaPago: FieldRef<"Empresa", 'Boolean'>
     readonly activa: FieldRef<"Empresa", 'Boolean'>
     readonly auxilioRevisadoEn: FieldRef<"Empresa", 'DateTime'>
+    readonly descansoRevisadoEn: FieldRef<"Empresa", 'DateTime'>
     readonly creadoEn: FieldRef<"Empresa", 'DateTime'>
     readonly actualizadoEn: FieldRef<"Empresa", 'DateTime'>
     readonly afiliadoId: FieldRef<"Empresa", 'String'>
@@ -4969,6 +5426,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: SedeScalarFieldEnum | SedeScalarFieldEnum[]
+  }
+
+  /**
+   * Empresa.plantillasTurno
+   */
+  export type Empresa$plantillasTurnoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    where?: PlantillaTurnoWhereInput
+    orderBy?: PlantillaTurnoOrderByWithRelationInput | PlantillaTurnoOrderByWithRelationInput[]
+    cursor?: PlantillaTurnoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PlantillaTurnoScalarFieldEnum | PlantillaTurnoScalarFieldEnum[]
   }
 
   /**
@@ -12627,6 +13104,1111 @@ export namespace Prisma {
 
 
   /**
+   * Model PlantillaTurno
+   */
+
+  export type AggregatePlantillaTurno = {
+    _count: PlantillaTurnoCountAggregateOutputType | null
+    _avg: PlantillaTurnoAvgAggregateOutputType | null
+    _sum: PlantillaTurnoSumAggregateOutputType | null
+    _min: PlantillaTurnoMinAggregateOutputType | null
+    _max: PlantillaTurnoMaxAggregateOutputType | null
+  }
+
+  export type PlantillaTurnoAvgAggregateOutputType = {
+    toleranciaMin: number | null
+    toleranciaSalidaMin: number | null
+  }
+
+  export type PlantillaTurnoSumAggregateOutputType = {
+    toleranciaMin: number | null
+    toleranciaSalidaMin: number | null
+  }
+
+  export type PlantillaTurnoMinAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    nombre: string | null
+    color: string | null
+    esDescanso: boolean | null
+    horaEntrada: string | null
+    horaSalida: string | null
+    tieneAlmuerzo: boolean | null
+    almuerzoInicio: string | null
+    almuerzoFin: string | null
+    descansos: string | null
+    toleranciaMin: number | null
+    toleranciaSalidaMin: number | null
+    ajustaEntrada: boolean | null
+    sedeId: string | null
+    activa: boolean | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type PlantillaTurnoMaxAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    nombre: string | null
+    color: string | null
+    esDescanso: boolean | null
+    horaEntrada: string | null
+    horaSalida: string | null
+    tieneAlmuerzo: boolean | null
+    almuerzoInicio: string | null
+    almuerzoFin: string | null
+    descansos: string | null
+    toleranciaMin: number | null
+    toleranciaSalidaMin: number | null
+    ajustaEntrada: boolean | null
+    sedeId: string | null
+    activa: boolean | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type PlantillaTurnoCountAggregateOutputType = {
+    id: number
+    empresaId: number
+    nombre: number
+    color: number
+    esDescanso: number
+    horaEntrada: number
+    horaSalida: number
+    tieneAlmuerzo: number
+    almuerzoInicio: number
+    almuerzoFin: number
+    descansos: number
+    toleranciaMin: number
+    toleranciaSalidaMin: number
+    ajustaEntrada: number
+    sedeId: number
+    activa: number
+    creadoEn: number
+    actualizadoEn: number
+    _all: number
+  }
+
+
+  export type PlantillaTurnoAvgAggregateInputType = {
+    toleranciaMin?: true
+    toleranciaSalidaMin?: true
+  }
+
+  export type PlantillaTurnoSumAggregateInputType = {
+    toleranciaMin?: true
+    toleranciaSalidaMin?: true
+  }
+
+  export type PlantillaTurnoMinAggregateInputType = {
+    id?: true
+    empresaId?: true
+    nombre?: true
+    color?: true
+    esDescanso?: true
+    horaEntrada?: true
+    horaSalida?: true
+    tieneAlmuerzo?: true
+    almuerzoInicio?: true
+    almuerzoFin?: true
+    descansos?: true
+    toleranciaMin?: true
+    toleranciaSalidaMin?: true
+    ajustaEntrada?: true
+    sedeId?: true
+    activa?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type PlantillaTurnoMaxAggregateInputType = {
+    id?: true
+    empresaId?: true
+    nombre?: true
+    color?: true
+    esDescanso?: true
+    horaEntrada?: true
+    horaSalida?: true
+    tieneAlmuerzo?: true
+    almuerzoInicio?: true
+    almuerzoFin?: true
+    descansos?: true
+    toleranciaMin?: true
+    toleranciaSalidaMin?: true
+    ajustaEntrada?: true
+    sedeId?: true
+    activa?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type PlantillaTurnoCountAggregateInputType = {
+    id?: true
+    empresaId?: true
+    nombre?: true
+    color?: true
+    esDescanso?: true
+    horaEntrada?: true
+    horaSalida?: true
+    tieneAlmuerzo?: true
+    almuerzoInicio?: true
+    almuerzoFin?: true
+    descansos?: true
+    toleranciaMin?: true
+    toleranciaSalidaMin?: true
+    ajustaEntrada?: true
+    sedeId?: true
+    activa?: true
+    creadoEn?: true
+    actualizadoEn?: true
+    _all?: true
+  }
+
+  export type PlantillaTurnoAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PlantillaTurno to aggregate.
+     */
+    where?: PlantillaTurnoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PlantillaTurnos to fetch.
+     */
+    orderBy?: PlantillaTurnoOrderByWithRelationInput | PlantillaTurnoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PlantillaTurnoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PlantillaTurnos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PlantillaTurnos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PlantillaTurnos
+    **/
+    _count?: true | PlantillaTurnoCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PlantillaTurnoAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PlantillaTurnoSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PlantillaTurnoMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PlantillaTurnoMaxAggregateInputType
+  }
+
+  export type GetPlantillaTurnoAggregateType<T extends PlantillaTurnoAggregateArgs> = {
+        [P in keyof T & keyof AggregatePlantillaTurno]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePlantillaTurno[P]>
+      : GetScalarType<T[P], AggregatePlantillaTurno[P]>
+  }
+
+
+
+
+  export type PlantillaTurnoGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PlantillaTurnoWhereInput
+    orderBy?: PlantillaTurnoOrderByWithAggregationInput | PlantillaTurnoOrderByWithAggregationInput[]
+    by: PlantillaTurnoScalarFieldEnum[] | PlantillaTurnoScalarFieldEnum
+    having?: PlantillaTurnoScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PlantillaTurnoCountAggregateInputType | true
+    _avg?: PlantillaTurnoAvgAggregateInputType
+    _sum?: PlantillaTurnoSumAggregateInputType
+    _min?: PlantillaTurnoMinAggregateInputType
+    _max?: PlantillaTurnoMaxAggregateInputType
+  }
+
+  export type PlantillaTurnoGroupByOutputType = {
+    id: string
+    empresaId: string
+    nombre: string
+    color: string
+    esDescanso: boolean
+    horaEntrada: string | null
+    horaSalida: string | null
+    tieneAlmuerzo: boolean
+    almuerzoInicio: string | null
+    almuerzoFin: string | null
+    descansos: string | null
+    toleranciaMin: number | null
+    toleranciaSalidaMin: number | null
+    ajustaEntrada: boolean | null
+    sedeId: string | null
+    activa: boolean
+    creadoEn: Date
+    actualizadoEn: Date
+    _count: PlantillaTurnoCountAggregateOutputType | null
+    _avg: PlantillaTurnoAvgAggregateOutputType | null
+    _sum: PlantillaTurnoSumAggregateOutputType | null
+    _min: PlantillaTurnoMinAggregateOutputType | null
+    _max: PlantillaTurnoMaxAggregateOutputType | null
+  }
+
+  type GetPlantillaTurnoGroupByPayload<T extends PlantillaTurnoGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PlantillaTurnoGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PlantillaTurnoGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PlantillaTurnoGroupByOutputType[P]>
+            : GetScalarType<T[P], PlantillaTurnoGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PlantillaTurnoSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    empresaId?: boolean
+    nombre?: boolean
+    color?: boolean
+    esDescanso?: boolean
+    horaEntrada?: boolean
+    horaSalida?: boolean
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: boolean
+    almuerzoFin?: boolean
+    descansos?: boolean
+    toleranciaMin?: boolean
+    toleranciaSalidaMin?: boolean
+    ajustaEntrada?: boolean
+    sedeId?: boolean
+    activa?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    sede?: boolean | PlantillaTurno$sedeArgs<ExtArgs>
+    diasEsperados?: boolean | PlantillaTurno$diasEsperadosArgs<ExtArgs>
+    _count?: boolean | PlantillaTurnoCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["plantillaTurno"]>
+
+
+  export type PlantillaTurnoSelectScalar = {
+    id?: boolean
+    empresaId?: boolean
+    nombre?: boolean
+    color?: boolean
+    esDescanso?: boolean
+    horaEntrada?: boolean
+    horaSalida?: boolean
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: boolean
+    almuerzoFin?: boolean
+    descansos?: boolean
+    toleranciaMin?: boolean
+    toleranciaSalidaMin?: boolean
+    ajustaEntrada?: boolean
+    sedeId?: boolean
+    activa?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+  }
+
+  export type PlantillaTurnoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    sede?: boolean | PlantillaTurno$sedeArgs<ExtArgs>
+    diasEsperados?: boolean | PlantillaTurno$diasEsperadosArgs<ExtArgs>
+    _count?: boolean | PlantillaTurnoCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $PlantillaTurnoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PlantillaTurno"
+    objects: {
+      empresa: Prisma.$EmpresaPayload<ExtArgs>
+      sede: Prisma.$SedePayload<ExtArgs> | null
+      diasEsperados: Prisma.$DiaEsperadoPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      empresaId: string
+      nombre: string
+      color: string
+      esDescanso: boolean
+      horaEntrada: string | null
+      horaSalida: string | null
+      tieneAlmuerzo: boolean
+      almuerzoInicio: string | null
+      almuerzoFin: string | null
+      descansos: string | null
+      toleranciaMin: number | null
+      toleranciaSalidaMin: number | null
+      ajustaEntrada: boolean | null
+      sedeId: string | null
+      activa: boolean
+      creadoEn: Date
+      actualizadoEn: Date
+    }, ExtArgs["result"]["plantillaTurno"]>
+    composites: {}
+  }
+
+  type PlantillaTurnoGetPayload<S extends boolean | null | undefined | PlantillaTurnoDefaultArgs> = $Result.GetResult<Prisma.$PlantillaTurnoPayload, S>
+
+  type PlantillaTurnoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<PlantillaTurnoFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: PlantillaTurnoCountAggregateInputType | true
+    }
+
+  export interface PlantillaTurnoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PlantillaTurno'], meta: { name: 'PlantillaTurno' } }
+    /**
+     * Find zero or one PlantillaTurno that matches the filter.
+     * @param {PlantillaTurnoFindUniqueArgs} args - Arguments to find a PlantillaTurno
+     * @example
+     * // Get one PlantillaTurno
+     * const plantillaTurno = await prisma.plantillaTurno.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PlantillaTurnoFindUniqueArgs>(args: SelectSubset<T, PlantillaTurnoFindUniqueArgs<ExtArgs>>): Prisma__PlantillaTurnoClient<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one PlantillaTurno that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {PlantillaTurnoFindUniqueOrThrowArgs} args - Arguments to find a PlantillaTurno
+     * @example
+     * // Get one PlantillaTurno
+     * const plantillaTurno = await prisma.plantillaTurno.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PlantillaTurnoFindUniqueOrThrowArgs>(args: SelectSubset<T, PlantillaTurnoFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PlantillaTurnoClient<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first PlantillaTurno that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PlantillaTurnoFindFirstArgs} args - Arguments to find a PlantillaTurno
+     * @example
+     * // Get one PlantillaTurno
+     * const plantillaTurno = await prisma.plantillaTurno.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PlantillaTurnoFindFirstArgs>(args?: SelectSubset<T, PlantillaTurnoFindFirstArgs<ExtArgs>>): Prisma__PlantillaTurnoClient<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first PlantillaTurno that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PlantillaTurnoFindFirstOrThrowArgs} args - Arguments to find a PlantillaTurno
+     * @example
+     * // Get one PlantillaTurno
+     * const plantillaTurno = await prisma.plantillaTurno.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PlantillaTurnoFindFirstOrThrowArgs>(args?: SelectSubset<T, PlantillaTurnoFindFirstOrThrowArgs<ExtArgs>>): Prisma__PlantillaTurnoClient<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more PlantillaTurnos that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PlantillaTurnoFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PlantillaTurnos
+     * const plantillaTurnos = await prisma.plantillaTurno.findMany()
+     * 
+     * // Get first 10 PlantillaTurnos
+     * const plantillaTurnos = await prisma.plantillaTurno.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const plantillaTurnoWithIdOnly = await prisma.plantillaTurno.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PlantillaTurnoFindManyArgs>(args?: SelectSubset<T, PlantillaTurnoFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a PlantillaTurno.
+     * @param {PlantillaTurnoCreateArgs} args - Arguments to create a PlantillaTurno.
+     * @example
+     * // Create one PlantillaTurno
+     * const PlantillaTurno = await prisma.plantillaTurno.create({
+     *   data: {
+     *     // ... data to create a PlantillaTurno
+     *   }
+     * })
+     * 
+     */
+    create<T extends PlantillaTurnoCreateArgs>(args: SelectSubset<T, PlantillaTurnoCreateArgs<ExtArgs>>): Prisma__PlantillaTurnoClient<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many PlantillaTurnos.
+     * @param {PlantillaTurnoCreateManyArgs} args - Arguments to create many PlantillaTurnos.
+     * @example
+     * // Create many PlantillaTurnos
+     * const plantillaTurno = await prisma.plantillaTurno.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PlantillaTurnoCreateManyArgs>(args?: SelectSubset<T, PlantillaTurnoCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a PlantillaTurno.
+     * @param {PlantillaTurnoDeleteArgs} args - Arguments to delete one PlantillaTurno.
+     * @example
+     * // Delete one PlantillaTurno
+     * const PlantillaTurno = await prisma.plantillaTurno.delete({
+     *   where: {
+     *     // ... filter to delete one PlantillaTurno
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PlantillaTurnoDeleteArgs>(args: SelectSubset<T, PlantillaTurnoDeleteArgs<ExtArgs>>): Prisma__PlantillaTurnoClient<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one PlantillaTurno.
+     * @param {PlantillaTurnoUpdateArgs} args - Arguments to update one PlantillaTurno.
+     * @example
+     * // Update one PlantillaTurno
+     * const plantillaTurno = await prisma.plantillaTurno.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PlantillaTurnoUpdateArgs>(args: SelectSubset<T, PlantillaTurnoUpdateArgs<ExtArgs>>): Prisma__PlantillaTurnoClient<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more PlantillaTurnos.
+     * @param {PlantillaTurnoDeleteManyArgs} args - Arguments to filter PlantillaTurnos to delete.
+     * @example
+     * // Delete a few PlantillaTurnos
+     * const { count } = await prisma.plantillaTurno.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PlantillaTurnoDeleteManyArgs>(args?: SelectSubset<T, PlantillaTurnoDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PlantillaTurnos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PlantillaTurnoUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PlantillaTurnos
+     * const plantillaTurno = await prisma.plantillaTurno.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PlantillaTurnoUpdateManyArgs>(args: SelectSubset<T, PlantillaTurnoUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one PlantillaTurno.
+     * @param {PlantillaTurnoUpsertArgs} args - Arguments to update or create a PlantillaTurno.
+     * @example
+     * // Update or create a PlantillaTurno
+     * const plantillaTurno = await prisma.plantillaTurno.upsert({
+     *   create: {
+     *     // ... data to create a PlantillaTurno
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PlantillaTurno we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PlantillaTurnoUpsertArgs>(args: SelectSubset<T, PlantillaTurnoUpsertArgs<ExtArgs>>): Prisma__PlantillaTurnoClient<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of PlantillaTurnos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PlantillaTurnoCountArgs} args - Arguments to filter PlantillaTurnos to count.
+     * @example
+     * // Count the number of PlantillaTurnos
+     * const count = await prisma.plantillaTurno.count({
+     *   where: {
+     *     // ... the filter for the PlantillaTurnos we want to count
+     *   }
+     * })
+    **/
+    count<T extends PlantillaTurnoCountArgs>(
+      args?: Subset<T, PlantillaTurnoCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PlantillaTurnoCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PlantillaTurno.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PlantillaTurnoAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PlantillaTurnoAggregateArgs>(args: Subset<T, PlantillaTurnoAggregateArgs>): Prisma.PrismaPromise<GetPlantillaTurnoAggregateType<T>>
+
+    /**
+     * Group by PlantillaTurno.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PlantillaTurnoGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PlantillaTurnoGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PlantillaTurnoGroupByArgs['orderBy'] }
+        : { orderBy?: PlantillaTurnoGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PlantillaTurnoGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPlantillaTurnoGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PlantillaTurno model
+   */
+  readonly fields: PlantillaTurnoFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PlantillaTurno.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PlantillaTurnoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    empresa<T extends EmpresaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EmpresaDefaultArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    sede<T extends PlantillaTurno$sedeArgs<ExtArgs> = {}>(args?: Subset<T, PlantillaTurno$sedeArgs<ExtArgs>>): Prisma__SedeClient<$Result.GetResult<Prisma.$SedePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    diasEsperados<T extends PlantillaTurno$diasEsperadosArgs<ExtArgs> = {}>(args?: Subset<T, PlantillaTurno$diasEsperadosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DiaEsperadoPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PlantillaTurno model
+   */ 
+  interface PlantillaTurnoFieldRefs {
+    readonly id: FieldRef<"PlantillaTurno", 'String'>
+    readonly empresaId: FieldRef<"PlantillaTurno", 'String'>
+    readonly nombre: FieldRef<"PlantillaTurno", 'String'>
+    readonly color: FieldRef<"PlantillaTurno", 'String'>
+    readonly esDescanso: FieldRef<"PlantillaTurno", 'Boolean'>
+    readonly horaEntrada: FieldRef<"PlantillaTurno", 'String'>
+    readonly horaSalida: FieldRef<"PlantillaTurno", 'String'>
+    readonly tieneAlmuerzo: FieldRef<"PlantillaTurno", 'Boolean'>
+    readonly almuerzoInicio: FieldRef<"PlantillaTurno", 'String'>
+    readonly almuerzoFin: FieldRef<"PlantillaTurno", 'String'>
+    readonly descansos: FieldRef<"PlantillaTurno", 'String'>
+    readonly toleranciaMin: FieldRef<"PlantillaTurno", 'Int'>
+    readonly toleranciaSalidaMin: FieldRef<"PlantillaTurno", 'Int'>
+    readonly ajustaEntrada: FieldRef<"PlantillaTurno", 'Boolean'>
+    readonly sedeId: FieldRef<"PlantillaTurno", 'String'>
+    readonly activa: FieldRef<"PlantillaTurno", 'Boolean'>
+    readonly creadoEn: FieldRef<"PlantillaTurno", 'DateTime'>
+    readonly actualizadoEn: FieldRef<"PlantillaTurno", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PlantillaTurno findUnique
+   */
+  export type PlantillaTurnoFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    /**
+     * Filter, which PlantillaTurno to fetch.
+     */
+    where: PlantillaTurnoWhereUniqueInput
+  }
+
+  /**
+   * PlantillaTurno findUniqueOrThrow
+   */
+  export type PlantillaTurnoFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    /**
+     * Filter, which PlantillaTurno to fetch.
+     */
+    where: PlantillaTurnoWhereUniqueInput
+  }
+
+  /**
+   * PlantillaTurno findFirst
+   */
+  export type PlantillaTurnoFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    /**
+     * Filter, which PlantillaTurno to fetch.
+     */
+    where?: PlantillaTurnoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PlantillaTurnos to fetch.
+     */
+    orderBy?: PlantillaTurnoOrderByWithRelationInput | PlantillaTurnoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PlantillaTurnos.
+     */
+    cursor?: PlantillaTurnoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PlantillaTurnos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PlantillaTurnos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PlantillaTurnos.
+     */
+    distinct?: PlantillaTurnoScalarFieldEnum | PlantillaTurnoScalarFieldEnum[]
+  }
+
+  /**
+   * PlantillaTurno findFirstOrThrow
+   */
+  export type PlantillaTurnoFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    /**
+     * Filter, which PlantillaTurno to fetch.
+     */
+    where?: PlantillaTurnoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PlantillaTurnos to fetch.
+     */
+    orderBy?: PlantillaTurnoOrderByWithRelationInput | PlantillaTurnoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PlantillaTurnos.
+     */
+    cursor?: PlantillaTurnoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PlantillaTurnos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PlantillaTurnos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PlantillaTurnos.
+     */
+    distinct?: PlantillaTurnoScalarFieldEnum | PlantillaTurnoScalarFieldEnum[]
+  }
+
+  /**
+   * PlantillaTurno findMany
+   */
+  export type PlantillaTurnoFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    /**
+     * Filter, which PlantillaTurnos to fetch.
+     */
+    where?: PlantillaTurnoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PlantillaTurnos to fetch.
+     */
+    orderBy?: PlantillaTurnoOrderByWithRelationInput | PlantillaTurnoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PlantillaTurnos.
+     */
+    cursor?: PlantillaTurnoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PlantillaTurnos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PlantillaTurnos.
+     */
+    skip?: number
+    distinct?: PlantillaTurnoScalarFieldEnum | PlantillaTurnoScalarFieldEnum[]
+  }
+
+  /**
+   * PlantillaTurno create
+   */
+  export type PlantillaTurnoCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PlantillaTurno.
+     */
+    data: XOR<PlantillaTurnoCreateInput, PlantillaTurnoUncheckedCreateInput>
+  }
+
+  /**
+   * PlantillaTurno createMany
+   */
+  export type PlantillaTurnoCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PlantillaTurnos.
+     */
+    data: PlantillaTurnoCreateManyInput | PlantillaTurnoCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PlantillaTurno update
+   */
+  export type PlantillaTurnoUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PlantillaTurno.
+     */
+    data: XOR<PlantillaTurnoUpdateInput, PlantillaTurnoUncheckedUpdateInput>
+    /**
+     * Choose, which PlantillaTurno to update.
+     */
+    where: PlantillaTurnoWhereUniqueInput
+  }
+
+  /**
+   * PlantillaTurno updateMany
+   */
+  export type PlantillaTurnoUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PlantillaTurnos.
+     */
+    data: XOR<PlantillaTurnoUpdateManyMutationInput, PlantillaTurnoUncheckedUpdateManyInput>
+    /**
+     * Filter which PlantillaTurnos to update
+     */
+    where?: PlantillaTurnoWhereInput
+  }
+
+  /**
+   * PlantillaTurno upsert
+   */
+  export type PlantillaTurnoUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PlantillaTurno to update in case it exists.
+     */
+    where: PlantillaTurnoWhereUniqueInput
+    /**
+     * In case the PlantillaTurno found by the `where` argument doesn't exist, create a new PlantillaTurno with this data.
+     */
+    create: XOR<PlantillaTurnoCreateInput, PlantillaTurnoUncheckedCreateInput>
+    /**
+     * In case the PlantillaTurno was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PlantillaTurnoUpdateInput, PlantillaTurnoUncheckedUpdateInput>
+  }
+
+  /**
+   * PlantillaTurno delete
+   */
+  export type PlantillaTurnoDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    /**
+     * Filter which PlantillaTurno to delete.
+     */
+    where: PlantillaTurnoWhereUniqueInput
+  }
+
+  /**
+   * PlantillaTurno deleteMany
+   */
+  export type PlantillaTurnoDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PlantillaTurnos to delete
+     */
+    where?: PlantillaTurnoWhereInput
+  }
+
+  /**
+   * PlantillaTurno.sede
+   */
+  export type PlantillaTurno$sedeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Sede
+     */
+    select?: SedeSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SedeInclude<ExtArgs> | null
+    where?: SedeWhereInput
+  }
+
+  /**
+   * PlantillaTurno.diasEsperados
+   */
+  export type PlantillaTurno$diasEsperadosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DiaEsperado
+     */
+    select?: DiaEsperadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DiaEsperadoInclude<ExtArgs> | null
+    where?: DiaEsperadoWhereInput
+    orderBy?: DiaEsperadoOrderByWithRelationInput | DiaEsperadoOrderByWithRelationInput[]
+    cursor?: DiaEsperadoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DiaEsperadoScalarFieldEnum | DiaEsperadoScalarFieldEnum[]
+  }
+
+  /**
+   * PlantillaTurno without action
+   */
+  export type PlantillaTurnoDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model DispositivoKiosco
    */
 
@@ -13544,6 +15126,7 @@ export namespace Prisma {
     nombre: string | null
     apellido: string | null
     cedula: string | null
+    numeroContrato: string | null
     cargo: string | null
     email: string | null
     telefono: string | null
@@ -13554,6 +15137,9 @@ export namespace Prisma {
     rostroRechazadoEn: Date | null
     foto: string | null
     fotoMini: string | null
+    descansoTipo: string | null
+    descansoDia: string | null
+    descansoAcuerdoEn: Date | null
     horarioId: string | null
     modalidad: $Enums.ModalidadTrabajo | null
     puedeCerrarEnOtraSede: boolean | null
@@ -13571,6 +15157,7 @@ export namespace Prisma {
     nombre: string | null
     apellido: string | null
     cedula: string | null
+    numeroContrato: string | null
     cargo: string | null
     email: string | null
     telefono: string | null
@@ -13581,6 +15168,9 @@ export namespace Prisma {
     rostroRechazadoEn: Date | null
     foto: string | null
     fotoMini: string | null
+    descansoTipo: string | null
+    descansoDia: string | null
+    descansoAcuerdoEn: Date | null
     horarioId: string | null
     modalidad: $Enums.ModalidadTrabajo | null
     puedeCerrarEnOtraSede: boolean | null
@@ -13598,6 +15188,7 @@ export namespace Prisma {
     nombre: number
     apellido: number
     cedula: number
+    numeroContrato: number
     cargo: number
     email: number
     telefono: number
@@ -13609,6 +15200,9 @@ export namespace Prisma {
     rostroRechazadoEn: number
     foto: number
     fotoMini: number
+    descansoTipo: number
+    descansoDia: number
+    descansoAcuerdoEn: number
     horarioId: number
     modalidad: number
     puedeCerrarEnOtraSede: number
@@ -13638,6 +15232,7 @@ export namespace Prisma {
     nombre?: true
     apellido?: true
     cedula?: true
+    numeroContrato?: true
     cargo?: true
     email?: true
     telefono?: true
@@ -13648,6 +15243,9 @@ export namespace Prisma {
     rostroRechazadoEn?: true
     foto?: true
     fotoMini?: true
+    descansoTipo?: true
+    descansoDia?: true
+    descansoAcuerdoEn?: true
     horarioId?: true
     modalidad?: true
     puedeCerrarEnOtraSede?: true
@@ -13665,6 +15263,7 @@ export namespace Prisma {
     nombre?: true
     apellido?: true
     cedula?: true
+    numeroContrato?: true
     cargo?: true
     email?: true
     telefono?: true
@@ -13675,6 +15274,9 @@ export namespace Prisma {
     rostroRechazadoEn?: true
     foto?: true
     fotoMini?: true
+    descansoTipo?: true
+    descansoDia?: true
+    descansoAcuerdoEn?: true
     horarioId?: true
     modalidad?: true
     puedeCerrarEnOtraSede?: true
@@ -13692,6 +15294,7 @@ export namespace Prisma {
     nombre?: true
     apellido?: true
     cedula?: true
+    numeroContrato?: true
     cargo?: true
     email?: true
     telefono?: true
@@ -13703,6 +15306,9 @@ export namespace Prisma {
     rostroRechazadoEn?: true
     foto?: true
     fotoMini?: true
+    descansoTipo?: true
+    descansoDia?: true
+    descansoAcuerdoEn?: true
     horarioId?: true
     modalidad?: true
     puedeCerrarEnOtraSede?: true
@@ -13807,6 +15413,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato: string | null
     cargo: string | null
     email: string | null
     telefono: string | null
@@ -13818,6 +15425,9 @@ export namespace Prisma {
     rostroRechazadoEn: Date | null
     foto: string | null
     fotoMini: string | null
+    descansoTipo: string
+    descansoDia: string | null
+    descansoAcuerdoEn: Date | null
     horarioId: string | null
     modalidad: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede: boolean
@@ -13854,6 +15464,7 @@ export namespace Prisma {
     nombre?: boolean
     apellido?: boolean
     cedula?: boolean
+    numeroContrato?: boolean
     cargo?: boolean
     email?: boolean
     telefono?: boolean
@@ -13865,6 +15476,9 @@ export namespace Prisma {
     rostroRechazadoEn?: boolean
     foto?: boolean
     fotoMini?: boolean
+    descansoTipo?: boolean
+    descansoDia?: boolean
+    descansoAcuerdoEn?: boolean
     horarioId?: boolean
     modalidad?: boolean
     puedeCerrarEnOtraSede?: boolean
@@ -13875,6 +15489,7 @@ export namespace Prisma {
     creadoEn?: boolean
     actualizadoEn?: boolean
     empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    descansosTrabajados?: boolean | Colaborador$descansosTrabajadosArgs<ExtArgs>
     horario?: boolean | Colaborador$horarioArgs<ExtArgs>
     registros?: boolean | Colaborador$registrosArgs<ExtArgs>
     permisos?: boolean | Colaborador$permisosArgs<ExtArgs>
@@ -13894,6 +15509,7 @@ export namespace Prisma {
     nombre?: boolean
     apellido?: boolean
     cedula?: boolean
+    numeroContrato?: boolean
     cargo?: boolean
     email?: boolean
     telefono?: boolean
@@ -13905,6 +15521,9 @@ export namespace Prisma {
     rostroRechazadoEn?: boolean
     foto?: boolean
     fotoMini?: boolean
+    descansoTipo?: boolean
+    descansoDia?: boolean
+    descansoAcuerdoEn?: boolean
     horarioId?: boolean
     modalidad?: boolean
     puedeCerrarEnOtraSede?: boolean
@@ -13918,6 +15537,7 @@ export namespace Prisma {
 
   export type ColaboradorInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    descansosTrabajados?: boolean | Colaborador$descansosTrabajadosArgs<ExtArgs>
     horario?: boolean | Colaborador$horarioArgs<ExtArgs>
     registros?: boolean | Colaborador$registrosArgs<ExtArgs>
     permisos?: boolean | Colaborador$permisosArgs<ExtArgs>
@@ -13934,6 +15554,7 @@ export namespace Prisma {
     name: "Colaborador"
     objects: {
       empresa: Prisma.$EmpresaPayload<ExtArgs>
+      descansosTrabajados: Prisma.$DescansoTrabajadoPayload<ExtArgs>[]
       horario: Prisma.$HorarioPayload<ExtArgs> | null
       registros: Prisma.$RegistroPayload<ExtArgs>[]
       permisos: Prisma.$PermisoPayload<ExtArgs>[]
@@ -13950,6 +15571,7 @@ export namespace Prisma {
       nombre: string
       apellido: string
       cedula: string
+      numeroContrato: string | null
       cargo: string | null
       email: string | null
       telefono: string | null
@@ -13961,6 +15583,9 @@ export namespace Prisma {
       rostroRechazadoEn: Date | null
       foto: string | null
       fotoMini: string | null
+      descansoTipo: string
+      descansoDia: string | null
+      descansoAcuerdoEn: Date | null
       horarioId: string | null
       modalidad: $Enums.ModalidadTrabajo
       puedeCerrarEnOtraSede: boolean
@@ -14311,6 +15936,7 @@ export namespace Prisma {
   export interface Prisma__ColaboradorClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     empresa<T extends EmpresaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EmpresaDefaultArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    descansosTrabajados<T extends Colaborador$descansosTrabajadosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$descansosTrabajadosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "findMany"> | Null>
     horario<T extends Colaborador$horarioArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$horarioArgs<ExtArgs>>): Prisma__HorarioClient<$Result.GetResult<Prisma.$HorarioPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     registros<T extends Colaborador$registrosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$registrosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findMany"> | Null>
     permisos<T extends Colaborador$permisosArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$permisosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PermisoPayload<ExtArgs>, T, "findMany"> | Null>
@@ -14354,6 +15980,7 @@ export namespace Prisma {
     readonly nombre: FieldRef<"Colaborador", 'String'>
     readonly apellido: FieldRef<"Colaborador", 'String'>
     readonly cedula: FieldRef<"Colaborador", 'String'>
+    readonly numeroContrato: FieldRef<"Colaborador", 'String'>
     readonly cargo: FieldRef<"Colaborador", 'String'>
     readonly email: FieldRef<"Colaborador", 'String'>
     readonly telefono: FieldRef<"Colaborador", 'String'>
@@ -14365,6 +15992,9 @@ export namespace Prisma {
     readonly rostroRechazadoEn: FieldRef<"Colaborador", 'DateTime'>
     readonly foto: FieldRef<"Colaborador", 'String'>
     readonly fotoMini: FieldRef<"Colaborador", 'String'>
+    readonly descansoTipo: FieldRef<"Colaborador", 'String'>
+    readonly descansoDia: FieldRef<"Colaborador", 'String'>
+    readonly descansoAcuerdoEn: FieldRef<"Colaborador", 'DateTime'>
     readonly horarioId: FieldRef<"Colaborador", 'String'>
     readonly modalidad: FieldRef<"Colaborador", 'ModalidadTrabajo'>
     readonly puedeCerrarEnOtraSede: FieldRef<"Colaborador", 'Boolean'>
@@ -14670,6 +16300,26 @@ export namespace Prisma {
      * Filter which Colaboradors to delete
      */
     where?: ColaboradorWhereInput
+  }
+
+  /**
+   * Colaborador.descansosTrabajados
+   */
+  export type Colaborador$descansosTrabajadosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+    where?: DescansoTrabajadoWhereInput
+    orderBy?: DescansoTrabajadoOrderByWithRelationInput | DescansoTrabajadoOrderByWithRelationInput[]
+    cursor?: DescansoTrabajadoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DescansoTrabajadoScalarFieldEnum | DescansoTrabajadoScalarFieldEnum[]
   }
 
   /**
@@ -15110,6 +16760,7 @@ export namespace Prisma {
     actualizadoEn?: boolean
     empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
     colaboradores?: boolean | Sede$colaboradoresArgs<ExtArgs>
+    plantillas?: boolean | Sede$plantillasArgs<ExtArgs>
     registros?: boolean | Sede$registrosArgs<ExtArgs>
     registrosCerrados?: boolean | Sede$registrosCerradosArgs<ExtArgs>
     _count?: boolean | SedeCountOutputTypeDefaultArgs<ExtArgs>
@@ -15132,6 +16783,7 @@ export namespace Prisma {
   export type SedeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
     colaboradores?: boolean | Sede$colaboradoresArgs<ExtArgs>
+    plantillas?: boolean | Sede$plantillasArgs<ExtArgs>
     registros?: boolean | Sede$registrosArgs<ExtArgs>
     registrosCerrados?: boolean | Sede$registrosCerradosArgs<ExtArgs>
     _count?: boolean | SedeCountOutputTypeDefaultArgs<ExtArgs>
@@ -15142,6 +16794,7 @@ export namespace Prisma {
     objects: {
       empresa: Prisma.$EmpresaPayload<ExtArgs>
       colaboradores: Prisma.$ColaboradorSedePayload<ExtArgs>[]
+      plantillas: Prisma.$PlantillaTurnoPayload<ExtArgs>[]
       registros: Prisma.$RegistroPayload<ExtArgs>[]
       registrosCerrados: Prisma.$RegistroPayload<ExtArgs>[]
     }
@@ -15498,6 +17151,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     empresa<T extends EmpresaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EmpresaDefaultArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     colaboradores<T extends Sede$colaboradoresArgs<ExtArgs> = {}>(args?: Subset<T, Sede$colaboradoresArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findMany"> | Null>
+    plantillas<T extends Sede$plantillasArgs<ExtArgs> = {}>(args?: Subset<T, Sede$plantillasArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "findMany"> | Null>
     registros<T extends Sede$registrosArgs<ExtArgs> = {}>(args?: Subset<T, Sede$registrosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findMany"> | Null>
     registrosCerrados<T extends Sede$registrosCerradosArgs<ExtArgs> = {}>(args?: Subset<T, Sede$registrosCerradosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RegistroPayload<ExtArgs>, T, "findMany"> | Null>
     /**
@@ -15855,6 +17509,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ColaboradorSedeScalarFieldEnum | ColaboradorSedeScalarFieldEnum[]
+  }
+
+  /**
+   * Sede.plantillas
+   */
+  export type Sede$plantillasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    where?: PlantillaTurnoWhereInput
+    orderBy?: PlantillaTurnoOrderByWithRelationInput | PlantillaTurnoOrderByWithRelationInput[]
+    cursor?: PlantillaTurnoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PlantillaTurnoScalarFieldEnum | PlantillaTurnoScalarFieldEnum[]
   }
 
   /**
@@ -16814,7 +18488,10 @@ export namespace Prisma {
     almuerzoInicio: string | null
     almuerzoFin: string | null
     descansos: string | null
+    esDescanso: boolean | null
+    descansoPintado: boolean | null
     horarioId: string | null
+    plantillaId: string | null
     origen: string | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -16835,7 +18512,10 @@ export namespace Prisma {
     almuerzoInicio: string | null
     almuerzoFin: string | null
     descansos: string | null
+    esDescanso: boolean | null
+    descansoPintado: boolean | null
     horarioId: string | null
+    plantillaId: string | null
     origen: string | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -16856,7 +18536,10 @@ export namespace Prisma {
     almuerzoInicio: number
     almuerzoFin: number
     descansos: number
+    esDescanso: number
+    descansoPintado: number
     horarioId: number
+    plantillaId: number
     origen: number
     creadoEn: number
     actualizadoEn: number
@@ -16893,7 +18576,10 @@ export namespace Prisma {
     almuerzoInicio?: true
     almuerzoFin?: true
     descansos?: true
+    esDescanso?: true
+    descansoPintado?: true
     horarioId?: true
+    plantillaId?: true
     origen?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -16914,7 +18600,10 @@ export namespace Prisma {
     almuerzoInicio?: true
     almuerzoFin?: true
     descansos?: true
+    esDescanso?: true
+    descansoPintado?: true
     horarioId?: true
+    plantillaId?: true
     origen?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -16935,7 +18624,10 @@ export namespace Prisma {
     almuerzoInicio?: true
     almuerzoFin?: true
     descansos?: true
+    esDescanso?: true
+    descansoPintado?: true
     horarioId?: true
+    plantillaId?: true
     origen?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -17043,7 +18735,10 @@ export namespace Prisma {
     almuerzoInicio: string | null
     almuerzoFin: string | null
     descansos: string | null
+    esDescanso: boolean | null
+    descansoPintado: boolean
     horarioId: string | null
+    plantillaId: string | null
     origen: string
     creadoEn: Date
     actualizadoEn: Date
@@ -17083,11 +18778,15 @@ export namespace Prisma {
     almuerzoInicio?: boolean
     almuerzoFin?: boolean
     descansos?: boolean
+    esDescanso?: boolean
+    descansoPintado?: boolean
     horarioId?: boolean
+    plantillaId?: boolean
     origen?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    plantilla?: boolean | DiaEsperado$plantillaArgs<ExtArgs>
   }, ExtArgs["result"]["diaEsperado"]>
 
 
@@ -17106,7 +18805,10 @@ export namespace Prisma {
     almuerzoInicio?: boolean
     almuerzoFin?: boolean
     descansos?: boolean
+    esDescanso?: boolean
+    descansoPintado?: boolean
     horarioId?: boolean
+    plantillaId?: boolean
     origen?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -17114,12 +18816,14 @@ export namespace Prisma {
 
   export type DiaEsperadoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    plantilla?: boolean | DiaEsperado$plantillaArgs<ExtArgs>
   }
 
   export type $DiaEsperadoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "DiaEsperado"
     objects: {
       colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+      plantilla: Prisma.$PlantillaTurnoPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -17136,7 +18840,10 @@ export namespace Prisma {
       almuerzoInicio: string | null
       almuerzoFin: string | null
       descansos: string | null
+      esDescanso: boolean | null
+      descansoPintado: boolean
       horarioId: string | null
+      plantillaId: string | null
       origen: string
       creadoEn: Date
       actualizadoEn: Date
@@ -17481,6 +19188,7 @@ export namespace Prisma {
   export interface Prisma__DiaEsperadoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    plantilla<T extends DiaEsperado$plantillaArgs<ExtArgs> = {}>(args?: Subset<T, DiaEsperado$plantillaArgs<ExtArgs>>): Prisma__PlantillaTurnoClient<$Result.GetResult<Prisma.$PlantillaTurnoPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -17524,7 +19232,10 @@ export namespace Prisma {
     readonly almuerzoInicio: FieldRef<"DiaEsperado", 'String'>
     readonly almuerzoFin: FieldRef<"DiaEsperado", 'String'>
     readonly descansos: FieldRef<"DiaEsperado", 'String'>
+    readonly esDescanso: FieldRef<"DiaEsperado", 'Boolean'>
+    readonly descansoPintado: FieldRef<"DiaEsperado", 'Boolean'>
     readonly horarioId: FieldRef<"DiaEsperado", 'String'>
+    readonly plantillaId: FieldRef<"DiaEsperado", 'String'>
     readonly origen: FieldRef<"DiaEsperado", 'String'>
     readonly creadoEn: FieldRef<"DiaEsperado", 'DateTime'>
     readonly actualizadoEn: FieldRef<"DiaEsperado", 'DateTime'>
@@ -17824,6 +19535,21 @@ export namespace Prisma {
      * Filter which DiaEsperados to delete
      */
     where?: DiaEsperadoWhereInput
+  }
+
+  /**
+   * DiaEsperado.plantilla
+   */
+  export type DiaEsperado$plantillaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PlantillaTurno
+     */
+    select?: PlantillaTurnoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PlantillaTurnoInclude<ExtArgs> | null
+    where?: PlantillaTurnoWhereInput
   }
 
   /**
@@ -27713,6 +29439,1900 @@ export namespace Prisma {
 
 
   /**
+   * Model DescansoTrabajado
+   */
+
+  export type AggregateDescansoTrabajado = {
+    _count: DescansoTrabajadoCountAggregateOutputType | null
+    _min: DescansoTrabajadoMinAggregateOutputType | null
+    _max: DescansoTrabajadoMaxAggregateOutputType | null
+  }
+
+  export type DescansoTrabajadoMinAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    fecha: Date | null
+    decision: string | null
+    fechaCompensatorio: Date | null
+    claseAlDecidir: string | null
+    nota: string | null
+    decididoPor: string | null
+    decididoNombre: string | null
+    decididoEn: Date | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type DescansoTrabajadoMaxAggregateOutputType = {
+    id: string | null
+    colaboradorId: string | null
+    fecha: Date | null
+    decision: string | null
+    fechaCompensatorio: Date | null
+    claseAlDecidir: string | null
+    nota: string | null
+    decididoPor: string | null
+    decididoNombre: string | null
+    decididoEn: Date | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type DescansoTrabajadoCountAggregateOutputType = {
+    id: number
+    colaboradorId: number
+    fecha: number
+    decision: number
+    fechaCompensatorio: number
+    claseAlDecidir: number
+    nota: number
+    decididoPor: number
+    decididoNombre: number
+    decididoEn: number
+    creadoEn: number
+    actualizadoEn: number
+    _all: number
+  }
+
+
+  export type DescansoTrabajadoMinAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    fecha?: true
+    decision?: true
+    fechaCompensatorio?: true
+    claseAlDecidir?: true
+    nota?: true
+    decididoPor?: true
+    decididoNombre?: true
+    decididoEn?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type DescansoTrabajadoMaxAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    fecha?: true
+    decision?: true
+    fechaCompensatorio?: true
+    claseAlDecidir?: true
+    nota?: true
+    decididoPor?: true
+    decididoNombre?: true
+    decididoEn?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type DescansoTrabajadoCountAggregateInputType = {
+    id?: true
+    colaboradorId?: true
+    fecha?: true
+    decision?: true
+    fechaCompensatorio?: true
+    claseAlDecidir?: true
+    nota?: true
+    decididoPor?: true
+    decididoNombre?: true
+    decididoEn?: true
+    creadoEn?: true
+    actualizadoEn?: true
+    _all?: true
+  }
+
+  export type DescansoTrabajadoAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DescansoTrabajado to aggregate.
+     */
+    where?: DescansoTrabajadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DescansoTrabajados to fetch.
+     */
+    orderBy?: DescansoTrabajadoOrderByWithRelationInput | DescansoTrabajadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DescansoTrabajadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DescansoTrabajados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DescansoTrabajados.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DescansoTrabajados
+    **/
+    _count?: true | DescansoTrabajadoCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DescansoTrabajadoMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DescansoTrabajadoMaxAggregateInputType
+  }
+
+  export type GetDescansoTrabajadoAggregateType<T extends DescansoTrabajadoAggregateArgs> = {
+        [P in keyof T & keyof AggregateDescansoTrabajado]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDescansoTrabajado[P]>
+      : GetScalarType<T[P], AggregateDescansoTrabajado[P]>
+  }
+
+
+
+
+  export type DescansoTrabajadoGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DescansoTrabajadoWhereInput
+    orderBy?: DescansoTrabajadoOrderByWithAggregationInput | DescansoTrabajadoOrderByWithAggregationInput[]
+    by: DescansoTrabajadoScalarFieldEnum[] | DescansoTrabajadoScalarFieldEnum
+    having?: DescansoTrabajadoScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DescansoTrabajadoCountAggregateInputType | true
+    _min?: DescansoTrabajadoMinAggregateInputType
+    _max?: DescansoTrabajadoMaxAggregateInputType
+  }
+
+  export type DescansoTrabajadoGroupByOutputType = {
+    id: string
+    colaboradorId: string
+    fecha: Date
+    decision: string
+    fechaCompensatorio: Date | null
+    claseAlDecidir: string | null
+    nota: string | null
+    decididoPor: string | null
+    decididoNombre: string | null
+    decididoEn: Date | null
+    creadoEn: Date
+    actualizadoEn: Date
+    _count: DescansoTrabajadoCountAggregateOutputType | null
+    _min: DescansoTrabajadoMinAggregateOutputType | null
+    _max: DescansoTrabajadoMaxAggregateOutputType | null
+  }
+
+  type GetDescansoTrabajadoGroupByPayload<T extends DescansoTrabajadoGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DescansoTrabajadoGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DescansoTrabajadoGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DescansoTrabajadoGroupByOutputType[P]>
+            : GetScalarType<T[P], DescansoTrabajadoGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DescansoTrabajadoSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    colaboradorId?: boolean
+    fecha?: boolean
+    decision?: boolean
+    fechaCompensatorio?: boolean
+    claseAlDecidir?: boolean
+    nota?: boolean
+    decididoPor?: boolean
+    decididoNombre?: boolean
+    decididoEn?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    cambios?: boolean | DescansoTrabajado$cambiosArgs<ExtArgs>
+    _count?: boolean | DescansoTrabajadoCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["descansoTrabajado"]>
+
+
+  export type DescansoTrabajadoSelectScalar = {
+    id?: boolean
+    colaboradorId?: boolean
+    fecha?: boolean
+    decision?: boolean
+    fechaCompensatorio?: boolean
+    claseAlDecidir?: boolean
+    nota?: boolean
+    decididoPor?: boolean
+    decididoNombre?: boolean
+    decididoEn?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+  }
+
+  export type DescansoTrabajadoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    cambios?: boolean | DescansoTrabajado$cambiosArgs<ExtArgs>
+    _count?: boolean | DescansoTrabajadoCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $DescansoTrabajadoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DescansoTrabajado"
+    objects: {
+      colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+      cambios: Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      colaboradorId: string
+      fecha: Date
+      decision: string
+      fechaCompensatorio: Date | null
+      claseAlDecidir: string | null
+      nota: string | null
+      decididoPor: string | null
+      decididoNombre: string | null
+      decididoEn: Date | null
+      creadoEn: Date
+      actualizadoEn: Date
+    }, ExtArgs["result"]["descansoTrabajado"]>
+    composites: {}
+  }
+
+  type DescansoTrabajadoGetPayload<S extends boolean | null | undefined | DescansoTrabajadoDefaultArgs> = $Result.GetResult<Prisma.$DescansoTrabajadoPayload, S>
+
+  type DescansoTrabajadoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<DescansoTrabajadoFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: DescansoTrabajadoCountAggregateInputType | true
+    }
+
+  export interface DescansoTrabajadoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DescansoTrabajado'], meta: { name: 'DescansoTrabajado' } }
+    /**
+     * Find zero or one DescansoTrabajado that matches the filter.
+     * @param {DescansoTrabajadoFindUniqueArgs} args - Arguments to find a DescansoTrabajado
+     * @example
+     * // Get one DescansoTrabajado
+     * const descansoTrabajado = await prisma.descansoTrabajado.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DescansoTrabajadoFindUniqueArgs>(args: SelectSubset<T, DescansoTrabajadoFindUniqueArgs<ExtArgs>>): Prisma__DescansoTrabajadoClient<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one DescansoTrabajado that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {DescansoTrabajadoFindUniqueOrThrowArgs} args - Arguments to find a DescansoTrabajado
+     * @example
+     * // Get one DescansoTrabajado
+     * const descansoTrabajado = await prisma.descansoTrabajado.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DescansoTrabajadoFindUniqueOrThrowArgs>(args: SelectSubset<T, DescansoTrabajadoFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DescansoTrabajadoClient<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first DescansoTrabajado that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoFindFirstArgs} args - Arguments to find a DescansoTrabajado
+     * @example
+     * // Get one DescansoTrabajado
+     * const descansoTrabajado = await prisma.descansoTrabajado.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DescansoTrabajadoFindFirstArgs>(args?: SelectSubset<T, DescansoTrabajadoFindFirstArgs<ExtArgs>>): Prisma__DescansoTrabajadoClient<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first DescansoTrabajado that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoFindFirstOrThrowArgs} args - Arguments to find a DescansoTrabajado
+     * @example
+     * // Get one DescansoTrabajado
+     * const descansoTrabajado = await prisma.descansoTrabajado.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DescansoTrabajadoFindFirstOrThrowArgs>(args?: SelectSubset<T, DescansoTrabajadoFindFirstOrThrowArgs<ExtArgs>>): Prisma__DescansoTrabajadoClient<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more DescansoTrabajados that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DescansoTrabajados
+     * const descansoTrabajados = await prisma.descansoTrabajado.findMany()
+     * 
+     * // Get first 10 DescansoTrabajados
+     * const descansoTrabajados = await prisma.descansoTrabajado.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const descansoTrabajadoWithIdOnly = await prisma.descansoTrabajado.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DescansoTrabajadoFindManyArgs>(args?: SelectSubset<T, DescansoTrabajadoFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a DescansoTrabajado.
+     * @param {DescansoTrabajadoCreateArgs} args - Arguments to create a DescansoTrabajado.
+     * @example
+     * // Create one DescansoTrabajado
+     * const DescansoTrabajado = await prisma.descansoTrabajado.create({
+     *   data: {
+     *     // ... data to create a DescansoTrabajado
+     *   }
+     * })
+     * 
+     */
+    create<T extends DescansoTrabajadoCreateArgs>(args: SelectSubset<T, DescansoTrabajadoCreateArgs<ExtArgs>>): Prisma__DescansoTrabajadoClient<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many DescansoTrabajados.
+     * @param {DescansoTrabajadoCreateManyArgs} args - Arguments to create many DescansoTrabajados.
+     * @example
+     * // Create many DescansoTrabajados
+     * const descansoTrabajado = await prisma.descansoTrabajado.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DescansoTrabajadoCreateManyArgs>(args?: SelectSubset<T, DescansoTrabajadoCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a DescansoTrabajado.
+     * @param {DescansoTrabajadoDeleteArgs} args - Arguments to delete one DescansoTrabajado.
+     * @example
+     * // Delete one DescansoTrabajado
+     * const DescansoTrabajado = await prisma.descansoTrabajado.delete({
+     *   where: {
+     *     // ... filter to delete one DescansoTrabajado
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DescansoTrabajadoDeleteArgs>(args: SelectSubset<T, DescansoTrabajadoDeleteArgs<ExtArgs>>): Prisma__DescansoTrabajadoClient<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one DescansoTrabajado.
+     * @param {DescansoTrabajadoUpdateArgs} args - Arguments to update one DescansoTrabajado.
+     * @example
+     * // Update one DescansoTrabajado
+     * const descansoTrabajado = await prisma.descansoTrabajado.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DescansoTrabajadoUpdateArgs>(args: SelectSubset<T, DescansoTrabajadoUpdateArgs<ExtArgs>>): Prisma__DescansoTrabajadoClient<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more DescansoTrabajados.
+     * @param {DescansoTrabajadoDeleteManyArgs} args - Arguments to filter DescansoTrabajados to delete.
+     * @example
+     * // Delete a few DescansoTrabajados
+     * const { count } = await prisma.descansoTrabajado.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DescansoTrabajadoDeleteManyArgs>(args?: SelectSubset<T, DescansoTrabajadoDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DescansoTrabajados.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DescansoTrabajados
+     * const descansoTrabajado = await prisma.descansoTrabajado.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DescansoTrabajadoUpdateManyArgs>(args: SelectSubset<T, DescansoTrabajadoUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one DescansoTrabajado.
+     * @param {DescansoTrabajadoUpsertArgs} args - Arguments to update or create a DescansoTrabajado.
+     * @example
+     * // Update or create a DescansoTrabajado
+     * const descansoTrabajado = await prisma.descansoTrabajado.upsert({
+     *   create: {
+     *     // ... data to create a DescansoTrabajado
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DescansoTrabajado we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DescansoTrabajadoUpsertArgs>(args: SelectSubset<T, DescansoTrabajadoUpsertArgs<ExtArgs>>): Prisma__DescansoTrabajadoClient<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of DescansoTrabajados.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoCountArgs} args - Arguments to filter DescansoTrabajados to count.
+     * @example
+     * // Count the number of DescansoTrabajados
+     * const count = await prisma.descansoTrabajado.count({
+     *   where: {
+     *     // ... the filter for the DescansoTrabajados we want to count
+     *   }
+     * })
+    **/
+    count<T extends DescansoTrabajadoCountArgs>(
+      args?: Subset<T, DescansoTrabajadoCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DescansoTrabajadoCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DescansoTrabajado.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DescansoTrabajadoAggregateArgs>(args: Subset<T, DescansoTrabajadoAggregateArgs>): Prisma.PrismaPromise<GetDescansoTrabajadoAggregateType<T>>
+
+    /**
+     * Group by DescansoTrabajado.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DescansoTrabajadoGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DescansoTrabajadoGroupByArgs['orderBy'] }
+        : { orderBy?: DescansoTrabajadoGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DescansoTrabajadoGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDescansoTrabajadoGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DescansoTrabajado model
+   */
+  readonly fields: DescansoTrabajadoFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DescansoTrabajado.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DescansoTrabajadoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    cambios<T extends DescansoTrabajado$cambiosArgs<ExtArgs> = {}>(args?: Subset<T, DescansoTrabajado$cambiosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DescansoTrabajado model
+   */ 
+  interface DescansoTrabajadoFieldRefs {
+    readonly id: FieldRef<"DescansoTrabajado", 'String'>
+    readonly colaboradorId: FieldRef<"DescansoTrabajado", 'String'>
+    readonly fecha: FieldRef<"DescansoTrabajado", 'DateTime'>
+    readonly decision: FieldRef<"DescansoTrabajado", 'String'>
+    readonly fechaCompensatorio: FieldRef<"DescansoTrabajado", 'DateTime'>
+    readonly claseAlDecidir: FieldRef<"DescansoTrabajado", 'String'>
+    readonly nota: FieldRef<"DescansoTrabajado", 'String'>
+    readonly decididoPor: FieldRef<"DescansoTrabajado", 'String'>
+    readonly decididoNombre: FieldRef<"DescansoTrabajado", 'String'>
+    readonly decididoEn: FieldRef<"DescansoTrabajado", 'DateTime'>
+    readonly creadoEn: FieldRef<"DescansoTrabajado", 'DateTime'>
+    readonly actualizadoEn: FieldRef<"DescansoTrabajado", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DescansoTrabajado findUnique
+   */
+  export type DescansoTrabajadoFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+    /**
+     * Filter, which DescansoTrabajado to fetch.
+     */
+    where: DescansoTrabajadoWhereUniqueInput
+  }
+
+  /**
+   * DescansoTrabajado findUniqueOrThrow
+   */
+  export type DescansoTrabajadoFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+    /**
+     * Filter, which DescansoTrabajado to fetch.
+     */
+    where: DescansoTrabajadoWhereUniqueInput
+  }
+
+  /**
+   * DescansoTrabajado findFirst
+   */
+  export type DescansoTrabajadoFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+    /**
+     * Filter, which DescansoTrabajado to fetch.
+     */
+    where?: DescansoTrabajadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DescansoTrabajados to fetch.
+     */
+    orderBy?: DescansoTrabajadoOrderByWithRelationInput | DescansoTrabajadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DescansoTrabajados.
+     */
+    cursor?: DescansoTrabajadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DescansoTrabajados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DescansoTrabajados.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DescansoTrabajados.
+     */
+    distinct?: DescansoTrabajadoScalarFieldEnum | DescansoTrabajadoScalarFieldEnum[]
+  }
+
+  /**
+   * DescansoTrabajado findFirstOrThrow
+   */
+  export type DescansoTrabajadoFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+    /**
+     * Filter, which DescansoTrabajado to fetch.
+     */
+    where?: DescansoTrabajadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DescansoTrabajados to fetch.
+     */
+    orderBy?: DescansoTrabajadoOrderByWithRelationInput | DescansoTrabajadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DescansoTrabajados.
+     */
+    cursor?: DescansoTrabajadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DescansoTrabajados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DescansoTrabajados.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DescansoTrabajados.
+     */
+    distinct?: DescansoTrabajadoScalarFieldEnum | DescansoTrabajadoScalarFieldEnum[]
+  }
+
+  /**
+   * DescansoTrabajado findMany
+   */
+  export type DescansoTrabajadoFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+    /**
+     * Filter, which DescansoTrabajados to fetch.
+     */
+    where?: DescansoTrabajadoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DescansoTrabajados to fetch.
+     */
+    orderBy?: DescansoTrabajadoOrderByWithRelationInput | DescansoTrabajadoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DescansoTrabajados.
+     */
+    cursor?: DescansoTrabajadoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DescansoTrabajados from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DescansoTrabajados.
+     */
+    skip?: number
+    distinct?: DescansoTrabajadoScalarFieldEnum | DescansoTrabajadoScalarFieldEnum[]
+  }
+
+  /**
+   * DescansoTrabajado create
+   */
+  export type DescansoTrabajadoCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+    /**
+     * The data needed to create a DescansoTrabajado.
+     */
+    data: XOR<DescansoTrabajadoCreateInput, DescansoTrabajadoUncheckedCreateInput>
+  }
+
+  /**
+   * DescansoTrabajado createMany
+   */
+  export type DescansoTrabajadoCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DescansoTrabajados.
+     */
+    data: DescansoTrabajadoCreateManyInput | DescansoTrabajadoCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DescansoTrabajado update
+   */
+  export type DescansoTrabajadoUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+    /**
+     * The data needed to update a DescansoTrabajado.
+     */
+    data: XOR<DescansoTrabajadoUpdateInput, DescansoTrabajadoUncheckedUpdateInput>
+    /**
+     * Choose, which DescansoTrabajado to update.
+     */
+    where: DescansoTrabajadoWhereUniqueInput
+  }
+
+  /**
+   * DescansoTrabajado updateMany
+   */
+  export type DescansoTrabajadoUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DescansoTrabajados.
+     */
+    data: XOR<DescansoTrabajadoUpdateManyMutationInput, DescansoTrabajadoUncheckedUpdateManyInput>
+    /**
+     * Filter which DescansoTrabajados to update
+     */
+    where?: DescansoTrabajadoWhereInput
+  }
+
+  /**
+   * DescansoTrabajado upsert
+   */
+  export type DescansoTrabajadoUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+    /**
+     * The filter to search for the DescansoTrabajado to update in case it exists.
+     */
+    where: DescansoTrabajadoWhereUniqueInput
+    /**
+     * In case the DescansoTrabajado found by the `where` argument doesn't exist, create a new DescansoTrabajado with this data.
+     */
+    create: XOR<DescansoTrabajadoCreateInput, DescansoTrabajadoUncheckedCreateInput>
+    /**
+     * In case the DescansoTrabajado was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DescansoTrabajadoUpdateInput, DescansoTrabajadoUncheckedUpdateInput>
+  }
+
+  /**
+   * DescansoTrabajado delete
+   */
+  export type DescansoTrabajadoDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+    /**
+     * Filter which DescansoTrabajado to delete.
+     */
+    where: DescansoTrabajadoWhereUniqueInput
+  }
+
+  /**
+   * DescansoTrabajado deleteMany
+   */
+  export type DescansoTrabajadoDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DescansoTrabajados to delete
+     */
+    where?: DescansoTrabajadoWhereInput
+  }
+
+  /**
+   * DescansoTrabajado.cambios
+   */
+  export type DescansoTrabajado$cambiosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+    where?: DescansoTrabajadoCambioWhereInput
+    orderBy?: DescansoTrabajadoCambioOrderByWithRelationInput | DescansoTrabajadoCambioOrderByWithRelationInput[]
+    cursor?: DescansoTrabajadoCambioWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DescansoTrabajadoCambioScalarFieldEnum | DescansoTrabajadoCambioScalarFieldEnum[]
+  }
+
+  /**
+   * DescansoTrabajado without action
+   */
+  export type DescansoTrabajadoDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajado
+     */
+    select?: DescansoTrabajadoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model DescansoTrabajadoCambio
+   */
+
+  export type AggregateDescansoTrabajadoCambio = {
+    _count: DescansoTrabajadoCambioCountAggregateOutputType | null
+    _min: DescansoTrabajadoCambioMinAggregateOutputType | null
+    _max: DescansoTrabajadoCambioMaxAggregateOutputType | null
+  }
+
+  export type DescansoTrabajadoCambioMinAggregateOutputType = {
+    id: string | null
+    descansoTrabajadoId: string | null
+    campo: string | null
+    antes: string | null
+    despues: string | null
+    usuarioId: string | null
+    usuarioNombre: string | null
+    creadoEn: Date | null
+  }
+
+  export type DescansoTrabajadoCambioMaxAggregateOutputType = {
+    id: string | null
+    descansoTrabajadoId: string | null
+    campo: string | null
+    antes: string | null
+    despues: string | null
+    usuarioId: string | null
+    usuarioNombre: string | null
+    creadoEn: Date | null
+  }
+
+  export type DescansoTrabajadoCambioCountAggregateOutputType = {
+    id: number
+    descansoTrabajadoId: number
+    campo: number
+    antes: number
+    despues: number
+    usuarioId: number
+    usuarioNombre: number
+    creadoEn: number
+    _all: number
+  }
+
+
+  export type DescansoTrabajadoCambioMinAggregateInputType = {
+    id?: true
+    descansoTrabajadoId?: true
+    campo?: true
+    antes?: true
+    despues?: true
+    usuarioId?: true
+    usuarioNombre?: true
+    creadoEn?: true
+  }
+
+  export type DescansoTrabajadoCambioMaxAggregateInputType = {
+    id?: true
+    descansoTrabajadoId?: true
+    campo?: true
+    antes?: true
+    despues?: true
+    usuarioId?: true
+    usuarioNombre?: true
+    creadoEn?: true
+  }
+
+  export type DescansoTrabajadoCambioCountAggregateInputType = {
+    id?: true
+    descansoTrabajadoId?: true
+    campo?: true
+    antes?: true
+    despues?: true
+    usuarioId?: true
+    usuarioNombre?: true
+    creadoEn?: true
+    _all?: true
+  }
+
+  export type DescansoTrabajadoCambioAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DescansoTrabajadoCambio to aggregate.
+     */
+    where?: DescansoTrabajadoCambioWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DescansoTrabajadoCambios to fetch.
+     */
+    orderBy?: DescansoTrabajadoCambioOrderByWithRelationInput | DescansoTrabajadoCambioOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DescansoTrabajadoCambioWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DescansoTrabajadoCambios from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DescansoTrabajadoCambios.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DescansoTrabajadoCambios
+    **/
+    _count?: true | DescansoTrabajadoCambioCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DescansoTrabajadoCambioMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DescansoTrabajadoCambioMaxAggregateInputType
+  }
+
+  export type GetDescansoTrabajadoCambioAggregateType<T extends DescansoTrabajadoCambioAggregateArgs> = {
+        [P in keyof T & keyof AggregateDescansoTrabajadoCambio]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDescansoTrabajadoCambio[P]>
+      : GetScalarType<T[P], AggregateDescansoTrabajadoCambio[P]>
+  }
+
+
+
+
+  export type DescansoTrabajadoCambioGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DescansoTrabajadoCambioWhereInput
+    orderBy?: DescansoTrabajadoCambioOrderByWithAggregationInput | DescansoTrabajadoCambioOrderByWithAggregationInput[]
+    by: DescansoTrabajadoCambioScalarFieldEnum[] | DescansoTrabajadoCambioScalarFieldEnum
+    having?: DescansoTrabajadoCambioScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DescansoTrabajadoCambioCountAggregateInputType | true
+    _min?: DescansoTrabajadoCambioMinAggregateInputType
+    _max?: DescansoTrabajadoCambioMaxAggregateInputType
+  }
+
+  export type DescansoTrabajadoCambioGroupByOutputType = {
+    id: string
+    descansoTrabajadoId: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId: string | null
+    usuarioNombre: string | null
+    creadoEn: Date
+    _count: DescansoTrabajadoCambioCountAggregateOutputType | null
+    _min: DescansoTrabajadoCambioMinAggregateOutputType | null
+    _max: DescansoTrabajadoCambioMaxAggregateOutputType | null
+  }
+
+  type GetDescansoTrabajadoCambioGroupByPayload<T extends DescansoTrabajadoCambioGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DescansoTrabajadoCambioGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DescansoTrabajadoCambioGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DescansoTrabajadoCambioGroupByOutputType[P]>
+            : GetScalarType<T[P], DescansoTrabajadoCambioGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DescansoTrabajadoCambioSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    descansoTrabajadoId?: boolean
+    campo?: boolean
+    antes?: boolean
+    despues?: boolean
+    usuarioId?: boolean
+    usuarioNombre?: boolean
+    creadoEn?: boolean
+    descansoTrabajado?: boolean | DescansoTrabajadoDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["descansoTrabajadoCambio"]>
+
+
+  export type DescansoTrabajadoCambioSelectScalar = {
+    id?: boolean
+    descansoTrabajadoId?: boolean
+    campo?: boolean
+    antes?: boolean
+    despues?: boolean
+    usuarioId?: boolean
+    usuarioNombre?: boolean
+    creadoEn?: boolean
+  }
+
+  export type DescansoTrabajadoCambioInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    descansoTrabajado?: boolean | DescansoTrabajadoDefaultArgs<ExtArgs>
+  }
+
+  export type $DescansoTrabajadoCambioPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DescansoTrabajadoCambio"
+    objects: {
+      descansoTrabajado: Prisma.$DescansoTrabajadoPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      descansoTrabajadoId: string
+      campo: string
+      antes: string
+      despues: string
+      usuarioId: string | null
+      usuarioNombre: string | null
+      creadoEn: Date
+    }, ExtArgs["result"]["descansoTrabajadoCambio"]>
+    composites: {}
+  }
+
+  type DescansoTrabajadoCambioGetPayload<S extends boolean | null | undefined | DescansoTrabajadoCambioDefaultArgs> = $Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload, S>
+
+  type DescansoTrabajadoCambioCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<DescansoTrabajadoCambioFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: DescansoTrabajadoCambioCountAggregateInputType | true
+    }
+
+  export interface DescansoTrabajadoCambioDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DescansoTrabajadoCambio'], meta: { name: 'DescansoTrabajadoCambio' } }
+    /**
+     * Find zero or one DescansoTrabajadoCambio that matches the filter.
+     * @param {DescansoTrabajadoCambioFindUniqueArgs} args - Arguments to find a DescansoTrabajadoCambio
+     * @example
+     * // Get one DescansoTrabajadoCambio
+     * const descansoTrabajadoCambio = await prisma.descansoTrabajadoCambio.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DescansoTrabajadoCambioFindUniqueArgs>(args: SelectSubset<T, DescansoTrabajadoCambioFindUniqueArgs<ExtArgs>>): Prisma__DescansoTrabajadoCambioClient<$Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one DescansoTrabajadoCambio that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {DescansoTrabajadoCambioFindUniqueOrThrowArgs} args - Arguments to find a DescansoTrabajadoCambio
+     * @example
+     * // Get one DescansoTrabajadoCambio
+     * const descansoTrabajadoCambio = await prisma.descansoTrabajadoCambio.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DescansoTrabajadoCambioFindUniqueOrThrowArgs>(args: SelectSubset<T, DescansoTrabajadoCambioFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DescansoTrabajadoCambioClient<$Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first DescansoTrabajadoCambio that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoCambioFindFirstArgs} args - Arguments to find a DescansoTrabajadoCambio
+     * @example
+     * // Get one DescansoTrabajadoCambio
+     * const descansoTrabajadoCambio = await prisma.descansoTrabajadoCambio.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DescansoTrabajadoCambioFindFirstArgs>(args?: SelectSubset<T, DescansoTrabajadoCambioFindFirstArgs<ExtArgs>>): Prisma__DescansoTrabajadoCambioClient<$Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first DescansoTrabajadoCambio that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoCambioFindFirstOrThrowArgs} args - Arguments to find a DescansoTrabajadoCambio
+     * @example
+     * // Get one DescansoTrabajadoCambio
+     * const descansoTrabajadoCambio = await prisma.descansoTrabajadoCambio.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DescansoTrabajadoCambioFindFirstOrThrowArgs>(args?: SelectSubset<T, DescansoTrabajadoCambioFindFirstOrThrowArgs<ExtArgs>>): Prisma__DescansoTrabajadoCambioClient<$Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more DescansoTrabajadoCambios that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoCambioFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DescansoTrabajadoCambios
+     * const descansoTrabajadoCambios = await prisma.descansoTrabajadoCambio.findMany()
+     * 
+     * // Get first 10 DescansoTrabajadoCambios
+     * const descansoTrabajadoCambios = await prisma.descansoTrabajadoCambio.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const descansoTrabajadoCambioWithIdOnly = await prisma.descansoTrabajadoCambio.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DescansoTrabajadoCambioFindManyArgs>(args?: SelectSubset<T, DescansoTrabajadoCambioFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a DescansoTrabajadoCambio.
+     * @param {DescansoTrabajadoCambioCreateArgs} args - Arguments to create a DescansoTrabajadoCambio.
+     * @example
+     * // Create one DescansoTrabajadoCambio
+     * const DescansoTrabajadoCambio = await prisma.descansoTrabajadoCambio.create({
+     *   data: {
+     *     // ... data to create a DescansoTrabajadoCambio
+     *   }
+     * })
+     * 
+     */
+    create<T extends DescansoTrabajadoCambioCreateArgs>(args: SelectSubset<T, DescansoTrabajadoCambioCreateArgs<ExtArgs>>): Prisma__DescansoTrabajadoCambioClient<$Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many DescansoTrabajadoCambios.
+     * @param {DescansoTrabajadoCambioCreateManyArgs} args - Arguments to create many DescansoTrabajadoCambios.
+     * @example
+     * // Create many DescansoTrabajadoCambios
+     * const descansoTrabajadoCambio = await prisma.descansoTrabajadoCambio.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DescansoTrabajadoCambioCreateManyArgs>(args?: SelectSubset<T, DescansoTrabajadoCambioCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a DescansoTrabajadoCambio.
+     * @param {DescansoTrabajadoCambioDeleteArgs} args - Arguments to delete one DescansoTrabajadoCambio.
+     * @example
+     * // Delete one DescansoTrabajadoCambio
+     * const DescansoTrabajadoCambio = await prisma.descansoTrabajadoCambio.delete({
+     *   where: {
+     *     // ... filter to delete one DescansoTrabajadoCambio
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DescansoTrabajadoCambioDeleteArgs>(args: SelectSubset<T, DescansoTrabajadoCambioDeleteArgs<ExtArgs>>): Prisma__DescansoTrabajadoCambioClient<$Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one DescansoTrabajadoCambio.
+     * @param {DescansoTrabajadoCambioUpdateArgs} args - Arguments to update one DescansoTrabajadoCambio.
+     * @example
+     * // Update one DescansoTrabajadoCambio
+     * const descansoTrabajadoCambio = await prisma.descansoTrabajadoCambio.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DescansoTrabajadoCambioUpdateArgs>(args: SelectSubset<T, DescansoTrabajadoCambioUpdateArgs<ExtArgs>>): Prisma__DescansoTrabajadoCambioClient<$Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more DescansoTrabajadoCambios.
+     * @param {DescansoTrabajadoCambioDeleteManyArgs} args - Arguments to filter DescansoTrabajadoCambios to delete.
+     * @example
+     * // Delete a few DescansoTrabajadoCambios
+     * const { count } = await prisma.descansoTrabajadoCambio.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DescansoTrabajadoCambioDeleteManyArgs>(args?: SelectSubset<T, DescansoTrabajadoCambioDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DescansoTrabajadoCambios.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoCambioUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DescansoTrabajadoCambios
+     * const descansoTrabajadoCambio = await prisma.descansoTrabajadoCambio.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DescansoTrabajadoCambioUpdateManyArgs>(args: SelectSubset<T, DescansoTrabajadoCambioUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one DescansoTrabajadoCambio.
+     * @param {DescansoTrabajadoCambioUpsertArgs} args - Arguments to update or create a DescansoTrabajadoCambio.
+     * @example
+     * // Update or create a DescansoTrabajadoCambio
+     * const descansoTrabajadoCambio = await prisma.descansoTrabajadoCambio.upsert({
+     *   create: {
+     *     // ... data to create a DescansoTrabajadoCambio
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DescansoTrabajadoCambio we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DescansoTrabajadoCambioUpsertArgs>(args: SelectSubset<T, DescansoTrabajadoCambioUpsertArgs<ExtArgs>>): Prisma__DescansoTrabajadoCambioClient<$Result.GetResult<Prisma.$DescansoTrabajadoCambioPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of DescansoTrabajadoCambios.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoCambioCountArgs} args - Arguments to filter DescansoTrabajadoCambios to count.
+     * @example
+     * // Count the number of DescansoTrabajadoCambios
+     * const count = await prisma.descansoTrabajadoCambio.count({
+     *   where: {
+     *     // ... the filter for the DescansoTrabajadoCambios we want to count
+     *   }
+     * })
+    **/
+    count<T extends DescansoTrabajadoCambioCountArgs>(
+      args?: Subset<T, DescansoTrabajadoCambioCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DescansoTrabajadoCambioCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DescansoTrabajadoCambio.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoCambioAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DescansoTrabajadoCambioAggregateArgs>(args: Subset<T, DescansoTrabajadoCambioAggregateArgs>): Prisma.PrismaPromise<GetDescansoTrabajadoCambioAggregateType<T>>
+
+    /**
+     * Group by DescansoTrabajadoCambio.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DescansoTrabajadoCambioGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DescansoTrabajadoCambioGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DescansoTrabajadoCambioGroupByArgs['orderBy'] }
+        : { orderBy?: DescansoTrabajadoCambioGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DescansoTrabajadoCambioGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDescansoTrabajadoCambioGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DescansoTrabajadoCambio model
+   */
+  readonly fields: DescansoTrabajadoCambioFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DescansoTrabajadoCambio.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DescansoTrabajadoCambioClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    descansoTrabajado<T extends DescansoTrabajadoDefaultArgs<ExtArgs> = {}>(args?: Subset<T, DescansoTrabajadoDefaultArgs<ExtArgs>>): Prisma__DescansoTrabajadoClient<$Result.GetResult<Prisma.$DescansoTrabajadoPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DescansoTrabajadoCambio model
+   */ 
+  interface DescansoTrabajadoCambioFieldRefs {
+    readonly id: FieldRef<"DescansoTrabajadoCambio", 'String'>
+    readonly descansoTrabajadoId: FieldRef<"DescansoTrabajadoCambio", 'String'>
+    readonly campo: FieldRef<"DescansoTrabajadoCambio", 'String'>
+    readonly antes: FieldRef<"DescansoTrabajadoCambio", 'String'>
+    readonly despues: FieldRef<"DescansoTrabajadoCambio", 'String'>
+    readonly usuarioId: FieldRef<"DescansoTrabajadoCambio", 'String'>
+    readonly usuarioNombre: FieldRef<"DescansoTrabajadoCambio", 'String'>
+    readonly creadoEn: FieldRef<"DescansoTrabajadoCambio", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DescansoTrabajadoCambio findUnique
+   */
+  export type DescansoTrabajadoCambioFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+    /**
+     * Filter, which DescansoTrabajadoCambio to fetch.
+     */
+    where: DescansoTrabajadoCambioWhereUniqueInput
+  }
+
+  /**
+   * DescansoTrabajadoCambio findUniqueOrThrow
+   */
+  export type DescansoTrabajadoCambioFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+    /**
+     * Filter, which DescansoTrabajadoCambio to fetch.
+     */
+    where: DescansoTrabajadoCambioWhereUniqueInput
+  }
+
+  /**
+   * DescansoTrabajadoCambio findFirst
+   */
+  export type DescansoTrabajadoCambioFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+    /**
+     * Filter, which DescansoTrabajadoCambio to fetch.
+     */
+    where?: DescansoTrabajadoCambioWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DescansoTrabajadoCambios to fetch.
+     */
+    orderBy?: DescansoTrabajadoCambioOrderByWithRelationInput | DescansoTrabajadoCambioOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DescansoTrabajadoCambios.
+     */
+    cursor?: DescansoTrabajadoCambioWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DescansoTrabajadoCambios from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DescansoTrabajadoCambios.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DescansoTrabajadoCambios.
+     */
+    distinct?: DescansoTrabajadoCambioScalarFieldEnum | DescansoTrabajadoCambioScalarFieldEnum[]
+  }
+
+  /**
+   * DescansoTrabajadoCambio findFirstOrThrow
+   */
+  export type DescansoTrabajadoCambioFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+    /**
+     * Filter, which DescansoTrabajadoCambio to fetch.
+     */
+    where?: DescansoTrabajadoCambioWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DescansoTrabajadoCambios to fetch.
+     */
+    orderBy?: DescansoTrabajadoCambioOrderByWithRelationInput | DescansoTrabajadoCambioOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DescansoTrabajadoCambios.
+     */
+    cursor?: DescansoTrabajadoCambioWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DescansoTrabajadoCambios from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DescansoTrabajadoCambios.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DescansoTrabajadoCambios.
+     */
+    distinct?: DescansoTrabajadoCambioScalarFieldEnum | DescansoTrabajadoCambioScalarFieldEnum[]
+  }
+
+  /**
+   * DescansoTrabajadoCambio findMany
+   */
+  export type DescansoTrabajadoCambioFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+    /**
+     * Filter, which DescansoTrabajadoCambios to fetch.
+     */
+    where?: DescansoTrabajadoCambioWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DescansoTrabajadoCambios to fetch.
+     */
+    orderBy?: DescansoTrabajadoCambioOrderByWithRelationInput | DescansoTrabajadoCambioOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DescansoTrabajadoCambios.
+     */
+    cursor?: DescansoTrabajadoCambioWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DescansoTrabajadoCambios from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DescansoTrabajadoCambios.
+     */
+    skip?: number
+    distinct?: DescansoTrabajadoCambioScalarFieldEnum | DescansoTrabajadoCambioScalarFieldEnum[]
+  }
+
+  /**
+   * DescansoTrabajadoCambio create
+   */
+  export type DescansoTrabajadoCambioCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+    /**
+     * The data needed to create a DescansoTrabajadoCambio.
+     */
+    data: XOR<DescansoTrabajadoCambioCreateInput, DescansoTrabajadoCambioUncheckedCreateInput>
+  }
+
+  /**
+   * DescansoTrabajadoCambio createMany
+   */
+  export type DescansoTrabajadoCambioCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DescansoTrabajadoCambios.
+     */
+    data: DescansoTrabajadoCambioCreateManyInput | DescansoTrabajadoCambioCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DescansoTrabajadoCambio update
+   */
+  export type DescansoTrabajadoCambioUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+    /**
+     * The data needed to update a DescansoTrabajadoCambio.
+     */
+    data: XOR<DescansoTrabajadoCambioUpdateInput, DescansoTrabajadoCambioUncheckedUpdateInput>
+    /**
+     * Choose, which DescansoTrabajadoCambio to update.
+     */
+    where: DescansoTrabajadoCambioWhereUniqueInput
+  }
+
+  /**
+   * DescansoTrabajadoCambio updateMany
+   */
+  export type DescansoTrabajadoCambioUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DescansoTrabajadoCambios.
+     */
+    data: XOR<DescansoTrabajadoCambioUpdateManyMutationInput, DescansoTrabajadoCambioUncheckedUpdateManyInput>
+    /**
+     * Filter which DescansoTrabajadoCambios to update
+     */
+    where?: DescansoTrabajadoCambioWhereInput
+  }
+
+  /**
+   * DescansoTrabajadoCambio upsert
+   */
+  export type DescansoTrabajadoCambioUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+    /**
+     * The filter to search for the DescansoTrabajadoCambio to update in case it exists.
+     */
+    where: DescansoTrabajadoCambioWhereUniqueInput
+    /**
+     * In case the DescansoTrabajadoCambio found by the `where` argument doesn't exist, create a new DescansoTrabajadoCambio with this data.
+     */
+    create: XOR<DescansoTrabajadoCambioCreateInput, DescansoTrabajadoCambioUncheckedCreateInput>
+    /**
+     * In case the DescansoTrabajadoCambio was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DescansoTrabajadoCambioUpdateInput, DescansoTrabajadoCambioUncheckedUpdateInput>
+  }
+
+  /**
+   * DescansoTrabajadoCambio delete
+   */
+  export type DescansoTrabajadoCambioDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+    /**
+     * Filter which DescansoTrabajadoCambio to delete.
+     */
+    where: DescansoTrabajadoCambioWhereUniqueInput
+  }
+
+  /**
+   * DescansoTrabajadoCambio deleteMany
+   */
+  export type DescansoTrabajadoCambioDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DescansoTrabajadoCambios to delete
+     */
+    where?: DescansoTrabajadoCambioWhereInput
+  }
+
+  /**
+   * DescansoTrabajadoCambio without action
+   */
+  export type DescansoTrabajadoCambioDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DescansoTrabajadoCambio
+     */
+    select?: DescansoTrabajadoCambioSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DescansoTrabajadoCambioInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model VinculacionEvento
    */
 
@@ -32454,6 +36074,1030 @@ export namespace Prisma {
 
 
   /**
+   * Model EventoSistema
+   */
+
+  export type AggregateEventoSistema = {
+    _count: EventoSistemaCountAggregateOutputType | null
+    _avg: EventoSistemaAvgAggregateOutputType | null
+    _sum: EventoSistemaSumAggregateOutputType | null
+    _min: EventoSistemaMinAggregateOutputType | null
+    _max: EventoSistemaMaxAggregateOutputType | null
+  }
+
+  export type EventoSistemaAvgAggregateOutputType = {
+    veces: number | null
+    estado: number | null
+  }
+
+  export type EventoSistemaSumAggregateOutputType = {
+    veces: number | null
+    estado: number | null
+  }
+
+  export type EventoSistemaMinAggregateOutputType = {
+    id: string | null
+    tipo: $Enums.TipoEvento | null
+    origen: $Enums.OrigenEvento | null
+    huella: string | null
+    veces: number | null
+    primeraVez: Date | null
+    ultimaVez: Date | null
+    metodo: string | null
+    ruta: string | null
+    estado: number | null
+    mensaje: string | null
+    detalle: string | null
+    ip: string | null
+    navegador: string | null
+    usuarioId: string | null
+    usuarioEmail: string | null
+    usuarioNombre: string | null
+    empresaId: string | null
+    empresaNombre: string | null
+  }
+
+  export type EventoSistemaMaxAggregateOutputType = {
+    id: string | null
+    tipo: $Enums.TipoEvento | null
+    origen: $Enums.OrigenEvento | null
+    huella: string | null
+    veces: number | null
+    primeraVez: Date | null
+    ultimaVez: Date | null
+    metodo: string | null
+    ruta: string | null
+    estado: number | null
+    mensaje: string | null
+    detalle: string | null
+    ip: string | null
+    navegador: string | null
+    usuarioId: string | null
+    usuarioEmail: string | null
+    usuarioNombre: string | null
+    empresaId: string | null
+    empresaNombre: string | null
+  }
+
+  export type EventoSistemaCountAggregateOutputType = {
+    id: number
+    tipo: number
+    origen: number
+    huella: number
+    veces: number
+    primeraVez: number
+    ultimaVez: number
+    metodo: number
+    ruta: number
+    estado: number
+    mensaje: number
+    detalle: number
+    ip: number
+    navegador: number
+    usuarioId: number
+    usuarioEmail: number
+    usuarioNombre: number
+    empresaId: number
+    empresaNombre: number
+    _all: number
+  }
+
+
+  export type EventoSistemaAvgAggregateInputType = {
+    veces?: true
+    estado?: true
+  }
+
+  export type EventoSistemaSumAggregateInputType = {
+    veces?: true
+    estado?: true
+  }
+
+  export type EventoSistemaMinAggregateInputType = {
+    id?: true
+    tipo?: true
+    origen?: true
+    huella?: true
+    veces?: true
+    primeraVez?: true
+    ultimaVez?: true
+    metodo?: true
+    ruta?: true
+    estado?: true
+    mensaje?: true
+    detalle?: true
+    ip?: true
+    navegador?: true
+    usuarioId?: true
+    usuarioEmail?: true
+    usuarioNombre?: true
+    empresaId?: true
+    empresaNombre?: true
+  }
+
+  export type EventoSistemaMaxAggregateInputType = {
+    id?: true
+    tipo?: true
+    origen?: true
+    huella?: true
+    veces?: true
+    primeraVez?: true
+    ultimaVez?: true
+    metodo?: true
+    ruta?: true
+    estado?: true
+    mensaje?: true
+    detalle?: true
+    ip?: true
+    navegador?: true
+    usuarioId?: true
+    usuarioEmail?: true
+    usuarioNombre?: true
+    empresaId?: true
+    empresaNombre?: true
+  }
+
+  export type EventoSistemaCountAggregateInputType = {
+    id?: true
+    tipo?: true
+    origen?: true
+    huella?: true
+    veces?: true
+    primeraVez?: true
+    ultimaVez?: true
+    metodo?: true
+    ruta?: true
+    estado?: true
+    mensaje?: true
+    detalle?: true
+    ip?: true
+    navegador?: true
+    usuarioId?: true
+    usuarioEmail?: true
+    usuarioNombre?: true
+    empresaId?: true
+    empresaNombre?: true
+    _all?: true
+  }
+
+  export type EventoSistemaAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which EventoSistema to aggregate.
+     */
+    where?: EventoSistemaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of EventoSistemas to fetch.
+     */
+    orderBy?: EventoSistemaOrderByWithRelationInput | EventoSistemaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: EventoSistemaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` EventoSistemas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` EventoSistemas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned EventoSistemas
+    **/
+    _count?: true | EventoSistemaCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: EventoSistemaAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: EventoSistemaSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: EventoSistemaMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: EventoSistemaMaxAggregateInputType
+  }
+
+  export type GetEventoSistemaAggregateType<T extends EventoSistemaAggregateArgs> = {
+        [P in keyof T & keyof AggregateEventoSistema]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateEventoSistema[P]>
+      : GetScalarType<T[P], AggregateEventoSistema[P]>
+  }
+
+
+
+
+  export type EventoSistemaGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: EventoSistemaWhereInput
+    orderBy?: EventoSistemaOrderByWithAggregationInput | EventoSistemaOrderByWithAggregationInput[]
+    by: EventoSistemaScalarFieldEnum[] | EventoSistemaScalarFieldEnum
+    having?: EventoSistemaScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: EventoSistemaCountAggregateInputType | true
+    _avg?: EventoSistemaAvgAggregateInputType
+    _sum?: EventoSistemaSumAggregateInputType
+    _min?: EventoSistemaMinAggregateInputType
+    _max?: EventoSistemaMaxAggregateInputType
+  }
+
+  export type EventoSistemaGroupByOutputType = {
+    id: string
+    tipo: $Enums.TipoEvento
+    origen: $Enums.OrigenEvento
+    huella: string | null
+    veces: number
+    primeraVez: Date
+    ultimaVez: Date
+    metodo: string | null
+    ruta: string | null
+    estado: number | null
+    mensaje: string
+    detalle: string | null
+    ip: string | null
+    navegador: string | null
+    usuarioId: string | null
+    usuarioEmail: string | null
+    usuarioNombre: string | null
+    empresaId: string | null
+    empresaNombre: string | null
+    _count: EventoSistemaCountAggregateOutputType | null
+    _avg: EventoSistemaAvgAggregateOutputType | null
+    _sum: EventoSistemaSumAggregateOutputType | null
+    _min: EventoSistemaMinAggregateOutputType | null
+    _max: EventoSistemaMaxAggregateOutputType | null
+  }
+
+  type GetEventoSistemaGroupByPayload<T extends EventoSistemaGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<EventoSistemaGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof EventoSistemaGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], EventoSistemaGroupByOutputType[P]>
+            : GetScalarType<T[P], EventoSistemaGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type EventoSistemaSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tipo?: boolean
+    origen?: boolean
+    huella?: boolean
+    veces?: boolean
+    primeraVez?: boolean
+    ultimaVez?: boolean
+    metodo?: boolean
+    ruta?: boolean
+    estado?: boolean
+    mensaje?: boolean
+    detalle?: boolean
+    ip?: boolean
+    navegador?: boolean
+    usuarioId?: boolean
+    usuarioEmail?: boolean
+    usuarioNombre?: boolean
+    empresaId?: boolean
+    empresaNombre?: boolean
+  }, ExtArgs["result"]["eventoSistema"]>
+
+
+  export type EventoSistemaSelectScalar = {
+    id?: boolean
+    tipo?: boolean
+    origen?: boolean
+    huella?: boolean
+    veces?: boolean
+    primeraVez?: boolean
+    ultimaVez?: boolean
+    metodo?: boolean
+    ruta?: boolean
+    estado?: boolean
+    mensaje?: boolean
+    detalle?: boolean
+    ip?: boolean
+    navegador?: boolean
+    usuarioId?: boolean
+    usuarioEmail?: boolean
+    usuarioNombre?: boolean
+    empresaId?: boolean
+    empresaNombre?: boolean
+  }
+
+
+  export type $EventoSistemaPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "EventoSistema"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tipo: $Enums.TipoEvento
+      origen: $Enums.OrigenEvento
+      huella: string | null
+      veces: number
+      primeraVez: Date
+      ultimaVez: Date
+      metodo: string | null
+      ruta: string | null
+      estado: number | null
+      mensaje: string
+      detalle: string | null
+      ip: string | null
+      navegador: string | null
+      usuarioId: string | null
+      usuarioEmail: string | null
+      usuarioNombre: string | null
+      empresaId: string | null
+      empresaNombre: string | null
+    }, ExtArgs["result"]["eventoSistema"]>
+    composites: {}
+  }
+
+  type EventoSistemaGetPayload<S extends boolean | null | undefined | EventoSistemaDefaultArgs> = $Result.GetResult<Prisma.$EventoSistemaPayload, S>
+
+  type EventoSistemaCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<EventoSistemaFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: EventoSistemaCountAggregateInputType | true
+    }
+
+  export interface EventoSistemaDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['EventoSistema'], meta: { name: 'EventoSistema' } }
+    /**
+     * Find zero or one EventoSistema that matches the filter.
+     * @param {EventoSistemaFindUniqueArgs} args - Arguments to find a EventoSistema
+     * @example
+     * // Get one EventoSistema
+     * const eventoSistema = await prisma.eventoSistema.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends EventoSistemaFindUniqueArgs>(args: SelectSubset<T, EventoSistemaFindUniqueArgs<ExtArgs>>): Prisma__EventoSistemaClient<$Result.GetResult<Prisma.$EventoSistemaPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one EventoSistema that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {EventoSistemaFindUniqueOrThrowArgs} args - Arguments to find a EventoSistema
+     * @example
+     * // Get one EventoSistema
+     * const eventoSistema = await prisma.eventoSistema.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends EventoSistemaFindUniqueOrThrowArgs>(args: SelectSubset<T, EventoSistemaFindUniqueOrThrowArgs<ExtArgs>>): Prisma__EventoSistemaClient<$Result.GetResult<Prisma.$EventoSistemaPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first EventoSistema that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EventoSistemaFindFirstArgs} args - Arguments to find a EventoSistema
+     * @example
+     * // Get one EventoSistema
+     * const eventoSistema = await prisma.eventoSistema.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends EventoSistemaFindFirstArgs>(args?: SelectSubset<T, EventoSistemaFindFirstArgs<ExtArgs>>): Prisma__EventoSistemaClient<$Result.GetResult<Prisma.$EventoSistemaPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first EventoSistema that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EventoSistemaFindFirstOrThrowArgs} args - Arguments to find a EventoSistema
+     * @example
+     * // Get one EventoSistema
+     * const eventoSistema = await prisma.eventoSistema.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends EventoSistemaFindFirstOrThrowArgs>(args?: SelectSubset<T, EventoSistemaFindFirstOrThrowArgs<ExtArgs>>): Prisma__EventoSistemaClient<$Result.GetResult<Prisma.$EventoSistemaPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more EventoSistemas that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EventoSistemaFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all EventoSistemas
+     * const eventoSistemas = await prisma.eventoSistema.findMany()
+     * 
+     * // Get first 10 EventoSistemas
+     * const eventoSistemas = await prisma.eventoSistema.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const eventoSistemaWithIdOnly = await prisma.eventoSistema.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends EventoSistemaFindManyArgs>(args?: SelectSubset<T, EventoSistemaFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EventoSistemaPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a EventoSistema.
+     * @param {EventoSistemaCreateArgs} args - Arguments to create a EventoSistema.
+     * @example
+     * // Create one EventoSistema
+     * const EventoSistema = await prisma.eventoSistema.create({
+     *   data: {
+     *     // ... data to create a EventoSistema
+     *   }
+     * })
+     * 
+     */
+    create<T extends EventoSistemaCreateArgs>(args: SelectSubset<T, EventoSistemaCreateArgs<ExtArgs>>): Prisma__EventoSistemaClient<$Result.GetResult<Prisma.$EventoSistemaPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many EventoSistemas.
+     * @param {EventoSistemaCreateManyArgs} args - Arguments to create many EventoSistemas.
+     * @example
+     * // Create many EventoSistemas
+     * const eventoSistema = await prisma.eventoSistema.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends EventoSistemaCreateManyArgs>(args?: SelectSubset<T, EventoSistemaCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a EventoSistema.
+     * @param {EventoSistemaDeleteArgs} args - Arguments to delete one EventoSistema.
+     * @example
+     * // Delete one EventoSistema
+     * const EventoSistema = await prisma.eventoSistema.delete({
+     *   where: {
+     *     // ... filter to delete one EventoSistema
+     *   }
+     * })
+     * 
+     */
+    delete<T extends EventoSistemaDeleteArgs>(args: SelectSubset<T, EventoSistemaDeleteArgs<ExtArgs>>): Prisma__EventoSistemaClient<$Result.GetResult<Prisma.$EventoSistemaPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one EventoSistema.
+     * @param {EventoSistemaUpdateArgs} args - Arguments to update one EventoSistema.
+     * @example
+     * // Update one EventoSistema
+     * const eventoSistema = await prisma.eventoSistema.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends EventoSistemaUpdateArgs>(args: SelectSubset<T, EventoSistemaUpdateArgs<ExtArgs>>): Prisma__EventoSistemaClient<$Result.GetResult<Prisma.$EventoSistemaPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more EventoSistemas.
+     * @param {EventoSistemaDeleteManyArgs} args - Arguments to filter EventoSistemas to delete.
+     * @example
+     * // Delete a few EventoSistemas
+     * const { count } = await prisma.eventoSistema.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends EventoSistemaDeleteManyArgs>(args?: SelectSubset<T, EventoSistemaDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more EventoSistemas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EventoSistemaUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many EventoSistemas
+     * const eventoSistema = await prisma.eventoSistema.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends EventoSistemaUpdateManyArgs>(args: SelectSubset<T, EventoSistemaUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one EventoSistema.
+     * @param {EventoSistemaUpsertArgs} args - Arguments to update or create a EventoSistema.
+     * @example
+     * // Update or create a EventoSistema
+     * const eventoSistema = await prisma.eventoSistema.upsert({
+     *   create: {
+     *     // ... data to create a EventoSistema
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the EventoSistema we want to update
+     *   }
+     * })
+     */
+    upsert<T extends EventoSistemaUpsertArgs>(args: SelectSubset<T, EventoSistemaUpsertArgs<ExtArgs>>): Prisma__EventoSistemaClient<$Result.GetResult<Prisma.$EventoSistemaPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of EventoSistemas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EventoSistemaCountArgs} args - Arguments to filter EventoSistemas to count.
+     * @example
+     * // Count the number of EventoSistemas
+     * const count = await prisma.eventoSistema.count({
+     *   where: {
+     *     // ... the filter for the EventoSistemas we want to count
+     *   }
+     * })
+    **/
+    count<T extends EventoSistemaCountArgs>(
+      args?: Subset<T, EventoSistemaCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], EventoSistemaCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a EventoSistema.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EventoSistemaAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends EventoSistemaAggregateArgs>(args: Subset<T, EventoSistemaAggregateArgs>): Prisma.PrismaPromise<GetEventoSistemaAggregateType<T>>
+
+    /**
+     * Group by EventoSistema.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {EventoSistemaGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends EventoSistemaGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: EventoSistemaGroupByArgs['orderBy'] }
+        : { orderBy?: EventoSistemaGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, EventoSistemaGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetEventoSistemaGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the EventoSistema model
+   */
+  readonly fields: EventoSistemaFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for EventoSistema.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__EventoSistemaClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the EventoSistema model
+   */ 
+  interface EventoSistemaFieldRefs {
+    readonly id: FieldRef<"EventoSistema", 'String'>
+    readonly tipo: FieldRef<"EventoSistema", 'TipoEvento'>
+    readonly origen: FieldRef<"EventoSistema", 'OrigenEvento'>
+    readonly huella: FieldRef<"EventoSistema", 'String'>
+    readonly veces: FieldRef<"EventoSistema", 'Int'>
+    readonly primeraVez: FieldRef<"EventoSistema", 'DateTime'>
+    readonly ultimaVez: FieldRef<"EventoSistema", 'DateTime'>
+    readonly metodo: FieldRef<"EventoSistema", 'String'>
+    readonly ruta: FieldRef<"EventoSistema", 'String'>
+    readonly estado: FieldRef<"EventoSistema", 'Int'>
+    readonly mensaje: FieldRef<"EventoSistema", 'String'>
+    readonly detalle: FieldRef<"EventoSistema", 'String'>
+    readonly ip: FieldRef<"EventoSistema", 'String'>
+    readonly navegador: FieldRef<"EventoSistema", 'String'>
+    readonly usuarioId: FieldRef<"EventoSistema", 'String'>
+    readonly usuarioEmail: FieldRef<"EventoSistema", 'String'>
+    readonly usuarioNombre: FieldRef<"EventoSistema", 'String'>
+    readonly empresaId: FieldRef<"EventoSistema", 'String'>
+    readonly empresaNombre: FieldRef<"EventoSistema", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * EventoSistema findUnique
+   */
+  export type EventoSistemaFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EventoSistema
+     */
+    select?: EventoSistemaSelect<ExtArgs> | null
+    /**
+     * Filter, which EventoSistema to fetch.
+     */
+    where: EventoSistemaWhereUniqueInput
+  }
+
+  /**
+   * EventoSistema findUniqueOrThrow
+   */
+  export type EventoSistemaFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EventoSistema
+     */
+    select?: EventoSistemaSelect<ExtArgs> | null
+    /**
+     * Filter, which EventoSistema to fetch.
+     */
+    where: EventoSistemaWhereUniqueInput
+  }
+
+  /**
+   * EventoSistema findFirst
+   */
+  export type EventoSistemaFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EventoSistema
+     */
+    select?: EventoSistemaSelect<ExtArgs> | null
+    /**
+     * Filter, which EventoSistema to fetch.
+     */
+    where?: EventoSistemaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of EventoSistemas to fetch.
+     */
+    orderBy?: EventoSistemaOrderByWithRelationInput | EventoSistemaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for EventoSistemas.
+     */
+    cursor?: EventoSistemaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` EventoSistemas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` EventoSistemas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of EventoSistemas.
+     */
+    distinct?: EventoSistemaScalarFieldEnum | EventoSistemaScalarFieldEnum[]
+  }
+
+  /**
+   * EventoSistema findFirstOrThrow
+   */
+  export type EventoSistemaFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EventoSistema
+     */
+    select?: EventoSistemaSelect<ExtArgs> | null
+    /**
+     * Filter, which EventoSistema to fetch.
+     */
+    where?: EventoSistemaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of EventoSistemas to fetch.
+     */
+    orderBy?: EventoSistemaOrderByWithRelationInput | EventoSistemaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for EventoSistemas.
+     */
+    cursor?: EventoSistemaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` EventoSistemas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` EventoSistemas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of EventoSistemas.
+     */
+    distinct?: EventoSistemaScalarFieldEnum | EventoSistemaScalarFieldEnum[]
+  }
+
+  /**
+   * EventoSistema findMany
+   */
+  export type EventoSistemaFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EventoSistema
+     */
+    select?: EventoSistemaSelect<ExtArgs> | null
+    /**
+     * Filter, which EventoSistemas to fetch.
+     */
+    where?: EventoSistemaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of EventoSistemas to fetch.
+     */
+    orderBy?: EventoSistemaOrderByWithRelationInput | EventoSistemaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing EventoSistemas.
+     */
+    cursor?: EventoSistemaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` EventoSistemas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` EventoSistemas.
+     */
+    skip?: number
+    distinct?: EventoSistemaScalarFieldEnum | EventoSistemaScalarFieldEnum[]
+  }
+
+  /**
+   * EventoSistema create
+   */
+  export type EventoSistemaCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EventoSistema
+     */
+    select?: EventoSistemaSelect<ExtArgs> | null
+    /**
+     * The data needed to create a EventoSistema.
+     */
+    data: XOR<EventoSistemaCreateInput, EventoSistemaUncheckedCreateInput>
+  }
+
+  /**
+   * EventoSistema createMany
+   */
+  export type EventoSistemaCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many EventoSistemas.
+     */
+    data: EventoSistemaCreateManyInput | EventoSistemaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * EventoSistema update
+   */
+  export type EventoSistemaUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EventoSistema
+     */
+    select?: EventoSistemaSelect<ExtArgs> | null
+    /**
+     * The data needed to update a EventoSistema.
+     */
+    data: XOR<EventoSistemaUpdateInput, EventoSistemaUncheckedUpdateInput>
+    /**
+     * Choose, which EventoSistema to update.
+     */
+    where: EventoSistemaWhereUniqueInput
+  }
+
+  /**
+   * EventoSistema updateMany
+   */
+  export type EventoSistemaUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update EventoSistemas.
+     */
+    data: XOR<EventoSistemaUpdateManyMutationInput, EventoSistemaUncheckedUpdateManyInput>
+    /**
+     * Filter which EventoSistemas to update
+     */
+    where?: EventoSistemaWhereInput
+  }
+
+  /**
+   * EventoSistema upsert
+   */
+  export type EventoSistemaUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EventoSistema
+     */
+    select?: EventoSistemaSelect<ExtArgs> | null
+    /**
+     * The filter to search for the EventoSistema to update in case it exists.
+     */
+    where: EventoSistemaWhereUniqueInput
+    /**
+     * In case the EventoSistema found by the `where` argument doesn't exist, create a new EventoSistema with this data.
+     */
+    create: XOR<EventoSistemaCreateInput, EventoSistemaUncheckedCreateInput>
+    /**
+     * In case the EventoSistema was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<EventoSistemaUpdateInput, EventoSistemaUncheckedUpdateInput>
+  }
+
+  /**
+   * EventoSistema delete
+   */
+  export type EventoSistemaDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EventoSistema
+     */
+    select?: EventoSistemaSelect<ExtArgs> | null
+    /**
+     * Filter which EventoSistema to delete.
+     */
+    where: EventoSistemaWhereUniqueInput
+  }
+
+  /**
+   * EventoSistema deleteMany
+   */
+  export type EventoSistemaDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which EventoSistemas to delete
+     */
+    where?: EventoSistemaWhereInput
+  }
+
+  /**
+   * EventoSistema without action
+   */
+  export type EventoSistemaDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the EventoSistema
+     */
+    select?: EventoSistemaSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -32477,6 +37121,7 @@ export namespace Prisma {
     exentaPago: 'exentaPago',
     activa: 'activa',
     auxilioRevisadoEn: 'auxilioRevisadoEn',
+    descansoRevisadoEn: 'descansoRevisadoEn',
     creadoEn: 'creadoEn',
     actualizadoEn: 'actualizadoEn',
     afiliadoId: 'afiliadoId',
@@ -32607,6 +37252,30 @@ export namespace Prisma {
   export type FranjaHorarioScalarFieldEnum = (typeof FranjaHorarioScalarFieldEnum)[keyof typeof FranjaHorarioScalarFieldEnum]
 
 
+  export const PlantillaTurnoScalarFieldEnum: {
+    id: 'id',
+    empresaId: 'empresaId',
+    nombre: 'nombre',
+    color: 'color',
+    esDescanso: 'esDescanso',
+    horaEntrada: 'horaEntrada',
+    horaSalida: 'horaSalida',
+    tieneAlmuerzo: 'tieneAlmuerzo',
+    almuerzoInicio: 'almuerzoInicio',
+    almuerzoFin: 'almuerzoFin',
+    descansos: 'descansos',
+    toleranciaMin: 'toleranciaMin',
+    toleranciaSalidaMin: 'toleranciaSalidaMin',
+    ajustaEntrada: 'ajustaEntrada',
+    sedeId: 'sedeId',
+    activa: 'activa',
+    creadoEn: 'creadoEn',
+    actualizadoEn: 'actualizadoEn'
+  };
+
+  export type PlantillaTurnoScalarFieldEnum = (typeof PlantillaTurnoScalarFieldEnum)[keyof typeof PlantillaTurnoScalarFieldEnum]
+
+
   export const DispositivoKioscoScalarFieldEnum: {
     id: 'id',
     empresaId: 'empresaId',
@@ -32625,6 +37294,7 @@ export namespace Prisma {
     nombre: 'nombre',
     apellido: 'apellido',
     cedula: 'cedula',
+    numeroContrato: 'numeroContrato',
     cargo: 'cargo',
     email: 'email',
     telefono: 'telefono',
@@ -32636,6 +37306,9 @@ export namespace Prisma {
     rostroRechazadoEn: 'rostroRechazadoEn',
     foto: 'foto',
     fotoMini: 'fotoMini',
+    descansoTipo: 'descansoTipo',
+    descansoDia: 'descansoDia',
+    descansoAcuerdoEn: 'descansoAcuerdoEn',
     horarioId: 'horarioId',
     modalidad: 'modalidad',
     puedeCerrarEnOtraSede: 'puedeCerrarEnOtraSede',
@@ -32690,7 +37363,10 @@ export namespace Prisma {
     almuerzoInicio: 'almuerzoInicio',
     almuerzoFin: 'almuerzoFin',
     descansos: 'descansos',
+    esDescanso: 'esDescanso',
+    descansoPintado: 'descansoPintado',
     horarioId: 'horarioId',
+    plantillaId: 'plantillaId',
     origen: 'origen',
     creadoEn: 'creadoEn',
     actualizadoEn: 'actualizadoEn'
@@ -32870,6 +37546,38 @@ export namespace Prisma {
   export type RegistroCambioScalarFieldEnum = (typeof RegistroCambioScalarFieldEnum)[keyof typeof RegistroCambioScalarFieldEnum]
 
 
+  export const DescansoTrabajadoScalarFieldEnum: {
+    id: 'id',
+    colaboradorId: 'colaboradorId',
+    fecha: 'fecha',
+    decision: 'decision',
+    fechaCompensatorio: 'fechaCompensatorio',
+    claseAlDecidir: 'claseAlDecidir',
+    nota: 'nota',
+    decididoPor: 'decididoPor',
+    decididoNombre: 'decididoNombre',
+    decididoEn: 'decididoEn',
+    creadoEn: 'creadoEn',
+    actualizadoEn: 'actualizadoEn'
+  };
+
+  export type DescansoTrabajadoScalarFieldEnum = (typeof DescansoTrabajadoScalarFieldEnum)[keyof typeof DescansoTrabajadoScalarFieldEnum]
+
+
+  export const DescansoTrabajadoCambioScalarFieldEnum: {
+    id: 'id',
+    descansoTrabajadoId: 'descansoTrabajadoId',
+    campo: 'campo',
+    antes: 'antes',
+    despues: 'despues',
+    usuarioId: 'usuarioId',
+    usuarioNombre: 'usuarioNombre',
+    creadoEn: 'creadoEn'
+  };
+
+  export type DescansoTrabajadoCambioScalarFieldEnum = (typeof DescansoTrabajadoCambioScalarFieldEnum)[keyof typeof DescansoTrabajadoCambioScalarFieldEnum]
+
+
   export const VinculacionEventoScalarFieldEnum: {
     id: 'id',
     colaboradorId: 'colaboradorId',
@@ -32949,6 +37657,31 @@ export namespace Prisma {
   };
 
   export type ProrrogaContratoScalarFieldEnum = (typeof ProrrogaContratoScalarFieldEnum)[keyof typeof ProrrogaContratoScalarFieldEnum]
+
+
+  export const EventoSistemaScalarFieldEnum: {
+    id: 'id',
+    tipo: 'tipo',
+    origen: 'origen',
+    huella: 'huella',
+    veces: 'veces',
+    primeraVez: 'primeraVez',
+    ultimaVez: 'ultimaVez',
+    metodo: 'metodo',
+    ruta: 'ruta',
+    estado: 'estado',
+    mensaje: 'mensaje',
+    detalle: 'detalle',
+    ip: 'ip',
+    navegador: 'navegador',
+    usuarioId: 'usuarioId',
+    usuarioEmail: 'usuarioEmail',
+    usuarioNombre: 'usuarioNombre',
+    empresaId: 'empresaId',
+    empresaNombre: 'empresaNombre'
+  };
+
+  export type EventoSistemaScalarFieldEnum = (typeof EventoSistemaScalarFieldEnum)[keyof typeof EventoSistemaScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -33162,6 +37895,20 @@ export namespace Prisma {
    */
   export type EnumEstadoContratoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoContrato'>
     
+
+
+  /**
+   * Reference to a field of type 'TipoEvento'
+   */
+  export type EnumTipoEventoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TipoEvento'>
+    
+
+
+  /**
+   * Reference to a field of type 'OrigenEvento'
+   */
+  export type EnumOrigenEventoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrigenEvento'>
+    
   /**
    * Deep Input Types
    */
@@ -33180,6 +37927,7 @@ export namespace Prisma {
     exentaPago?: BoolFilter<"Empresa"> | boolean
     activa?: BoolFilter<"Empresa"> | boolean
     auxilioRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
+    descansoRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableFilter<"Empresa"> | string | null
@@ -33192,6 +37940,7 @@ export namespace Prisma {
     suscripcion?: XOR<SuscripcionNullableRelationFilter, SuscripcionWhereInput> | null
     horarios?: HorarioListRelationFilter
     sedes?: SedeListRelationFilter
+    plantillasTurno?: PlantillaTurnoListRelationFilter
     dispositivos?: DispositivoKioscoListRelationFilter
     notificaciones?: NotificacionListRelationFilter
     afiliado?: XOR<AfiliadoNullableRelationFilter, AfiliadoWhereInput> | null
@@ -33208,6 +37957,7 @@ export namespace Prisma {
     exentaPago?: SortOrder
     activa?: SortOrder
     auxilioRevisadoEn?: SortOrderInput | SortOrder
+    descansoRevisadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrderInput | SortOrder
@@ -33220,6 +37970,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionOrderByWithRelationInput
     horarios?: HorarioOrderByRelationAggregateInput
     sedes?: SedeOrderByRelationAggregateInput
+    plantillasTurno?: PlantillaTurnoOrderByRelationAggregateInput
     dispositivos?: DispositivoKioscoOrderByRelationAggregateInput
     notificaciones?: NotificacionOrderByRelationAggregateInput
     afiliado?: AfiliadoOrderByWithRelationInput
@@ -33239,6 +37990,7 @@ export namespace Prisma {
     exentaPago?: BoolFilter<"Empresa"> | boolean
     activa?: BoolFilter<"Empresa"> | boolean
     auxilioRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
+    descansoRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableFilter<"Empresa"> | string | null
@@ -33251,6 +38003,7 @@ export namespace Prisma {
     suscripcion?: XOR<SuscripcionNullableRelationFilter, SuscripcionWhereInput> | null
     horarios?: HorarioListRelationFilter
     sedes?: SedeListRelationFilter
+    plantillasTurno?: PlantillaTurnoListRelationFilter
     dispositivos?: DispositivoKioscoListRelationFilter
     notificaciones?: NotificacionListRelationFilter
     afiliado?: XOR<AfiliadoNullableRelationFilter, AfiliadoWhereInput> | null
@@ -33267,6 +38020,7 @@ export namespace Prisma {
     exentaPago?: SortOrder
     activa?: SortOrder
     auxilioRevisadoEn?: SortOrderInput | SortOrder
+    descansoRevisadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrderInput | SortOrder
@@ -33290,6 +38044,7 @@ export namespace Prisma {
     exentaPago?: BoolWithAggregatesFilter<"Empresa"> | boolean
     activa?: BoolWithAggregatesFilter<"Empresa"> | boolean
     auxilioRevisadoEn?: DateTimeNullableWithAggregatesFilter<"Empresa"> | Date | string | null
+    descansoRevisadoEn?: DateTimeNullableWithAggregatesFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableWithAggregatesFilter<"Empresa"> | string | null
@@ -33912,6 +38667,134 @@ export namespace Prisma {
     descansos?: StringNullableWithAggregatesFilter<"FranjaHorario"> | string | null
   }
 
+  export type PlantillaTurnoWhereInput = {
+    AND?: PlantillaTurnoWhereInput | PlantillaTurnoWhereInput[]
+    OR?: PlantillaTurnoWhereInput[]
+    NOT?: PlantillaTurnoWhereInput | PlantillaTurnoWhereInput[]
+    id?: StringFilter<"PlantillaTurno"> | string
+    empresaId?: StringFilter<"PlantillaTurno"> | string
+    nombre?: StringFilter<"PlantillaTurno"> | string
+    color?: StringFilter<"PlantillaTurno"> | string
+    esDescanso?: BoolFilter<"PlantillaTurno"> | boolean
+    horaEntrada?: StringNullableFilter<"PlantillaTurno"> | string | null
+    horaSalida?: StringNullableFilter<"PlantillaTurno"> | string | null
+    tieneAlmuerzo?: BoolFilter<"PlantillaTurno"> | boolean
+    almuerzoInicio?: StringNullableFilter<"PlantillaTurno"> | string | null
+    almuerzoFin?: StringNullableFilter<"PlantillaTurno"> | string | null
+    descansos?: StringNullableFilter<"PlantillaTurno"> | string | null
+    toleranciaMin?: IntNullableFilter<"PlantillaTurno"> | number | null
+    toleranciaSalidaMin?: IntNullableFilter<"PlantillaTurno"> | number | null
+    ajustaEntrada?: BoolNullableFilter<"PlantillaTurno"> | boolean | null
+    sedeId?: StringNullableFilter<"PlantillaTurno"> | string | null
+    activa?: BoolFilter<"PlantillaTurno"> | boolean
+    creadoEn?: DateTimeFilter<"PlantillaTurno"> | Date | string
+    actualizadoEn?: DateTimeFilter<"PlantillaTurno"> | Date | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    sede?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
+    diasEsperados?: DiaEsperadoListRelationFilter
+  }
+
+  export type PlantillaTurnoOrderByWithRelationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    nombre?: SortOrder
+    color?: SortOrder
+    esDescanso?: SortOrder
+    horaEntrada?: SortOrderInput | SortOrder
+    horaSalida?: SortOrderInput | SortOrder
+    tieneAlmuerzo?: SortOrder
+    almuerzoInicio?: SortOrderInput | SortOrder
+    almuerzoFin?: SortOrderInput | SortOrder
+    descansos?: SortOrderInput | SortOrder
+    toleranciaMin?: SortOrderInput | SortOrder
+    toleranciaSalidaMin?: SortOrderInput | SortOrder
+    ajustaEntrada?: SortOrderInput | SortOrder
+    sedeId?: SortOrderInput | SortOrder
+    activa?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    empresa?: EmpresaOrderByWithRelationInput
+    sede?: SedeOrderByWithRelationInput
+    diasEsperados?: DiaEsperadoOrderByRelationAggregateInput
+  }
+
+  export type PlantillaTurnoWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: PlantillaTurnoWhereInput | PlantillaTurnoWhereInput[]
+    OR?: PlantillaTurnoWhereInput[]
+    NOT?: PlantillaTurnoWhereInput | PlantillaTurnoWhereInput[]
+    empresaId?: StringFilter<"PlantillaTurno"> | string
+    nombre?: StringFilter<"PlantillaTurno"> | string
+    color?: StringFilter<"PlantillaTurno"> | string
+    esDescanso?: BoolFilter<"PlantillaTurno"> | boolean
+    horaEntrada?: StringNullableFilter<"PlantillaTurno"> | string | null
+    horaSalida?: StringNullableFilter<"PlantillaTurno"> | string | null
+    tieneAlmuerzo?: BoolFilter<"PlantillaTurno"> | boolean
+    almuerzoInicio?: StringNullableFilter<"PlantillaTurno"> | string | null
+    almuerzoFin?: StringNullableFilter<"PlantillaTurno"> | string | null
+    descansos?: StringNullableFilter<"PlantillaTurno"> | string | null
+    toleranciaMin?: IntNullableFilter<"PlantillaTurno"> | number | null
+    toleranciaSalidaMin?: IntNullableFilter<"PlantillaTurno"> | number | null
+    ajustaEntrada?: BoolNullableFilter<"PlantillaTurno"> | boolean | null
+    sedeId?: StringNullableFilter<"PlantillaTurno"> | string | null
+    activa?: BoolFilter<"PlantillaTurno"> | boolean
+    creadoEn?: DateTimeFilter<"PlantillaTurno"> | Date | string
+    actualizadoEn?: DateTimeFilter<"PlantillaTurno"> | Date | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    sede?: XOR<SedeNullableRelationFilter, SedeWhereInput> | null
+    diasEsperados?: DiaEsperadoListRelationFilter
+  }, "id">
+
+  export type PlantillaTurnoOrderByWithAggregationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    nombre?: SortOrder
+    color?: SortOrder
+    esDescanso?: SortOrder
+    horaEntrada?: SortOrderInput | SortOrder
+    horaSalida?: SortOrderInput | SortOrder
+    tieneAlmuerzo?: SortOrder
+    almuerzoInicio?: SortOrderInput | SortOrder
+    almuerzoFin?: SortOrderInput | SortOrder
+    descansos?: SortOrderInput | SortOrder
+    toleranciaMin?: SortOrderInput | SortOrder
+    toleranciaSalidaMin?: SortOrderInput | SortOrder
+    ajustaEntrada?: SortOrderInput | SortOrder
+    sedeId?: SortOrderInput | SortOrder
+    activa?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    _count?: PlantillaTurnoCountOrderByAggregateInput
+    _avg?: PlantillaTurnoAvgOrderByAggregateInput
+    _max?: PlantillaTurnoMaxOrderByAggregateInput
+    _min?: PlantillaTurnoMinOrderByAggregateInput
+    _sum?: PlantillaTurnoSumOrderByAggregateInput
+  }
+
+  export type PlantillaTurnoScalarWhereWithAggregatesInput = {
+    AND?: PlantillaTurnoScalarWhereWithAggregatesInput | PlantillaTurnoScalarWhereWithAggregatesInput[]
+    OR?: PlantillaTurnoScalarWhereWithAggregatesInput[]
+    NOT?: PlantillaTurnoScalarWhereWithAggregatesInput | PlantillaTurnoScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PlantillaTurno"> | string
+    empresaId?: StringWithAggregatesFilter<"PlantillaTurno"> | string
+    nombre?: StringWithAggregatesFilter<"PlantillaTurno"> | string
+    color?: StringWithAggregatesFilter<"PlantillaTurno"> | string
+    esDescanso?: BoolWithAggregatesFilter<"PlantillaTurno"> | boolean
+    horaEntrada?: StringNullableWithAggregatesFilter<"PlantillaTurno"> | string | null
+    horaSalida?: StringNullableWithAggregatesFilter<"PlantillaTurno"> | string | null
+    tieneAlmuerzo?: BoolWithAggregatesFilter<"PlantillaTurno"> | boolean
+    almuerzoInicio?: StringNullableWithAggregatesFilter<"PlantillaTurno"> | string | null
+    almuerzoFin?: StringNullableWithAggregatesFilter<"PlantillaTurno"> | string | null
+    descansos?: StringNullableWithAggregatesFilter<"PlantillaTurno"> | string | null
+    toleranciaMin?: IntNullableWithAggregatesFilter<"PlantillaTurno"> | number | null
+    toleranciaSalidaMin?: IntNullableWithAggregatesFilter<"PlantillaTurno"> | number | null
+    ajustaEntrada?: BoolNullableWithAggregatesFilter<"PlantillaTurno"> | boolean | null
+    sedeId?: StringNullableWithAggregatesFilter<"PlantillaTurno"> | string | null
+    activa?: BoolWithAggregatesFilter<"PlantillaTurno"> | boolean
+    creadoEn?: DateTimeWithAggregatesFilter<"PlantillaTurno"> | Date | string
+    actualizadoEn?: DateTimeWithAggregatesFilter<"PlantillaTurno"> | Date | string
+  }
+
   export type DispositivoKioscoWhereInput = {
     AND?: DispositivoKioscoWhereInput | DispositivoKioscoWhereInput[]
     OR?: DispositivoKioscoWhereInput[]
@@ -33981,6 +38864,7 @@ export namespace Prisma {
     nombre?: StringFilter<"Colaborador"> | string
     apellido?: StringFilter<"Colaborador"> | string
     cedula?: StringFilter<"Colaborador"> | string
+    numeroContrato?: StringNullableFilter<"Colaborador"> | string | null
     cargo?: StringNullableFilter<"Colaborador"> | string | null
     email?: StringNullableFilter<"Colaborador"> | string | null
     telefono?: StringNullableFilter<"Colaborador"> | string | null
@@ -33992,6 +38876,9 @@ export namespace Prisma {
     rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
+    descansoTipo?: StringFilter<"Colaborador"> | string
+    descansoDia?: StringNullableFilter<"Colaborador"> | string | null
+    descansoAcuerdoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoFilter<"Colaborador"> | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFilter<"Colaborador"> | boolean
@@ -34002,6 +38889,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    descansosTrabajados?: DescansoTrabajadoListRelationFilter
     horario?: XOR<HorarioNullableRelationFilter, HorarioWhereInput> | null
     registros?: RegistroListRelationFilter
     permisos?: PermisoListRelationFilter
@@ -34019,6 +38907,7 @@ export namespace Prisma {
     nombre?: SortOrder
     apellido?: SortOrder
     cedula?: SortOrder
+    numeroContrato?: SortOrderInput | SortOrder
     cargo?: SortOrderInput | SortOrder
     email?: SortOrderInput | SortOrder
     telefono?: SortOrderInput | SortOrder
@@ -34030,6 +38919,9 @@ export namespace Prisma {
     rostroRechazadoEn?: SortOrderInput | SortOrder
     foto?: SortOrderInput | SortOrder
     fotoMini?: SortOrderInput | SortOrder
+    descansoTipo?: SortOrder
+    descansoDia?: SortOrderInput | SortOrder
+    descansoAcuerdoEn?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     modalidad?: SortOrder
     puedeCerrarEnOtraSede?: SortOrder
@@ -34040,6 +38932,7 @@ export namespace Prisma {
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     empresa?: EmpresaOrderByWithRelationInput
+    descansosTrabajados?: DescansoTrabajadoOrderByRelationAggregateInput
     horario?: HorarioOrderByWithRelationInput
     registros?: RegistroOrderByRelationAggregateInput
     permisos?: PermisoOrderByRelationAggregateInput
@@ -34061,6 +38954,7 @@ export namespace Prisma {
     nombre?: StringFilter<"Colaborador"> | string
     apellido?: StringFilter<"Colaborador"> | string
     cedula?: StringFilter<"Colaborador"> | string
+    numeroContrato?: StringNullableFilter<"Colaborador"> | string | null
     cargo?: StringNullableFilter<"Colaborador"> | string | null
     email?: StringNullableFilter<"Colaborador"> | string | null
     telefono?: StringNullableFilter<"Colaborador"> | string | null
@@ -34072,6 +38966,9 @@ export namespace Prisma {
     rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
+    descansoTipo?: StringFilter<"Colaborador"> | string
+    descansoDia?: StringNullableFilter<"Colaborador"> | string | null
+    descansoAcuerdoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoFilter<"Colaborador"> | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFilter<"Colaborador"> | boolean
@@ -34082,6 +38979,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     actualizadoEn?: DateTimeFilter<"Colaborador"> | Date | string
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    descansosTrabajados?: DescansoTrabajadoListRelationFilter
     horario?: XOR<HorarioNullableRelationFilter, HorarioWhereInput> | null
     registros?: RegistroListRelationFilter
     permisos?: PermisoListRelationFilter
@@ -34099,6 +38997,7 @@ export namespace Prisma {
     nombre?: SortOrder
     apellido?: SortOrder
     cedula?: SortOrder
+    numeroContrato?: SortOrderInput | SortOrder
     cargo?: SortOrderInput | SortOrder
     email?: SortOrderInput | SortOrder
     telefono?: SortOrderInput | SortOrder
@@ -34110,6 +39009,9 @@ export namespace Prisma {
     rostroRechazadoEn?: SortOrderInput | SortOrder
     foto?: SortOrderInput | SortOrder
     fotoMini?: SortOrderInput | SortOrder
+    descansoTipo?: SortOrder
+    descansoDia?: SortOrderInput | SortOrder
+    descansoAcuerdoEn?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     modalidad?: SortOrder
     puedeCerrarEnOtraSede?: SortOrder
@@ -34135,6 +39037,7 @@ export namespace Prisma {
     nombre?: StringWithAggregatesFilter<"Colaborador"> | string
     apellido?: StringWithAggregatesFilter<"Colaborador"> | string
     cedula?: StringWithAggregatesFilter<"Colaborador"> | string
+    numeroContrato?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     cargo?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     email?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     telefono?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
@@ -34146,6 +39049,9 @@ export namespace Prisma {
     rostroRechazadoEn?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
+    descansoTipo?: StringWithAggregatesFilter<"Colaborador"> | string
+    descansoDia?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
+    descansoAcuerdoEn?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoWithAggregatesFilter<"Colaborador"> | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolWithAggregatesFilter<"Colaborador"> | boolean
@@ -34173,6 +39079,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFilter<"Sede"> | Date | string
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
     colaboradores?: ColaboradorSedeListRelationFilter
+    plantillas?: PlantillaTurnoListRelationFilter
     registros?: RegistroListRelationFilter
     registrosCerrados?: RegistroListRelationFilter
   }
@@ -34190,6 +39097,7 @@ export namespace Prisma {
     actualizadoEn?: SortOrder
     empresa?: EmpresaOrderByWithRelationInput
     colaboradores?: ColaboradorSedeOrderByRelationAggregateInput
+    plantillas?: PlantillaTurnoOrderByRelationAggregateInput
     registros?: RegistroOrderByRelationAggregateInput
     registrosCerrados?: RegistroOrderByRelationAggregateInput
   }
@@ -34210,6 +39118,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFilter<"Sede"> | Date | string
     empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
     colaboradores?: ColaboradorSedeListRelationFilter
+    plantillas?: PlantillaTurnoListRelationFilter
     registros?: RegistroListRelationFilter
     registrosCerrados?: RegistroListRelationFilter
   }, "id">
@@ -34315,11 +39224,15 @@ export namespace Prisma {
     almuerzoInicio?: StringNullableFilter<"DiaEsperado"> | string | null
     almuerzoFin?: StringNullableFilter<"DiaEsperado"> | string | null
     descansos?: StringNullableFilter<"DiaEsperado"> | string | null
+    esDescanso?: BoolNullableFilter<"DiaEsperado"> | boolean | null
+    descansoPintado?: BoolFilter<"DiaEsperado"> | boolean
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
+    plantillaId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
     actualizadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    plantilla?: XOR<PlantillaTurnoNullableRelationFilter, PlantillaTurnoWhereInput> | null
   }
 
   export type DiaEsperadoOrderByWithRelationInput = {
@@ -34337,11 +39250,15 @@ export namespace Prisma {
     almuerzoInicio?: SortOrderInput | SortOrder
     almuerzoFin?: SortOrderInput | SortOrder
     descansos?: SortOrderInput | SortOrder
+    esDescanso?: SortOrderInput | SortOrder
+    descansoPintado?: SortOrder
     horarioId?: SortOrderInput | SortOrder
+    plantillaId?: SortOrderInput | SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     colaborador?: ColaboradorOrderByWithRelationInput
+    plantilla?: PlantillaTurnoOrderByWithRelationInput
   }
 
   export type DiaEsperadoWhereUniqueInput = Prisma.AtLeast<{
@@ -34363,11 +39280,15 @@ export namespace Prisma {
     almuerzoInicio?: StringNullableFilter<"DiaEsperado"> | string | null
     almuerzoFin?: StringNullableFilter<"DiaEsperado"> | string | null
     descansos?: StringNullableFilter<"DiaEsperado"> | string | null
+    esDescanso?: BoolNullableFilter<"DiaEsperado"> | boolean | null
+    descansoPintado?: BoolFilter<"DiaEsperado"> | boolean
     horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
+    plantillaId?: StringNullableFilter<"DiaEsperado"> | string | null
     origen?: StringFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
     actualizadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
     colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    plantilla?: XOR<PlantillaTurnoNullableRelationFilter, PlantillaTurnoWhereInput> | null
   }, "id" | "colaboradorId_fecha">
 
   export type DiaEsperadoOrderByWithAggregationInput = {
@@ -34385,7 +39306,10 @@ export namespace Prisma {
     almuerzoInicio?: SortOrderInput | SortOrder
     almuerzoFin?: SortOrderInput | SortOrder
     descansos?: SortOrderInput | SortOrder
+    esDescanso?: SortOrderInput | SortOrder
+    descansoPintado?: SortOrder
     horarioId?: SortOrderInput | SortOrder
+    plantillaId?: SortOrderInput | SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -34414,7 +39338,10 @@ export namespace Prisma {
     almuerzoInicio?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
     almuerzoFin?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
     descansos?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
+    esDescanso?: BoolNullableWithAggregatesFilter<"DiaEsperado"> | boolean | null
+    descansoPintado?: BoolWithAggregatesFilter<"DiaEsperado"> | boolean
     horarioId?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
+    plantillaId?: StringNullableWithAggregatesFilter<"DiaEsperado"> | string | null
     origen?: StringWithAggregatesFilter<"DiaEsperado"> | string
     creadoEn?: DateTimeWithAggregatesFilter<"DiaEsperado"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"DiaEsperado"> | Date | string
@@ -35318,6 +40245,170 @@ export namespace Prisma {
     creadoEn?: DateTimeWithAggregatesFilter<"RegistroCambio"> | Date | string
   }
 
+  export type DescansoTrabajadoWhereInput = {
+    AND?: DescansoTrabajadoWhereInput | DescansoTrabajadoWhereInput[]
+    OR?: DescansoTrabajadoWhereInput[]
+    NOT?: DescansoTrabajadoWhereInput | DescansoTrabajadoWhereInput[]
+    id?: StringFilter<"DescansoTrabajado"> | string
+    colaboradorId?: StringFilter<"DescansoTrabajado"> | string
+    fecha?: DateTimeFilter<"DescansoTrabajado"> | Date | string
+    decision?: StringFilter<"DescansoTrabajado"> | string
+    fechaCompensatorio?: DateTimeNullableFilter<"DescansoTrabajado"> | Date | string | null
+    claseAlDecidir?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    nota?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    decididoPor?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    decididoNombre?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    decididoEn?: DateTimeNullableFilter<"DescansoTrabajado"> | Date | string | null
+    creadoEn?: DateTimeFilter<"DescansoTrabajado"> | Date | string
+    actualizadoEn?: DateTimeFilter<"DescansoTrabajado"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    cambios?: DescansoTrabajadoCambioListRelationFilter
+  }
+
+  export type DescansoTrabajadoOrderByWithRelationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    decision?: SortOrder
+    fechaCompensatorio?: SortOrderInput | SortOrder
+    claseAlDecidir?: SortOrderInput | SortOrder
+    nota?: SortOrderInput | SortOrder
+    decididoPor?: SortOrderInput | SortOrder
+    decididoNombre?: SortOrderInput | SortOrder
+    decididoEn?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    colaborador?: ColaboradorOrderByWithRelationInput
+    cambios?: DescansoTrabajadoCambioOrderByRelationAggregateInput
+  }
+
+  export type DescansoTrabajadoWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    colaboradorId_fecha?: DescansoTrabajadoColaboradorIdFechaCompoundUniqueInput
+    AND?: DescansoTrabajadoWhereInput | DescansoTrabajadoWhereInput[]
+    OR?: DescansoTrabajadoWhereInput[]
+    NOT?: DescansoTrabajadoWhereInput | DescansoTrabajadoWhereInput[]
+    colaboradorId?: StringFilter<"DescansoTrabajado"> | string
+    fecha?: DateTimeFilter<"DescansoTrabajado"> | Date | string
+    decision?: StringFilter<"DescansoTrabajado"> | string
+    fechaCompensatorio?: DateTimeNullableFilter<"DescansoTrabajado"> | Date | string | null
+    claseAlDecidir?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    nota?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    decididoPor?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    decididoNombre?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    decididoEn?: DateTimeNullableFilter<"DescansoTrabajado"> | Date | string | null
+    creadoEn?: DateTimeFilter<"DescansoTrabajado"> | Date | string
+    actualizadoEn?: DateTimeFilter<"DescansoTrabajado"> | Date | string
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    cambios?: DescansoTrabajadoCambioListRelationFilter
+  }, "id" | "colaboradorId_fecha">
+
+  export type DescansoTrabajadoOrderByWithAggregationInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    decision?: SortOrder
+    fechaCompensatorio?: SortOrderInput | SortOrder
+    claseAlDecidir?: SortOrderInput | SortOrder
+    nota?: SortOrderInput | SortOrder
+    decididoPor?: SortOrderInput | SortOrder
+    decididoNombre?: SortOrderInput | SortOrder
+    decididoEn?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    _count?: DescansoTrabajadoCountOrderByAggregateInput
+    _max?: DescansoTrabajadoMaxOrderByAggregateInput
+    _min?: DescansoTrabajadoMinOrderByAggregateInput
+  }
+
+  export type DescansoTrabajadoScalarWhereWithAggregatesInput = {
+    AND?: DescansoTrabajadoScalarWhereWithAggregatesInput | DescansoTrabajadoScalarWhereWithAggregatesInput[]
+    OR?: DescansoTrabajadoScalarWhereWithAggregatesInput[]
+    NOT?: DescansoTrabajadoScalarWhereWithAggregatesInput | DescansoTrabajadoScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"DescansoTrabajado"> | string
+    colaboradorId?: StringWithAggregatesFilter<"DescansoTrabajado"> | string
+    fecha?: DateTimeWithAggregatesFilter<"DescansoTrabajado"> | Date | string
+    decision?: StringWithAggregatesFilter<"DescansoTrabajado"> | string
+    fechaCompensatorio?: DateTimeNullableWithAggregatesFilter<"DescansoTrabajado"> | Date | string | null
+    claseAlDecidir?: StringNullableWithAggregatesFilter<"DescansoTrabajado"> | string | null
+    nota?: StringNullableWithAggregatesFilter<"DescansoTrabajado"> | string | null
+    decididoPor?: StringNullableWithAggregatesFilter<"DescansoTrabajado"> | string | null
+    decididoNombre?: StringNullableWithAggregatesFilter<"DescansoTrabajado"> | string | null
+    decididoEn?: DateTimeNullableWithAggregatesFilter<"DescansoTrabajado"> | Date | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"DescansoTrabajado"> | Date | string
+    actualizadoEn?: DateTimeWithAggregatesFilter<"DescansoTrabajado"> | Date | string
+  }
+
+  export type DescansoTrabajadoCambioWhereInput = {
+    AND?: DescansoTrabajadoCambioWhereInput | DescansoTrabajadoCambioWhereInput[]
+    OR?: DescansoTrabajadoCambioWhereInput[]
+    NOT?: DescansoTrabajadoCambioWhereInput | DescansoTrabajadoCambioWhereInput[]
+    id?: StringFilter<"DescansoTrabajadoCambio"> | string
+    descansoTrabajadoId?: StringFilter<"DescansoTrabajadoCambio"> | string
+    campo?: StringFilter<"DescansoTrabajadoCambio"> | string
+    antes?: StringFilter<"DescansoTrabajadoCambio"> | string
+    despues?: StringFilter<"DescansoTrabajadoCambio"> | string
+    usuarioId?: StringNullableFilter<"DescansoTrabajadoCambio"> | string | null
+    usuarioNombre?: StringNullableFilter<"DescansoTrabajadoCambio"> | string | null
+    creadoEn?: DateTimeFilter<"DescansoTrabajadoCambio"> | Date | string
+    descansoTrabajado?: XOR<DescansoTrabajadoRelationFilter, DescansoTrabajadoWhereInput>
+  }
+
+  export type DescansoTrabajadoCambioOrderByWithRelationInput = {
+    id?: SortOrder
+    descansoTrabajadoId?: SortOrder
+    campo?: SortOrder
+    antes?: SortOrder
+    despues?: SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    usuarioNombre?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    descansoTrabajado?: DescansoTrabajadoOrderByWithRelationInput
+  }
+
+  export type DescansoTrabajadoCambioWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: DescansoTrabajadoCambioWhereInput | DescansoTrabajadoCambioWhereInput[]
+    OR?: DescansoTrabajadoCambioWhereInput[]
+    NOT?: DescansoTrabajadoCambioWhereInput | DescansoTrabajadoCambioWhereInput[]
+    descansoTrabajadoId?: StringFilter<"DescansoTrabajadoCambio"> | string
+    campo?: StringFilter<"DescansoTrabajadoCambio"> | string
+    antes?: StringFilter<"DescansoTrabajadoCambio"> | string
+    despues?: StringFilter<"DescansoTrabajadoCambio"> | string
+    usuarioId?: StringNullableFilter<"DescansoTrabajadoCambio"> | string | null
+    usuarioNombre?: StringNullableFilter<"DescansoTrabajadoCambio"> | string | null
+    creadoEn?: DateTimeFilter<"DescansoTrabajadoCambio"> | Date | string
+    descansoTrabajado?: XOR<DescansoTrabajadoRelationFilter, DescansoTrabajadoWhereInput>
+  }, "id">
+
+  export type DescansoTrabajadoCambioOrderByWithAggregationInput = {
+    id?: SortOrder
+    descansoTrabajadoId?: SortOrder
+    campo?: SortOrder
+    antes?: SortOrder
+    despues?: SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    usuarioNombre?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    _count?: DescansoTrabajadoCambioCountOrderByAggregateInput
+    _max?: DescansoTrabajadoCambioMaxOrderByAggregateInput
+    _min?: DescansoTrabajadoCambioMinOrderByAggregateInput
+  }
+
+  export type DescansoTrabajadoCambioScalarWhereWithAggregatesInput = {
+    AND?: DescansoTrabajadoCambioScalarWhereWithAggregatesInput | DescansoTrabajadoCambioScalarWhereWithAggregatesInput[]
+    OR?: DescansoTrabajadoCambioScalarWhereWithAggregatesInput[]
+    NOT?: DescansoTrabajadoCambioScalarWhereWithAggregatesInput | DescansoTrabajadoCambioScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"DescansoTrabajadoCambio"> | string
+    descansoTrabajadoId?: StringWithAggregatesFilter<"DescansoTrabajadoCambio"> | string
+    campo?: StringWithAggregatesFilter<"DescansoTrabajadoCambio"> | string
+    antes?: StringWithAggregatesFilter<"DescansoTrabajadoCambio"> | string
+    despues?: StringWithAggregatesFilter<"DescansoTrabajadoCambio"> | string
+    usuarioId?: StringNullableWithAggregatesFilter<"DescansoTrabajadoCambio"> | string | null
+    usuarioNombre?: StringNullableWithAggregatesFilter<"DescansoTrabajadoCambio"> | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"DescansoTrabajadoCambio"> | Date | string
+  }
+
   export type VinculacionEventoWhereInput = {
     AND?: VinculacionEventoWhereInput | VinculacionEventoWhereInput[]
     OR?: VinculacionEventoWhereInput[]
@@ -35728,6 +40819,130 @@ export namespace Prisma {
     creadoEn?: DateTimeWithAggregatesFilter<"ProrrogaContrato"> | Date | string
   }
 
+  export type EventoSistemaWhereInput = {
+    AND?: EventoSistemaWhereInput | EventoSistemaWhereInput[]
+    OR?: EventoSistemaWhereInput[]
+    NOT?: EventoSistemaWhereInput | EventoSistemaWhereInput[]
+    id?: StringFilter<"EventoSistema"> | string
+    tipo?: EnumTipoEventoFilter<"EventoSistema"> | $Enums.TipoEvento
+    origen?: EnumOrigenEventoFilter<"EventoSistema"> | $Enums.OrigenEvento
+    huella?: StringNullableFilter<"EventoSistema"> | string | null
+    veces?: IntFilter<"EventoSistema"> | number
+    primeraVez?: DateTimeFilter<"EventoSistema"> | Date | string
+    ultimaVez?: DateTimeFilter<"EventoSistema"> | Date | string
+    metodo?: StringNullableFilter<"EventoSistema"> | string | null
+    ruta?: StringNullableFilter<"EventoSistema"> | string | null
+    estado?: IntNullableFilter<"EventoSistema"> | number | null
+    mensaje?: StringFilter<"EventoSistema"> | string
+    detalle?: StringNullableFilter<"EventoSistema"> | string | null
+    ip?: StringNullableFilter<"EventoSistema"> | string | null
+    navegador?: StringNullableFilter<"EventoSistema"> | string | null
+    usuarioId?: StringNullableFilter<"EventoSistema"> | string | null
+    usuarioEmail?: StringNullableFilter<"EventoSistema"> | string | null
+    usuarioNombre?: StringNullableFilter<"EventoSistema"> | string | null
+    empresaId?: StringNullableFilter<"EventoSistema"> | string | null
+    empresaNombre?: StringNullableFilter<"EventoSistema"> | string | null
+  }
+
+  export type EventoSistemaOrderByWithRelationInput = {
+    id?: SortOrder
+    tipo?: SortOrder
+    origen?: SortOrder
+    huella?: SortOrderInput | SortOrder
+    veces?: SortOrder
+    primeraVez?: SortOrder
+    ultimaVez?: SortOrder
+    metodo?: SortOrderInput | SortOrder
+    ruta?: SortOrderInput | SortOrder
+    estado?: SortOrderInput | SortOrder
+    mensaje?: SortOrder
+    detalle?: SortOrderInput | SortOrder
+    ip?: SortOrderInput | SortOrder
+    navegador?: SortOrderInput | SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    usuarioEmail?: SortOrderInput | SortOrder
+    usuarioNombre?: SortOrderInput | SortOrder
+    empresaId?: SortOrderInput | SortOrder
+    empresaNombre?: SortOrderInput | SortOrder
+  }
+
+  export type EventoSistemaWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    huella?: string
+    AND?: EventoSistemaWhereInput | EventoSistemaWhereInput[]
+    OR?: EventoSistemaWhereInput[]
+    NOT?: EventoSistemaWhereInput | EventoSistemaWhereInput[]
+    tipo?: EnumTipoEventoFilter<"EventoSistema"> | $Enums.TipoEvento
+    origen?: EnumOrigenEventoFilter<"EventoSistema"> | $Enums.OrigenEvento
+    veces?: IntFilter<"EventoSistema"> | number
+    primeraVez?: DateTimeFilter<"EventoSistema"> | Date | string
+    ultimaVez?: DateTimeFilter<"EventoSistema"> | Date | string
+    metodo?: StringNullableFilter<"EventoSistema"> | string | null
+    ruta?: StringNullableFilter<"EventoSistema"> | string | null
+    estado?: IntNullableFilter<"EventoSistema"> | number | null
+    mensaje?: StringFilter<"EventoSistema"> | string
+    detalle?: StringNullableFilter<"EventoSistema"> | string | null
+    ip?: StringNullableFilter<"EventoSistema"> | string | null
+    navegador?: StringNullableFilter<"EventoSistema"> | string | null
+    usuarioId?: StringNullableFilter<"EventoSistema"> | string | null
+    usuarioEmail?: StringNullableFilter<"EventoSistema"> | string | null
+    usuarioNombre?: StringNullableFilter<"EventoSistema"> | string | null
+    empresaId?: StringNullableFilter<"EventoSistema"> | string | null
+    empresaNombre?: StringNullableFilter<"EventoSistema"> | string | null
+  }, "id" | "huella">
+
+  export type EventoSistemaOrderByWithAggregationInput = {
+    id?: SortOrder
+    tipo?: SortOrder
+    origen?: SortOrder
+    huella?: SortOrderInput | SortOrder
+    veces?: SortOrder
+    primeraVez?: SortOrder
+    ultimaVez?: SortOrder
+    metodo?: SortOrderInput | SortOrder
+    ruta?: SortOrderInput | SortOrder
+    estado?: SortOrderInput | SortOrder
+    mensaje?: SortOrder
+    detalle?: SortOrderInput | SortOrder
+    ip?: SortOrderInput | SortOrder
+    navegador?: SortOrderInput | SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    usuarioEmail?: SortOrderInput | SortOrder
+    usuarioNombre?: SortOrderInput | SortOrder
+    empresaId?: SortOrderInput | SortOrder
+    empresaNombre?: SortOrderInput | SortOrder
+    _count?: EventoSistemaCountOrderByAggregateInput
+    _avg?: EventoSistemaAvgOrderByAggregateInput
+    _max?: EventoSistemaMaxOrderByAggregateInput
+    _min?: EventoSistemaMinOrderByAggregateInput
+    _sum?: EventoSistemaSumOrderByAggregateInput
+  }
+
+  export type EventoSistemaScalarWhereWithAggregatesInput = {
+    AND?: EventoSistemaScalarWhereWithAggregatesInput | EventoSistemaScalarWhereWithAggregatesInput[]
+    OR?: EventoSistemaScalarWhereWithAggregatesInput[]
+    NOT?: EventoSistemaScalarWhereWithAggregatesInput | EventoSistemaScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"EventoSistema"> | string
+    tipo?: EnumTipoEventoWithAggregatesFilter<"EventoSistema"> | $Enums.TipoEvento
+    origen?: EnumOrigenEventoWithAggregatesFilter<"EventoSistema"> | $Enums.OrigenEvento
+    huella?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+    veces?: IntWithAggregatesFilter<"EventoSistema"> | number
+    primeraVez?: DateTimeWithAggregatesFilter<"EventoSistema"> | Date | string
+    ultimaVez?: DateTimeWithAggregatesFilter<"EventoSistema"> | Date | string
+    metodo?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+    ruta?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+    estado?: IntNullableWithAggregatesFilter<"EventoSistema"> | number | null
+    mensaje?: StringWithAggregatesFilter<"EventoSistema"> | string
+    detalle?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+    ip?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+    navegador?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+    usuarioId?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+    usuarioEmail?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+    usuarioNombre?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+    empresaId?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+    empresaNombre?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
+  }
+
   export type EmpresaCreateInput = {
     id?: string
     nombre: string
@@ -35738,6 +40953,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -35749,6 +40965,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -35765,6 +40982,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -35777,6 +40995,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -35792,6 +41011,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35803,6 +41023,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -35819,6 +41040,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -35831,6 +41053,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -35846,6 +41069,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -35863,6 +41087,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35879,6 +41104,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -36570,6 +41796,155 @@ export namespace Prisma {
     descansos?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type PlantillaTurnoCreateInput = {
+    id?: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutPlantillasTurnoInput
+    sede?: SedeCreateNestedOneWithoutPlantillasInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutPlantillaInput
+  }
+
+  export type PlantillaTurnoUncheckedCreateInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    sedeId?: string | null
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutPlantillaInput
+  }
+
+  export type PlantillaTurnoUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutPlantillasTurnoNestedInput
+    sede?: SedeUpdateOneWithoutPlantillasNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutPlantillaNestedInput
+  }
+
+  export type PlantillaTurnoUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutPlantillaNestedInput
+  }
+
+  export type PlantillaTurnoCreateManyInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    sedeId?: string | null
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type PlantillaTurnoUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PlantillaTurnoUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type DispositivoKioscoCreateInput = {
     id?: string
     nombre: string
@@ -36637,6 +42012,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -36648,6 +42024,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -36657,6 +42036,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
@@ -36674,6 +42054,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -36685,6 +42066,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -36694,6 +42078,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -36709,6 +42094,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -36720,6 +42106,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -36729,6 +42118,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
@@ -36746,6 +42136,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -36757,6 +42148,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -36766,6 +42160,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -36782,6 +42177,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -36793,6 +42189,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -36809,6 +42208,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -36820,6 +42220,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -36836,6 +42239,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -36847,6 +42251,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -36870,6 +42277,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutSedesInput
     colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
+    plantillas?: PlantillaTurnoCreateNestedManyWithoutSedeInput
     registros?: RegistroCreateNestedManyWithoutSedeInput
     registrosCerrados?: RegistroCreateNestedManyWithoutSedeSalidaInput
   }
@@ -36886,6 +42294,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
+    plantillas?: PlantillaTurnoUncheckedCreateNestedManyWithoutSedeInput
     registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
     registrosCerrados?: RegistroUncheckedCreateNestedManyWithoutSedeSalidaInput
   }
@@ -36902,6 +42311,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
     colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
+    plantillas?: PlantillaTurnoUpdateManyWithoutSedeNestedInput
     registros?: RegistroUpdateManyWithoutSedeNestedInput
     registrosCerrados?: RegistroUpdateManyWithoutSedeSalidaNestedInput
   }
@@ -36918,6 +42328,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
+    plantillas?: PlantillaTurnoUncheckedUpdateManyWithoutSedeNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
     registrosCerrados?: RegistroUncheckedUpdateManyWithoutSedeSalidaNestedInput
   }
@@ -37014,11 +42425,14 @@ export namespace Prisma {
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
     descansos?: string | null
+    esDescanso?: boolean | null
+    descansoPintado?: boolean
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     colaborador: ColaboradorCreateNestedOneWithoutDiasEsperadosInput
+    plantilla?: PlantillaTurnoCreateNestedOneWithoutDiasEsperadosInput
   }
 
   export type DiaEsperadoUncheckedCreateInput = {
@@ -37036,7 +42450,10 @@ export namespace Prisma {
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
     descansos?: string | null
+    esDescanso?: boolean | null
+    descansoPintado?: boolean
     horarioId?: string | null
+    plantillaId?: string | null
     origen?: string
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -37056,11 +42473,14 @@ export namespace Prisma {
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    esDescanso?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    descansoPintado?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaborador?: ColaboradorUpdateOneRequiredWithoutDiasEsperadosNestedInput
+    plantilla?: PlantillaTurnoUpdateOneWithoutDiasEsperadosNestedInput
   }
 
   export type DiaEsperadoUncheckedUpdateInput = {
@@ -37078,7 +42498,10 @@ export namespace Prisma {
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    esDescanso?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    descansoPintado?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    plantillaId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -37099,7 +42522,10 @@ export namespace Prisma {
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
     descansos?: string | null
+    esDescanso?: boolean | null
+    descansoPintado?: boolean
     horarioId?: string | null
+    plantillaId?: string | null
     origen?: string
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -37119,6 +42545,8 @@ export namespace Prisma {
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    esDescanso?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    descansoPintado?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -37140,7 +42568,10 @@ export namespace Prisma {
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    esDescanso?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    descansoPintado?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    plantillaId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -38142,6 +43573,190 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type DescansoTrabajadoCreateInput = {
+    id?: string
+    fecha: Date | string
+    decision?: string
+    fechaCompensatorio?: Date | string | null
+    claseAlDecidir?: string | null
+    nota?: string | null
+    decididoPor?: string | null
+    decididoNombre?: string | null
+    decididoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutDescansosTrabajadosInput
+    cambios?: DescansoTrabajadoCambioCreateNestedManyWithoutDescansoTrabajadoInput
+  }
+
+  export type DescansoTrabajadoUncheckedCreateInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    decision?: string
+    fechaCompensatorio?: Date | string | null
+    claseAlDecidir?: string | null
+    nota?: string | null
+    decididoPor?: string | null
+    decididoNombre?: string | null
+    decididoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    cambios?: DescansoTrabajadoCambioUncheckedCreateNestedManyWithoutDescansoTrabajadoInput
+  }
+
+  export type DescansoTrabajadoUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    decision?: StringFieldUpdateOperationsInput | string
+    fechaCompensatorio?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    claseAlDecidir?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutDescansosTrabajadosNestedInput
+    cambios?: DescansoTrabajadoCambioUpdateManyWithoutDescansoTrabajadoNestedInput
+  }
+
+  export type DescansoTrabajadoUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    decision?: StringFieldUpdateOperationsInput | string
+    fechaCompensatorio?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    claseAlDecidir?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cambios?: DescansoTrabajadoCambioUncheckedUpdateManyWithoutDescansoTrabajadoNestedInput
+  }
+
+  export type DescansoTrabajadoCreateManyInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    decision?: string
+    fechaCompensatorio?: Date | string | null
+    claseAlDecidir?: string | null
+    nota?: string | null
+    decididoPor?: string | null
+    decididoNombre?: string | null
+    decididoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type DescansoTrabajadoUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    decision?: StringFieldUpdateOperationsInput | string
+    fechaCompensatorio?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    claseAlDecidir?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DescansoTrabajadoUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    decision?: StringFieldUpdateOperationsInput | string
+    fechaCompensatorio?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    claseAlDecidir?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DescansoTrabajadoCambioCreateInput = {
+    id?: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+    descansoTrabajado: DescansoTrabajadoCreateNestedOneWithoutCambiosInput
+  }
+
+  export type DescansoTrabajadoCambioUncheckedCreateInput = {
+    id?: string
+    descansoTrabajadoId: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type DescansoTrabajadoCambioUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansoTrabajado?: DescansoTrabajadoUpdateOneRequiredWithoutCambiosNestedInput
+  }
+
+  export type DescansoTrabajadoCambioUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    descansoTrabajadoId?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DescansoTrabajadoCambioCreateManyInput = {
+    id?: string
+    descansoTrabajadoId: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type DescansoTrabajadoCambioUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DescansoTrabajadoCambioUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    descansoTrabajadoId?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type VinculacionEventoCreateInput = {
     id?: string
     tipo: $Enums.TipoVinculacion
@@ -38603,6 +44218,160 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type EventoSistemaCreateInput = {
+    id?: string
+    tipo: $Enums.TipoEvento
+    origen?: $Enums.OrigenEvento
+    huella?: string | null
+    veces?: number
+    primeraVez?: Date | string
+    ultimaVez?: Date | string
+    metodo?: string | null
+    ruta?: string | null
+    estado?: number | null
+    mensaje: string
+    detalle?: string | null
+    ip?: string | null
+    navegador?: string | null
+    usuarioId?: string | null
+    usuarioEmail?: string | null
+    usuarioNombre?: string | null
+    empresaId?: string | null
+    empresaNombre?: string | null
+  }
+
+  export type EventoSistemaUncheckedCreateInput = {
+    id?: string
+    tipo: $Enums.TipoEvento
+    origen?: $Enums.OrigenEvento
+    huella?: string | null
+    veces?: number
+    primeraVez?: Date | string
+    ultimaVez?: Date | string
+    metodo?: string | null
+    ruta?: string | null
+    estado?: number | null
+    mensaje: string
+    detalle?: string | null
+    ip?: string | null
+    navegador?: string | null
+    usuarioId?: string | null
+    usuarioEmail?: string | null
+    usuarioNombre?: string | null
+    empresaId?: string | null
+    empresaNombre?: string | null
+  }
+
+  export type EventoSistemaUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoEventoFieldUpdateOperationsInput | $Enums.TipoEvento
+    origen?: EnumOrigenEventoFieldUpdateOperationsInput | $Enums.OrigenEvento
+    huella?: NullableStringFieldUpdateOperationsInput | string | null
+    veces?: IntFieldUpdateOperationsInput | number
+    primeraVez?: DateTimeFieldUpdateOperationsInput | Date | string
+    ultimaVez?: DateTimeFieldUpdateOperationsInput | Date | string
+    metodo?: NullableStringFieldUpdateOperationsInput | string | null
+    ruta?: NullableStringFieldUpdateOperationsInput | string | null
+    estado?: NullableIntFieldUpdateOperationsInput | number | null
+    mensaje?: StringFieldUpdateOperationsInput | string
+    detalle?: NullableStringFieldUpdateOperationsInput | string | null
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    navegador?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    empresaId?: NullableStringFieldUpdateOperationsInput | string | null
+    empresaNombre?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type EventoSistemaUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoEventoFieldUpdateOperationsInput | $Enums.TipoEvento
+    origen?: EnumOrigenEventoFieldUpdateOperationsInput | $Enums.OrigenEvento
+    huella?: NullableStringFieldUpdateOperationsInput | string | null
+    veces?: IntFieldUpdateOperationsInput | number
+    primeraVez?: DateTimeFieldUpdateOperationsInput | Date | string
+    ultimaVez?: DateTimeFieldUpdateOperationsInput | Date | string
+    metodo?: NullableStringFieldUpdateOperationsInput | string | null
+    ruta?: NullableStringFieldUpdateOperationsInput | string | null
+    estado?: NullableIntFieldUpdateOperationsInput | number | null
+    mensaje?: StringFieldUpdateOperationsInput | string
+    detalle?: NullableStringFieldUpdateOperationsInput | string | null
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    navegador?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    empresaId?: NullableStringFieldUpdateOperationsInput | string | null
+    empresaNombre?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type EventoSistemaCreateManyInput = {
+    id?: string
+    tipo: $Enums.TipoEvento
+    origen?: $Enums.OrigenEvento
+    huella?: string | null
+    veces?: number
+    primeraVez?: Date | string
+    ultimaVez?: Date | string
+    metodo?: string | null
+    ruta?: string | null
+    estado?: number | null
+    mensaje: string
+    detalle?: string | null
+    ip?: string | null
+    navegador?: string | null
+    usuarioId?: string | null
+    usuarioEmail?: string | null
+    usuarioNombre?: string | null
+    empresaId?: string | null
+    empresaNombre?: string | null
+  }
+
+  export type EventoSistemaUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoEventoFieldUpdateOperationsInput | $Enums.TipoEvento
+    origen?: EnumOrigenEventoFieldUpdateOperationsInput | $Enums.OrigenEvento
+    huella?: NullableStringFieldUpdateOperationsInput | string | null
+    veces?: IntFieldUpdateOperationsInput | number
+    primeraVez?: DateTimeFieldUpdateOperationsInput | Date | string
+    ultimaVez?: DateTimeFieldUpdateOperationsInput | Date | string
+    metodo?: NullableStringFieldUpdateOperationsInput | string | null
+    ruta?: NullableStringFieldUpdateOperationsInput | string | null
+    estado?: NullableIntFieldUpdateOperationsInput | number | null
+    mensaje?: StringFieldUpdateOperationsInput | string
+    detalle?: NullableStringFieldUpdateOperationsInput | string | null
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    navegador?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    empresaId?: NullableStringFieldUpdateOperationsInput | string | null
+    empresaNombre?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type EventoSistemaUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tipo?: EnumTipoEventoFieldUpdateOperationsInput | $Enums.TipoEvento
+    origen?: EnumOrigenEventoFieldUpdateOperationsInput | $Enums.OrigenEvento
+    huella?: NullableStringFieldUpdateOperationsInput | string | null
+    veces?: IntFieldUpdateOperationsInput | number
+    primeraVez?: DateTimeFieldUpdateOperationsInput | Date | string
+    ultimaVez?: DateTimeFieldUpdateOperationsInput | Date | string
+    metodo?: NullableStringFieldUpdateOperationsInput | string | null
+    ruta?: NullableStringFieldUpdateOperationsInput | string | null
+    estado?: NullableIntFieldUpdateOperationsInput | number | null
+    mensaje?: StringFieldUpdateOperationsInput | string
+    detalle?: NullableStringFieldUpdateOperationsInput | string | null
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    navegador?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    empresaId?: NullableStringFieldUpdateOperationsInput | string | null
+    empresaNombre?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -38699,6 +44468,12 @@ export namespace Prisma {
     none?: SedeWhereInput
   }
 
+  export type PlantillaTurnoListRelationFilter = {
+    every?: PlantillaTurnoWhereInput
+    some?: PlantillaTurnoWhereInput
+    none?: PlantillaTurnoWhereInput
+  }
+
   export type DispositivoKioscoListRelationFilter = {
     every?: DispositivoKioscoWhereInput
     some?: DispositivoKioscoWhereInput
@@ -38751,6 +44526,10 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
+  export type PlantillaTurnoOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type DispositivoKioscoOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -38773,6 +44552,7 @@ export namespace Prisma {
     exentaPago?: SortOrder
     activa?: SortOrder
     auxilioRevisadoEn?: SortOrder
+    descansoRevisadoEn?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrder
@@ -38790,6 +44570,7 @@ export namespace Prisma {
     exentaPago?: SortOrder
     activa?: SortOrder
     auxilioRevisadoEn?: SortOrder
+    descansoRevisadoEn?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrder
@@ -38807,6 +44588,7 @@ export namespace Prisma {
     exentaPago?: SortOrder
     activa?: SortOrder
     auxilioRevisadoEn?: SortOrder
+    descansoRevisadoEn?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrder
@@ -39517,6 +45299,107 @@ export namespace Prisma {
     descansos?: SortOrder
   }
 
+  export type BoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
+  export type SedeNullableRelationFilter = {
+    is?: SedeWhereInput | null
+    isNot?: SedeWhereInput | null
+  }
+
+  export type DiaEsperadoListRelationFilter = {
+    every?: DiaEsperadoWhereInput
+    some?: DiaEsperadoWhereInput
+    none?: DiaEsperadoWhereInput
+  }
+
+  export type DiaEsperadoOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PlantillaTurnoCountOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    nombre?: SortOrder
+    color?: SortOrder
+    esDescanso?: SortOrder
+    horaEntrada?: SortOrder
+    horaSalida?: SortOrder
+    tieneAlmuerzo?: SortOrder
+    almuerzoInicio?: SortOrder
+    almuerzoFin?: SortOrder
+    descansos?: SortOrder
+    toleranciaMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
+    sedeId?: SortOrder
+    activa?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type PlantillaTurnoAvgOrderByAggregateInput = {
+    toleranciaMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+  }
+
+  export type PlantillaTurnoMaxOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    nombre?: SortOrder
+    color?: SortOrder
+    esDescanso?: SortOrder
+    horaEntrada?: SortOrder
+    horaSalida?: SortOrder
+    tieneAlmuerzo?: SortOrder
+    almuerzoInicio?: SortOrder
+    almuerzoFin?: SortOrder
+    descansos?: SortOrder
+    toleranciaMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
+    sedeId?: SortOrder
+    activa?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type PlantillaTurnoMinOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    nombre?: SortOrder
+    color?: SortOrder
+    esDescanso?: SortOrder
+    horaEntrada?: SortOrder
+    horaSalida?: SortOrder
+    tieneAlmuerzo?: SortOrder
+    almuerzoInicio?: SortOrder
+    almuerzoFin?: SortOrder
+    descansos?: SortOrder
+    toleranciaMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+    ajustaEntrada?: SortOrder
+    sedeId?: SortOrder
+    activa?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type PlantillaTurnoSumOrderByAggregateInput = {
+    toleranciaMin?: SortOrder
+    toleranciaSalidaMin?: SortOrder
+  }
+
+  export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
   export type DispositivoKioscoCountOrderByAggregateInput = {
     id?: SortOrder
     empresaId?: SortOrder
@@ -39569,6 +45452,12 @@ export namespace Prisma {
     not?: NestedEnumMotivoRetiroNullableFilter<$PrismaModel> | $Enums.MotivoRetiro | null
   }
 
+  export type DescansoTrabajadoListRelationFilter = {
+    every?: DescansoTrabajadoWhereInput
+    some?: DescansoTrabajadoWhereInput
+    none?: DescansoTrabajadoWhereInput
+  }
+
   export type HorarioNullableRelationFilter = {
     is?: HorarioWhereInput | null
     isNot?: HorarioWhereInput | null
@@ -39598,12 +45487,6 @@ export namespace Prisma {
     none?: VinculacionEventoWhereInput
   }
 
-  export type DiaEsperadoListRelationFilter = {
-    every?: DiaEsperadoWhereInput
-    some?: DiaEsperadoWhereInput
-    none?: DiaEsperadoWhereInput
-  }
-
   export type ColaboradorSedeListRelationFilter = {
     every?: ColaboradorSedeWhereInput
     some?: ColaboradorSedeWhereInput
@@ -39622,6 +45505,10 @@ export namespace Prisma {
     none?: ConstanciaBiometricaWhereInput
   }
 
+  export type DescansoTrabajadoOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type RegistroOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -39635,10 +45522,6 @@ export namespace Prisma {
   }
 
   export type VinculacionEventoOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type DiaEsperadoOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -39665,6 +45548,7 @@ export namespace Prisma {
     nombre?: SortOrder
     apellido?: SortOrder
     cedula?: SortOrder
+    numeroContrato?: SortOrder
     cargo?: SortOrder
     email?: SortOrder
     telefono?: SortOrder
@@ -39676,6 +45560,9 @@ export namespace Prisma {
     rostroRechazadoEn?: SortOrder
     foto?: SortOrder
     fotoMini?: SortOrder
+    descansoTipo?: SortOrder
+    descansoDia?: SortOrder
+    descansoAcuerdoEn?: SortOrder
     horarioId?: SortOrder
     modalidad?: SortOrder
     puedeCerrarEnOtraSede?: SortOrder
@@ -39698,6 +45585,7 @@ export namespace Prisma {
     nombre?: SortOrder
     apellido?: SortOrder
     cedula?: SortOrder
+    numeroContrato?: SortOrder
     cargo?: SortOrder
     email?: SortOrder
     telefono?: SortOrder
@@ -39708,6 +45596,9 @@ export namespace Prisma {
     rostroRechazadoEn?: SortOrder
     foto?: SortOrder
     fotoMini?: SortOrder
+    descansoTipo?: SortOrder
+    descansoDia?: SortOrder
+    descansoAcuerdoEn?: SortOrder
     horarioId?: SortOrder
     modalidad?: SortOrder
     puedeCerrarEnOtraSede?: SortOrder
@@ -39725,6 +45616,7 @@ export namespace Prisma {
     nombre?: SortOrder
     apellido?: SortOrder
     cedula?: SortOrder
+    numeroContrato?: SortOrder
     cargo?: SortOrder
     email?: SortOrder
     telefono?: SortOrder
@@ -39735,6 +45627,9 @@ export namespace Prisma {
     rostroRechazadoEn?: SortOrder
     foto?: SortOrder
     fotoMini?: SortOrder
+    descansoTipo?: SortOrder
+    descansoDia?: SortOrder
+    descansoAcuerdoEn?: SortOrder
     horarioId?: SortOrder
     modalidad?: SortOrder
     puedeCerrarEnOtraSede?: SortOrder
@@ -39871,6 +45766,11 @@ export namespace Prisma {
     creadoEn?: SortOrder
   }
 
+  export type PlantillaTurnoNullableRelationFilter = {
+    is?: PlantillaTurnoWhereInput | null
+    isNot?: PlantillaTurnoWhereInput | null
+  }
+
   export type DiaEsperadoColaboradorIdFechaCompoundUniqueInput = {
     colaboradorId: string
     fecha: Date | string
@@ -39891,7 +45791,10 @@ export namespace Prisma {
     almuerzoInicio?: SortOrder
     almuerzoFin?: SortOrder
     descansos?: SortOrder
+    esDescanso?: SortOrder
+    descansoPintado?: SortOrder
     horarioId?: SortOrder
+    plantillaId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -39919,7 +45822,10 @@ export namespace Prisma {
     almuerzoInicio?: SortOrder
     almuerzoFin?: SortOrder
     descansos?: SortOrder
+    esDescanso?: SortOrder
+    descansoPintado?: SortOrder
     horarioId?: SortOrder
+    plantillaId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -39940,7 +45846,10 @@ export namespace Prisma {
     almuerzoInicio?: SortOrder
     almuerzoFin?: SortOrder
     descansos?: SortOrder
+    esDescanso?: SortOrder
+    descansoPintado?: SortOrder
     horarioId?: SortOrder
+    plantillaId?: SortOrder
     origen?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -39965,11 +45874,6 @@ export namespace Prisma {
     in?: $Enums.MetodoMarcacion[] | null
     notIn?: $Enums.MetodoMarcacion[] | null
     not?: NestedEnumMetodoMarcacionNullableFilter<$PrismaModel> | $Enums.MetodoMarcacion | null
-  }
-
-  export type SedeNullableRelationFilter = {
-    is?: SedeWhereInput | null
-    isNot?: SedeWhereInput | null
   }
 
   export type RegistroCambioListRelationFilter = {
@@ -40622,6 +46526,104 @@ export namespace Prisma {
     creadoEn?: SortOrder
   }
 
+  export type DescansoTrabajadoCambioListRelationFilter = {
+    every?: DescansoTrabajadoCambioWhereInput
+    some?: DescansoTrabajadoCambioWhereInput
+    none?: DescansoTrabajadoCambioWhereInput
+  }
+
+  export type DescansoTrabajadoCambioOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DescansoTrabajadoColaboradorIdFechaCompoundUniqueInput = {
+    colaboradorId: string
+    fecha: Date | string
+  }
+
+  export type DescansoTrabajadoCountOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    decision?: SortOrder
+    fechaCompensatorio?: SortOrder
+    claseAlDecidir?: SortOrder
+    nota?: SortOrder
+    decididoPor?: SortOrder
+    decididoNombre?: SortOrder
+    decididoEn?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type DescansoTrabajadoMaxOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    decision?: SortOrder
+    fechaCompensatorio?: SortOrder
+    claseAlDecidir?: SortOrder
+    nota?: SortOrder
+    decididoPor?: SortOrder
+    decididoNombre?: SortOrder
+    decididoEn?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type DescansoTrabajadoMinOrderByAggregateInput = {
+    id?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    decision?: SortOrder
+    fechaCompensatorio?: SortOrder
+    claseAlDecidir?: SortOrder
+    nota?: SortOrder
+    decididoPor?: SortOrder
+    decididoNombre?: SortOrder
+    decididoEn?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type DescansoTrabajadoRelationFilter = {
+    is?: DescansoTrabajadoWhereInput
+    isNot?: DescansoTrabajadoWhereInput
+  }
+
+  export type DescansoTrabajadoCambioCountOrderByAggregateInput = {
+    id?: SortOrder
+    descansoTrabajadoId?: SortOrder
+    campo?: SortOrder
+    antes?: SortOrder
+    despues?: SortOrder
+    usuarioId?: SortOrder
+    usuarioNombre?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type DescansoTrabajadoCambioMaxOrderByAggregateInput = {
+    id?: SortOrder
+    descansoTrabajadoId?: SortOrder
+    campo?: SortOrder
+    antes?: SortOrder
+    despues?: SortOrder
+    usuarioId?: SortOrder
+    usuarioNombre?: SortOrder
+    creadoEn?: SortOrder
+  }
+
+  export type DescansoTrabajadoCambioMinOrderByAggregateInput = {
+    id?: SortOrder
+    descansoTrabajadoId?: SortOrder
+    campo?: SortOrder
+    antes?: SortOrder
+    despues?: SortOrder
+    usuarioId?: SortOrder
+    usuarioNombre?: SortOrder
+    creadoEn?: SortOrder
+  }
+
   export type EnumTipoVinculacionFilter<$PrismaModel = never> = {
     equals?: $Enums.TipoVinculacion | EnumTipoVinculacionFieldRefInput<$PrismaModel>
     in?: $Enums.TipoVinculacion[]
@@ -40739,11 +46741,6 @@ export namespace Prisma {
     not?: NestedEnumOrigenConstanciaFilter<$PrismaModel> | $Enums.OrigenConstancia
   }
 
-  export type BoolNullableFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
-  }
-
   export type ConstanciaBiometricaCountOrderByAggregateInput = {
     id?: SortOrder
     colaboradorId?: SortOrder
@@ -40798,14 +46795,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumOrigenConstanciaFilter<$PrismaModel>
     _max?: NestedEnumOrigenConstanciaFilter<$PrismaModel>
-  }
-
-  export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedBoolNullableFilter<$PrismaModel>
-    _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
   export type EnumTipoContratoFilter<$PrismaModel = never> = {
@@ -40941,6 +46930,116 @@ export namespace Prisma {
     creadoEn?: SortOrder
   }
 
+  export type EnumTipoEventoFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoEvento | EnumTipoEventoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoEvento[]
+    notIn?: $Enums.TipoEvento[]
+    not?: NestedEnumTipoEventoFilter<$PrismaModel> | $Enums.TipoEvento
+  }
+
+  export type EnumOrigenEventoFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenEvento | EnumOrigenEventoFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenEvento[]
+    notIn?: $Enums.OrigenEvento[]
+    not?: NestedEnumOrigenEventoFilter<$PrismaModel> | $Enums.OrigenEvento
+  }
+
+  export type EventoSistemaCountOrderByAggregateInput = {
+    id?: SortOrder
+    tipo?: SortOrder
+    origen?: SortOrder
+    huella?: SortOrder
+    veces?: SortOrder
+    primeraVez?: SortOrder
+    ultimaVez?: SortOrder
+    metodo?: SortOrder
+    ruta?: SortOrder
+    estado?: SortOrder
+    mensaje?: SortOrder
+    detalle?: SortOrder
+    ip?: SortOrder
+    navegador?: SortOrder
+    usuarioId?: SortOrder
+    usuarioEmail?: SortOrder
+    usuarioNombre?: SortOrder
+    empresaId?: SortOrder
+    empresaNombre?: SortOrder
+  }
+
+  export type EventoSistemaAvgOrderByAggregateInput = {
+    veces?: SortOrder
+    estado?: SortOrder
+  }
+
+  export type EventoSistemaMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tipo?: SortOrder
+    origen?: SortOrder
+    huella?: SortOrder
+    veces?: SortOrder
+    primeraVez?: SortOrder
+    ultimaVez?: SortOrder
+    metodo?: SortOrder
+    ruta?: SortOrder
+    estado?: SortOrder
+    mensaje?: SortOrder
+    detalle?: SortOrder
+    ip?: SortOrder
+    navegador?: SortOrder
+    usuarioId?: SortOrder
+    usuarioEmail?: SortOrder
+    usuarioNombre?: SortOrder
+    empresaId?: SortOrder
+    empresaNombre?: SortOrder
+  }
+
+  export type EventoSistemaMinOrderByAggregateInput = {
+    id?: SortOrder
+    tipo?: SortOrder
+    origen?: SortOrder
+    huella?: SortOrder
+    veces?: SortOrder
+    primeraVez?: SortOrder
+    ultimaVez?: SortOrder
+    metodo?: SortOrder
+    ruta?: SortOrder
+    estado?: SortOrder
+    mensaje?: SortOrder
+    detalle?: SortOrder
+    ip?: SortOrder
+    navegador?: SortOrder
+    usuarioId?: SortOrder
+    usuarioEmail?: SortOrder
+    usuarioNombre?: SortOrder
+    empresaId?: SortOrder
+    empresaNombre?: SortOrder
+  }
+
+  export type EventoSistemaSumOrderByAggregateInput = {
+    veces?: SortOrder
+    estado?: SortOrder
+  }
+
+  export type EnumTipoEventoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoEvento | EnumTipoEventoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoEvento[]
+    notIn?: $Enums.TipoEvento[]
+    not?: NestedEnumTipoEventoWithAggregatesFilter<$PrismaModel> | $Enums.TipoEvento
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumTipoEventoFilter<$PrismaModel>
+    _max?: NestedEnumTipoEventoFilter<$PrismaModel>
+  }
+
+  export type EnumOrigenEventoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenEvento | EnumOrigenEventoFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenEvento[]
+    notIn?: $Enums.OrigenEvento[]
+    not?: NestedEnumOrigenEventoWithAggregatesFilter<$PrismaModel> | $Enums.OrigenEvento
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOrigenEventoFilter<$PrismaModel>
+    _max?: NestedEnumOrigenEventoFilter<$PrismaModel>
+  }
+
   export type UsuarioCreateNestedManyWithoutEmpresaInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -40987,6 +47086,13 @@ export namespace Prisma {
     connectOrCreate?: SedeCreateOrConnectWithoutEmpresaInput | SedeCreateOrConnectWithoutEmpresaInput[]
     createMany?: SedeCreateManyEmpresaInputEnvelope
     connect?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+  }
+
+  export type PlantillaTurnoCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<PlantillaTurnoCreateWithoutEmpresaInput, PlantillaTurnoUncheckedCreateWithoutEmpresaInput> | PlantillaTurnoCreateWithoutEmpresaInput[] | PlantillaTurnoUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: PlantillaTurnoCreateOrConnectWithoutEmpresaInput | PlantillaTurnoCreateOrConnectWithoutEmpresaInput[]
+    createMany?: PlantillaTurnoCreateManyEmpresaInputEnvelope
+    connect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
   }
 
   export type DispositivoKioscoCreateNestedManyWithoutEmpresaInput = {
@@ -41062,6 +47168,13 @@ export namespace Prisma {
     connectOrCreate?: SedeCreateOrConnectWithoutEmpresaInput | SedeCreateOrConnectWithoutEmpresaInput[]
     createMany?: SedeCreateManyEmpresaInputEnvelope
     connect?: SedeWhereUniqueInput | SedeWhereUniqueInput[]
+  }
+
+  export type PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<PlantillaTurnoCreateWithoutEmpresaInput, PlantillaTurnoUncheckedCreateWithoutEmpresaInput> | PlantillaTurnoCreateWithoutEmpresaInput[] | PlantillaTurnoUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: PlantillaTurnoCreateOrConnectWithoutEmpresaInput | PlantillaTurnoCreateOrConnectWithoutEmpresaInput[]
+    createMany?: PlantillaTurnoCreateManyEmpresaInputEnvelope
+    connect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
   }
 
   export type DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput = {
@@ -41197,6 +47310,20 @@ export namespace Prisma {
     update?: SedeUpdateWithWhereUniqueWithoutEmpresaInput | SedeUpdateWithWhereUniqueWithoutEmpresaInput[]
     updateMany?: SedeUpdateManyWithWhereWithoutEmpresaInput | SedeUpdateManyWithWhereWithoutEmpresaInput[]
     deleteMany?: SedeScalarWhereInput | SedeScalarWhereInput[]
+  }
+
+  export type PlantillaTurnoUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<PlantillaTurnoCreateWithoutEmpresaInput, PlantillaTurnoUncheckedCreateWithoutEmpresaInput> | PlantillaTurnoCreateWithoutEmpresaInput[] | PlantillaTurnoUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: PlantillaTurnoCreateOrConnectWithoutEmpresaInput | PlantillaTurnoCreateOrConnectWithoutEmpresaInput[]
+    upsert?: PlantillaTurnoUpsertWithWhereUniqueWithoutEmpresaInput | PlantillaTurnoUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: PlantillaTurnoCreateManyEmpresaInputEnvelope
+    set?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    disconnect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    delete?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    connect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    update?: PlantillaTurnoUpdateWithWhereUniqueWithoutEmpresaInput | PlantillaTurnoUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: PlantillaTurnoUpdateManyWithWhereWithoutEmpresaInput | PlantillaTurnoUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: PlantillaTurnoScalarWhereInput | PlantillaTurnoScalarWhereInput[]
   }
 
   export type DispositivoKioscoUpdateManyWithoutEmpresaNestedInput = {
@@ -41343,6 +47470,20 @@ export namespace Prisma {
     update?: SedeUpdateWithWhereUniqueWithoutEmpresaInput | SedeUpdateWithWhereUniqueWithoutEmpresaInput[]
     updateMany?: SedeUpdateManyWithWhereWithoutEmpresaInput | SedeUpdateManyWithWhereWithoutEmpresaInput[]
     deleteMany?: SedeScalarWhereInput | SedeScalarWhereInput[]
+  }
+
+  export type PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<PlantillaTurnoCreateWithoutEmpresaInput, PlantillaTurnoUncheckedCreateWithoutEmpresaInput> | PlantillaTurnoCreateWithoutEmpresaInput[] | PlantillaTurnoUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: PlantillaTurnoCreateOrConnectWithoutEmpresaInput | PlantillaTurnoCreateOrConnectWithoutEmpresaInput[]
+    upsert?: PlantillaTurnoUpsertWithWhereUniqueWithoutEmpresaInput | PlantillaTurnoUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: PlantillaTurnoCreateManyEmpresaInputEnvelope
+    set?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    disconnect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    delete?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    connect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    update?: PlantillaTurnoUpdateWithWhereUniqueWithoutEmpresaInput | PlantillaTurnoUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: PlantillaTurnoUpdateManyWithWhereWithoutEmpresaInput | PlantillaTurnoUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: PlantillaTurnoScalarWhereInput | PlantillaTurnoScalarWhereInput[]
   }
 
   export type DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput = {
@@ -41637,6 +47778,82 @@ export namespace Prisma {
     update?: XOR<XOR<HorarioUpdateToOneWithWhereWithoutFranjasInput, HorarioUpdateWithoutFranjasInput>, HorarioUncheckedUpdateWithoutFranjasInput>
   }
 
+  export type EmpresaCreateNestedOneWithoutPlantillasTurnoInput = {
+    create?: XOR<EmpresaCreateWithoutPlantillasTurnoInput, EmpresaUncheckedCreateWithoutPlantillasTurnoInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutPlantillasTurnoInput
+    connect?: EmpresaWhereUniqueInput
+  }
+
+  export type SedeCreateNestedOneWithoutPlantillasInput = {
+    create?: XOR<SedeCreateWithoutPlantillasInput, SedeUncheckedCreateWithoutPlantillasInput>
+    connectOrCreate?: SedeCreateOrConnectWithoutPlantillasInput
+    connect?: SedeWhereUniqueInput
+  }
+
+  export type DiaEsperadoCreateNestedManyWithoutPlantillaInput = {
+    create?: XOR<DiaEsperadoCreateWithoutPlantillaInput, DiaEsperadoUncheckedCreateWithoutPlantillaInput> | DiaEsperadoCreateWithoutPlantillaInput[] | DiaEsperadoUncheckedCreateWithoutPlantillaInput[]
+    connectOrCreate?: DiaEsperadoCreateOrConnectWithoutPlantillaInput | DiaEsperadoCreateOrConnectWithoutPlantillaInput[]
+    createMany?: DiaEsperadoCreateManyPlantillaInputEnvelope
+    connect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+  }
+
+  export type DiaEsperadoUncheckedCreateNestedManyWithoutPlantillaInput = {
+    create?: XOR<DiaEsperadoCreateWithoutPlantillaInput, DiaEsperadoUncheckedCreateWithoutPlantillaInput> | DiaEsperadoCreateWithoutPlantillaInput[] | DiaEsperadoUncheckedCreateWithoutPlantillaInput[]
+    connectOrCreate?: DiaEsperadoCreateOrConnectWithoutPlantillaInput | DiaEsperadoCreateOrConnectWithoutPlantillaInput[]
+    createMany?: DiaEsperadoCreateManyPlantillaInputEnvelope
+    connect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+  }
+
+  export type NullableBoolFieldUpdateOperationsInput = {
+    set?: boolean | null
+  }
+
+  export type EmpresaUpdateOneRequiredWithoutPlantillasTurnoNestedInput = {
+    create?: XOR<EmpresaCreateWithoutPlantillasTurnoInput, EmpresaUncheckedCreateWithoutPlantillasTurnoInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutPlantillasTurnoInput
+    upsert?: EmpresaUpsertWithoutPlantillasTurnoInput
+    connect?: EmpresaWhereUniqueInput
+    update?: XOR<XOR<EmpresaUpdateToOneWithWhereWithoutPlantillasTurnoInput, EmpresaUpdateWithoutPlantillasTurnoInput>, EmpresaUncheckedUpdateWithoutPlantillasTurnoInput>
+  }
+
+  export type SedeUpdateOneWithoutPlantillasNestedInput = {
+    create?: XOR<SedeCreateWithoutPlantillasInput, SedeUncheckedCreateWithoutPlantillasInput>
+    connectOrCreate?: SedeCreateOrConnectWithoutPlantillasInput
+    upsert?: SedeUpsertWithoutPlantillasInput
+    disconnect?: SedeWhereInput | boolean
+    delete?: SedeWhereInput | boolean
+    connect?: SedeWhereUniqueInput
+    update?: XOR<XOR<SedeUpdateToOneWithWhereWithoutPlantillasInput, SedeUpdateWithoutPlantillasInput>, SedeUncheckedUpdateWithoutPlantillasInput>
+  }
+
+  export type DiaEsperadoUpdateManyWithoutPlantillaNestedInput = {
+    create?: XOR<DiaEsperadoCreateWithoutPlantillaInput, DiaEsperadoUncheckedCreateWithoutPlantillaInput> | DiaEsperadoCreateWithoutPlantillaInput[] | DiaEsperadoUncheckedCreateWithoutPlantillaInput[]
+    connectOrCreate?: DiaEsperadoCreateOrConnectWithoutPlantillaInput | DiaEsperadoCreateOrConnectWithoutPlantillaInput[]
+    upsert?: DiaEsperadoUpsertWithWhereUniqueWithoutPlantillaInput | DiaEsperadoUpsertWithWhereUniqueWithoutPlantillaInput[]
+    createMany?: DiaEsperadoCreateManyPlantillaInputEnvelope
+    set?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    disconnect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    delete?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    connect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    update?: DiaEsperadoUpdateWithWhereUniqueWithoutPlantillaInput | DiaEsperadoUpdateWithWhereUniqueWithoutPlantillaInput[]
+    updateMany?: DiaEsperadoUpdateManyWithWhereWithoutPlantillaInput | DiaEsperadoUpdateManyWithWhereWithoutPlantillaInput[]
+    deleteMany?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
+  }
+
+  export type DiaEsperadoUncheckedUpdateManyWithoutPlantillaNestedInput = {
+    create?: XOR<DiaEsperadoCreateWithoutPlantillaInput, DiaEsperadoUncheckedCreateWithoutPlantillaInput> | DiaEsperadoCreateWithoutPlantillaInput[] | DiaEsperadoUncheckedCreateWithoutPlantillaInput[]
+    connectOrCreate?: DiaEsperadoCreateOrConnectWithoutPlantillaInput | DiaEsperadoCreateOrConnectWithoutPlantillaInput[]
+    upsert?: DiaEsperadoUpsertWithWhereUniqueWithoutPlantillaInput | DiaEsperadoUpsertWithWhereUniqueWithoutPlantillaInput[]
+    createMany?: DiaEsperadoCreateManyPlantillaInputEnvelope
+    set?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    disconnect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    delete?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    connect?: DiaEsperadoWhereUniqueInput | DiaEsperadoWhereUniqueInput[]
+    update?: DiaEsperadoUpdateWithWhereUniqueWithoutPlantillaInput | DiaEsperadoUpdateWithWhereUniqueWithoutPlantillaInput[]
+    updateMany?: DiaEsperadoUpdateManyWithWhereWithoutPlantillaInput | DiaEsperadoUpdateManyWithWhereWithoutPlantillaInput[]
+    deleteMany?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
+  }
+
   export type EmpresaCreateNestedOneWithoutDispositivosInput = {
     create?: XOR<EmpresaCreateWithoutDispositivosInput, EmpresaUncheckedCreateWithoutDispositivosInput>
     connectOrCreate?: EmpresaCreateOrConnectWithoutDispositivosInput
@@ -41655,6 +47872,13 @@ export namespace Prisma {
     create?: XOR<EmpresaCreateWithoutColaboradoresInput, EmpresaUncheckedCreateWithoutColaboradoresInput>
     connectOrCreate?: EmpresaCreateOrConnectWithoutColaboradoresInput
     connect?: EmpresaWhereUniqueInput
+  }
+
+  export type DescansoTrabajadoCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<DescansoTrabajadoCreateWithoutColaboradorInput, DescansoTrabajadoUncheckedCreateWithoutColaboradorInput> | DescansoTrabajadoCreateWithoutColaboradorInput[] | DescansoTrabajadoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: DescansoTrabajadoCreateOrConnectWithoutColaboradorInput | DescansoTrabajadoCreateOrConnectWithoutColaboradorInput[]
+    createMany?: DescansoTrabajadoCreateManyColaboradorInputEnvelope
+    connect?: DescansoTrabajadoWhereUniqueInput | DescansoTrabajadoWhereUniqueInput[]
   }
 
   export type HorarioCreateNestedOneWithoutColaboradoresInput = {
@@ -41717,6 +47941,13 @@ export namespace Prisma {
     connectOrCreate?: ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput | ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput[]
     createMany?: ConstanciaBiometricaCreateManyColaboradorInputEnvelope
     connect?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+  }
+
+  export type DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<DescansoTrabajadoCreateWithoutColaboradorInput, DescansoTrabajadoUncheckedCreateWithoutColaboradorInput> | DescansoTrabajadoCreateWithoutColaboradorInput[] | DescansoTrabajadoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: DescansoTrabajadoCreateOrConnectWithoutColaboradorInput | DescansoTrabajadoCreateOrConnectWithoutColaboradorInput[]
+    createMany?: DescansoTrabajadoCreateManyColaboradorInputEnvelope
+    connect?: DescansoTrabajadoWhereUniqueInput | DescansoTrabajadoWhereUniqueInput[]
   }
 
   export type RegistroUncheckedCreateNestedManyWithoutColaboradorInput = {
@@ -41797,6 +48028,20 @@ export namespace Prisma {
     upsert?: EmpresaUpsertWithoutColaboradoresInput
     connect?: EmpresaWhereUniqueInput
     update?: XOR<XOR<EmpresaUpdateToOneWithWhereWithoutColaboradoresInput, EmpresaUpdateWithoutColaboradoresInput>, EmpresaUncheckedUpdateWithoutColaboradoresInput>
+  }
+
+  export type DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<DescansoTrabajadoCreateWithoutColaboradorInput, DescansoTrabajadoUncheckedCreateWithoutColaboradorInput> | DescansoTrabajadoCreateWithoutColaboradorInput[] | DescansoTrabajadoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: DescansoTrabajadoCreateOrConnectWithoutColaboradorInput | DescansoTrabajadoCreateOrConnectWithoutColaboradorInput[]
+    upsert?: DescansoTrabajadoUpsertWithWhereUniqueWithoutColaboradorInput | DescansoTrabajadoUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: DescansoTrabajadoCreateManyColaboradorInputEnvelope
+    set?: DescansoTrabajadoWhereUniqueInput | DescansoTrabajadoWhereUniqueInput[]
+    disconnect?: DescansoTrabajadoWhereUniqueInput | DescansoTrabajadoWhereUniqueInput[]
+    delete?: DescansoTrabajadoWhereUniqueInput | DescansoTrabajadoWhereUniqueInput[]
+    connect?: DescansoTrabajadoWhereUniqueInput | DescansoTrabajadoWhereUniqueInput[]
+    update?: DescansoTrabajadoUpdateWithWhereUniqueWithoutColaboradorInput | DescansoTrabajadoUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: DescansoTrabajadoUpdateManyWithWhereWithoutColaboradorInput | DescansoTrabajadoUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: DescansoTrabajadoScalarWhereInput | DescansoTrabajadoScalarWhereInput[]
   }
 
   export type HorarioUpdateOneWithoutColaboradoresNestedInput = {
@@ -41919,6 +48164,20 @@ export namespace Prisma {
     update?: ConstanciaBiometricaUpdateWithWhereUniqueWithoutColaboradorInput | ConstanciaBiometricaUpdateWithWhereUniqueWithoutColaboradorInput[]
     updateMany?: ConstanciaBiometricaUpdateManyWithWhereWithoutColaboradorInput | ConstanciaBiometricaUpdateManyWithWhereWithoutColaboradorInput[]
     deleteMany?: ConstanciaBiometricaScalarWhereInput | ConstanciaBiometricaScalarWhereInput[]
+  }
+
+  export type DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<DescansoTrabajadoCreateWithoutColaboradorInput, DescansoTrabajadoUncheckedCreateWithoutColaboradorInput> | DescansoTrabajadoCreateWithoutColaboradorInput[] | DescansoTrabajadoUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: DescansoTrabajadoCreateOrConnectWithoutColaboradorInput | DescansoTrabajadoCreateOrConnectWithoutColaboradorInput[]
+    upsert?: DescansoTrabajadoUpsertWithWhereUniqueWithoutColaboradorInput | DescansoTrabajadoUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: DescansoTrabajadoCreateManyColaboradorInputEnvelope
+    set?: DescansoTrabajadoWhereUniqueInput | DescansoTrabajadoWhereUniqueInput[]
+    disconnect?: DescansoTrabajadoWhereUniqueInput | DescansoTrabajadoWhereUniqueInput[]
+    delete?: DescansoTrabajadoWhereUniqueInput | DescansoTrabajadoWhereUniqueInput[]
+    connect?: DescansoTrabajadoWhereUniqueInput | DescansoTrabajadoWhereUniqueInput[]
+    update?: DescansoTrabajadoUpdateWithWhereUniqueWithoutColaboradorInput | DescansoTrabajadoUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: DescansoTrabajadoUpdateManyWithWhereWithoutColaboradorInput | DescansoTrabajadoUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: DescansoTrabajadoScalarWhereInput | DescansoTrabajadoScalarWhereInput[]
   }
 
   export type RegistroUncheckedUpdateManyWithoutColaboradorNestedInput = {
@@ -42046,6 +48305,13 @@ export namespace Prisma {
     connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
   }
 
+  export type PlantillaTurnoCreateNestedManyWithoutSedeInput = {
+    create?: XOR<PlantillaTurnoCreateWithoutSedeInput, PlantillaTurnoUncheckedCreateWithoutSedeInput> | PlantillaTurnoCreateWithoutSedeInput[] | PlantillaTurnoUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: PlantillaTurnoCreateOrConnectWithoutSedeInput | PlantillaTurnoCreateOrConnectWithoutSedeInput[]
+    createMany?: PlantillaTurnoCreateManySedeInputEnvelope
+    connect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+  }
+
   export type RegistroCreateNestedManyWithoutSedeInput = {
     create?: XOR<RegistroCreateWithoutSedeInput, RegistroUncheckedCreateWithoutSedeInput> | RegistroCreateWithoutSedeInput[] | RegistroUncheckedCreateWithoutSedeInput[]
     connectOrCreate?: RegistroCreateOrConnectWithoutSedeInput | RegistroCreateOrConnectWithoutSedeInput[]
@@ -42065,6 +48331,13 @@ export namespace Prisma {
     connectOrCreate?: ColaboradorSedeCreateOrConnectWithoutSedeInput | ColaboradorSedeCreateOrConnectWithoutSedeInput[]
     createMany?: ColaboradorSedeCreateManySedeInputEnvelope
     connect?: ColaboradorSedeWhereUniqueInput | ColaboradorSedeWhereUniqueInput[]
+  }
+
+  export type PlantillaTurnoUncheckedCreateNestedManyWithoutSedeInput = {
+    create?: XOR<PlantillaTurnoCreateWithoutSedeInput, PlantillaTurnoUncheckedCreateWithoutSedeInput> | PlantillaTurnoCreateWithoutSedeInput[] | PlantillaTurnoUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: PlantillaTurnoCreateOrConnectWithoutSedeInput | PlantillaTurnoCreateOrConnectWithoutSedeInput[]
+    createMany?: PlantillaTurnoCreateManySedeInputEnvelope
+    connect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
   }
 
   export type RegistroUncheckedCreateNestedManyWithoutSedeInput = {
@@ -42101,6 +48374,20 @@ export namespace Prisma {
     update?: ColaboradorSedeUpdateWithWhereUniqueWithoutSedeInput | ColaboradorSedeUpdateWithWhereUniqueWithoutSedeInput[]
     updateMany?: ColaboradorSedeUpdateManyWithWhereWithoutSedeInput | ColaboradorSedeUpdateManyWithWhereWithoutSedeInput[]
     deleteMany?: ColaboradorSedeScalarWhereInput | ColaboradorSedeScalarWhereInput[]
+  }
+
+  export type PlantillaTurnoUpdateManyWithoutSedeNestedInput = {
+    create?: XOR<PlantillaTurnoCreateWithoutSedeInput, PlantillaTurnoUncheckedCreateWithoutSedeInput> | PlantillaTurnoCreateWithoutSedeInput[] | PlantillaTurnoUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: PlantillaTurnoCreateOrConnectWithoutSedeInput | PlantillaTurnoCreateOrConnectWithoutSedeInput[]
+    upsert?: PlantillaTurnoUpsertWithWhereUniqueWithoutSedeInput | PlantillaTurnoUpsertWithWhereUniqueWithoutSedeInput[]
+    createMany?: PlantillaTurnoCreateManySedeInputEnvelope
+    set?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    disconnect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    delete?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    connect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    update?: PlantillaTurnoUpdateWithWhereUniqueWithoutSedeInput | PlantillaTurnoUpdateWithWhereUniqueWithoutSedeInput[]
+    updateMany?: PlantillaTurnoUpdateManyWithWhereWithoutSedeInput | PlantillaTurnoUpdateManyWithWhereWithoutSedeInput[]
+    deleteMany?: PlantillaTurnoScalarWhereInput | PlantillaTurnoScalarWhereInput[]
   }
 
   export type RegistroUpdateManyWithoutSedeNestedInput = {
@@ -42143,6 +48430,20 @@ export namespace Prisma {
     update?: ColaboradorSedeUpdateWithWhereUniqueWithoutSedeInput | ColaboradorSedeUpdateWithWhereUniqueWithoutSedeInput[]
     updateMany?: ColaboradorSedeUpdateManyWithWhereWithoutSedeInput | ColaboradorSedeUpdateManyWithWhereWithoutSedeInput[]
     deleteMany?: ColaboradorSedeScalarWhereInput | ColaboradorSedeScalarWhereInput[]
+  }
+
+  export type PlantillaTurnoUncheckedUpdateManyWithoutSedeNestedInput = {
+    create?: XOR<PlantillaTurnoCreateWithoutSedeInput, PlantillaTurnoUncheckedCreateWithoutSedeInput> | PlantillaTurnoCreateWithoutSedeInput[] | PlantillaTurnoUncheckedCreateWithoutSedeInput[]
+    connectOrCreate?: PlantillaTurnoCreateOrConnectWithoutSedeInput | PlantillaTurnoCreateOrConnectWithoutSedeInput[]
+    upsert?: PlantillaTurnoUpsertWithWhereUniqueWithoutSedeInput | PlantillaTurnoUpsertWithWhereUniqueWithoutSedeInput[]
+    createMany?: PlantillaTurnoCreateManySedeInputEnvelope
+    set?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    disconnect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    delete?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    connect?: PlantillaTurnoWhereUniqueInput | PlantillaTurnoWhereUniqueInput[]
+    update?: PlantillaTurnoUpdateWithWhereUniqueWithoutSedeInput | PlantillaTurnoUpdateWithWhereUniqueWithoutSedeInput[]
+    updateMany?: PlantillaTurnoUpdateManyWithWhereWithoutSedeInput | PlantillaTurnoUpdateManyWithWhereWithoutSedeInput[]
+    deleteMany?: PlantillaTurnoScalarWhereInput | PlantillaTurnoScalarWhereInput[]
   }
 
   export type RegistroUncheckedUpdateManyWithoutSedeNestedInput = {
@@ -42207,12 +48508,28 @@ export namespace Prisma {
     connect?: ColaboradorWhereUniqueInput
   }
 
+  export type PlantillaTurnoCreateNestedOneWithoutDiasEsperadosInput = {
+    create?: XOR<PlantillaTurnoCreateWithoutDiasEsperadosInput, PlantillaTurnoUncheckedCreateWithoutDiasEsperadosInput>
+    connectOrCreate?: PlantillaTurnoCreateOrConnectWithoutDiasEsperadosInput
+    connect?: PlantillaTurnoWhereUniqueInput
+  }
+
   export type ColaboradorUpdateOneRequiredWithoutDiasEsperadosNestedInput = {
     create?: XOR<ColaboradorCreateWithoutDiasEsperadosInput, ColaboradorUncheckedCreateWithoutDiasEsperadosInput>
     connectOrCreate?: ColaboradorCreateOrConnectWithoutDiasEsperadosInput
     upsert?: ColaboradorUpsertWithoutDiasEsperadosInput
     connect?: ColaboradorWhereUniqueInput
     update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutDiasEsperadosInput, ColaboradorUpdateWithoutDiasEsperadosInput>, ColaboradorUncheckedUpdateWithoutDiasEsperadosInput>
+  }
+
+  export type PlantillaTurnoUpdateOneWithoutDiasEsperadosNestedInput = {
+    create?: XOR<PlantillaTurnoCreateWithoutDiasEsperadosInput, PlantillaTurnoUncheckedCreateWithoutDiasEsperadosInput>
+    connectOrCreate?: PlantillaTurnoCreateOrConnectWithoutDiasEsperadosInput
+    upsert?: PlantillaTurnoUpsertWithoutDiasEsperadosInput
+    disconnect?: PlantillaTurnoWhereInput | boolean
+    delete?: PlantillaTurnoWhereInput | boolean
+    connect?: PlantillaTurnoWhereUniqueInput
+    update?: XOR<XOR<PlantillaTurnoUpdateToOneWithWhereWithoutDiasEsperadosInput, PlantillaTurnoUpdateWithoutDiasEsperadosInput>, PlantillaTurnoUncheckedUpdateWithoutDiasEsperadosInput>
   }
 
   export type ColaboradorCreateNestedOneWithoutRegistrosInput = {
@@ -42721,6 +49038,76 @@ export namespace Prisma {
     update?: XOR<XOR<RegistroUpdateToOneWithWhereWithoutCambiosInput, RegistroUpdateWithoutCambiosInput>, RegistroUncheckedUpdateWithoutCambiosInput>
   }
 
+  export type ColaboradorCreateNestedOneWithoutDescansosTrabajadosInput = {
+    create?: XOR<ColaboradorCreateWithoutDescansosTrabajadosInput, ColaboradorUncheckedCreateWithoutDescansosTrabajadosInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutDescansosTrabajadosInput
+    connect?: ColaboradorWhereUniqueInput
+  }
+
+  export type DescansoTrabajadoCambioCreateNestedManyWithoutDescansoTrabajadoInput = {
+    create?: XOR<DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput, DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput> | DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput[] | DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput[]
+    connectOrCreate?: DescansoTrabajadoCambioCreateOrConnectWithoutDescansoTrabajadoInput | DescansoTrabajadoCambioCreateOrConnectWithoutDescansoTrabajadoInput[]
+    createMany?: DescansoTrabajadoCambioCreateManyDescansoTrabajadoInputEnvelope
+    connect?: DescansoTrabajadoCambioWhereUniqueInput | DescansoTrabajadoCambioWhereUniqueInput[]
+  }
+
+  export type DescansoTrabajadoCambioUncheckedCreateNestedManyWithoutDescansoTrabajadoInput = {
+    create?: XOR<DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput, DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput> | DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput[] | DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput[]
+    connectOrCreate?: DescansoTrabajadoCambioCreateOrConnectWithoutDescansoTrabajadoInput | DescansoTrabajadoCambioCreateOrConnectWithoutDescansoTrabajadoInput[]
+    createMany?: DescansoTrabajadoCambioCreateManyDescansoTrabajadoInputEnvelope
+    connect?: DescansoTrabajadoCambioWhereUniqueInput | DescansoTrabajadoCambioWhereUniqueInput[]
+  }
+
+  export type ColaboradorUpdateOneRequiredWithoutDescansosTrabajadosNestedInput = {
+    create?: XOR<ColaboradorCreateWithoutDescansosTrabajadosInput, ColaboradorUncheckedCreateWithoutDescansosTrabajadosInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutDescansosTrabajadosInput
+    upsert?: ColaboradorUpsertWithoutDescansosTrabajadosInput
+    connect?: ColaboradorWhereUniqueInput
+    update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutDescansosTrabajadosInput, ColaboradorUpdateWithoutDescansosTrabajadosInput>, ColaboradorUncheckedUpdateWithoutDescansosTrabajadosInput>
+  }
+
+  export type DescansoTrabajadoCambioUpdateManyWithoutDescansoTrabajadoNestedInput = {
+    create?: XOR<DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput, DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput> | DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput[] | DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput[]
+    connectOrCreate?: DescansoTrabajadoCambioCreateOrConnectWithoutDescansoTrabajadoInput | DescansoTrabajadoCambioCreateOrConnectWithoutDescansoTrabajadoInput[]
+    upsert?: DescansoTrabajadoCambioUpsertWithWhereUniqueWithoutDescansoTrabajadoInput | DescansoTrabajadoCambioUpsertWithWhereUniqueWithoutDescansoTrabajadoInput[]
+    createMany?: DescansoTrabajadoCambioCreateManyDescansoTrabajadoInputEnvelope
+    set?: DescansoTrabajadoCambioWhereUniqueInput | DescansoTrabajadoCambioWhereUniqueInput[]
+    disconnect?: DescansoTrabajadoCambioWhereUniqueInput | DescansoTrabajadoCambioWhereUniqueInput[]
+    delete?: DescansoTrabajadoCambioWhereUniqueInput | DescansoTrabajadoCambioWhereUniqueInput[]
+    connect?: DescansoTrabajadoCambioWhereUniqueInput | DescansoTrabajadoCambioWhereUniqueInput[]
+    update?: DescansoTrabajadoCambioUpdateWithWhereUniqueWithoutDescansoTrabajadoInput | DescansoTrabajadoCambioUpdateWithWhereUniqueWithoutDescansoTrabajadoInput[]
+    updateMany?: DescansoTrabajadoCambioUpdateManyWithWhereWithoutDescansoTrabajadoInput | DescansoTrabajadoCambioUpdateManyWithWhereWithoutDescansoTrabajadoInput[]
+    deleteMany?: DescansoTrabajadoCambioScalarWhereInput | DescansoTrabajadoCambioScalarWhereInput[]
+  }
+
+  export type DescansoTrabajadoCambioUncheckedUpdateManyWithoutDescansoTrabajadoNestedInput = {
+    create?: XOR<DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput, DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput> | DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput[] | DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput[]
+    connectOrCreate?: DescansoTrabajadoCambioCreateOrConnectWithoutDescansoTrabajadoInput | DescansoTrabajadoCambioCreateOrConnectWithoutDescansoTrabajadoInput[]
+    upsert?: DescansoTrabajadoCambioUpsertWithWhereUniqueWithoutDescansoTrabajadoInput | DescansoTrabajadoCambioUpsertWithWhereUniqueWithoutDescansoTrabajadoInput[]
+    createMany?: DescansoTrabajadoCambioCreateManyDescansoTrabajadoInputEnvelope
+    set?: DescansoTrabajadoCambioWhereUniqueInput | DescansoTrabajadoCambioWhereUniqueInput[]
+    disconnect?: DescansoTrabajadoCambioWhereUniqueInput | DescansoTrabajadoCambioWhereUniqueInput[]
+    delete?: DescansoTrabajadoCambioWhereUniqueInput | DescansoTrabajadoCambioWhereUniqueInput[]
+    connect?: DescansoTrabajadoCambioWhereUniqueInput | DescansoTrabajadoCambioWhereUniqueInput[]
+    update?: DescansoTrabajadoCambioUpdateWithWhereUniqueWithoutDescansoTrabajadoInput | DescansoTrabajadoCambioUpdateWithWhereUniqueWithoutDescansoTrabajadoInput[]
+    updateMany?: DescansoTrabajadoCambioUpdateManyWithWhereWithoutDescansoTrabajadoInput | DescansoTrabajadoCambioUpdateManyWithWhereWithoutDescansoTrabajadoInput[]
+    deleteMany?: DescansoTrabajadoCambioScalarWhereInput | DescansoTrabajadoCambioScalarWhereInput[]
+  }
+
+  export type DescansoTrabajadoCreateNestedOneWithoutCambiosInput = {
+    create?: XOR<DescansoTrabajadoCreateWithoutCambiosInput, DescansoTrabajadoUncheckedCreateWithoutCambiosInput>
+    connectOrCreate?: DescansoTrabajadoCreateOrConnectWithoutCambiosInput
+    connect?: DescansoTrabajadoWhereUniqueInput
+  }
+
+  export type DescansoTrabajadoUpdateOneRequiredWithoutCambiosNestedInput = {
+    create?: XOR<DescansoTrabajadoCreateWithoutCambiosInput, DescansoTrabajadoUncheckedCreateWithoutCambiosInput>
+    connectOrCreate?: DescansoTrabajadoCreateOrConnectWithoutCambiosInput
+    upsert?: DescansoTrabajadoUpsertWithoutCambiosInput
+    connect?: DescansoTrabajadoWhereUniqueInput
+    update?: XOR<XOR<DescansoTrabajadoUpdateToOneWithWhereWithoutCambiosInput, DescansoTrabajadoUpdateWithoutCambiosInput>, DescansoTrabajadoUncheckedUpdateWithoutCambiosInput>
+  }
+
   export type ColaboradorCreateNestedOneWithoutVinculacionInput = {
     create?: XOR<ColaboradorCreateWithoutVinculacionInput, ColaboradorUncheckedCreateWithoutVinculacionInput>
     connectOrCreate?: ColaboradorCreateOrConnectWithoutVinculacionInput
@@ -42765,10 +49152,6 @@ export namespace Prisma {
 
   export type EnumOrigenConstanciaFieldUpdateOperationsInput = {
     set?: $Enums.OrigenConstancia
-  }
-
-  export type NullableBoolFieldUpdateOperationsInput = {
-    set?: boolean | null
   }
 
   export type ColaboradorUpdateOneRequiredWithoutConstanciasBiometricasNestedInput = {
@@ -42855,6 +49238,14 @@ export namespace Prisma {
     upsert?: ContratoUpsertWithoutProrrogasInput
     connect?: ContratoWhereUniqueInput
     update?: XOR<XOR<ContratoUpdateToOneWithWhereWithoutProrrogasInput, ContratoUpdateWithoutProrrogasInput>, ContratoUncheckedUpdateWithoutProrrogasInput>
+  }
+
+  export type EnumTipoEventoFieldUpdateOperationsInput = {
+    set?: $Enums.TipoEvento
+  }
+
+  export type EnumOrigenEventoFieldUpdateOperationsInput = {
+    set?: $Enums.OrigenEvento
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -43169,6 +49560,19 @@ export namespace Prisma {
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
+  export type NestedBoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
+  export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
   export type NestedEnumModalidadTrabajoFilter<$PrismaModel = never> = {
     equals?: $Enums.ModalidadTrabajo | EnumModalidadTrabajoFieldRefInput<$PrismaModel>
     in?: $Enums.ModalidadTrabajo[]
@@ -43386,11 +49790,6 @@ export namespace Prisma {
     not?: NestedEnumOrigenConstanciaFilter<$PrismaModel> | $Enums.OrigenConstancia
   }
 
-  export type NestedBoolNullableFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
-  }
-
   export type NestedEnumDecisionBiometricaWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.DecisionBiometrica | EnumDecisionBiometricaFieldRefInput<$PrismaModel>
     in?: $Enums.DecisionBiometrica[]
@@ -43409,14 +49808,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumOrigenConstanciaFilter<$PrismaModel>
     _max?: NestedEnumOrigenConstanciaFilter<$PrismaModel>
-  }
-
-  export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
-    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedBoolNullableFilter<$PrismaModel>
-    _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumTipoContratoFilter<$PrismaModel = never> = {
@@ -43451,6 +49842,40 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumEstadoContratoFilter<$PrismaModel>
     _max?: NestedEnumEstadoContratoFilter<$PrismaModel>
+  }
+
+  export type NestedEnumTipoEventoFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoEvento | EnumTipoEventoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoEvento[]
+    notIn?: $Enums.TipoEvento[]
+    not?: NestedEnumTipoEventoFilter<$PrismaModel> | $Enums.TipoEvento
+  }
+
+  export type NestedEnumOrigenEventoFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenEvento | EnumOrigenEventoFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenEvento[]
+    notIn?: $Enums.OrigenEvento[]
+    not?: NestedEnumOrigenEventoFilter<$PrismaModel> | $Enums.OrigenEvento
+  }
+
+  export type NestedEnumTipoEventoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoEvento | EnumTipoEventoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoEvento[]
+    notIn?: $Enums.TipoEvento[]
+    not?: NestedEnumTipoEventoWithAggregatesFilter<$PrismaModel> | $Enums.TipoEvento
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumTipoEventoFilter<$PrismaModel>
+    _max?: NestedEnumTipoEventoFilter<$PrismaModel>
+  }
+
+  export type NestedEnumOrigenEventoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenEvento | EnumOrigenEventoFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenEvento[]
+    notIn?: $Enums.OrigenEvento[]
+    not?: NestedEnumOrigenEventoWithAggregatesFilter<$PrismaModel> | $Enums.OrigenEvento
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOrigenEventoFilter<$PrismaModel>
+    _max?: NestedEnumOrigenEventoFilter<$PrismaModel>
   }
 
   export type UsuarioCreateWithoutEmpresaInput = {
@@ -43500,6 +49925,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -43511,6 +49937,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -43519,6 +49948,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
@@ -43535,6 +49965,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -43546,6 +49977,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -43555,6 +49989,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -43717,6 +50152,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
+    plantillas?: PlantillaTurnoCreateNestedManyWithoutSedeInput
     registros?: RegistroCreateNestedManyWithoutSedeInput
     registrosCerrados?: RegistroCreateNestedManyWithoutSedeSalidaInput
   }
@@ -43732,6 +50168,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
+    plantillas?: PlantillaTurnoUncheckedCreateNestedManyWithoutSedeInput
     registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
     registrosCerrados?: RegistroUncheckedCreateNestedManyWithoutSedeSalidaInput
   }
@@ -43743,6 +50180,58 @@ export namespace Prisma {
 
   export type SedeCreateManyEmpresaInputEnvelope = {
     data: SedeCreateManyEmpresaInput | SedeCreateManyEmpresaInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PlantillaTurnoCreateWithoutEmpresaInput = {
+    id?: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    sede?: SedeCreateNestedOneWithoutPlantillasInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutPlantillaInput
+  }
+
+  export type PlantillaTurnoUncheckedCreateWithoutEmpresaInput = {
+    id?: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    sedeId?: string | null
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutPlantillaInput
+  }
+
+  export type PlantillaTurnoCreateOrConnectWithoutEmpresaInput = {
+    where: PlantillaTurnoWhereUniqueInput
+    create: XOR<PlantillaTurnoCreateWithoutEmpresaInput, PlantillaTurnoUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type PlantillaTurnoCreateManyEmpresaInputEnvelope = {
+    data: PlantillaTurnoCreateManyEmpresaInput | PlantillaTurnoCreateManyEmpresaInput[]
     skipDuplicates?: boolean
   }
 
@@ -43946,6 +50435,7 @@ export namespace Prisma {
     nombre?: StringFilter<"Colaborador"> | string
     apellido?: StringFilter<"Colaborador"> | string
     cedula?: StringFilter<"Colaborador"> | string
+    numeroContrato?: StringNullableFilter<"Colaborador"> | string | null
     cargo?: StringNullableFilter<"Colaborador"> | string | null
     email?: StringNullableFilter<"Colaborador"> | string | null
     telefono?: StringNullableFilter<"Colaborador"> | string | null
@@ -43957,6 +50447,9 @@ export namespace Prisma {
     rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
+    descansoTipo?: StringFilter<"Colaborador"> | string
+    descansoDia?: StringNullableFilter<"Colaborador"> | string | null
+    descansoAcuerdoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoFilter<"Colaborador"> | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFilter<"Colaborador"> | boolean
@@ -44138,6 +50631,46 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFilter<"Sede"> | Date | string
   }
 
+  export type PlantillaTurnoUpsertWithWhereUniqueWithoutEmpresaInput = {
+    where: PlantillaTurnoWhereUniqueInput
+    update: XOR<PlantillaTurnoUpdateWithoutEmpresaInput, PlantillaTurnoUncheckedUpdateWithoutEmpresaInput>
+    create: XOR<PlantillaTurnoCreateWithoutEmpresaInput, PlantillaTurnoUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type PlantillaTurnoUpdateWithWhereUniqueWithoutEmpresaInput = {
+    where: PlantillaTurnoWhereUniqueInput
+    data: XOR<PlantillaTurnoUpdateWithoutEmpresaInput, PlantillaTurnoUncheckedUpdateWithoutEmpresaInput>
+  }
+
+  export type PlantillaTurnoUpdateManyWithWhereWithoutEmpresaInput = {
+    where: PlantillaTurnoScalarWhereInput
+    data: XOR<PlantillaTurnoUpdateManyMutationInput, PlantillaTurnoUncheckedUpdateManyWithoutEmpresaInput>
+  }
+
+  export type PlantillaTurnoScalarWhereInput = {
+    AND?: PlantillaTurnoScalarWhereInput | PlantillaTurnoScalarWhereInput[]
+    OR?: PlantillaTurnoScalarWhereInput[]
+    NOT?: PlantillaTurnoScalarWhereInput | PlantillaTurnoScalarWhereInput[]
+    id?: StringFilter<"PlantillaTurno"> | string
+    empresaId?: StringFilter<"PlantillaTurno"> | string
+    nombre?: StringFilter<"PlantillaTurno"> | string
+    color?: StringFilter<"PlantillaTurno"> | string
+    esDescanso?: BoolFilter<"PlantillaTurno"> | boolean
+    horaEntrada?: StringNullableFilter<"PlantillaTurno"> | string | null
+    horaSalida?: StringNullableFilter<"PlantillaTurno"> | string | null
+    tieneAlmuerzo?: BoolFilter<"PlantillaTurno"> | boolean
+    almuerzoInicio?: StringNullableFilter<"PlantillaTurno"> | string | null
+    almuerzoFin?: StringNullableFilter<"PlantillaTurno"> | string | null
+    descansos?: StringNullableFilter<"PlantillaTurno"> | string | null
+    toleranciaMin?: IntNullableFilter<"PlantillaTurno"> | number | null
+    toleranciaSalidaMin?: IntNullableFilter<"PlantillaTurno"> | number | null
+    ajustaEntrada?: BoolNullableFilter<"PlantillaTurno"> | boolean | null
+    sedeId?: StringNullableFilter<"PlantillaTurno"> | string | null
+    activa?: BoolFilter<"PlantillaTurno"> | boolean
+    creadoEn?: DateTimeFilter<"PlantillaTurno"> | Date | string
+    actualizadoEn?: DateTimeFilter<"PlantillaTurno"> | Date | string
+  }
+
   export type DispositivoKioscoUpsertWithWhereUniqueWithoutEmpresaInput = {
     where: DispositivoKioscoWhereUniqueInput
     update: XOR<DispositivoKioscoUpdateWithoutEmpresaInput, DispositivoKioscoUncheckedUpdateWithoutEmpresaInput>
@@ -44292,6 +50825,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -44302,6 +50836,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -44318,6 +50853,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -44329,6 +50865,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -44402,6 +50939,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -44412,6 +50950,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -44428,6 +50967,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44439,6 +50979,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -44649,6 +51190,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -44659,6 +51201,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -44675,6 +51218,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -44686,6 +51230,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -44733,6 +51278,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -44744,6 +51290,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -44753,6 +51302,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
@@ -44769,6 +51319,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -44780,6 +51331,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -44788,6 +51342,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -44829,6 +51384,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -44839,6 +51395,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -44855,6 +51412,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44866,6 +51424,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -44990,7 +51549,7 @@ export namespace Prisma {
     colaboradores?: ColaboradorUncheckedUpdateManyWithoutHorarioNestedInput
   }
 
-  export type EmpresaCreateWithoutDispositivosInput = {
+  export type EmpresaCreateWithoutPlantillasTurnoInput = {
     id?: string
     nombre: string
     nit: string
@@ -45000,6 +51559,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -45011,6 +51571,314 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaUncheckedCreateWithoutPlantillasTurnoInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaCreateOrConnectWithoutPlantillasTurnoInput = {
+    where: EmpresaWhereUniqueInput
+    create: XOR<EmpresaCreateWithoutPlantillasTurnoInput, EmpresaUncheckedCreateWithoutPlantillasTurnoInput>
+  }
+
+  export type SedeCreateWithoutPlantillasInput = {
+    id?: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutSedesInput
+    colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
+    registros?: RegistroCreateNestedManyWithoutSedeInput
+    registrosCerrados?: RegistroCreateNestedManyWithoutSedeSalidaInput
+  }
+
+  export type SedeUncheckedCreateWithoutPlantillasInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    direccion?: string | null
+    lat?: number | null
+    lng?: number | null
+    radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
+    registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
+    registrosCerrados?: RegistroUncheckedCreateNestedManyWithoutSedeSalidaInput
+  }
+
+  export type SedeCreateOrConnectWithoutPlantillasInput = {
+    where: SedeWhereUniqueInput
+    create: XOR<SedeCreateWithoutPlantillasInput, SedeUncheckedCreateWithoutPlantillasInput>
+  }
+
+  export type DiaEsperadoCreateWithoutPlantillaInput = {
+    id?: string
+    fecha: Date | string
+    programado?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    toleranciaMin?: number
+    almuerzoMin?: number
+    minutosEsperados?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    esDescanso?: boolean | null
+    descansoPintado?: boolean
+    horarioId?: string | null
+    origen?: string
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutDiasEsperadosInput
+  }
+
+  export type DiaEsperadoUncheckedCreateWithoutPlantillaInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    programado?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    toleranciaMin?: number
+    almuerzoMin?: number
+    minutosEsperados?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    esDescanso?: boolean | null
+    descansoPintado?: boolean
+    horarioId?: string | null
+    origen?: string
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type DiaEsperadoCreateOrConnectWithoutPlantillaInput = {
+    where: DiaEsperadoWhereUniqueInput
+    create: XOR<DiaEsperadoCreateWithoutPlantillaInput, DiaEsperadoUncheckedCreateWithoutPlantillaInput>
+  }
+
+  export type DiaEsperadoCreateManyPlantillaInputEnvelope = {
+    data: DiaEsperadoCreateManyPlantillaInput | DiaEsperadoCreateManyPlantillaInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type EmpresaUpsertWithoutPlantillasTurnoInput = {
+    update: XOR<EmpresaUpdateWithoutPlantillasTurnoInput, EmpresaUncheckedUpdateWithoutPlantillasTurnoInput>
+    create: XOR<EmpresaCreateWithoutPlantillasTurnoInput, EmpresaUncheckedCreateWithoutPlantillasTurnoInput>
+    where?: EmpresaWhereInput
+  }
+
+  export type EmpresaUpdateToOneWithWhereWithoutPlantillasTurnoInput = {
+    where?: EmpresaWhereInput
+    data: XOR<EmpresaUpdateWithoutPlantillasTurnoInput, EmpresaUncheckedUpdateWithoutPlantillasTurnoInput>
+  }
+
+  export type EmpresaUpdateWithoutPlantillasTurnoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type EmpresaUncheckedUpdateWithoutPlantillasTurnoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type SedeUpsertWithoutPlantillasInput = {
+    update: XOR<SedeUpdateWithoutPlantillasInput, SedeUncheckedUpdateWithoutPlantillasInput>
+    create: XOR<SedeCreateWithoutPlantillasInput, SedeUncheckedCreateWithoutPlantillasInput>
+    where?: SedeWhereInput
+  }
+
+  export type SedeUpdateToOneWithWhereWithoutPlantillasInput = {
+    where?: SedeWhereInput
+    data: XOR<SedeUpdateWithoutPlantillasInput, SedeUncheckedUpdateWithoutPlantillasInput>
+  }
+
+  export type SedeUpdateWithoutPlantillasInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
+    colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
+    registros?: RegistroUpdateManyWithoutSedeNestedInput
+    registrosCerrados?: RegistroUpdateManyWithoutSedeSalidaNestedInput
+  }
+
+  export type SedeUncheckedUpdateWithoutPlantillasInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    direccion?: NullableStringFieldUpdateOperationsInput | string | null
+    lat?: NullableFloatFieldUpdateOperationsInput | number | null
+    lng?: NullableFloatFieldUpdateOperationsInput | number | null
+    radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
+    registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
+    registrosCerrados?: RegistroUncheckedUpdateManyWithoutSedeSalidaNestedInput
+  }
+
+  export type DiaEsperadoUpsertWithWhereUniqueWithoutPlantillaInput = {
+    where: DiaEsperadoWhereUniqueInput
+    update: XOR<DiaEsperadoUpdateWithoutPlantillaInput, DiaEsperadoUncheckedUpdateWithoutPlantillaInput>
+    create: XOR<DiaEsperadoCreateWithoutPlantillaInput, DiaEsperadoUncheckedCreateWithoutPlantillaInput>
+  }
+
+  export type DiaEsperadoUpdateWithWhereUniqueWithoutPlantillaInput = {
+    where: DiaEsperadoWhereUniqueInput
+    data: XOR<DiaEsperadoUpdateWithoutPlantillaInput, DiaEsperadoUncheckedUpdateWithoutPlantillaInput>
+  }
+
+  export type DiaEsperadoUpdateManyWithWhereWithoutPlantillaInput = {
+    where: DiaEsperadoScalarWhereInput
+    data: XOR<DiaEsperadoUpdateManyMutationInput, DiaEsperadoUncheckedUpdateManyWithoutPlantillaInput>
+  }
+
+  export type DiaEsperadoScalarWhereInput = {
+    AND?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
+    OR?: DiaEsperadoScalarWhereInput[]
+    NOT?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
+    id?: StringFilter<"DiaEsperado"> | string
+    colaboradorId?: StringFilter<"DiaEsperado"> | string
+    fecha?: DateTimeFilter<"DiaEsperado"> | Date | string
+    programado?: BoolFilter<"DiaEsperado"> | boolean
+    horaEntrada?: StringNullableFilter<"DiaEsperado"> | string | null
+    horaSalida?: StringNullableFilter<"DiaEsperado"> | string | null
+    toleranciaMin?: IntFilter<"DiaEsperado"> | number
+    almuerzoMin?: IntFilter<"DiaEsperado"> | number
+    minutosEsperados?: IntFilter<"DiaEsperado"> | number
+    toleranciaSalidaMin?: IntFilter<"DiaEsperado"> | number
+    ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
+    almuerzoInicio?: StringNullableFilter<"DiaEsperado"> | string | null
+    almuerzoFin?: StringNullableFilter<"DiaEsperado"> | string | null
+    descansos?: StringNullableFilter<"DiaEsperado"> | string | null
+    esDescanso?: BoolNullableFilter<"DiaEsperado"> | boolean | null
+    descansoPintado?: BoolFilter<"DiaEsperado"> | boolean
+    horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
+    plantillaId?: StringNullableFilter<"DiaEsperado"> | string | null
+    origen?: StringFilter<"DiaEsperado"> | string
+    creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
+    actualizadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
+  }
+
+  export type EmpresaCreateWithoutDispositivosInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
@@ -45026,6 +51894,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -45038,6 +51907,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
@@ -45068,6 +51938,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45079,6 +51950,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
@@ -45094,6 +51966,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45106,6 +51979,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
@@ -45120,6 +51994,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -45130,6 +52005,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -45146,6 +52022,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -45157,6 +52034,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -45165,6 +52043,46 @@ export namespace Prisma {
   export type EmpresaCreateOrConnectWithoutColaboradoresInput = {
     where: EmpresaWhereUniqueInput
     create: XOR<EmpresaCreateWithoutColaboradoresInput, EmpresaUncheckedCreateWithoutColaboradoresInput>
+  }
+
+  export type DescansoTrabajadoCreateWithoutColaboradorInput = {
+    id?: string
+    fecha: Date | string
+    decision?: string
+    fechaCompensatorio?: Date | string | null
+    claseAlDecidir?: string | null
+    nota?: string | null
+    decididoPor?: string | null
+    decididoNombre?: string | null
+    decididoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    cambios?: DescansoTrabajadoCambioCreateNestedManyWithoutDescansoTrabajadoInput
+  }
+
+  export type DescansoTrabajadoUncheckedCreateWithoutColaboradorInput = {
+    id?: string
+    fecha: Date | string
+    decision?: string
+    fechaCompensatorio?: Date | string | null
+    claseAlDecidir?: string | null
+    nota?: string | null
+    decididoPor?: string | null
+    decididoNombre?: string | null
+    decididoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    cambios?: DescansoTrabajadoCambioUncheckedCreateNestedManyWithoutDescansoTrabajadoInput
+  }
+
+  export type DescansoTrabajadoCreateOrConnectWithoutColaboradorInput = {
+    where: DescansoTrabajadoWhereUniqueInput
+    create: XOR<DescansoTrabajadoCreateWithoutColaboradorInput, DescansoTrabajadoUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type DescansoTrabajadoCreateManyColaboradorInputEnvelope = {
+    data: DescansoTrabajadoCreateManyColaboradorInput | DescansoTrabajadoCreateManyColaboradorInput[]
+    skipDuplicates?: boolean
   }
 
   export type HorarioCreateWithoutColaboradoresInput = {
@@ -45400,10 +52318,13 @@ export namespace Prisma {
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
     descansos?: string | null
+    esDescanso?: boolean | null
+    descansoPintado?: boolean
     horarioId?: string | null
     origen?: string
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    plantilla?: PlantillaTurnoCreateNestedOneWithoutDiasEsperadosInput
   }
 
   export type DiaEsperadoUncheckedCreateWithoutColaboradorInput = {
@@ -45420,7 +52341,10 @@ export namespace Prisma {
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
     descansos?: string | null
+    esDescanso?: boolean | null
+    descansoPintado?: boolean
     horarioId?: string | null
+    plantillaId?: string | null
     origen?: string
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -45541,6 +52465,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -45551,6 +52476,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -45567,6 +52493,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -45578,9 +52505,44 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type DescansoTrabajadoUpsertWithWhereUniqueWithoutColaboradorInput = {
+    where: DescansoTrabajadoWhereUniqueInput
+    update: XOR<DescansoTrabajadoUpdateWithoutColaboradorInput, DescansoTrabajadoUncheckedUpdateWithoutColaboradorInput>
+    create: XOR<DescansoTrabajadoCreateWithoutColaboradorInput, DescansoTrabajadoUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type DescansoTrabajadoUpdateWithWhereUniqueWithoutColaboradorInput = {
+    where: DescansoTrabajadoWhereUniqueInput
+    data: XOR<DescansoTrabajadoUpdateWithoutColaboradorInput, DescansoTrabajadoUncheckedUpdateWithoutColaboradorInput>
+  }
+
+  export type DescansoTrabajadoUpdateManyWithWhereWithoutColaboradorInput = {
+    where: DescansoTrabajadoScalarWhereInput
+    data: XOR<DescansoTrabajadoUpdateManyMutationInput, DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorInput>
+  }
+
+  export type DescansoTrabajadoScalarWhereInput = {
+    AND?: DescansoTrabajadoScalarWhereInput | DescansoTrabajadoScalarWhereInput[]
+    OR?: DescansoTrabajadoScalarWhereInput[]
+    NOT?: DescansoTrabajadoScalarWhereInput | DescansoTrabajadoScalarWhereInput[]
+    id?: StringFilter<"DescansoTrabajado"> | string
+    colaboradorId?: StringFilter<"DescansoTrabajado"> | string
+    fecha?: DateTimeFilter<"DescansoTrabajado"> | Date | string
+    decision?: StringFilter<"DescansoTrabajado"> | string
+    fechaCompensatorio?: DateTimeNullableFilter<"DescansoTrabajado"> | Date | string | null
+    claseAlDecidir?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    nota?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    decididoPor?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    decididoNombre?: StringNullableFilter<"DescansoTrabajado"> | string | null
+    decididoEn?: DateTimeNullableFilter<"DescansoTrabajado"> | Date | string | null
+    creadoEn?: DateTimeFilter<"DescansoTrabajado"> | Date | string
+    actualizadoEn?: DateTimeFilter<"DescansoTrabajado"> | Date | string
   }
 
   export type HorarioUpsertWithoutColaboradoresInput = {
@@ -45788,30 +52750,6 @@ export namespace Prisma {
     data: XOR<DiaEsperadoUpdateManyMutationInput, DiaEsperadoUncheckedUpdateManyWithoutColaboradorInput>
   }
 
-  export type DiaEsperadoScalarWhereInput = {
-    AND?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
-    OR?: DiaEsperadoScalarWhereInput[]
-    NOT?: DiaEsperadoScalarWhereInput | DiaEsperadoScalarWhereInput[]
-    id?: StringFilter<"DiaEsperado"> | string
-    colaboradorId?: StringFilter<"DiaEsperado"> | string
-    fecha?: DateTimeFilter<"DiaEsperado"> | Date | string
-    programado?: BoolFilter<"DiaEsperado"> | boolean
-    horaEntrada?: StringNullableFilter<"DiaEsperado"> | string | null
-    horaSalida?: StringNullableFilter<"DiaEsperado"> | string | null
-    toleranciaMin?: IntFilter<"DiaEsperado"> | number
-    almuerzoMin?: IntFilter<"DiaEsperado"> | number
-    minutosEsperados?: IntFilter<"DiaEsperado"> | number
-    toleranciaSalidaMin?: IntFilter<"DiaEsperado"> | number
-    ajustaEntrada?: BoolFilter<"DiaEsperado"> | boolean
-    almuerzoInicio?: StringNullableFilter<"DiaEsperado"> | string | null
-    almuerzoFin?: StringNullableFilter<"DiaEsperado"> | string | null
-    descansos?: StringNullableFilter<"DiaEsperado"> | string | null
-    horarioId?: StringNullableFilter<"DiaEsperado"> | string | null
-    origen?: StringFilter<"DiaEsperado"> | string
-    creadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
-    actualizadoEn?: DateTimeFilter<"DiaEsperado"> | Date | string
-  }
-
   export type ColaboradorSedeUpsertWithWhereUniqueWithoutColaboradorInput = {
     where: ColaboradorSedeWhereUniqueInput
     update: XOR<ColaboradorSedeUpdateWithoutColaboradorInput, ColaboradorSedeUncheckedUpdateWithoutColaboradorInput>
@@ -45909,6 +52847,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -45919,6 +52858,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -45935,6 +52875,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -45946,6 +52887,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -45973,6 +52915,58 @@ export namespace Prisma {
 
   export type ColaboradorSedeCreateManySedeInputEnvelope = {
     data: ColaboradorSedeCreateManySedeInput | ColaboradorSedeCreateManySedeInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PlantillaTurnoCreateWithoutSedeInput = {
+    id?: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutPlantillasTurnoInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutPlantillaInput
+  }
+
+  export type PlantillaTurnoUncheckedCreateWithoutSedeInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutPlantillaInput
+  }
+
+  export type PlantillaTurnoCreateOrConnectWithoutSedeInput = {
+    where: PlantillaTurnoWhereUniqueInput
+    create: XOR<PlantillaTurnoCreateWithoutSedeInput, PlantillaTurnoUncheckedCreateWithoutSedeInput>
+  }
+
+  export type PlantillaTurnoCreateManySedeInputEnvelope = {
+    data: PlantillaTurnoCreateManySedeInput | PlantillaTurnoCreateManySedeInput[]
     skipDuplicates?: boolean
   }
 
@@ -46125,6 +53119,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -46135,6 +53130,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -46151,6 +53147,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46162,6 +53159,7 @@ export namespace Prisma {
     configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -46181,6 +53179,22 @@ export namespace Prisma {
   export type ColaboradorSedeUpdateManyWithWhereWithoutSedeInput = {
     where: ColaboradorSedeScalarWhereInput
     data: XOR<ColaboradorSedeUpdateManyMutationInput, ColaboradorSedeUncheckedUpdateManyWithoutSedeInput>
+  }
+
+  export type PlantillaTurnoUpsertWithWhereUniqueWithoutSedeInput = {
+    where: PlantillaTurnoWhereUniqueInput
+    update: XOR<PlantillaTurnoUpdateWithoutSedeInput, PlantillaTurnoUncheckedUpdateWithoutSedeInput>
+    create: XOR<PlantillaTurnoCreateWithoutSedeInput, PlantillaTurnoUncheckedCreateWithoutSedeInput>
+  }
+
+  export type PlantillaTurnoUpdateWithWhereUniqueWithoutSedeInput = {
+    where: PlantillaTurnoWhereUniqueInput
+    data: XOR<PlantillaTurnoUpdateWithoutSedeInput, PlantillaTurnoUncheckedUpdateWithoutSedeInput>
+  }
+
+  export type PlantillaTurnoUpdateManyWithWhereWithoutSedeInput = {
+    where: PlantillaTurnoScalarWhereInput
+    data: XOR<PlantillaTurnoUpdateManyMutationInput, PlantillaTurnoUncheckedUpdateManyWithoutSedeInput>
   }
 
   export type RegistroUpsertWithWhereUniqueWithoutSedeInput = {
@@ -46220,6 +53234,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -46231,6 +53246,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -46240,6 +53258,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
@@ -46256,6 +53275,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -46267,6 +53287,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -46276,6 +53299,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -46301,6 +53325,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutSedesInput
+    plantillas?: PlantillaTurnoCreateNestedManyWithoutSedeInput
     registros?: RegistroCreateNestedManyWithoutSedeInput
     registrosCerrados?: RegistroCreateNestedManyWithoutSedeSalidaInput
   }
@@ -46316,6 +53341,7 @@ export namespace Prisma {
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    plantillas?: PlantillaTurnoUncheckedCreateNestedManyWithoutSedeInput
     registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
     registrosCerrados?: RegistroUncheckedCreateNestedManyWithoutSedeSalidaInput
   }
@@ -46341,6 +53367,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46352,6 +53379,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -46361,6 +53391,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
@@ -46377,6 +53408,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46388,6 +53420,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -46397,6 +53432,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -46428,6 +53464,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
+    plantillas?: PlantillaTurnoUpdateManyWithoutSedeNestedInput
     registros?: RegistroUpdateManyWithoutSedeNestedInput
     registrosCerrados?: RegistroUpdateManyWithoutSedeSalidaNestedInput
   }
@@ -46443,6 +53480,7 @@ export namespace Prisma {
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    plantillas?: PlantillaTurnoUncheckedUpdateManyWithoutSedeNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
     registrosCerrados?: RegistroUncheckedUpdateManyWithoutSedeSalidaNestedInput
   }
@@ -46452,6 +53490,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -46463,6 +53502,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -46472,6 +53514,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
@@ -46488,6 +53531,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -46499,6 +53543,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -46508,6 +53555,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -46520,6 +53568,53 @@ export namespace Prisma {
   export type ColaboradorCreateOrConnectWithoutDiasEsperadosInput = {
     where: ColaboradorWhereUniqueInput
     create: XOR<ColaboradorCreateWithoutDiasEsperadosInput, ColaboradorUncheckedCreateWithoutDiasEsperadosInput>
+  }
+
+  export type PlantillaTurnoCreateWithoutDiasEsperadosInput = {
+    id?: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutPlantillasTurnoInput
+    sede?: SedeCreateNestedOneWithoutPlantillasInput
+  }
+
+  export type PlantillaTurnoUncheckedCreateWithoutDiasEsperadosInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    sedeId?: string | null
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type PlantillaTurnoCreateOrConnectWithoutDiasEsperadosInput = {
+    where: PlantillaTurnoWhereUniqueInput
+    create: XOR<PlantillaTurnoCreateWithoutDiasEsperadosInput, PlantillaTurnoUncheckedCreateWithoutDiasEsperadosInput>
   }
 
   export type ColaboradorUpsertWithoutDiasEsperadosInput = {
@@ -46538,6 +53633,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46549,6 +53645,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -46558,6 +53657,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
@@ -46574,6 +53674,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46585,6 +53686,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -46594,6 +53698,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -46603,11 +53708,65 @@ export namespace Prisma {
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
+  export type PlantillaTurnoUpsertWithoutDiasEsperadosInput = {
+    update: XOR<PlantillaTurnoUpdateWithoutDiasEsperadosInput, PlantillaTurnoUncheckedUpdateWithoutDiasEsperadosInput>
+    create: XOR<PlantillaTurnoCreateWithoutDiasEsperadosInput, PlantillaTurnoUncheckedCreateWithoutDiasEsperadosInput>
+    where?: PlantillaTurnoWhereInput
+  }
+
+  export type PlantillaTurnoUpdateToOneWithWhereWithoutDiasEsperadosInput = {
+    where?: PlantillaTurnoWhereInput
+    data: XOR<PlantillaTurnoUpdateWithoutDiasEsperadosInput, PlantillaTurnoUncheckedUpdateWithoutDiasEsperadosInput>
+  }
+
+  export type PlantillaTurnoUpdateWithoutDiasEsperadosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutPlantillasTurnoNestedInput
+    sede?: SedeUpdateOneWithoutPlantillasNestedInput
+  }
+
+  export type PlantillaTurnoUncheckedUpdateWithoutDiasEsperadosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type ColaboradorCreateWithoutRegistrosInput = {
     id?: string
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -46619,6 +53778,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -46628,6 +53790,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
@@ -46644,6 +53807,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -46655,6 +53819,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -46664,6 +53831,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -46690,6 +53858,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutSedesInput
     colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
+    plantillas?: PlantillaTurnoCreateNestedManyWithoutSedeInput
     registrosCerrados?: RegistroCreateNestedManyWithoutSedeSalidaInput
   }
 
@@ -46705,6 +53874,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
+    plantillas?: PlantillaTurnoUncheckedCreateNestedManyWithoutSedeInput
     registrosCerrados?: RegistroUncheckedCreateNestedManyWithoutSedeSalidaInput
   }
 
@@ -46725,6 +53895,7 @@ export namespace Prisma {
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutSedesInput
     colaboradores?: ColaboradorSedeCreateNestedManyWithoutSedeInput
+    plantillas?: PlantillaTurnoCreateNestedManyWithoutSedeInput
     registros?: RegistroCreateNestedManyWithoutSedeInput
   }
 
@@ -46740,6 +53911,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     colaboradores?: ColaboradorSedeUncheckedCreateNestedManyWithoutSedeInput
+    plantillas?: PlantillaTurnoUncheckedCreateNestedManyWithoutSedeInput
     registros?: RegistroUncheckedCreateNestedManyWithoutSedeInput
   }
 
@@ -46836,6 +54008,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46847,6 +54020,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -46856,6 +54032,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
@@ -46872,6 +54049,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -46883,6 +54061,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -46892,6 +54073,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -46924,6 +54106,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
     colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
+    plantillas?: PlantillaTurnoUpdateManyWithoutSedeNestedInput
     registrosCerrados?: RegistroUpdateManyWithoutSedeSalidaNestedInput
   }
 
@@ -46939,6 +54122,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
+    plantillas?: PlantillaTurnoUncheckedUpdateManyWithoutSedeNestedInput
     registrosCerrados?: RegistroUncheckedUpdateManyWithoutSedeSalidaNestedInput
   }
 
@@ -46965,6 +54149,7 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutSedesNestedInput
     colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
+    plantillas?: PlantillaTurnoUpdateManyWithoutSedeNestedInput
     registros?: RegistroUpdateManyWithoutSedeNestedInput
   }
 
@@ -46980,6 +54165,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
+    plantillas?: PlantillaTurnoUncheckedUpdateManyWithoutSedeNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
   }
 
@@ -47034,6 +54220,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -47045,6 +54232,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -47054,6 +54244,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoCreateNestedManyWithoutColaboradorInput
@@ -47070,6 +54261,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -47081,6 +54273,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -47090,6 +54285,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -47179,6 +54375,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47190,6 +54387,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -47199,6 +54399,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
@@ -47215,6 +54416,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47226,6 +54428,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -47235,6 +54440,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -47319,6 +54525,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -47329,6 +54536,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -47345,6 +54553,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -47356,6 +54565,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -47387,6 +54597,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47397,6 +54608,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -47413,6 +54625,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47424,6 +54637,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -47439,6 +54653,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -47449,6 +54664,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -47465,6 +54681,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -47476,6 +54693,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -47507,6 +54725,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47517,6 +54736,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -47533,6 +54753,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47544,6 +54765,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -47559,6 +54781,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -47570,6 +54793,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
@@ -47585,6 +54809,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -47597,6 +54822,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
   }
@@ -47627,6 +54853,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47638,6 +54865,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
@@ -47653,6 +54881,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47665,6 +54894,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
@@ -47679,6 +54909,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -47689,6 +54920,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -47705,6 +54937,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -47716,6 +54949,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -47794,6 +55028,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -47804,6 +55039,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -47820,6 +55056,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47831,6 +55068,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -47941,6 +55179,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -47952,6 +55191,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
@@ -47967,6 +55207,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -47978,6 +55219,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
@@ -48102,6 +55344,7 @@ export namespace Prisma {
     exentaPago?: BoolFilter<"Empresa"> | boolean
     activa?: BoolFilter<"Empresa"> | boolean
     auxilioRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
+    descansoRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableFilter<"Empresa"> | string | null
@@ -48213,6 +55456,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -48224,6 +55468,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioCreateNestedManyWithoutEmpresaInput
     sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
@@ -48239,6 +55484,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -48251,6 +55497,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
     horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
     sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
   }
@@ -48371,6 +55618,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -48382,6 +55630,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
@@ -48397,6 +55646,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48409,6 +55659,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
@@ -48680,11 +55931,12 @@ export namespace Prisma {
     novedades?: PermisoUncheckedUpdateManyWithoutRegistroNestedInput
   }
 
-  export type ColaboradorCreateWithoutVinculacionInput = {
+  export type ColaboradorCreateWithoutDescansosTrabajadosInput = {
     id?: string
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -48696,6 +55948,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -48705,6 +55960,319 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    horario?: HorarioCreateNestedOneWithoutColaboradoresInput
+    registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorUncheckedCreateWithoutDescansosTrabajadosInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    apellido: string
+    cedula: string
+    numeroContrato?: string | null
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    auxilioTransporte?: number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
+    horarioId?: string | null
+    modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorCreateOrConnectWithoutDescansosTrabajadosInput = {
+    where: ColaboradorWhereUniqueInput
+    create: XOR<ColaboradorCreateWithoutDescansosTrabajadosInput, ColaboradorUncheckedCreateWithoutDescansosTrabajadosInput>
+  }
+
+  export type DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput = {
+    id?: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput = {
+    id?: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type DescansoTrabajadoCambioCreateOrConnectWithoutDescansoTrabajadoInput = {
+    where: DescansoTrabajadoCambioWhereUniqueInput
+    create: XOR<DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput, DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput>
+  }
+
+  export type DescansoTrabajadoCambioCreateManyDescansoTrabajadoInputEnvelope = {
+    data: DescansoTrabajadoCambioCreateManyDescansoTrabajadoInput | DescansoTrabajadoCambioCreateManyDescansoTrabajadoInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ColaboradorUpsertWithoutDescansosTrabajadosInput = {
+    update: XOR<ColaboradorUpdateWithoutDescansosTrabajadosInput, ColaboradorUncheckedUpdateWithoutDescansosTrabajadosInput>
+    create: XOR<ColaboradorCreateWithoutDescansosTrabajadosInput, ColaboradorUncheckedCreateWithoutDescansosTrabajadosInput>
+    where?: ColaboradorWhereInput
+  }
+
+  export type ColaboradorUpdateToOneWithWhereWithoutDescansosTrabajadosInput = {
+    where?: ColaboradorWhereInput
+    data: XOR<ColaboradorUpdateWithoutDescansosTrabajadosInput, ColaboradorUncheckedUpdateWithoutDescansosTrabajadosInput>
+  }
+
+  export type ColaboradorUpdateWithoutDescansosTrabajadosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
+    registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorUncheckedUpdateWithoutDescansosTrabajadosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type DescansoTrabajadoCambioUpsertWithWhereUniqueWithoutDescansoTrabajadoInput = {
+    where: DescansoTrabajadoCambioWhereUniqueInput
+    update: XOR<DescansoTrabajadoCambioUpdateWithoutDescansoTrabajadoInput, DescansoTrabajadoCambioUncheckedUpdateWithoutDescansoTrabajadoInput>
+    create: XOR<DescansoTrabajadoCambioCreateWithoutDescansoTrabajadoInput, DescansoTrabajadoCambioUncheckedCreateWithoutDescansoTrabajadoInput>
+  }
+
+  export type DescansoTrabajadoCambioUpdateWithWhereUniqueWithoutDescansoTrabajadoInput = {
+    where: DescansoTrabajadoCambioWhereUniqueInput
+    data: XOR<DescansoTrabajadoCambioUpdateWithoutDescansoTrabajadoInput, DescansoTrabajadoCambioUncheckedUpdateWithoutDescansoTrabajadoInput>
+  }
+
+  export type DescansoTrabajadoCambioUpdateManyWithWhereWithoutDescansoTrabajadoInput = {
+    where: DescansoTrabajadoCambioScalarWhereInput
+    data: XOR<DescansoTrabajadoCambioUpdateManyMutationInput, DescansoTrabajadoCambioUncheckedUpdateManyWithoutDescansoTrabajadoInput>
+  }
+
+  export type DescansoTrabajadoCambioScalarWhereInput = {
+    AND?: DescansoTrabajadoCambioScalarWhereInput | DescansoTrabajadoCambioScalarWhereInput[]
+    OR?: DescansoTrabajadoCambioScalarWhereInput[]
+    NOT?: DescansoTrabajadoCambioScalarWhereInput | DescansoTrabajadoCambioScalarWhereInput[]
+    id?: StringFilter<"DescansoTrabajadoCambio"> | string
+    descansoTrabajadoId?: StringFilter<"DescansoTrabajadoCambio"> | string
+    campo?: StringFilter<"DescansoTrabajadoCambio"> | string
+    antes?: StringFilter<"DescansoTrabajadoCambio"> | string
+    despues?: StringFilter<"DescansoTrabajadoCambio"> | string
+    usuarioId?: StringNullableFilter<"DescansoTrabajadoCambio"> | string | null
+    usuarioNombre?: StringNullableFilter<"DescansoTrabajadoCambio"> | string | null
+    creadoEn?: DateTimeFilter<"DescansoTrabajadoCambio"> | Date | string
+  }
+
+  export type DescansoTrabajadoCreateWithoutCambiosInput = {
+    id?: string
+    fecha: Date | string
+    decision?: string
+    fechaCompensatorio?: Date | string | null
+    claseAlDecidir?: string | null
+    nota?: string | null
+    decididoPor?: string | null
+    decididoNombre?: string | null
+    decididoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutDescansosTrabajadosInput
+  }
+
+  export type DescansoTrabajadoUncheckedCreateWithoutCambiosInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    decision?: string
+    fechaCompensatorio?: Date | string | null
+    claseAlDecidir?: string | null
+    nota?: string | null
+    decididoPor?: string | null
+    decididoNombre?: string | null
+    decididoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type DescansoTrabajadoCreateOrConnectWithoutCambiosInput = {
+    where: DescansoTrabajadoWhereUniqueInput
+    create: XOR<DescansoTrabajadoCreateWithoutCambiosInput, DescansoTrabajadoUncheckedCreateWithoutCambiosInput>
+  }
+
+  export type DescansoTrabajadoUpsertWithoutCambiosInput = {
+    update: XOR<DescansoTrabajadoUpdateWithoutCambiosInput, DescansoTrabajadoUncheckedUpdateWithoutCambiosInput>
+    create: XOR<DescansoTrabajadoCreateWithoutCambiosInput, DescansoTrabajadoUncheckedCreateWithoutCambiosInput>
+    where?: DescansoTrabajadoWhereInput
+  }
+
+  export type DescansoTrabajadoUpdateToOneWithWhereWithoutCambiosInput = {
+    where?: DescansoTrabajadoWhereInput
+    data: XOR<DescansoTrabajadoUpdateWithoutCambiosInput, DescansoTrabajadoUncheckedUpdateWithoutCambiosInput>
+  }
+
+  export type DescansoTrabajadoUpdateWithoutCambiosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    decision?: StringFieldUpdateOperationsInput | string
+    fechaCompensatorio?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    claseAlDecidir?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutDescansosTrabajadosNestedInput
+  }
+
+  export type DescansoTrabajadoUncheckedUpdateWithoutCambiosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    decision?: StringFieldUpdateOperationsInput | string
+    fechaCompensatorio?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    claseAlDecidir?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ColaboradorCreateWithoutVinculacionInput = {
+    id?: string
+    nombre: string
+    apellido: string
+    cedula: string
+    numeroContrato?: string | null
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    auxilioTransporte?: number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
+    modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
@@ -48721,6 +56289,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -48732,6 +56301,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -48741,6 +56313,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -48771,6 +56344,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48782,6 +56356,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -48791,6 +56368,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
@@ -48807,6 +56385,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48818,6 +56397,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -48827,6 +56409,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -48841,6 +56424,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -48852,6 +56436,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -48861,6 +56448,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
@@ -48877,6 +56465,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -48888,6 +56477,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -48897,6 +56489,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -48927,6 +56520,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48938,6 +56532,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -48947,6 +56544,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
@@ -48963,6 +56561,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -48974,6 +56573,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -48983,6 +56585,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -48997,6 +56600,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -49008,6 +56612,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -49017,6 +56624,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
@@ -49033,6 +56641,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -49044,6 +56653,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -49053,6 +56665,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -49083,6 +56696,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49094,6 +56708,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -49103,6 +56720,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
@@ -49119,6 +56737,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49130,6 +56749,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -49139,6 +56761,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -49153,6 +56776,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -49164,6 +56788,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -49173,6 +56800,7 @@ export namespace Prisma {
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
     horario?: HorarioCreateNestedOneWithoutColaboradoresInput
     registros?: RegistroCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoCreateNestedManyWithoutColaboradorInput
@@ -49189,6 +56817,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -49200,6 +56829,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -49209,6 +56841,7 @@ export namespace Prisma {
     retiroProgramado?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
     registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
     permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
     vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
@@ -49269,6 +56902,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49280,6 +56914,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -49289,6 +56926,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
@@ -49305,6 +56943,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49316,6 +56955,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -49325,6 +56967,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -49469,6 +57112,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -49480,6 +57124,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -49523,6 +57170,26 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type PlantillaTurnoCreateManyEmpresaInput = {
+    id?: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    sedeId?: string | null
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -49612,6 +57279,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49623,6 +57291,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -49631,6 +57302,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
@@ -49647,6 +57319,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49658,6 +57331,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -49667,6 +57343,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -49682,6 +57359,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -49693,6 +57371,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -49794,6 +57475,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorSedeUpdateManyWithoutSedeNestedInput
+    plantillas?: PlantillaTurnoUpdateManyWithoutSedeNestedInput
     registros?: RegistroUpdateManyWithoutSedeNestedInput
     registrosCerrados?: RegistroUpdateManyWithoutSedeSalidaNestedInput
   }
@@ -49809,6 +57491,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     colaboradores?: ColaboradorSedeUncheckedUpdateManyWithoutSedeNestedInput
+    plantillas?: PlantillaTurnoUncheckedUpdateManyWithoutSedeNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutSedeNestedInput
     registrosCerrados?: RegistroUncheckedUpdateManyWithoutSedeSalidaNestedInput
   }
@@ -49820,6 +57503,68 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PlantillaTurnoUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    sede?: SedeUpdateOneWithoutPlantillasNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutPlantillaNestedInput
+  }
+
+  export type PlantillaTurnoUncheckedUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutPlantillaNestedInput
+  }
+
+  export type PlantillaTurnoUncheckedUpdateManyWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    sedeId?: NullableStringFieldUpdateOperationsInput | string | null
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -49997,6 +57742,7 @@ export namespace Prisma {
     nombre: string
     apellido: string
     cedula: string
+    numeroContrato?: string | null
     cargo?: string | null
     email?: string | null
     telefono?: string | null
@@ -50008,6 +57754,9 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
+    descansoTipo?: string
+    descansoDia?: string | null
+    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -50056,6 +57805,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50067,6 +57817,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -50076,6 +57829,7 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
@@ -50092,6 +57846,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50103,6 +57858,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -50111,6 +57869,7 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
     registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
     permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
     contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
@@ -50127,6 +57886,7 @@ export namespace Prisma {
     nombre?: StringFieldUpdateOperationsInput | string
     apellido?: StringFieldUpdateOperationsInput | string
     cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
     cargo?: NullableStringFieldUpdateOperationsInput | string | null
     email?: NullableStringFieldUpdateOperationsInput | string | null
     telefono?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50138,6 +57898,9 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoTipo?: StringFieldUpdateOperationsInput | string
+    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
+    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -50146,6 +57909,112 @@ export namespace Prisma {
     retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiaEsperadoCreateManyPlantillaInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    programado?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    toleranciaMin?: number
+    almuerzoMin?: number
+    minutosEsperados?: number
+    toleranciaSalidaMin?: number
+    ajustaEntrada?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    esDescanso?: boolean | null
+    descansoPintado?: boolean
+    horarioId?: string | null
+    origen?: string
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type DiaEsperadoUpdateWithoutPlantillaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    programado?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
+    minutosEsperados?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    esDescanso?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    descansoPintado?: BoolFieldUpdateOperationsInput | boolean
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    origen?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutDiasEsperadosNestedInput
+  }
+
+  export type DiaEsperadoUncheckedUpdateWithoutPlantillaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    programado?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
+    minutosEsperados?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    esDescanso?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    descansoPintado?: BoolFieldUpdateOperationsInput | boolean
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    origen?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DiaEsperadoUncheckedUpdateManyWithoutPlantillaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    programado?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: IntFieldUpdateOperationsInput | number
+    almuerzoMin?: IntFieldUpdateOperationsInput | number
+    minutosEsperados?: IntFieldUpdateOperationsInput | number
+    toleranciaSalidaMin?: IntFieldUpdateOperationsInput | number
+    ajustaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    esDescanso?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    descansoPintado?: BoolFieldUpdateOperationsInput | boolean
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    origen?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DescansoTrabajadoCreateManyColaboradorInput = {
+    id?: string
+    fecha: Date | string
+    decision?: string
+    fechaCompensatorio?: Date | string | null
+    claseAlDecidir?: string | null
+    nota?: string | null
+    decididoPor?: string | null
+    decididoNombre?: string | null
+    decididoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
   }
 
   export type RegistroCreateManyColaboradorInput = {
@@ -50232,7 +58101,10 @@ export namespace Prisma {
     almuerzoInicio?: string | null
     almuerzoFin?: string | null
     descansos?: string | null
+    esDescanso?: boolean | null
+    descansoPintado?: boolean
     horarioId?: string | null
+    plantillaId?: string | null
     origen?: string
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -50263,6 +58135,50 @@ export namespace Prisma {
     usuarioId?: string | null
     enlaceId?: string | null
     creadoEn?: Date | string
+  }
+
+  export type DescansoTrabajadoUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    decision?: StringFieldUpdateOperationsInput | string
+    fechaCompensatorio?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    claseAlDecidir?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cambios?: DescansoTrabajadoCambioUpdateManyWithoutDescansoTrabajadoNestedInput
+  }
+
+  export type DescansoTrabajadoUncheckedUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    decision?: StringFieldUpdateOperationsInput | string
+    fechaCompensatorio?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    claseAlDecidir?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cambios?: DescansoTrabajadoCambioUncheckedUpdateManyWithoutDescansoTrabajadoNestedInput
+  }
+
+  export type DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    decision?: StringFieldUpdateOperationsInput | string
+    fechaCompensatorio?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    claseAlDecidir?: NullableStringFieldUpdateOperationsInput | string | null
+    nota?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoPor?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    decididoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type RegistroUpdateWithoutColaboradorInput = {
@@ -50495,10 +58411,13 @@ export namespace Prisma {
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    esDescanso?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    descansoPintado?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    plantilla?: PlantillaTurnoUpdateOneWithoutDiasEsperadosNestedInput
   }
 
   export type DiaEsperadoUncheckedUpdateWithoutColaboradorInput = {
@@ -50515,7 +58434,10 @@ export namespace Prisma {
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    esDescanso?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    descansoPintado?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    plantillaId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -50535,7 +58457,10 @@ export namespace Prisma {
     almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
     almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
     descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    esDescanso?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    descansoPintado?: BoolFieldUpdateOperationsInput | boolean
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    plantillaId?: NullableStringFieldUpdateOperationsInput | string | null
     origen?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -50627,6 +58552,26 @@ export namespace Prisma {
     creadoEn?: Date | string
   }
 
+  export type PlantillaTurnoCreateManySedeInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    color?: string
+    esDescanso?: boolean
+    horaEntrada?: string | null
+    horaSalida?: string | null
+    tieneAlmuerzo?: boolean
+    almuerzoInicio?: string | null
+    almuerzoFin?: string | null
+    descansos?: string | null
+    toleranciaMin?: number | null
+    toleranciaSalidaMin?: number | null
+    ajustaEntrada?: boolean | null
+    activa?: boolean
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
   export type RegistroCreateManySedeInput = {
     id?: string
     colaboradorId: string
@@ -50690,6 +58635,68 @@ export namespace Prisma {
   export type ColaboradorSedeUncheckedUpdateManyWithoutSedeInput = {
     colaboradorId?: StringFieldUpdateOperationsInput | string
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PlantillaTurnoUpdateWithoutSedeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutPlantillasTurnoNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutPlantillaNestedInput
+  }
+
+  export type PlantillaTurnoUncheckedUpdateWithoutSedeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutPlantillaNestedInput
+  }
+
+  export type PlantillaTurnoUncheckedUpdateManyWithoutSedeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    esDescanso?: BoolFieldUpdateOperationsInput | boolean
+    horaEntrada?: NullableStringFieldUpdateOperationsInput | string | null
+    horaSalida?: NullableStringFieldUpdateOperationsInput | string | null
+    tieneAlmuerzo?: BoolFieldUpdateOperationsInput | boolean
+    almuerzoInicio?: NullableStringFieldUpdateOperationsInput | string | null
+    almuerzoFin?: NullableStringFieldUpdateOperationsInput | string | null
+    descansos?: NullableStringFieldUpdateOperationsInput | string | null
+    toleranciaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    toleranciaSalidaMin?: NullableIntFieldUpdateOperationsInput | number | null
+    ajustaEntrada?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type RegistroUpdateWithoutSedeInput = {
@@ -50980,6 +58987,7 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
+    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -51066,6 +59074,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -51077,6 +59086,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
@@ -51092,6 +59102,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -51103,6 +59114,7 @@ export namespace Prisma {
     suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
     horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
     sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
@@ -51118,6 +59130,7 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -51190,6 +59203,46 @@ export namespace Prisma {
     procesadoPor?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type DescansoTrabajadoCambioCreateManyDescansoTrabajadoInput = {
+    id?: string
+    campo: string
+    antes: string
+    despues: string
+    usuarioId?: string | null
+    usuarioNombre?: string | null
+    creadoEn?: Date | string
+  }
+
+  export type DescansoTrabajadoCambioUpdateWithoutDescansoTrabajadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DescansoTrabajadoCambioUncheckedUpdateWithoutDescansoTrabajadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DescansoTrabajadoCambioUncheckedUpdateManyWithoutDescansoTrabajadoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    campo?: StringFieldUpdateOperationsInput | string
+    antes?: StringFieldUpdateOperationsInput | string
+    despues?: StringFieldUpdateOperationsInput | string
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type ProrrogaContratoCreateManyContratoInput = {
     id?: string
     desde: Date | string
@@ -51248,6 +59301,10 @@ export namespace Prisma {
      */
     export type HorarioCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = HorarioCountOutputTypeDefaultArgs<ExtArgs>
     /**
+     * @deprecated Use PlantillaTurnoCountOutputTypeDefaultArgs instead
+     */
+    export type PlantillaTurnoCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PlantillaTurnoCountOutputTypeDefaultArgs<ExtArgs>
+    /**
      * @deprecated Use ColaboradorCountOutputTypeDefaultArgs instead
      */
     export type ColaboradorCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
@@ -51263,6 +59320,10 @@ export namespace Prisma {
      * @deprecated Use AfiliadoCountOutputTypeDefaultArgs instead
      */
     export type AfiliadoCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = AfiliadoCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use DescansoTrabajadoCountOutputTypeDefaultArgs instead
+     */
+    export type DescansoTrabajadoCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DescansoTrabajadoCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use ContratoCountOutputTypeDefaultArgs instead
      */
@@ -51303,6 +59364,10 @@ export namespace Prisma {
      * @deprecated Use FranjaHorarioDefaultArgs instead
      */
     export type FranjaHorarioArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = FranjaHorarioDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use PlantillaTurnoDefaultArgs instead
+     */
+    export type PlantillaTurnoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PlantillaTurnoDefaultArgs<ExtArgs>
     /**
      * @deprecated Use DispositivoKioscoDefaultArgs instead
      */
@@ -51364,6 +59429,14 @@ export namespace Prisma {
      */
     export type RegistroCambioArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RegistroCambioDefaultArgs<ExtArgs>
     /**
+     * @deprecated Use DescansoTrabajadoDefaultArgs instead
+     */
+    export type DescansoTrabajadoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DescansoTrabajadoDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use DescansoTrabajadoCambioDefaultArgs instead
+     */
+    export type DescansoTrabajadoCambioArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DescansoTrabajadoCambioDefaultArgs<ExtArgs>
+    /**
      * @deprecated Use VinculacionEventoDefaultArgs instead
      */
     export type VinculacionEventoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = VinculacionEventoDefaultArgs<ExtArgs>
@@ -51383,6 +59456,10 @@ export namespace Prisma {
      * @deprecated Use ProrrogaContratoDefaultArgs instead
      */
     export type ProrrogaContratoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ProrrogaContratoDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use EventoSistemaDefaultArgs instead
+     */
+    export type EventoSistemaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = EventoSistemaDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

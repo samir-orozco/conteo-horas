@@ -132,6 +132,7 @@ exports.Prisma.EmpresaScalarFieldEnum = {
   exentaPago: 'exentaPago',
   activa: 'activa',
   auxilioRevisadoEn: 'auxilioRevisadoEn',
+  descansoRevisadoEn: 'descansoRevisadoEn',
   creadoEn: 'creadoEn',
   actualizadoEn: 'actualizadoEn',
   afiliadoId: 'afiliadoId',
@@ -235,6 +236,27 @@ exports.Prisma.FranjaHorarioScalarFieldEnum = {
   descansos: 'descansos'
 };
 
+exports.Prisma.PlantillaTurnoScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  nombre: 'nombre',
+  color: 'color',
+  esDescanso: 'esDescanso',
+  horaEntrada: 'horaEntrada',
+  horaSalida: 'horaSalida',
+  tieneAlmuerzo: 'tieneAlmuerzo',
+  almuerzoInicio: 'almuerzoInicio',
+  almuerzoFin: 'almuerzoFin',
+  descansos: 'descansos',
+  toleranciaMin: 'toleranciaMin',
+  toleranciaSalidaMin: 'toleranciaSalidaMin',
+  ajustaEntrada: 'ajustaEntrada',
+  sedeId: 'sedeId',
+  activa: 'activa',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
 exports.Prisma.DispositivoKioscoScalarFieldEnum = {
   id: 'id',
   empresaId: 'empresaId',
@@ -250,6 +272,7 @@ exports.Prisma.ColaboradorScalarFieldEnum = {
   nombre: 'nombre',
   apellido: 'apellido',
   cedula: 'cedula',
+  numeroContrato: 'numeroContrato',
   cargo: 'cargo',
   email: 'email',
   telefono: 'telefono',
@@ -261,6 +284,9 @@ exports.Prisma.ColaboradorScalarFieldEnum = {
   rostroRechazadoEn: 'rostroRechazadoEn',
   foto: 'foto',
   fotoMini: 'fotoMini',
+  descansoTipo: 'descansoTipo',
+  descansoDia: 'descansoDia',
+  descansoAcuerdoEn: 'descansoAcuerdoEn',
   horarioId: 'horarioId',
   modalidad: 'modalidad',
   puedeCerrarEnOtraSede: 'puedeCerrarEnOtraSede',
@@ -306,7 +332,10 @@ exports.Prisma.DiaEsperadoScalarFieldEnum = {
   almuerzoInicio: 'almuerzoInicio',
   almuerzoFin: 'almuerzoFin',
   descansos: 'descansos',
+  esDescanso: 'esDescanso',
+  descansoPintado: 'descansoPintado',
   horarioId: 'horarioId',
+  plantillaId: 'plantillaId',
   origen: 'origen',
   creadoEn: 'creadoEn',
   actualizadoEn: 'actualizadoEn'
@@ -453,6 +482,32 @@ exports.Prisma.RegistroCambioScalarFieldEnum = {
   creadoEn: 'creadoEn'
 };
 
+exports.Prisma.DescansoTrabajadoScalarFieldEnum = {
+  id: 'id',
+  colaboradorId: 'colaboradorId',
+  fecha: 'fecha',
+  decision: 'decision',
+  fechaCompensatorio: 'fechaCompensatorio',
+  claseAlDecidir: 'claseAlDecidir',
+  nota: 'nota',
+  decididoPor: 'decididoPor',
+  decididoNombre: 'decididoNombre',
+  decididoEn: 'decididoEn',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
+exports.Prisma.DescansoTrabajadoCambioScalarFieldEnum = {
+  id: 'id',
+  descansoTrabajadoId: 'descansoTrabajadoId',
+  campo: 'campo',
+  antes: 'antes',
+  despues: 'despues',
+  usuarioId: 'usuarioId',
+  usuarioNombre: 'usuarioNombre',
+  creadoEn: 'creadoEn'
+};
+
 exports.Prisma.VinculacionEventoScalarFieldEnum = {
   id: 'id',
   colaboradorId: 'colaboradorId',
@@ -517,6 +572,28 @@ exports.Prisma.ProrrogaContratoScalarFieldEnum = {
   documentoTipo: 'documentoTipo',
   documentoNombre: 'documentoNombre',
   creadoEn: 'creadoEn'
+};
+
+exports.Prisma.EventoSistemaScalarFieldEnum = {
+  id: 'id',
+  tipo: 'tipo',
+  origen: 'origen',
+  huella: 'huella',
+  veces: 'veces',
+  primeraVez: 'primeraVez',
+  ultimaVez: 'ultimaVez',
+  metodo: 'metodo',
+  ruta: 'ruta',
+  estado: 'estado',
+  mensaje: 'mensaje',
+  detalle: 'detalle',
+  ip: 'ip',
+  navegador: 'navegador',
+  usuarioId: 'usuarioId',
+  usuarioEmail: 'usuarioEmail',
+  usuarioNombre: 'usuarioNombre',
+  empresaId: 'empresaId',
+  empresaNombre: 'empresaNombre'
 };
 
 exports.Prisma.SortOrder = {
@@ -663,6 +740,17 @@ exports.EstadoContrato = exports.$Enums.EstadoContrato = {
   TERMINADO: 'TERMINADO'
 };
 
+exports.TipoEvento = exports.$Enums.TipoEvento = {
+  ERROR: 'ERROR',
+  ACCESO: 'ACCESO',
+  AUDITORIA: 'AUDITORIA'
+};
+
+exports.OrigenEvento = exports.$Enums.OrigenEvento = {
+  SERVIDOR: 'SERVIDOR',
+  NAVEGADOR: 'NAVEGADOR'
+};
+
 exports.Prisma.ModelName = {
   Empresa: 'Empresa',
   Suscripcion: 'Suscripcion',
@@ -673,6 +761,7 @@ exports.Prisma.ModelName = {
   TipoHora: 'TipoHora',
   Horario: 'Horario',
   FranjaHorario: 'FranjaHorario',
+  PlantillaTurno: 'PlantillaTurno',
   DispositivoKiosco: 'DispositivoKiosco',
   Colaborador: 'Colaborador',
   Sede: 'Sede',
@@ -688,11 +777,14 @@ exports.Prisma.ModelName = {
   Comision: 'Comision',
   SolicitudRetiro: 'SolicitudRetiro',
   RegistroCambio: 'RegistroCambio',
+  DescansoTrabajado: 'DescansoTrabajado',
+  DescansoTrabajadoCambio: 'DescansoTrabajadoCambio',
   VinculacionEvento: 'VinculacionEvento',
   EnlaceRegistroFacial: 'EnlaceRegistroFacial',
   ConstanciaBiometrica: 'ConstanciaBiometrica',
   Contrato: 'Contrato',
-  ProrrogaContrato: 'ProrrogaContrato'
+  ProrrogaContrato: 'ProrrogaContrato',
+  EventoSistema: 'EventoSistema'
 };
 
 /**
