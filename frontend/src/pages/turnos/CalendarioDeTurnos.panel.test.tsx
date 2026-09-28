@@ -45,7 +45,7 @@ const numeroDe = (fecha: string) => Number(fecha.slice(8, 10));
 const diaDe = (fecha: string, extra: Record<string, unknown> = {}) => ({
   fecha, estado: 'TRABAJA', horaEntrada: '08:00', horaSalida: '16:00',
   minutosEsperados: 420, esFestivo: false, origen: 'AUTO', turno: null,
-  horarioNombre: 'Jornada demo', decision: null,
+  horarioNombre: 'Jornada demo', decision: null, esDescansoObligatorio: false,
   toleranciaMin: 10, toleranciaSalidaMin: 15, ajustaEntrada: false,
   almuerzoMin: 60, almuerzoInicio: '12:00', almuerzoFin: '13:00',
   descansos: [{ inicio: '10:00', fin: '10:15' }],

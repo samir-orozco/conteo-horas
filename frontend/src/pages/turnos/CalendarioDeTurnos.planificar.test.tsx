@@ -49,7 +49,7 @@ const numeroDe = (fecha: string) => Number(fecha.slice(8, 10));
 const diaDe = (fecha: string, extra: Record<string, unknown> = {}) => ({
   fecha, estado: 'TRABAJA', horaEntrada: '10:00', horaSalida: '16:00',
   minutosEsperados: 300, esFestivo: false, origen: 'AUTO', turno: null,
-  horarioNombre: null, decision: null,
+  horarioNombre: null, decision: null, esDescansoObligatorio: false,
   // Las reglas del día, que el panel de la celda muestra.
   toleranciaMin: 10, toleranciaSalidaMin: 0, ajustaEntrada: false,
   almuerzoMin: 60, almuerzoInicio: '12:00', almuerzoFin: '13:00', descansos: [],
@@ -145,7 +145,7 @@ describe('quitar lo pintado', () => {
   const conPintura = () => ({
     ...FILA,
     dias: FILA.dias.map(d => (d.fecha === DOMINGO
-      ? { ...d, origen: 'MANUAL', turno: { nombre: 'Noche', color: 'cobalto' } }
+      ? { ...d, origen: 'MANUAL', turno: { id: 'p2', nombre: 'Noche', color: 'cobalto' } }
       : d)),
   });
 
@@ -209,7 +209,7 @@ describe('un día sin turno asignado no puede aparentar que lo tiene', () => {
     const conPintura = {
       ...FILA,
       dias: FILA.dias.map(d => (d.fecha === DOMINGO
-        ? { ...d, origen: 'MANUAL', turno: { nombre: 'Portería A', color: 'rubi' } }
+        ? { ...d, origen: 'MANUAL', turno: { id: 'p9', nombre: 'Portería A', color: 'rubi' } }
         : d)),
     };
     montar([conPintura]);
@@ -250,7 +250,7 @@ describe('un día que el horario programa SÍ está asignado', () => {
     montar([{
       ...FILA,
       dias: FILA.dias.map(d => (d.fecha === DOMINGO
-        ? { ...d, origen: 'MANUAL', horarioNombre: 'Jornada demo', turno: { nombre: 'Portería A', color: 'rubi' } }
+        ? { ...d, origen: 'MANUAL', horarioNombre: 'Jornada demo', turno: { id: 'p9', nombre: 'Portería A', color: 'rubi' } }
         : { ...d, horarioNombre: 'Jornada demo' })),
     }]);
     const celda = await celdaDe(numeroDe(DOMINGO));

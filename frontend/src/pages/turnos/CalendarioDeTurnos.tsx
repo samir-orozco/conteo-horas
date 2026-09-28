@@ -8,6 +8,11 @@ import {
 // Qué celdas caen dentro de un rectángulo y qué se va a escribir de verdad NO se deciden aquí.
 import { claveDeCelda, celdasDelRectangulo, type Celda as CeldaMarcada } from './seleccionEnBloque';
 import { bloquesDe, planDeEscritura, type AccionDeEscritura } from './aplicacionPorBloques';
+// Las cuentas y los avisos de la previa. También puros, probados y mutados: la pantalla los APLICA,
+// no los decide. De ellos depende que alguien apruebe o cancele un envío de cien jornadas.
+import {
+  conteoDePrevia, descansosPisados, cruzanAHabitual, type CeldaParaPrevia,
+} from './previaDeBloque';
 // Qué rango le toca a cada modo y cómo se mueven las flechas. Es una decisión pura, probada y
 // mutada aparte: aquí solo se aplica.
 import { vistaDelCalendario, moverVista, type ModoDeVista } from './vistaDelCalendario';
@@ -53,10 +58,26 @@ type DiaDelCalendario = {
   almuerzoFin: string | null;
   descansos: { inicio: string; fin: string }[];
   esFestivo: boolean;
+  // SI ESTE DÍA ES EL DESCANSO OBLIGATORIO DE ESA PERSONA (28 de septiembre de 2026).
+  //
+  // Lo decide el backend, con la guarda legal del acuerdo escrito dentro, y viaja porque la
+  // programación en bloque tiene que poder avisar «pintarías sobre el descanso obligatorio de tres
+  // jornadas» ANTES de escribir.
+  //
+  // NO SE DEDUCE DE `estado`, que fue lo primero que se intentó: un día marcado a mano como descanso
+  // también llega como `DESCANSO` sin ser el obligatorio, así que deducirlo daría un aviso falso
+  // justo en el caso que cuesta dinero. Y tampoco de `descanso.tipo` de la fila: esa regla lleva
+  // dentro que sin acuerdo escrito cualquier día declarado vale como domingo, y una segunda copia es
+  // como se separan (CLAUDE.md §9.3).
+  esDescansoObligatorio: boolean;
   origen: string | null;
   // El turno del CATÁLOGO con el que se pintó este día, cuando alguien lo pintó. `null` significa
   // que no lo pintó ninguno, y entonces el nombre lo pone `horarioNombre`.
-  turno: { nombre: string; color: string } | null;
+  // El `id` viaja desde el 28 de septiembre de 2026 y lo usa la previa de la programación en bloque:
+  // para decir cuántas jornadas NO cambian hay que comparar el turno que el día YA tiene contra el
+  // que se le va a poner, y eso se compara por identidad. Por nombre sería frágil, porque dos turnos
+  // del catálogo pueden llamarse igual.
+  turno: { id: string; nombre: string; color: string } | null;
   // El nombre del horario que rige ESTE día, tal como lo resolvió el backend: el del horario con
   // el que la fila quedó congelada, no el que la persona tenga hoy. `null` solo cuando de verdad
   // no hay horario detrás, que es el único caso que merece decir «sin asignar».
@@ -91,7 +112,21 @@ type FilaDelCalendario = {
   propuesta: PropuestaDeDescanso | null;
 };
 
-type Respuesta = { desde: string; hasta: string; horasSemanales: number; filas: FilaDelCalendario[] };
+// `minimoHabitual` es el tercer descanso trabajado del mes, a partir del cual compensar con TIEMPO
+// deja de ser opcional (art. 181). Viaja por la misma razón que `horasSemanales`: son los dos números
+// legales que esta pantalla nombra, y escribirlos aquí a mano los congelaría el día que la ley los
+// mueva. La constante del backend ya lo advertía en su comentario.
+//
+// OPCIONAL a propósito: una respuesta vieja en caché o un backend anterior no lo traen, y en ese caso
+// la previa CALLA el aviso del habitual en vez de suponer un tres. Inventar el umbral en la pantalla
+// sería la segunda copia de una regla legal.
+type Respuesta = {
+  desde: string;
+  hasta: string;
+  horasSemanales: number;
+  minimoHabitual?: number;
+  filas: FilaDelCalendario[];
+};
 
 // Lo que el selector necesita de un turno del catálogo, y nada más. La ruta devuelve bastante más
 // (horas, ventana de almuerzo, descansos, sede), pero aquí solo se pinta un botón con su nombre y
@@ -805,6 +840,113 @@ function TarjetaDeBloque({ cuenta, catalogo, ocupado, progreso, onTurno, onDesca
   );
 }
 
+// LO QUE SE DICE ANTES DE ESCRIBIR UN BLOQUE (28 de septiembre de 2026).
+//
+// POR QUÉ AQUÍ SÍ HAY UN PASO MÁS Y EN LA CELDA SUELTA NO: pintar un día es reversible y barato, así
+// que su panel escribe de una («elegir ES la acción», y así sigue). Un bloque no: toca a varias
+// personas a la vez, y dos de sus consecuencias cuestan dinero —pintar sobre el descanso obligatorio
+// paga recargo, y cruzar el tercero del mes convierte el compensatorio en obligación—. Esas dos hay
+// que poder leerlas antes de decir sí.
+//
+// ES UN MODAL Y NO UN PANEL ANCLADO, al contrario que el de la jornada, y la diferencia es deliberada:
+// aquí no se está comparando celdas entre sí, se está decidiendo una sola cosa, y tapar la rejilla
+// mientras se decide es correcto.
+function PreviaDeBloque({ titulo, conteo, pisados, habituales, ocupado, onCancelar, onAplicar }: {
+  titulo: string;
+  conteo: { escribe: number; iguales: number; bloqueadas: number };
+  pisados: { nombre: string; fecha: string }[];
+  habituales: { nombre: string; antes: number; despues: number }[];
+  ocupado: boolean;
+  onCancelar: () => void;
+  onAplicar: () => void;
+}) {
+  useEffect(() => {
+    const alTeclear = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancelar(); };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [onCancelar]);
+
+  return (
+    <div className="fixed inset-0 !mt-0 z-[80] flex items-center justify-center bg-black/50 p-4">
+      <div role="dialog" aria-modal="true" aria-label="Antes de aplicar"
+        className="hp-pop max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl">
+        <div className="border-b border-gray-100 px-6 pt-5 pb-4">
+          <h3 className="text-lg font-bold text-ink">Antes de aplicar</h3>
+          <p className="mt-1 text-sm text-muted">{titulo}</p>
+        </div>
+
+        <div className="space-y-4 p-6">
+          <dl className="space-y-1.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-[13px] text-muted">Se escriben</dt>
+              <dd className="text-sm font-bold text-ink">{jornadas(conteo.escribe)}</dd>
+            </div>
+            {/* «Igual» es que no hacía falta. Sin separarlo, repasar una semana ya programada
+                anunciaría ciento cuarenta escrituras y un cambio real quedaría indistinguible de un
+                repaso inofensivo. */}
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-[13px] text-muted">Ya tenían ese mismo turno</dt>
+              <dd className="text-sm font-medium text-gray-400 tabular-nums">{conteo.iguales}</dd>
+            </div>
+            {/* Solo cuando hay alguna: una fila en cero es ruido, y su ausencia ya dice que no hay. */}
+            {conteo.bloqueadas > 0 && (
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-[13px] text-muted">No se tocan porque el día ya pasó</dt>
+                <dd className="text-sm font-medium text-gray-400 tabular-nums">{conteo.bloqueadas}</dd>
+              </div>
+            )}
+          </dl>
+
+          {/* LOS DOS AVISOS SE SEPARAN A PROPÓSITO. Pintar sobre el descanso obligatorio puede
+              terminar en recargo; cruzar a habitual cambia una obligación. Un solo aviso juntándolos
+              los volvería ruido. */}
+          {habituales.length > 0 && (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-rose-900">
+                <AlertTriangle size={13} className="shrink-0" />
+                Pasarían a descanso habitual: compensar con tiempo deja de ser opcional
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-[12px] text-rose-900">
+                {habituales.map(h => (
+                  <li key={h.nombre}>
+                    {h.nombre} pasaría de <b>{h.antes}</b> a <b>{h.despues}</b> descansos trabajados este mes
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {pisados.length > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-900">
+                <AlertTriangle size={13} className="shrink-0" />
+                Pintarías sobre el descanso obligatorio de {jornadas(pisados.length)}
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-[12px] text-amber-900">
+                {pisados.map(p => <li key={`${p.nombre}|${p.fecha}`}>{p.nombre}, el {p.fecha}</li>)}
+              </ul>
+            </div>
+          )}
+
+          <p className="text-[11px] leading-relaxed text-muted">
+            Lo que ya pasó no se toca nunca. Si alguien ya empezó su jornada de hoy, el servidor lo
+            rechaza y el motivo se muestra al terminar.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-6 py-4">
+          <button type="button" onClick={onCancelar} className="px-4 py-2 text-sm text-muted">Cancelar</button>
+          {/* Sin nada que escribir el botón no se ofrece activo: prometería algo que no va a pasar. */}
+          <button type="button" onClick={onAplicar} disabled={ocupado || conteo.escribe === 0}
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-ink hover:bg-primary-dark disabled:opacity-60">
+            Aplicar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // CÓMO SE NOMBRA EL PERÍODO EN CADA MODO (22 de septiembre de 2026).
 //
 // Una tabla con un caso por valor y no un `? :`, porque el español no deja: es «de la semana» pero
@@ -936,6 +1078,13 @@ export default function CalendarioDeTurnos() {
   // El gesto en curso. Va en un `ref` y no en el estado a propósito: cambia en cada celda por la que
   // pasa el puntero, y guardarlo en el estado redibujaría la rejilla entera en cada movimiento.
   const arrastre = useRef<{ desde: CeldaMarcada; base: Record<string, CeldaMarcada>; movido: boolean } | null>(null);
+  // LO QUE ESTÁ A PUNTO DE APLICARSE, mientras la previa está abierta. `null` = no hay previa.
+  //
+  // Se guarda como DATO y no como función, aunque la escritura reciba una función: hoy es una sola
+  // acción para todo el envío, y cuando llegue la rotación esto pasa a ser una unión («una acción
+  // igual para todos» o «un patrón»). Ese será el único sitio que cambie, y el camino de escritura
+  // seguirá siendo uno.
+  const [pendiente, setPendiente] = useState<AccionDeEscritura | null>(null);
   const [progreso, setProgreso] = useState<{ bloque: number; bloques: number } | null>(null);
   const [resultado, setResultado] = useState<{ escritas: number; bloqueadas: number; fallos: string[] } | null>(null);
 
@@ -1144,6 +1293,87 @@ export default function CalendarioDeTurnos() {
       const suya = filas.find(f => f.id === [...ids][0]);
       return suya ? `${suya.nombre} ${suya.apellido}` : null;
     })(),
+  };
+
+  // ───────── DE LO MARCADO A LO QUE LA PREVIA NECESITA ─────────
+  //
+  // La selección guarda solo persona y fecha, que es su identidad. Para contar y avisar hace falta lo
+  // que ese día YA tiene encima, y eso vive en la respuesta.
+  //
+  // UN MAPA Y NO UNA BÚSQUEDA POR CELDA: con un mes y cien personas, buscar la fila y el día de cada
+  // celda marcada serían miles de recorridos en cada dibujado.
+  const porClave = new Map<string, { fila: FilaDelCalendario; dia: DiaDelCalendario }>();
+  for (const fila of filas) {
+    for (const dia of fila.dias) {
+      porClave.set(claveDeCelda({ colaboradorId: fila.id, fecha: dia.fecha }), { fila, dia });
+    }
+  }
+
+  const celdasParaPrevia: CeldaParaPrevia[] = seleccion.flatMap(celda => {
+    const encontrada = porClave.get(claveDeCelda(celda));
+    // Una celda marcada que ya no está en la respuesta (se cambió de período, cambió el filtro) se
+    // descarta en vez de inventarle un estado: suponerla vacía diría que se va a escribir algo de lo
+    // que no se sabe nada.
+    if (!encontrada) return [];
+    const { dia } = encontrada;
+    return [{
+      colaboradorId: celda.colaboradorId,
+      fecha: celda.fecha,
+      esDescansoObligatorio: dia.esDescansoObligatorio === true,
+      // El id del turno del catálogo que el día ya tiene. Por identidad y no por nombre: dos turnos
+      // pueden llamarse igual.
+      plantillaIdActual: dia.turno?.id ?? null,
+      // Los dos estados que se comportan como descanso, sea el obligatorio o uno marcado a mano.
+      esDescansoHoy: dia.estado === 'DESCANSO' || dia.estado === 'DESCANSO_TRABAJADO',
+      // Lo que el borrado quita. MANUAL es «lo ajustó una persona», y eso incluye una marca de
+      // descanso sin turno encima.
+      pintadoAMano: dia.origen === 'MANUAL',
+    }];
+  });
+
+  const accionPendiente = (): AccionDeEscritura => pendiente ?? { tipo: 'QUITAR' };
+  const conteo = pendiente
+    ? conteoDePrevia(celdasParaPrevia, accionPendiente, hoy)
+    : { escribe: 0, iguales: 0, bloqueadas: 0 };
+
+  const nombreDe = (colaboradorId: string): string => {
+    const suya = filas.find(f => f.id === colaboradorId);
+    return suya ? `${suya.nombre} ${suya.apellido}` : 'esa persona';
+  };
+
+  const pisados = pendiente ? descansosPisados(celdasParaPrevia, accionPendiente, hoy) : [];
+
+  // QUIÉN CRUZA A HABITUAL. Se cuenta cuántos de SUS descansos pisa este envío y se compara contra los
+  // que ya trabajó este mes, que vienen contados con marcaciones desde el backend.
+  //
+  // SI EL UMBRAL NO VIENE, NO SE AVISA. Una respuesta vieja en caché o un backend anterior no traen
+  // `minimoHabitual`, y poner un tres de respaldo aquí sería la segunda copia de una regla legal: el
+  // aviso se calla y los otros siguen saliendo.
+  const pisadosPorPersona = new Map<string, number>();
+  for (const celda of pisados) {
+    pisadosPorPersona.set(celda.colaboradorId, (pisadosPorPersona.get(celda.colaboradorId) ?? 0) + 1);
+  }
+  // `habitualesQueCruzan` y no `habituales`: ese nombre YA está tomado arriba por el número de la
+  // cuarta tarjeta del resumen (cuántas personas están YA en descanso habitual), que es otra cosa.
+  // Reusarlo hizo que el JSX de la previa resolviera contra el número y pidiera `.map` de un `number`.
+  // Las dos cosas se parecen tanto de nombre que conviene que se distingan en el suyo.
+  const habitualesQueCruzan = datos?.minimoHabitual === undefined ? [] : cruzanAHabitual(
+    [...pisadosPorPersona].map(([colaboradorId, pisaEsteEnvio]) => ({
+      colaboradorId,
+      trabajadosEnElMes: filas.find(f => f.id === colaboradorId)?.descansoHabitual.trabajados ?? 0,
+      pisaEsteEnvio,
+    })),
+    datos.minimoHabitual,
+  );
+
+  // Cómo se llama en una línea lo que está a punto de escribirse. Es lo único que cambia entre un
+  // turno, un descanso y un borrado: de ahí para abajo la previa es la misma.
+  const tituloDePendiente = (): string => {
+    if (!pendiente) return '';
+    const queCosa = pendiente.tipo === 'TURNO'
+      ? `Turno de ${catalogo.find(t => t.id === pendiente.plantillaId)?.nombre ?? 'ese turno'}`
+      : pendiente.tipo === 'DESCANSO' ? 'Marcar como descanso' : 'Quitar el turno';
+    return `${queCosa} · ${cuenta.nombre ?? `${cuenta.personas} personas`} · ${cuenta.dias} ${cuenta.dias === 1 ? 'día' : 'días'}`;
   };
 
   // ───────── APLICAR A TODO LO MARCADO, POR BLOQUES ─────────
@@ -1642,10 +1872,25 @@ export default function CalendarioDeTurnos() {
           catalogo={catalogo}
           ocupado={guardando}
           progreso={progreso}
-          onTurno={plantillaId => aplicarABloque(() => ({ tipo: 'TURNO', plantillaId }))}
-          onDescanso={() => aplicarABloque(() => ({ tipo: 'DESCANSO' }))}
-          onQuitar={() => aplicarABloque(() => ({ tipo: 'QUITAR' }))}
+          // Elegir NO escribe: abre la previa. Un bloque toca a varias personas a la vez y dos de sus
+          // consecuencias cuestan dinero, así que hay que poder leerlas antes de decir sí.
+          onTurno={plantillaId => setPendiente({ tipo: 'TURNO', plantillaId })}
+          onDescanso={() => setPendiente({ tipo: 'DESCANSO' })}
+          onQuitar={() => setPendiente({ tipo: 'QUITAR' })}
           onCancelar={limpiarMarcadas} />
+      )}
+
+      {/* LA PREVIA. Cancelar cierra pero NO limpia lo marcado: es «déjame mirarlo otra vez», no
+          «empieza de cero». */}
+      {pendiente && (
+        <PreviaDeBloque
+          titulo={tituloDePendiente()}
+          conteo={conteo}
+          pisados={pisados.map(c => ({ nombre: nombreDe(c.colaboradorId), fecha: c.fecha }))}
+          habituales={habitualesQueCruzan.map(h => ({ nombre: nombreDe(h.colaboradorId), antes: h.antes, despues: h.despues }))}
+          ocupado={guardando}
+          onCancelar={() => setPendiente(null)}
+          onAplicar={() => { const que = pendiente; setPendiente(null); aplicarABloque(() => que); }} />
       )}
 
       <p className="mt-3 text-xs text-muted leading-relaxed">

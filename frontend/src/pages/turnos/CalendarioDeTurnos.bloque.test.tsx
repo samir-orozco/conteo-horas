@@ -47,7 +47,7 @@ const numeroDe = (fecha: string) => Number(fecha.slice(8, 10));
 const diaDe = (fecha: string, extra: Record<string, unknown> = {}) => ({
   fecha, estado: 'TRABAJA', horaEntrada: '10:00', horaSalida: '16:00',
   minutosEsperados: 300, esFestivo: false, origen: 'AUTO', turno: null,
-  horarioNombre: null, decision: null,
+  horarioNombre: null, decision: null, esDescansoObligatorio: false,
   toleranciaMin: 10, toleranciaSalidaMin: 0, ajustaEntrada: false,
   almuerzoMin: 60, almuerzoInicio: '12:00', almuerzoFin: '13:00', descansos: [],
   ...extra,
@@ -91,6 +91,15 @@ const celda = (quien: string, fecha: string) =>
 // La tarjeta de abajo. Aparece solo cuando hay algo marcado, así que `findBy` es parte de la
 // afirmación: si no aparece, la prueba falla ahí.
 const tarjeta = () => screen.findByRole('region', { name: /marcad/i });
+
+// CON LA PREVIA EN MEDIO, ELEGIR EN LA TARJETA YA NO ESCRIBE: abre «Antes de aplicar» y una persona
+// confirma. Estos casos nacieron antes de la previa y daban por hecho que el clic escribía de una, así
+// que se pasan por el botón, que es lo que hace una persona de verdad. Lo que afirman —qué se manda y
+// con qué— no cambia, y es lo que tienen que seguir sujetando.
+const aplicarEnLaPrevia = async (usuario: ReturnType<typeof userEvent.setup>) => {
+  const caja = await screen.findByRole('dialog', { name: /antes de aplicar/i });
+  await usuario.click(within(caja).getByRole('button', { name: /aplicar/i }));
+};
 
 // EL ARRASTRE, con los eventos que el componente escucha de verdad. Lo que se afirma después es lo
 // que la tarjeta DICE, no cómo se implementó el gesto.
@@ -217,6 +226,7 @@ describe('aplicar a lo marcado', () => {
     put.mockResolvedValue({ data: { ok: true } });
     const caja = await marcarDosCeldas();
     await usuario.click(within(caja).getByRole('button', { name: /Noche/ }));
+    await aplicarEnLaPrevia(usuario);
 
     expect(put).toHaveBeenCalledWith('/turnos/dia', { colaboradorId: 'c1', fecha: SABADO, plantillaId: 'p2' });
     expect(put).toHaveBeenCalledWith('/turnos/dia', { colaboradorId: 'c1', fecha: DOMINGO, plantillaId: 'p2' });
@@ -228,16 +238,26 @@ describe('aplicar a lo marcado', () => {
     put.mockResolvedValue({ data: { ok: true } });
     const caja = await marcarDosCeldas();
     await usuario.click(within(caja).getByRole('button', { name: /^Descanso$/ }));
+    await aplicarEnLaPrevia(usuario);
 
     expect(put).toHaveBeenCalledWith('/turnos/dia', { colaboradorId: 'c1', fecha: SABADO, descanso: true });
     expect(put).toHaveBeenCalledTimes(2);
   });
 
   it('Quitar turno borra en cada celda marcada', async () => {
+    // LOS DÍAS TIENEN QUE TENER ALGO PINTADO, y antes no lo tenían: este caso montaba días que el
+    // horario resuelve solo y pedía borrarlos. La previa dice —con razón— que ahí no hay nada que
+    // quitar y deja el botón apagado, así que la prueba estaba afirmando un borrado imposible. Lo que
+    // el backend contestaría es «ese día no tiene ningún turno pintado».
     const usuario = userEvent.setup();
     del.mockResolvedValue({ data: { ok: true } });
-    const caja = await marcarDosCeldas();
-    await usuario.click(within(caja).getByRole('button', { name: /quitar turno/i }));
+    const pintados = personaDe('c1', 'Ana', 'Ríos', DIAS).dias.map(d => ({
+      ...d, origen: 'MANUAL', turno: { id: 'p2', nombre: 'Noche', color: 'cobalto' },
+    }));
+    montar([{ ...personaDe('c1', 'Ana', 'Ríos'), dias: pintados }]);
+    await arrastrarDe(await celda('Ana', SABADO), await celda('Ana', DOMINGO));
+    await usuario.click(within(await tarjeta()).getByRole('button', { name: /quitar turno/i }));
+    await aplicarEnLaPrevia(usuario);
 
     expect(del).toHaveBeenCalledWith('/turnos/dia', { params: { colaboradorId: 'c1', fecha: SABADO } });
     expect(del).toHaveBeenCalledTimes(2);
@@ -252,6 +272,7 @@ describe('aplicar a lo marcado', () => {
     montar([personaDe('c1', 'Ana', 'Ríos', [ayer, DOMINGO])]);
     await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
     await usuario.click(within(await tarjeta()).getByRole('button', { name: /Noche/ }));
+    await aplicarEnLaPrevia(usuario);
 
     expect(put).toHaveBeenCalledTimes(1);
     expect(put).toHaveBeenCalledWith('/turnos/dia', { colaboradorId: 'c1', fecha: DOMINGO, plantillaId: 'p2' });
@@ -262,6 +283,7 @@ describe('aplicar a lo marcado', () => {
     put.mockResolvedValue({ data: { ok: true } });
     const caja = await marcarDosCeldas();
     await usuario.click(within(caja).getByRole('button', { name: /Noche/ }));
+    await aplicarEnLaPrevia(usuario);
     expect(await screen.findByRole('status')).toHaveTextContent(/2 jornadas/);
   });
 
@@ -272,6 +294,7 @@ describe('aplicar a lo marcado', () => {
     put.mockRejectedValue({ response: { data: { error: 'Esa persona ya empezó su jornada de hoy.' } } });
     const caja = await marcarDosCeldas();
     await usuario.click(within(caja).getByRole('button', { name: /Noche/ }));
+    await aplicarEnLaPrevia(usuario);
     expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudieron escribir/i);
   });
 });

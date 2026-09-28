@@ -38,7 +38,7 @@ const DOMINGO = DIAS[6];
 const diaDe = (fecha: string) => ({
   fecha, estado: 'TRABAJA', horaEntrada: '06:00', horaSalida: '14:00',
   minutosEsperados: 480, esFestivo: false, origen: 'AUTO', turno: null, horarioNombre: 'Rotativo 7x1',
-  decision: null,
+  decision: null, esDescansoObligatorio: false,
   // Las reglas del día, que el panel de la celda muestra.
   toleranciaMin: 10, toleranciaSalidaMin: 0, ajustaEntrada: false,
   almuerzoMin: 0, almuerzoInicio: null, almuerzoFin: null, descansos: [],

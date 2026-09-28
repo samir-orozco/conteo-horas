@@ -34,7 +34,7 @@ const HOY = hoyEnBogota();
 const diaDe = (fecha: string, extra: Record<string, unknown> = {}) => ({
   fecha, estado: 'TRABAJA', horaEntrada: '08:00', horaSalida: '16:00',
   minutosEsperados: 420, esFestivo: false, origen: 'AUTO', turno: null,
-  horarioNombre: 'Jornada demo', decision: null,
+  horarioNombre: 'Jornada demo', decision: null, esDescansoObligatorio: false,
   toleranciaMin: 10, toleranciaSalidaMin: 0, ajustaEntrada: false,
   almuerzoMin: 60, almuerzoInicio: '12:00', almuerzoFin: '13:00', descansos: [],
   ...extra,
@@ -53,7 +53,7 @@ const filaDe = (id: string, nombre: string, apellido: string, dia: Record<string
 // día siguiente, y los rótulos de después de medianoche tienen que decir 00, 01... y no 24, 25.
 const DIURNA = filaDe('c1', 'Ana', 'Giraldo', diaDe(HOY));
 const NOCTURNA = filaDe('c2', 'Julián', 'Torres', diaDe(HOY, {
-  horaEntrada: '22:00', horaSalida: '06:00', turno: { nombre: 'Noche', color: 'cobalto' },
+  horaEntrada: '22:00', horaSalida: '06:00', turno: { id: 'p2', nombre: 'Noche', color: 'cobalto' },
 }));
 const SIN_TURNO = filaDe('c3', 'Sofía', 'Ramos', diaDe(HOY, {
   estado: 'SIN_TURNO', horaEntrada: null, horaSalida: null, minutosEsperados: 0, horarioNombre: null,

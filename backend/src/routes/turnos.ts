@@ -18,7 +18,7 @@ import { jornadaVigente } from '../utils/vigencias';
 // El contador mensual de descansos trabajados. Es una ALARMA, no dinero: el recargo se paga igual
 // siendo ocasional o habitual, y lo que cambia al llegar a tres es que la compensación en tiempo
 // deja de ser opcional.
-import { descansosTrabajadosPorMes, clasificarDescansos } from '../utils/descansoHabitual';
+import { descansosTrabajadosPorMes, clasificarDescansos, MINIMO_HABITUAL } from '../utils/descansoHabitual';
 // El modal del descanso trabajado (22 de septiembre de 2026). Las tres piezas son puras, probadas y
 // mutadas; aquí solo queda la plomería.
 import { limpiarDecisionDeDescanso } from '../utils/cuerpoDeDecisionDeDescanso';
@@ -121,10 +121,19 @@ export default async function turnoRoutes(app: FastifyInstance) {
           // Dos columnas de la plantilla y no la entera: la celda pinta un recuadro con un rótulo,
           // y traerse sus descansos y sus ventanas de almuerzo sería cargar el mes de toda la
           // empresa para no usarlo.
-          // `esDescanso` NO viaja al frontend: se usa aquí para calcular la propuesta de la semana
-          // (qué día sugerirle a quien planifica) y nada más. La celda ya distingue un descanso por
-          // `dia.estado`, así que mandarlo además sería un campo que nadie lee.
-          plantilla: { select: { nombre: true, color: true, esDescanso: true } },
+          // El `esDescanso` DE LA PLANTILLA (o sea, si el turno pintado es un turno de descanso) no
+          // viaja al frontend: se usa aquí para calcular la propuesta de la semana (qué día sugerirle
+          // a quien planifica) y nada más.
+          //
+          // OJO, NO CONFUNDIRLO CON EL DEL DÍA (28 de septiembre de 2026). El de la fila —el de
+          // arriba, junto a `origen`— SÍ viaja desde hoy, como `esDescansoObligatorio`, y la razón
+          // está escrita donde se agrega: `dia.estado` NO alcanza para distinguir el descanso
+          // obligatorio de uno marcado a mano, y de esa diferencia depende un aviso que cuesta plata.
+          // El `id` viaja desde el 28 de septiembre de 2026, y es una palabra con una consecuencia:
+          // sin él la pantalla sabe que el día tiene un turno pintado pero no CUÁL, así que la previa
+          // de la programación en bloque no podía distinguir «ya tiene este mismo turno» de «tiene
+          // otro». Comparar por nombre habría sido lo otro, y dos turnos pueden llamarse igual.
+          plantilla: { select: { id: true, nombre: true, color: true, esDescanso: true } },
         },
         orderBy: { fecha: 'asc' },
       }),
@@ -254,6 +263,22 @@ export default async function turnoRoutes(app: FastifyInstance) {
           // `null` cuando el día no es un descanso trabajado; `PENDIENTE` cuando lo es y nadie ha
           // decidido todavía, que es el caso que el dueño pidió poder ver sin abrir el modal.
           decision: decisionDelDia(estadoDia === 'DESCANSO_TRABAJADO', decisionPorDia.get(`${persona.id}|${clave}`)),
+          // SI ESTE DÍA ES SU DESCANSO OBLIGATORIO (28 de septiembre de 2026).
+          //
+          // Ya estaba calculado dos líneas arriba para decidir el estado de la celda, y hasta hoy se
+          // tiraba. Viaja porque la programación en bloque tiene que poder avisar «pintarías sobre el
+          // descanso obligatorio de tres jornadas» ANTES de escribir, y eso es por celda.
+          //
+          // NO SE PUEDE DEDUCIR DE `estado`, que fue lo primero que se intentó: un día marcado a mano
+          // como descanso también sale `DESCANSO` sin ser el obligatorio, así que deducirlo daría un
+          // aviso falso justo en el caso que cuesta dinero.
+          //
+          // Y NO SE PUEDE DEDUCIR EN LA PANTALLA de `descanso.tipo`: la regla lleva dentro la guarda
+          // del acuerdo escrito (sin papel, cualquier día declarado vale como domingo), y una segunda
+          // copia es como se separan. Ya pasó en la maqueta de esto mismo: su copia se quedó leyendo
+          // el tipo en crudo y le decía «pactado por escrito» a alguien a quien el motor trata como
+          // presumido.
+          esDescansoObligatorio: esDescanso,
           horaEntrada: d.horaEntrada,
           horaSalida: d.horaSalida,
           minutosEsperados: d.minutosEsperados,
@@ -288,8 +313,11 @@ export default async function turnoRoutes(app: FastifyInstance) {
           // `null` significa «a este día no lo pintó ningún turno». La celda NO se inventa entonces
           // un nombre a partir de las horas: eso se quitó el 21 de septiembre de 2026 porque se leía
           // como un turno asignado que nadie había asignado. Cae a `horarioNombre`, aquí abajo.
+          // El `id` va junto al nombre y al color porque quien lo necesita es la previa del bloque:
+          // para decir cuántas jornadas NO cambian hay que comparar el turno que el día ya tiene
+          // contra el que se le va a poner, y eso se compara por identidad, no por nombre.
           turno: extra?.plantilla
-            ? { nombre: extra.plantilla.nombre, color: extra.plantilla.color }
+            ? { id: extra.plantilla.id, nombre: extra.plantilla.nombre, color: extra.plantilla.color }
             : null,
           // El nombre del horario que rige ESTE día, para la celda que nadie pintó. Un día que el
           // horario programa sí está asignado, y decir «sin asignar» de todo lo no pintado dejaba
@@ -376,7 +404,12 @@ export default async function turnoRoutes(app: FastifyInstance) {
       };
     });
 
-    return { desde, hasta, horasSemanales, filas };
+    // `minimoHabitual` viaja por la MISMA razón que `horasSemanales`, y con el precedente hecho: son
+    // los dos números legales que la pantalla nombra, y escribirlos a mano allí los congelaría. El
+    // comentario de la constante ya lo advertía («la pantalla también lo nombra: escribirlo dos veces
+    // es como se separan»). Lo usa la previa de la programación en bloque para decir quién cruza a
+    // descanso habitual con lo que está a punto de aplicarse.
+    return { desde, hasta, horasSemanales, minimoHabitual: MINIMO_HABITUAL, filas };
   });
 
   // ───────────── EL PLANIFICADOR: pintar un día con un turno del catálogo ─────────────

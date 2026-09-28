@@ -42,7 +42,7 @@ const ULTIMO_DEL_MES = `${HOY.slice(0, 7)}-${String(DIAS_DEL_MES).padStart(2, '0
 const diaDe = (fecha: string) => ({
   fecha, estado: 'TRABAJA', horaEntrada: '08:00', horaSalida: '16:00',
   minutosEsperados: 420, esFestivo: false, origen: 'AUTO', turno: null,
-  horarioNombre: 'Jornada demo', decision: null,
+  horarioNombre: 'Jornada demo', decision: null, esDescansoObligatorio: false,
   toleranciaMin: 10, toleranciaSalidaMin: 0, ajustaEntrada: false,
   almuerzoMin: 60, almuerzoInicio: '12:00', almuerzoFin: '13:00', descansos: [],
 });
