@@ -236,6 +236,35 @@ describe('marcar varias celdas', () => {
     expect(await tarjeta()).toHaveTextContent(/1 jornada/);
   });
 
+  it('cambiar de período LIMPIA lo marcado', async () => {
+    // SALIÓ DE VER 87 JORNADAS ARMADAS EN PANTALLA que nadie había marcado a propósito (28 de
+    // septiembre de 2026), en una página recién cargada y solo tras cambiar a vista de mes.
+    //
+    // No depende de saber qué las disparó: una selección hecha sobre UN período no puede seguir
+    // armada en OTRO, donde las columnas ni siquiera son las mismas. Lo que se ve marcado y lo que
+    // está marcado tienen que coincidir, porque de la tarjeta a escribir hay un clic. La maqueta
+    // limpia al cambiar de vista y al mover las flechas; esto no lo hacía.
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+    await tarjeta();
+
+    await usuario.click(screen.getByRole('button', { name: 'Mes' }));
+    expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
+  });
+
+  it('y mover las flechas también', async () => {
+    // El mismo peligro por el otro camino: marcar esta semana, pasar a la siguiente, y quedarse con
+    // celdas armadas de una semana que ya no está en pantalla.
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+    await tarjeta();
+
+    await usuario.click(screen.getByRole('button', { name: /semana siguiente/i }));
+    expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
+  });
+
   it('Cancelar limpia lo marcado y la tarjeta se va', async () => {
     const usuario = userEvent.setup();
     montar();

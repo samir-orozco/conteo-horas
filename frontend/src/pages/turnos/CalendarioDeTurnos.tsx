@@ -1420,6 +1420,7 @@ export default function CalendarioDeTurnos() {
     // dibujado: con el objeto, el efecto se dispararía sin parar.
   }, [vista.desde, vista.hasta, recarga]);
 
+
   // El catálogo, una sola vez. Si falla se queda vacío y el selector lo dice: no poder pintar es
   // molesto, pero romper el calendario entero por eso sería peor.
   useEffect(() => {
@@ -1661,6 +1662,29 @@ export default function CalendarioDeTurnos() {
   };
 
   const limpiarMarcadas = () => { setMarcadas({}); setResultado(null); cerrarRango(); };
+
+  // CAMBIAR DE PERÍODO LIMPIA LO MARCADO (28 de septiembre de 2026).
+  //
+  // Salió de ver 87 jornadas armadas en pantalla que nadie había marcado a propósito, en una página
+  // recién cargada y solo tras pasar a la vista de mes. Sea cual sea el gesto que las creó, el
+  // peligro es el mismo y no depende de saberlo: una selección hecha sobre UN período no puede seguir
+  // armada en OTRO, donde las columnas ni siquiera son las mismas. Lo que se ve marcado y lo que está
+  // marcado tienen que coincidir, porque de la tarjeta a escribir hay un solo clic.
+  //
+  // SE LIMPIA AQUÍ Y NO EN UN EFECTO atado al rango, que fue el primer intento: el linter lo rechazó
+  // con `react-hooks/set-state-in-effect` y tenía razón, porque así React dibuja una vez con la
+  // selección vieja y vuelve a dibujar al limpiarla. Este archivo ya sigue ese idioma en otro sitio
+  // (`cargando` se DERIVA en vez de guardarse, por esta misma regla).
+  //
+  // Y pasan por AQUÍ los cuatro caminos que cambian el período —el selector de modo y las tres
+  // flechas, «Hoy» incluida—, en vez de repetir la limpieza en cada manejador: un quinto camino
+  // tendría que pasar por uno de estos dos, y si alguien llama a `setModo` o `setAncla` a pelo se ve
+  // a simple vista (CLAUDE.md §9.3).
+  const verEnModo = (nuevo: ModoDeVista) => { setModo(nuevo); limpiarMarcadas(); };
+  const irAlPeriodo = (nueva: string | ((anterior: string) => string)) => {
+    setAncla(nueva);
+    limpiarMarcadas();
+  };
 
   const seleccion = Object.values(marcadas);
   const cuenta = {
@@ -1942,7 +1966,7 @@ export default function CalendarioDeTurnos() {
         <div role="group" aria-label="Cómo se ve el calendario"
           className="flex items-center gap-1 rounded-2xl bg-gray-100 p-1 sm:justify-self-center">
           {MODOS.map(m => (
-            <button key={m} type="button" onClick={() => setModo(m)} aria-pressed={modo === m}
+            <button key={m} type="button" onClick={() => verEnModo(m)} aria-pressed={modo === m}
               className={`rounded-xl px-4 py-1.5 text-sm transition-colors ${
                 modo === m
                   ? 'bg-white text-ink font-bold shadow-sm'
@@ -1955,7 +1979,7 @@ export default function CalendarioDeTurnos() {
         <div className="flex items-center gap-2 sm:justify-self-end">
           {/* Las flechas se mueven en la UNIDAD DEL MODO, y lo dicen: en un mes, «Semana anterior»
               sería una etiqueta falsa para quien navega con lector de pantalla. */}
-          <button type="button" onClick={() => setAncla(a => moverVista(modo, a, -1))}
+          <button type="button" onClick={() => irAlPeriodo(a => moverVista(modo, a, -1))}
             aria-label={`${PERIODO[modo].unidad} anterior`}
             className="grid h-9 w-9 place-items-center rounded-xl bg-gray-100 text-ink hover:bg-gray-200 transition-colors">
             <ChevronLeft size={18} />
@@ -1964,11 +1988,11 @@ export default function CalendarioDeTurnos() {
               estaba a la vista, y eso tiene un costo que no se ve hasta que se usa: un botón que
               aparece y desaparece EMPUJA a las flechas de sitio, justo mientras se está haciendo
               clic repetido en ellas para avanzar semanas. */}
-          <button type="button" onClick={() => setAncla(hoy)}
+          <button type="button" onClick={() => irAlPeriodo(hoy)}
             className="rounded-xl bg-gray-100 px-5 py-2 text-sm font-bold text-ink hover:bg-gray-200 transition-colors">
             Hoy
           </button>
-          <button type="button" onClick={() => setAncla(a => moverVista(modo, a, 1))}
+          <button type="button" onClick={() => irAlPeriodo(a => moverVista(modo, a, 1))}
             aria-label={`${PERIODO[modo].unidad} siguiente`}
             className="grid h-9 w-9 place-items-center rounded-xl bg-gray-100 text-ink hover:bg-gray-200 transition-colors">
             <ChevronRight size={18} />
