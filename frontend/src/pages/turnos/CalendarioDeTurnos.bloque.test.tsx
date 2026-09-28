@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CalendarioDeTurnos from './CalendarioDeTurnos';
 import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias } from './semana';
@@ -400,6 +400,90 @@ describe('aplicar a lo marcado', () => {
     await usuario.click(within(caja).getByRole('button', { name: /Noche/ }));
     await aplicarEnLaPrevia(usuario);
     expect(await screen.findByRole('status')).toHaveTextContent(/2 jornadas/);
+  });
+
+  it('MIENTRAS ESCRIBE, una ventana dice por dónde va y deja detener', async () => {
+    // Hoy esto es una línea dentro de la tarjeta: «Bloque 2 de 7 · no cierres esta ventana». Con siete
+    // bloques informa; con treinta, quien mira no sabe si va por la mitad o por el final. Y sobre
+    // todo: no hay forma de PARAR. Un envío de un mes para veinte personas son cien bloques en serie,
+    // y hoy, una vez arrancado, no se puede hacer nada más que esperar o cerrar el navegador.
+    //
+    // LAS ESCRITURAS SE DEJAN PENDIENTES A PROPÓSITO. Con `mockResolvedValue` todo termina dentro del
+    // mismo ciclo y la ventana abriría y se cerraría sin que nada pueda observarla: la prueba pasaría
+    // o fallaría por azar. Aquí se controla cuándo resuelven, así que el estado «en vuelo» es un hecho
+    // y no una carrera.
+    const usuario = userEvent.setup();
+    const resolver: ((v: unknown) => void)[] = [];
+    put.mockImplementation(() => new Promise(r => { resolver.push(r); }));
+
+    const caja = await marcarDosCeldas();
+    await usuario.click(within(caja).getByRole('button', { name: /Noche/ }));
+    await aplicarEnLaPrevia(usuario);
+
+    const ventana = await screen.findByRole('dialog', { name: /cómo va la programación/i });
+    expect(within(ventana).getByRole('button', { name: /detener al terminar este bloque/i }))
+      .toBeInTheDocument();
+
+    // Las dos escrituras se soltaron, así que la ventana deja de estar «escribiendo».
+    resolver.forEach(r => r({ data: { ok: true } }));
+    await waitFor(() => expect(within(ventana).getByText(/listo/i)).toBeInTheDocument());
+  });
+
+  it('DETENER deja sin escribir los bloques que faltaban', async () => {
+    // Es lo único que este botón promete, y lo que promete es algo que NO va a pasar: que las jornadas
+    // de los bloques siguientes no se escriban. Sin esta prueba, quitar el corte del bucle no pondría
+    // roja ninguna otra.
+    //
+    // SE DETIENE AL TERMINAR EL BLOQUE EN CURSO, no a mitad: lo que ya salió en vuelo se termina,
+    // porque cortarlo dejaría seis peticiones de las que nadie sabe cuáles llegaron.
+    //
+    // CUÁNTAS CELDAS SON PINTABLES DEPENDE DEL DÍA en que se corra la suite: un domingo solo queda un
+    // día por delante. Por eso se afirma `min(6, N)` y no un número escrito a mano. El día que N no
+    // pase de seis, este caso no discrimina nada —hay un solo bloque y no hay nada que detener—, y
+    // vale más decirlo aquí que poner un número que falle los sábados.
+    const usuario = userEvent.setup();
+    const resolver: ((v: unknown) => void)[] = [];
+    put.mockImplementation(() => new Promise(r => { resolver.push(r); }));
+
+    montar();
+    // Las tres filas enteras, que es la selección más grande que se puede armar con tres clics.
+    for (const quien of ['Ana', 'Beto', 'Ciro']) {
+      await usuario.click(await screen.findByRole('button', { name: new RegExp(`marcar la semana de ${quien}`, 'i') }));
+    }
+    const caja = await tarjeta();
+    await usuario.click(within(caja).getByRole('button', { name: /Noche/ }));
+    await aplicarEnLaPrevia(usuario);
+
+    const pintables = DIAS.filter(f => f >= HOY).length * 3;
+    const ventana = await screen.findByRole('dialog', { name: /cómo va la programación/i });
+    await usuario.click(within(ventana).getByRole('button', { name: /detener al terminar este bloque/i }));
+
+    // Se sueltan las que ya estaban en vuelo: son las del bloque en curso y ninguna más.
+    resolver.forEach(r => r({ data: { ok: true } }));
+    await waitFor(() => expect(within(ventana).getByRole('button', { name: /cerrar/i })).toBeInTheDocument());
+
+    expect(put).toHaveBeenCalledTimes(Math.min(6, pintables));
+  });
+
+  it('y al terminar se QUEDA ABIERTA diciendo cómo quedó', async () => {
+    // Pedido del dueño en la maqueta, con estas palabras: antes se cerraba sola y el final se veía
+    // como un parpadeo, sin decir cuánto se escribió. La cierra la persona.
+    const usuario = userEvent.setup();
+    put.mockResolvedValue({ data: { ok: true } });
+
+    const caja = await marcarDosCeldas();
+    await usuario.click(within(caja).getByRole('button', { name: /Noche/ }));
+    await aplicarEnLaPrevia(usuario);
+
+    const ventana = await screen.findByRole('dialog', { name: /cómo va la programación/i });
+    expect(ventana).toHaveTextContent(/2 jornadas/);
+    // Sigue ahí: no se desvanece sola.
+    expect(screen.getByRole('dialog', { name: /cómo va la programación/i })).toBeInTheDocument();
+
+    await usuario.click(within(ventana).getByRole('button', { name: /cerrar/i }));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /cómo va la programación/i })).not.toBeInTheDocument();
+    });
   });
 
   it('si una escritura se niega, lo dice y NO se lo calla', async () => {

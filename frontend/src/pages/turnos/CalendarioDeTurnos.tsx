@@ -9,6 +9,9 @@ import {
 // Qué celdas caen dentro de un rectángulo y qué se va a escribir de verdad NO se deciden aquí.
 import { claveDeCelda, celdasDelRectangulo, type Celda as CeldaMarcada } from './seleccionEnBloque';
 import { bloquesDe, planDeEscritura, type AccionDeEscritura } from './aplicacionPorBloques';
+// Por dónde va el envío: el porcentaje, los círculos y si terminó o se cortó. Puro, probado y mutado
+// aparte. El porcentaje va sobre JORNADAS y no sobre bloques, y ahí está el porqué.
+import { estadoDelProgreso } from './progresoDelBloque';
 // Las cuentas y los avisos de la previa. También puros, probados y mutados: la pantalla los APLICA,
 // no los decide. De ellos depende que alguien apruebe o cancele un envío de cien jornadas.
 import {
@@ -829,12 +832,11 @@ function ModalDescansoTrabajado({ nombre, datos, guardando, error, onCerrar, onG
 // LAS FLECHAS DEL CARRIL SE MIDEN, NO SE SUPONEN: si los turnos caben, no aparecen. Y se mide con la
 // tarjeta ya dibujada, porque un elemento que todavía no existe mide cero y entonces saldrían siempre.
 function TarjetaDeBloque({
-  cuenta, catalogo, ocupado, progreso, puedeRotar, onTurno, onDescanso, onQuitar, onRotacion, onCancelar,
+  cuenta, catalogo, ocupado, puedeRotar, onTurno, onDescanso, onQuitar, onRotacion, onCancelar,
 }: {
   cuenta: { total: number; personas: number; dias: number; pasadas: number; nombre: string | null };
   catalogo: TurnoDelCatalogo[];
   ocupado: boolean;
-  progreso: { bloque: number; bloques: number } | null;
   puedeRotar: boolean;
   onTurno: (plantillaId: string) => void;
   onDescanso: () => void;
@@ -1002,12 +1004,9 @@ function TarjetaDeBloque({
         </div>
       </div>
 
-      {/* POR DÓNDE VA, mientras va. Un guardado que tarda y no dice nada se lee como uno colgado. */}
-      {progreso && (
-        <p className="mt-2 border-t border-gray-100 pt-2 text-[11px] font-medium text-muted">
-          Bloque {progreso.bloque} de {progreso.bloques} · no cierres esta ventana
-        </p>
-      )}
+      {/* POR DÓNDE VA YA NO SE DICE AQUÍ (28 de septiembre de 2026): lo dice su propia ventana, con
+          el porcentaje, los bloques y el botón de detener. Tenerlo en dos sitios es como se
+          desincronizan. */}
     </div>
   );
 }
@@ -1193,6 +1192,107 @@ function VentanaDeRotacion({
 // ES UN MODAL Y NO UN PANEL ANCLADO, al contrario que el de la jornada, y la diferencia es deliberada:
 // aquí no se está comparando celdas entre sí, se está decidiendo una sola cosa, y tapar la rejilla
 // mientras se decide es correcto.
+// POR DÓNDE VA EL ENVÍO, en su propia ventana (28 de septiembre de 2026).
+//
+// Antes era una línea dentro de la tarjeta: «Bloque 2 de 7 · no cierres esta ventana». Con siete
+// bloques informa; con treinta, quien mira no sabe si va por la mitad o por el final. Y sobre todo no
+// había forma de PARAR: un mes para veinte personas son cien bloques en serie, y una vez arrancado no
+// quedaba más que esperar o cerrar el navegador.
+//
+// LAS CUENTAS NO SE HACEN AQUÍ. El porcentaje, los círculos y si terminó o se cortó los decide
+// `estadoDelProgreso`, que es puro y está probado y mutado: de ese número depende que alguien espere o
+// detenga, y un porcentaje sobre el denominador equivocado no se ve mal, se ve plausible.
+function VentanaDeProgreso({ estado, escritas, total, detenido, onDetener, onCerrar }: {
+  estado: ReturnType<typeof estadoDelProgreso>;
+  escritas: number;
+  total: number;
+  detenido: boolean;
+  onDetener: () => void;
+  onCerrar: () => void;
+}) {
+  const acabo = estado.terminado || estado.cortado;
+
+  return (
+    <div className="fixed inset-0 !mt-0 z-[90] flex items-center justify-center bg-black/50 p-4">
+      <div role="dialog" aria-modal="true" aria-label="Cómo va la programación"
+        className="hp-pop w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div className="flex items-center gap-3">
+          {/* EL ICONO DICE EL FINAL DE UN VISTAZO, y «se detuvo» no es «listo»: uno dejó todo escrito
+              y el otro dejó jornadas sin escribir. */}
+          <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${
+            estado.cortado ? 'bg-rose-100 text-rose-700'
+              : estado.terminado ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-primary-light text-ink'}`}>
+            {estado.cortado ? <AlertTriangle size={20} /> : estado.terminado ? <Check size={20} /> : <Clock size={20} />}
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-lg font-bold text-ink">
+              {estado.cortado ? 'Se detuvo' : estado.terminado ? 'Listo' : 'Programando'}
+            </h3>
+            <p className="mt-0.5 text-xs text-muted">
+              {estado.cortado ? 'Lo que alcanzó a escribirse se quedó escrito.'
+                : estado.terminado ? 'Puedes cerrar esta ventana cuando quieras.'
+                  : 'No cierres esta ventana.'}
+            </p>
+          </div>
+          {/* EL PORCENTAJE SOLO SE PONE VERDE SI TERMINÓ DE VERDAD: en un envío cortado, el verde
+              diría «todo bien» sobre una escritura incompleta. */}
+          <span className={`ml-auto text-2xl font-extrabold tabular-nums ${
+            estado.terminado ? 'text-emerald-700' : 'text-muted'}`}>
+            {estado.pct}%
+          </span>
+        </div>
+
+        {/* UN CÍRCULO POR BLOQUE, y con más de diez se esconden y manda la barra: cien circulitos no
+            informan de nada. La regla la decide el módulo puro, aquí solo se dibuja. */}
+        {estado.seVenLosPasos ? (
+          <div className="mt-5 flex items-center" aria-hidden="true">
+            {estado.pasos.map((paso, i) => (
+              <Fragment key={i}>
+                <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-extrabold ${
+                  paso === 'HECHO' ? 'bg-emerald-600 text-white'
+                    : paso === 'EN_CURSO' ? 'bg-primary text-ink ring-4 ring-primary/40'
+                      : 'bg-gray-200 text-gray-500'}`}>
+                  {paso === 'HECHO' ? <Check size={13} strokeWidth={3} /> : i + 1}
+                </span>
+                {i < estado.pasos.length - 1 && (
+                  <span className={`h-1 flex-1 ${paso === 'HECHO' ? 'bg-emerald-600' : 'bg-gray-200'}`} />
+                )}
+              </Fragment>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-gray-200">
+            <div className={`h-full rounded-full transition-all ${estado.terminado ? 'bg-emerald-600' : 'bg-primary'}`}
+              style={{ width: `${estado.pct}%` }} />
+          </div>
+        )}
+
+        <p className="mt-3 flex justify-between gap-3 text-xs text-muted tabular-nums">
+          <span>Bloque {Math.min(estado.pasos.length, Math.max(1, estado.pasos.filter(p => p === 'HECHO').length + (acabo ? 0 : 1)))} de {estado.pasos.length}</span>
+          <span>{escritas} de {jornadas(total)}</span>
+        </p>
+
+        <div className="mt-5 flex justify-end">
+          {acabo ? (
+            <button type="button" onClick={onCerrar}
+              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-ink hover:bg-primary-dark">
+              Cerrar
+            </button>
+          ) : (
+            // DETENER AL TERMINAR EL BLOQUE, y lo dice con esas palabras: no corta lo que ya está en
+            // vuelo, porque entonces nadie sabría cuáles de esas seis llegaron.
+            <button type="button" onClick={onDetener} disabled={detenido}
+              className="rounded-xl border border-rose-200 px-5 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60">
+              {detenido ? 'Se detendrá al terminar este bloque…' : 'Detener al terminar este bloque'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PreviaDeBloque({
   titulo, conteo, pisados, habituales, sinDescanso, sobreElTope, topeHoras, ocupado, onCancelar, onAplicar,
 }: {
@@ -1499,7 +1599,21 @@ export default function CalendarioDeTurnos() {
   // selección de octubre, porque el cálculo compara el mes guardado con el de la selección y si no
   // coinciden se calla. Sin eso habría un parpadeo de veredicto falso al cambiar de mes.
   const [mesDeLaPrevia, setMesDeLaPrevia] = useState<{ mes: string; filas: FilaDelCalendario[] } | null>(null);
-  const [progreso, setProgreso] = useState<{ bloque: number; bloques: number } | null>(null);
+  // POR DÓNDE VA EL ENVÍO, y se queda después de terminar: la ventana no se cierra sola.
+  //
+  // Lleva las JORNADAS además de los bloques porque el porcentaje se calcula sobre ellas: los bloques
+  // no son iguales y el último puede llevar una o seis. Ver `progresoDelBloque`.
+  const [progreso, setProgreso] = useState<
+    { bloquesHechos: number; bloques: number; escritas: number; total: number } | null
+  >(null);
+  // PEDIR DETENER ES UNA BANDERA QUE SE MIRA ENTRE BLOQUES, no dentro. Cortar a mitad de un bloque
+  // dejaría seis peticiones en vuelo sin saber cuáles llegaron; al terminar el bloque, lo escrito está
+  // escrito y lo que falta no se empezó.
+  //
+  // Un `ref` Y ADEMÁS un estado: el bucle lee el ref (un estado quedaría congelado en el valor que
+  // tenía cuando arrancó), y el estado es lo que hace que el botón se vuelva a dibujar.
+  const detener = useRef(false);
+  const [detenido, setDetenido] = useState(false);
   const [resultado, setResultado] = useState<{ escritas: number; bloqueadas: number; fallos: string[] } | null>(null);
 
   const vista = vistaDelCalendario(modo, ancla);
@@ -2129,12 +2243,19 @@ export default function CalendarioDeTurnos() {
     const bloques = bloquesDe(plan.escribe, EN_VUELO);
     setResultado(null);
     setGuardando(true);
+    detener.current = false;
+    setDetenido(false);
 
     let escritas = 0;
     const fallos: string[] = [];
+    // Estado de ARRANQUE explícito: la ventana se reutiliza entre envíos, y sin esto el segundo
+    // empezaría mostrando el «Listo» del primero.
+    setProgreso({ bloquesHechos: 0, bloques: bloques.length, escritas: 0, total: plan.escribe.length });
     try {
       for (let i = 0; i < bloques.length; i++) {
-        setProgreso({ bloque: i + 1, bloques: bloques.length });
+        // SE MIRA ANTES DE EMPEZAR EL BLOQUE, no dentro: lo que se empieza se termina, así que al
+        // detenerse nadie queda con seis peticiones en vuelo de las que no se sabe cuáles llegaron.
+        if (detener.current) break;
         // `allSettled` y no `all`: con `all`, la primera negativa aborta el bloque y las otras cinco
         // quedarían escritas o no según el azar de la red, sin que nadie pueda saber cuáles.
         const idas = await Promise.allSettled(
@@ -2144,9 +2265,14 @@ export default function CalendarioDeTurnos() {
           if (ida.status === 'fulfilled') escritas++;
           else fallos.push(motivoDe(ida.reason, 'No pudimos guardar ese día.'));
         }
+        setProgreso({
+          bloquesHechos: i + 1, bloques: bloques.length, escritas, total: plan.escribe.length,
+        });
       }
     } finally {
-      setProgreso(null);
+      // `progreso` NO se limpia aquí, y esa es la diferencia con antes: la ventana se queda con su
+      // estado final hasta que la cierre una persona. Cerrándola sola, el final se veía como un
+      // parpadeo y nadie alcanzaba a leer cuánto se escribió.
       setGuardando(false);
     }
 
@@ -2689,7 +2815,6 @@ export default function CalendarioDeTurnos() {
           cuenta={cuenta}
           catalogo={catalogo}
           ocupado={guardando}
-          progreso={progreso}
           // Elegir NO escribe: abre la previa. Un bloque toca a varias personas a la vez y dos de sus
           // consecuencias cuestan dinero, así que hay que poder leerlas antes de decir sí.
           onTurno={plantillaId => setPendiente({ clase: 'IGUAL', accion: { tipo: 'TURNO', plantillaId } })}
@@ -2702,6 +2827,18 @@ export default function CalendarioDeTurnos() {
 
       {/* LA PREVIA. Cancelar cierra pero NO limpia lo marcado: es «déjame mirarlo otra vez», no
           «empieza de cero». */}
+      {/* LA VENTANA DEL ENVÍO. Se queda con su estado final hasta que la cierre una persona: antes se
+          desvanecía sola y el final se veía como un parpadeo, sin decir cuánto se escribió. */}
+      {progreso && (
+        <VentanaDeProgreso
+          estado={estadoDelProgreso({ ...progreso, detenido })}
+          escritas={progreso.escritas}
+          total={progreso.total}
+          detenido={detenido}
+          onDetener={() => { detener.current = true; setDetenido(true); }}
+          onCerrar={() => setProgreso(null)} />
+      )}
+
       {pendiente && (
         <PreviaDeBloque
           titulo={tituloDePendiente()}
