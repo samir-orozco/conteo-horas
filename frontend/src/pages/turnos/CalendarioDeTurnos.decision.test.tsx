@@ -185,6 +185,32 @@ describe('lo que la ley obliga a mostrar', () => {
     expect(within(dialogo).queryByRole('button', { name: /^dinero$/i })).not.toBeInTheDocument();
     expect(within(dialogo).getByText(/además|sin perjuicio/i)).toBeInTheDocument();
   });
+
+  // SIN NINGÚN DESCANSO TRABAJADO EN EL MES NO SE PUEDE DECIR «HABITUAL» (28 de septiembre de 2026).
+  //
+  // Encontrado mirando la pantalla con datos reales, no leyendo el código. Julián Torres tenía
+  // `clase: NINGUNO` y `trabajados: 0` en la respuesta de `/turnos/calendario`, la tarjeta de arriba
+  // decía «0 · Trabajaron su descanso» y la columna del resumen decía «—»... y el modal afirmaba
+  // «Trabajó su descanso de forma HABITUAL: el día compensatorio va además del recargo. No hay nada
+  // que elegir». O sea que le decía a la empresa que debe un día libre por el artículo 181, sobre
+  // alguien que según el propio motor no está en ese supuesto.
+  //
+  // LA CAUSA es la de CLAUDE.md §9.4: el texto se elegía con un ternario sobre `eligeElTrabajador`,
+  // que es un booleano, cuando las clases son TRES. `opcionesDeCompensacion` devuelve
+  // `eligeElTrabajador: false` tanto para HABITUAL como para NINGUNO, así que NINGUNO caía en la
+  // rama escrita para HABITUAL. La función estaba probada (descansoCompensatorio.test.ts:51) y la
+  // FRASE no: las pruebas de pantalla que usan `clase: NINGUNO` no abren este modal.
+  it('sin descansos trabajados en el mes NO dice «habitual» ni promete compensatorio', async () => {
+    montar({
+      ...OCASIONAL, claseActual: 'NINGUNO',
+      opciones: [], eligeElTrabajador: false,
+    });
+    const { dialogo } = await abrir();
+    expect(within(dialogo).queryByText(/habitual/i)).not.toBeInTheDocument();
+    expect(within(dialogo).queryByText(/además|sin perjuicio/i)).not.toBeInTheDocument();
+    // Y tampoco ofrece elegir nada, que es lo que ya dice `opciones: []`.
+    expect(within(dialogo).queryByRole('button', { name: /^dinero$/i })).not.toBeInTheDocument();
+  });
 });
 
 describe('guardar la decisión', () => {

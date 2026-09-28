@@ -562,6 +562,34 @@ function ModalDescansoTrabajado({ nombre, datos, guardando, error, onCerrar, onG
     onGuardar(decision, decision === 'COMPENSATORIO' ? dia : null);
   };
 
+  // LO QUE LA LEY OBLIGA A DECIR, ELEGIDO POR LA CLASE Y NO POR UN BOOLEANO.
+  //
+  // Esto era un ternario sobre `eligeElTrabajador`, y ahí estaba el defecto: las clases son TRES y
+  // el booleano solo distingue dos. `opcionesDeCompensacion` devuelve `eligeElTrabajador: false`
+  // para HABITUAL y también para NINGUNO, así que quien no tenía ningún descanso trabajado en el mes
+  // recibía la frase del artículo 181: que se le debe un día compensatorio y que no hay nada que
+  // elegir. Visto en pantalla el 28 de septiembre de 2026 con datos reales, contra una respuesta que
+  // decía `trabajados: 0, clase: NINGUNO`.
+  //
+  // Un caso por valor y `default` explícito, que es lo que pide CLAUDE.md §9.4 cuando la pregunta es
+  // «de qué tipo es esto»: el día que aparezca una cuarta clase, esto no la mete a la fuerza en la
+  // rama de otra.
+  const textoLegal = (() => {
+    switch (datos.claseActual) {
+      case 'OCASIONAL':
+        return 'Trabajó su descanso de forma ocasional: la ley deja la elección entre dinero y día compensatorio a su elección, o sea que elige el trabajador. Aquí se registra lo que eligió.';
+      case 'HABITUAL':
+        return 'Trabajó su descanso de forma habitual: el día compensatorio va además del recargo, sin perjuicio de la retribución en dinero. No hay nada que elegir.';
+      case 'NINGUNO':
+        // El conteo sale de las MARCACIONES, no de que el día tenga un turno encima: un descanso
+        // con turno programado que nadie trabajó no cuenta. Por eso aquí todavía no hay nada que
+        // compensar, y decirlo es más honesto que callar.
+        return 'Este mes no tiene ningún descanso trabajado registrado. El conteo sale de las marcaciones, no del turno que el día tenga encima, así que por ahora no hay compensación que decidir.';
+      default:
+        return 'No se puede determinar cómo compensar este día. Revisa el registro antes de decidir.';
+    }
+  })();
+
   return (
     <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-[70] p-4">
       <div role="dialog" aria-modal="true" aria-label="Descanso trabajado"
@@ -585,12 +613,11 @@ function ModalDescansoTrabajado({ nombre, datos, guardando, error, onCerrar, onG
             </p>
           )}
 
-          {/* Lo que la ley obliga a decir, y por eso no es solo copy. */}
-          <p className="text-sm text-muted">
-            {datos.eligeElTrabajador
-              ? 'Trabajó su descanso de forma ocasional: la ley deja la elección entre dinero y día compensatorio a su elección, o sea que elige el trabajador. Aquí se registra lo que eligió.'
-              : 'Trabajó su descanso de forma habitual: el día compensatorio va además del recargo, sin perjuicio de la retribución en dinero. No hay nada que elegir.'}
-          </p>
+          {/* Lo que la ley obliga a decir, y por eso no es solo copy. El texto lo elige la CLASE
+              (ver `textoLegal` arriba), no `eligeElTrabajador`: ese booleano no distingue HABITUAL
+              de NINGUNO y por eso se le prometía un compensatorio a quien no había trabajado
+              ningún descanso. */}
+          <p className="text-sm text-muted">{textoLegal}</p>
 
           {datos.opciones.includes('COMPENSATORIO') && (
             <label className="block">
