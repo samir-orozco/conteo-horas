@@ -252,6 +252,35 @@ describe('qué dibuja la rejilla', () => {
     expect(repetidos).toEqual([]);
   });
 
+  it('la pantalla dice en qué período estás parado, no solo su rango', async () => {
+    // El título dice «28 sep – 4 oct», y eso no responde la pregunta que uno se hace al llegar: ¿esto
+    // es la semana en curso o me fui tres semanas adelante con las flechas? Programar turnos en la
+    // semana equivocada no se ve raro: se ve igual que programarlos en la correcta.
+    //
+    // ESTA PRUEBA NO DEPENDE DEL RELOJ aunque no lo fije, y por eso se puede afirmar el texto exacto:
+    // la etiqueta es RELATIVA a hoy, así que al montar sin tocar nada siempre es la semana en curso,
+    // cualquier día que se corra la suite. La aritmética va aparte, en `etiquetaDelPeriodo.test.ts`.
+    montar();
+    await cargado();
+    expect(screen.getByText('Semana en curso')).toBeInTheDocument();
+  });
+
+  it('y esa etiqueta cambia al moverse con las flechas', async () => {
+    // Que el texto exista no sirve si se queda quieto: un rótulo que dice «semana en curso» estando
+    // tres semanas adelante es peor que no tener rótulo, porque tranquiliza.
+    //
+    // La flecha se consulta por ROL y la etiqueta por TEXTO a propósito: el botón se llama «Semana
+    // siguiente» por su `aria-label` y no tiene texto, así que las dos consultas no se pisan.
+    montar();
+    await cargado();
+    const usuario = userEvent.setup();
+    await usuario.click(screen.getByRole('button', { name: 'Semana siguiente' }));
+    await cargado();
+
+    expect(screen.getByText('Semana siguiente')).toBeInTheDocument();
+    expect(screen.queryByText('Semana en curso')).not.toBeInTheDocument();
+  });
+
   it('y las iniciales siguen siendo ciertas pasada la séptima columna', async () => {
     // El defecto concreto: `INICIALES_DE_DIA[i]` con `i` = número de columna devuelve `undefined`
     // de la octava en adelante, o sea medio encabezado en blanco.

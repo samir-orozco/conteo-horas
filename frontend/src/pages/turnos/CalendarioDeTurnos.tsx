@@ -22,6 +22,10 @@ import { proyeccionDelMes } from './proyeccionDeRotacion';
 // una rotación que reparte turnos y descansos por el ciclo. Puro, probado y mutado aparte.
 import { accionDeLoPendiente, type LoPendiente } from './loPendiente';
 import { diasEntre, sumarDias, nombreDelMes, rotuloCorto } from './semana';
+// Dónde está parado el calendario respecto a hoy. Puro, probado y mutado aparte: es aritmética de
+// calendario, que es la que falla en silencio (una diferencia de meses mal contada dice «hace once
+// meses» del mes que viene).
+import { etiquetaDelPeriodo } from './etiquetaDelPeriodo';
 // Qué rango le toca a cada modo y cómo se mueven las flechas. Es una decisión pura, probada y
 // mutada aparte: aquí solo se aplica.
 import { vistaDelCalendario, moverVista, type ModoDeVista } from './vistaDelCalendario';
@@ -918,7 +922,12 @@ function TarjetaDeBloque({
             turno. */}
         {/* Las tres fijas bajan debajo del carril y se centran cuando no hay ancho, envolviendo si
             hace falta: apiladas, una raya vertical de separación no separaría nada. */}
-        <div className="flex shrink-0 flex-wrap items-stretch justify-center gap-1.5">
+        {/* LA RAYA SOLO DESDE `sm`, y no es un descuido: el comentario de arriba ya había decidido que
+            apiladas no se separan con una raya vertical, porque una raya horizontal entre dos filas no
+            dice «estas tres son otra cosa», dice «aquí se parte la tarjeta». En fila sí separa, que es
+            lo que hace la maqueta: el catálogo cambia de empresa a empresa y estas tres son siempre
+            las mismas, y sin raya se leen como ocho botones seguidos. */}
+        <div className="flex shrink-0 flex-wrap items-stretch justify-center gap-1.5 sm:border-l sm:border-gray-200 sm:pl-3">
           <button type="button" disabled={ocupado} onClick={onDescanso}
             className="flex w-[4.5rem] flex-col items-center gap-0.5 rounded-xl border border-dashed border-gray-300 px-2 py-1.5 text-[11px] font-semibold text-muted hover:text-ink hover:border-gray-400 disabled:opacity-60">
             <Moon size={15} />
@@ -1468,6 +1477,7 @@ export default function CalendarioDeTurnos() {
   // columnas semanales, así que se derivan y no se cuentan a ojo.
   const columnas = dias.length + 2 + (haySemanales ? semanas.length : 0);
   const hoy = hoyEnBogota();
+  const etiquetaPeriodo = etiquetaDelPeriodo(modo, ancla, hoy);
 
   // `cargando` se DERIVA, no se guarda: la respuesta trae el `desde` que contestó, así que si no
   // coincide con la semana en pantalla es que todavía viene en camino. Evita el `setState` síncrono
@@ -2068,6 +2078,21 @@ export default function CalendarioDeTurnos() {
             <ChevronRight size={18} />
           </button>
         </div>
+      </div>
+
+      {/* DÓNDE ESTÁ PARADO EL CALENDARIO, debajo del encabezado (28 de septiembre de 2026).
+          El título dice «28 sep – 4 oct» o «Septiembre de 2026», y eso no contesta la pregunta que uno
+          se hace al llegar: ¿esto es la semana en curso, o me fui tres semanas adelante con las
+          flechas? Programar en el período equivocado no se ve raro en pantalla; se ve igual que
+          programar en el correcto.
+
+          EL COLOR NO ES EL DE ALERTA, y ahí se deja la maqueta a propósito: allí el período actual va
+          con el color de aviso. Estar en la semana en curso no es un aviso, y gastar ese color en lo
+          normal lo desgasta para cuando de verdad haya algo mal. Va en tinta fuerte cuando es el
+          período de hoy y apagada cuando no. */}
+      <div className={`mt-1 mb-4 text-[10px] font-extrabold uppercase tracking-[0.06em] text-center sm:text-left ${
+        etiquetaPeriodo.esActual ? 'text-ink' : 'text-muted'}`}>
+        {etiquetaPeriodo.texto}
       </div>
 
       {/* UNA TARJETA POR FILA EN EL TELÉFONO (24 de septiembre de 2026, pedido del dueño).
