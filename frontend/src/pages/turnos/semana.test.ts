@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   hoyEnBogota, sumarDias, lunesDeLaSemana, diasDeLaSemana, rotuloDeSemana, horasDeMinutos,
-  sePuedePintar, inicialDeDia,
+  sePuedePintar, inicialDeDia, diasEntre,
 } from './semana';
 
 // Estas pruebas corren en América/Los Ángeles (vite.config.ts lo fija a propósito). Todo lo que
@@ -150,5 +150,52 @@ describe('sePuedePintar: solo hacia adelante', () => {
     // 5 de septiembre pasaría por futuro. Este caso es el que lo sujeta.
     expect(sePuedePintar('2026-09-05', '2026-09-10')).toBe(false);
     expect(sePuedePintar('2026-09-10', '2026-09-05')).toBe(true);
+  });
+});
+
+// CUÁNTOS DÍAS HAY DE UNA FECHA A OTRA (28 de septiembre de 2026).
+//
+// Nace con el motor de rotaciones, que necesita saber en qué punto del ciclo cae cada día. Vive
+// aquí y no en `rotacion.ts` porque necesita el mismo anclaje a mediodía UTC que todo este archivo.
+describe('diasEntre', () => {
+  it('de una fecha a sí misma no hay días', () => {
+    expect(diasEntre('2026-09-28', '2026-09-28')).toBe(0);
+  });
+
+  it('cuenta hacia adelante', () => {
+    expect(diasEntre('2026-09-28', '2026-09-29')).toBe(1);
+    expect(diasEntre('2026-09-28', '2026-10-05')).toBe(7);
+  });
+
+  it('hacia atrás cuenta en negativo', () => {
+    // Importa que NO devuelva el valor absoluto: el motor de rotaciones usa el signo, y con un
+    // negativo mal tratado el ciclo se leería al revés.
+    expect(diasEntre('2026-09-29', '2026-09-28')).toBe(-1);
+  });
+
+  it('cruza el cambio de mes y el de año', () => {
+    expect(diasEntre('2026-09-28', '2026-10-01')).toBe(3);
+    expect(diasEntre('2026-12-31', '2027-01-01')).toBe(1);
+  });
+
+  it('un año entero, para que un error de una hora no se acumule sin verse', () => {
+    // 2026 no es bisiesto: del 1 de enero al 31 de diciembre hay 364 días.
+    expect(diasEntre('2026-01-01', '2026-12-31')).toBe(364);
+  });
+
+  it('un tramo que CRUZA EL CAMBIO DE HORA de la zona en que corren estas pruebas', () => {
+    // Estas pruebas corren en América/Los Ángeles, que el domingo 1 de noviembre de 2026 atrasa el
+    // reloj una hora.
+    //
+    // ESTE CASO NO DISTINGUE `round` DE `floor`, y conviene decirlo porque la primera versión de
+    // este comentario afirmaba que sí. Se comprobó con una mutación: cambiar `Math.round` por
+    // `Math.floor` en `diasEntre` deja las 29 pruebas en verde. La razón es que `aFecha` ancla las
+    // dos fechas a las 12:00 **UTC**, y `Date.UTC` no tiene horario de verano: la resta siempre da
+    // un múltiplo exacto de un día, sin parte fraccionaria que redondear.
+    //
+    // Lo que este caso SÍ sujeta es el anclaje: el día que alguien cambie `aFecha` por un
+    // `new Date(iso)` leído en local, este tramo empieza a medir 4 días y 1 hora y la cuenta se
+    // parte. Por eso se queda.
+    expect(diasEntre('2026-10-30', '2026-11-03')).toBe(4);
   });
 });

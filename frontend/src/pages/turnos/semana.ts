@@ -44,6 +44,26 @@ export function diasDeLaSemana(lunes: string): string[] {
   return Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i));
 }
 
+// CUÁNTOS DÍAS HAY DE UNA FECHA A OTRA (28 de septiembre de 2026). Positivo hacia adelante.
+//
+// Nace con el motor de rotaciones, que necesita saber en qué punto del ciclo cae cada día y no
+// puede contarlo por el índice del arreglo: una selección con huecos dejaría dos días separados por
+// una semana en posiciones contiguas del ciclo, y la rotación se desalinearía sin que se note.
+//
+// Vive AQUÍ y no en `rotacion.ts` porque necesita el mismo anclaje a mediodía UTC que todo este
+// archivo: restar dos fechas construidas con `new Date("2026-09-28")` da 0 o 2 días según la zona
+// del navegador, y las pruebas de este lado corren fijadas en América/Los Ángeles a propósito.
+// Media jornada de margen a cada lado hace que ningún desfase de zona pueda mover la cuenta.
+//
+// El `Math.round` es DEFENSIVO, no es lo que sostiene el resultado, y conviene no confundirse:
+// anclando las dos fechas a las 12:00 UTC la resta siempre da un múltiplo exacto de un día, porque
+// `Date.UTC` no tiene horario de verano. Se comprobó con una mutación: cambiarlo por `Math.floor`
+// no pone roja ninguna prueba. Se deja por si alguien cambia el anclaje, que es cuando aparecerían
+// las restas de 23,96 o 24,04 horas.
+export function diasEntre(desde: string, hasta: string): number {
+  return Math.round((aFecha(hasta).getTime() - aFecha(desde).getTime()) / UN_DIA_MS);
+}
+
 // Si un día se puede pintar con un turno del planificador.
 //
 // SOLO HACIA ADELANTE, que es la misma regla que aplica el backend: un día pasado no se toca
