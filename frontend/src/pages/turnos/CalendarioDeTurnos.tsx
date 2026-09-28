@@ -869,7 +869,16 @@ function TarjetaDeBloque({
 
   return (
     <div role="region" aria-label="Lo que tienes marcado"
-      className="fixed inset-x-3 bottom-3 z-[60] !mt-0 mx-auto max-w-5xl rounded-2xl bg-white p-3 shadow-xl ring-1 ring-gray-200">
+      // LA TARJETA ABRAZA SU CONTENIDO, NO OCUPA TODO EL ANCHO (28 de septiembre de 2026).
+      //
+      // Con `inset-x-3 mx-auto max-w-5xl` medía 1024 px siempre, llevara ocho turnos o una sola línea
+      // que dice «1 jornada seleccionada». Una barra de lado a lado se lee como parte del armazón de
+      // la pantalla; lo que esto es en realidad es un aviso de que hay algo marcado, y eso se lee
+      // mejor en una tarjeta del tamaño de lo que dice.
+      //
+      // `w-max` + centrada a mano, como la maqueta. El tope es el ancho de la ventana menos los dos
+      // márgenes: sin él, un catálogo largo la haría más ancha que la pantalla.
+      className="fixed bottom-3 left-1/2 z-[60] !mt-0 w-max max-w-[calc(100vw-1.5rem)] -translate-x-1/2 rounded-2xl bg-white p-3 shadow-xl ring-1 ring-gray-200">
       {/* EN PANTALLA ANGOSTA SE APILA, CENTRADO (28 de septiembre de 2026). Medido en el navegador a
           375 px de ancho antes de tocarlo: la cuenta, el carril y las tres fijas se peleaban la misma
           fila, el carril se comprimía a unos 240 px con la segunda pastilla cortada por la mitad, y
@@ -889,7 +898,13 @@ function TarjetaDeBloque({
         {/* EL CATÁLOGO, en un carril que se corre. `min-w-0` en el carril y `flex-1` sobre él: sin
             eso, una pista con veinte turnos empuja a las acciones fijas fuera de la tarjeta.
             En pantalla angosta ocupa el ancho entero de la tarjeta, en su propia línea. */}
-        <div className="flex w-full min-w-0 items-center gap-1 sm:w-auto sm:flex-1">
+        {/* EL TOPE DE 330 px VA JUNTO CON EL `w-max` DE LA TARJETA, no es un adorno aparte. Mientras
+            la tarjeta medía 1024 px fijos, el carril se encogía contra ese borde y las flechas
+            aparecían solas cuando el catálogo no cabía. Con la tarjeta abrazando su contenido ya no
+            hay contra qué encogerse: el carril pediría el ancho de todas las pastillas, la tarjeta
+            crecería hasta el tope de la ventana y las flechas no saldrían nunca. El tope es el mismo
+            de la maqueta. */}
+        <div className="flex w-full min-w-0 items-center gap-1 sm:w-auto sm:max-w-[330px] sm:flex-1">
           {carril.desborda && (
             <button type="button" onClick={() => correr(-1)} disabled={carril.alInicio}
               aria-label="Turnos anteriores"
