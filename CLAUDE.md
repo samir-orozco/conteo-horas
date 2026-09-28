@@ -762,6 +762,52 @@ git fetch origin backend-build && git update-ref refs/heads/backend-build "$(git
 git ls-tree -r --name-only backend-build | grep '<el archivo>'   # primero existe
 ```
 
+---
+
+## 13. NUNCA una maqueta HTML aparte de una vista que ya existe (28 de septiembre de 2026)
+
+Regla del dueño, con sus palabras: **«nunca se hace un html externo para una vista que ya está
+desarrollada»**. No es una preferencia de estilo. Salió de perder días.
+
+### Qué pasó
+
+El módulo de turnos ya estaba desarrollado: su tabla, su buscador, sus filtros, sus celdas, su
+selección. Para diseñar la programación en bloque se propuso una maqueta HTML aparte
+(`docs/maquetas/programacion-en-bloque.html`) y allí quedó todo funcionando bien.
+
+Después hubo que llevarlo a la aplicación, y eso significó **reconstruir a mano** lo que en la maqueta
+ya funcionaba. El resultado, dicho por el dueño: la tabla perdió el buscador y los filtros, las celdas
+seleccionadas se ven distintas de las no seleccionadas de otra forma, el modal es otro, el doble clic
+hace otra cosa, y no se ve el avance sobre las celdas mientras se escriben.
+
+### Por qué falla, y no es por descuido
+
+**Una maqueta aparte crea una segunda verdad.** A partir de ahí hay dos sitios donde vive «cómo es
+esta pantalla», y el trabajo pasa a ser copiar de uno a otro. Copiar a mano una pantalla entera —con
+sus estados, sus gestos y sus transiciones— no se hace bien nunca: se copia lo que está en la lista y
+se pierde todo lo que la maqueta tenía **de más** y nadie escribió en ninguna lista.
+
+Y hay una trampa peor, que fue la que de verdad hizo daño: **la migración se hace punto por punto** y
+cada punto se ve correcto por separado. Nadie mira la pantalla entera contra la maqueta entera hasta
+que ya está hecha, y entonces lo que falta no son tres detalles: es que no se parece.
+
+### La regla
+
+1. **Si la vista ya existe, se trabaja SOBRE la vista.** Se cambia el componente real, se mira en el
+   navegador con el servidor local y se itera ahí. No hay copia que migrar porque no hay copia.
+2. **Una maqueta aparte solo se justifica para lo que todavía no existe** y cuando no hay dónde
+   probarlo. Y aun entonces, muere el día que el código real la alcanza: se borra, no se deja como
+   referencia, porque una referencia desactualizada es la segunda verdad otra vez.
+3. **Si ya existe una maqueta y hay que alinear**, no se va punto por punto de una lista: se abren las
+   dos, se comparan ENTERAS, y se escribe el inventario de diferencias antes de tocar nada. Lo que no
+   está en el inventario no se descubre después: se descubre cuando el dueño la abre.
+
+### Cómo se detecta que se está cayendo en esto
+
+La señal es la frase «lo implementé como en la maqueta» sobre un punto suelto. Si para saber si se
+parece hay que ir punto por punto, es que se está copiando en vez de desarrollando, y lo que no esté
+en la lista se va a perder.
+
 ### 12.8 La recarga en caliente no vuelve a ejecutar los efectos (28 de septiembre de 2026)
 
 Verificar en el navegador un gesto nuevo del calendario de turnos costó **tres rondas de

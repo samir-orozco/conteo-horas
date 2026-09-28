@@ -92,7 +92,7 @@ const abrirPanel = async () => {
   // DOBLE CLIC desde el 28 de septiembre de 2026: el clic simple ahora MARCA la celda para la
   // programación en bloque, que es el gesto del trabajo diario, y el panel de la jornada se movió un
   // gesto más adentro. Lo que este archivo comprueba —qué dice el panel y qué deja hacer— no cambia.
-  await usuario.dblClick(await celdaDelDomingo());
+  await usuario.pointer({ target: await celdaDelDomingo(), keys: '[MouseRight]' });
   return { usuario, panel: await screen.findByRole('dialog') };
 };
 
@@ -228,7 +228,7 @@ describe('marcar un día como descanso', () => {
     // DOBLE CLIC desde el 28 de septiembre de 2026: el clic simple ahora MARCA la celda para la
   // programación en bloque, que es el gesto del trabajo diario, y el panel de la jornada se movió un
   // gesto más adentro. Lo que este archivo comprueba —qué dice el panel y qué deja hacer— no cambia.
-  await usuario.dblClick(await celdaDelDomingo());
+  await usuario.pointer({ target: await celdaDelDomingo(), keys: '[MouseRight]' });
     const panel = await screen.findByRole('dialog');
     expect(within(panel).getByRole('button', { name: /marcar como descanso/i })).toBeInTheDocument();
   });

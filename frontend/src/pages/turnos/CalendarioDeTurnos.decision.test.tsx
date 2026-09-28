@@ -108,12 +108,17 @@ const montarCon = (extraDelDia: Record<string, unknown>) => {
 
 const abrir = async () => {
   const usuario = userEvent.setup();
-  // DOBLE CLIC desde el 28 de septiembre de 2026: el clic simple pasó a MARCAR la celda para la
-  // programación en bloque, y el modal del descanso trabajado se movió un gesto más adentro. Lo que
-  // este archivo comprueba —qué obliga la ley a mostrar y qué se guarda— no cambia.
-  await usuario.dblClick(await screen.findByRole('button', {
-    name: new RegExp(`descanso trabajado.*${numeroDe(TRABAJADO)}`, 'i'),
-  }));
+  // CLIC DERECHO desde el 28 de septiembre de 2026, y es el segundo movimiento de este gesto en el
+  // mismo día: primero pasó de clic simple a doble clic, porque el simple empezó a MARCAR la celda
+  // para la programación en bloque; y ahora del doble al derecho, porque el doble pasó a ser el cuarto
+  // gesto de la maqueta («borra todo y deja solo esa»). Lo que este archivo comprueba —qué obliga la
+  // ley a mostrar y qué se guarda— no cambia con ninguno de los dos.
+  await usuario.pointer({
+    target: await screen.findByRole('button', {
+      name: new RegExp(`descanso trabajado.*${numeroDe(TRABAJADO)}`, 'i'),
+    }),
+    keys: '[MouseRight]',
+  });
   return { usuario, dialogo: await screen.findByRole('dialog', { name: /descanso trabajado/i }) };
 };
 

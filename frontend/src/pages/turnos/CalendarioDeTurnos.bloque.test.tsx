@@ -213,14 +213,47 @@ describe('marcar varias celdas', () => {
     expect(await tarjeta()).toHaveTextContent(/1 jornada/);
   });
 
-  it('el DOBLE clic abre el panel del día, que es donde se fue ese gesto', async () => {
-    // El panel con las tolerancias, el almuerzo y los descansos del día sigue existiendo: lo pidió el
-    // dueño el 22 de septiembre y es lo único que muestra las reglas con las que ESE día se liquida.
+  it('el DOBLE clic deja marcada SOLO esa celda', async () => {
+    // Es el cuarto gesto de la maqueta, escrito allí con estas palabras: «doble clic: borra todo y
+    // deja solo esa». Sirve para corregir una selección grande sin empezar de cero.
     const usuario = userEvent.setup();
     montar();
-    await usuario.dblClick(await celda('Ana', DOMINGO));
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+    expect(await tarjeta()).toHaveTextContent(/7 jornadas/);
+
+    // Dos toques seguidos sobre la misma celda.
+    const suya = await celda('Ana', DOMINGO);
+    await usuario.dblClick(suya);
+
+    expect(await tarjeta()).toHaveTextContent(/1 jornada/);
   });
+
+  it('una celda vacía MARCADA deja de ofrecer el «+»', async () => {
+    // En la maqueta, una celda vacía seleccionada esconde el «+» y muestra el visto grande en su
+    // lugar: `.jornada.t-vacio.sel .n { display: none }`. El «+» es la invitación a agregar, y una
+    // celda ya marcada no está invitando a nada: está esperando que se elija qué ponerle.
+    // OJO CON EL FIXTURE: `diaDe` pone `estado: 'TRABAJA'` con horario, así que una celda cualquiera
+    // NO está vacía: muestra «Sin asignar». La primera versión de esta prueba afirmaba el «+» sobre
+    // una celda con turno y fallaba en su primera línea, o sea por una premisa falsa mía y no por un
+    // defecto de la pantalla. Un día vacío es `SIN_TURNO` y sin horas (CLAUDE.md §9.2).
+    const usuario = userEvent.setup();
+    const vacios = DIAS.map(f => diaDe(f, {
+      estado: 'SIN_TURNO', horaEntrada: null, horaSalida: null, minutosEsperados: 0, horarioNombre: null,
+    }));
+    montar([{ ...personaDe('c1', 'Ana', 'Ríos'), dias: vacios }]);
+
+    expect(await celda('Ana', DOMINGO)).toHaveTextContent(/agregar/i);
+
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+
+    expect(await celda('Ana', DOMINGO)).not.toHaveTextContent(/agregar/i);
+  });
+
+  // AQUÍ VIVÍA «el doble clic abre el panel del día», y se BORRA en vez de dejarse saltada: el panel se
+  // movió al clic derecho el 28 de septiembre de 2026, porque el doble clic pasó a ser el cuarto gesto
+  // de la maqueta. Que ese panel abre y qué muestra lo sujetan las diez pruebas de `panel`,
+  // `planificar`, `dia` y `decision`, ya migradas. Una prueba saltada no comprueba nada y se queda
+  // para siempre.
 
   it('apretar y mover DENTRO de la misma celda no arma un rectángulo', async () => {
     // `pointerover` BURBUJEA y se vuelve a disparar al pasar por los elementos de dentro de la propia
@@ -484,6 +517,60 @@ describe('aplicar a lo marcado', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: /cómo va la programación/i })).not.toBeInTheDocument();
     });
+  });
+
+  it('DESHACER despinta los días que nadie había pintado', async () => {
+    // EL CASO QUE SE HACE MAL. Esos dos días los resolvía el horario de la persona: no tenían turno
+    // puesto a mano. Deshacer ahí es DESPINTAR, no repintar. Si se devolvieran con un turno quedarían
+    // clavados a mano para siempre, y el defecto no se ve el día que se deshace: se ve semanas después
+    // cuando alguien cambia el horario y esos días no cambian con él.
+    //
+    // Deshacer va por el MISMO camino que aplicar —en bloques, con su ventana—, que es lo que pidió el
+    // dueño: «un proceso parcial, no de inmediato».
+    const usuario = userEvent.setup();
+    put.mockResolvedValue({ data: { ok: true } });
+    del.mockResolvedValue({ data: { ok: true } });
+
+    const caja = await marcarDosCeldas();
+    await usuario.click(within(caja).getByRole('button', { name: /Noche/ }));
+    await aplicarEnLaPrevia(usuario);
+    expect(put).toHaveBeenCalledTimes(2);
+
+    const ventana = await screen.findByRole('dialog', { name: /cómo va la programación/i });
+    await usuario.click(within(ventana).getByRole('button', { name: /deshacer esta programación/i }));
+
+    await waitFor(() => expect(del).toHaveBeenCalledTimes(2));
+    expect(del).toHaveBeenCalledWith('/turnos/dia', { params: { colaboradorId: 'c1', fecha: SABADO } });
+    expect(del).toHaveBeenCalledWith('/turnos/dia', { params: { colaboradorId: 'c1', fecha: DOMINGO } });
+    // Y NO se repintó nada: las dos únicas escrituras siguen siendo las del envío original.
+    expect(put).toHaveBeenCalledTimes(2);
+  });
+
+  it('y devuelve su turno anterior al día que sí tenía uno', async () => {
+    // El otro lado de la misma decisión: aquí sí había algo puesto a mano, y deshacer es volver a ESE
+    // turno. Por identidad y no por nombre, que dos turnos pueden llamarse igual.
+    const usuario = userEvent.setup();
+    put.mockResolvedValue({ data: { ok: true } });
+    del.mockResolvedValue({ data: { ok: true } });
+
+    const conTurno = personaDe('c1', 'Ana', 'Ríos', DIAS).dias.map(d => (
+      d.fecha === SABADO
+        ? { ...d, origen: 'MANUAL', turno: { id: 'p1', nombre: 'Mañana', color: 'esmeralda' } }
+        : d
+    ));
+    montar([{ ...personaDe('c1', 'Ana', 'Ríos'), dias: conTurno }]);
+    await arrastrarDe(await celda('Ana', SABADO), await celda('Ana', DOMINGO));
+    await usuario.click(within(await tarjeta()).getByRole('button', { name: /Noche/ }));
+    await aplicarEnLaPrevia(usuario);
+
+    const ventana = await screen.findByRole('dialog', { name: /cómo va la programación/i });
+    await usuario.click(within(ventana).getByRole('button', { name: /deshacer esta programación/i }));
+
+    // El sábado vuelve a su turno de antes; el domingo, que no tenía nada, se despinta.
+    await waitFor(() => {
+      expect(put).toHaveBeenCalledWith('/turnos/dia', { colaboradorId: 'c1', fecha: SABADO, plantillaId: 'p1' });
+    });
+    expect(del).toHaveBeenCalledWith('/turnos/dia', { params: { colaboradorId: 'c1', fecha: DOMINGO } });
   });
 
   it('si una escritura se niega, lo dice y NO se lo calla', async () => {

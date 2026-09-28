@@ -12,6 +12,9 @@ import { bloquesDe, planDeEscritura, type AccionDeEscritura } from './aplicacion
 // Por dónde va el envío: el porcentaje, los círculos y si terminó o se cortó. Puro, probado y mutado
 // aparte. El porcentaje va sobre JORNADAS y no sobre bloques, y ahí está el porqué.
 import { estadoDelProgreso } from './progresoDelBloque';
+// A qué se devuelve cada celda para deshacer un envío. Puro, probado y mutado: el caso que se hace mal
+// es el día que NADIE había pintado, que se despinta en vez de repintarse.
+import { accionParaDeshacer } from './deshacerElLote';
 // Las cuentas y los avisos de la previa. También puros, probados y mutados: la pantalla los APLICA,
 // no los decide. De ellos depende que alguien apruebe o cancele un envío de cien jornadas.
 import {
@@ -384,7 +387,9 @@ function tonoDeJornada(dia: DiaDelCalendario) {
 // («Mñ», «Tr»), y con eso la tabla baja a 1630 px. Ese campo no existe en el catálogo —solo hay
 // `nombre`—, y ponerlo pide una decisión de producto y un cambio de esquema, no CSS. Mientras no
 // exista, el mes se sigue desplazando a lo ancho: menos que antes, pero se desplaza.
-function Celda({ dia, sePuedeAgregar = false, compacta = false }: { dia: DiaDelCalendario; sePuedeAgregar?: boolean; compacta?: boolean }) {
+function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false }: {
+  dia: DiaDelCalendario; sePuedeAgregar?: boolean; compacta?: boolean; marcada?: boolean;
+}) {
   const horas = dia.horaEntrada && dia.horaSalida ? `${dia.horaEntrada}–${dia.horaSalida}` : null;
 
   // El descanso trabajado manda sobre el turno pintado: es el dato que cuesta dinero, y pintarlo
@@ -470,6 +475,14 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false }: { dia: DiaDelC
   // Solo donde de verdad se puede agregar. Un día ya pasado también llega aquí, y ofrecerle un «+»
   // sería prometer un clic que el servidor va a rechazar con un 400.
   if (!sePuedeAgregar) return <div className="py-1.5 text-center text-[11px] text-gray-300">—</div>;
+
+  // UNA CELDA VACÍA MARCADA DEJA DE OFRECER «AGREGAR» (28 de septiembre de 2026), como en la maqueta,
+  // donde `.jornada.t-vacio.sel .n { display: none }`. El «+» es la invitación a poner algo; una celda
+  // ya marcada no invita a nada, está esperando que se elija qué ponerle a todo el bloque. Y deja sitio
+  // para que se vea el visto, que es lo que dice que está marcada.
+  if (marcada) {
+    return <div className="min-h-[2.1rem] rounded-lg border border-dashed border-primary-dark bg-primary-light" />;
+  }
 
   return (
     <div className="flex items-center justify-center gap-1 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-2 py-1.5 text-[11px] font-medium text-gray-400">
@@ -1202,12 +1215,17 @@ function VentanaDeRotacion({
 // LAS CUENTAS NO SE HACEN AQUÍ. El porcentaje, los círculos y si terminó o se cortó los decide
 // `estadoDelProgreso`, que es puro y está probado y mutado: de ese número depende que alguien espere o
 // detenga, y un porcentaje sobre el denominador equivocado no se ve mal, se ve plausible.
-function VentanaDeProgreso({ estado, escritas, total, detenido, onDetener, onCerrar }: {
+function VentanaDeProgreso({
+  estado, escritas, total, detenido, sePuedeDeshacer, onDetener, onDeshacer, onCerrar,
+}: {
   estado: ReturnType<typeof estadoDelProgreso>;
   escritas: number;
   total: number;
   detenido: boolean;
+  // Hay una foto del antes que revertir. Falso cuando lo que acaba de correr YA era un deshacer.
+  sePuedeDeshacer: boolean;
   onDetener: () => void;
+  onDeshacer: () => void;
   onCerrar: () => void;
 }) {
   const acabo = estado.terminado || estado.cortado;
@@ -1268,17 +1286,51 @@ function VentanaDeProgreso({ estado, escritas, total, detenido, onDetener, onCer
           </div>
         )}
 
-        <p className="mt-3 flex justify-between gap-3 text-xs text-muted tabular-nums">
-          <span>Bloque {Math.min(estado.pasos.length, Math.max(1, estado.pasos.filter(p => p === 'HECHO').length + (acabo ? 0 : 1)))} de {estado.pasos.length}</span>
-          <span>{escritas} de {jornadas(total)}</span>
-        </p>
+        {/* DOS CAJAS Y NO UNA LÍNEA, como en la maqueta: lo que se escribió y por dónde va el envío son
+            dos datos distintos, y juntos en una línea de texto pequeño no se leen. */}
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
+          <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-muted shadow-sm">
+              <Check size={15} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-lg font-extrabold leading-none text-ink tabular-nums">{escritas}</span>
+              <span className="block text-[11px] text-muted">
+                {escritas === 1 ? 'jornada escrita' : 'jornadas escritas'}
+              </span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-muted shadow-sm">
+              <Users size={15} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-lg font-extrabold leading-none text-ink tabular-nums">
+                {estado.pasos.filter(p => p === 'HECHO').length} de {estado.pasos.length}
+              </span>
+              <span className="block text-[11px] text-muted">bloques enviados</span>
+            </span>
+          </div>
+        </div>
+        <p className="mt-2 text-right text-[11px] text-muted tabular-nums">de {jornadas(total)}</p>
 
-        <div className="mt-5 flex justify-end">
+        <div className="mt-5 flex items-center justify-end gap-3">
           {acabo ? (
-            <button type="button" onClick={onCerrar}
-              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-ink hover:bg-primary-dark">
-              Cerrar
-            </button>
+            <>
+              {/* DESHACER VA POR EL MISMO CAMINO: otro envío por bloques, con esta misma ventana. Y se
+                  dice lo que NO puede devolver, porque prometer una marcha atrás completa cuando no lo
+                  es sería peor que no ofrecerla. */}
+              {sePuedeDeshacer && (
+                <button type="button" onClick={onDeshacer}
+                  className="rounded-xl px-4 py-2.5 text-sm font-semibold text-muted hover:text-ink">
+                  Deshacer esta programación
+                </button>
+              )}
+              <button type="button" onClick={onCerrar}
+                className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-ink hover:bg-primary-dark">
+                Cerrar
+              </button>
+            </>
           ) : (
             // DETENER AL TERMINAR EL BLOQUE, y lo dice con esas palabras: no corta lo que ya está en
             // vuelo, porque entonces nadie sabría cuáles de esas seis llegaron.
@@ -1494,6 +1546,9 @@ function motivoDe(err: unknown, porDefecto: string): string {
 // a una se siente detenido.
 const EN_VUELO = 6;
 
+// Lo que separa dos toques para que cuenten como doble clic. Es el mismo de la maqueta.
+const MS_DOBLE_CLIC = 400;
+
 // De MAYOR a menor, como en la maqueta del dueño: Mes · Semana · Día. El orden no es decorativo,
 // es el que deja «Semana» —el modo por defecto y el que más se usa— en el medio, donde cae el
 // pulgar y donde la vista en blanco de la pista gris lo destaca.
@@ -1577,6 +1632,11 @@ export default function CalendarioDeTurnos() {
   // cambia a media gesto y no pinta nada por sí mismo: guardarlo en el estado redibujaría la rejilla
   // entera entre el primer clic y el segundo.
   const rangoAbierto = useRef(false);
+  // EL DOBLE CLIC SE DETECTA A MANO, como en la maqueta, y no con el `dblclick` del navegador: ese
+  // llega DESPUÉS de dos ciclos completos de pulsar y soltar, o sea cuando el rango ya se abrió con el
+  // primer clic y se cerró con el segundo. Funcionaría de rebote, y de rebote significa que el día que
+  // cambie el gesto de abajo, este deja de funcionar sin que nadie sepa por qué.
+  const ultimoToque = useRef<{ clave: string; cuando: number } | null>(null);
   // LO QUE ESTÁ A PUNTO DE APLICARSE, mientras la previa está abierta. `null` = no hay previa.
   //
   // Se guarda como DATO y no como función, aunque la escritura reciba una función: hoy es una sola
@@ -1614,6 +1674,13 @@ export default function CalendarioDeTurnos() {
   // tenía cuando arrancó), y el estado es lo que hace que el botón se vuelva a dibujar.
   const detener = useRef(false);
   const [detenido, setDetenido] = useState(false);
+  // LO QUE HABÍA ANTES DEL ÚLTIMO ENVÍO, para poder deshacerlo. Son las celdas tal como la previa las
+  // leyó, que es justo lo que `accionParaDeshacer` necesita.
+  //
+  // `null` significa «no hay nada que deshacer»: o no se ha aplicado nada, o lo último que corrió FUE
+  // un deshacer. Deshacer un deshacer no se ofrece, porque eso es aplicar otra vez y llamarlo
+  // «deshacer» mentiría sobre lo que el servidor hizo.
+  const [loQueHabia, setLoQueHabia] = useState<CeldaParaPrevia[] | null>(null);
   const [resultado, setResultado] = useState<{ escritas: number; bloqueadas: number; fallos: string[] } | null>(null);
 
   const vista = vistaDelCalendario(modo, ancla);
@@ -1842,7 +1909,24 @@ export default function CalendarioDeTurnos() {
   // El rectángulo se calcula AQUÍ, en el `pointerdown`, y no en la escucha de `pointerup`: esta
   // función se vuelve a crear en cada dibujado y ve `filas` y `dias` frescos, mientras que aquella se
   // registra una sola vez y los vería congelados del primer dibujado.
-  const iniciarArrastre = (celda: CeldaMarcada) => {
+  // `cuando` ES LA MARCA DE TIEMPO DEL EVENTO, y no `Date.now()` leído aquí dentro. Dos razones, y la
+  // segunda es la que importa: el linter de React prohíbe llamar funciones impuras en el cuerpo de un
+  // componente, y además el dato bueno es CUÁNDO OCURRIÓ EL CLIC, no cuándo alcanzó a ejecutarse el
+  // manejador. Con la pestaña ocupada, esa diferencia puede ser de decenas de milisegundos.
+  const iniciarArrastre = (celda: CeldaMarcada, cuando: number) => {
+    // DOBLE CLIC: BORRA TODO Y DEJA SOLO ESA. Es el cuarto gesto de la maqueta y sirve para corregir
+    // una selección grande sin empezar de cero. `cerrarRango` deja `arrastre.current` en nulo, así que
+    // la escucha de `pointerup` sale sin hacer nada y este gesto no se pisa con el de marcar.
+    const clave = claveDeCelda(celda);
+    const antes = ultimoToque.current;
+    if (antes && antes.clave === clave && cuando - antes.cuando < MS_DOBLE_CLIC) {
+      ultimoToque.current = null;
+      cerrarRango();
+      setMarcadas({ [clave]: celda });
+      return;
+    }
+    ultimoToque.current = { clave, cuando };
+
     if (rangoAbierto.current && arrastre.current) {
       extenderArrastre(celda);
       cerrarRango();
@@ -2238,13 +2322,30 @@ export default function CalendarioDeTurnos() {
   // SE INFORMA LO QUE FALLÓ, UNA A UNA. Escribir diecinueve de veinte y decir «listo» es exactamente
   // la forma en que esta pantalla mentiría: el servidor rechaza días sueltos con motivo propio («ya
   // empezó su jornada»), y ese motivo tiene que salir a la pantalla.
-  const aplicarABloque = async (accionDe: (celda: CeldaMarcada) => AccionDeEscritura) => {
-    const plan = planDeEscritura(seleccion, accionDe, hoy);
+  // `celdas` entra por parámetro y ya no se lee la selección aquí dentro: es lo que permite que
+  // DESHACER pase por esta misma máquina, con sus mismos bloques, su misma ventana y su mismo botón de
+  // detener. Es lo que pidió el dueño con esas palabras: «un proceso parcial, no de inmediato».
+  //
+  // `paraDeshacer` es la foto del antes, o `null` cuando lo que corre YA es un deshacer.
+  const aplicarABloque = async (
+    celdas: readonly CeldaMarcada[],
+    accionDe: (celda: CeldaMarcada) => AccionDeEscritura,
+    paraDeshacer: CeldaParaPrevia[] | null,
+  ) => {
+    const plan = planDeEscritura(celdas, accionDe, hoy);
     const bloques = bloquesDe(plan.escribe, EN_VUELO);
     setResultado(null);
     setGuardando(true);
     detener.current = false;
     setDetenido(false);
+
+    // EL «ANTES», SOLO DE LO QUE DE VERDAD SE VA A ESCRIBIR. Un día que quedó bloqueado por haber
+    // pasado nadie lo tocó, así que meterlo aquí haría que deshacer escribiera sobre algo que no
+    // cambió. Se guarda ANTES de empezar, porque al terminar la selección se limpia.
+    const escritas0 = new Set(plan.escribe.map(e => `${e.colaboradorId}|${e.fecha}`));
+    setLoQueHabia(paraDeshacer === null
+      ? null
+      : paraDeshacer.filter(c => escritas0.has(`${c.colaboradorId}|${c.fecha}`)));
 
     let escritas = 0;
     const fallos: string[] = [];
@@ -2307,21 +2408,31 @@ export default function CalendarioDeTurnos() {
   const celdaDeDia = (
     fila: FilaDelCalendario,
     dia: DiaDelCalendario,
-    opciones?: { clase?: string; contenido?: (sePuedeAgregar: boolean) => React.ReactNode },
+    opciones?: {
+      clase?: string;
+      contenido?: (sePuedeAgregar: boolean) => React.ReactNode;
+      // Si está marcada. Lo necesita la celda para esconder el «Agregar» del hueco.
+      marcada?: boolean;
+    },
   ) => {
     const clase = opciones?.clase
       ?? 'w-full text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-primary hover:opacity-80 transition-opacity';
     // `sePuedeAgregar` llega desde aquí y no desde quien llama: es el único sitio que sabe si este
     // día es pintable, y el hueco con el «+» solo se ofrece donde el servidor lo va a aceptar.
     const dibujar = opciones?.contenido
-      ?? ((sePuedeAgregar: boolean) => <Celda dia={dia} sePuedeAgregar={sePuedeAgregar} compacta={enMes} />);
+      ?? ((sePuedeAgregar: boolean) => (
+        <Celda dia={dia} sePuedeAgregar={sePuedeAgregar} compacta={enMes} marcada={opciones?.marcada === true} />
+      ));
 
     return dia.estado === 'DESCANSO_TRABAJADO' ? (
       <button type="button"
         aria-label={`Descanso trabajado de ${fila.nombre} ${fila.apellido}, día ${Number(dia.fecha.slice(8, 10))}`}
         // DOBLE CLIC, porque el clic simple ahora MARCA la celda (28 de septiembre de 2026). Los dos
         // gestos no caben en el mismo clic, y el de marcar es el que se usa a todas horas.
-        onDoubleClick={() => abrirDecision(fila, dia)} className={clase}>
+        // CLIC DERECHO, no doble clic (28 de septiembre de 2026): el doble clic pasó a ser el gesto de
+        // la maqueta —«borra todo y deja solo esa»—, así que este panel necesitaba otro. El derecho es
+        // el que ya significa «más opciones» en cualquier parte.
+        onContextMenu={e => { e.preventDefault(); abrirDecision(fila, dia); }} className={clase}>
         {dibujar(false)}
       </button>
     ) : sePuedePintar(dia.fecha, hoy) ? (
@@ -2330,7 +2441,9 @@ export default function CalendarioDeTurnos() {
         // DOBLE CLIC, no clic simple: desde el 28 de septiembre de 2026 el clic marca la celda, que es
         // el gesto del trabajo diario. El panel con las tolerancias, el almuerzo y los descansos de
         // ESE día sigue estando, un gesto más adentro.
-        onDoubleClick={e => {
+        // CLIC DERECHO, por lo mismo que arriba: el doble clic es ahora «deja solo esa».
+        onContextMenu={e => {
+          e.preventDefault();
           const r = e.currentTarget.getBoundingClientRect();
           setEditando({ fila, dia, ancla: { x: r.x, y: r.y, ancho: r.width, alto: r.height } });
           setErrorPintado('');
@@ -2597,13 +2710,17 @@ export default function CalendarioDeTurnos() {
                       // `planDeEscritura`, no el gesto.
                       <Fragment key={dia.fecha}>
                       <td
-                        onPointerDown={() => iniciarArrastre(suya)}
+                        onPointerDown={e => iniciarArrastre(suya, e.timeStamp)}
                         onPointerOver={() => extenderArrastre(suya)}
                         // MARCADA Y FONDO DE COLUMNA SON EXCLUYENTES A PROPÓSITO. Los dos son un
                         // `background-color`, así que entre `bg-primary/20` y `bg-rose-50` no gana el
                         // que se escriba después aquí, sino el que Tailwind ponga después en su hoja.
                         // Emitir los dos dejaría al azar si un sábado marcado se ve marcado.
-                        className={`align-middle ${enMes ? 'px-0.5 py-1' : 'px-1.5 py-2.5'} ${corteDeSemana(dia.fecha)} ${marcada ? 'bg-primary/20' : fondoDeColumna(dia.fecha)}`}>
+                        // EL FONDO DE LA COLUMNA YA NO COMPITE CON LO MARCADO: marcada se dice con el
+                        // anillo de abajo, que se ve igual sobre cualquier color de turno. Antes era un
+                        // `bg-primary/20` aquí, y encima había que hacerlo excluyente con el fondo del
+                        // fin de semana porque los dos eran `background-color`.
+                        className={`align-middle ${enMes ? 'px-0.5 py-1' : 'px-1.5 py-2.5'} ${corteDeSemana(dia.fecha)} ${fondoDeColumna(dia.fecha)}`}>
                         {/* TRES CASOS Y NO DOS (22 de septiembre de 2026).
                             Un DESCANSO TRABAJADO abre su propio modal, y NO mira `sePuedePintar`:
                             por definición ya ocurrió, así que es pasado o de hoy, y colgándolo del
@@ -2612,15 +2729,21 @@ export default function CalendarioDeTurnos() {
 
                             Los demás siguen igual: solo los pintables son botones. Ofrecer un clic
                             que el servidor va a rechazar con un 400 es peor que no ofrecerlo. */}
-                        <div className="relative">
-                          {celdaDeDia(fila, dia)}
-                          {/* El visto de que está marcada. El fondo de la celda ya lo dice, pero un
-                              fondo suave se pierde sobre el color de un turno, y la cuenta que manda
-                              la dice la tarjeta de abajo. */}
+                        {/* MARCADA SE VE COMO EN LA MAQUETA: borde ámbar con halo alrededor de la
+                            celda y el visto DENTRO, arriba a la derecha. Antes era un visto flotando
+                            fuera del borde y un fondo suave en la celda de la tabla; sobre el color de
+                            un turno ese fondo se perdía, y el visto por fuera se leía como un adorno
+                            pegado y no como el estado de la celda.
+
+                            El anillo va aquí y no en cada rama de `Celda`: son cuatro ramas y cuatro
+                            copias del mismo borde se separan a la primera. */}
+                        <div className={`relative rounded-lg ${
+                          marcada ? 'ring-2 ring-primary-dark ring-offset-1 ring-offset-white' : ''}`}>
+                          {celdaDeDia(fila, dia, { marcada })}
                           {marcada && (
                             <span aria-hidden="true"
-                              className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-primary text-ink shadow">
-                              <Check size={10} strokeWidth={3} />
+                              className="absolute right-1 top-1 grid h-4 w-4 place-items-center rounded bg-primary-dark text-ink">
+                              <Check size={11} strokeWidth={3} />
                             </span>
                           )}
                         </div>
@@ -2835,7 +2958,26 @@ export default function CalendarioDeTurnos() {
           escritas={progreso.escritas}
           total={progreso.total}
           detenido={detenido}
+          sePuedeDeshacer={loQueHabia !== null && loQueHabia.length > 0}
           onDetener={() => { detener.current = true; setDetenido(true); }}
+          // DESHACER ES OTRO ENVÍO POR BLOQUES, por la misma máquina y con esta misma ventana. Cada
+          // celda vuelve a lo que `accionParaDeshacer` diga de su foto anterior, y se pasa `null` como
+          // foto del nuevo envío: deshacer un deshacer no se ofrece.
+          onDeshacer={() => {
+            const antes = loQueHabia;
+            if (!antes) return;
+            const porClave = new Map(antes.map(c => [`${c.colaboradorId}|${c.fecha}`, c] as const));
+            aplicarABloque(
+              antes.map(c => ({ colaboradorId: c.colaboradorId, fecha: c.fecha })),
+              celda => {
+                const suya = porClave.get(`${celda.colaboradorId}|${celda.fecha}`);
+                // No puede faltar: las celdas salen de esa misma foto. Se comprueba igual porque el
+                // tipo lo permite, y adivinar aquí escribiría algo que nadie pidió.
+                return suya ? accionParaDeshacer(suya) : { tipo: 'QUITAR' };
+              },
+              null,
+            );
+          }}
           onCerrar={() => setProgreso(null)} />
       )}
 
@@ -2855,7 +2997,7 @@ export default function CalendarioDeTurnos() {
           onAplicar={() => {
             const que = pendiente;
             setPendiente(null);
-            aplicarABloque(celda => accionDeLoPendiente(que, celda.fecha));
+            aplicarABloque(seleccion, celda => accionDeLoPendiente(que, celda.fecha), celdasParaPrevia);
           }} />
       )}
 

@@ -158,7 +158,7 @@ describe('cada persona lleva su barra', () => {
     // Doble clic: el clic simple marca la celda para la programación en bloque desde el 28 de
     // septiembre de 2026. La barra de la vista de día pasa por el mismo envoltorio que la celda de la
     // semana, así que hereda el mismo gesto, y eso es justo lo que este caso comprueba.
-    await usuario.dblClick(screen.getByRole('button', { name: /Turno de Ana Giraldo/ }));
+    await usuario.pointer({ target: screen.getByRole('button', { name: /Turno de Ana Giraldo/ }), keys: '[MouseRight]' });
     const panel = await screen.findByRole('dialog');
     expect(within(panel).getByText('Tolerancia de entrada')).toBeInTheDocument();
   });

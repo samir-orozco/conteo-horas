@@ -108,7 +108,7 @@ describe('pintar', () => {
   it('al tocar una celda se ofrece el catálogo', async () => {
     const usuario = userEvent.setup();
     montar();
-    await usuario.dblClick(await celdaDelDomingo());
+    await usuario.pointer({ target: await celdaDelDomingo(), keys: '[MouseRight]' });
 
     const dialogo = await screen.findByRole('dialog');
     expect(within(dialogo).getByRole('button', { name: /Mañana/ })).toBeInTheDocument();
@@ -120,7 +120,7 @@ describe('pintar', () => {
     const usuario = userEvent.setup();
     put.mockResolvedValue({ data: { ok: true } });
     montar();
-    await usuario.dblClick(await celdaDelDomingo());
+    await usuario.pointer({ target: await celdaDelDomingo(), keys: '[MouseRight]' });
     await usuario.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /Noche/ }));
 
     expect(put).toHaveBeenCalledWith('/turnos/dia', {
@@ -133,7 +133,7 @@ describe('pintar', () => {
     const usuario = userEvent.setup();
     put.mockRejectedValue({ response: { data: { error: 'Esa persona ya empezó su jornada de hoy.' } } });
     montar();
-    await usuario.dblClick(await celdaDelDomingo());
+    await usuario.pointer({ target: await celdaDelDomingo(), keys: '[MouseRight]' });
     await usuario.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /Mañana/ }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/ya empezó su jornada/i);
@@ -152,7 +152,7 @@ describe('quitar lo pintado', () => {
   it('un día pintado ofrece quitarlo', async () => {
     const usuario = userEvent.setup();
     montar([conPintura()]);
-    await usuario.dblClick(await celdaDelDomingo());
+    await usuario.pointer({ target: await celdaDelDomingo(), keys: '[MouseRight]' });
     expect(within(await screen.findByRole('dialog')).getByRole('button', { name: /quitar/i })).toBeInTheDocument();
   });
 
@@ -161,7 +161,7 @@ describe('quitar lo pintado', () => {
     // ningún turno pintado».
     const usuario = userEvent.setup();
     montar();
-    await usuario.dblClick(await celdaDelDomingo());
+    await usuario.pointer({ target: await celdaDelDomingo(), keys: '[MouseRight]' });
     const dialogo = await screen.findByRole('dialog');
     expect(within(dialogo).queryByRole('button', { name: /quitar/i })).not.toBeInTheDocument();
   });
@@ -170,7 +170,7 @@ describe('quitar lo pintado', () => {
     const usuario = userEvent.setup();
     del.mockResolvedValue({ data: { ok: true } });
     montar([conPintura()]);
-    await usuario.dblClick(await celdaDelDomingo());
+    await usuario.pointer({ target: await celdaDelDomingo(), keys: '[MouseRight]' });
     await usuario.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /quitar/i }));
 
     expect(del).toHaveBeenCalledWith('/turnos/dia', {
