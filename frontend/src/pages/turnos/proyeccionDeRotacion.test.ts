@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { proyeccionDelMes } from './proyeccionDeRotacion';
+import { proyeccionDelMes, proyeccionDelBloque } from './proyeccionDeRotacion';
 
 // QUÉ DÍAS QUEDARÍAN TRABAJADOS SI SE APLICA ESTA ROTACIÓN (28 de septiembre de 2026).
 //
@@ -172,5 +172,106 @@ describe('la forma del resultado', () => {
       hoy: HOY,
     });
     expect(Object.keys(r)).toEqual(['2026-09-30']);
+  });
+});
+
+// LO MISMO PARA UN LOTE NORMAL (28 de septiembre de 2026).
+//
+// El aviso de «semanas que quedarían sin descanso» existía solo dentro de la ventana de rotación, y
+// eso es media foto: marcar siete días seguidos con un turno cualquiera deja la semana entera
+// trabajada igual que una rotación mal cuadrada, y nadie avisaba. La regla que juzga es la misma
+// (`semanasSinDescanso`, ya probada) y la mezcla de las tres fuentes también; lo único que cambia es
+// qué queda trabajado en un día tocado.
+//
+// POR ESO NO HAY UNA SEGUNDA FUNCIÓN DE MEZCLA. Las tres reglas de arriba —marcada y futura recibe lo
+// nuevo, marcada y pasada conserva, no marcada conserva— valen igual para los dos casos, y tenerlas
+// escritas dos veces es exactamente como se separan (CLAUDE.md §9.3).
+//
+// QUITAR NO ENTRA AQUÍ, Y ES A PROPÓSITO. Borrar lo pintado a mano deja el día como lo diga el
+// horario, y eso el navegador no lo sabe: daría por hecho que el día queda igual, que es afirmar que
+// no cambió nada cuando sí cambió. El tipo del parámetro solo admite turno o descanso, así que el
+// compilador impide pedir un veredicto que no se puede dar. Con un borrado, la pantalla se calla.
+
+describe('la misma mezcla, con un lote en vez de una rotación', () => {
+  it('una fecha marcada y futura con TURNO queda trabajada', () => {
+    const r = proyeccionDelBloque({
+      diasDelMes: [
+        { fecha: '2026-09-29', trabajado: false },
+        { fecha: '2026-09-30', trabajado: false },
+      ],
+      marcadas: ['2026-09-29', '2026-09-30'],
+      accion: { tipo: 'TURNO' },
+      hoy: HOY,
+    });
+    expect(r).toEqual({ '2026-09-29': true, '2026-09-30': true });
+  });
+
+  it('y con DESCANSO queda sin trabajar', () => {
+    const r = proyeccionDelBloque({
+      diasDelMes: mesTrabajado(30),
+      marcadas: ['2026-09-29', '2026-09-30'],
+      accion: { tipo: 'DESCANSO' },
+      hoy: HOY,
+    });
+    expect(r['2026-09-29']).toBe(false);
+    expect(r['2026-09-30']).toBe(false);
+  });
+
+  it('una fecha marcada pero YA PASADA conserva lo que tiene', () => {
+    // No se va a escribir. Proyectarle el turno mentiría sobre el estado del mes, y podría encender
+    // un aviso por un día que nadie va a tocar.
+    const r = proyeccionDelBloque({
+      diasDelMes: [
+        { fecha: '2026-09-01', trabajado: false },
+        { fecha: '2026-09-30', trabajado: false },
+      ],
+      marcadas: ['2026-09-01', '2026-09-30'],
+      accion: { tipo: 'TURNO' },
+      hoy: HOY,
+    });
+    expect(r['2026-09-01']).toBe(false);
+    expect(r['2026-09-30']).toBe(true);
+  });
+
+  it('una fecha NO marcada conserva lo que tiene, que es lo que hace ganar el sueldo al aviso', () => {
+    // EL CASO QUE JUSTIFICA LEER EL MES ENTERO. Se marcan dos días de una semana que ya venía con los
+    // otros cinco trabajados: ninguna celda «pisa» un descanso, y aun así la semana queda con los
+    // siete. Un aviso que solo mirara lo pintado no lo vería nunca.
+    const r = proyeccionDelBloque({
+      diasDelMes: mesTrabajado(30),
+      marcadas: ['2026-09-29', '2026-09-30'],
+      accion: { tipo: 'TURNO' },
+      hoy: HOY,
+    });
+    expect(r['2026-09-28']).toBe(true);
+    expect(r['2026-09-27']).toBe(true);
+  });
+
+  it('trae una entrada por cada día del mes que se le pasó, ni una más', () => {
+    const r = proyeccionDelBloque({
+      diasDelMes: mesTrabajado(30), marcadas: [], accion: { tipo: 'TURNO' }, hoy: HOY,
+    });
+    expect(Object.keys(r)).toHaveLength(30);
+  });
+
+  it('una fecha marcada que no está en el mes no se inventa', () => {
+    const r = proyeccionDelBloque({
+      diasDelMes: [{ fecha: '2026-09-30', trabajado: true }],
+      marcadas: ['2026-09-30', '2026-10-01'],
+      accion: { tipo: 'DESCANSO' },
+      hoy: HOY,
+    });
+    expect(Object.keys(r)).toEqual(['2026-09-30']);
+  });
+
+  it('sin nada marcado devuelve el mes tal como está', () => {
+    // Es lo que permite pedir el veredicto de ANTES y el de DESPUÉS con la misma función y comparar:
+    // así se puede distinguir una semana que este envío ROMPE de una que ya venía rota.
+    const dias = [
+      { fecha: '2026-09-29', trabajado: true },
+      { fecha: '2026-09-30', trabajado: false },
+    ];
+    const r = proyeccionDelBloque({ diasDelMes: dias, marcadas: [], accion: { tipo: 'TURNO' }, hoy: HOY });
+    expect(r).toEqual({ '2026-09-29': true, '2026-09-30': false });
   });
 });
