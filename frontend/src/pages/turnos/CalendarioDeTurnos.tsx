@@ -1515,7 +1515,27 @@ export default function CalendarioDeTurnos() {
   // Quiénes ya cruzaron a habitual. Es la única alarma de verdad: ahí la compensación en tiempo
   // deja de ser opcional. Uno o dos se pagan con recargo y no exigen nada más.
   const habituales = filas.filter(f => f.descansoHabitual.clase === 'HABITUAL').length;
-  const sobreTope = topeAplica ? filas.filter(f => f.minutosEsperados > tope * 60).length : 0;
+  // CUÁNTAS SEMANAS-PERSONA PASAN DEL TOPE (28 de septiembre de 2026).
+  //
+  // Antes esto contaba PERSONAS cuyo total del período pasaba de 42 h, y solo en la vista de semana:
+  // en un mes son treinta jornadas, cualquiera pasa, y encender la alarma ahí habría pintado de ámbar
+  // a la empresa entera diciendo algo falso. Por eso valía cero en mes, y con ello el aviso
+  // desaparecía justo donde más jornadas se programan de una vez.
+  //
+  // La pregunta correcta era otra: no «cuántas personas se pasan en el mes» —que es falsa por
+  // construcción— sino «cuántas SEMANAS se pasan», que es cierta en los dos modos porque el tope es
+  // semanal. Hasta ahora no se podía calcular; con los totales por semana, sí.
+  //
+  // UN SOLO SIGNIFICADO PARA LOS DOS MODOS: en la vista de semana hay una sola semana, así que
+  // «semanas-persona por encima» y «personas que se pasan» son el mismo número. No hace falta una
+  // redacción por modo, que sería otra rama donde equivocarse.
+  //
+  // `topeAplica` NO se toca: sus otros dos usos comparan el TOTAL DE LA FILA, y ahí la regla de hoy
+  // sigue siendo la correcta.
+  const semanasSobreTope = filas.reduce((cuantas, fila) => {
+    const minutosPorFecha = Object.fromEntries(fila.dias.map(d => [d.fecha, d.minutosEsperados]));
+    return cuantas + semanas.filter(s => minutosDeLaSemana(s.fechas, minutosPorFecha) > tope * 60).length;
+  }, 0);
   const festivos = new Set((filas[0]?.dias ?? []).filter(d => d.esFestivo).map(d => d.fecha));
 
   // ───────── LA SELECCIÓN EN BLOQUE ─────────
@@ -1967,8 +1987,14 @@ export default function CalendarioDeTurnos() {
         <Tarjeta icono={Scale} valor={horasDeMinutos(promedio)} titulo="Promedio por persona"
           // «semanales» va siempre, y no solo en la vista de semana: debajo de un promedio mensual,
           // un «tope legal 42 h» a secas se lee como si ese promedio tuviera que caber ahí.
-          nota={sobreTope > 0 ? `${sobreTope} pasa${sobreTope === 1 ? '' : 'n'} de ${tope} h` : `tope legal ${tope} h semanales`}
-          alerta={sobreTope > 0} />
+          // SEÑALA SEMANAS Y NO PERSONAS, y por eso ahora también avisa en la vista de mes: el tope es
+          // semanal, así que «3 semanas por encima de 42 h» es cierto mire uno un mes o una semana.
+          // Sin nada que señalar sigue diciendo la regla, que es lo que evita leer un promedio
+          // mensual como si tuviera que caber en 42 h.
+          nota={semanasSobreTope > 0
+            ? `${semanasSobreTope} semana${semanasSobreTope === 1 ? '' : 's'} por encima de ${tope} h`
+            : `tope legal ${tope} h semanales`}
+          alerta={semanasSobreTope > 0} />
         <Tarjeta icono={AlertTriangle} valor={String(trabajaronSuDescanso)} titulo="Trabajaron su descanso"
           nota={habituales > 0
             ? `${habituales} en descanso habitual: compensar en tiempo`

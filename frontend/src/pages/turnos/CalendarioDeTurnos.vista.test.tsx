@@ -233,6 +233,21 @@ describe('lo que dice la pantalla deja de hablar de la semana', () => {
     expect(screen.queryByText(/pasan de 42 h/i)).toBeNull();
   });
 
+  it('pero SÍ cuenta cuántas SEMANAS pasan del tope, también en el mes', async () => {
+    // LA PREGUNTA CORRECTA ES OTRA. «Cuántas personas pasan de 42 en el mes» es falsa por
+    // construcción: treinta jornadas siempre pasan. «Cuántas semanas-persona pasan de 42» sí es
+    // cierta, y es la que el dueño necesita para saber dónde mirar. Antes no se podía calcular
+    // porque no existía el total por semana; ahora sí.
+    //
+    // El fixture de esta prueba da 7 h por día a cada persona, o sea 49 h por semana completa: todas
+    // las semanas enteras del mes pasan del tope.
+    montar();
+    await cargado();
+    await elegirModo('Mes');
+    await cargado();
+    expect(await screen.findByText(/semanas? por encima de 42 h/i)).toBeInTheDocument();
+  });
+
   it('el encabezado nombra el mes, no un rango de semana', async () => {
     montar();
     await cargado();
