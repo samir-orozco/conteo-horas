@@ -111,6 +111,24 @@ describe('llegar a la rotación', () => {
     expect(within(await tarjeta()).getByRole('button', { name: /rotación/i })).toBeInTheDocument();
   });
 
+  it('y su nombre accesible dice ROTACIÓN, no el texto del tooltip', async () => {
+    // ESTA PRUEBA NACIÓ DE MIRAR EL NAVEGADOR DE VERDAD (28 de septiembre de 2026), y es la clase de
+    // defecto que esta suite NO puede cazar sola: con un `title` y sin `aria-label`, el navegador
+    // expone el botón como «Aplicar un patrón 6x1, 4x2…» mientras jsdom lo expone como «Rotación»,
+    // porque calculan el nombre accesible con distinta precedencia. O sea que el caso de arriba pasaba
+    // en verde por un motivo que no se cumple en producción: quien navegue con lector de pantalla
+    // buscaría «Rotación» y no lo encontraría.
+    //
+    // Por eso aquí se afirma el ATRIBUTO y no el rol: el atributo sí significa lo mismo en los dos
+    // sitios. Y el `aria-label` lleva además el motivo cuando está apagado, que es justo lo que el
+    // tooltip le daba solo a quien puede ver.
+    const usuario = userEvent.setup();
+    montar();
+    await marcarFilaDe(usuario, 'Ana Ríos');
+    const boton = within(await tarjeta()).getByRole('button', { name: /rotación/i });
+    expect(boton).toHaveAttribute('aria-label', expect.stringMatching(/^Rotación/));
+  });
+
   it('con DOS personas marcadas la rotación NO se puede usar', async () => {
     // No es una limitación técnica: un ciclo arranca en un día concreto, y aplicar el mismo 4x2 con el
     // mismo arranque a diez personas las deja a todas descansando el mismo día, que es lo contrario de
@@ -174,6 +192,16 @@ describe('el veredicto del mes', () => {
     const usuario = userEvent.setup();
     const caja = await abrir(usuario);
     expect(await within(caja).findByText(/semana del/i)).toBeInTheDocument();
+  });
+
+  it('nombra el mes A SECAS, sin pegarle el año', async () => {
+    // Visto en el navegador: decía «en 2 semanas de septiembre de 2026». El año sobra y estorba, y la
+    // redacción que se aprobó era «de septiembre». Sale de reutilizar el rótulo del encabezado, que sí
+    // necesita el año porque titula la vista de mes; aquí no.
+    const usuario = userEvent.setup();
+    const caja = await abrir(usuario);
+    const veredicto = await within(caja).findByText(/no le estarías dando el día de descanso/i);
+    expect(veredicto.textContent ?? '').not.toMatch(/\b20\d{2}\b/);
   });
 
   it('cambiar el patrón vuelve a juzgar', async () => {

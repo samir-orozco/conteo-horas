@@ -78,14 +78,45 @@ export function sePuedePintar(fecha: string, hoy: string): boolean {
   return fecha >= hoy;
 }
 
+// EL NOMBRE DEL MES, A SECAS Y EN MINÚSCULA: "septiembre" (28 de septiembre de 2026).
+//
+// Estaba escrito aquí dentro como una constante local de `rotuloDeSemana`, y al necesitarlo también
+// el veredicto de la rotación se saca en vez de copiarse: dos copias parecen una sola regla y se
+// separan a la primera (CLAUDE.md §9.3). La copia vieja se migra en este mismo cambio.
+//
+// SIN AÑO, y esa es toda la diferencia con `rotuloDeMes`: aquel titula la vista de mes y ahí el año
+// hace falta; dentro de una frase («en 2 semanas de septiembre») sobra y estorba.
+//
+// EL `timeZone: 'UTC'` ES DEFENSIVO Y NO ES LO QUE SOSTIENE ESTO, y conviene no confundirse porque es
+// fácil creer lo contrario: quien protege el resultado es `aFecha`, que ancla a MEDIODÍA UTC, y desde
+// ahí sobra medio día de margen en las dos direcciones. Se comprobó con una mutación: quitando esta
+// opción no se pone roja ninguna prueba. Se deja por si alguien mueve ese anclaje, que es cuando sí
+// empezaría a decidir. Va igual que en `rotuloDeDia` y `rotuloDeMes`, que llevan la misma opción por
+// la misma razón.
+export function nombreDelMes(iso: string): string {
+  return aFecha(iso).toLocaleDateString('es-CO', { timeZone: 'UTC', month: 'long' });
+}
+
+// "28 de septiembre": una fecha dicha como la diría una persona, sin el día de la semana.
+//
+// Existe porque los avisos nombran días sueltos («pintarías sobre el descanso obligatorio de Julián,
+// el 28 de septiembre») y hasta hoy mostraban la cadena "2026-09-28" tal cual. Esa cadena es la clave
+// con la que se escribe el día, no algo que un administrador tenga que leer.
+//
+// `getUTCDate()` corre la misma suerte que el `timeZone` de arriba: cambiarlo por `getDate()` no pone
+// roja ninguna prueba, porque el anclaje a mediodía deja el mismo día en las dos lecturas. Se queda
+// por coherencia con el resto del archivo, no porque hoy decida nada.
+export function rotuloCorto(iso: string): string {
+  return `${aFecha(iso).getUTCDate()} de ${nombreDelMes(iso)}`;
+}
+
 // "15 al 21 de septiembre" · "29 de septiembre al 5 de octubre" cuando cruza de mes.
 export function rotuloDeSemana(lunes: string): string {
   const domingo = sumarDias(lunes, 6);
-  const mesDe = (iso: string) => aFecha(iso).toLocaleDateString('es-CO', { timeZone: 'UTC', month: 'long' });
   const diaDe = (iso: string) => aFecha(iso).getUTCDate();
-  return mesDe(lunes) === mesDe(domingo)
-    ? `${diaDe(lunes)} al ${diaDe(domingo)} de ${mesDe(domingo)}`
-    : `${diaDe(lunes)} de ${mesDe(lunes)} al ${diaDe(domingo)} de ${mesDe(domingo)}`;
+  return nombreDelMes(lunes) === nombreDelMes(domingo)
+    ? `${diaDe(lunes)} al ${diaDe(domingo)} de ${nombreDelMes(domingo)}`
+    : `${diaDe(lunes)} de ${nombreDelMes(lunes)} al ${diaDe(domingo)} de ${nombreDelMes(domingo)}`;
 }
 
 // "martes, 22 de septiembre" · "septiembre de 2026" — los otros dos rótulos del encabezado, para

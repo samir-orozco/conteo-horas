@@ -20,7 +20,7 @@ import { proyeccionDelMes } from './proyeccionDeRotacion';
 // Qué se le escribe a cada día con lo que está pendiente: una acción igual para todas las celdas, o
 // una rotación que reparte turnos y descansos por el ciclo. Puro, probado y mutado aparte.
 import { accionDeLoPendiente, type LoPendiente } from './loPendiente';
-import { diasEntre, sumarDias, rotuloDeMes } from './semana';
+import { diasEntre, sumarDias, nombreDelMes, rotuloCorto } from './semana';
 // Qué rango le toca a cada modo y cómo se mueven las flechas. Es una decisión pura, probada y
 // mutada aparte: aquí solo se aplica.
 import { vistaDelCalendario, moverVista, type ModoDeVista } from './vistaDelCalendario';
@@ -844,7 +844,18 @@ function TarjetaDeBloque({
               un ciclo arranca en un día concreto, y el mismo 4x2 con el mismo arranque para diez
               personas las deja a todas descansando el mismo día, que es lo contrario de para lo que
               existe una rotación. */}
+          {/* EL `aria-label` NO ES REDUNDANTE CON EL TEXTO, y se puso tras mirar el navegador de
+              verdad el 28 de septiembre de 2026: con solo `title`, el nombre accesible que expone el
+              navegador es el del tooltip («Aplicar un patrón 6x1, 4x2…»), no «Rotación». Quien
+              navegue con lector de pantalla buscaría la palabra que ve en la pantalla y no la
+              encontraría. Ojo: jsdom calcula ese nombre con otra precedencia y da «Rotación», así que
+              la prueba de rol pasaba en verde por un motivo que no se cumple aquí fuera; por eso su
+              prueba afirma el ATRIBUTO. Y empieza por «Rotación» a propósito, para que el motivo de
+              estar apagado llegue también a quien no puede ver el tooltip. */}
           <button type="button" disabled={ocupado || !puedeRotar} onClick={onRotacion}
+            aria-label={puedeRotar
+              ? 'Rotación'
+              : 'Rotación: marca a una sola persona, cada rotación arranca en su propio día'}
             title={puedeRotar
               ? 'Aplicar un patrón 6x1, 4x2…'
               : 'Marca a una sola persona: cada rotación arranca en su propio día.'}
@@ -999,7 +1010,7 @@ function VentanaDeRotacion({
               <p className="flex items-start gap-1.5 text-[13px] font-semibold text-rose-900">
                 <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                 Por norma no le estarías dando el día de descanso en {semanasMalas.length}
-                {semanasMalas.length === 1 ? ' semana' : ' semanas'} de {mes.toLowerCase()}
+                {semanasMalas.length === 1 ? ' semana' : ' semanas'} de {mes}
               </p>
               <p className="mt-1 pl-5 text-[11px] text-rose-900">
                 {semanasMalas.map(l => `Semana del ${Number(l.slice(8, 10))}`).join(' · ')}
@@ -1009,7 +1020,7 @@ function VentanaDeRotacion({
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
               <p className="flex items-start gap-1.5 text-[13px] font-semibold text-emerald-900">
                 <Check size={14} className="mt-0.5 shrink-0" />
-                Cada semana de {mes.toLowerCase()} le queda con su día de descanso
+                Cada semana de {mes} le queda con su día de descanso
               </p>
               <p className="mt-1 pl-5 text-[11px] text-emerald-900">{ROTACIONES[rot.patron].nota}.</p>
             </div>
@@ -1120,7 +1131,11 @@ function PreviaDeBloque({ titulo, conteo, pisados, habituales, ocupado, onCancel
                 Pintarías sobre el descanso obligatorio de {jornadas(pisados.length)}
               </p>
               <ul className="mt-1 list-disc pl-5 text-[12px] text-amber-900">
-                {pisados.map(p => <li key={`${p.nombre}|${p.fecha}`}>{p.nombre}, el {p.fecha}</li>)}
+                {/* La fecha dicha con palabras. Antes salía "2026-09-28" en crudo, que es la clave
+                    con la que se escribe el día y no algo que un administrador tenga que leer. */}
+                {pisados.map(p => (
+                  <li key={`${p.nombre}|${p.fecha}`}>{p.nombre}, el {rotuloCorto(p.fecha)}</li>
+                ))}
               </ul>
             </div>
           )}
@@ -2177,7 +2192,7 @@ export default function CalendarioDeTurnos() {
           marcadas={new Set(seleccion.filter(c => c.colaboradorId === rotando.id).map(c => c.fecha))}
           hoy={hoy}
           primerDia={primerDiaDelPeriodo}
-          mes={rotuloDeMes(`${mesDeLaSeleccion}-01`)}
+          mes={nombreDelMes(`${mesDeLaSeleccion}-01`)}
           semanasMalas={semanasMalas}
           esperandoElMes={mesDeLaRotacion === null}
           onPatron={patron => setRot({ ...rot, patron, desfase: 0 })}

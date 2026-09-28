@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   hoyEnBogota, sumarDias, lunesDeLaSemana, diasDeLaSemana, rotuloDeSemana, horasDeMinutos,
-  sePuedePintar, inicialDeDia, diasEntre,
+  sePuedePintar, inicialDeDia, diasEntre, nombreDelMes, rotuloCorto,
 } from './semana';
 
 // Estas pruebas corren en América/Los Ángeles (vite.config.ts lo fija a propósito). Todo lo que
@@ -53,6 +53,49 @@ describe('sumarDias y diasDeLaSemana', () => {
       '2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24',
       '2026-09-25', '2026-09-26', '2026-09-27',
     ]);
+  });
+});
+
+describe('el nombre del mes, a secas', () => {
+  // Salió de un defecto visto en el navegador el 28 de septiembre de 2026: el veredicto de la
+  // rotación decía «en 2 semanas de septiembre de 2026» porque reutilizaba el rótulo del encabezado,
+  // que lleva el año porque titula la vista de mes. Dentro de una frase, el año sobra.
+  it('devuelve solo el mes, sin año', () => {
+    expect(nombreDelMes('2026-09-28')).toBe('septiembre');
+  });
+
+  it('en minúscula, porque va dentro de una oración', () => {
+    expect(nombreDelMes('2026-01-15')).toBe('enero');
+  });
+
+  it('el primero de un mes no se corre al mes anterior', () => {
+    // OJO CON LO QUE ESTE CASO SÍ PRUEBA, porque su primera redacción mentía y lo dijo una mutación:
+    // decía «lo decide el anclaje a UTC», y al quitarle `timeZone: 'UTC'` a la función NO se puso
+    // roja. Lo que de verdad sostiene el resultado es que `aFecha` ancla a MEDIODÍA UTC: en América
+    // /Los Ángeles —donde estas pruebas corren a propósito— eso son las 4 o 5 de la mañana del MISMO
+    // día, así que leer las partes locales da lo mismo. Las opciones UTC de la función son cinturón
+    // por si alguien mueve ese anclaje, no lo que hoy protege esto.
+    //
+    // El caso se queda porque el comportamiento sí importa (un primero de mes corriéndose sería un
+    // rótulo falso); lo que se corrige es la razón que decía tener.
+    expect(nombreDelMes('2026-10-01')).toBe('octubre');
+    expect(nombreDelMes('2026-03-01')).toBe('marzo');
+  });
+});
+
+describe('una fecha dicha como la diría una persona', () => {
+  it('junta el día y el mes', () => {
+    expect(rotuloCorto('2026-09-28')).toBe('28 de septiembre');
+  });
+
+  it('sin cero a la izquierda', () => {
+    expect(rotuloCorto('2026-09-05')).toBe('5 de septiembre');
+  });
+
+  it('el último día del mes no se corre al siguiente', () => {
+    // El caso que caza un anclaje mal hecho: en zona negativa, "2026-01-31" leído mal diría 30 de
+    // enero, o peor, febrero.
+    expect(rotuloCorto('2026-01-31')).toBe('31 de enero');
   });
 });
 

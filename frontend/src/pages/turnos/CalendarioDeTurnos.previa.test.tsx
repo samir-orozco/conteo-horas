@@ -163,6 +163,19 @@ describe('los avisos que cuestan dinero', () => {
     expect(caja).toHaveTextContent(/Ana Ríos/);
   });
 
+  it('y dice la fecha como la diría una persona, no en crudo', async () => {
+    // Visto en el navegador: el aviso mostraba «Julián Torres, el 2026-09-28». Esa cadena es la clave
+    // con la que se escribe el día, no algo que un administrador tenga que leer; en el resto del
+    // producto las fechas se dicen con palabras. Se reutiliza el rótulo de día que ya existe y está
+    // probado, en vez de armar aquí un formato nuevo.
+    const usuario = userEvent.setup();
+    montar([personaDe('c1', 'Ana', 'Ríos', [{ fecha: DOMINGO, extra: { esDescansoObligatorio: true } }])]);
+    await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
+    const caja = await previa();
+    expect(caja).not.toHaveTextContent(DOMINGO);
+    expect(caja).toHaveTextContent(new RegExp(`${numeroDe(DOMINGO)} de `));
+  });
+
   it('marcar DESCANSO sobre ese mismo día NO lo avisa', async () => {
     // Marcar descanso ES el descanso. Avisarlo volvería ruido la acción que hace lo correcto.
     const usuario = userEvent.setup();
@@ -217,6 +230,24 @@ describe('decidir', () => {
     await usuario.click(within(await previa()).getByRole('button', { name: /cancelar/i }));
 
     expect(put).not.toHaveBeenCalled();
+    expect(await tarjeta()).toHaveTextContent(/2 jornadas/);
+  });
+
+  it('Escape cierra la previa y NO escribe nada', async () => {
+    // LA TECLA QUE CIERRA NO PUEDE SER LA QUE CONFIRMA. Se escribió al ver un `PUT /turnos/dia` en el
+    // registro de red del navegador justo después de cerrar una previa con Escape, sin haber pulsado
+    // Aplicar. La explicación probable era otra (alguien trasteando en la misma pantalla), pero la
+    // alternativa —que cerrar escriba— es lo bastante grave como para no dejarla a una suposición.
+    const usuario = userEvent.setup();
+    montar([personaDe('c1', 'Ana', 'Ríos', [{ fecha: SABADO }, { fecha: DOMINGO }])]);
+    await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
+    await previa();
+    await usuario.keyboard('{Escape}');
+
+    expect(put).not.toHaveBeenCalled();
+    expect(del).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: /antes de aplicar/i })).not.toBeInTheDocument();
+    // Y lo marcado sigue ahí: cerrar es «déjame mirarlo otra vez», no «empieza de cero».
     expect(await tarjeta()).toHaveTextContent(/2 jornadas/);
   });
 
