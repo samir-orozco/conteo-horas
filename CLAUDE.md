@@ -761,3 +761,35 @@ artefacto empieza por listar la ruta, no por buscar dentro de ella:
 git fetch origin backend-build && git update-ref refs/heads/backend-build "$(git rev-parse origin/backend-build)"
 git ls-tree -r --name-only backend-build | grep '<el archivo>'   # primero existe
 ```
+
+### 12.8 La recarga en caliente no vuelve a ejecutar los efectos (28 de septiembre de 2026)
+
+Verificar en el navegador un gesto nuevo del calendario de turnos costó **tres rondas de
+diagnóstico** por esto, y las tres veces la evidencia apuntaba a un defecto que no existía.
+
+El gesto nuevo (clic en una esquina, clic en la otra) cuelga de dos piezas: los manejadores que van
+en el JSX (`onPointerDown` de la celda) y una escucha de `pointerup` registrada en un
+`useEffect(..., [])`. Con Vite y React Fast Refresh:
+
+- **el JSX SÍ se actualiza** en caliente;
+- **un efecto con dependencias vacías NO se vuelve a ejecutar**, así que la escucha sigue siendo la
+  que se registró al montar la página.
+
+Resultado: la pantalla corría el dibujo nuevo con la escucha vieja. Los clics no marcaban nada, la
+consola no daba ningún error, y el doble clic —que vive en el JSX— sí funcionaba. Tres señales que
+juntas describían un defecto en el código recién escrito, y el código estaba bien: **bastaba
+recargar**.
+
+**La regla:** una función que vive en un `useEffect` no está verificada hasta que se recarga la
+página. Y antes de creerse un fallo en el navegador, mirar cuánto lleva viva esa carga:
+
+```js
+// en la consola de la página: si son minutos y hubo ediciones, recarga ANTES de diagnosticar nada
+Math.round(performance.now() / 1000)
+```
+
+Los registros del servidor de desarrollo ayudan a confirmarlo (`hmr update` sin un `page reload` en
+medio), pero el número de arriba es el que decide.
+
+Es la misma familia que todo lo demás de esta sección: **el instrumento informó éxito** —Vite dijo
+«hmr update», el navegador no se quejó— **y lo que corría era otra cosa.**
