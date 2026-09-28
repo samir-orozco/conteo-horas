@@ -8,6 +8,7 @@ const date_fns_1 = require("date-fns");
 const horasColombiana_1 = require("./horasColombiana");
 const vigencias_1 = require("./vigencias");
 const tardanzas_1 = require("./tardanzas");
+const diasDeLaSemana_1 = require("./diasDeLaSemana");
 const ajusteJornada_1 = require("./ajusteJornada");
 const almuerzo_1 = require("./almuerzo");
 const descansos_1 = require("./descansos");
@@ -30,7 +31,7 @@ function almuerzoDelRegistro(horario, fecha) {
     if (!horario || !horario.almuerzoMin)
         return 0;
     const z = (0, date_fns_tz_1.toZonedTime)(fecha, TZ);
-    const franja = (0, tardanzas_1.franjaDelDia)(horario, tardanzas_1.DIAS_SEMANA[z.getDay()]);
+    const franja = (0, tardanzas_1.franjaDelDia)(horario, diasDeLaSemana_1.DIAS_SEMANA[z.getDay()]);
     return franja && franja.tieneAlmuerzo ? horario.almuerzoMin : 0;
 }
 // Lo que ya se cobró de UNA pausa en cada día. Cada fila pide lo que el día debe hasta
@@ -65,8 +66,30 @@ function debidoHastaCadaFila(reparto, total) {
 function liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, salarioMensual, horasMes, incluirDetalle, 
 // Días materializados del rango: de ahí sale la hora de salida programada para
 // la tolerancia. Si no llegan, la tolerancia sencillamente no se aplica.
-diasEsperados = []) {
+diasEsperados = [], 
+// Lo que la persona tiene declarado HOY, con la guarda legal ya aplicada (`estadoDescansoDe`).
+// Es el respaldo para las fechas sin fila congelada. Ausente = PRESUMIDO, o sea el domingo, que
+// es lo que el sistema calculó siempre: por eso los llamadores que no lo pasen no ven cambio.
+estadoDescanso) {
     const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
+    // EL CABLE ENTRE EL DÍA CONGELADO Y EL MOTOR DE HORAS (20 de septiembre de 2026).
+    //
+    // Hasta hoy el motor decidía el recargo dominical con su propio respaldo (el domingo) para todo
+    // el mundo, porque nadie le contaba qué decía la fila de ese día.
+    //
+    // La clave se arma con `claveDeDescanso`, la MISMA función que el motor usa para consultarla, y
+    // no con el `claveDiaBogota` local de este archivo: ese tiene otro formato (mes en base cero, sin
+    // relleno) y la búsqueda fallaría en silencio, cayendo al respaldo sin que nada se quejara.
+    //
+    // Solo entran los días que de verdad lo calcularon. Un `null` es la AUSENCIA del dato, no un
+    // `false`: meterlo como `false` afirmaría que ese domingo no era descanso y le quitaría el
+    // recargo a todo el historial anterior a la columna.
+    const porFecha = {};
+    for (const d of diasEsperados) {
+        if (typeof d.esDescanso === 'boolean')
+            porFecha[(0, horasColombiana_1.claveDeDescanso)(d.fecha)] = d.esDescanso;
+    }
+    const descansoConfig = { porFecha, estado: estadoDescanso };
     // Las pausas se miden por DÍA, el de la FECHA de la jornada: el regreso de la madrugada
     // de un nocturno es del mismo día que su salida, y contado por el día de su entrada su
     // pausa quedaba sin regreso (12 de septiembre de 2026). Cuánto cuesta cada pausa lo
@@ -151,7 +174,7 @@ diasEsperados = []) {
                 ? (0, ajusteJornada_1.ajustarAJornada)(registro.entrada, registro.salida, diaDelRegistro)
                 : { entrada: registro.entrada, salida: registro.salida };
             const tiposDelDia = (0, vigencias_1.tiposVigentes)(registro.fecha, tiposHoraTodos);
-            const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(entrada, salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana, extraConfig);
+            const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(entrada, salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana, extraConfig, descansoConfig);
             // Lo que esta fila debe de cada pausa, hasta ella (arriba). El almuerzo de un día sin
             // ventana sale solo de las diurnas ordinarias, como siempre; el de uno con ventana y
             // los descansos, de todas las ordinarias.

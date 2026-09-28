@@ -14,6 +14,10 @@ const sedesDeEmpresa_1 = require("../utils/sedesDeEmpresa");
 const liquidarRegistros_1 = require("../utils/liquidarRegistros");
 const novedadesDelPeriodo_1 = require("../utils/novedadesDelPeriodo");
 const columnasDeColaborador_1 = require("../utils/columnasDeColaborador");
+// La guarda legal: convierte las tres columnas crudas en el estado que el motor entiende, y por el
+// camino descarta cualquier día declarado SIN acuerdo escrito. Se resuelve aquí, una vez por
+// persona, y nunca dentro del motor: así no hay ninguna rama que pueda saltársela.
+const descansoObligatorio_1 = require("../utils/descansoObligatorio");
 // Lo que devuelven los dos resúmenes que se filtran por sede. El filtro decide
 // QUIÉN aparece; el resumen se arma siempre con todas las filas, así que no cambia
 // según la sede que se mire. Las reglas viven en utils/sedesDeReporte.ts: esto
@@ -108,6 +112,10 @@ async function reporteRoutes(app) {
                     toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
                     toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
                     descansos: true,
+                    // Si ESE día era su descanso obligatorio. Sin esta columna el día llega al motor sin la
+                    // respuesta congelada y el recargo dominical se recalcula con la declaración de HOY, que
+                    // es justo lo que esta tabla existe para impedir (20 de septiembre de 2026).
+                    esDescanso: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
@@ -136,7 +144,7 @@ async function reporteRoutes(app) {
         // lo que impide que cambiar un horario reescriba la clasificación de extras
         // de un período ya liquidado.
         const extraConfig = (0, tardanzas_1.construirExtraConfig)(modoExtra, horario, diasEsperados);
-        const r = (0, liquidarRegistros_1.liquidarRegistros)(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados);
+        const r = (0, liquidarRegistros_1.liquidarRegistros)(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados, (0, descansoObligatorio_1.estadoDescansoDe)(colaborador));
         // Saldo de tiempo no remunerado: lo que el horario exigía contra lo que
         // realmente trabajó. Va en su propio campo y NUNCA dentro de `liquidacion`,
         // porque ese array alimenta totalRecargos/totalAdicional y una fila
@@ -184,6 +192,9 @@ async function reporteRoutes(app) {
                 where: { empresaId, activo: true },
                 select: {
                     id: true, nombre: true, apellido: true, salarioMensual: true, modalidad: true,
+                    // Las tres del descanso: sin ellas el motor no puede saber qué día descansa esta persona
+                    // y este resumen daría cifras distintas de /liquidacion para la misma gente.
+                    descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
                     horario: { include: { franjas: true } },
                 },
                 orderBy: { nombre: 'asc' },
@@ -219,6 +230,10 @@ async function reporteRoutes(app) {
                     horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
                     toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
                     descansos: true,
+                    // Si ESE día era su descanso obligatorio. Sin esta columna el día llega al motor sin la
+                    // respuesta congelada y el recargo dominical se recalcula con la declaración de HOY, que
+                    // es justo lo que esta tabla existe para impedir (20 de septiembre de 2026).
+                    esDescanso: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
@@ -246,7 +261,7 @@ async function reporteRoutes(app) {
             const registros = porColaborador.get(col.id) ?? [];
             const dias = (0, diasEsperados_1.combinarDiasEsperados)(desdeF, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
             const extraConfig = (0, tardanzas_1.construirExtraConfig)(modoExtra, horario, dias);
-            const r = (0, liquidarRegistros_1.liquidarRegistros)(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias);
+            const r = (0, liquidarRegistros_1.liquidarRegistros)(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, (0, descansoObligatorio_1.estadoDescansoDe)(col));
             return {
                 colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
                 totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
@@ -283,6 +298,9 @@ async function reporteRoutes(app) {
             prisma_1.prisma.jornadaVigencia.findMany(),
             // La hora exigida y la tolerancia de cada día, congeladas. Sin esto,
             // adelantar la entrada del horario llenaba de tardanzas los meses cerrados.
+            //
+            // SIN `esDescanso`, a propósito: las tardanzas no dependen de quién descansa cuándo, y una
+            // columna que nadie lee aquí haría creer lo contrario al que venga después.
             prisma_1.prisma.diaEsperado.findMany({
                 where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
                 select: {
@@ -341,6 +359,9 @@ async function reporteRoutes(app) {
             prisma_1.prisma.jornadaVigencia.findMany(),
             // Los días de TODA la empresa en una sola consulta; se agrupan abajo. Uno
             // por colaborador serían N consultas para pintar una tabla.
+            //
+            // SIN `esDescanso`, por lo mismo que en /tardanzas: este resumen cuenta llegadas tarde, no
+            // recargos, y seleccionar la columna aquí sugeriría que la respeta.
             prisma_1.prisma.diaEsperado.findMany({
                 where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
                 select: {
@@ -399,8 +420,11 @@ async function reporteRoutes(app) {
             prisma_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
                 select: {
-                    id: true, nombre: true, apellido: true, cedula: true, cargo: true,
+                    id: true, nombre: true, apellido: true, cedula: true, numeroContrato: true, cargo: true,
                     salarioMensual: true, auxilioTransporte: true, modalidad: true, horario: { include: { franjas: true } },
+                    // Las tres del descanso, por lo mismo que en los otros dos reportes: este es el archivo
+                    // que se sube al ERP, así que es el que no puede discrepar de la liquidación.
+                    descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
                 },
                 orderBy: { nombre: 'asc' },
             }),
@@ -432,6 +456,10 @@ async function reporteRoutes(app) {
                     horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
                     toleranciaSalidaMin: true, ajustaEntrada: true, almuerzoInicio: true, almuerzoFin: true,
                     descansos: true,
+                    // Si ESE día era su descanso obligatorio. Sin esta columna el día llega al motor sin la
+                    // respuesta congelada y el recargo dominical se recalcula con la declaración de HOY, que
+                    // es justo lo que esta tabla existe para impedir (20 de septiembre de 2026).
+                    esDescanso: true,
                 },
                 orderBy: { fecha: 'asc' },
             }),
@@ -462,9 +490,9 @@ async function reporteRoutes(app) {
                 id: reg.id, fecha: reg.fecha, entrada: reg.entrada, salida: reg.salida,
                 salidaAlmuerzo: reg.salidaAlmuerzo, salidaDescanso: reg.salidaDescanso, descansoVentana: reg.descansoVentana,
             }));
-            const r = (0, liquidarRegistros_1.liquidarRegistros)(suyos, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias);
+            const r = (0, liquidarRegistros_1.liquidarRegistros)(suyos, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, (0, descansoObligatorio_1.estadoDescansoDe)(col));
             return {
-                colaboradorId: col.id, cedula: col.cedula, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,
+                colaboradorId: col.id, cedula: col.cedula, numeroContrato: col.numeroContrato, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,
                 salarioMensual: col.salarioMensual,
                 valorHora: parseFloat((0, horasColombiana_1.calcularValorHora)(col.salarioMensual, horasMes).toFixed(2)),
                 // El auxilio NO entra en el valor de la hora: se paga aparte y se prorratea por los días en

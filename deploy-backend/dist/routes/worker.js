@@ -7,6 +7,7 @@ exports.default = workerRoutes;
 const client_1 = require("@prisma/client");
 const crypto_1 = __importDefault(require("crypto"));
 const prisma_1 = require("../prisma");
+const registrarEvento_1 = require("../utils/registrarEvento");
 const rostro_1 = require("../utils/rostro");
 const metodoMarcacion_1 = require("../utils/metodoMarcacion");
 const telegram_1 = require("../utils/telegram");
@@ -20,7 +21,7 @@ const descansos_1 = require("../utils/descansos");
 const tardanzas_1 = require("../utils/tardanzas");
 const cierreAlmuerzo_1 = require("../utils/cierreAlmuerzo");
 const materializarDias_1 = require("../utils/materializarDias");
-const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+const diasDeLaSemana_1 = require("../utils/diasDeLaSemana");
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
 // Un token de kiosco dura 12 horas y sigue siendo válido aunque la persona ya no
 // exista: pasa cuando el super admin elimina la empresa con una sesión abierta.
@@ -321,8 +322,13 @@ async function workerRoutes(app) {
         const col = await prisma_1.prisma.colaborador.findFirst({
             where: { cedula, activo: true, empresaId: empresa.id },
         });
-        if (!col)
+        if (!col) {
+            // Alguien probando cédulas en el kiosco de una empresa. Va al registro del sistema por la
+            // misma razón que el login de la plataforma, y con la misma regla: una cédula que existe se
+            // cuenta aparte, una inventada se suma a la fila de su IP.
+            (0, registrarEvento_1.registrarAcceso)({ motivo: 'CREDENCIALES', email: cedula, correoConocido: false }, request);
             return reply.code(401).send({ error: 'Cédula no registrada en esta empresa' });
+        }
         // `metodo` viaja DENTRO del token firmado y no en la respuesta: es la única
         // forma de que la marcación registre con qué se autenticó de verdad. Si el
         // kiosco lo declarara en el cuerpo de `/marcar`, cualquiera lo cambiaría
@@ -663,7 +669,7 @@ async function workerRoutes(app) {
                 let ventanaNovedad = null;
                 const horario = col?.horario;
                 if (!esAlmuerzo && !esDescanso && horario && horario.activo && !festHoy) {
-                    const franja = horario.franjas.find(f => (f.dias ?? []).includes(DIAS_SEMANA[ahoraBog.getDay()]));
+                    const franja = horario.franjas.find(f => (f.dias ?? []).includes(diasDeLaSemana_1.DIAS_SEMANA[ahoraBog.getDay()]));
                     if (franja)
                         salidaTemprana = (0, tardanzas_1.salidaAntesDeHora)(ahoraBog, franja, horario.toleranciaMin ?? 0);
                     if (franja && salidaTemprana)

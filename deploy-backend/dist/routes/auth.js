@@ -7,6 +7,7 @@ exports.default = authRoutes;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = __importDefault(require("crypto"));
 const prisma_1 = require("../prisma");
+const registrarEvento_1 = require("../utils/registrarEvento");
 const suscripcion_1 = require("../utils/suscripcion");
 const planes_1 = require("../utils/planes");
 const correo_1 = require("../utils/correo");
@@ -240,6 +241,12 @@ async function authRoutes(app) {
             include: { empresa: { include: { suscripcion: true } } },
         });
         if (!usuario || !usuario.activo || !(await bcryptjs_1.default.compare(password, usuario.password))) {
+            // Al registro del sistema, pestaña de Accesos. Se registra aquí y no en el enganche global
+            // porque este es el único punto que sabe DOS cosas: qué correo se probó, y si esa cuenta
+            // existe. Lo segundo decide cómo se agrupa —por cuenta si es real, solo por IP si es un
+            // correo inventado— y es lo que impide que un bot con diez mil correos al azar escriba diez
+            // mil filas. Ver `eventoDeAcceso.ts`. La contraseña probada no se pasa ni se guarda.
+            (0, registrarEvento_1.registrarAcceso)({ motivo: 'CREDENCIALES', email, correoConocido: Boolean(usuario) }, request);
             return reply.status(401).send({ error: 'Credenciales inválidas' });
         }
         if (usuario.empresaId && !usuario.empresa?.activa) {

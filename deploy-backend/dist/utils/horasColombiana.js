@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CODIGOS_EXTRA = void 0;
+exports.claveDeDescanso = claveDeDescanso;
 exports.calcularHorasTrabajadas = calcularHorasTrabajadas;
 exports.descontarAlmuerzo = descontarAlmuerzo;
 exports.calcularValorHora = calcularValorHora;
@@ -8,8 +9,10 @@ exports.descontarAlmuerzoOrdinarias = descontarAlmuerzoOrdinarias;
 exports.calcularLiquidacion = calcularLiquidacion;
 const date_fns_1 = require("date-fns");
 const date_fns_tz_1 = require("date-fns-tz");
+// Con alias para no tocar ni una línea del cálculo: este paso solo quita la copia de la lista.
+const diasDeLaSemana_1 = require("./diasDeLaSemana");
+const descansoObligatorio_1 = require("./descansoObligatorio");
 const TZ = 'America/Bogota';
-const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 function esDiurna(hora, horaInicio, horaFin) {
     // Ej: horaInicio=6, horaFin=21 → diurna si 6 <= hora < 21
     if (horaInicio < horaFin)
@@ -28,13 +31,53 @@ function clasificarMinuto(hora, esDomOFestivo, esExtra, horaInicioDiurna, horaFi
         return diurno ? 'HOD' : 'HON';
     return diurno ? 'HED' : 'HEN';
 }
+// La fecha de Bogotá como "yyyy-MM-dd". `zc` ya viene zonificado, así que se lee con los getters
+// locales y NO se vuelve a convertir: aplicar `toZonedTime` dos veces sobre la misma fecha la corre
+// otras cinco horas.
+//
+// Estaba escrita suelta dentro de `esExtraPorModo`. Sale a función con nombre el 20 de septiembre
+// de 2026 porque el día de descanso necesita la MISMA clave: dos formatos de fecha en el mismo
+// archivo es la clase de diferencia que no se nota hasta que un día de diciembre sale corrido.
+function claveDeFechaBogota(zc) {
+    return `${zc.getFullYear()}-${String(zc.getMonth() + 1).padStart(2, '0')}-${String(zc.getDate()).padStart(2, '0')}`;
+}
+// La clave con la que se CONSTRUYE y se CONSULTA `DescansoConfig.porFecha`. Se exporta a propósito,
+// y conviene entender por qué antes de tocarla.
+//
+// En este mismo archivo conviven dos formatos de clave: el de arriba, con relleno (`2026-09-20`), y
+// el de los festivos en el bucle (`2026-8-20`, con el mes en base cero). `liquidarRegistros.ts`
+// tiene además un tercero, igual al segundo. Son tres formatos que se parecen lo suficiente para
+// confundirse y lo bastante distintos para no emparejar.
+//
+// Si quien arma el mapa usa un formato y quien lo consulta usa otro, `hasOwnProperty` devuelve
+// falso, el motor cae al respaldo y liquida como si nadie hubiera declarado nada. No hay excepción,
+// no hay aviso y las pruebas del motor siguen verdes: el síntoma sería un domingo cobrando el 90%
+// cuando estaba pactado como día de trabajo. Por eso productor y consumidor comparten ESTA función
+// en vez de escribir la plantilla dos veces (CLAUDE.md §9.3).
+//
+// Recibe la fecha CRUDA y zonifica una sola vez: `toZonedTime` aplicado dos veces sobre la misma
+// fecha la corre cinco horas (CLAUDE.md §4).
+function claveDeDescanso(fecha) {
+    return claveDeFechaBogota((0, date_fns_tz_1.toZonedTime)(fecha, TZ));
+}
+const PRESUMIDO = { tipo: 'PRESUMIDO' };
+function esDescansoDeLaFecha(zc, diaSemana, cfg) {
+    // `hasOwnProperty` y no `??`, por lo mismo que las franjas de abajo: un día congelado como
+    // `false` dice a propósito «ese día NO era su descanso», y con `??` se caería al respaldo justo
+    // cuando la fila ya respondió. Se pregunta si la fecha ESTÁ, no si trae algo.
+    if (cfg.porFecha) {
+        const clave = claveDeFechaBogota(zc);
+        if (Object.prototype.hasOwnProperty.call(cfg.porFecha, clave))
+            return cfg.porFecha[clave];
+    }
+    // Sin fila congelada no hay semana planificada que consultar, así que un ROTATIVO cae al domingo.
+    // Es la dirección segura: un turno puede agregar un recargo, nunca quitarlo.
+    return (0, descansoObligatorio_1.esDescansoObligatorio)(diaSemana, cfg.estado ?? PRESUMIDO, null);
+}
 function esExtraPorModo(extra, zc, hora, superoTope) {
     if (extra.modo !== 'HORARIO' || (!extra.franjaPorFecha && !extra.franjaPorDia))
         return superoTope;
-    // `zc` ya viene zonificado a Bogotá, así que se lee con los getters locales y
-    // NO se vuelve a convertir: aplicar `toZonedTime` dos veces sobre la misma
-    // fecha la corre otras cinco horas.
-    const clave = `${zc.getFullYear()}-${String(zc.getMonth() + 1).padStart(2, '0')}-${String(zc.getDate()).padStart(2, '0')}`;
+    const clave = claveDeFechaBogota(zc);
     // `??` no sirve aquí: un día congelado como NO programado vale `null`, y con
     // `??` se caería al respaldo justo cuando el día dice, a propósito, que no
     // había franja. Se pregunta si la fecha ESTÁ, no si trae algo.
@@ -52,7 +95,10 @@ function esExtraPorModo(extra, zc, hora, superoTope) {
         fuera = !(min >= fr.ini - tol || min < fr.fin + tol); // franja que cruza medianoche
     return fuera || superoTope; // el tope legal siempre aplica encima
 }
-function calcularHorasTrabajadas(entrada, salida, festivosDates, tiposHoraDB, jornadaSemanalHoras, minutosOrdinariosSemanaAcumulados = 0, extra = { modo: 'SEMANAL' }) {
+function calcularHorasTrabajadas(entrada, salida, festivosDates, tiposHoraDB, jornadaSemanalHoras, minutosOrdinariosSemanaAcumulados = 0, extra = { modo: 'SEMANAL' }, 
+// Va al final y con valor por defecto vacío A PROPÓSITO: así las llamadas que ya existen no se
+// tocan y devuelven exactamente lo mismo que antes. Vacío equivale a PRESUMIDO, o sea el domingo.
+descanso = {}) {
     const maxOrdinariosSemana = jornadaSemanalHoras * 60;
     const festSet = new Set(festivosDates.map(f => {
         const z = (0, date_fns_tz_1.toZonedTime)(f, TZ);
@@ -74,11 +120,16 @@ function calcularHorasTrabajadas(entrada, salida, festivosDates, tiposHoraDB, jo
     let zc = (0, date_fns_tz_1.toZonedTime)(entrada, TZ);
     while (zc < zSalida) {
         const hora = zc.getHours();
-        const diaSemana = DIAS[(0, date_fns_1.getDay)(zc)];
+        const diaSemana = diasDeLaSemana_1.DIAS_SEMANA[(0, date_fns_1.getDay)(zc)];
         const key = `${zc.getFullYear()}-${zc.getMonth()}-${zc.getDate()}`;
         const esFestivo = festSet.has(key);
-        const esDomingo = diaSemana === 'DOMINGO';
-        const esDomOFestivo = esDomingo || esFestivo;
+        // Antes decía `diaSemana === 'DOMINGO'` escrito a mano. La ley presume el domingo SALVO acuerdo
+        // escrito, y medido en producción hay 26 personas cuyo horario cubre los siete días. Sin
+        // configuración esto devuelve exactamente lo mismo de siempre.
+        const esDescanso = esDescansoDeLaFecha(zc, diaSemana, descanso);
+        // El festivo es otro concepto y no depende de quién descansa cuándo: un martes festivo se paga
+        // igual aunque el martes no sea el descanso de nadie.
+        const esDomOFestivo = esDescanso || esFestivo;
         // Extra según el modo configurado (semanal >tope, u horario fuera de la franja).
         // El tope legal semanal siempre aplica encima.
         const superoTope = minutosOrdAcum >= maxOrdinariosSemana;

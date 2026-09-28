@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -28,6 +61,8 @@ const wompi_1 = __importDefault(require("./routes/wompi"));
 const suscripcion_1 = __importDefault(require("./routes/suscripcion"));
 const horarios_1 = __importDefault(require("./routes/horarios"));
 const sedes_1 = __importDefault(require("./routes/sedes"));
+const plantillasTurno_1 = __importDefault(require("./routes/plantillasTurno"));
+const turnos_1 = __importDefault(require("./routes/turnos"));
 const dashboard_1 = __importDefault(require("./routes/dashboard"));
 const telegram_1 = __importDefault(require("./routes/telegram"));
 const notificaciones_1 = __importDefault(require("./routes/notificaciones"));
@@ -40,6 +75,8 @@ const programarDiario_1 = require("./utils/programarDiario");
 const opcionesDeLog_1 = require("./utils/opcionesDeLog");
 const accesoEmpresa_1 = require("./utils/accesoEmpresa");
 const respuestaDeError_1 = require("./utils/respuestaDeError");
+const registrarEvento_1 = require("./utils/registrarEvento");
+const eventos_1 = __importStar(require("./routes/eventos"));
 const esProduccion = process.env.NODE_ENV === 'production';
 // En producción los secretos NO pueden venir de valores por defecto del código
 if (esProduccion && !process.env.JWT_SECRET) {
@@ -51,6 +88,20 @@ if (esProduccion && !process.env.JWT_SECRET) {
 // app se monta en <dominio>/api, algunas configuraciones entregan la URL sin el
 // prefijo. Todas nuestras rutas viven bajo /api, así que lo reponemos si falta.
 const app = (0, fastify_1.default)({
+    // La IP que se ve en el registro del sistema es la de quien de verdad llama, y no la del propio
+    // servidor (23 de septiembre de 2026). En este hosting la app Node corre detrás del proxy de
+    // cPanel, que la alcanza desde 127.0.0.1: sin esta opción, `request.ip` devuelve esa dirección
+    // para TODO el mundo y la columna de IP del módulo de accesos no valdría nada.
+    //
+    // 'loopback' y no `true`: solo se confía en la cabecera `X-Forwarded-For` cuando la conexión
+    // viene del propio equipo, que es el único caso en que la puso el proxy. Con `true`, cualquiera
+    // desde fuera podría mandar la cabecera y escribir la IP que quisiera en el registro, que es
+    // justo lo contrario de lo que se quiere de un registro de intentos de acceso.
+    //
+    // PENDIENTE DE COMPROBAR EN PRODUCCIÓN: falta ver que el proxy mande de verdad esa cabecera. Si
+    // no la manda, la IP seguirá siendo 127.0.0.1 y el registro lo dirá sin quejarse de nada. Se
+    // comprueba con un intento de login fallido desde fuera y leyendo la fila que quedó.
+    trustProxy: 'loopback',
     // Con LOG_FILE escribe a ese archivo y calla el registro de cada petición; sin ella, a consola
     // como siempre. Ver utils/opcionesDeLog.ts: cPanel descarta lo que la app imprime a stdout, así
     // que en producción sin esta variable no queda rastro de nada.
@@ -131,7 +182,20 @@ app.decorate('requireAfiliado', async (request, reply) => {
 });
 // Lo que ninguna ruta atajó sale con un texto fijo y sin el mensaje interno; los 4xx salen como
 // siempre. Va antes de registrar las rutas para que lo hereden todas. Ver utils/respuestaDeError.ts.
-app.setErrorHandler(respuestaDeError_1.manejarError);
+app.setErrorHandler((error, request, reply) => {
+    // Lo inesperado, además de responderse con el texto fijo, queda en el registro del sistema: es
+    // de donde sale la pantalla que responde "qué error está dando el producto y por qué".
+    if ((0, respuestaDeError_1.esErrorInesperado)(error))
+        (0, registrarEvento_1.registrarError)(error, request);
+    return (0, respuestaDeError_1.manejarError)(error, request, reply);
+});
+// El enganche global del registro del sistema. En `onResponse` (ya se respondió) para no añadir
+// ni un milisegundo a lo que el usuario espera, y global para que una ruta escrita mañana quede
+// cubierta sin que nadie tenga que acordarse de nada.
+app.addHook('onResponse', async (request, reply) => {
+    (0, registrarEvento_1.registrarAccesoPorRespuesta)(request, reply);
+    (0, registrarEvento_1.registrarAuditoria)(request, reply);
+});
 app.register(auth_1.default, { prefix: '/api/auth' });
 app.register(colaboradores_1.default, { prefix: '/api/colaboradores' });
 app.register(registros_1.default, { prefix: '/api/registros' });
@@ -150,9 +214,13 @@ app.register(afiliado_panel_1.default, { prefix: '/api/afiliado' });
 app.register(wompi_1.default, { prefix: '/api/wompi' });
 app.register(suscripcion_1.default, { prefix: '/api/suscripcion' });
 app.register(horarios_1.default, { prefix: '/api/horarios' });
+app.register(plantillasTurno_1.default, { prefix: '/api/plantillas-turno' });
+app.register(turnos_1.default, { prefix: '/api/turnos' });
 app.register(dashboard_1.default, { prefix: '/api/dashboard' });
 app.register(telegram_1.default, { prefix: '/api/telegram' });
 app.register(notificaciones_1.default, { prefix: '/api/notificaciones' });
+app.register(eventos_1.default, { prefix: '/api/eventos' });
+app.register(eventos_1.eventosAdminRoutes, { prefix: '/api/admin/eventos' });
 app.get('/api/health', async () => ({ status: 'ok' }));
 // Retención de fotos de verificación facial: 2 meses. Corre al arrancar y cada día
 // a las 3 de la madrugada de Bogotá (ver utils/programarDiario.ts), para que las
@@ -188,7 +256,11 @@ const start = async () => {
     try {
         // '::' escucha IPv6 e IPv4 (dual-stack); localhost puede resolver a ::1
         await app.listen({ port: Number(process.env.PORT) || 3001, host: '::' });
-        console.log('HoraPro API corriendo en puerto 3001');
+        // El puerto REAL, no uno escrito a mano: decía siempre «3001» aunque estuviera escuchando en
+        // otro, y el 19 de septiembre de 2026 mandó un diagnóstico por el camino equivocado (se creyó
+        // que había dos backends vivos). Un mensaje que afirma algo que no consultó es de la misma
+        // familia del CLAUDE.md §12.
+        console.log(`HoraPro API corriendo en puerto ${Number(process.env.PORT) || 3001}`);
         // Los cuatro barridos diarios van anclados al reloj de Bogotá y no al arranque
         // del proceso (19 de septiembre de 2026). Ver utils/programarDiario.ts y la
         // sección 8.3 del CLAUDE.md: con `setInterval` desde el arranque, la hora a la

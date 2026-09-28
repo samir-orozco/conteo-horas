@@ -1,23 +1,37 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.horaValida = void 0;
+exports.mensajeVentanasImposibles = exports.horaValida = void 0;
+exports.horasDeTramoValidas = horasDeTramoValidas;
 exports.franjaBasicaValida = franjaBasicaValida;
 exports.revisarDescansos = revisarDescansos;
 exports.franjasConVentanaImposible = franjasConVentanaImposible;
+exports.ventanasParaGuardar = ventanasParaGuardar;
 exports.franjaParaGuardar = franjaParaGuardar;
 exports.franjaParaResponder = franjaParaResponder;
 exports.pantallaViejaBorraDescansos = pantallaViejaBorraDescansos;
 const tardanzas_1 = require("./tardanzas");
 const descansos_1 = require("./descansos");
 Object.defineProperty(exports, "horaValida", { enumerable: true, get: function () { return descansos_1.horaValida; } });
+// Las horas de un tramo son horas de verdad. La regla de la hora es UNA sola y vive
+// en `horaValida`: aquí y en la ruta hubo regex propias que dejaban pasar «99:99»
+// (12 de septiembre de 2026, CLAUDE.md §9.3).
+function horasDeTramoValidas(t) {
+    const tramo = (t && typeof t === 'object' ? t : {});
+    return (0, descansos_1.horaValida)(tramo.horaEntrada) !== null && (0, descansos_1.horaValida)(tramo.horaSalida) !== null;
+}
 // Lo básico de una franja, antes de mirar sus pausas: al menos un día, y horas de
-// entrada y salida que de verdad son horas. Vivía en la ruta con su propia regex,
-// que dejaba pasar «99:99» (12 de septiembre de 2026, CLAUDE.md §9.3).
+// entrada y salida que de verdad son horas.
 function franjaBasicaValida(f) {
     const franja = (f && typeof f === 'object' ? f : {});
-    return Array.isArray(franja.dias) && franja.dias.length > 0 &&
-        (0, descansos_1.horaValida)(franja.horaEntrada) !== null && (0, descansos_1.horaValida)(franja.horaSalida) !== null;
+    return Array.isArray(franja.dias) && franja.dias.length > 0 && horasDeTramoValidas(f);
 }
+// El mensaje con el que se le devuelve al administrador una ventana que no se puede
+// cumplir. Vivía en routes/horarios.ts; se mudó aquí el 19 de septiembre de 2026 para
+// que el catálogo de plantillas dé EL MISMO motivo ante la misma falla, en vez de una
+// segunda redacción del mismo error.
+const mensajeVentanasImposibles = (imposibles) => `El almuerzo o los descansos no caben dentro de la jornada: ${imposibles.join(', ')}. ` +
+    'Revisa que cada hora de inicio sea anterior a la de fin, que ninguna pausa se cruce con otra y que no haya más de 3 descansos.';
+exports.mensajeVentanasImposibles = mensajeVentanasImposibles;
 // La ventana como tramo de la jornada, en minutos contados desde la entrada. Así
 // se comparan igual una franja de día y una nocturna que cruza la medianoche.
 function tramoDesdeLaEntrada(f, ini, fin) {
@@ -55,6 +69,16 @@ function revisar(f, ini, fin) {
 }
 const franjaEnTexto = (f) => `${f.horaEntrada}-${f.horaSalida}`;
 const horaEnTexto = (v) => (escrito(v) ? String(v) : '?');
+// Cuántas FILAS se aceptan siquiera mirar, que NO es la regla de negocio: el máximo de descansos
+// sigue siendo `MAX_DESCANSOS_POR_FRANJA` y se cuenta sobre las filas que traen horas, porque la
+// pantalla manda filas vacías a propósito y no deben gastar el cupo.
+//
+// Esto es solo un freno al abuso, puesto el 19 de septiembre de 2026: con 500 filas la revisión
+// compara todas las parejas (124.751 avisos) y esparcirlas como argumentos de `push` revienta la
+// pila, así que la ruta devolvía un 500 en vez de un 400 con su motivo. La pantalla nunca manda más
+// de tres filas; 50 está muy por encima de cualquier cuerpo legítimo y muy por debajo del punto
+// donde esto duele.
+const FILAS_MAXIMAS_DE_DESCANSOS = 50;
 // Los descansos de UNA franja: la lista completa y cumplible, o los rótulos de por
 // qué no. `n` es la posición en que el administrador ve la fila, contando las que
 // dejó vacías.
@@ -72,6 +96,13 @@ function revisarDescansos(f) {
     const franja = franjaEnTexto(f);
     if (!Array.isArray(f.descansos))
         return { mal: [`${franja} (los descansos no tienen el formato esperado)`] };
+    // El freno al abuso va ANTES de recorrer nada: una lista descomunal no se revisa fila por fila,
+    // se rechaza de una. No confundir con el máximo de descansos, que se cuenta más abajo sobre las
+    // filas que traen horas. Un primer intento puso esta guarda en el máximo de negocio y rompió la
+    // regla de que una fila vacía no gasta cupo: lo cazó una prueba que ya existía.
+    if (f.descansos.length > FILAS_MAXIMAS_DE_DESCANSOS) {
+        return { mal: [`${franja} (tiene ${f.descansos.length} descansos; el máximo es ${descansos_1.MAX_DESCANSOS_POR_FRANJA})`] };
+    }
     const mal = [];
     const validos = [];
     let conHoras = 0;
@@ -112,7 +143,7 @@ function revisarDescansos(f) {
     }
     return mal.length > 0 ? { mal } : { ok: validos.map(d => d.ventana) };
 }
-// Franjas con alguna ventana que no se puede cumplir. Se devuelven para que la
+// Tramos con alguna ventana que no se puede cumplir. Se devuelven para que la
 // ruta responda 400 con un mensaje concreto en vez de guardar algo imposible.
 function franjasConVentanaImposible(franjas) {
     const malas = [];
@@ -127,22 +158,31 @@ function franjasConVentanaImposible(franjas) {
     }
     return malas;
 }
-// Lo que se guarda de una franja: el almuerzo completo o vacío, nunca a medias, y
-// la lista de descansos en su forma canónica, ordenada desde la entrada (NULL si no
-// hay ninguno). La ruta ya rechazó lo imposible antes de llegar aquí.
-function franjaParaGuardar(f) {
+// Lo que se guarda de las PAUSAS de un tramo: el almuerzo completo o vacío, nunca a
+// medias, y la lista de descansos en su forma canónica, ordenada desde la entrada
+// (NULL si no hay ninguno). Quien llama ya rechazó lo imposible antes de llegar aquí.
+//
+// Está separado de `franjaParaGuardar` para que la plantilla de turno, que no tiene
+// días, guarde sus pausas con este mismo código y no con una copia.
+function ventanasParaGuardar(f) {
     const i = (0, descansos_1.horaValida)(f.almuerzoInicio);
     const fi = (0, descansos_1.horaValida)(f.almuerzoFin);
     const conAlmuerzo = i !== null && fi !== null && i !== fi;
     const descansos = revisarDescansos(f);
     return {
-        dias: f.dias,
-        horaEntrada: f.horaEntrada,
-        horaSalida: f.horaSalida,
         tieneAlmuerzo: f.tieneAlmuerzo !== false, // por defecto sí descuenta almuerzo
         almuerzoInicio: conAlmuerzo ? i : null,
         almuerzoFin: conAlmuerzo ? fi : null,
         descansos: (0, descansos_1.escribirDescansos)((0, descansos_1.ventanasEnOrden)(f.horaEntrada, 'ok' in descansos ? descansos.ok : [])),
+    };
+}
+// Lo que se guarda de una franja: sus días, sus horas y sus pausas.
+function franjaParaGuardar(f) {
+    return {
+        dias: f.dias,
+        horaEntrada: f.horaEntrada,
+        horaSalida: f.horaSalida,
+        ...ventanasParaGuardar(f),
     };
 }
 // La franja como viaja al navegador: los descansos como arreglo, nunca el texto que

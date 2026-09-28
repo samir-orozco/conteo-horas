@@ -187,6 +187,9 @@ async function colaboradorRoutes(app) {
         if ('fechaNacimiento' in data) {
             data.fechaNacimiento = data.fechaNacimiento ? new Date(`${data.fechaNacimiento}T12:00:00Z`) : null;
         }
+        // Vacío significa «el contrato es la cédula»: se guarda como nulo y no como cadena vacía.
+        if ('numeroContrato' in data)
+            data.numeroContrato = String(data.numeroContrato ?? '').trim() || null;
         if ('modalidad' in data)
             data.modalidad = (0, modalidad_1.normalizarModalidad)(data.modalidad);
         if ('puedeCerrarEnOtraSede' in data)

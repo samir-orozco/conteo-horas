@@ -11,7 +11,8 @@ exports.textoMuyLargo = textoMuyLargo;
 exports.MAX_CARACTERES = 191;
 // Las columnas de texto, con el nombre que ve la persona.
 exports.TEXTOS_DEL_COLABORADOR = {
-    nombre: 'Nombre', apellido: 'Apellido', cedula: 'Cédula', cargo: 'Cargo', email: 'Correo', telefono: 'Teléfono',
+    nombre: 'Nombre', apellido: 'Apellido', cedula: 'Cédula', numeroContrato: 'Número de contrato',
+    cargo: 'Cargo', email: 'Correo', telefono: 'Teléfono',
 };
 const caracteres = (valor) => Array.from(valor).length;
 exports.caracteres = caracteres;

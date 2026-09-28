@@ -14,8 +14,6 @@ function validarFranjas(franjas) {
         return false;
     return franjas.every(ventanasDeHorario_1.franjaBasicaValida);
 }
-const mensajeVentanasImposibles = (imposibles) => `El almuerzo o los descansos no caben dentro de la jornada: ${imposibles.join(', ')}. ` +
-    'Revisa que cada hora de inicio sea anterior a la de fin, que ninguna pausa se cruce con otra y que no haya más de 3 descansos por franja.';
 // Horarios de trabajo de la empresa (se asignan a cada colaborador). Un horario
 // agrupa varias franjas: ej. "Oficina" = L-V 08:00-17:00 + Sáb 08:00-12:00.
 //
@@ -48,7 +46,7 @@ async function horarioRoutes(app) {
         }
         const imposibles = (0, ventanasDeHorario_1.franjasConVentanaImposible)(franjas);
         if (imposibles.length > 0) {
-            return reply.status(400).send({ error: mensajeVentanasImposibles(imposibles) });
+            return reply.status(400).send({ error: (0, ventanasDeHorario_1.mensajeVentanasImposibles)(imposibles) });
         }
         // Gating: varios horarios requieren plan Profesional o superior
         const cap = await (0, capacidades_1.capacidadesEmpresa)(request.empresaId);
@@ -98,7 +96,7 @@ async function horarioRoutes(app) {
         }
         const imposibles = (0, ventanasDeHorario_1.franjasConVentanaImposible)(franjas);
         if (imposibles.length > 0) {
-            return reply.status(400).send({ error: mensajeVentanasImposibles(imposibles) });
+            return reply.status(400).send({ error: (0, ventanasDeHorario_1.mensajeVentanasImposibles)(imposibles) });
         }
         // Las franjas se reemplazan completas: es la forma simple y sin ambigüedad
         const actualizado = await prisma_1.prisma.horario.update({

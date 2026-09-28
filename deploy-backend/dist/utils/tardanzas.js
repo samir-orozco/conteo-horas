@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DIAS_SEMANA = void 0;
 exports.minutosDe = minutosDe;
 exports.duracionFranjaMin = duracionFranjaMin;
 exports.franjaDelDia = franjaDelDia;
@@ -13,8 +12,11 @@ exports.ventanaDeSalidaTemprana = ventanaDeSalidaTemprana;
 exports.ventanaDeLlegadaTarde = ventanaDeLlegadaTarde;
 exports.llegadaTarde = llegadaTarde;
 const date_fns_tz_1 = require("date-fns-tz");
+// Vivía aquí, y de aquí la importaban otros cuatro archivos. Se mudó a su propio módulo sin
+// dependencias el 20 de septiembre de 2026: este archivo importa de `horasColombiana`, así que
+// tenerla aquí cerraba un ciclo en cuanto `horasColombiana` necesitó preguntar por el descanso.
+const diasDeLaSemana_1 = require("./diasDeLaSemana");
 const TZ = 'America/Bogota';
-exports.DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 function minutosDe(hhmm) {
     const [h, m] = hhmm.split(':').map(Number);
     return h * 60 + m;
@@ -57,7 +59,7 @@ function construirExtraConfig(modo, horario, dias) {
     const tol = horario.toleranciaMin ?? 0;
     for (const fr of horario.franjas) {
         for (const d of (fr.dias ?? [])) {
-            const idx = exports.DIAS_SEMANA.indexOf(d);
+            const idx = diasDeLaSemana_1.DIAS_SEMANA.indexOf(d);
             if (idx >= 0)
                 franjaPorDia[idx] = { ini: minutosDe(fr.horaEntrada), fin: minutosDe(fr.horaSalida), toleranciaMin: tol };
         }
@@ -209,7 +211,7 @@ function llegadaTarde(ahoraBog, ctx) {
     const { horario } = ctx;
     if (!ctx.esPrimeraEntrada || ctx.vuelveDeUnaPausa || ctx.esFestivo || !horario?.activo)
         return null;
-    const franja = franjaDelDia(horario, exports.DIAS_SEMANA[ahoraBog.getDay()]);
+    const franja = franjaDelDia(horario, diasDeLaSemana_1.DIAS_SEMANA[ahoraBog.getDay()]);
     if (!franja)
         return null;
     const minutos = ahoraBog.getHours() * 60 + ahoraBog.getMinutes() - (minutosDe(franja.horaEntrada) + horario.toleranciaMin);

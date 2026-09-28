@@ -11,9 +11,9 @@ const date_fns_tz_1 = require("date-fns-tz");
 // disparaban las tareas diarias contra la base de desarrollo.
 const prisma_1 = require("../prisma");
 const tardanzas_1 = require("./tardanzas");
+const diasDeLaSemana_1 = require("./diasDeLaSemana");
 const notificaciones_1 = require("./notificaciones");
 const TZ = 'America/Bogota';
-const DIAS_SEMANA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const minutosDe = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
 // Cuánto tiempo el kiosco sigue aceptando la salida de un turno abierto. Es la
 // misma ventana con la que /marcar busca el turno en curso, y por eso vive aquí
@@ -53,7 +53,7 @@ function decidirCierre(turno, ahora) {
         return NO_CERRAR;
     const zEnt = (0, date_fns_tz_1.toZonedTime)(entrada, TZ);
     // La franja del día en que ENTRÓ, no la de hoy: un viernes sale a otra hora.
-    const franja = horario?.activo ? (0, tardanzas_1.franjaDelDia)(horario, DIAS_SEMANA[zEnt.getDay()]) : null;
+    const franja = horario?.activo ? (0, tardanzas_1.franjaDelDia)(horario, diasDeLaSemana_1.DIAS_SEMANA[zEnt.getDay()]) : null;
     // Sin franja no hay hora que aplicar: se marca para que la ponga el admin.
     if (!franja)
         return { cerrar: true, salida: null, horaFranja: null };

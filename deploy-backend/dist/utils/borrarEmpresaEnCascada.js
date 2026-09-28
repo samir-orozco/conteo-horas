@@ -80,6 +80,13 @@ async function borrarEmpresaEnCascada(tx, empresaId, { lote = exports.LOTE_BORRA
     await enLotes('colaboradores_sedes', colaboradores, parte => tx.colaboradorSede.deleteMany({ where: { colaboradorId: { in: parte } } }));
     await enLotes('colaboradores_sedes', sedes, parte => tx.colaboradorSede.deleteMany({ where: { sedeId: { in: parte } } }));
     await enLotes('colaboradores', colaboradores, parte => tx.colaborador.deleteMany({ where: { id: { in: parte } } }));
+    // El catálogo de turnos (19 de septiembre de 2026). Su llave hacia `empresas` es RESTRICT,
+    // así que sin esta línea una empresa que hubiera creado un solo turno YA NO SE PODRÍA
+    // BORRAR: el `deleteMany` final de `empresas` fallaría y la transacción entera se
+    // desharía. Va ANTES de `sedes` a propósito: su `sedeId` es SET NULL, y borrar las sedes
+    // primero obligaría al motor a actualizar estas filas para dejarlas en null justo antes de
+    // borrarlas.
+    await enLotes('plantillas_turno', ids(await tx.plantillaTurno.findMany({ where: { empresaId }, select: { id: true } })), parte => tx.plantillaTurno.deleteMany({ where: { id: { in: parte } } }));
     await enLotes('sedes', sedes, parte => tx.sede.deleteMany({ where: { id: { in: parte } } }));
     // Después de colaboradores: `colaboradores.horarioId` los apunta.
     await enLotes('franjas_horario', ids(await tx.franjaHorario.findMany({ where: { horario: { empresaId } }, select: { id: true } })), parte => tx.franjaHorario.deleteMany({ where: { id: { in: parte } } }));

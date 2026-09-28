@@ -4,6 +4,8 @@ exports.calcularDiasEsperados = calcularDiasEsperados;
 exports.combinarDiasEsperados = combinarDiasEsperados;
 const date_fns_tz_1 = require("date-fns-tz");
 const tardanzas_1 = require("./tardanzas");
+const diasDeLaSemana_1 = require("./diasDeLaSemana");
+const fechas_1 = require("./fechas");
 const saldoTiempo_1 = require("./saldoTiempo");
 const descansos_1 = require("./descansos");
 const TZ = 'America/Bogota';
@@ -12,14 +14,6 @@ const UN_DIA_MS = 24 * 60 * 60 * 1000;
 function medianocheBogotaDe(d) {
     const z = (0, date_fns_tz_1.toZonedTime)(d, TZ);
     return new Date(Date.UTC(z.getFullYear(), z.getMonth(), z.getDate(), 5, 0, 0));
-}
-// Clave de día calendario Bogotá ("2026-07-01"). Se empareja por día y no por
-// instante a propósito: MySQL puede devolver la fecha con milisegundos, y una
-// fila que no empareje por unos milisegundos quedaría huérfana y el día caería
-// al horario actual sin que nadie se entere.
-function claveDiaBogota(d) {
-    const z = (0, date_fns_tz_1.toZonedTime)(d, TZ);
-    return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
 }
 function calcularDiasEsperados(desde, finExclusivo, horario) {
     const activo = !!horario && horario.activo;
@@ -31,7 +25,7 @@ function calcularDiasEsperados(desde, finExclusivo, horario) {
     const fin = finExclusivo.getTime();
     while (cursor.getTime() < fin) {
         const z = (0, date_fns_tz_1.toZonedTime)(cursor, TZ);
-        const franja = activo ? (0, tardanzas_1.franjaDelDia)(horario, tardanzas_1.DIAS_SEMANA[z.getDay()]) : null;
+        const franja = activo ? (0, tardanzas_1.franjaDelDia)(horario, diasDeLaSemana_1.DIAS_SEMANA[z.getDay()]) : null;
         if (!franja) {
             salida.push({
                 fecha: cursor,
@@ -100,9 +94,9 @@ function combinarDiasEsperados(desde, finExclusivo, materializados, horario) {
     const base = calcularDiasEsperados(desde, finExclusivo, horario);
     if (materializados.length === 0)
         return base;
-    const porDia = new Map(materializados.map(m => [claveDiaBogota(m.fecha), m]));
+    const porDia = new Map(materializados.map(m => [(0, fechas_1.claveDiaBogota)(m.fecha), m]));
     return base.map(dia => {
-        const congelado = porDia.get(claveDiaBogota(dia.fecha));
+        const congelado = porDia.get((0, fechas_1.claveDiaBogota)(dia.fecha));
         // La fecha se normaliza a la del rango: si la fila viniera con milisegundos
         // de la base de datos, aguas abajo se compara por día y no debe arrastrarlos.
         return congelado ? { ...congelado, fecha: dia.fecha } : dia;

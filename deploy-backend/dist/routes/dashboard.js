@@ -5,17 +5,17 @@ const date_fns_tz_1 = require("date-fns-tz");
 const date_fns_1 = require("date-fns");
 const prisma_1 = require("../prisma");
 const horasColombiana_1 = require("../utils/horasColombiana");
+// La guarda legal, igual que en reportes.ts: un día declarado SIN acuerdo escrito no vale.
+const descansoObligatorio_1 = require("../utils/descansoObligatorio");
 const vigencias_1 = require("../utils/vigencias");
 const tardanzas_1 = require("../utils/tardanzas");
 const liquidarRegistros_1 = require("../utils/liquidarRegistros");
 const almuerzo_1 = require("../utils/almuerzo");
+// Con el nombre de siempre: la copia local salió a `utils/fechas.ts` y ninguna línea de uso cambia.
+const fechas_1 = require("../utils/fechas");
+const diasDeLaSemana_1 = require("../utils/diasDeLaSemana");
 const TZ = 'America/Bogota';
-const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
-function claveDia(d) {
-    const z = (0, date_fns_tz_1.toZonedTime)(d, TZ);
-    return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`;
-}
 function semanaKey(fecha) {
     const z = (0, date_fns_tz_1.toZonedTime)(fecha, TZ);
     return `${(0, date_fns_1.getISOWeekYear)(z)}-W${String((0, date_fns_1.getISOWeek)(z)).padStart(2, '0')}`;
@@ -38,13 +38,16 @@ async function dashboardRoutes(app) {
         // Lunes 00:00 Bogotá de la semana ISO que contiene el día 1: así las semanas
         // que cruzan el límite de mes quedan completas para los KPIs semanales/extra.
         const inicioSemanaMes = (0, date_fns_tz_1.fromZonedTime)((0, date_fns_1.startOfISOWeek)((0, date_fns_tz_1.toZonedTime)(inicioMes, TZ)), TZ);
-        const claveHoy = claveDia(ahora);
-        const diaHoy = DIAS[ahoraBog.getDay()];
+        const claveHoy = (0, fechas_1.claveDiaBogota)(ahora);
+        const diaHoy = diasDeLaSemana_1.DIAS_SEMANA[ahoraBog.getDay()];
         const [colaboradores, festivos, jornadas, tiposHoraTodos, permisos] = await Promise.all([
             prisma_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
                 select: {
                     id: true, nombre: true, apellido: true, cargo: true, fechaNacimiento: true,
+                    // Las tres del descanso: sin ellas el panel no puede saber qué día descansa cada quien y
+                    // sus horas de la semana discreparían de las del reporte para la misma gente.
+                    descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
                     horario: { select: { id: true, activo: true, nombre: true, toleranciaMin: true, almuerzoMin: true,
                             franjas: { select: { dias: true, horaEntrada: true, horaSalida: true, tieneAlmuerzo: true } } } },
                 },
@@ -61,7 +64,7 @@ async function dashboardRoutes(app) {
             }),
         ]);
         const colIds = colaboradores.map(c => c.id);
-        const festSet = new Set(festivos.map(f => claveDia(f.fecha)));
+        const festSet = new Set(festivos.map(f => (0, fechas_1.claveDiaBogota)(f.fecha)));
         const hoyEsFestivo = festSet.has(claveHoy);
         // Registros de hoy + turnos abiertos de días anteriores.
         // Nota: NO se traen fotoEntrada/fotoSalida (LongText base64) — solo se necesita
@@ -73,7 +76,7 @@ async function dashboardRoutes(app) {
             salidaAlmuerzo: true, salidaDescanso: true,
             colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
         };
-        const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto] = await Promise.all([
+        const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados] = await Promise.all([
             prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia } },
                 select: SEL_REG,
@@ -93,6 +96,13 @@ async function dashboardRoutes(app) {
             prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia }, fotoSalida: { not: null } },
                 select: { id: true },
+            }),
+            // Si cada día del rango era el descanso obligatorio de esa persona, congelado. MISMO rango que
+            // `registrosMes` de arriba, para que no haya un día con marcación y sin su respuesta. Van solo
+            // tres columnas: el panel no necesita el resto del día, solo saber si llevaba recargo.
+            prisma_1.prisma.diaEsperado.findMany({
+                where: { colaboradorId: { in: colIds }, fecha: { gte: inicioSemanaMes, lte: finDia } },
+                select: { colaboradorId: true, fecha: true, esDescanso: true },
             }),
         ]);
         const conFotoSalida = new Set(salidasConFoto.map(r => r.id));
@@ -162,7 +172,7 @@ async function dashboardRoutes(app) {
         }));
         // Novedades que cubren HOY. Se calculan las claves de día UNA sola vez por permiso
         // y se reutilizan para 'sin marcar' y para el listado de novedades.
-        const permisosHoy = permisos.filter(p => claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin));
+        const permisosHoy = permisos.filter(p => (0, fechas_1.claveDiaBogota)(p.fechaInicio) <= claveHoy && claveHoy <= (0, fechas_1.claveDiaBogota)(p.fechaFin));
         // Tipo de novedad activa hoy por colaborador (para explicar por qué no marcó)
         const novedadHoyTipo = new Map();
         for (const p of permisosHoy) {
@@ -248,7 +258,7 @@ async function dashboardRoutes(app) {
         // es el almuerzo del horario vigente, como siempre. El día es el de la fecha de la jornada.
         const filasPorColDia = new Map();
         for (const r of registrosMes) {
-            const k = `${r.colaboradorId}|${claveDia(r.fecha)}`;
+            const k = `${r.colaboradorId}|${(0, fechas_1.claveDiaBogota)(r.fecha)}`;
             filasPorColDia.set(k, [...(filasPorColDia.get(k) ?? []), r]);
         }
         const almuerzoPorColDia = new Map([...filasPorColDia].map(([k, filas]) => [k,
@@ -256,10 +266,24 @@ async function dashboardRoutes(app) {
         // Modo de horas extra (mismo criterio que el reporte de liquidación)
         const cfgModo = await prisma_1.prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } });
         const modoExtra = cfgModo?.valor === 'HORARIO' ? 'HORARIO' : 'SEMANAL';
-        // Sin días congelados: el panel mira la semana en curso y se queda con el
-        // respaldo por día de semana, que es como se ha comportado siempre. La
-        // corrección por fecha vive donde se liquida, que es donde mueve plata.
+        // El `ExtraConfig` sigue sin días congelados: el panel mira la semana en curso y se queda con el
+        // respaldo por día de semana, que es como se ha comportado siempre.
         const extraConfigPorCol = new Map(colaboradores.map(c => [c.id, (0, tardanzas_1.construirExtraConfig)(modoExtra, c.horario, [])]));
+        // El DESCANSO sí se conecta (20 de septiembre de 2026), y es un cambio de criterio respecto de
+        // lo que decía aquí antes. La razón: el panel y el reporte cuentan las horas de la MISMA semana
+        // para la MISMA gente, así que si uno respeta el día de descanso pactado y el otro no, muestran
+        // dos cifras distintas de lo mismo. Eso es peor que no mostrarlo.
+        //
+        // Donde hay fila congelada manda la fila; donde no la hay, el estado declarado hoy. Un `null`
+        // NO entra al mapa: es la ausencia del dato, no un `false`.
+        const descansoPorCol = new Map(colaboradores.map(c => [c.id, { porFecha: {}, estado: (0, descansoObligatorio_1.estadoDescansoDe)(c) }]));
+        for (const d of diasCongelados) {
+            if (typeof d.esDescanso !== 'boolean')
+                continue;
+            const cfg = descansoPorCol.get(d.colaboradorId);
+            if (cfg?.porFecha)
+                cfg.porFecha[(0, horasColombiana_1.claveDeDescanso)(d.fecha)] = d.esDescanso;
+        }
         for (const [clave, regs] of porColSemana) {
             const jornadaSemanal = (0, vigencias_1.jornadaVigente)(regs[0].fecha, jornadas);
             let minutosOrdSemana = 0;
@@ -268,8 +292,8 @@ async function dashboardRoutes(app) {
                 if (!r.entrada || !r.salida)
                     continue;
                 const tiposDelDia = (0, vigencias_1.tiposVigentes)(r.fecha, tiposHoraTodos);
-                const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(r.entrada, r.salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana, extraConfigPorCol.get(r.colaboradorId));
-                const claveColDia = `${r.colaboradorId}|${claveDia(r.fecha)}`;
+                const { resultado, minutosOrdinariosTrabajados } = (0, horasColombiana_1.calcularHorasTrabajadas)(r.entrada, r.salida, festivosDates, tiposDelDia, jornadaSemanal, minutosOrdSemana, extraConfigPorCol.get(r.colaboradorId), descansoPorCol.get(r.colaboradorId));
+                const claveColDia = `${r.colaboradorId}|${(0, fechas_1.claveDiaBogota)(r.fecha)}`;
                 const almuerzoCobrado = cobrarAlmuerzo(claveColDia, almuerzoPorColDia.get(claveColDia) ?? 0, m => (0, horasColombiana_1.descontarAlmuerzo)(resultado, m));
                 minutosOrdSemana += Math.max(0, minutosOrdinariosTrabajados - almuerzoCobrado);
                 for (const p of resultado) {

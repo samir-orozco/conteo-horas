@@ -11,10 +11,15 @@ exports.COLABORADOR_SIN_DESCRIPTOR = exports.COLABORADOR_SIN_FOTOS = void 0;
 // función en vista previa del esquema. La prueba de al lado la compara con las columnas que
 // declara el cliente, así que una columna nueva no se queda afuera sin que nadie lo note.
 exports.COLABORADOR_SIN_FOTOS = {
-    id: true, empresaId: true, nombre: true, apellido: true, cedula: true, cargo: true, email: true,
+    id: true, empresaId: true, nombre: true, apellido: true, cedula: true, numeroContrato: true, cargo: true, email: true,
     telefono: true, fechaNacimiento: true, salarioMensual: true, auxilioTransporte: true, rostroEnroladoEn: true, rostroRechazadoEn: true, horarioId: true,
     modalidad: true, puedeCerrarEnOtraSede: true, activo: true, fechaRetiro: true, motivoRetiro: true,
     retiroProgramado: true, creadoEn: true, actualizadoEn: true,
+    // El día de descanso obligatorio (20 de septiembre de 2026). Viajan a propósito y no por inercia:
+    // `reportes.ts` usa esta misma lista para la liquidación, y sin estas tres el motor no puede ver
+    // la declaración de la persona y no podría decidir si su domingo lleva recargo. La ficha además
+    // las necesita para declararlas. No son datos sensibles: no hay razón para dejarlas fuera.
+    descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
 };
 // Lo que devuelven la ficha y las rutas que crean, editan, retiran o reingresan a una persona: las
 // fotos sí, porque la ficha las pinta, pero no el descriptor facial, que viajaba al navegador sin que
