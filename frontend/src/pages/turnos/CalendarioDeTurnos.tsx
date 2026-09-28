@@ -1289,7 +1289,16 @@ export default function CalendarioDeTurnos() {
   const [marcadas, setMarcadas] = useState<Record<string, CeldaMarcada>>({});
   // El gesto en curso. Va en un `ref` y no en el estado a propósito: cambia en cada celda por la que
   // pasa el puntero, y guardarlo en el estado redibujaría la rejilla entera en cada movimiento.
-  const arrastre = useRef<{ desde: CeldaMarcada; base: Record<string, CeldaMarcada>; movido: boolean } | null>(null);
+  const arrastre = useRef<{
+    desde: CeldaMarcada;
+    base: Record<string, CeldaMarcada>;
+    movido: boolean;
+    yaEstaba: boolean;
+  } | null>(null);
+  // SI HAY UN RANGO ABIERTO ESPERANDO SU SEGUNDA ESQUINA. Va en un `ref` y no en el estado porque
+  // cambia a media gesto y no pinta nada por sí mismo: guardarlo en el estado redibujaría la rejilla
+  // entera entre el primer clic y el segundo.
+  const rangoAbierto = useRef(false);
   // LO QUE ESTÁ A PUNTO DE APLICARSE, mientras la previa está abierta. `null` = no hay previa.
   //
   // Se guarda como DATO y no como función, aunque la escritura reciba una función: hoy es una sola
@@ -1453,8 +1462,29 @@ export default function CalendarioDeTurnos() {
     });
   };
 
+  const cerrarRango = () => { rangoAbierto.current = false; arrastre.current = null; };
+
+  // EL PRIMER CLIC ABRE EL RANGO Y EL SEGUNDO LO CIERRA, que es el gesto de la maqueta y el único
+  // practicable en la vista de mes: arrastrar sobre 31 columnas obliga a desplazar con el botón
+  // apretado. Arrastrar sigue valiendo para lo corto.
+  //
+  // El rectángulo se calcula AQUÍ, en el `pointerdown`, y no en la escucha de `pointerup`: esta
+  // función se vuelve a crear en cada dibujado y ve `filas` y `dias` frescos, mientras que aquella se
+  // registra una sola vez y los vería congelados del primer dibujado.
   const iniciarArrastre = (celda: CeldaMarcada) => {
-    arrastre.current = { desde: celda, base: { ...marcadas }, movido: false };
+    if (rangoAbierto.current && arrastre.current) {
+      extenderArrastre(celda);
+      cerrarRango();
+      return;
+    }
+    arrastre.current = {
+      desde: celda,
+      base: { ...marcadas },
+      movido: false,
+      // Si ya estaba marcada, un clic suelto la QUITA. Sin esto, equivocarse en una celda de un
+      // rectángulo de doscientas obligaría a limpiar todo y empezar de nuevo.
+      yaEstaba: Boolean(marcadas[claveDeCelda(celda)]),
+    };
   };
 
   // `pointerover` y no `pointerenter`: enter NO BURBUJEA, así que colgado de la celda de la tabla no
@@ -1474,30 +1504,65 @@ export default function CalendarioDeTurnos() {
   // pasa al arrastrar hasta el borde— una escucha colgada de la celda no se enteraría y el gesto se
   // quedaría abierto para siempre.
   useEffect(() => {
-    const alSoltar = () => { arrastre.current = null; };
+    // AL SOLTAR SE DECIDE QUÉ FUE EL GESTO, y son tres cosas distintas:
+    //
+    //   se movió          fue un arrastre: el rectángulo ya está marcado y el rango se cierra.
+    //   no se movió y la
+    //   celda ya estaba   fue un clic para QUITARLA.
+    //   no se movió       fue el PRIMER clic de un rango: se marca esa celda y el rango queda
+    //                     abierto esperando la segunda esquina.
+    //
+    // Solo toca una celda, así que no necesita `filas` ni `dias` y puede vivir en una escucha
+    // registrada una sola vez. El estado se actualiza con la forma funcional, que tampoco los mira.
+    const alSoltar = () => {
+      const gesto = arrastre.current;
+      if (!gesto) return;
+      if (gesto.movido) { cerrarRango(); return; }
+
+      const clave = claveDeCelda(gesto.desde);
+      if (gesto.yaEstaba && !rangoAbierto.current) {
+        setMarcadas(antes => {
+          const ahora = { ...antes };
+          delete ahora[clave];
+          return ahora;
+        });
+        cerrarRango();
+        return;
+      }
+      setMarcadas(antes => ({ ...antes, [clave]: gesto.desde }));
+      // El ancla SOBREVIVE al primer clic: es la esquina desde la que el segundo cerrará el
+      // rectángulo. Por eso aquí no se borra `arrastre.current`.
+      gesto.base = { ...gesto.base, [clave]: gesto.desde };
+      rangoAbierto.current = true;
+    };
+    const alCancelar = () => cerrarRango();
     window.addEventListener('pointerup', alSoltar);
-    window.addEventListener('pointercancel', alSoltar);
+    window.addEventListener('pointercancel', alCancelar);
     return () => {
       window.removeEventListener('pointerup', alSoltar);
-      window.removeEventListener('pointercancel', alSoltar);
+      window.removeEventListener('pointercancel', alCancelar);
     };
   }, []);
 
   // La fila de una persona son SUS días y no las columnas de la vista: una respuesta puede traerle
   // días que la rejilla no encabeza, y marcar lo que no se ve sería escribir a ciegas.
+  // La fila y la columna CIERRAN el rango: son gestos completos en sí mismos, y dejarlo abierto haría
+  // que el siguiente clic en una celda cualquiera estirara un rectángulo desde quién sabe dónde.
   const marcarFila = (fila: FilaDelCalendario) => {
     const suyas = fila.dias.map(d => ({ colaboradorId: fila.id, fecha: d.fecha }));
     const completa = suyas.every(c => marcadas[claveDeCelda(c)]);
     marcar(suyas, completa);
+    cerrarRango();
   };
 
   const marcarColumna = (fecha: string) => {
     const esas = filas.map(f => ({ colaboradorId: f.id, fecha }));
     const completa = esas.every(c => marcadas[claveDeCelda(c)]);
     marcar(esas, completa);
+    cerrarRango();
   };
 
-  const limpiarMarcadas = () => { setMarcadas({}); setResultado(null); };
+  const limpiarMarcadas = () => { setMarcadas({}); setResultado(null); cerrarRango(); };
 
   const seleccion = Object.values(marcadas);
   const cuenta = {
@@ -1731,13 +1796,18 @@ export default function CalendarioDeTurnos() {
     return dia.estado === 'DESCANSO_TRABAJADO' ? (
       <button type="button"
         aria-label={`Descanso trabajado de ${fila.nombre} ${fila.apellido}, día ${Number(dia.fecha.slice(8, 10))}`}
-        onClick={() => abrirDecision(fila, dia)} className={clase}>
+        // DOBLE CLIC, porque el clic simple ahora MARCA la celda (28 de septiembre de 2026). Los dos
+        // gestos no caben en el mismo clic, y el de marcar es el que se usa a todas horas.
+        onDoubleClick={() => abrirDecision(fila, dia)} className={clase}>
         {dibujar(false)}
       </button>
     ) : sePuedePintar(dia.fecha, hoy) ? (
       <button type="button"
         aria-label={`Turno de ${fila.nombre} ${fila.apellido}, día ${Number(dia.fecha.slice(8, 10))}`}
-        onClick={e => {
+        // DOBLE CLIC, no clic simple: desde el 28 de septiembre de 2026 el clic marca la celda, que es
+        // el gesto del trabajo diario. El panel con las tolerancias, el almuerzo y los descansos de
+        // ESE día sigue estando, un gesto más adentro.
+        onDoubleClick={e => {
           const r = e.currentTarget.getBoundingClientRect();
           setEditando({ fila, dia, ancla: { x: r.x, y: r.y, ancho: r.width, alto: r.height } });
           setErrorPintado('');

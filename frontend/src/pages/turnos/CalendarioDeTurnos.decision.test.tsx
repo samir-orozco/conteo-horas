@@ -108,7 +108,10 @@ const montarCon = (extraDelDia: Record<string, unknown>) => {
 
 const abrir = async () => {
   const usuario = userEvent.setup();
-  await usuario.click(await screen.findByRole('button', {
+  // DOBLE CLIC desde el 28 de septiembre de 2026: el clic simple pasó a MARCAR la celda para la
+  // programación en bloque, y el modal del descanso trabajado se movió un gesto más adentro. Lo que
+  // este archivo comprueba —qué obliga la ley a mostrar y qué se guarda— no cambia.
+  await usuario.dblClick(await screen.findByRole('button', {
     name: new RegExp(`descanso trabajado.*${numeroDe(TRABAJADO)}`, 'i'),
   }));
   return { usuario, dialogo: await screen.findByRole('dialog', { name: /descanso trabajado/i }) };

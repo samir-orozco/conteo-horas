@@ -170,29 +170,70 @@ describe('marcar varias celdas', () => {
     expect(await tarjeta()).toHaveTextContent(/3 jornadas/);
   });
 
-  it('un clic suelto NO marca nada: sigue abriendo el panel de la jornada', async () => {
-    // LA FRONTERA ENTRE LOS DOS GESTOS, y es la que sostiene que este trabajo no rompa lo que ya
-    // había. Un clic en la celda tiene que seguir abriendo el panel del día con sus tolerancias, su
-    // almuerzo y sus descansos, que es lo que el dueño pidió el 22 de septiembre.
+  it('UN CLIC MARCA esa celda, como en la maqueta', async () => {
+    // EL GESTO CAMBIÓ A PROPÓSITO el 28 de septiembre de 2026, con el dueño mirando la maqueta al
+    // lado: «falta la selección en lote». En la maqueta un clic marca, y clic en una esquina más clic
+    // en la otra cierra el rectángulo. Arrastrar sirve para una semana, pero en la vista de mes hay
+    // 31 columnas y arrastrar obliga a desplazar con el botón apretado, que es inviable.
+    //
+    // Antes este mismo clic abría el panel del día. No se pierde: pasa al DOBLE clic, y su caso está
+    // más abajo. Los dos gestos no pueden vivir en el mismo clic.
     const usuario = userEvent.setup();
     montar();
     await usuario.click(await celda('Ana', DOMINGO));
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
+    expect(await tarjeta()).toHaveTextContent(/1 jornada/);
   });
 
-  it('apretar y mover DENTRO de la misma celda tampoco la marca', async () => {
-    // ESTA PRUEBA EXISTE PORQUE LA GUARDA NO TENÍA NINGUNA, y se vio buscando qué mutación mataría a
-    // cada una. `pointerover` BURBUJEA y se vuelve a disparar al pasar por los elementos de dentro de
-    // la propia celda, así que sin la comprobación de «llegó a OTRA celda» un clic normal —apretar,
-    // moverse un pelo, soltar— dejaría la celda marcada además de abrir el panel. El siguiente turno
-    // que alguien eligiera se escribiría sobre una selección que no sabía que tenía.
+  it('el SEGUNDO clic cierra el rectángulo entre las dos esquinas', async () => {
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await celda('Ana', VIERNES));
+    await usuario.click(await celda('Beto', DOMINGO));
+    // Dos personas por tres días, sin arrastrar ni una vez.
+    expect(await tarjeta()).toHaveTextContent(/6 jornadas/);
+  });
+
+  it('da igual por qué esquina se empiece', async () => {
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await celda('Beto', DOMINGO));
+    await usuario.click(await celda('Ana', VIERNES));
+    expect(await tarjeta()).toHaveTextContent(/6 jornadas/);
+  });
+
+  it('con el rango ya cerrado, un clic en una celda marcada la desmarca', async () => {
+    // Sin esto, equivocarse en una sola celda de un rectángulo de doscientas obliga a limpiar y
+    // empezar de nuevo.
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await celda('Ana', SABADO));
+    await usuario.click(await celda('Ana', DOMINGO));
+    expect(await tarjeta()).toHaveTextContent(/2 jornadas/);
+    await usuario.click(await celda('Ana', DOMINGO));
+    expect(await tarjeta()).toHaveTextContent(/1 jornada/);
+  });
+
+  it('el DOBLE clic abre el panel del día, que es donde se fue ese gesto', async () => {
+    // El panel con las tolerancias, el almuerzo y los descansos del día sigue existiendo: lo pidió el
+    // dueño el 22 de septiembre y es lo único que muestra las reglas con las que ESE día se liquida.
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.dblClick(await celda('Ana', DOMINGO));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('apretar y mover DENTRO de la misma celda no arma un rectángulo', async () => {
+    // `pointerover` BURBUJEA y se vuelve a disparar al pasar por los elementos de dentro de la propia
+    // celda. Sin la comprobación de «llegó a OTRA celda», moverse un pelo con el botón apretado
+    // contaría como arrastre y cerraría el rango en la misma celda, dejando el gesto a medias.
     montar();
     const suya = await celda('Ana', DOMINGO);
     fireEvent.pointerDown(suya, { pointerId: 1, button: 0 });
     fireEvent.pointerOver(suya, { pointerId: 1 });
     fireEvent.pointerUp(window, { pointerId: 1 });
-    expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
+    // Queda marcada la celda (es un clic), pero el rango sigue ABIERTO: el siguiente clic tiene que
+    // cerrar un rectángulo, no desmarcarla.
+    expect(await tarjeta()).toHaveTextContent(/1 jornada/);
   });
 
   it('Cancelar limpia lo marcado y la tarjeta se va', async () => {
