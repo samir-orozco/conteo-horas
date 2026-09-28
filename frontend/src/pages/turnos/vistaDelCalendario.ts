@@ -43,6 +43,35 @@ function diasDelMes(primero: string): string[] {
   return dias;
 }
 
+// LAS COLUMNAS DE LA VISTA DE MES: SEMANAS COMPLETAS (28 de septiembre de 2026).
+//
+// Del lunes anterior al día 1 al domingo posterior al último. NO es estético, y esta es la razón:
+// pintar un día REESCRIBE SU SEMANA ENTERA, porque el descanso obligatorio se decide por semana. Si
+// el mes se cortara a mitad de semana, una sola escritura tocaría días que no están en pantalla y
+// quien planifica no vería lo que acaba de cambiar.
+//
+// VIVE APARTE DE `diasDelMes` Y NO LA REEMPLAZA, que es lo importante: `moverVista` usa aquella para
+// saltar de mes, y si le cambiara el significado el salto se calcularía desde un domingo que ya es
+// del mes siguiente. Los meses empezarían a repetirse o a saltarse SIN QUE NADA SE QUEJE. Dos
+// significados, dos funciones.
+//
+// El peor mes son 42 columnas (marzo de 2026, que empieza en domingo y acaba en martes) y el tope
+// del backend son 62 días, así que cabe con margen. Está medido, no supuesto, y hay una prueba que
+// lo afirma.
+function columnasDelMes(primero: string): string[] {
+  const delMes = diasDelMes(primero);
+  const desde = lunesDeLaSemana(primero);
+  // El domingo de la semana del último día es su lunes más seis. Así no hace falta una segunda regla
+  // de «qué día de la semana es» que pudiera separarse de `lunesDeLaSemana`.
+  const hasta = sumarDias(lunesDeLaSemana(delMes[delMes.length - 1]), 6);
+
+  const columnas: string[] = [];
+  // Se comparan cadenas ISO, que ordenan igual que las fechas. Sin `new Date` de por medio no hay
+  // zona horaria que pueda correr un día (CLAUDE.md §7).
+  for (let d = desde; d <= hasta; d = sumarDias(d, 1)) columnas.push(d);
+  return columnas;
+}
+
 export function vistaDelCalendario(modo: ModoDeVista, ancla: string): Vista {
   if (modo === 'DIA') {
     return { desde: ancla, hasta: ancla, dias: [ancla], rotulo: rotuloDeDia(ancla) };
@@ -56,8 +85,10 @@ export function vistaDelCalendario(modo: ModoDeVista, ancla: string): Vista {
 
   if (modo === 'MES') {
     const primero = primeroDelMes(ancla);
-    const dias = diasDelMes(primero);
-    return { desde: primero, hasta: dias[dias.length - 1], dias, rotulo: rotuloDeMes(primero) };
+    // Semanas completas: `desde` ya no es el día 1 sino el lunes anterior, y `hasta` el domingo
+    // posterior al último. El rótulo sigue nombrando EL MES, que es lo que se está programando.
+    const dias = columnasDelMes(primero);
+    return { desde: dias[0], hasta: dias[dias.length - 1], dias, rotulo: rotuloDeMes(primero) };
   }
 
   // Un caso por valor y nada de `else` (CLAUDE.md §9.4). El tipo no deja llegar hasta aquí; esto

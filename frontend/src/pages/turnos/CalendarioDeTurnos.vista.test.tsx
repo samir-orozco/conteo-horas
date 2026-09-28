@@ -39,6 +39,18 @@ const DIAS_DEL_MES = new Date(Date.UTC(ANIO, MES, 0)).getUTCDate();
 const PRIMERO_DEL_MES = `${HOY.slice(0, 7)}-01`;
 const ULTIMO_DEL_MES = `${HOY.slice(0, 7)}-${String(DIAS_DEL_MES).padStart(2, '0')}`;
 
+// EL MES SE DIBUJA CON SEMANAS COMPLETAS (28 de septiembre de 2026): del lunes anterior al día 1 al
+// domingo posterior al último. Pintar un día reescribe su semana entera, así que un mes cortado a
+// mitad de semana dejaría que una escritura tocara días que no están en pantalla.
+//
+// Estas tres también se calculan APARTE, con `Date` y aritmética propia, por la misma razón que las
+// de arriba: pedírselas a `vistaDelCalendario` sería comprobarlo consigo mismo.
+const RELLENO_ANTES = (new Date(`${PRIMERO_DEL_MES}T12:00:00Z`).getUTCDay() + 6) % 7;
+const RELLENO_DESPUES = 6 - ((new Date(`${ULTIMO_DEL_MES}T12:00:00Z`).getUTCDay() + 6) % 7);
+const PRIMERA_COLUMNA = sumarDias(PRIMERO_DEL_MES, -RELLENO_ANTES);
+const ULTIMA_COLUMNA = sumarDias(ULTIMO_DEL_MES, RELLENO_DESPUES);
+const COLUMNAS_DEL_MES = DIAS_DEL_MES + RELLENO_ANTES + RELLENO_DESPUES;
+
 const diaDe = (fecha: string) => ({
   fecha, estado: 'TRABAJA', horaEntrada: '08:00', horaSalida: '16:00',
   minutosEsperados: 420, esFestivo: false, origen: 'AUTO', turno: null,
@@ -115,13 +127,17 @@ describe('qué rango le pide al servidor cada modo', () => {
     expect(rangoPedido()).toEqual({ desde: LUNES, hasta: sumarDias(LUNES, 6) });
   });
 
-  it('en MES pide el mes entero, del 1 al último', async () => {
+  it('en MES pide SEMANAS COMPLETAS, no del 1 al último', async () => {
+    // Antes pedía del 1 al último y este caso lo afirmaba. Se reescribe a propósito: pintar un día
+    // reescribe su semana entera, y con el mes cortado a mitad de semana esa reescritura tocaría
+    // días fuera de la pantalla.
     montar();
     await cargado();
     await elegirModo('Mes');
     await cargado();
-    expect(rangoPedido()).toEqual({ desde: PRIMERO_DEL_MES, hasta: ULTIMO_DEL_MES });
+    expect(rangoPedido()).toEqual({ desde: PRIMERA_COLUMNA, hasta: ULTIMA_COLUMNA });
   });
+
 
   it('en DÍA pide un solo día', async () => {
     montar();
@@ -133,13 +149,14 @@ describe('qué rango le pide al servidor cada modo', () => {
 });
 
 describe('qué dibuja la rejilla', () => {
-  it('en MES hay una columna por día del mes', async () => {
+  it('en MES hay una columna por día, incluidas las de relleno', async () => {
     montar();
     await cargado();
     await elegirModo('Mes');
     await cargado();
-    expect(await columnas()).toBe(DIAS_DEL_MES);
+    expect(await columnas()).toBe(COLUMNAS_DEL_MES);
   });
+
 
   it('y las iniciales siguen siendo ciertas pasada la séptima columna', async () => {
     // El defecto concreto: `INICIALES_DE_DIA[i]` con `i` = número de columna devuelve `undefined`
@@ -163,8 +180,10 @@ describe('las flechas se mueven en la unidad del modo', () => {
     await cargado();
     await usuario.click(screen.getByRole('button', { name: /siguiente/i }));
     await cargado();
-    const siguiente = sumarDias(ULTIMO_DEL_MES, 1);
-    expect(rangoPedido().desde).toBe(`${siguiente.slice(0, 7)}-01`);
+    // La flecha salta un mes entero, y el rango que se pide sigue siendo de semanas completas: el
+    // lunes anterior al día 1 del mes siguiente, no el día 1.
+    const primeroSiguiente = `${sumarDias(ULTIMO_DEL_MES, 1).slice(0, 7)}-01`;
+    expect(rangoPedido().desde).toBe(lunesDeLaSemana(primeroSiguiente));
   });
 });
 

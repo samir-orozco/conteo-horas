@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { vistaDelCalendario, moverVista } from './vistaDelCalendario';
-import { rotuloDeSemana } from './semana';
+// `lunesDeLaSemana` y `sumarDias` vienen de `semana.ts`, que es OTRO módulo: comprobar la invariante
+// de «empieza en lunes» con ellos no es verificar `vistaDelCalendario` consigo mismo.
+import { rotuloDeSemana, lunesDeLaSemana, sumarDias } from './semana';
 
 // DÍA, SEMANA Y MES (22 de septiembre de 2026).
 //
@@ -35,31 +37,66 @@ describe('qué días muestra cada modo', () => {
     expect(v.hasta).toBe('2026-09-27');
   });
 
-  it('MES arranca el día 1 aunque el ancla sea el 22', () => {
+  // EL MES SE DIBUJA CON SEMANAS COMPLETAS (28 de septiembre de 2026), del lunes anterior al día 1 al
+  // domingo posterior al último. Antes iba del 1 al último y estos casos lo afirmaban; se reescriben
+  // a propósito, no se arreglan de paso.
+  //
+  // NO ES ESTÉTICO, y esa es toda la razón: pintar un día REESCRIBE SU SEMANA ENTERA (el descanso
+  // obligatorio de esa semana se recalcula). Si el mes se cortara a mitad de semana, una escritura
+  // tocaría días que no están en pantalla, y el administrador no podría ver lo que acaba de cambiar.
+  // El tope del backend son 62 días y el peor mes son 42 columnas (marzo de 2026), así que cabe.
+
+  it('MES arranca el LUNES anterior al día 1, no el día 1', () => {
+    // Septiembre de 2026 empieza en martes, así que la rejilla arranca el lunes 31 de agosto.
     const v = vistaDelCalendario('MES', MARTES);
-    expect(v.desde).toBe('2026-09-01');
-    expect(v.hasta).toBe('2026-09-30');
-    expect(v.dias).toHaveLength(30);
+    expect(v.desde).toBe('2026-08-31');
+    expect(v.hasta).toBe('2026-10-04');
+    expect(v.dias).toHaveLength(35);
   });
 
-  it('y cada mes dura lo suyo, también en año bisiesto', () => {
-    // Un mes de 31, uno de 28 y uno de 29. Con un «31» fijo, dos de estos tres se caen.
-    expect(vistaDelCalendario('MES', '2026-01-15').dias).toHaveLength(31);
-    expect(vistaDelCalendario('MES', '2027-02-15').dias).toHaveLength(28);
-    expect(vistaDelCalendario('MES', '2028-02-15').dias).toHaveLength(29);
-  });
-
-  it('`hasta` es el ÚLTIMO día mostrado, no el primero del siguiente', () => {
-    // La ruta lo quiere inclusive. Pasarle el 1 de octubre pediría 31 días y pintaría una columna
-    // que no es de este mes.
-    expect(vistaDelCalendario('MES', '2026-01-15').hasta).toBe('2026-01-31');
-    expect(vistaDelCalendario('MES', '2026-12-15').hasta).toBe('2026-12-31');
-  });
-
-  it('los días van seguidos y sin huecos', () => {
+  it('y termina el DOMINGO posterior al último día', () => {
+    // El 30 de septiembre es miércoles: la semana se completa hasta el domingo 4 de octubre.
     const v = vistaDelCalendario('MES', MARTES);
-    expect(v.dias[0]).toBe('2026-09-01');
-    expect(v.dias[v.dias.length - 1]).toBe('2026-09-30');
+    expect(v.dias[v.dias.length - 1]).toBe('2026-10-04');
+  });
+
+  it('un mes que YA empieza en lunes y termina en domingo no se rellena', () => {
+    // Febrero de 2027 empieza lunes y acaba domingo. Es el caso que distingue «siempre añade una
+    // semana» de «añade solo lo que falta»: aquí no falta nada y son 28 columnas exactas.
+    const v = vistaDelCalendario('MES', '2027-02-15');
+    expect(v.desde).toBe('2027-02-01');
+    expect(v.hasta).toBe('2027-02-28');
+    expect(v.dias).toHaveLength(28);
+  });
+
+  it('siempre salen semanas enteras, sea cual sea el mes', () => {
+    // Un mes de 31, uno de 28, uno bisiesto de 29 y el peor caso de todos. Lo que se afirma no es el
+    // número exacto sino la INVARIANTE: múltiplo de siete, empieza en lunes y acaba en domingo.
+    for (const ancla of ['2026-01-15', '2027-02-15', '2028-02-15', '2026-03-15', '2026-12-15']) {
+      const v = vistaDelCalendario('MES', ancla);
+      expect(v.dias.length % 7).toBe(0);
+      expect(lunesDeLaSemana(v.desde)).toBe(v.desde);
+      expect(sumarDias(v.hasta, 1)).toBe(lunesDeLaSemana(sumarDias(v.hasta, 1)));
+    }
+  });
+
+  it('el mes de 42 columnas cabe en el tope de 62 días del backend', () => {
+    // Marzo de 2026 empieza en domingo y acaba en martes: es el mes que más relleno necesita. Si
+    // algún mes pasara de 62, la ruta devolvería un error y la vista de mes quedaría rota.
+    expect(vistaDelCalendario('MES', '2026-03-15').dias).toHaveLength(42);
+    for (const ancla of ['2026-01-15', '2026-03-15', '2026-08-15', '2028-02-15']) {
+      expect(vistaDelCalendario('MES', ancla).dias.length).toBeLessThanOrEqual(62);
+    }
+  });
+
+  it('los días van seguidos y sin huecos, y el mes entero está dentro', () => {
+    const v = vistaDelCalendario('MES', MARTES);
+    // Ni un día del mes se queda fuera: el relleno añade a los lados, nunca quita.
+    expect(v.dias).toContain('2026-09-01');
+    expect(v.dias).toContain('2026-09-30');
+    for (let i = 1; i < v.dias.length; i++) {
+      expect(v.dias[i]).toBe(sumarDias(v.dias[i - 1], 1));
+    }
   });
 });
 
@@ -72,20 +109,27 @@ describe('las flechas se mueven según el modo', () => {
     expect(moverVista('SEMANA', MARTES, 1)).toBe('2026-09-29');
   });
 
+  // AL COMPARAR EL SALTO SE MIRA EL ANCLA, NO `desde` (28 de septiembre de 2026). Desde que el mes se
+  // dibuja con semanas completas, `desde` es el lunes anterior al día 1 y puede ser de otro mes: el
+  // 28 de septiembre para octubre. Afirmarlo contra «2026-10-01» estaría comprobando el relleno, que
+  // ya tiene sus propios casos, en vez de lo que a estos les toca, que es que la flecha NO se salte
+  // ningún mes. `moverVista` no cambió: sigue devolviendo el día 1 del mes vecino.
   it('en MES avanzan un mes', () => {
-    expect(vistaDelCalendario('MES', moverVista('MES', MARTES, 1)).desde).toBe('2026-10-01');
+    expect(moverVista('MES', MARTES, 1)).toBe('2026-10-01');
   });
 
   it('y un mes de 31 días NO se salta el siguiente', () => {
     // El error clásico de sumar 31 días o de conservar el día del mes: del 31 de enero se llega a
     // marzo, y febrero desaparece del calendario sin que nadie lo note.
-    expect(vistaDelCalendario('MES', moverVista('MES', '2026-01-31', 1)).desde).toBe('2026-02-01');
+    expect(moverVista('MES', '2026-01-31', 1)).toBe('2026-02-01');
+    // Y el mes al que se llega es de verdad febrero, aunque su rejilla arranque en enero.
+    expect(vistaDelCalendario('MES', moverVista('MES', '2026-01-31', 1)).rotulo).toMatch(/febrero/i);
   });
 
   it('también se puede ir hacia atrás, y cruzando de año', () => {
     expect(moverVista('DIA', '2026-01-01', -1)).toBe('2025-12-31');
     expect(moverVista('SEMANA', '2026-01-05', -1)).toBe('2025-12-29');
-    expect(vistaDelCalendario('MES', moverVista('MES', '2026-01-15', -1)).desde).toBe('2025-12-01');
+    expect(moverVista('MES', '2026-01-15', -1)).toBe('2025-12-01');
   });
 
   it('y hacia atrás tampoco se salta el mes CORTO', () => {
@@ -95,9 +139,9 @@ describe('las flechas se mueven según el modo', () => {
     //
     // Desde marzo se ve: restar 31 días cae en ENERO, porque febrero tiene 28. Marzo es el mes que
     // distingue, y por eso es el que hay que escribir.
-    expect(vistaDelCalendario('MES', moverVista('MES', '2026-03-15', -1)).desde).toBe('2026-02-01');
+    expect(moverVista('MES', '2026-03-15', -1)).toBe('2026-02-01');
     // Y desde marzo de un año bisiesto, donde febrero tiene 29.
-    expect(vistaDelCalendario('MES', moverVista('MES', '2028-03-15', -1)).desde).toBe('2028-02-01');
+    expect(moverVista('MES', '2028-03-15', -1)).toBe('2028-02-01');
   });
 });
 
