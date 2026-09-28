@@ -1,9 +1,13 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon } from 'lucide-react';
 import api from '../../lib/api';
 import {
   hoyEnBogota, horasDeMinutos, sePuedePintar, inicialDeDia,
 } from './semana';
+// La selección en bloque y el guardado por bloques: dos decisiones puras, probadas y mutadas aparte.
+// Qué celdas caen dentro de un rectángulo y qué se va a escribir de verdad NO se deciden aquí.
+import { claveDeCelda, celdasDelRectangulo, type Celda as CeldaMarcada } from './seleccionEnBloque';
+import { bloquesDe, planDeEscritura, type AccionDeEscritura } from './aplicacionPorBloques';
 // Qué rango le toca a cada modo y cómo se mueven las flechas. Es una decisión pura, probada y
 // mutada aparte: aquí solo se aplica.
 import { vistaDelCalendario, moverVista, type ModoDeVista } from './vistaDelCalendario';
@@ -670,17 +674,193 @@ function ModalDescansoTrabajado({ nombre, datos, guardando, error, onCerrar, onG
   );
 }
 
+// LA TARJETA DE LO QUE ESTÁ MARCADO (28 de septiembre de 2026).
+//
+// Programar a veinte personas una semana pintando día por día son ciento cuarenta clics. Marcado un
+// bloque, esta tarjeta es donde se le aplica UNA cosa a todo.
+//
+// LOS TURNOS VAN EN UN CARRIL Y LAS TRES ACCIONES FIJAS NO, y eso salió de mirarlo con ocho turnos en
+// vez de tres: el catálogo lo crea cada cliente y puede tener veinte. Descanso, Quitar turno y
+// Cancelar son siempre las mismas tres, así que la mano las busca en el mismo sitio y no se corren
+// cuando el catálogo crece.
+//
+// LAS FLECHAS DEL CARRIL SE MIDEN, NO SE SUPONEN: si los turnos caben, no aparecen. Y se mide con la
+// tarjeta ya dibujada, porque un elemento que todavía no existe mide cero y entonces saldrían siempre.
+function TarjetaDeBloque({ cuenta, catalogo, ocupado, progreso, onTurno, onDescanso, onQuitar, onCancelar }: {
+  cuenta: { total: number; personas: number; dias: number; pasadas: number; nombre: string | null };
+  catalogo: TurnoDelCatalogo[];
+  ocupado: boolean;
+  progreso: { bloque: number; bloques: number } | null;
+  onTurno: (plantillaId: string) => void;
+  onDescanso: () => void;
+  onQuitar: () => void;
+  onCancelar: () => void;
+}) {
+  const pista = useRef<HTMLDivElement>(null);
+  const [carril, setCarril] = useState({ desborda: false, alInicio: true, alFinal: false });
+
+  const medir = () => {
+    const p = pista.current;
+    if (!p) return;
+    setCarril({
+      desborda: p.scrollWidth > p.clientWidth + 1,
+      alInicio: p.scrollLeft <= 1,
+      alFinal: p.scrollLeft + p.clientWidth >= p.scrollWidth - 1,
+    });
+  };
+
+  // Se mide con el largo del catálogo en las dependencias: un turno nuevo puede hacer que lo que
+  // cabía deje de caber, y entonces las flechas tienen que aparecer.
+  useLayoutEffect(() => {
+    medir();
+    window.addEventListener('resize', medir);
+    return () => window.removeEventListener('resize', medir);
+  }, [catalogo.length]);
+
+  const correr = (hacia: number) => {
+    const p = pista.current;
+    if (!p) return;
+    p.scrollLeft += hacia * Math.max(130, p.clientWidth * 0.8);
+    // El desplazamiento es suave: se vuelve a medir cuando ya terminó, no mientras corre.
+    setTimeout(medir, 340);
+  };
+
+  // QUIÉN Y CUÁNTO, dicho de forma que no haya que recordar nada. Con una sola persona va su NOMBRE y
+  // no «1 persona»: «1 persona · 7 días» obliga a acordarse de a quién se marcó.
+  const quien = cuenta.nombre ?? `${cuenta.personas} personas`;
+  const detalle = `${quien} · ${cuenta.dias} ${cuenta.dias === 1 ? 'día' : 'días'}`;
+  // LO QUE NO SE VA A ESCRIBIR TAMBIÉN SE DICE. Escribir menos de lo que alguien creyó haber pedido,
+  // sin avisar, es la forma en que esta pantalla mentiría.
+  const pasadas = cuenta.pasadas === 0 ? ''
+    : cuenta.pasadas === 1 ? ' · 1 ya pasó y no se escribe'
+      : ` · ${cuenta.pasadas} ya pasaron y no se escriben`;
+
+  return (
+    <div role="region" aria-label="Lo que tienes marcado"
+      className="fixed inset-x-3 bottom-3 z-[60] !mt-0 mx-auto max-w-5xl rounded-2xl bg-white p-3 shadow-xl ring-1 ring-gray-200">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="min-w-0">
+          <div className="text-sm font-bold text-ink">{jornadas(cuenta.total)} seleccionadas</div>
+          <div className="text-[11px] text-muted">{detalle}{pasadas}</div>
+        </div>
+
+        {/* EL CATÁLOGO, en un carril que se corre. `min-w-0` en el carril y `flex-1` sobre él: sin
+            eso, una pista con veinte turnos empuja a las acciones fijas fuera de la tarjeta. */}
+        <div className="flex min-w-0 flex-1 items-center gap-1">
+          {carril.desborda && (
+            <button type="button" onClick={() => correr(-1)} disabled={carril.alInicio}
+              aria-label="Turnos anteriores"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gray-100 text-ink disabled:opacity-40">
+              <ChevronLeft size={14} />
+            </button>
+          )}
+          <div ref={pista} onScroll={medir}
+            className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto scroll-smooth">
+            {catalogo.map(t => (
+              <button key={t.id} type="button" disabled={ocupado} onClick={() => onTurno(t.id)}
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-semibold disabled:opacity-60 ${
+                  CLASES_COLOR[normalizarColor(t.color)]}`}>
+                {t.nombre}
+              </button>
+            ))}
+          </div>
+          {carril.desborda && (
+            <button type="button" onClick={() => correr(1)} disabled={carril.alFinal}
+              aria-label="Más turnos"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gray-100 text-ink disabled:opacity-40">
+              <ChevronRight size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* LAS FIJAS. Icono arriba y texto abajo, que fue lo que pidió el dueño, y fuera del carril
+            porque no son turnos del catálogo. «Quitar turno» y no «Quitar» a secas: se lee como
+            «deseleccionar» y es lo contrario, porque esto ESCRIBE en los días marcados dejándolos sin
+            turno. */}
+        <div className="flex shrink-0 items-stretch gap-1.5">
+          <button type="button" disabled={ocupado} onClick={onDescanso}
+            className="flex w-[4.5rem] flex-col items-center gap-0.5 rounded-xl border border-dashed border-gray-300 px-2 py-1.5 text-[11px] font-semibold text-muted hover:text-ink hover:border-gray-400 disabled:opacity-60">
+            <Moon size={15} />
+            Descanso
+          </button>
+          <button type="button" disabled={ocupado} onClick={onQuitar}
+            className="flex w-[4.5rem] flex-col items-center gap-0.5 rounded-xl border border-gray-200 px-2 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60">
+            <X size={15} />
+            Quitar turno
+          </button>
+          <button type="button" onClick={onCancelar}
+            className="self-center rounded-xl px-3 py-2 text-[12px] font-semibold text-muted hover:text-ink">
+            Cancelar
+          </button>
+        </div>
+      </div>
+
+      {/* POR DÓNDE VA, mientras va. Un guardado que tarda y no dice nada se lee como uno colgado. */}
+      {progreso && (
+        <p className="mt-2 border-t border-gray-100 pt-2 text-[11px] font-medium text-muted">
+          Bloque {progreso.bloque} de {progreso.bloques} · no cierres esta ventana
+        </p>
+      )}
+    </div>
+  );
+}
+
 // CÓMO SE NOMBRA EL PERÍODO EN CADA MODO (22 de septiembre de 2026).
 //
 // Una tabla con un caso por valor y no un `? :`, porque el español no deja: es «de la semana» pero
 // «del mes». Y hace falta de verdad: la pantalla decía «Resumen de la semana», «Total semanal» y
 // «en la semana» en sitios fijos, y todos esos textos MIENTEN cuando lo que se está viendo es un
 // mes. Un rótulo falso es un defecto, no un detalle.
-const PERIODO: Record<ModoDeVista, { unidad: string; deEl: string; enEl: string }> = {
-  DIA: { unidad: 'Día', deEl: 'del día', enEl: 'en el día' },
-  SEMANA: { unidad: 'Semana', deEl: 'de la semana', enEl: 'en la semana' },
-  MES: { unidad: 'Mes', deEl: 'del mes', enEl: 'en el mes' },
+// `elArt` existe para el botón que marca la fila entera de una persona: «Marcar la semana de Ana
+// Ríos». Con `deEl` saldría «Marcar de la semana de Ana Ríos», y con `unidad` a secas, «Marcar Semana
+// de». Es la misma razón que las otras dos columnas: el español no deja armar estos rótulos pegando
+// trozos, y un rótulo falso que solo oye quien usa lector de pantalla es igual de falso.
+const PERIODO: Record<ModoDeVista, { unidad: string; deEl: string; enEl: string; elArt: string }> = {
+  DIA: { unidad: 'Día', deEl: 'del día', enEl: 'en el día', elArt: 'el día' },
+  SEMANA: { unidad: 'Semana', deEl: 'de la semana', enEl: 'en la semana', elArt: 'la semana' },
+  MES: { unidad: 'Mes', deEl: 'del mes', enEl: 'en el mes', elArt: 'el mes' },
 };
+
+// «1 jornada» / «6 jornadas». Sale a una función porque se dice en cuatro sitios de la tarjeta y del
+// resultado, y cuatro copias de un plural se separan a la primera.
+const jornadas = (n: number): string => `${n} ${n === 1 ? 'jornada' : 'jornadas'}`;
+
+// EL ÚNICO SITIO QUE SABE A QUÉ RUTA SE LE ESCRIBE UN DÍA.
+//
+// Lo usan los cuatro caminos que escriben: el panel de la celda, el botón que confirma la propuesta
+// de la semana, y ahora los turnos y el descanso de la tarjeta de bloque. Darle su propia llamada al
+// bloque habría abierto un SEGUNDO camino de escritura sobre la tabla que alimenta la liquidación,
+// que es justo lo que el planificador lleva evitando desde que existe (CLAUDE.md §9.3).
+//
+// La acción entra como la unión de `aplicacionPorBloques` y no como tres parámetros opcionales: así
+// «un turno», «un descanso» y «quitar» son tres cosas y nunca dos a la vez ni ninguna.
+function escribirDia(colaboradorId: string, fecha: string, accion: AccionDeEscritura) {
+  if (accion.tipo === 'QUITAR') {
+    // Por `query` y no por cuerpo, que es lo que espera la ruta: un DELETE con cuerpo lo tratan
+    // distinto según el cliente.
+    return api.delete('/turnos/dia', { params: { colaboradorId, fecha } });
+  }
+  const que = accion.tipo === 'TURNO' ? { plantillaId: accion.plantillaId } : { descanso: true };
+  return api.put('/turnos/dia', { colaboradorId, fecha, ...que });
+}
+
+// El motivo que manda el servidor, que es una regla del producto («ya pasó», «ya empezó su jornada»)
+// y tiene que llegarle al administrador tal cual. Estaba escrito cuatro veces.
+function motivoDe(err: unknown, porDefecto: string): string {
+  return (err as { response?: { data?: { error?: string } } }).response?.data?.error ?? porDefecto;
+}
+
+// CUÁNTAS ESCRITURAS VAN A LA VEZ.
+//
+// Lo que puede tumbar el servidor no es el tamaño de lo seleccionado, es cuántas peticiones coinciden
+// en vuelo: cada día escrito RECALCULA LA SEMANA ENTERA de esa persona, y el hosting es compartido.
+// Por eso el bloque no es solo una unidad de progreso, es el tope de concurrencia: los bloques van en
+// serie y dentro de cada uno las seis peticiones van juntas.
+//
+// Seis y no cuarenta: cuarenta recálculos de semana simultáneos es exactamente el atragantamiento que
+// esto viene a evitar. Y no uno, porque una selección de un mes de una persona son 31 peticiones y de
+// a una se siente detenido.
+const EN_VUELO = 6;
 
 // De MAYOR a menor, como en la maqueta del dueño: Mes · Semana · Día. El orden no es decorativo,
 // es el que deja «Semana» —el modo por defecto y el que más se usa— en el medio, donde cae el
@@ -748,6 +928,17 @@ export default function CalendarioDeTurnos() {
   // quien decide qué exige un día.
   const [recarga, setRecarga] = useState(0);
 
+  // LO QUE ESTÁ MARCADO, por clave de celda. Un objeto y no una lista: la pertenencia se pregunta una
+  // vez por celda en cada dibujado (con un mes y cien personas son 3.100 preguntas), y buscar en una
+  // lista las volvería 3.100 recorridos. La clave la arma `claveDeCelda`, que es la misma pareja con
+  // la que el backend escribe un día.
+  const [marcadas, setMarcadas] = useState<Record<string, CeldaMarcada>>({});
+  // El gesto en curso. Va en un `ref` y no en el estado a propósito: cambia en cada celda por la que
+  // pasa el puntero, y guardarlo en el estado redibujaría la rejilla entera en cada movimiento.
+  const arrastre = useRef<{ desde: CeldaMarcada; base: Record<string, CeldaMarcada>; movido: boolean } | null>(null);
+  const [progreso, setProgreso] = useState<{ bloque: number; bloques: number } | null>(null);
+  const [resultado, setResultado] = useState<{ escritas: number; bloqueadas: number; fallos: string[] } | null>(null);
+
   const vista = vistaDelCalendario(modo, ancla);
   const dias = vista.dias;
   // La persona + los días + el total. Era una constante con un 9 escrito a mano, de cuando la
@@ -800,14 +991,15 @@ export default function CalendarioDeTurnos() {
     setErrorPintado('');
     setGuardando(true);
     try {
-      await api.put('/turnos/dia', { colaboradorId, fecha, ...que });
+      // Pasa por `escribirDia`, que es el único sitio que sabe a qué ruta se le escribe un día.
+      await escribirDia(colaboradorId, fecha,
+        'plantillaId' in que ? { tipo: 'TURNO', plantillaId: que.plantillaId } : { tipo: 'DESCANSO' });
       setEditando(null);
       setRecarga(n => n + 1);
     } catch (err) {
       // El motivo viene del servidor y se muestra tal cual: «ya pasó», «ya empezó su jornada». Son
       // reglas del producto, y el administrador tiene que poder leer cuál lo frenó.
-      const delServidor = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
-      setErrorPintado(delServidor ?? 'No pudimos guardar el turno.');
+      setErrorPintado(motivoDe(err, 'No pudimos guardar el turno.'));
     } finally {
       setGuardando(false);
     }
@@ -833,14 +1025,11 @@ export default function CalendarioDeTurnos() {
     setErrorPintado('');
     setGuardando(true);
     try {
-      await api.delete('/turnos/dia', {
-        params: { colaboradorId: editando.fila.id, fecha: editando.dia.fecha },
-      });
+      await escribirDia(editando.fila.id, editando.dia.fecha, { tipo: 'QUITAR' });
       setEditando(null);
       setRecarga(n => n + 1);
     } catch (err) {
-      const delServidor = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
-      setErrorPintado(delServidor ?? 'No pudimos quitar el turno.');
+      setErrorPintado(motivoDe(err, 'No pudimos quitar el turno.'));
     } finally {
       setGuardando(false);
     }
@@ -873,6 +1062,129 @@ export default function CalendarioDeTurnos() {
   const habituales = filas.filter(f => f.descansoHabitual.clase === 'HABITUAL').length;
   const sobreTope = topeAplica ? filas.filter(f => f.minutosEsperados > tope * 60).length : 0;
   const festivos = new Set((filas[0]?.dias ?? []).filter(d => d.esFestivo).map(d => d.fecha));
+
+  // ───────── LA SELECCIÓN EN BLOQUE ─────────
+  //
+  // QUÉ CELDAS CAEN DENTRO NO SE DECIDE AQUÍ: es `celdasDelRectangulo`, que es pura y está probada y
+  // mutada. Aquí solo viven el gesto y el estado, que es la parte que no se puede probar sin montar
+  // la pantalla.
+  //
+  // EL CLIC SUELTO NO MARCA, ABRE EL PANEL DEL DÍA. En la maqueta la selección estaba siempre activa
+  // porque allí no existía ese panel; en la aplicación sí, es lo que el dueño pidió el 22 de
+  // septiembre, y lleva dentro las tolerancias, el almuerzo y los descansos de ESE día. Por eso el
+  // arrastre solo cuenta como arrastre cuando el puntero llega a OTRA celda (`movido`): si no se
+  // movió, no se toca nada y el clic sigue su camino hasta el botón.
+  const marcar = (celdas: readonly CeldaMarcada[], apagar: boolean) => {
+    setMarcadas(antes => {
+      const ahora = { ...antes };
+      for (const celda of celdas) {
+        if (apagar) delete ahora[claveDeCelda(celda)];
+        else ahora[claveDeCelda(celda)] = celda;
+      }
+      return ahora;
+    });
+  };
+
+  const iniciarArrastre = (celda: CeldaMarcada) => {
+    arrastre.current = { desde: celda, base: { ...marcadas }, movido: false };
+  };
+
+  // `pointerover` y no `pointerenter`: enter NO BURBUJEA, así que colgado de la celda de la tabla no
+  // llegaría nunca desde el botón de dentro. Volver a pasar por la misma celda recalcula el mismo
+  // rectángulo, así que repetirse es inofensivo.
+  const extenderArrastre = (celda: CeldaMarcada) => {
+    const gesto = arrastre.current;
+    if (!gesto || claveDeCelda(gesto.desde) === claveDeCelda(celda)) return;
+    gesto.movido = true;
+    const rectangulo = celdasDelRectangulo(gesto.desde, celda, filas.map(f => f.id), dias);
+    const ahora = { ...gesto.base };
+    for (const c of rectangulo) ahora[claveDeCelda(c)] = c;
+    setMarcadas(ahora);
+  };
+
+  // El gesto termina en la ventana y no en la celda: si termina fuera de la rejilla —que es lo que
+  // pasa al arrastrar hasta el borde— una escucha colgada de la celda no se enteraría y el gesto se
+  // quedaría abierto para siempre.
+  useEffect(() => {
+    const alSoltar = () => { arrastre.current = null; };
+    window.addEventListener('pointerup', alSoltar);
+    window.addEventListener('pointercancel', alSoltar);
+    return () => {
+      window.removeEventListener('pointerup', alSoltar);
+      window.removeEventListener('pointercancel', alSoltar);
+    };
+  }, []);
+
+  // La fila de una persona son SUS días y no las columnas de la vista: una respuesta puede traerle
+  // días que la rejilla no encabeza, y marcar lo que no se ve sería escribir a ciegas.
+  const marcarFila = (fila: FilaDelCalendario) => {
+    const suyas = fila.dias.map(d => ({ colaboradorId: fila.id, fecha: d.fecha }));
+    const completa = suyas.every(c => marcadas[claveDeCelda(c)]);
+    marcar(suyas, completa);
+  };
+
+  const marcarColumna = (fecha: string) => {
+    const esas = filas.map(f => ({ colaboradorId: f.id, fecha }));
+    const completa = esas.every(c => marcadas[claveDeCelda(c)]);
+    marcar(esas, completa);
+  };
+
+  const limpiarMarcadas = () => { setMarcadas({}); setResultado(null); };
+
+  const seleccion = Object.values(marcadas);
+  const cuenta = {
+    total: seleccion.length,
+    personas: new Set(seleccion.map(c => c.colaboradorId)).size,
+    dias: new Set(seleccion.map(c => c.fecha)).size,
+    pasadas: seleccion.filter(c => !sePuedePintar(c.fecha, hoy)).length,
+    // El nombre solo cuando hay UNA persona, y sale de las filas porque la selección solo guarda ids.
+    nombre: (() => {
+      const ids = new Set(seleccion.map(c => c.colaboradorId));
+      if (ids.size !== 1) return null;
+      const suya = filas.find(f => f.id === [...ids][0]);
+      return suya ? `${suya.nombre} ${suya.apellido}` : null;
+    })(),
+  };
+
+  // ───────── APLICAR A TODO LO MARCADO, POR BLOQUES ─────────
+  //
+  // QUÉ SE ESCRIBE Y QUÉ NO lo decide `planDeEscritura`, y CÓMO SE PARTE lo decide `bloquesDe`: las
+  // dos son puras y están probadas y mutadas. Aquí solo quedan las peticiones y lo que se le cuenta a
+  // quien mira.
+  //
+  // SE INFORMA LO QUE FALLÓ, UNA A UNA. Escribir diecinueve de veinte y decir «listo» es exactamente
+  // la forma en que esta pantalla mentiría: el servidor rechaza días sueltos con motivo propio («ya
+  // empezó su jornada»), y ese motivo tiene que salir a la pantalla.
+  const aplicarABloque = async (accionDe: (celda: CeldaMarcada) => AccionDeEscritura) => {
+    const plan = planDeEscritura(seleccion, accionDe, hoy);
+    const bloques = bloquesDe(plan.escribe, EN_VUELO);
+    setResultado(null);
+    setGuardando(true);
+
+    let escritas = 0;
+    const fallos: string[] = [];
+    try {
+      for (let i = 0; i < bloques.length; i++) {
+        setProgreso({ bloque: i + 1, bloques: bloques.length });
+        // `allSettled` y no `all`: con `all`, la primera negativa aborta el bloque y las otras cinco
+        // quedarían escritas o no según el azar de la red, sin que nadie pueda saber cuáles.
+        const idas = await Promise.allSettled(
+          bloques[i].map(e => escribirDia(e.colaboradorId, e.fecha, e.accion)),
+        );
+        for (const ida of idas) {
+          if (ida.status === 'fulfilled') escritas++;
+          else fallos.push(motivoDe(ida.reason, 'No pudimos guardar ese día.'));
+        }
+      }
+    } finally {
+      setProgreso(null);
+      setGuardando(false);
+    }
+
+    setResultado({ escritas, bloqueadas: plan.bloqueadas, fallos });
+    setMarcadas({});
+    setRecarga(n => n + 1);
+  };
 
   // LA VISTA DE DÍA EN HORAS (22 de septiembre de 2026). Pedido del dueño: «que no vea arriba la M
   // de martes 22, sino las horas, y que la barra vaya del color del turno desde la hora de inicio
@@ -1057,13 +1369,21 @@ export default function CalendarioDeTurnos() {
                 const esHoy = fecha === hoy;
                 return (
                   <th key={fecha} className="px-2 py-3 text-center min-w-[96px]">
-                    {/* La inicial sale de la FECHA y no del número de columna: con `[i]`, de la
-                        octava columna en adelante el encabezado salía en blanco. */}
-                    <div className={`text-xs font-semibold ${esHoy ? 'text-ink' : 'text-muted'}`}>{inicialDeDia(fecha)}</div>
-                    <div className={`text-sm tabular-nums ${esHoy ? 'font-bold text-ink' : 'text-muted'}`}>
-                      {Number(fecha.slice(8, 10))}
-                    </div>
-                    {festivos.has(fecha) && <div className="text-[10px] font-medium text-violet-700">Festivo</div>}
+                    {/* EL ENCABEZADO MARCA LA COLUMNA ENTERA: ese día de todo el mundo. Es el gesto
+                        con el que se programa una jornada completa —un domingo, un festivo— sin
+                        recorrer la lista persona por persona. Vuelve a tocarse y se desmarca, porque
+                        marcar una columna por error no puede obligar a limpiar todo. */}
+                    <button type="button" onClick={() => marcarColumna(fecha)}
+                      aria-label={`Marcar el día ${Number(fecha.slice(8, 10))} de todos`}
+                      className="w-full rounded-lg px-1 py-0.5 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary">
+                      {/* La inicial sale de la FECHA y no del número de columna: con `[i]`, de la
+                          octava columna en adelante el encabezado salía en blanco. */}
+                      <div className={`text-xs font-semibold ${esHoy ? 'text-ink' : 'text-muted'}`}>{inicialDeDia(fecha)}</div>
+                      <div className={`text-sm tabular-nums ${esHoy ? 'font-bold text-ink' : 'text-muted'}`}>
+                        {Number(fecha.slice(8, 10))}
+                      </div>
+                      {festivos.has(fecha) && <div className="text-[10px] font-medium text-violet-700">Festivo</div>}
+                    </button>
                   </th>
                 );
               })}
@@ -1090,7 +1410,13 @@ export default function CalendarioDeTurnos() {
               return (
                 <tr key={fila.id} className="border-b border-gray-100 last:border-0">
                   <td className="sticky left-0 bg-white z-10 w-px whitespace-nowrap px-4 py-2.5">
-                    <div className="flex items-center gap-2.5">
+                    {/* EL NOMBRE MARCA SU FILA ENTERA, que es el gesto de «a esta persona, todo el
+                        período». Dice qué período con todas las letras («Marcar la semana de…»,
+                        «Marcar el mes de…»): en un mes, un rótulo que dijera «semana» sería falso
+                        para quien navega con lector de pantalla. */}
+                    <button type="button" onClick={() => marcarFila(fila)}
+                      aria-label={`Marcar ${PERIODO[modo].elArt} de ${fila.nombre} ${fila.apellido}`}
+                      className="flex items-center gap-2.5 rounded-lg text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary">
                       <Inicial nombre={fila.nombre} apellido={fila.apellido} />
                       {/* El tope existe para que la columna se ajuste al contenido SIN quedar a
                           merced de un nombre larguísimo: hasta ahí crece, y de ahí en adelante el
@@ -1100,7 +1426,7 @@ export default function CalendarioDeTurnos() {
                         <div className="text-sm font-medium text-ink truncate">{fila.nombre} {fila.apellido}</div>
                         <div className="text-[11px] text-muted truncate">{fila.cargo || '—'}</div>
                       </div>
-                    </div>
+                    </button>
                   </td>
                   {enDia && eje ? (
                     // `w-full` por lo mismo que en el encabezado: la pista es puro posicionamiento
@@ -1122,19 +1448,41 @@ export default function CalendarioDeTurnos() {
                         <PistaDeLaFila fila={fila} dia={fila.dias[0]} eje={eje} celda={celdaDeDia} />
                       </div>
                     </td>
-                  ) : fila.dias.map(dia => (
-                    <td key={dia.fecha} className="px-1.5 py-2.5 align-middle">
-                      {/* TRES CASOS Y NO DOS (22 de septiembre de 2026).
-                          Un DESCANSO TRABAJADO abre su propio modal, y NO mira `sePuedePintar`:
-                          por definición ya ocurrió, así que es pasado o de hoy, y colgándolo del
-                          botón de pintar —que es solo hacia adelante— casi ninguno sería alcanzable.
-                          Decidir la compensación de un día pasado es legítimo; repintarlo no.
+                  ) : fila.dias.map(dia => {
+                    const suya = { colaboradorId: fila.id, fecha: dia.fecha };
+                    const marcada = Boolean(marcadas[claveDeCelda(suya)]);
+                    return (
+                      // El gesto vive en la CELDA DE LA TABLA y no en el botón de dentro: así también
+                      // se puede arrastrar por encima de un día pasado o de un descanso trabajado,
+                      // que no son botones. Lo que se escriba de esa selección lo decide después
+                      // `planDeEscritura`, no el gesto.
+                      <td key={dia.fecha}
+                        onPointerDown={() => iniciarArrastre(suya)}
+                        onPointerOver={() => extenderArrastre(suya)}
+                        className={`px-1.5 py-2.5 align-middle ${marcada ? 'bg-primary/20' : ''}`}>
+                        {/* TRES CASOS Y NO DOS (22 de septiembre de 2026).
+                            Un DESCANSO TRABAJADO abre su propio modal, y NO mira `sePuedePintar`:
+                            por definición ya ocurrió, así que es pasado o de hoy, y colgándolo del
+                            botón de pintar —que es solo hacia adelante— casi ninguno sería alcanzable.
+                            Decidir la compensación de un día pasado es legítimo; repintarlo no.
 
-                          Los demás siguen igual: solo los pintables son botones. Ofrecer un clic
-                          que el servidor va a rechazar con un 400 es peor que no ofrecerlo. */}
-                      {celdaDeDia(fila, dia)}
-                    </td>
-                  ))}
+                            Los demás siguen igual: solo los pintables son botones. Ofrecer un clic
+                            que el servidor va a rechazar con un 400 es peor que no ofrecerlo. */}
+                        <div className="relative">
+                          {celdaDeDia(fila, dia)}
+                          {/* El visto de que está marcada. El fondo de la celda ya lo dice, pero un
+                              fondo suave se pierde sobre el color de un turno, y la cuenta que manda
+                              la dice la tarjeta de abajo. */}
+                          {marcada && (
+                            <span aria-hidden="true"
+                              className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-primary text-ink shadow">
+                              <Check size={10} strokeWidth={3} />
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
                   <td className="px-4 py-2.5 text-right">
                     <span className={`text-sm font-semibold tabular-nums ${sePasa ? 'text-amber-700' : 'text-ink'}`}>
                       {horasDeMinutos(fila.minutosEsperados)}
@@ -1258,6 +1606,46 @@ export default function CalendarioDeTurnos() {
           parecería que el botón está roto. Ojo: esta línea no tiene prueba que la cubra. */}
       {decidiendo && !decision && errorDecision && (
         <p role="alert" className="mt-3 text-sm text-red-600">{errorDecision}</p>
+      )}
+
+      {/* CÓMO QUEDÓ LO QUE SE APLICÓ. Se queda en pantalla hasta la siguiente vez: un resultado que
+          se desvanece solo obliga a haber estado mirando justo en ese momento.
+
+          Dos papeles distintos y no uno: todo bien es un `status` (se anuncia sin interrumpir), y
+          algo que no se pudo escribir es un `alert`. Meter las dos cosas en el mismo sitio dejaría
+          las negativas del servidor con el mismo peso que un «listo». */}
+      {resultado && resultado.fallos.length === 0 && (
+        <p role="status" className="mt-3 flex items-center gap-2 rounded-card border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900">
+          <Check size={15} className="shrink-0" />
+          {jornadas(resultado.escritas)} escritas.
+          {resultado.bloqueadas > 0 && ` ${resultado.bloqueadas} no se tocaron porque el día ya pasó.`}
+        </p>
+      )}
+      {resultado && resultado.fallos.length > 0 && (
+        <div role="alert" className="mt-3 rounded-card border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">
+            {jornadas(resultado.escritas)} escritas, y {resultado.fallos.length} no se pudieron escribir.
+          </p>
+          {/* El motivo del servidor, tal cual, y sin repetirlo veinte veces: cuando falla un bloque
+              entero suele ser la misma razón, y veinte líneas iguales esconden la que es distinta. */}
+          <ul className="mt-1.5 list-disc pl-5 text-[13px]">
+            {[...new Set(resultado.fallos)].map(m => <li key={m}>{m}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* LA TARJETA DE LO MARCADO. Aparece sola cuando hay algo marcado y se va cuando no queda
+          nada: un sitio fijo y vacío esperando una selección ocuparía la pantalla sin decir nada. */}
+      {cuenta.total > 0 && (
+        <TarjetaDeBloque
+          cuenta={cuenta}
+          catalogo={catalogo}
+          ocupado={guardando}
+          progreso={progreso}
+          onTurno={plantillaId => aplicarABloque(() => ({ tipo: 'TURNO', plantillaId }))}
+          onDescanso={() => aplicarABloque(() => ({ tipo: 'DESCANSO' }))}
+          onQuitar={() => aplicarABloque(() => ({ tipo: 'QUITAR' }))}
+          onCancelar={limpiarMarcadas} />
       )}
 
       <p className="mt-3 text-xs text-muted leading-relaxed">
