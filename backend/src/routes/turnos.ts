@@ -11,6 +11,9 @@ import { combinarDiasEsperados } from '../utils/diasEsperados';
 // Los descansos no remunerados se guardan como texto y viajan como `{ inicio, fin }[]`, igual que
 // los de una franja. El formato de la columna es cosa de la base y no de la pantalla.
 import { leerDescansos } from '../utils/descansos';
+// Qué exige un turno del catálogo, con la MISMA cuenta que corre al pintar un día. Es pura, tiene 24
+// casos y se usa aquí solo para responder, nunca para escribir.
+import { diaDesdePlantilla } from '../utils/pintarDia';
 import { estadoDescansoDe, propuestaDeDescanso } from '../utils/descansoObligatorio';
 import { diaSemanaDeFechaBogota } from '../utils/diasDeLaSemana';
 import { descansoDelDia, estadoDelDia } from '../utils/calendarioDeTurnos';
@@ -192,6 +195,28 @@ export default async function turnoRoutes(app: FastifyInstance) {
         select: { colaboradorId: true, fecha: true, decision: true },
       })).map(d => [`${d.colaboradorId}|${claveDiaBogota(d.fecha)}`, d.decision] as const),
     );
+
+    // EL CATÁLOGO ACTIVO, PARA PODER DECIR CUÁNTO EXIGIRÍA CADA TURNO (28 de septiembre de 2026).
+    //
+    // La previa de la programación en bloque tiene que avisar «con esto la semana quedaría en 56 h»
+    // ANTES de escribir, y el tope de 42 es semanal. Para eso hace falta saber cuántos minutos exige
+    // cada turno del catálogo, y eso NO se puede calcular en la pantalla: hay que convertir una franja
+    // en minutos exigidos (cruce de medianoche, menos el almuerzo no pagado, menos los descansos no
+    // remunerados), y rehacerlo allí pondría en dos sitios la regla de la que salen las horas extra.
+    //
+    // Va DESPUÉS del `Promise.all` por la misma razón que las dos consultas de arriba: meterla dentro
+    // obliga a tocar también su desestructuración sesenta líneas más arriba.
+    //
+    // Se traen también los de descanso, que dan cero: así el mapa está completo y la pantalla no
+    // necesita un caso aparte para ellos.
+    const plantillasDelCatalogo = await prisma.plantillaTurno.findMany({
+      where: { empresaId, activa: true },
+      select: {
+        id: true, esDescanso: true, horaEntrada: true, horaSalida: true,
+        tieneAlmuerzo: true, almuerzoInicio: true, almuerzoFin: true, descansos: true,
+        toleranciaMin: true, toleranciaSalidaMin: true, ajustaEntrada: true,
+      },
+    });
 
     const festivosDelRango = new Set(festivos.map(f => claveDiaBogota(f.fecha)));
     // La jornada legal del final del rango: 42 horas hoy, y sube o baja sola con la Ley 2101
@@ -385,6 +410,23 @@ export default async function turnoRoutes(app: FastifyInstance) {
         descanso: { tipo: estado.tipo, dia: estado.tipo === 'FIJO' ? estado.dia : null },
         propuesta,
         minutosEsperados: dias.reduce((a, d) => a + d.minutosEsperados, 0),
+        // CUÁNTOS MINUTOS LE EXIGIRÍA A ESTA PERSONA CADA TURNO DEL CATÁLOGO (28 de septiembre de 2026).
+        //
+        // POR PERSONA Y NO SOLO POR TURNO, y esa es la parte que no se puede recortar: cuando un turno
+        // descuenta almuerzo pero no trae ventana propia, la cuenta cae al `almuerzoMin` del horario
+        // de CADA persona. Publicar un número por turno sería correcto para unos y falso para otros, y
+        // como el respaldo sin horario da cero, el número saldría de MÁS: alarmas de 42 h que no son
+        // ciertas. Un aviso legal que a veces miente es peor que no tenerlo.
+        //
+        // Se le pasa `persona.horario` igual que hace `pintarDiaDeColaborador`, que es el camino que
+        // escribe de verdad. Un turno con horas inválidas devuelve `null` y NO entra en el mapa: la
+        // pantalla no puede decir un veredicto de algo que ni siquiera se puede pintar.
+        minutosPorTurno: Object.fromEntries(
+          plantillasDelCatalogo
+            .map(p => [p.id, diaDesdePlantilla(p, horario)] as const)
+            .filter((par): par is readonly [string, NonNullable<typeof par[1]>] => par[1] !== null)
+            .map(([id, campos]) => [id, campos.minutosEsperados]),
+        ),
         // Cuántos de sus días de descanso tienen turno PROGRAMADO encima en este rango. Es un dato
         // del horario, no de lo que ocurrió: sirve para pintar la semana, y NO para la regla legal.
         descansosConTurno: dias.filter(d => d.estado === 'DESCANSO_TRABAJADO').length,
