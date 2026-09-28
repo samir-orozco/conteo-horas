@@ -220,6 +220,38 @@ describe('qué dibuja la rejilla', () => {
     expect(primeraFila.textContent ?? '').toMatch(/\d{2}:\d{2}/);
   });
 
+  it('en MES no hay dos columnas que se llamen igual', async () => {
+    // EL MES SE DIBUJA CON SEMANAS COMPLETAS, así que las columnas de los extremos son de otro mes.
+    // Con el rótulo diciendo solo el número, el día 1 de este mes y el 1 del siguiente se llaman
+    // IGUAL: «Marcar el día 1 de todos». Quien navega con lector de pantalla oye dos columnas con el
+    // mismo nombre y una de ellas escribe en un mes que no es el del título.
+    //
+    // POR QUÉ SE AFIRMA LA UNICIDAD Y NO «la primera columna dice agosto»: estas pruebas corren
+    // contra el reloj de verdad, y el relleno puede ser CERO en los dos extremos (un mes que empieza
+    // lunes y termina domingo; febrero de 2027 es uno). Una prueba que diera por hecho el relleno
+    // pasaría o fallaría según el día en que se corra, y una con un `if` podría no afirmar nada
+    // durante un mes entero sin que nadie se enterara (CLAUDE.md §12.2). La unicidad es cierta
+    // siempre: hoy se pone roja porque hay relleno, y el día que no lo haya sigue diciendo la verdad.
+    montar();
+    await cargado();
+    await elegirModo('Mes');
+    await cargado();
+
+    const tabla = (await screen.findAllByRole('table'))[0];
+    const encabezado = within(tabla).getAllByRole('row')[0];
+    const nombres = within(encabezado)
+      .getAllByRole('button', { name: /^Marcar el día/ })
+      .map(b => b.getAttribute('aria-label'));
+
+    // La guarda de que esto de verdad está mirando un MES. Sin ella, si el cambio de modo fallara en
+    // silencio la prueba pasaría con siete columnas, todas con nombre distinto, por la razón
+    // equivocada (CLAUDE.md §9.1).
+    expect(nombres).toHaveLength(COLUMNAS_DEL_MES);
+
+    const repetidos = nombres.filter((n, i) => nombres.indexOf(n) !== i);
+    expect(repetidos).toEqual([]);
+  });
+
   it('y las iniciales siguen siendo ciertas pasada la séptima columna', async () => {
     // El defecto concreto: `INICIALES_DE_DIA[i]` con `i` = número de columna devuelve `undefined`
     // de la octava en adelante, o sea medio encabezado en blanco.

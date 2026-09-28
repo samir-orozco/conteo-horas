@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus,
 import api from '../../lib/api';
 import {
   hoyEnBogota, horasDeMinutos, sePuedePintar, inicialDeDia,
+  esFinDeSemana, esDeOtroMes,
 } from './semana';
 // La selección en bloque y el guardado por bloques: dos decisiones puras, probadas y mutadas aparte.
 // Qué celdas caen dentro de un rectángulo y qué se va a escribir de verdad NO se deciden aquí.
@@ -1424,6 +1425,42 @@ export default function CalendarioDeTurnos() {
   const haySemanales = modo !== 'DIA' && semanas.length > 1;
   // La última columna de cada semana, que es debajo de la que va su total.
   const cierraSemana = new Set(semanas.map(s => s.fechas[s.fechas.length - 1]));
+  // Y la PRIMERA de cada semana, que es donde va la raya que separa una de otra.
+  //
+  // Sale de `semanas`, que agrupa por lunes y está probada con mutación. La maqueta lo hace con
+  // `i % 7 === 0`, o sea «de siete en siete desde la primera columna», y eso es la misma regla que ya
+  // se rechazó para los totales semanales: en un rango que empieza a media semana la raya cae en la
+  // columna equivocada y estaría diciendo que la semana corta por donde no corta.
+  const abreSemana = new Set(semanas.map(s => s.fechas[0]));
+
+  // LAS TRES SEÑALES DE UNA COLUMNA, en un solo sitio porque la rejilla las pregunta DOS veces —en el
+  // encabezado y en la celda— y dos copias de la misma regla es peor que ninguna (CLAUDE.md §9.3).
+
+  // PRECEDENCIA: «de otro mes» manda sobre «fin de semana». Un domingo de relleno es las dos cosas, y
+  // lo primero que hay que ver es que ese día NO es del mes que dice el título.
+  const fondoDeColumna = (fecha: string) => {
+    if (enMes && esDeOtroMes(fecha, ancla)) return 'bg-gray-100';
+    if (esFinDeSemana(fecha)) return 'bg-rose-50';
+    return '';
+  };
+
+  // La raya solo entre semanas, nunca al principio: en la primera columna no separa nada de nada, y
+  // en la vista de semana no hay dos semanas que separar.
+  const corteDeSemana = (fecha: string) =>
+    haySemanales && abreSemana.has(fecha) && fecha !== dias[0] ? 'border-l-2 border-gray-300' : '';
+
+  // EL RÓTULO DE LA COLUMNA NOMBRA EL MES CUANDO EL DÍA ES DE OTRO. Sin esto, el «1» de este mes y el
+  // «1» del siguiente se llaman igual —«Marcar el día 1 de todos»— y quien navega con lector de
+  // pantalla oye dos columnas idénticas, una de las cuales escribe en un mes que no es el del título.
+  //
+  // Solo en el mes: ahí el título nombra UN mes y el relleno es la excepción. En la semana el título
+  // ya dice el rango entero, y el mes del ancla es arbitrario.
+  const rotuloDeColumna = (fecha: string) => {
+    const numero = Number(fecha.slice(8, 10));
+    return enMes && esDeOtroMes(fecha, ancla)
+      ? `Marcar el día ${numero} de ${nombreDelMes(fecha)} de todos`
+      : `Marcar el día ${numero} de todos`;
+  };
 
   // La persona + los días + el total, MÁS una celda por semana cuando las hay. Era una constante con
   // un 9 escrito a mano, de cuando la rejilla siempre tenía siete días: con un día son 3 y con un mes
@@ -2115,13 +2152,13 @@ export default function CalendarioDeTurnos() {
                       porque la celda ya no lleva horario y el nombre se recorta. Sigue habiendo
                       desplazamiento horizontal —cerrarlo del todo pide un nombre corto por turno, que
                       no existe en el catálogo—, pero de cuatro pantallas pasa a algo más de dos. */}
-                  <th className={`py-3 text-center ${enMes ? 'px-1 min-w-[56px]' : 'px-2 min-w-[96px]'}`}>
+                  <th className={`py-3 text-center ${enMes ? 'px-1 min-w-[56px]' : 'px-2 min-w-[96px]'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
                     {/* EL ENCABEZADO MARCA LA COLUMNA ENTERA: ese día de todo el mundo. Es el gesto
                         con el que se programa una jornada completa —un domingo, un festivo— sin
                         recorrer la lista persona por persona. Vuelve a tocarse y se desmarca, porque
                         marcar una columna por error no puede obligar a limpiar todo. */}
                     <button type="button" onClick={() => marcarColumna(fecha)}
-                      aria-label={`Marcar el día ${Number(fecha.slice(8, 10))} de todos`}
+                      aria-label={rotuloDeColumna(fecha)}
                       className="w-full rounded-lg px-1 py-0.5 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary">
                       {/* La inicial sale de la FECHA y no del número de columna: con `[i]`, de la
                           octava columna en adelante el encabezado salía en blanco. */}
@@ -2216,7 +2253,11 @@ export default function CalendarioDeTurnos() {
                       <td
                         onPointerDown={() => iniciarArrastre(suya)}
                         onPointerOver={() => extenderArrastre(suya)}
-                        className={`align-middle ${enMes ? 'px-0.5 py-1' : 'px-1.5 py-2.5'} ${marcada ? 'bg-primary/20' : ''}`}>
+                        // MARCADA Y FONDO DE COLUMNA SON EXCLUYENTES A PROPÓSITO. Los dos son un
+                        // `background-color`, así que entre `bg-primary/20` y `bg-rose-50` no gana el
+                        // que se escriba después aquí, sino el que Tailwind ponga después en su hoja.
+                        // Emitir los dos dejaría al azar si un sábado marcado se ve marcado.
+                        className={`align-middle ${enMes ? 'px-0.5 py-1' : 'px-1.5 py-2.5'} ${corteDeSemana(dia.fecha)} ${marcada ? 'bg-primary/20' : fondoDeColumna(dia.fecha)}`}>
                         {/* TRES CASOS Y NO DOS (22 de septiembre de 2026).
                             Un DESCANSO TRABAJADO abre su propio modal, y NO mira `sePuedePintar`:
                             por definición ya ocurrió, así que es pasado o de hoy, y colgándolo del

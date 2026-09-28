@@ -161,6 +161,37 @@ export function inicialDeDia(iso: string): string {
   return INICIALES_DE_DIA[diaSemana === 0 ? 6 : diaSemana - 1];
 }
 
+// SÁBADO Y DOMINGO (28 de septiembre de 2026).
+//
+// La rejilla del mes tiene hasta 42 columnas y nada distinguía el fin de semana del resto, que es
+// justo donde hay que mirar: es donde caen los descansos obligatorios y los recargos.
+//
+// `getUTCDay()` ES DEFENSIVO, NO ES LO QUE SOSTIENE EL RESULTADO, y conviene no confundirlo: medido
+// con una mutación, cambiarlo por `getDay()` deja las 42 pruebas de este archivo en verde, porque
+// `aFecha` ancla a MEDIODÍA UTC y las siete horas de la zona en que corren no cruzan el día. El
+// guardia real es ese anclaje. Se escribe `getUTCDay()` por coherencia con el resto del archivo, y
+// lo que de verdad rompería esto es leer la fecha a medianoche local.
+export function esFinDeSemana(iso: string): boolean {
+  const diaSemana = aFecha(iso).getUTCDay(); // 0 = domingo, 6 = sábado
+  return diaSemana === 0 || diaSemana === 6;
+}
+
+// SI UN DÍA NO ES DEL MES QUE SE ESTÁ VIENDO (28 de septiembre de 2026).
+//
+// Existe porque el mes se dibuja con SEMANAS COMPLETAS: las columnas de los extremos son del mes
+// anterior y del siguiente. Sin marcarlas, la rejilla miente por omisión —se ve un «1» al principio
+// y otro «1» al final, y los dos parecen del mes del título.
+//
+// SE COMPARA EL PREFIJO `YYYY-MM` Y NO EL NÚMERO DE MES. La maqueta compara `getMonth()` a secas, y
+// con eso el relleno de enero del año siguiente pasa por del mes; los dos extremos del año cruzan de
+// año, no solo de mes. Sobre texto ISO no hace falta ni construir una fecha: el año va delante.
+//
+// Va aquí y no en el componente porque la rejilla lo pregunta en DOS sitios —el encabezado y la
+// celda— y dos copias de la misma regla es peor que ninguna (CLAUDE.md §9.3).
+export function esDeOtroMes(iso: string, ancla: string): boolean {
+  return iso.slice(0, 7) !== ancla.slice(0, 7);
+}
+
 // Horas con una decimal solo cuando hace falta: "42 h", "41,5 h".
 export function horasDeMinutos(minutos: number): string {
   const horas = minutos / 60;
