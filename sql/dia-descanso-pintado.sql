@@ -30,20 +30,56 @@
 -- Esa es del trabajo de la plantilla de Siigo, que tocó el mismo `schema.prisma` en paralelo.
 --
 -- ─────────────────────────────────────────────────────────────────────────────────────────────
--- ESTA ES LA SENTENCIA QUE SE EJECUTÓ DE VERDAD, no una versión mejorada después.
+-- LA GUARDA VUELVE, Y AHORA CON LA MEDICIÓN DELANTE (27 de septiembre de 2026)
+-- ─────────────────────────────────────────────────────────────────────────────────────────────
+-- La versión anterior de este archivo llevaba la sentencia pelada, y explicaba por qué: la primera
+-- forma usaba `SET STATEMENT innodb_lock_wait_timeout = 60 FOR ...`, falló con un error de
+-- sintaxis, y se concluyó que la cláusula no era portable. Lo del error es cierto, pero se midió
+-- en el motor equivocado: `SET STATEMENT ... FOR` no existe en MySQL, y la base de DESARROLLO es
+-- MySQL 9.7.1, mientras que PRODUCCIÓN es MariaDB. Este archivo es para producción.
 --
--- La primera versión llevaba `SET STATEMENT innodb_lock_wait_timeout = 60 FOR ...` y
--- `ALGORITHM = INSTANT`, copiando el patrón de los ALTER de `registros`. Al aplicarla falló:
+-- Medido contra MariaDB 12.3.2 con 60.000 filas en la tabla, no razonado:
 --
---   Error: You have an error in your SQL syntax ... near 'innodb_lock_wait_timeout = 60 FOR'
+--   sentencia pelada          56 ms   Handler_write = 0   (MariaDB ya la resuelve INSTANT sola)
+--   con la guarda completa    51 ms   Handler_write = 0   (mismo resultado, sin coste)
+--   `innodb_lock_wait_timeout` también es aceptado: el nombre no era la causa del fallo
 --
--- `SET STATEMENT ... FOR` es de MariaDB y NO existe en MySQL, y la base de desarrollo es
--- **MySQL 9.7.1** (comprobado con `SELECT VERSION()`, no supuesto). Como producción sí es MariaDB,
--- un archivo con esa cláusula se aplicaría allá y reventaría acá, o al revés, según quién lo corra.
--- Se deja la forma portable, que es la que se probó.
+-- O SEA QUE EL MIEDO ERA EL EQUIVOCADO. No copia la tabla. Lo que sí puede pasar es otra cosa:
+-- `dias_esperados` está en el camino VIVO del kiosco, de lectura y de escritura. `/estado`
+-- (worker.ts:436) llama a `pausasDelTurno` (worker.ts:478, definida en la 112) y corre ANTES de
+-- abrir la sesión del kiosco; `/marcar` (worker.ts:546) escribe en cada entrada vía
+-- `asegurarDiaSinFallar` (worker.ts:869) -> `materializarDias.ts:106`. Si el ALTER llega mientras
+-- hay una transacción abierta sobre la tabla (un reporte, el planificador, o phpMyAdmin), se queda
+-- esperando el candado de metadatos y TODO lo que venga detrás se encola detrás de él. Sin tope,
+-- esa espera es de `@@lock_wait_timeout`, que medido es de **86400 segundos**: un día entero.
+-- Con `connection_limit=5` en el backend, cinco peticiones atascadas se llevan la API completa.
 --
--- Si al aplicarlo en producción la tabla ya fuera grande y el ALTER se notara, ahí sí conviene
--- envolverlo; pero eso se decide midiendo contra esa base, no copiando un patrón de otra tabla.
+-- Por eso la guarda no es adorno y cuesta cero: acota la espera a 10 segundos. Si el ALTER no
+-- entra en 10 s, falla ruidoso y se reintenta fuera de horario, que es infinitamente mejor que
+-- dejar a la gente sin poder marcar sin que nadie sepa por qué.
+--
+-- OJO: esta forma es de MariaDB. NO la corras contra la base local de desarrollo, que es MySQL.
 
-ALTER TABLE `dias_esperados`
-  ADD COLUMN `descansoPintado` BOOLEAN NOT NULL DEFAULT false;
+SET STATEMENT lock_wait_timeout=10 FOR
+ALTER TABLE `ewyfwxbg_horapro`.`dias_esperados`
+  ADD COLUMN `descansoPintado` BOOLEAN NOT NULL DEFAULT false,
+  ALGORITHM=INSTANT;
+
+-- ============================================================================
+-- COMPROBACIÓN (un comando puede informar éxito y no haber hecho nada)
+-- ============================================================================
+-- Una fila, tinyint(1), NOT NULL, default 0:
+-- SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+--   FROM information_schema.COLUMNS
+--  WHERE TABLE_SCHEMA = 'ewyfwxbg_horapro' AND TABLE_NAME = 'dias_esperados'
+--    AND COLUMN_NAME = 'descansoPintado';
+--
+-- Y todas en 0, que es lo que garantiza que no reinterpretó ningún día:
+-- SELECT COUNT(*) AS marcados FROM `ewyfwxbg_horapro`.`dias_esperados`
+--  WHERE `descansoPintado` = 1;   -- tiene que dar 0
+
+-- ============================================================================
+-- PARA REVERTIR
+-- ============================================================================
+-- Sin riesgo mientras el backend nuevo no esté arriba: nada lee esta columna.
+-- ALTER TABLE `ewyfwxbg_horapro`.`dias_esperados` DROP COLUMN `descansoPintado`;

@@ -28,8 +28,54 @@
 --
 -- Es aditivo y sobre una tabla chica (el catálogo de turnos de una empresa), así que no necesita
 -- ALGORITHM/LOCK explícitos como los ALTER de `registros`.
+--
+-- ============================================================================
+-- ANTES DE CORRER NADA
+-- ============================================================================
+-- 1. Copia de seguridad de la base desde cPanel (Backup → Download a MySQL Database Backup).
+-- 2. Entra a la base `ewyfwxbg_horapro` en phpMyAdmin ANTES de enviar. Aun así el nombre va
+--    escrito abajo, que es la guarda de verdad (#1109 del 13 de septiembre de 2026).
+-- 3. ESTE ARCHIVO VA DESPUÉS DE `sql/plantillas-turno.sql`, que es quien CREA `plantillas_turno`
+--    (el único CREATE de esa tabla en todo el repositorio). No es un «si acaso»: pegado antes,
+--    muere con el error 1146 (Table 'plantillas_turno' doesn't exist) sin tocar una sola columna.
+--
+--    Y el error de invertir el orden es SILENCIOSO en la otra dirección: `plantillas-turno.sql`
+--    es idempotente por `CREATE TABLE IF NOT EXISTS`, así que corrido después no falla, no hace
+--    nada, y su propia comprobación («tiene que devolver 15 columnas») devolvería 18 y se leería
+--    como un fallo donde todo está bien.
+--
+--    El orden se comprueba, no se recuerda (CLAUDE.md §12.3). Corre esto PRIMERO:
+--
+--      SELECT COUNT(*) AS existe_plantillas_turno
+--        FROM information_schema.TABLES
+--       WHERE TABLE_SCHEMA = 'ewyfwxbg_horapro' AND TABLE_NAME = 'plantillas_turno';
+--
+--    0 = PARA y corre antes `sql/plantillas-turno.sql`.   1 = sigue.
+-- 4. Este SQL va ANTES del backend nuevo, y el esquema cambió, así que el despliegue lleva CUATRO
+--    ramas y no tres, con `prisma-build` por delante del backend (CLAUDE.md §11).
 
-ALTER TABLE `plantillas_turno`
+ALTER TABLE `ewyfwxbg_horapro`.`plantillas_turno`
   ADD COLUMN `toleranciaMin` INTEGER NULL,
   ADD COLUMN `toleranciaSalidaMin` INTEGER NULL,
   ADD COLUMN `ajustaEntrada` BOOLEAN NULL;
+
+-- ============================================================================
+-- COMPROBACIÓN
+-- ============================================================================
+-- Tres filas, las tres con IS_NULLABLE = YES y COLUMN_DEFAULT nulo. Un default aquí borraría la
+-- diferencia entre «la del horario» y «sin tolerancia», que es lo único delicado de este archivo:
+-- SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+--   FROM information_schema.COLUMNS
+--  WHERE TABLE_SCHEMA = 'ewyfwxbg_horapro' AND TABLE_NAME = 'plantillas_turno'
+--    AND COLUMN_NAME IN ('toleranciaMin','toleranciaSalidaMin','ajustaEntrada');
+--
+-- Y todas las plantillas existentes tienen que quedar en NULL:
+-- SELECT COUNT(*) AS con_tolerancia_propia FROM `ewyfwxbg_horapro`.`plantillas_turno`
+--  WHERE `toleranciaMin` IS NOT NULL OR `toleranciaSalidaMin` IS NOT NULL
+--     OR `ajustaEntrada` IS NOT NULL;   -- tiene que dar 0
+
+-- ============================================================================
+-- PARA REVERTIR
+-- ============================================================================
+-- ALTER TABLE `ewyfwxbg_horapro`.`plantillas_turno`
+--   DROP COLUMN `toleranciaMin`, DROP COLUMN `toleranciaSalidaMin`, DROP COLUMN `ajustaEntrada`;
