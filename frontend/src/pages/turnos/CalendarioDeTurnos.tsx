@@ -25,7 +25,7 @@ import { diasEntre, sumarDias, nombreDelMes, rotuloCorto } from './semana';
 // mutada aparte: aquí solo se aplica.
 import { vistaDelCalendario, moverVista, type ModoDeVista } from './vistaDelCalendario';
 import { nombreDelDia } from '../../lib/diasDeLaSemana';
-import { CLASES_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
+import { CLASES_COLOR, PUNTO_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
 import { rotuloDeCelda, type OrigenDelRotulo } from './rotuloDeCelda';
 // Dónde cabe un panel flotante sin salirse de la pantalla. Vive en `lib/` porque el pedido del
 // dueño fue para TODA esta clase de elementos, no solo para este.
@@ -136,10 +136,57 @@ type Respuesta = {
   filas: FilaDelCalendario[];
 };
 
-// Lo que el selector necesita de un turno del catálogo, y nada más. La ruta devuelve bastante más
-// (horas, ventana de almuerzo, descansos, sede), pero aquí solo se pinta un botón con su nombre y
-// su color: lo que ese turno EXIGE lo resuelve el backend al pintar, no esta pantalla.
-type TurnoDelCatalogo = { id: string; nombre: string; color: string };
+// Lo que el selector necesita de un turno del catálogo. La ruta devuelve bastante más (ventana de
+// almuerzo, descansos, sede) y eso sigue fuera: lo que ese turno EXIGE lo resuelve el backend al
+// pintar, no esta pantalla.
+//
+// LAS HORAS SÍ ENTRAN, desde el 28 de septiembre de 2026. Antes se descartaban aquí mismo, en el
+// borde de tipos, aunque la respuesta ya las traía. El problema se vio en la pantalla real del dueño:
+// sus turnos se llaman «test», «test 2» y «Test largo», y al aplicar a un bloque de veinte personas
+// la tarjeta no dejaba confirmar QUÉ horario se iba a escribir sin salir al catálogo y perder la
+// selección. Lo que se escribe es lo que ese día va a exigir, así que el nombre solo no basta.
+//
+// `null` en las dos es un turno sin jornada (un descanso del catálogo), y entonces no se dice ninguna
+// hora en vez de inventarse un «00:00».
+type TurnoDelCatalogo = {
+  id: string;
+  nombre: string;
+  color: string;
+  horaEntrada: string | null;
+  horaSalida: string | null;
+};
+
+// LA PASTILLA DE UN TURNO DEL CATÁLOGO, en un solo sitio.
+//
+// Se pintaba en TRES: el carril de la tarjeta de bloque, el panel del día y la ventana de rotación.
+// Las tres eran el mismo botón redondo con el nombre dentro, y al añadirles el horario habrían sido
+// tres copias de la misma regla de presentación destinadas a separarse (CLAUDE.md §9.3). Se
+// encontraron buscando el patrón `CLASES_COLOR[normalizarColor(t.color)]`, no de memoria.
+//
+// El punto de color viene de `PUNTO_COLOR`, que ya existía en la librería para el selector del
+// catálogo: es el relleno sólido del mismo tono que el fondo claro de la pastilla.
+//
+// EL PUNTO NO TIENE PRUEBA, Y ESO ES DELIBERADO. Se comprobó con una mutación: quitándolo no se pone
+// roja ninguna de las 51 pruebas de esta pantalla. La única forma de sujetarlo sería afirmar una
+// clase de CSS, y eso es justo lo que CLAUDE.md §7 prohíbe —una prueba que se rompe al renombrar una
+// clase no prueba comportamiento, solo parece cobertura—. Lo que sí está cubierto es lo que el punto
+// acompaña: el nombre y el horario del turno, y el color del propio fondo de la pastilla. El punto se
+// verificó a ojo en el navegador y se queda como decoración declarada, no como algo probado.
+function PastillaDeTurno({ turno, activa = true }: { turno: TurnoDelCatalogo; activa?: boolean }) {
+  const horas = turno.horaEntrada && turno.horaSalida ? `${turno.horaEntrada}–${turno.horaSalida}` : null;
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+        activa ? PUNTO_COLOR[normalizarColor(turno.color)] : 'bg-gray-400'}`} />
+      <span className="flex flex-col items-start leading-tight">
+        <span>{turno.nombre}</span>
+        {/* Sin horas no se dice nada: un turno de descanso del catálogo no tiene jornada, y poner un
+            guion o un «00:00» afirmaría una que no existe. */}
+        {horas && <span className="text-[10px] font-normal tabular-nums opacity-70">{horas}</span>}
+      </span>
+    </span>
+  );
+}
 
 // LA PROPUESTA DE DESCANSO DE UNA SEMANA ROTATIVA. La decide el backend (`propuestaDeDescanso`,
 // pura y mutada) y aquí solo se muestra: es una regla que roza el dinero, y deducirla otra vez en
@@ -491,7 +538,7 @@ function PanelDeJornada({ ancla, titulo, subtitulo, dia, catalogo, ocupado, erro
             {catalogo.map(t => (
               <button key={t.id} type="button" disabled={ocupado} onClick={() => onElegir(t.id)}
                 className={`rounded-full px-2.5 py-1 text-[12px] font-semibold disabled:opacity-60 ${CLASES_COLOR[normalizarColor(t.color)]}`}>
-                {t.nombre}
+                <PastillaDeTurno turno={t} />
               </button>
             ))}
           </div>
@@ -785,15 +832,26 @@ function TarjetaDeBloque({
   return (
     <div role="region" aria-label="Lo que tienes marcado"
       className="fixed inset-x-3 bottom-3 z-[60] !mt-0 mx-auto max-w-5xl rounded-2xl bg-white p-3 shadow-xl ring-1 ring-gray-200">
-      <div className="flex flex-wrap items-center gap-3">
+      {/* EN PANTALLA ANGOSTA SE APILA, CENTRADO (28 de septiembre de 2026). Medido en el navegador a
+          375 px de ancho antes de tocarlo: la cuenta, el carril y las tres fijas se peleaban la misma
+          fila, el carril se comprimía a unos 240 px con la segunda pastilla cortada por la mitad, y
+          las flechas aparecían por falta de sitio en vez de por tener turnos de sobra.
+
+          `w-full` y `min-w-0` van AQUÍ, en el padre, y esa es la parte que se hace mal: sin ellos
+          esta caja se dimensiona por su contenido y sale más ancha que la tarjeta, y entonces la
+          pista no tiene contra qué encogerse por mucho `min-w-0` que lleve ella. El desbordamiento se
+          arregla en el padre, no en el hijo. Lo dice la maqueta con esas palabras, y costó descubrirlo
+          allí. */}
+      <div className="flex w-full min-w-0 flex-col items-center gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
         <div className="min-w-0">
           <div className="text-sm font-bold text-ink">{jornadas(cuenta.total)} seleccionadas</div>
           <div className="text-[11px] text-muted">{detalle}{pasadas}</div>
         </div>
 
         {/* EL CATÁLOGO, en un carril que se corre. `min-w-0` en el carril y `flex-1` sobre él: sin
-            eso, una pista con veinte turnos empuja a las acciones fijas fuera de la tarjeta. */}
-        <div className="flex min-w-0 flex-1 items-center gap-1">
+            eso, una pista con veinte turnos empuja a las acciones fijas fuera de la tarjeta.
+            En pantalla angosta ocupa el ancho entero de la tarjeta, en su propia línea. */}
+        <div className="flex w-full min-w-0 items-center gap-1 sm:w-auto sm:flex-1">
           {carril.desborda && (
             <button type="button" onClick={() => correr(-1)} disabled={carril.alInicio}
               aria-label="Turnos anteriores"
@@ -807,7 +865,7 @@ function TarjetaDeBloque({
               <button key={t.id} type="button" disabled={ocupado} onClick={() => onTurno(t.id)}
                 className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-semibold disabled:opacity-60 ${
                   CLASES_COLOR[normalizarColor(t.color)]}`}>
-                {t.nombre}
+                <PastillaDeTurno turno={t} />
               </button>
             ))}
           </div>
@@ -824,7 +882,9 @@ function TarjetaDeBloque({
             porque no son turnos del catálogo. «Quitar turno» y no «Quitar» a secas: se lee como
             «deseleccionar» y es lo contrario, porque esto ESCRIBE en los días marcados dejándolos sin
             turno. */}
-        <div className="flex shrink-0 items-stretch gap-1.5">
+        {/* Las tres fijas bajan debajo del carril y se centran cuando no hay ancho, envolviendo si
+            hace falta: apiladas, una raya vertical de separación no separaría nada. */}
+        <div className="flex shrink-0 flex-wrap items-stretch justify-center gap-1.5">
           <button type="button" disabled={ocupado} onClick={onDescanso}
             className="flex w-[4.5rem] flex-col items-center gap-0.5 rounded-xl border border-dashed border-gray-300 px-2 py-1.5 text-[11px] font-semibold text-muted hover:text-ink hover:border-gray-400 disabled:opacity-60">
             <Moon size={15} />
@@ -959,7 +1019,9 @@ function VentanaDeRotacion({
                     rot.plantillaId === t.id
                       ? CLASES_COLOR[normalizarColor(t.color)]
                       : 'bg-gray-100 text-muted'}`}>
-                  {t.nombre}
+                  {/* Apagada cuando no es la elegida: el punto pierde su color para que el elegido se
+                      distinga de un vistazo, que es de lo que vive esta lista. */}
+                  <PastillaDeTurno turno={t} activa={rot.plantillaId === t.id} />
                 </button>
               ))}
             </div>

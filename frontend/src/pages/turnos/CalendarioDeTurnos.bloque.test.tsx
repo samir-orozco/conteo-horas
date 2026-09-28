@@ -255,6 +255,51 @@ describe('marcar varias celdas', () => {
   });
 });
 
+describe('las pastillas de turno dicen a qué hora es ese turno', () => {
+  // SALIÓ DE COMPARAR CON LA MAQUETA (28 de septiembre de 2026). Allí cada pastilla lleva el nombre y
+  // debajo su horario («Mañana · 7:00 – 15:00»); aquí solo el nombre.
+  //
+  // NO ES COSMÉTICO, y se ve en la pantalla real del dueño: sus tres turnos se llaman «test»,
+  // «test 2» y «Test largo». Al aplicar a un bloque de veinte personas, la tarjeta no deja confirmar
+  // QUÉ horario se va a escribir: hay que acordarse de memoria o salir al catálogo y perder la
+  // selección. Y lo que se escribe es lo que ese día va a exigir.
+  //
+  // EL DATO YA LLEGA: `GET /plantillas-turno` responde con `horaEntrada` y `horaSalida` de cada turno
+  // (el fixture de arriba los trae porque son los de la respuesta real). Se estaban descartando en el
+  // borde de tipos, no faltaba pedirlos.
+
+  it('la pastilla del carril muestra el horario además del nombre', async () => {
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+    const boton = within(await tarjeta()).getByRole('button', { name: /Noche/ });
+    expect(boton).toHaveTextContent('22:00');
+    expect(boton).toHaveTextContent('06:00');
+  });
+
+  it('un turno sin horas no inventa ninguna', async () => {
+    // Un turno de descanso del catálogo no tiene entrada ni salida. Poner un guion o un «00:00»
+    // sería afirmar una jornada que no existe.
+    const usuario = userEvent.setup();
+    get.mockImplementation((url: string) => {
+      if (url === '/turnos/calendario') {
+        return Promise.resolve({ data: { desde: LUNES, hasta: DOMINGO, horasSemanales: 42, filas: [ANA] } });
+      }
+      if (url === '/plantillas-turno') {
+        return Promise.resolve({
+          data: [{ id: 'p9', nombre: 'Libre', color: 'grafito', horaEntrada: null, horaSalida: null }],
+        });
+      }
+      return Promise.reject(new Error('url inesperada: ' + url));
+    });
+    render(<CalendarioDeTurnos />);
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+    const boton = within(await tarjeta()).getByRole('button', { name: /Libre/ });
+    expect(boton).toHaveTextContent('Libre');
+    expect(boton.textContent).not.toMatch(/\d{2}:\d{2}/);
+  });
+});
+
 describe('aplicar a lo marcado', () => {
   const marcarDosCeldas = async () => {
     montar();

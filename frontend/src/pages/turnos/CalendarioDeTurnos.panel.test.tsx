@@ -61,9 +61,16 @@ const FILA = {
   propuesta: null,
 };
 
+// CON SUS HORAS, como las manda la respuesta de verdad (28 de septiembre de 2026). Esta fixture era
+// la única del módulo que no las traía, y por eso fue la única que NO se rompió al empezar a pintar
+// el horario dentro de la pastilla: sin horas no se pinta ninguna y el nombre accesible no cambia.
+//
+// O sea que estaba verde ejercitando un turno que no existe en producción (CLAUDE.md §9.2). Al
+// ponérselas, las dos consultas por cadena exacta de más abajo pasan a buscar «Mañana 06:00–14:00»,
+// y eso es justo lo que se quiere: que esta prueba toque lo que la pantalla muestra de verdad.
 const CATALOGO = [
-  { id: 'p1', nombre: 'Mañana', color: 'esmeralda' },
-  { id: 'p2', nombre: 'Noche', color: 'cobalto' },
+  { id: 'p1', nombre: 'Mañana', color: 'esmeralda', horaEntrada: '06:00', horaSalida: '14:00' },
+  { id: 'p2', nombre: 'Noche', color: 'cobalto', horaEntrada: '22:00', horaSalida: '06:00' },
 ];
 
 const montar = (filas: unknown[] = [FILA]) => {
@@ -164,14 +171,17 @@ describe('el panel sigue sirviendo para pintar', () => {
   it('ofrece los turnos del catálogo', async () => {
     montar();
     const { panel } = await abrirPanel();
-    expect(within(panel).getByRole('button', { name: 'Mañana' })).toBeInTheDocument();
+    // Por expresión y no por cadena exacta: la pastilla ahora dice el nombre Y su horario, así que su
+    // nombre accesible es «Mañana 06:00–14:00». Afirmar la cadena entera ataría esta prueba al formato
+    // del horario, que es otra cosa y tiene su propio caso en `bloque.test.tsx`.
+    expect(within(panel).getByRole('button', { name: /^Mañana/ })).toBeInTheDocument();
   });
 
   it('elegir uno lo pinta, sin un «guardar» aparte', async () => {
     montar();
     const { usuario, panel } = await abrirPanel();
     put.mockResolvedValue({ data: { ok: true } });
-    await usuario.click(within(panel).getByRole('button', { name: 'Noche' }));
+    await usuario.click(within(panel).getByRole('button', { name: /^Noche/ }));
     expect(put).toHaveBeenCalledWith('/turnos/dia', {
       colaboradorId: 'c1', fecha: DOMINGO, plantillaId: 'p2',
     });
