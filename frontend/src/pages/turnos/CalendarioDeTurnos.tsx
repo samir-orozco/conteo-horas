@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw } from 'lucide-react';
 import api from '../../lib/api';
 import {
   hoyEnBogota, horasDeMinutos, sePuedePintar, inicialDeDia,
@@ -13,6 +13,14 @@ import { bloquesDe, planDeEscritura, type AccionDeEscritura } from './aplicacion
 import {
   conteoDePrevia, descansosPisados, cruzanAHabitual, type CeldaParaPrevia,
 } from './previaDeBloque';
+// El motor de rotaciones y la proyección del mes: también puros, probados y mutados. Qué le toca a
+// cada día del ciclo y qué semanas quedarían sin descanso NO se deciden aquí.
+import { ROTACIONES, accionDelDia, semanasSinDescanso, type PatronDeRotacion } from './rotacion';
+import { proyeccionDelMes } from './proyeccionDeRotacion';
+// Qué se le escribe a cada día con lo que está pendiente: una acción igual para todas las celdas, o
+// una rotación que reparte turnos y descansos por el ciclo. Puro, probado y mutado aparte.
+import { accionDeLoPendiente, type LoPendiente } from './loPendiente';
+import { diasEntre, sumarDias, rotuloDeMes } from './semana';
 // Qué rango le toca a cada modo y cómo se mueven las flechas. Es una decisión pura, probada y
 // mutada aparte: aquí solo se aplica.
 import { vistaDelCalendario, moverVista, type ModoDeVista } from './vistaDelCalendario';
@@ -721,14 +729,18 @@ function ModalDescansoTrabajado({ nombre, datos, guardando, error, onCerrar, onG
 //
 // LAS FLECHAS DEL CARRIL SE MIDEN, NO SE SUPONEN: si los turnos caben, no aparecen. Y se mide con la
 // tarjeta ya dibujada, porque un elemento que todavía no existe mide cero y entonces saldrían siempre.
-function TarjetaDeBloque({ cuenta, catalogo, ocupado, progreso, onTurno, onDescanso, onQuitar, onCancelar }: {
+function TarjetaDeBloque({
+  cuenta, catalogo, ocupado, progreso, puedeRotar, onTurno, onDescanso, onQuitar, onRotacion, onCancelar,
+}: {
   cuenta: { total: number; personas: number; dias: number; pasadas: number; nombre: string | null };
   catalogo: TurnoDelCatalogo[];
   ocupado: boolean;
   progreso: { bloque: number; bloques: number } | null;
+  puedeRotar: boolean;
   onTurno: (plantillaId: string) => void;
   onDescanso: () => void;
   onQuitar: () => void;
+  onRotacion: () => void;
   onCancelar: () => void;
 }) {
   const pista = useRef<HTMLDivElement>(null);
@@ -823,6 +835,23 @@ function TarjetaDeBloque({ cuenta, catalogo, ocupado, progreso, onTurno, onDesca
             <X size={15} />
             Quitar turno
           </button>
+          {/* LA ROTACIÓN VIVE AQUÍ, junto a los turnos, porque es lo que pidió el dueño con esas
+              palabras: «en el modal donde están los turnos, que se ponga el 6x1 o el 4x2». No es un
+              turno más: es un patrón que reparte varios turnos y descansos a lo largo del período, y
+              por eso abre su propia ventana en vez de aplicarse de una.
+
+              APAGADA CON MÁS DE UNA PERSONA, y el título dice por qué. No es una limitación técnica:
+              un ciclo arranca en un día concreto, y el mismo 4x2 con el mismo arranque para diez
+              personas las deja a todas descansando el mismo día, que es lo contrario de para lo que
+              existe una rotación. */}
+          <button type="button" disabled={ocupado || !puedeRotar} onClick={onRotacion}
+            title={puedeRotar
+              ? 'Aplicar un patrón 6x1, 4x2…'
+              : 'Marca a una sola persona: cada rotación arranca en su propio día.'}
+            className="flex w-[4.5rem] flex-col items-center gap-0.5 rounded-xl border border-gray-200 px-2 py-1.5 text-[11px] font-semibold text-ink hover:bg-gray-50 disabled:opacity-40">
+            <RotateCw size={15} />
+            Rotación
+          </button>
           <button type="button" onClick={onCancelar}
             className="self-center rounded-xl px-3 py-2 text-[12px] font-semibold text-muted hover:text-ink">
             Cancelar
@@ -836,6 +865,174 @@ function TarjetaDeBloque({ cuenta, catalogo, ocupado, progreso, onTurno, onDesca
           Bloque {progreso.bloque} de {progreso.bloques} · no cierres esta ventana
         </p>
       )}
+    </div>
+  );
+}
+
+// LA VENTANA DE ROTACIÓN (28 de septiembre de 2026).
+//
+// Pedido del dueño, con sus palabras: «si seleccionamos el nombre de la persona podamos poner en el
+// modal donde están los turnos de que se ponga el 6x1 o el 4x2 para que semanalmente se apliquen los
+// cambios, como que solo se seleccione el tipo de rotación, los días y el turno». Los días son la
+// selección que ya está hecha en la rejilla, así que aquí quedan tres decisiones: el patrón, el turno
+// que se trabaja, y en qué punto del ciclo arranca.
+//
+// Y SU RAZÓN DE SER, también con sus palabras: «que el sistema lea todo el mes y me diga que por norma
+// no le estás dando el día de descanso». Nada de eso se decide aquí: el veredicto lo calculan
+// `proyeccionDelMes` y `semanasSinDescanso`, que son puras y están probadas y mutadas.
+function VentanaDeRotacion({
+  nombre, catalogo, rot, dias, marcadas, hoy, primerDia, mes, semanasMalas, esperandoElMes,
+  onPatron, onTurno, onCorrer, onCancelar, onVerPrevia,
+}: {
+  nombre: string;
+  catalogo: TurnoDelCatalogo[];
+  rot: { patron: PatronDeRotacion; plantillaId: string; desfase: number };
+  dias: string[];
+  marcadas: Set<string>;
+  hoy: string;
+  primerDia: string;
+  mes: string;
+  semanasMalas: string[];
+  esperandoElMes: boolean;
+  onPatron: (patron: PatronDeRotacion) => void;
+  onTurno: (plantillaId: string) => void;
+  onCorrer: (cuanto: number) => void;
+  onCancelar: () => void;
+  onVerPrevia: () => void;
+}) {
+  useEffect(() => {
+    const alTeclear = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancelar(); };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [onCancelar]);
+
+  return (
+    <div className="fixed inset-0 !mt-0 z-[80] flex items-center justify-center bg-black/50 p-4">
+      <div role="dialog" aria-modal="true" aria-label={`Rotación de ${nombre}`}
+        className="hp-pop max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+        <div className="border-b border-gray-100 px-6 pt-5 pb-4">
+          <h3 className="text-lg font-bold text-ink">Rotación de {nombre}</h3>
+          <p className="mt-1 text-sm text-muted">
+            Se aplica sobre los días que tienes marcados, semana tras semana.
+          </p>
+        </div>
+
+        <div className="space-y-5 p-6">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Tipo de rotación</span>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {(Object.keys(ROTACIONES) as PatronDeRotacion[]).map(patron => (
+                <button key={patron} type="button" aria-pressed={rot.patron === patron}
+                  onClick={() => onPatron(patron)}
+                  className={`rounded-xl border px-3 py-2 text-left transition-colors ${
+                    rot.patron === patron
+                      ? 'border-primary bg-primary/10 text-ink'
+                      : 'border-gray-200 text-muted hover:border-gray-300'}`}>
+                  <span className="block text-sm font-bold">{patron}</span>
+                  <span className="block text-[10px] leading-tight">
+                    {ROTACIONES[patron].trabaja} de trabajo, {ROTACIONES[patron].descansa} de descanso
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted">{ROTACIONES[rot.patron].nota}</p>
+          </div>
+
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Turno que trabaja</span>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {catalogo.map(t => (
+                <button key={t.id} type="button" aria-pressed={rot.plantillaId === t.id}
+                  onClick={() => onTurno(t.id)}
+                  className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${
+                    rot.plantillaId === t.id
+                      ? CLASES_COLOR[normalizarColor(t.color)]
+                      : 'bg-gray-100 text-muted'}`}>
+                  {t.nombre}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Dónde arranca el ciclo</span>
+            <div className="mt-2 flex items-center gap-1.5">
+              <button type="button" onClick={() => onCorrer(-1)} aria-label="Correr un día atrás"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gray-100 text-ink hover:bg-gray-200">
+                <ChevronLeft size={14} />
+              </button>
+              {/* LA TIRA MUESTRA LO QUE DE VERDAD SE VA A ESCRIBIR, no el patrón en abstracto: un día
+                  que no está marcado, o que ya pasó, conserva lo suyo y se ve apagado. Si pintara el
+                  ciclo completo, prometería una rotación que la escritura no va a cumplir. */}
+              <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
+                {dias.map(fecha => {
+                  const entra = marcadas.has(fecha) && sePuedePintar(fecha, hoy);
+                  const trabaja = accionDelDia(rot.patron, rot.desfase, diasEntre(primerDia, fecha)) === 'TURNO';
+                  return (
+                    <div key={fecha}
+                      className={`shrink-0 rounded-lg px-1.5 py-1 text-center text-[10px] leading-tight ${
+                        !entra ? 'bg-gray-50 text-gray-300'
+                          : trabaja ? 'bg-primary/20 text-ink' : 'bg-gray-200 text-muted'}`}>
+                      <div className="font-semibold">{inicialDeDia(fecha)}</div>
+                      <div className="tabular-nums">{Number(fecha.slice(8, 10))}</div>
+                      <div className="font-bold">{!entra ? '·' : trabaja ? 'T' : 'D'}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <button type="button" onClick={() => onCorrer(1)} aria-label="Correr un día adelante"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gray-100 text-ink hover:bg-gray-200">
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* EL VEREDICTO. Mientras el mes viene en camino NO se dice nada: juzgarlo con los días que
+              hay en pantalla sería decir «todo bien» de un mes que no se ha visto, y un aviso que no
+              salta cuando debe enseña a confiar en él. */}
+          {esperandoElMes ? (
+            <p className="rounded-lg bg-gray-50 px-3 py-2.5 text-[13px] text-muted">
+              Leyendo el mes para poder juzgar la rotación…
+            </p>
+          ) : semanasMalas.length > 0 ? (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5">
+              <p className="flex items-start gap-1.5 text-[13px] font-semibold text-rose-900">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                Por norma no le estarías dando el día de descanso en {semanasMalas.length}
+                {semanasMalas.length === 1 ? ' semana' : ' semanas'} de {mes.toLowerCase()}
+              </p>
+              <p className="mt-1 pl-5 text-[11px] text-rose-900">
+                {semanasMalas.map(l => `Semana del ${Number(l.slice(8, 10))}`).join(' · ')}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+              <p className="flex items-start gap-1.5 text-[13px] font-semibold text-emerald-900">
+                <Check size={14} className="mt-0.5 shrink-0" />
+                Cada semana de {mes.toLowerCase()} le queda con su día de descanso
+              </p>
+              <p className="mt-1 pl-5 text-[11px] text-emerald-900">{ROTACIONES[rot.patron].nota}.</p>
+            </div>
+          )}
+
+          <p className="text-[11px] leading-relaxed text-muted">
+            Un ciclo de <b>siete días</b> (6x1, 5x2) deja el descanso siempre en el mismo día. Uno de
+            seis o de cuatro (4x2, 2x2) lo corre cada semana, y por eso hay que mirar el mes entero:
+            puede dejar siete días seguidos de trabajo sin que ningún día pintado lo delate.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-6 py-4">
+          <button type="button" onClick={onCancelar} className="px-4 py-2 text-sm text-muted">Cancelar</button>
+          {/* NO ESCRIBE: deja la rotación pendiente y abre la MISMA previa que los turnos sueltos, con
+              sus avisos y su guardado por bloques. Un segundo camino sería un segundo sitio donde
+              equivocarse, y la rotación se saltaría los avisos que la previa ya sabe dar. */}
+          <button type="button" onClick={onVerPrevia}
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-ink hover:bg-primary-dark">
+            Ver antes de aplicar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1084,7 +1281,14 @@ export default function CalendarioDeTurnos() {
   // acción para todo el envío, y cuando llegue la rotación esto pasa a ser una unión («una acción
   // igual para todos» o «un patrón»). Ese será el único sitio que cambie, y el camino de escritura
   // seguirá siendo uno.
-  const [pendiente, setPendiente] = useState<AccionDeEscritura | null>(null);
+  const [pendiente, setPendiente] = useState<LoPendiente | null>(null);
+  // La ventana de rotación: sobre quién, con qué patrón, y el mes que se pidió aparte para juzgarlo.
+  // `mesDeLaRotacion` es `null` mientras viene en camino, y entonces el veredicto todavía no se dice:
+  // juzgar el mes con los siete días que hay en pantalla sería decir «todo bien» de lo que no se ha
+  // visto, que es peor que callar.
+  const [rotando, setRotando] = useState<FilaDelCalendario | null>(null);
+  const [rot, setRot] = useState<{ patron: PatronDeRotacion; plantillaId: string; desfase: number } | null>(null);
+  const [mesDeLaRotacion, setMesDeLaRotacion] = useState<{ fecha: string; trabajado: boolean }[] | null>(null);
   const [progreso, setProgreso] = useState<{ bloque: number; bloques: number } | null>(null);
   const [resultado, setResultado] = useState<{ escritas: number; bloqueadas: number; fallos: string[] } | null>(null);
 
@@ -1331,7 +1535,9 @@ export default function CalendarioDeTurnos() {
     }];
   });
 
-  const accionPendiente = (): AccionDeEscritura => pendiente ?? { tipo: 'QUITAR' };
+  // La acción se resuelve POR CELDA, que es lo que deja pasar una rotación por la misma maquinaria.
+  const accionPendiente = (celda: { fecha: string }): AccionDeEscritura =>
+    pendiente ? accionDeLoPendiente(pendiente, celda.fecha) : { tipo: 'QUITAR' };
   const conteo = pendiente
     ? conteoDePrevia(celdasParaPrevia, accionPendiente, hoy)
     : { escribe: 0, iguales: 0, bloqueadas: 0 };
@@ -1370,11 +1576,70 @@ export default function CalendarioDeTurnos() {
   // turno, un descanso y un borrado: de ahí para abajo la previa es la misma.
   const tituloDePendiente = (): string => {
     if (!pendiente) return '';
-    const queCosa = pendiente.tipo === 'TURNO'
-      ? `Turno de ${catalogo.find(t => t.id === pendiente.plantillaId)?.nombre ?? 'ese turno'}`
-      : pendiente.tipo === 'DESCANSO' ? 'Marcar como descanso' : 'Quitar el turno';
+    const nombreDelTurno = (id: string) => catalogo.find(t => t.id === id)?.nombre ?? 'ese turno';
+    const queCosa = pendiente.clase === 'ROTACION'
+      ? `Rotación ${pendiente.patron} con turno de ${nombreDelTurno(pendiente.plantillaId).toLowerCase()}`
+      : pendiente.accion.tipo === 'TURNO'
+        ? `Turno de ${nombreDelTurno(pendiente.accion.plantillaId)}`
+        : pendiente.accion.tipo === 'DESCANSO' ? 'Marcar como descanso' : 'Quitar el turno';
     return `${queCosa} · ${cuenta.nombre ?? `${cuenta.personas} personas`} · ${cuenta.dias} ${cuenta.dias === 1 ? 'día' : 'días'}`;
   };
+
+  // ───────── LA ROTACIÓN ─────────
+  //
+  // UNA SOLA PERSONA, y no es una limitación técnica: un ciclo arranca en un día concreto, y aplicar el
+  // mismo 4x2 con el mismo arranque a diez personas las deja a todas descansando el mismo día, que es
+  // justo lo contrario de para lo que existe una rotación.
+  const puedeRotar = cuenta.personas === 1 && catalogo.length > 0;
+
+  // El mes que se está programando sale de la PRIMERA fecha marcada, no del período en pantalla: se
+  // puede estar viendo una semana que cruza de mes, y el veredicto tiene que hablar del mes al que
+  // pertenece lo que se va a escribir.
+  const mesDeLaSeleccion = seleccion.map(c => c.fecha).sort()[0]?.slice(0, 7) ?? hoy.slice(0, 7);
+  // El ancla del ciclo: el primer día del período mostrado. Así dos personas con el mismo desfase
+  // quedan alineadas entre sí, que es de lo que vive una rotación en un equipo.
+  const primerDiaDelPeriodo = dias[0] ?? hoy;
+
+  const abrirRotacion = async () => {
+    const quien = filas.find(f => f.id === seleccion[0]?.colaboradorId);
+    if (!quien) return;
+    setRotando(quien);
+    setRot({ patron: '6x1', plantillaId: catalogo[0].id, desfase: 0 });
+    setMesDeLaRotacion(null);
+    // EL MES SE PIDE APARTE, y con la ruta que ya existe: acepta hasta 62 días. Sin esto el veredicto
+    // juzgaría los siete días que hay en pantalla y diría «todo bien» de un mes que no ha visto.
+    try {
+      const primero = `${mesDeLaSeleccion}-01`;
+      const ultimo = sumarDias(`${sumarDias(primero, 32).slice(0, 7)}-01`, -1);
+      const r = await api.get('/turnos/calendario', { params: { desde: primero, hasta: ultimo } });
+      const suya = (r.data.filas as FilaDelCalendario[]).find(f => f.id === quien.id);
+      setMesDeLaRotacion((suya?.dias ?? []).map(d => ({
+        fecha: d.fecha,
+        // Trabajado es tener turno encima, sea un día normal o su descanso con turno. Un descanso o un
+        // día sin nada no cuentan, que es la misma regla con la que `semanasSinDescanso` juzga.
+        trabajado: d.estado === 'TRABAJA' || d.estado === 'DESCANSO_TRABAJADO',
+      })));
+    } catch {
+      // Sin el mes no se dice veredicto. Inventar uno sería peor que no darlo.
+      setMesDeLaRotacion(null);
+    }
+  };
+
+  const cerrarRotacion = () => { setRotando(null); setRot(null); setMesDeLaRotacion(null); };
+
+  // Las semanas del mes que quedarían sin ningún descanso CON esta rotación puesta. Se calcula con las
+  // mismas funciones puras que juzgarían cualquier otra programación.
+  const semanasMalas = (rotando && rot && mesDeLaRotacion)
+    ? semanasSinDescanso(
+      proyeccionDelMes({
+        diasDelMes: mesDeLaRotacion,
+        marcadas: seleccion.filter(c => c.colaboradorId === rotando.id).map(c => c.fecha),
+        rotacion: { patron: rot.patron, desfase: rot.desfase, primerDia: primerDiaDelPeriodo },
+        hoy,
+      }),
+      mesDeLaSeleccion,
+    )
+    : [];
 
   // ───────── APLICAR A TODO LO MARCADO, POR BLOQUES ─────────
   //
@@ -1874,9 +2139,11 @@ export default function CalendarioDeTurnos() {
           progreso={progreso}
           // Elegir NO escribe: abre la previa. Un bloque toca a varias personas a la vez y dos de sus
           // consecuencias cuestan dinero, así que hay que poder leerlas antes de decir sí.
-          onTurno={plantillaId => setPendiente({ tipo: 'TURNO', plantillaId })}
-          onDescanso={() => setPendiente({ tipo: 'DESCANSO' })}
-          onQuitar={() => setPendiente({ tipo: 'QUITAR' })}
+          onTurno={plantillaId => setPendiente({ clase: 'IGUAL', accion: { tipo: 'TURNO', plantillaId } })}
+          onDescanso={() => setPendiente({ clase: 'IGUAL', accion: { tipo: 'DESCANSO' } })}
+          onQuitar={() => setPendiente({ clase: 'IGUAL', accion: { tipo: 'QUITAR' } })}
+          puedeRotar={puedeRotar}
+          onRotacion={abrirRotacion}
           onCancelar={limpiarMarcadas} />
       )}
 
@@ -1890,7 +2157,44 @@ export default function CalendarioDeTurnos() {
           habituales={habitualesQueCruzan.map(h => ({ nombre: nombreDe(h.colaboradorId), antes: h.antes, despues: h.despues }))}
           ocupado={guardando}
           onCancelar={() => setPendiente(null)}
-          onAplicar={() => { const que = pendiente; setPendiente(null); aplicarABloque(() => que); }} />
+          // Se captura lo pendiente ANTES de limpiarlo: el estado ya no está cuando la escritura corre,
+          // y leerlo desde dentro daría `null` y escribiría un «quitar» sobre todo lo marcado.
+          onAplicar={() => {
+            const que = pendiente;
+            setPendiente(null);
+            aplicarABloque(celda => accionDeLoPendiente(que, celda.fecha));
+          }} />
+      )}
+
+      {/* LA VENTANA DE ROTACIÓN. «Ver antes de aplicar» no escribe: deja la rotación pendiente y abre
+          la MISMA previa que los turnos sueltos, con sus avisos y su guardado por bloques. */}
+      {rotando && rot && (
+        <VentanaDeRotacion
+          nombre={`${rotando.nombre} ${rotando.apellido}`}
+          catalogo={catalogo}
+          rot={rot}
+          dias={dias}
+          marcadas={new Set(seleccion.filter(c => c.colaboradorId === rotando.id).map(c => c.fecha))}
+          hoy={hoy}
+          primerDia={primerDiaDelPeriodo}
+          mes={rotuloDeMes(`${mesDeLaSeleccion}-01`)}
+          semanasMalas={semanasMalas}
+          esperandoElMes={mesDeLaRotacion === null}
+          onPatron={patron => setRot({ ...rot, patron, desfase: 0 })}
+          onTurno={plantillaId => setRot({ ...rot, plantillaId })}
+          onCorrer={cuanto => setRot({
+            ...rot,
+            desfase: ((rot.desfase + cuanto) % ROTACIONES[rot.patron].ciclo + ROTACIONES[rot.patron].ciclo)
+              % ROTACIONES[rot.patron].ciclo,
+          })}
+          onCancelar={cerrarRotacion}
+          onVerPrevia={() => {
+            setPendiente({
+              clase: 'ROTACION', patron: rot.patron, desfase: rot.desfase,
+              plantillaId: rot.plantillaId, primerDia: primerDiaDelPeriodo,
+            });
+            cerrarRotacion();
+          }} />
       )}
 
       <p className="mt-3 text-xs text-muted leading-relaxed">
