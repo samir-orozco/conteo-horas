@@ -339,7 +339,30 @@ function tonoDeJornada(dia: DiaDelCalendario) {
   return { rotulo, tono };
 }
 
-function Celda({ dia, sePuedeAgregar = false }: { dia: DiaDelCalendario; sePuedeAgregar?: boolean }) {
+// `compacta` ES LA VISTA DE MES (28 de septiembre de 2026). Medido en el navegador antes de tocar
+// nada: con 42 columnas la tabla mide 4001 px dentro de un contenedor de 1006, o sea que se ve la
+// CUARTA PARTE del mes y hay que raspar a lo ancho para llegar a la última semana.
+//
+// Lo que se quita es el HORARIO, no el turno. En un mes lo que se lee de un vistazo es quién lleva
+// qué; la hora exacta sigue estando en la vista de semana, en el panel del día y en la pastilla del
+// catálogo, que son los tres sitios donde se está mirando UN día. Y de paso la fila pasa de dos
+// renglones a uno, que es lo que hace que quepa más gente sin desplazar hacia abajo.
+//
+// EL NOMBRE PASA A DOS RENGLONES, NO SE RECORTA, y esa fue una corrección sobre la marcha.
+//
+// Medido: con el nombre en una sola línea las columnas de día quedan entre 56 y 94 px, y los 35 días
+// suman 2813 de los 3264 que mide la tabla. O sea que lo que la ensancha es el nombre sin partir.
+//
+// El primer intento fue recortarlo con puntos suspensivos, y está mal: a 48 px caben siete letras,
+// así que «Jornada mañana» y «Jornada tarde» se leerían las dos «Jornad…» y la celda dejaría de
+// decir lo único que tiene que decir. Dejándolo partir, la columna se estrecha hasta la palabra más
+// larga en vez de hasta la frase entera, no se esconde nada, y el sitio vertical ya estaba ahí.
+//
+// LO QUE NO SE PUDO COPIAR DE LA MAQUETA: allí la celda del mes muestra un código corto por turno
+// («Mñ», «Tr»), y con eso la tabla baja a 1630 px. Ese campo no existe en el catálogo —solo hay
+// `nombre`—, y ponerlo pide una decisión de producto y un cambio de esquema, no CSS. Mientras no
+// exista, el mes se sigue desplazando a lo ancho: menos que antes, pero se desplaza.
+function Celda({ dia, sePuedeAgregar = false, compacta = false }: { dia: DiaDelCalendario; sePuedeAgregar?: boolean; compacta?: boolean }) {
   const horas = dia.horaEntrada && dia.horaSalida ? `${dia.horaEntrada}–${dia.horaSalida}` : null;
 
   // El descanso trabajado manda sobre el turno pintado: es el dato que cuesta dinero, y pintarlo
@@ -351,7 +374,7 @@ function Celda({ dia, sePuedeAgregar = false }: { dia: DiaDelCalendario; sePuede
           <AlertTriangle size={11} className="shrink-0" />
           Descanso
         </div>
-        {horas && <div className="text-[11px] text-amber-800 tabular-nums text-center whitespace-nowrap">{horas}</div>}
+        {!compacta && horas && <div className="text-[11px] text-amber-800 tabular-nums text-center whitespace-nowrap">{horas}</div>}
         {/* SOLO SE AVISA LO QUE FALTA (22 de septiembre de 2026). Un día ya decidido no dice nada
             extra: la ausencia de la palabra es la señal de que está atendido. Poner también un
             «resuelto» llenaría la rejilla de ruido y haría que «pendiente» dejara de saltar a la
@@ -400,11 +423,18 @@ function Celda({ dia, sePuedeAgregar = false }: { dia: DiaDelCalendario; sePuede
     const { rotulo, tono } = tonoDeJornada(dia);
 
     return (
-      <div className={`rounded-lg px-2 py-1.5 ${tono}`}>
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap">
+      <div className={`rounded-lg ${compacta ? 'px-1.5 py-1' : 'px-2 py-1.5'} ${tono}`}>
+        {/* En compacto NO lleva `whitespace-nowrap`, y eso es TODO el ahorro de ancho: una tabla de
+            ancho automático le da a la columna lo que mide su contenido sin partir, así que el
+            `nowrap` la estiraba hasta la frase completa. Dejándolo partir, la columna se estrecha
+            hasta la palabra más larga. `break-words` es para el nombre que ni partido cabe: antes
+            que desbordar la celda, se corta la palabra. */}
+        <div className={compacta
+          ? 'text-[11px] font-semibold leading-tight break-words'
+          : 'flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap'}>
           {rotulo.texto}
         </div>
-        {horas && <div className="text-[11px] tabular-nums opacity-80 whitespace-nowrap">{horas}</div>}
+        {!compacta && horas && <div className="text-[11px] tabular-nums opacity-80 whitespace-nowrap">{horas}</div>}
       </div>
     );
   }
@@ -1891,6 +1921,9 @@ export default function CalendarioDeTurnos() {
   // lado: si cada fila tuviera su propio eje, dos barras del mismo largo significarían horarios
   // distintos y la pantalla dejaría de poder compararse de un vistazo, que es para lo que sirve.
   const enDia = modo === 'DIA';
+  // El mes es el único modo donde el ancho aprieta: 42 columnas contra un contenedor de mil y pico.
+  // Ver el comentario de `Celda` con la medida.
+  const enMes = modo === 'MES';
   const eje = enDia ? ejeDelDia(filas.flatMap(f => f.dias)) : null;
 
   // Los tres casos de una celda, tal cual los tenía la vista de semana. Es una función local y no
@@ -1913,7 +1946,7 @@ export default function CalendarioDeTurnos() {
     // `sePuedeAgregar` llega desde aquí y no desde quien llama: es el único sitio que sabe si este
     // día es pintable, y el hueco con el «+» solo se ofrece donde el servidor lo va a aceptar.
     const dibujar = opciones?.contenido
-      ?? ((sePuedeAgregar: boolean) => <Celda dia={dia} sePuedeAgregar={sePuedeAgregar} />);
+      ?? ((sePuedeAgregar: boolean) => <Celda dia={dia} sePuedeAgregar={sePuedeAgregar} compacta={enMes} />);
 
     return dia.estado === 'DESCANSO_TRABAJADO' ? (
       <button type="button"
@@ -2077,7 +2110,12 @@ export default function CalendarioDeTurnos() {
                 const esHoy = fecha === hoy;
                 return (
                   <Fragment key={fecha}>
-                  <th className="px-2 py-3 text-center min-w-[96px]">
+                  {/* El MÍNIMO de la columna, que es lo que de verdad fija el ancho de la tabla: 42
+                      columnas de 96 px son 4001 px contra un contenedor de 1006. En el mes baja a 56
+                      porque la celda ya no lleva horario y el nombre se recorta. Sigue habiendo
+                      desplazamiento horizontal —cerrarlo del todo pide un nombre corto por turno, que
+                      no existe en el catálogo—, pero de cuatro pantallas pasa a algo más de dos. */}
+                  <th className={`py-3 text-center ${enMes ? 'px-1 min-w-[56px]' : 'px-2 min-w-[96px]'}`}>
                     {/* EL ENCABEZADO MARCA LA COLUMNA ENTERA: ese día de todo el mundo. Es el gesto
                         con el que se programa una jornada completa —un domingo, un festivo— sin
                         recorrer la lista persona por persona. Vuelve a tocarse y se desmarca, porque
@@ -2178,7 +2216,7 @@ export default function CalendarioDeTurnos() {
                       <td
                         onPointerDown={() => iniciarArrastre(suya)}
                         onPointerOver={() => extenderArrastre(suya)}
-                        className={`px-1.5 py-2.5 align-middle ${marcada ? 'bg-primary/20' : ''}`}>
+                        className={`align-middle ${enMes ? 'px-0.5 py-1' : 'px-1.5 py-2.5'} ${marcada ? 'bg-primary/20' : ''}`}>
                         {/* TRES CASOS Y NO DOS (22 de septiembre de 2026).
                             Un DESCANSO TRABAJADO abre su propio modal, y NO mira `sePuedePintar`:
                             por definición ya ocurrió, así que es pasado o de hoy, y colgándolo del

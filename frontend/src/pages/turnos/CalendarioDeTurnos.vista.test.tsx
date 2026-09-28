@@ -192,6 +192,34 @@ describe('qué dibuja la rejilla', () => {
     expect(within(primeraFila).getAllByRole('cell')).toHaveLength(1 + 7 + 1);
   });
 
+  it('en MES la celda se compacta: dice el turno, no el horario', async () => {
+    // MEDIDO EN EL NAVEGADOR ANTES DE ESCRIBIR ESTO: en la vista de mes la tabla mide 4001 px dentro
+    // de un contenedor de 1006, o sea que se ve la CUARTA PARTE del mes y hay que raspar a lo ancho
+    // para llegar a la última semana. Con 42 columnas no caben dos renglones por celda.
+    //
+    // El horario no se pierde: sigue en la vista de semana, en el panel del día y en la pastilla del
+    // catálogo. En el mes lo que hay que leer de un vistazo es QUÉ turno lleva cada día.
+    montar();
+    await cargado();
+    await elegirModo('Mes');
+    await cargado();
+
+    const tabla = (await screen.findAllByRole('table'))[0];
+    const primeraFila = within(tabla).getAllByRole('row')[1];
+    expect(primeraFila).toHaveTextContent('Jornada demo');
+    expect(primeraFila.textContent ?? '').not.toMatch(/\d{2}:\d{2}/);
+  });
+
+  it('y en SEMANA la celda SÍ dice el horario', async () => {
+    // El contraste, que es lo que impide «compactar» también donde hay sitio de sobra: con siete
+    // columnas el horario cabe y es lo que se está mirando al programar el día a día.
+    montar();
+    await cargado();
+    const tabla = (await screen.findAllByRole('table'))[0];
+    const primeraFila = within(tabla).getAllByRole('row')[1];
+    expect(primeraFila.textContent ?? '').toMatch(/\d{2}:\d{2}/);
+  });
+
   it('y las iniciales siguen siendo ciertas pasada la séptima columna', async () => {
     // El defecto concreto: `INICIALES_DE_DIA[i]` con `i` = número de columna devuelve `undefined`
     // de la octava en adelante, o sea medio encabezado en blanco.
