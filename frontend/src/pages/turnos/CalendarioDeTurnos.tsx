@@ -2577,6 +2577,26 @@ export default function CalendarioDeTurnos() {
         asignar» y conserva sus horas: el horario las sigue exigiendo aunque todavía no se haya
         elegido qué turno lo cubre.
       </p>
+
+      {/* SITIO AL PIE PARA LA TARJETA FLOTANTE (28 de septiembre de 2026).
+          La tarjeta es `fixed`, así que tapa SIEMPRE los últimos píxeles de la ventana, y cuando la
+          página está desplazada del todo esos píxeles caen sobre el final del documento. Medido: en
+          escritorio tapa 100 px y quedaban 68 de este párrafo por debajo; apilada en el teléfono tapa
+          192 y quedaban 168. No se ve como un error: se ve como si la página terminara ahí.
+
+          VA AL FINAL DE TODO, y esto costó una pasada. El primer intento lo puso justo antes de la
+          tarjeta, dando por hecho que ahí acababa la página; pero este párrafo se dibuja DESPUÉS de
+          ella, así que el separador solo empujó todo hacia abajo y el déficit quedó idéntico, en los
+          mismos 168 px. Lo delató que el número no se moviera ni un píxel.
+
+          ES UN SEPARADOR CON ALTURA Y NO RELLENO EN EL CONTENEDOR, y la diferencia no es de estilo:
+          el contenedor lleva `p-6 md:p-8`, y un `pb-*` suelto se lo comería el atajo `p-8` de la
+          variante `md`, que Tailwind emite después por ir dentro de una media query. El arreglo
+          desaparecería justo en escritorio y sin decir nada.
+
+          Solo cuando la tarjeta está, con la misma condición con la que se dibuja: un hueco
+          permanente al final de la página no lo pide nadie. */}
+      {cuenta.total > 0 && <div aria-hidden="true" className="h-52 sm:h-28" />}
     </div>
   );
 }
