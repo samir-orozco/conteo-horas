@@ -170,18 +170,18 @@ describe('quién cruza a descanso habitual con esto', () => {
   // igual que ya viaja el tope de horas semanales, que es el mismo caso y el precedente.
 
   it('avisa a quien pasa de dos a tres', () => {
-    const r = cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 2, pisaEsteEnvio: 1 }], 3);
+    const r = cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 2, pisaEsteEnvio: 1, descansoRotativo: false }], 3);
     expect(r).toEqual([{ colaboradorId: 'c1', antes: 2, despues: 3 }]);
   });
 
   it('no avisa a quien se queda en dos', () => {
-    expect(cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 1, pisaEsteEnvio: 1 }], 3))
+    expect(cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 1, pisaEsteEnvio: 1, descansoRotativo: false }], 3))
       .toEqual([]);
   });
 
   it('no avisa a quien YA era habitual: no cruza nada, ya estaba', () => {
     // Si avisara, el aviso saldría en cada envío del resto del mes y dejaría de leerse.
-    expect(cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 3, pisaEsteEnvio: 2 }], 3))
+    expect(cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 3, pisaEsteEnvio: 2, descansoRotativo: false }], 3))
       .toEqual([]);
   });
 
@@ -190,33 +190,58 @@ describe('quién cruza a descanso habitual con esto', () => {
     // no volver a agregar una creyendo que falta: sin nada pisado, `despues` es igual a `antes`, y
     // «antes por debajo del mínimo y después por encima» no puede cumplirse. Hubo una guarda aquí y
     // al mutarla no se puso roja ninguna prueba, que es como se supo que era código muerto.
-    expect(cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 2, pisaEsteEnvio: 0 }], 3))
+    expect(cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 2, pisaEsteEnvio: 0, descansoRotativo: false }], 3))
       .toEqual([]);
   });
 
   it('avisa a quien salta el umbral de una sola vez', () => {
     // Marcar un mes entero puede pisar cuatro descansos de golpe: el aviso tiene que salir igual,
     // aunque no pase por el tres exacto.
-    expect(cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 0, pisaEsteEnvio: 4 }], 3))
+    expect(cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 0, pisaEsteEnvio: 4, descansoRotativo: false }], 3))
       .toEqual([{ colaboradorId: 'c1', antes: 0, despues: 4 }]);
   });
 
   it('avisa a varias personas, en el orden en que venían', () => {
     const r = cruzanAHabitual([
-      { colaboradorId: 'c1', trabajadosEnElMes: 2, pisaEsteEnvio: 1 },
-      { colaboradorId: 'c2', trabajadosEnElMes: 0, pisaEsteEnvio: 1 },
-      { colaboradorId: 'c3', trabajadosEnElMes: 2, pisaEsteEnvio: 5 },
+      { colaboradorId: 'c1', trabajadosEnElMes: 2, pisaEsteEnvio: 1, descansoRotativo: false },
+      { colaboradorId: 'c2', trabajadosEnElMes: 0, pisaEsteEnvio: 1, descansoRotativo: false },
+      { colaboradorId: 'c3', trabajadosEnElMes: 2, pisaEsteEnvio: 5, descansoRotativo: false },
     ], 3);
     expect(r.map(x => x.colaboradorId)).toEqual(['c1', 'c3']);
   });
 
   it('un umbral distinto cambia el resultado, que es la prueba de que NO está escrito dentro', () => {
     // Si la ley cambiara el mínimo, esto tiene que seguirla sin tocar la pantalla.
-    expect(cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 1, pisaEsteEnvio: 1 }], 2))
+    expect(cruzanAHabitual([{ colaboradorId: 'c1', trabajadosEnElMes: 1, pisaEsteEnvio: 1, descansoRotativo: false }], 2))
       .toEqual([{ colaboradorId: 'c1', antes: 1, despues: 2 }]);
   });
 
   it('sin nadie no avisa nada', () => {
     expect(cruzanAHabitual([], 3)).toEqual([]);
+  });
+
+  it('a un ROTATIVO no se le avisa, aunque los números crucen igual', () => {
+    // EL MOTIVO ES DEL DUEÑO Y ES CONDICIONAL, así que va entero: el compensatorio es cosa de los
+    // turnos fijos. No es que la norma no exista para un rotativo, es que no se dispara mientras su
+    // rotación sí le dé descanso cada semana. Si deja una semana sin ninguno, eso sale por el OTRO
+    // aviso —«semanas que quedarían sin ningún descanso»—, que es el que de verdad le corresponde.
+    //
+    // POR ESO ESTA EXCLUSIÓN NO SE PODÍA ESCRIBIR ANTES DE HOY: ese otro aviso acaba de existir. Sin
+    // él, callar aquí habría quitado una advertencia y dejado el caso sin nadie que lo recogiera.
+    //
+    // Los números son los mismos del primer caso de este bloque —dos trabajados más uno que pisa son
+    // tres—, para que lo único que cambie sea el tipo de descanso.
+    expect(cruzanAHabitual(
+      [{ colaboradorId: 'c1', trabajadosEnElMes: 2, pisaEsteEnvio: 1, descansoRotativo: true }], 3,
+    )).toEqual([]);
+  });
+
+  it('y el campo es OBLIGATORIO: a un fijo con los mismos números sí se le avisa', () => {
+    // El contraste, y la razón de que `descansoRotativo` no sea opcional: con un valor por defecto,
+    // quien llame desde una pantalla nueva y se olvide del campo recibiría el aviso sin haber dicho
+    // de qué tipo es el descanso. Siendo obligatorio, el compilador obliga a decirlo.
+    expect(cruzanAHabitual(
+      [{ colaboradorId: 'c1', trabajadosEnElMes: 2, pisaEsteEnvio: 1, descansoRotativo: false }], 3,
+    )).toEqual([{ colaboradorId: 'c1', antes: 2, despues: 3 }]);
   });
 });

@@ -17,7 +17,7 @@ import {
 // El motor de rotaciones y la proyección del mes: también puros, probados y mutados. Qué le toca a
 // cada día del ciclo y qué semanas quedarían sin descanso NO se deciden aquí.
 import { ROTACIONES, accionDelDia, semanasSinDescanso, type PatronDeRotacion } from './rotacion';
-import { proyeccionDelMes } from './proyeccionDeRotacion';
+import { proyeccionDelMes, proyeccionDelBloque } from './proyeccionDeRotacion';
 // Qué se le escribe a cada día con lo que está pendiente: una acción igual para todas las celdas, o
 // una rotación que reparte turnos y descansos por el ciclo. Puro, probado y mutado aparte.
 import { accionDeLoPendiente, type LoPendiente } from './loPendiente';
@@ -1179,11 +1179,12 @@ function VentanaDeRotacion({
 // ES UN MODAL Y NO UN PANEL ANCLADO, al contrario que el de la jornada, y la diferencia es deliberada:
 // aquí no se está comparando celdas entre sí, se está decidiendo una sola cosa, y tapar la rejilla
 // mientras se decide es correcto.
-function PreviaDeBloque({ titulo, conteo, pisados, habituales, ocupado, onCancelar, onAplicar }: {
+function PreviaDeBloque({ titulo, conteo, pisados, habituales, sinDescanso, ocupado, onCancelar, onAplicar }: {
   titulo: string;
   conteo: { escribe: number; iguales: number; bloqueadas: number };
   pisados: { nombre: string; fecha: string }[];
   habituales: { nombre: string; antes: number; despues: number }[];
+  sinDescanso: { nombre: string; lunes: string }[];
   ocupado: boolean;
   onCancelar: () => void;
   onAplicar: () => void;
@@ -1225,9 +1226,27 @@ function PreviaDeBloque({ titulo, conteo, pisados, habituales, ocupado, onCancel
             )}
           </dl>
 
-          {/* LOS DOS AVISOS SE SEPARAN A PROPÓSITO. Pintar sobre el descanso obligatorio puede
-              terminar en recargo; cruzar a habitual cambia una obligación. Un solo aviso juntándolos
-              los volvería ruido. */}
+          {/* LOS AVISOS SE SEPARAN A PROPÓSITO. Pintar sobre el descanso obligatorio puede terminar en
+              recargo; cruzar a habitual cambia una obligación; una semana entera sin descanso no es un
+              riesgo, es una infracción. Un solo aviso juntándolos los volvería ruido.
+
+              ESTE VA PRIMERO por eso mismo: los otros dos dicen «esto te va a costar», y este dice
+              «esto no se puede». Y es el único que ve el MES completo y no solo las celdas tocadas:
+              una semana se completa marcando dos días sobre cinco que ya estaban, sin pisar nada. */}
+          {sinDescanso.length > 0 && (
+            <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2.5">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-rose-900">
+                <AlertTriangle size={13} className="shrink-0" />
+                Semanas que quedarían sin ningún descanso
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-[12px] text-rose-900">
+                {sinDescanso.map(s => (
+                  <li key={`${s.nombre}|${s.lunes}`}>{s.nombre}, semana del {rotuloCorto(s.lunes)}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {habituales.length > 0 && (
             <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5">
               <p className="flex items-center gap-1.5 text-[13px] font-semibold text-rose-900">
@@ -1433,6 +1452,14 @@ export default function CalendarioDeTurnos() {
   const [rotando, setRotando] = useState<FilaDelCalendario | null>(null);
   const [rot, setRot] = useState<{ patron: PatronDeRotacion; plantillaId: string; desfase: number } | null>(null);
   const [mesDeLaRotacion, setMesDeLaRotacion] = useState<{ fecha: string; trabajado: boolean }[] | null>(null);
+  // EL MES DE TODA LA SELECCIÓN, para el veredicto de las semanas sin descanso de la previa.
+  //
+  // Se guarda CON EL MES AL QUE PERTENECE, y eso resuelve dos cosas de una. Una: no hay que limpiarlo
+  // al cerrar la previa, así que el efecto no necesita un `setState` síncrono, que es lo que hace
+  // saltar `react-hooks/set-state-in-effect`. Dos: un mes traído para septiembre no puede juzgar una
+  // selección de octubre, porque el cálculo compara el mes guardado con el de la selección y si no
+  // coinciden se calla. Sin eso habría un parpadeo de veredicto falso al cambiar de mes.
+  const [mesDeLaPrevia, setMesDeLaPrevia] = useState<{ mes: string; filas: FilaDelCalendario[] } | null>(null);
   const [progreso, setProgreso] = useState<{ bloque: number; bloques: number } | null>(null);
   const [resultado, setResultado] = useState<{ escritas: number; bloqueadas: number; fallos: string[] } | null>(null);
 
@@ -1862,6 +1889,9 @@ export default function CalendarioDeTurnos() {
       colaboradorId,
       trabajadosEnElMes: filas.find(f => f.id === colaboradorId)?.descansoHabitual.trabajados ?? 0,
       pisaEsteEnvio,
+      // El tipo DECLARADO de la respuesta. A un rotativo este aviso no le aplica: el motivo está en
+      // `cruzanAHabitual`, que es quien lo decide.
+      descansoRotativo: filas.find(f => f.id === colaboradorId)?.descanso.tipo === 'ROTATIVO',
     })),
     datos.minimoHabitual,
   );
@@ -1934,6 +1964,66 @@ export default function CalendarioDeTurnos() {
       mesDeLaSeleccion,
     )
     : [];
+
+  // EL MISMO VEREDICTO, PERO PARA CUALQUIER ENVÍO Y PARA TODA LA SELECCIÓN (28 de septiembre de 2026).
+  //
+  // Hasta ahora esto solo existía dentro de la ventana de rotación, y eso es media foto: marcar siete
+  // días seguidos con un turno cualquiera deja la semana entera trabajada igual que un ciclo mal
+  // cuadrado, y nadie decía nada. El aviso de «pintarías sobre el descanso obligatorio» no lo ve,
+  // porque solo mira las celdas que se tocan: una semana que ya venía con cinco días trabajados se
+  // completa marcando los otros dos sin que ninguna celda pise nada.
+  //
+  // SE PIDE EL MES APARTE porque en pantalla puede haber solo una semana. Es UNA petición para todas
+  // las personas: la ruta devuelve todas las filas del rango.
+  const hayPendiente = pendiente !== null;
+  useEffect(() => {
+    if (!hayPendiente) return;
+    let vivo = true;
+    const primero = `${mesDeLaSeleccion}-01`;
+    const ultimo = sumarDias(`${sumarDias(primero, 32).slice(0, 7)}-01`, -1);
+    api.get('/turnos/calendario', { params: { desde: primero, hasta: ultimo } })
+      .then(r => { if (vivo) setMesDeLaPrevia({ mes: mesDeLaSeleccion, filas: r.data.filas as FilaDelCalendario[] }); })
+      // Sin el mes no se dice veredicto. Inventar uno sería peor que no darlo, que es lo mismo que ya
+      // hace la ventana de rotación.
+      .catch(() => { /* la previa se calla y sus otros avisos siguen saliendo */ });
+    return () => { vivo = false; };
+  }, [hayPendiente, mesDeLaSeleccion]);
+
+  const semanasSinDescansoDelEnvio = (): { nombre: string; lunes: string }[] => {
+    if (!pendiente || mesDeLaPrevia?.mes !== mesDeLaSeleccion) return [];
+    // UN BORRADO NO SE JUZGA. Quitar lo pintado a mano deja el día como lo diga el horario de esa
+    // persona, y eso el navegador no lo sabe: dar por hecho que queda igual podría APAGAR un aviso que
+    // corresponde. Está explicado en `proyeccionDelBloque`, que ni siquiera admite ese caso.
+    if (pendiente.clase === 'IGUAL' && pendiente.accion.tipo === 'QUITAR') return [];
+
+    const salida: { nombre: string; lunes: string }[] = [];
+    for (const colaboradorId of new Set(seleccion.map(c => c.colaboradorId))) {
+      const suya = mesDeLaPrevia.filas.find(f => f.id === colaboradorId);
+      if (!suya) continue;
+      // Trabajado es tener turno encima, sea un día normal o su descanso con turno. La misma regla con
+      // la que juzga la ventana de rotación, y la misma que espera `semanasSinDescanso`.
+      const diasDelMes = suya.dias.map(d => ({
+        fecha: d.fecha,
+        trabajado: d.estado === 'TRABAJA' || d.estado === 'DESCANSO_TRABAJADO',
+      }));
+      const marcadasSuyas = seleccion.filter(c => c.colaboradorId === colaboradorId).map(c => c.fecha);
+      const proyeccion = pendiente.clase === 'ROTACION'
+        ? proyeccionDelMes({
+          diasDelMes, marcadas: marcadasSuyas,
+          rotacion: { patron: pendiente.patron, desfase: pendiente.desfase, primerDia: pendiente.primerDia },
+          hoy,
+        })
+        : proyeccionDelBloque({
+          diasDelMes, marcadas: marcadasSuyas,
+          accion: pendiente.accion.tipo === 'TURNO' ? { tipo: 'TURNO' } : { tipo: 'DESCANSO' },
+          hoy,
+        });
+      for (const lunes of semanasSinDescanso(proyeccion, mesDeLaSeleccion)) {
+        salida.push({ nombre: nombreDe(colaboradorId), lunes });
+      }
+    }
+    return salida;
+  };
 
   // ───────── APLICAR A TODO LO MARCADO, POR BLOQUES ─────────
   //
@@ -2528,6 +2618,7 @@ export default function CalendarioDeTurnos() {
           conteo={conteo}
           pisados={pisados.map(c => ({ nombre: nombreDe(c.colaboradorId), fecha: c.fecha }))}
           habituales={habitualesQueCruzan.map(h => ({ nombre: nombreDe(h.colaboradorId), antes: h.antes, despues: h.despues }))}
+          sinDescanso={semanasSinDescansoDelEnvio()}
           ocupado={guardando}
           onCancelar={() => setPendiente(null)}
           // Se captura lo pendiente ANTES de limpiarlo: el estado ya no está cuando la escritura corre,

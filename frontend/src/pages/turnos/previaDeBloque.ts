@@ -127,6 +127,12 @@ export type PersonaParaHabitual = {
   trabajadosEnElMes: number;
   // Cuántos de sus descansos obligatorios pisaría este envío.
   pisaEsteEnvio: number;
+  // Si su descanso es ROTATIVO. Ver abajo por qué eso apaga este aviso.
+  //
+  // OBLIGATORIO Y NO OPCIONAL a propósito: con un valor por defecto, una pantalla nueva que se
+  // olvidara del campo recibiría el aviso sin haber dicho de qué tipo es el descanso, y este aviso
+  // cambia una obligación legal. Siendo obligatorio, el compilador obliga a decirlo.
+  descansoRotativo: boolean;
 };
 
 // QUIÉN CRUZA A DESCANSO HABITUAL CON ESTE ENVÍO.
@@ -148,6 +154,15 @@ export function cruzanAHabitual(
 ): { colaboradorId: string; antes: number; despues: number }[] {
   const cruzan: { colaboradorId: string; antes: number; despues: number }[] = [];
   for (const persona of personas) {
+    // A UN ROTATIVO ESTE AVISO NO LE APLICA EN LA PRÁCTICA, y el motivo es del dueño y es condicional,
+    // así que va entero: el compensatorio es cosa de los turnos fijos. No es que la norma no exista
+    // para un rotativo, es que no se dispara mientras su rotación sí le dé descanso cada semana. Si
+    // deja una semana sin ninguno, eso sale por el OTRO aviso —«semanas que quedarían sin ningún
+    // descanso»—, que es el que de verdad le corresponde.
+    //
+    // POR ESO ESTA EXCLUSIÓN NO EXISTÍA ANTES: ese otro aviso se escribió el mismo día que esto. Sin
+    // él, callar aquí habría quitado una advertencia dejando el caso sin nadie que lo recogiera.
+    if (persona.descansoRotativo) continue;
     const antes = persona.trabajadosEnElMes;
     const despues = antes + persona.pisaEsteEnvio;
     // AQUÍ HABÍA UNA GUARDA DE `pisaEsteEnvio <= 0` Y ERA CÓDIGO MUERTO. Se descubrió mutándola: al

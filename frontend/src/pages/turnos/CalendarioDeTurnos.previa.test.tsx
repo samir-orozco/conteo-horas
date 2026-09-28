@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CalendarioDeTurnos from './CalendarioDeTurnos';
 import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias } from './semana';
@@ -76,6 +76,26 @@ const montar = (filas: unknown[], extraRespuesta: Record<string, unknown> = {}) 
     if (url === '/turnos/calendario') {
       return Promise.resolve({
         data: { desde: LUNES, hasta: DOMINGO, horasSemanales: 42, minimoHabitual: 3, filas, ...extraRespuesta },
+      });
+    }
+    if (url === '/plantillas-turno') return Promise.resolve({ data: CATALOGO });
+    return Promise.reject(new Error('url inesperada: ' + url));
+  });
+  return render(<CalendarioDeTurnos />);
+};
+
+// UN DOBLE QUE RESPONDE A LO QUE LE PIDEN, que es lo que `montar` no hace: aquel devuelve siempre la
+// misma semana, ignorando el rango. La previa pide el MES aparte para poder juzgar las semanas
+// enteras, y con un doble sordo recibiría siete días haciéndose pasar por un mes: la prueba quedaría
+// verde ejercitando algo que no existe (CLAUDE.md §9.2).
+const montarPorRango = (
+  filasDe: (rango: { desde: string; hasta: string }) => unknown[],
+) => {
+  get.mockImplementation((url: string, cfg?: { params?: { desde: string; hasta: string } }) => {
+    if (url === '/turnos/calendario') {
+      const rango = cfg!.params!;
+      return Promise.resolve({
+        data: { ...rango, horasSemanales: 42, minimoHabitual: 3, filas: filasDe(rango) },
       });
     }
     if (url === '/plantillas-turno') return Promise.resolve({ data: CATALOGO });
@@ -196,6 +216,29 @@ describe('los avisos que cuestan dinero', () => {
     expect(await previa()).toHaveTextContent(/habitual/i);
   });
 
+  it('a un ROTATIVO no se le avisa de habitual, aunque los números crucen', async () => {
+    // EL MOTIVO ES DEL DUEÑO Y ES CONDICIONAL, así que conviene escribirlo entero: el compensatorio es
+    // cosa de los turnos fijos. No es que la norma no exista para un rotativo, es que no se dispara
+    // mientras su rotación sí le dé descanso cada semana. Si deja una semana sin ninguno, eso sale por
+    // el OTRO aviso, que es el que de verdad le corresponde.
+    //
+    // POR ESO ESTA EXCLUSIÓN NO SE PODÍA HACER ANTES. El aviso de «semanas que quedarían sin ningún
+    // descanso» se acaba de escribir; sin él, callar aquí habría quitado una advertencia y dejado el
+    // caso sin nadie que lo recogiera.
+    //
+    // Los números son los mismos que los del caso de arriba —dos trabajados más uno que pisa este
+    // envío son tres— para que lo único que cambie sea el tipo de descanso.
+    const usuario = userEvent.setup();
+    montar([personaDe('c1', 'Ana', 'Ríos',
+      [{ fecha: DOMINGO, extra: { esDescansoObligatorio: true } }],
+      {
+        descanso: { tipo: 'ROTATIVO', dia: null },
+        descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 2, clase: 'OCASIONAL' },
+      })]);
+    await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
+    expect(await previa()).not.toHaveTextContent(/habitual/i);
+  });
+
   it('a quien NO cruza no se le avisa de habitual', async () => {
     const usuario = userEvent.setup();
     montar([personaDe('c1', 'Ana', 'Ríos',
@@ -272,6 +315,80 @@ describe('decidir', () => {
     await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
     const caja = await previa();
     expect(within(caja).getByRole('button', { name: /aplicar/i })).toBeDisabled();
+  });
+
+  it('avisa de las semanas que quedarían SIN NINGÚN descanso', async () => {
+    // LEYENDO EL MES ENTERO, y esa es toda la gracia. Pintar sobre el descanso obligatorio ya se
+    // avisa, pero ese aviso solo ve las celdas que se tocan: marcar un par de días en una semana que
+    // ya venía con los otros cinco trabajados deja los siete completos sin que ninguna celda «pise»
+    // nada, y hasta ahora nadie decía nada. La ley no admite la semana completa trabajada.
+    //
+    // EL DOBLE RESPONDE A LO QUE LE PIDEN, a diferencia del `montar` de arriba, que devuelve siempre
+    // la misma semana. La previa pide el MES aparte, y con un doble que ignora el rango recibiría
+    // siete días haciéndose pasar por un mes entero: la prueba quedaría verde ejercitando algo que no
+    // existe (CLAUDE.md §9.2).
+    const usuario = userEvent.setup();
+    montarPorRango(({ desde, hasta }) => {
+      const dias: { fecha: string }[] = [];
+      for (let d = desde; d <= hasta; d = sumarDias(d, 1)) dias.push({ fecha: d });
+      // Todos los días trabajados: así CUALQUIER semana completa del mes queda sin descanso, y eso
+      // vale cualquier día en que se corra la suite. Un mes de 28 días o más siempre tiene al menos
+      // una semana de lunes a domingo entera dentro de él.
+      return [personaDe('c1', 'Julián', 'Torres', dias)];
+    });
+    await marcarFilaYElegir(usuario, 'Julián', /Mañana/);
+
+    const aviso = await screen.findByText(/sin ning[úu]n descanso/i);
+    const caja = aviso.closest('div')!;
+
+    // POR RENGLÓN Y NO POR `getByText(/Julián Torres/)`, que fue el primer intento y se rompió: el
+    // nombre sale una vez por semana mala, así que la consulta singular revienta con «Found multiple
+    // elements». Un patrón flojo da rojos y verdes falsos por igual.
+    //
+    // Y no se afirma CUÁNTAS semanas son: depende del mes en que se corra la suite. Lo que sí es
+    // cierto siempre es que hay al menos una y que cada renglón dice quién y qué semana.
+    const renglones = within(caja).getAllByRole('listitem');
+    expect(renglones.length).toBeGreaterThan(0);
+    for (const renglon of renglones) {
+      expect(renglon).toHaveTextContent(/^Julián Torres, semana del \d{1,2} de \p{L}+$/u);
+    }
+  });
+
+  it('y NO avisa cuando cada semana tiene su descanso', async () => {
+    // El contraste, que es lo que impide que el aviso salga siempre. Un domingo sin turno es descanso
+    // de hecho aunque nadie le ponga la etiqueta encima, y eso ya lo decide `semanasSinDescanso`.
+    const usuario = userEvent.setup();
+    montarPorRango(({ desde, hasta }) => {
+      const dias: { fecha: string; extra?: Record<string, unknown> }[] = [];
+      for (let d = desde; d <= hasta; d = sumarDias(d, 1)) {
+        const esDomingo = diasDeLaSemana(lunesDeLaSemana(d))[6] === d;
+        dias.push({ fecha: d, extra: esDomingo ? { estado: 'DESCANSO' } : {} });
+      }
+      return [personaDe('c1', 'Julián', 'Torres', dias)];
+    });
+
+    // UNA SOLA CELDA, Y NO LA FILA ENTERA. Marcar la fila marca los siete días, y con un turno encima
+    // esa semana quedaría completa: la prueba se pondría roja sola cualquier lunes de mitad de mes,
+    // cuando la semana en curso cabe entera dentro del mes. Con una sola celda, el domingo conserva
+    // su descanso y ninguna semana se completa, corra el día que corra.
+    const suya = await celda('Julián', SABADO);
+    arrastrarDe(suya, suya);
+    await usuario.click(within(await tarjeta()).getByRole('button', { name: /Mañana/ }));
+
+    await previa();
+
+    // SE ESPERA A QUE EL MES HAYA LLEGADO ANTES DE AFIRMAR LA AUSENCIA, y esto es lo que separa esta
+    // prueba de una que pasa sola. El veredicto se calcula con una segunda petición del calendario;
+    // sin esperarla, la ausencia del aviso se cumpliría igual aunque nunca se calculara nada, y la
+    // prueba seguiría verde el día que el cálculo se rompa (CLAUDE.md §9.1).
+    //
+    // Se cuentan las peticiones en vez de mirar el rango: la de la semana sale al montar y la del mes
+    // al abrir la previa. Distinguirlas por la fecha («la que empieza en día 1») fallaría los meses
+    // que empiezan en lunes, donde las dos empiezan igual.
+    await waitFor(() => {
+      expect(get.mock.calls.filter(c => c[0] === '/turnos/calendario').length).toBeGreaterThanOrEqual(2);
+    });
+    expect(screen.queryByText(/sin ning[úu]n descanso/i)).not.toBeInTheDocument();
   });
 
   it('el rectángulo también pasa por la previa', async () => {
