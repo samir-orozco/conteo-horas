@@ -1,4 +1,4 @@
-import { lunesDeLaSemana } from './semana';
+import { lunesDeLaSemana, diasDeLaSemana, sumarDias } from './semana';
 
 // LAS SEMANAS QUE HAY DENTRO DE LA REJILLA (28 de septiembre de 2026).
 //
@@ -53,4 +53,54 @@ export function minutosDeLaSemana(
   let total = 0;
   for (const fecha of fechas) total += minutosPorFecha[fecha] ?? 0;
   return total;
+}
+
+// El primer día del mes siguiente, sobre texto. Vivía dentro de `rotacion.ts` y se muda con el
+// recorrido que la usaba: así no queda una copia allá y otra aquí.
+function primeroDelMesSiguiente(mes: string): string {
+  const [anio, numero] = mes.split('-').map(Number);
+  return numero === 12
+    ? `${anio + 1}-01-01`
+    : `${anio}-${String(numero + 1).padStart(2, '0')}-01`;
+}
+
+// LAS SEMANAS ENTERAS DE UN MES (28 de septiembre de 2026).
+//
+// Este recorrido ya existía, escrito DENTRO de `semanasSinDescanso`. El aviso de las 42 horas
+// necesita exactamente el mismo, y escribirlo por segunda vez es como se separan dos copias de una
+// misma regla (CLAUDE.md §9.3): se extrae aquí y aquel se migra en el mismo commit.
+//
+// SOLO LAS ENTERAS, y esa es toda la decisión. Una semana partida por el borde del mes se juzgaría a
+// medias, con días que viven en otro mes y que el mapa ni siquiera tiene. Vale igual para «no
+// descansó ningún día» que para «pasó del tope»: las dos son reglas SEMANALES, y media semana no es
+// una semana.
+export function semanasEnterasDelMes(mes: string): string[] {
+  const ultimo = sumarDias(primeroDelMesSiguiente(mes), -1);
+  const enteras: string[] = [];
+  for (let lunes = lunesDeLaSemana(`${mes}-01`); lunes <= ultimo; lunes = sumarDias(lunes, 7)) {
+    if (diasDeLaSemana(lunes).every(f => f.slice(0, 7) === mes)) enteras.push(lunes);
+  }
+  return enteras;
+}
+
+// LAS SEMANAS QUE SE PASAN DEL TOPE, hermana de `semanasSinDescanso` y por la misma razón: la
+// jornada legal es SEMANAL, así que el total de un rango de treinta días no se puede comparar con
+// ella. Un mes son cinco semanas y cada una se juzga sola.
+//
+// EL TOPE ENTRA POR PARÁMETRO. Sale de la respuesta del servidor, que lo lee de la tabla de
+// vigencias y sube o baja con la ley; un 42 escrito aquí lo congelaría.
+//
+// `>` Y NO `>=`: programar exactamente el tope es legal. Avisar ahí convertiría en alarma el caso de
+// quien programa justo lo que puede.
+export function semanasSobreElTope(
+  minutosPorFecha: Readonly<Record<string, number>>,
+  mes: string,
+  topeMinutos: number,
+): { lunes: string; minutos: number }[] {
+  const salen: { lunes: string; minutos: number }[] = [];
+  for (const lunes of semanasEnterasDelMes(mes)) {
+    const minutos = minutosDeLaSemana(diasDeLaSemana(lunes), minutosPorFecha);
+    if (minutos > topeMinutos) salen.push({ lunes, minutos });
+  }
+  return salen;
 }

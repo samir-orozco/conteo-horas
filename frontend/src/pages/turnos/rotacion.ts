@@ -1,4 +1,7 @@
-import { diasEntre, diasDeLaSemana, lunesDeLaSemana, sumarDias } from './semana';
+import { diasEntre, diasDeLaSemana } from './semana';
+// El recorrido de las semanas enteras de un mes vive allí desde que el aviso de las 42 horas necesitó
+// el mismo. Ver `semanasSinDescanso`, aquí abajo.
+import { semanasEnterasDelMes } from './semanasDeLaRejilla';
 
 // EL MOTOR DE ROTACIONES (28 de septiembre de 2026).
 //
@@ -69,15 +72,6 @@ export function planDeRotacion(
   }));
 }
 
-// El primer día del mes siguiente, para saber dónde termina el que se está mirando. Se arma con
-// aritmética de cadenas y `sumarDias`, sin `Date`, por lo mismo que todo lo demás de este archivo.
-function primeroDelMesSiguiente(mes: string): string {
-  const [anio, numero] = mes.split('-').map(Number);
-  return numero === 12
-    ? `${anio + 1}-01-01`
-    : `${anio}-${String(numero + 1).padStart(2, '0')}-01`;
-}
-
 // LAS SEMANAS DEL MES QUE QUEDARÍAN SIN NINGÚN DESCANSO.
 //
 // Es la comprobación que hace legal a una programación, y por eso vive junto al motor que podría
@@ -98,15 +92,9 @@ export function semanasSinDescanso(
   trabajadoPorFecha: Readonly<Record<string, boolean>>,
   mes: string,
 ): string[] {
-  const primero = `${mes}-01`;
-  const ultimo = sumarDias(primeroDelMesSiguiente(mes), -1);
-  const malas: string[] = [];
-
-  for (let lunes = lunesDeLaSemana(primero); lunes <= ultimo; lunes = sumarDias(lunes, 7)) {
-    const dias = diasDeLaSemana(lunes);
-    const delMes = dias.filter(f => f.slice(0, 7) === mes);
-    if (delMes.length !== 7) continue;
-    if (delMes.every(f => trabajadoPorFecha[f] === true)) malas.push(lunes);
-  }
-  return malas;
+  // EL RECORRIDO DE LAS SEMANAS ENTERAS SE MUDÓ a `semanasDeLaRejilla`, porque el aviso de las 42
+  // horas necesita exactamente el mismo y dos copias de una regla es como se separan (§9.3). Lo que
+  // se queda aquí es la única parte propia de esto: qué hace que una semana sea ilegal.
+  return semanasEnterasDelMes(mes)
+    .filter(lunes => diasDeLaSemana(lunes).every(f => trabajadoPorFecha[f] === true));
 }

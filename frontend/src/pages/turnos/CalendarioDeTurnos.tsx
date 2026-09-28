@@ -17,7 +17,7 @@ import {
 // El motor de rotaciones y la proyección del mes: también puros, probados y mutados. Qué le toca a
 // cada día del ciclo y qué semanas quedarían sin descanso NO se deciden aquí.
 import { ROTACIONES, accionDelDia, semanasSinDescanso, type PatronDeRotacion } from './rotacion';
-import { proyeccionDelMes, proyeccionDelBloque } from './proyeccionDeRotacion';
+import { proyeccionDelMes, proyeccionDelBloque, minutosProyectados } from './proyeccionDeRotacion';
 // Qué se le escribe a cada día con lo que está pendiente: una acción igual para todas las celdas, o
 // una rotación que reparte turnos y descansos por el ciclo. Puro, probado y mutado aparte.
 import { accionDeLoPendiente, type LoPendiente } from './loPendiente';
@@ -31,7 +31,12 @@ import { etiquetaDelPeriodo } from './etiquetaDelPeriodo';
 import { vistaDelCalendario, moverVista, type ModoDeVista } from './vistaDelCalendario';
 // Qué semanas hay dentro de las columnas y cuántos minutos exige cada una. Puro, probado y mutado:
 // de ese número sale la alarma de las 42 horas, que es semanal.
-import { semanasDeLasColumnas, minutosDeLaSemana } from './semanasDeLaRejilla';
+//
+// OJO CON DOS NOMBRES CASI IGUALES EN ESTE ARCHIVO, y lo señaló el compilador al traer el segundo:
+// `semanasSobreElTope` (de aquí) es la función que dice QUÉ semanas de un mes se pasan y en cuánto,
+// para la previa; `semanasSobreTope`, más abajo, es un NÚMERO local: cuántas semanas-persona se pasan
+// en lo que hay en pantalla, para la tarjeta de resumen. No son lo mismo y no se sustituyen.
+import { semanasDeLasColumnas, minutosDeLaSemana, semanasSobreElTope } from './semanasDeLaRejilla';
 import { nombreDelDia } from '../../lib/diasDeLaSemana';
 import { CLASES_COLOR, PUNTO_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
 import { rotuloDeCelda, type OrigenDelRotulo } from './rotuloDeCelda';
@@ -124,6 +129,15 @@ type FilaDelCalendario = {
     clase: 'NINGUNO' | 'OCASIONAL' | 'HABITUAL';
   };
   dias: DiaDelCalendario[];
+  // CUÁNTOS MINUTOS LE EXIGIRÍA A ESTA PERSONA CADA TURNO DEL CATÁLOGO, por id de plantilla.
+  //
+  // Va por persona y no por turno porque un turno que descuenta almuerzo sin ventana propia hereda el
+  // `almuerzoMin` del horario de CADA una. Lo calcula el servidor con la misma función que corre al
+  // pintar un día; aquí no se rehace, porque sería la segunda copia de la regla de la que salen las
+  // horas extra.
+  //
+  // Un turno con horas inválidas NO está en el mapa: de ese no se puede decir veredicto.
+  minutosPorTurno: Record<string, number>;
   // Qué proponerle a quien planifica esta semana. Ver `PropuestaDeDescanso`.
   propuesta: PropuestaDeDescanso | null;
 };
@@ -1179,12 +1193,18 @@ function VentanaDeRotacion({
 // ES UN MODAL Y NO UN PANEL ANCLADO, al contrario que el de la jornada, y la diferencia es deliberada:
 // aquí no se está comparando celdas entre sí, se está decidiendo una sola cosa, y tapar la rejilla
 // mientras se decide es correcto.
-function PreviaDeBloque({ titulo, conteo, pisados, habituales, sinDescanso, ocupado, onCancelar, onAplicar }: {
+function PreviaDeBloque({
+  titulo, conteo, pisados, habituales, sinDescanso, sobreElTope, topeHoras, ocupado, onCancelar, onAplicar,
+}: {
   titulo: string;
   conteo: { escribe: number; iguales: number; bloqueadas: number };
   pisados: { nombre: string; fecha: string }[];
   habituales: { nombre: string; antes: number; despues: number }[];
   sinDescanso: { nombre: string; lunes: string }[];
+  sobreElTope: { nombre: string; lunes: string; minutos: number }[];
+  // El tope viene de la jornada legal vigente, que la respuesta trae. No se escribe un 42 aquí: sube
+  // o baja con la ley y esta ventana tiene que decir el número que de verdad rige.
+  topeHoras: number;
   ocupado: boolean;
   onCancelar: () => void;
   onAplicar: () => void;
@@ -1242,6 +1262,25 @@ function PreviaDeBloque({ titulo, conteo, pisados, habituales, sinDescanso, ocup
               <ul className="mt-1 list-disc pl-5 text-[12px] text-rose-900">
                 {sinDescanso.map(s => (
                   <li key={`${s.nombre}|${s.lunes}`}>{s.nombre}, semana del {rotuloCorto(s.lunes)}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* EL TOPE DE HORAS, que es semanal. Va junto al de arriba porque son de la misma familia:
+              los dos dicen «esto no se puede», no «esto te va a costar». Y se dice EN CUÁNTO quedaría
+              cada semana: «se pasa» sin el número obliga a ir a contarlo a mano. */}
+          {sobreElTope.length > 0 && (
+            <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2.5">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-rose-900">
+                <AlertTriangle size={13} className="shrink-0" />
+                Semanas que se pasarían del tope de {topeHoras} horas
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-[12px] text-rose-900">
+                {sobreElTope.map(s => (
+                  <li key={`${s.nombre}|${s.lunes}`}>
+                    {s.nombre}, semana del {rotuloCorto(s.lunes)}: <b>{horasDeMinutos(s.minutos)}</b>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -2025,6 +2064,57 @@ export default function CalendarioDeTurnos() {
     return salida;
   };
 
+  // LAS SEMANAS QUE SE PASARÍAN DEL TOPE DE HORAS (28 de septiembre de 2026).
+  //
+  // Hermana del aviso de arriba y con el mismo motivo de fondo: el tope de la jornada legal es
+  // SEMANAL. El total que la fila trae es del RANGO, así que en un mes pasa de 42 h por definición y
+  // compararlo no significa nada; y mirando solo lo marcado tampoco se ve, porque una semana llega a
+  // 56 h entre lo que ya estaba programado y los dos días que se marcan encima.
+  //
+  // LOS MINUTOS DE CADA TURNO LOS DA EL SERVIDOR (`minutosPorTurno`), no se calculan aquí: convertir
+  // una franja en minutos exigidos lleva dentro el cruce de medianoche, el almuerzo no pagado y los
+  // descansos no remunerados, y rehacerlo sería la segunda copia de la regla de la que salen las horas
+  // extra (CLAUDE.md §9.3).
+  const semanasSobreElTopeDelEnvio = (): { nombre: string; lunes: string; minutos: number }[] => {
+    if (!pendiente || mesDeLaPrevia?.mes !== mesDeLaSeleccion) return [];
+    // Un borrado no se juzga, por lo mismo que en el otro aviso: el día vuelve a lo que diga el
+    // horario y eso el navegador no lo sabe.
+    if (pendiente.clase === 'IGUAL' && pendiente.accion.tipo === 'QUITAR') return [];
+
+    const salida: { nombre: string; lunes: string; minutos: number }[] = [];
+    for (const colaboradorId of new Set(seleccion.map(c => c.colaboradorId))) {
+      const suya = mesDeLaPrevia.filas.find(f => f.id === colaboradorId);
+      if (!suya) continue;
+
+      // QUÉ TURNO SE VA A PONER, y de ahí sus minutos PARA ESTA PERSONA.
+      const plantillaId = pendiente.clase === 'ROTACION' ? pendiente.plantillaId
+        : pendiente.accion.tipo === 'TURNO' ? pendiente.accion.plantillaId : null;
+      // Un turno con horas inválidas no está en el mapa. Se SALTA esta persona en vez de contarlo como
+      // cero: cero sería afirmar que ese turno no exige nada, y de eso no se sabe nada.
+      const minutosDelTurno = plantillaId === null ? 0 : suya.minutosPorTurno?.[plantillaId];
+      if (minutosDelTurno === undefined) continue;
+
+      const diasDelMes = suya.dias.map(d => ({ fecha: d.fecha, minutos: d.minutosEsperados }));
+      const marcadasSuyas = seleccion.filter(c => c.colaboradorId === colaboradorId).map(c => c.fecha);
+      // UNA ROTACIÓN VALE DISTINTO CADA DÍA: turno unos, descanso otros. Por eso los minutos entran
+      // como función de la fecha y no como un número, y por eso este aviso SÍ puede juzgar rotaciones
+      // —que son el caso más peligroso, no el menos: un 6x1 de nueve horas son 54 h semanales.
+      const minutosSiSePinta = (fecha: string): number => {
+        if (pendiente.clase !== 'ROTACION') return minutosDelTurno;
+        const toca = accionDelDia(
+          pendiente.patron, pendiente.desfase, diasEntre(pendiente.primerDia, fecha),
+        );
+        return toca === 'TURNO' ? minutosDelTurno : 0;
+      };
+
+      const proyectados = minutosProyectados({ diasDelMes, marcadas: marcadasSuyas, minutosSiSePinta, hoy });
+      for (const semana of semanasSobreElTope(proyectados, mesDeLaSeleccion, tope * 60)) {
+        salida.push({ nombre: nombreDe(colaboradorId), lunes: semana.lunes, minutos: semana.minutos });
+      }
+    }
+    return salida;
+  };
+
   // ───────── APLICAR A TODO LO MARCADO, POR BLOQUES ─────────
   //
   // QUÉ SE ESCRIBE Y QUÉ NO lo decide `planDeEscritura`, y CÓMO SE PARTE lo decide `bloquesDe`: las
@@ -2619,6 +2709,8 @@ export default function CalendarioDeTurnos() {
           pisados={pisados.map(c => ({ nombre: nombreDe(c.colaboradorId), fecha: c.fecha }))}
           habituales={habitualesQueCruzan.map(h => ({ nombre: nombreDe(h.colaboradorId), antes: h.antes, despues: h.despues }))}
           sinDescanso={semanasSinDescansoDelEnvio()}
+          sobreElTope={semanasSobreElTopeDelEnvio()}
+          topeHoras={tope}
           ocupado={guardando}
           onCancelar={() => setPendiente(null)}
           // Se captura lo pendiente ANTES de limpiarlo: el estado ya no está cuando la escritura corre,

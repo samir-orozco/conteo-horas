@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { proyeccionDelMes, proyeccionDelBloque } from './proyeccionDeRotacion';
+import { proyeccionDelMes, proyeccionDelBloque, minutosProyectados } from './proyeccionDeRotacion';
 
 // QUÉ DÍAS QUEDARÍAN TRABAJADOS SI SE APLICA ESTA ROTACIÓN (28 de septiembre de 2026).
 //
@@ -273,5 +273,97 @@ describe('la misma mezcla, con un lote en vez de una rotación', () => {
     ];
     const r = proyeccionDelBloque({ diasDelMes: dias, marcadas: [], accion: { tipo: 'TURNO' }, hoy: HOY });
     expect(r).toEqual({ '2026-09-29': true, '2026-09-30': false });
+  });
+});
+
+// LA MISMA MEZCLA, PERO EN MINUTOS (28 de septiembre de 2026).
+//
+// El aviso de las 42 horas necesita saber en cuántos minutos quedaría cada semana si se aplica lo
+// que está marcado. Las tres reglas de la mezcla son LAS MISMAS —marcada y futura recibe lo nuevo,
+// marcada y pasada conserva, no marcada conserva—; lo único que cambia es que el valor es un número
+// en vez de un sí o un no. Por eso no hay una tercera copia del bucle.
+//
+// LOS MINUTOS DEL TURNO LOS DA EL SERVIDOR, no se calculan aquí: convertir una franja en minutos
+// exigidos lleva dentro el cruce de medianoche, el almuerzo no pagado y los descansos no remunerados.
+// Rehacerlo en el navegador pondría en dos sitios la regla de la que salen las horas extra (§9.3).
+
+describe('los minutos en que quedaría cada día', () => {
+  const mesDe = (dias: number, minutos: number) => Array.from({ length: dias }, (_, i) => ({
+    fecha: `2026-09-${String(i + 1).padStart(2, '0')}`,
+    minutos,
+  }));
+
+  it('una fecha marcada y futura pasa a los minutos del turno nuevo', () => {
+    const r = minutosProyectados({
+      diasDelMes: [{ fecha: '2026-09-29', minutos: 300 }, { fecha: '2026-09-30', minutos: 300 }],
+      marcadas: ['2026-09-29', '2026-09-30'],
+      minutosSiSePinta: () => 480,
+      hoy: HOY,
+    });
+    expect(r).toEqual({ '2026-09-29': 480, '2026-09-30': 480 });
+  });
+
+  it('CERO es un valor legítimo, no un vacío', () => {
+    // Marcar descanso deja el día en cero minutos, y eso es lo que hace que el aviso de 42 h pueda
+    // APAGARSE al marcar un descanso. Si el cero se tratara como «sin dato», el día conservaría sus
+    // minutos de antes y la semana seguiría saliendo por encima del tope.
+    const r = minutosProyectados({
+      diasDelMes: [{ fecha: '2026-09-30', minutos: 480 }],
+      marcadas: ['2026-09-30'],
+      minutosSiSePinta: () => 0,
+      hoy: HOY,
+    });
+    expect(r).toEqual({ '2026-09-30': 0 });
+  });
+
+  it('una fecha marcada pero YA PASADA conserva sus minutos', () => {
+    // No se va a escribir, así que proyectarle el turno nuevo mentiría sobre el estado del mes.
+    const r = minutosProyectados({
+      diasDelMes: [{ fecha: '2026-09-01', minutos: 300 }],
+      marcadas: ['2026-09-01'],
+      minutosSiSePinta: () => 480,
+      hoy: HOY,
+    });
+    expect(r).toEqual({ '2026-09-01': 300 });
+  });
+
+  it('una fecha NO marcada conserva sus minutos, que es lo que hace ganar el sueldo al aviso', () => {
+    // Una semana llega a 56 h entre lo que ya estaba y los dos días que se marcan. Mirando solo lo
+    // marcado, el aviso nunca saltaría.
+    const r = minutosProyectados({
+      diasDelMes: mesDe(30, 480), marcadas: ['2026-09-29', '2026-09-30'], minutosSiSePinta: () => 600, hoy: HOY,
+    });
+    expect(r['2026-09-28']).toBe(480);
+    expect(r['2026-09-29']).toBe(600);
+  });
+
+  it('trae una entrada por cada día del mes que se le pasó, ni una más', () => {
+    const r = minutosProyectados({ diasDelMes: mesDe(30, 480), marcadas: [], minutosSiSePinta: () => 600, hoy: HOY });
+    expect(Object.keys(r)).toHaveLength(30);
+  });
+
+  it('una fecha marcada que no está en el mes no se inventa', () => {
+    const r = minutosProyectados({
+      diasDelMes: [{ fecha: '2026-09-30', minutos: 480 }],
+      marcadas: ['2026-09-30', '2026-10-01'],
+      minutosSiSePinta: () => 600,
+      hoy: HOY,
+    });
+    expect(Object.keys(r)).toEqual(['2026-09-30']);
+  });
+
+  it('LOS MINUTOS PUEDEN SER DISTINTOS POR DÍA, que es lo que permite juzgar una rotación', () => {
+    // Una rotación pone turno unos días y descanso otros: sus minutos NO son un número único. Con uno
+    // solo, este aviso no podría juzgarlas, y son el caso más peligroso: un 6x1 de nueve horas son
+    // 54 h semanales.
+    //
+    // Aquí el 29 recibe turno y el 30 descanso, con el mismo envío.
+    const r = minutosProyectados({
+      diasDelMes: [{ fecha: '2026-09-29', minutos: 300 }, { fecha: '2026-09-30', minutos: 300 }],
+      marcadas: ['2026-09-29', '2026-09-30'],
+      minutosSiSePinta: fecha => (fecha === '2026-09-30' ? 0 : 540),
+      hoy: HOY,
+    });
+    expect(r).toEqual({ '2026-09-29': 540, '2026-09-30': 0 });
   });
 });

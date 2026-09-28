@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { semanasDeLasColumnas, minutosDeLaSemana } from './semanasDeLaRejilla';
+import {
+  semanasDeLasColumnas, minutosDeLaSemana, semanasEnterasDelMes, semanasSobreElTope,
+} from './semanasDeLaRejilla';
 
 // LAS SEMANAS QUE HAY DENTRO DE LA REJILLA (28 de septiembre de 2026).
 //
@@ -119,5 +121,114 @@ describe('los minutos de una semana', () => {
 
   it('sin días son cero minutos', () => {
     expect(minutosDeLaSemana([], { '2026-09-28': 300 })).toBe(0);
+  });
+});
+
+// LAS SEMANAS ENTERAS DE UN MES (28 de septiembre de 2026).
+//
+// Este recorrido ya existía, escrito DENTRO de `semanasSinDescanso`: el bucle de lunes en lunes que
+// descarta las semanas partidas por el borde del mes. El aviso de las 42 horas necesita exactamente
+// el mismo, y escribirlo por segunda vez es como se separan dos copias de una misma regla
+// (CLAUDE.md §9.3). Se extrae aquí y el que ya existía se migra en el mismo commit.
+//
+// SOLO LAS ENTERAS, y esa es toda la decisión: una semana partida por el borde se juzgaría a medias,
+// con días que viven en otro mes y que el mapa no tiene. Vale igual para «no descansó ningún día» que
+// para «pasó de 42 horas»: las dos son reglas SEMANALES y una semana incompleta no es una semana.
+
+describe('las semanas enteras de un mes', () => {
+  it('devuelve los lunes de las semanas que caben enteras dentro del mes', () => {
+    // Octubre de 2026 empieza JUEVES 1 y termina SÁBADO 31, así que los dos extremos cruzan: la
+    // semana del 28 de septiembre entra en octubre, y la del lunes 26 sale hasta el domingo 1 de
+    // noviembre. Quedan tres enteras.
+    //
+    // La primera versión de este caso esperaba también la del 26, y el comentario de encima decía «y
+    // termina sábado» a la vez que la listaba: la contradicción estaba dentro de la propia prueba. Un
+    // mes que no termina en domingo NUNCA tiene entera su última semana.
+    expect(semanasEnterasDelMes('2026-10')).toEqual(['2026-10-05', '2026-10-12', '2026-10-19']);
+  });
+
+  it('descarta la primera cuando el mes no empieza lunes', () => {
+    // Septiembre de 2026 empieza martes: la semana del 31 de agosto cruza y no se juzga.
+    expect(semanasEnterasDelMes('2026-09')).not.toContain('2026-08-31');
+    expect(semanasEnterasDelMes('2026-09')[0]).toBe('2026-09-07');
+  });
+
+  it('descarta la última cuando el mes no termina domingo', () => {
+    // Septiembre termina miércoles 30: la semana del 28 cruza a octubre.
+    expect(semanasEnterasDelMes('2026-09')).not.toContain('2026-09-28');
+  });
+
+  it('un mes que empieza lunes y termina domingo las trae todas', () => {
+    // Febrero de 2027: empieza lunes 1 y termina domingo 28. Cuatro semanas exactas.
+    expect(semanasEnterasDelMes('2027-02')).toEqual(['2027-02-01', '2027-02-08', '2027-02-15', '2027-02-22']);
+  });
+
+  it('el cruce de año no lo descarrila', () => {
+    // Diciembre de 2026 termina jueves 31: su última semana entera es la del 21.
+    const diciembre = semanasEnterasDelMes('2026-12');
+    expect(diciembre[diciembre.length - 1]).toBe('2026-12-21');
+    // Y enero de 2027 empieza viernes: la primera entera es la del 4.
+    expect(semanasEnterasDelMes('2027-01')[0]).toBe('2027-01-04');
+  });
+});
+
+// LAS SEMANAS QUE SE PASAN DEL TOPE.
+//
+// Hermana de `semanasSinDescanso` y por la misma razón: el tope de la jornada legal es SEMANAL, así
+// que el total de un rango de treinta días no se puede comparar con él. Un mes son cinco semanas y
+// cada una se juzga sola.
+//
+// EL TOPE ENTRA POR PARÁMETRO Y NO SE ESCRIBE AQUÍ: sale de la respuesta del servidor, que lo lee de
+// la tabla de vigencias y sube o baja con la ley. Un 42 escrito en este archivo lo congelaría.
+
+describe('las semanas que se pasan del tope', () => {
+  const semanaDe = (lunes: string, minutosPorDia: number) => Object.fromEntries(
+    Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(Date.UTC(...(lunes.split('-').map(Number) as [number, number, number])));
+      d.setUTCMonth(d.getUTCMonth() - 1);
+      d.setUTCDate(d.getUTCDate() + i);
+      return [d.toISOString().slice(0, 10), minutosPorDia];
+    }),
+  );
+
+  it('una semana por encima del tope sale, con sus minutos', () => {
+    // Siete días de 8 h son 56 h, muy por encima de 42.
+    const r = semanasSobreElTope(semanaDe('2026-10-05', 480), '2026-10', 42 * 60);
+    expect(r).toEqual([{ lunes: '2026-10-05', minutos: 3360 }]);
+  });
+
+  it('una semana JUSTO en el tope no sale', () => {
+    // 42 h exactas son legales. `>` y no `>=`: quien programa exactamente el tope no está infringiendo.
+    const r = semanasSobreElTope(semanaDe('2026-10-05', 360), '2026-10', 42 * 60);
+    expect(r).toEqual([]);
+  });
+
+  it('una semana partida por el borde del mes NO se juzga', () => {
+    // La del 28 de septiembre cruza a octubre: le faltan días que el mapa ni siquiera tiene.
+    const r = semanasSobreElTope(semanaDe('2026-09-28', 600), '2026-09', 42 * 60);
+    expect(r).toEqual([]);
+  });
+
+  it('un día ausente del mapa cuenta como cero, no rompe la suma', () => {
+    // Pasa de verdad: un mes recién abierto no tiene todos los días programados.
+    const r = semanasSobreElTope({ '2026-10-05': 480 }, '2026-10', 42 * 60);
+    expect(r).toEqual([]);
+  });
+
+  it('salen varias en el orden del calendario', () => {
+    const dos = { ...semanaDe('2026-10-05', 480), ...semanaDe('2026-10-19', 480) };
+    expect(semanasSobreElTope(dos, '2026-10', 42 * 60).map(s => s.lunes))
+      .toEqual(['2026-10-05', '2026-10-19']);
+  });
+
+  it('el tope entra por parámetro: con otro número cambia el resultado', () => {
+    // Si la ley baja la jornada, esto la sigue sin tocar la pantalla.
+    const semana = semanaDe('2026-10-05', 360); // 42 h justas
+    expect(semanasSobreElTope(semana, '2026-10', 42 * 60)).toEqual([]);
+    expect(semanasSobreElTope(semana, '2026-10', 40 * 60).map(s => s.lunes)).toEqual(['2026-10-05']);
+  });
+
+  it('un mapa vacío no produce ninguna', () => {
+    expect(semanasSobreElTope({}, '2026-10', 42 * 60)).toEqual([]);
   });
 });

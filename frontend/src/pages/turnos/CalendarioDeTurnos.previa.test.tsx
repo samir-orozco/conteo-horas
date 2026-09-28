@@ -58,6 +58,13 @@ const personaDe = (
   id, nombre, apellido, cargo: 'Guarda',
   descanso: { tipo: 'PRESUMIDO', dia: null },
   minutosEsperados: 2100, descansosConTurno: 0,
+  // CUÁNTO EXIGIRÍA CADA TURNO DEL CATÁLOGO A ESTA PERSONA, que el servidor calcula con la misma
+  // función que corre al pintar. Se escribe a mano aquí por la razón del comentario de `diaDe`: este
+  // fixture no lo tipa nadie, así que un campo de la respuesta que no se agregue deja la prueba verde
+  // ejercitando algo que no existe (CLAUDE.md §9.2).
+  //
+  // 480 para los dos: Mañana es 06:00–14:00 y Noche 22:00–06:00, ocho horas cada uno.
+  minutosPorTurno: { p1: 480, p2: 480 },
   descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 0, clase: 'NINGUNO' },
   propuesta: { estado: 'NO_APLICA' },
   dias: dias.map(d => diaDe(d.fecha, d.extra)),
@@ -389,6 +396,60 @@ describe('decidir', () => {
       expect(get.mock.calls.filter(c => c[0] === '/turnos/calendario').length).toBeGreaterThanOrEqual(2);
     });
     expect(screen.queryByText(/sin ning[úu]n descanso/i)).not.toBeInTheDocument();
+  });
+
+  it('avisa de las semanas que se pasarían del tope de horas', async () => {
+    // EL TOPE ES SEMANAL, y ese es todo el problema que este aviso resuelve. El total que la fila trae
+    // es del RANGO, así que en un mes pasa de 42 h por definición y no se puede comparar con nada. Un
+    // mes son cinco semanas y cada una se juzga sola.
+    //
+    // Y SE LEE EL MES ENTERO, no lo marcado: una semana llega a 56 h entre los días que ya estaban
+    // programados y los dos que se marcan encima, sin que ninguna celda «pise» nada.
+    //
+    // El montaje no depende del día en que se corra: con todos los días del mes ya en 10 h, CUALQUIER
+    // semana completa del mes pasa de 42, y todo mes de 28 días o más tiene al menos una entera.
+    const usuario = userEvent.setup();
+    montarPorRango(({ desde, hasta }) => {
+      const dias: { fecha: string; extra?: Record<string, unknown> }[] = [];
+      for (let d = desde; d <= hasta; d = sumarDias(d, 1)) {
+        dias.push({ fecha: d, extra: { minutosEsperados: 600 } });
+      }
+      return [personaDe('c1', 'Julián', 'Torres', dias)];
+    });
+    await marcarFilaYElegir(usuario, 'Julián', /Mañana/);
+
+    const aviso = await screen.findByText(/se pasar[íi]an del tope/i);
+    const caja = aviso.closest('div')!;
+    const renglones = within(caja).getAllByRole('listitem');
+    expect(renglones.length).toBeGreaterThan(0);
+    for (const renglon of renglones) {
+      expect(renglon).toHaveTextContent(/^Julián Torres, semana del \d{1,2} de \p{L}+: \d/u);
+    }
+  });
+
+  it('y NO avisa cuando ninguna semana llega al tope', async () => {
+    // El contraste, que es lo que impide que el aviso salga siempre. Días de 5 h son 35 h a la semana;
+    // cambiar UNO por el turno de 8 h la deja en 38, todavía por debajo de 42.
+    const usuario = userEvent.setup();
+    montarPorRango(({ desde, hasta }) => {
+      const dias: { fecha: string; extra?: Record<string, unknown> }[] = [];
+      for (let d = desde; d <= hasta; d = sumarDias(d, 1)) {
+        dias.push({ fecha: d, extra: { minutosEsperados: 300 } });
+      }
+      return [personaDe('c1', 'Julián', 'Torres', dias)];
+    });
+
+    const suya = await celda('Julián', SABADO);
+    arrastrarDe(suya, suya);
+    await usuario.click(within(await tarjeta()).getByRole('button', { name: /Mañana/ }));
+
+    await previa();
+    // Se espera a que el mes haya llegado antes de afirmar la ausencia, por lo mismo que en el aviso
+    // de descansos: sin eso, la prueba pasaría igual aunque el veredicto nunca se calculara.
+    await waitFor(() => {
+      expect(get.mock.calls.filter(c => c[0] === '/turnos/calendario').length).toBeGreaterThanOrEqual(2);
+    });
+    expect(screen.queryByText(/se pasar[íi]an del tope/i)).not.toBeInTheDocument();
   });
 
   it('el rectángulo también pasa por la previa', async () => {

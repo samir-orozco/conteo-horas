@@ -48,22 +48,26 @@ export type RotacionElegida = {
 // Es el mismo reparto que ya hace `planDeEscritura`, que recibe la acción de quien llama en vez de
 // decidirla: con una copia por caso habría dos sitios donde equivocarse, y el segundo se descubre
 // cuando alguien cambia el primero y se olvida del otro (CLAUDE.md §9.3).
-function mezclaDelMes(
-  diasDelMes: readonly DiaDelMes[],
+// GENÉRICA EN EL VALOR desde el 28 de septiembre de 2026, cuando entró el aviso de las 42 horas: ese
+// necesita la misma mezcla produciendo MINUTOS en vez de un sí o un no. Las tres reglas son idénticas
+// para los dos, así que lo que cambia es el tipo del valor y nada más.
+function mezclaDelMes<D extends { fecha: string }, T>(
+  diasDelMes: readonly D[],
   marcadas: readonly string[],
   hoy: string,
-  quedaTrabajado: (fecha: string) => boolean,
-): Record<string, boolean> {
+  valorDeHoy: (dia: D) => T,
+  quedaTrabajado: (fecha: string) => T,
+): Record<string, T> {
   // Un conjunto y no un `includes`: esto corre por persona y en cada dibujado del modal, y una
   // selección de un mes para veinte personas son 600 fechas contra 30 días de mes.
   const estaMarcada = new Set(marcadas);
-  const salida: Record<string, boolean> = {};
+  const salida: Record<string, T> = {};
 
   for (const dia of diasDelMes) {
     // La MISMA `sePuedePintar` que usan la rejilla y el plan de escritura, no una copia: si aquí se
     // decidiera distinto, el veredicto juzgaría un mes que no es el que se va a escribir.
     const laToca = estaMarcada.has(dia.fecha) && sePuedePintar(dia.fecha, hoy);
-    salida[dia.fecha] = laToca ? quedaTrabajado(dia.fecha) : dia.trabajado;
+    salida[dia.fecha] = laToca ? quedaTrabajado(dia.fecha) : valorDeHoy(dia);
   }
   return salida;
 }
@@ -74,7 +78,7 @@ export function proyeccionDelMes({ diasDelMes, marcadas, rotacion, hoy }: {
   rotacion: RotacionElegida;
   hoy: string;
 }): Record<string, boolean> {
-  return mezclaDelMes(diasDelMes, marcadas, hoy, fecha =>
+  return mezclaDelMes(diasDelMes, marcadas, hoy, d => d.trabajado, fecha =>
     accionDelDia(rotacion.patron, rotacion.desfase, diasEntre(rotacion.primerDia, fecha)) === 'TURNO');
 }
 
@@ -97,5 +101,38 @@ export function proyeccionDelBloque({ diasDelMes, marcadas, accion, hoy }: {
   accion: AccionDelBloque;
   hoy: string;
 }): Record<string, boolean> {
-  return mezclaDelMes(diasDelMes, marcadas, hoy, () => accion.tipo === 'TURNO');
+  return mezclaDelMes(diasDelMes, marcadas, hoy, d => d.trabajado, () => accion.tipo === 'TURNO');
+}
+
+// LOS MINUTOS EN QUE QUEDARÍA CADA DÍA (28 de septiembre de 2026).
+//
+// Lo que le falta al aviso de las 42 horas: el tope es SEMANAL, así que hay que poder sumar la semana
+// entera CON lo pendiente puesto encima, y no solo mirar las celdas que se tocan. Una semana llega a
+// 56 h entre lo que ya estaba programado y los dos días que se marcan.
+//
+// Las tres reglas de la mezcla son las mismas de arriba; lo único que cambia es que el valor es un
+// número. Por eso `mezclaDelMes` es genérica y no hay una tercera copia del bucle.
+//
+// LOS MINUTOS DEL TURNO LOS DA EL SERVIDOR (`minutosPorTurno` de cada fila), no se calculan aquí:
+// convertir una franja en minutos exigidos lleva dentro el cruce de medianoche, el almuerzo no pagado
+// y los descansos no remunerados. Rehacerlo en el navegador pondría en dos sitios la regla de la que
+// salen las horas extra (CLAUDE.md §9.3).
+//
+// CERO ES UN VALOR LEGÍTIMO y no un vacío: marcar descanso deja el día en cero minutos, y eso es lo
+// que permite que este aviso se APAGUE al marcar un descanso.
+// `minutosSiSePinta` ES UNA FUNCIÓN DE LA FECHA Y NO UN NÚMERO, y eso no es generalidad gratuita: una
+// ROTACIÓN pone turno unos días y descanso otros, así que sus minutos cambian día a día. Con un solo
+// número, el aviso no podría juzgar rotaciones — y son el caso más peligroso, no el menos: un 6x1 con
+// turnos de nueve horas son 54 h semanales. La alarma callaría justo donde más falta hace.
+//
+// Es además la misma forma que ya usan `planDeEscritura` y la mezcla de aquí arriba: quien llama
+// decide, celda por celda. Una unión «número o función» habría sido la otra opción, y es el `? :`
+// sobre un conjunto abierto del que advierte CLAUDE.md §9.4.
+export function minutosProyectados({ diasDelMes, marcadas, minutosSiSePinta, hoy }: {
+  diasDelMes: readonly { fecha: string; minutos: number }[];
+  marcadas: readonly string[];
+  minutosSiSePinta: (fecha: string) => number;
+  hoy: string;
+}): Record<string, number> {
+  return mezclaDelMes(diasDelMes, marcadas, hoy, d => d.minutos, minutosSiSePinta);
 }
