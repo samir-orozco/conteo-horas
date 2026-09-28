@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, Fragment } from 'react';
 import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw } from 'lucide-react';
 import api from '../../lib/api';
 import {
@@ -24,6 +24,9 @@ import { diasEntre, sumarDias, nombreDelMes, rotuloCorto } from './semana';
 // Qué rango le toca a cada modo y cómo se mueven las flechas. Es una decisión pura, probada y
 // mutada aparte: aquí solo se aplica.
 import { vistaDelCalendario, moverVista, type ModoDeVista } from './vistaDelCalendario';
+// Qué semanas hay dentro de las columnas y cuántos minutos exige cada una. Puro, probado y mutado:
+// de ese número sale la alarma de las 42 horas, que es semanal.
+import { semanasDeLasColumnas, minutosDeLaSemana } from './semanasDeLaRejilla';
 import { nombreDelDia } from '../../lib/diasDeLaSemana';
 import { CLASES_COLOR, PUNTO_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
 import { rotuloDeCelda, type OrigenDelRotulo } from './rotuloDeCelda';
@@ -1380,10 +1383,23 @@ export default function CalendarioDeTurnos() {
 
   const vista = vistaDelCalendario(modo, ancla);
   const dias = vista.dias;
-  // La persona + los días + el total. Era una constante con un 9 escrito a mano, de cuando la
-  // rejilla siempre tenía siete días: con un día son 3 y con un mes 33, y la fila de «Cargando…»
-  // habría dejado de abarcar la tabla.
-  const columnas = dias.length + 2;
+  // LAS SEMANAS QUE HAY DENTRO DE LAS COLUMNAS (28 de septiembre de 2026).
+  //
+  // En la vista de mes el total desaparecía como número semanal, y con él el guardia de las 42 horas,
+  // que es SEMANAL. Un mes son cinco o seis semanas y ninguna tenía dónde decir «esta persona quedó
+  // en 48». Quién agrupa con quién lo decide `semanasDeLasColumnas`, que es pura y está mutada.
+  const semanas = semanasDeLasColumnas(dias);
+  // Solo con MÁS DE UNA. En la vista de semana el total de la fila YA es el de esa semana, y repetir
+  // el mismo número en dos celdas contiguas no informa de nada. En la de día no hay semana que sumar.
+  const haySemanales = modo !== 'DIA' && semanas.length > 1;
+  // La última columna de cada semana, que es debajo de la que va su total.
+  const cierraSemana = new Set(semanas.map(s => s.fechas[s.fechas.length - 1]));
+
+  // La persona + los días + el total, MÁS una celda por semana cuando las hay. Era una constante con
+  // un 9 escrito a mano, de cuando la rejilla siempre tenía siete días: con un día son 3 y con un mes
+  // 33, y la fila de «Cargando…» habría dejado de abarcar la tabla. Ahora pasaría lo mismo con las
+  // columnas semanales, así que se derivan y no se cuentan a ojo.
+  const columnas = dias.length + 2 + (haySemanales ? semanas.length : 0);
   const hoy = hoyEnBogota();
 
   // `cargando` se DERIVA, no se guarda: la respuesta trae el `desde` que contestó, así que si no
@@ -2010,7 +2026,8 @@ export default function CalendarioDeTurnos() {
               ) : dias.map(fecha => {
                 const esHoy = fecha === hoy;
                 return (
-                  <th key={fecha} className="px-2 py-3 text-center min-w-[96px]">
+                  <Fragment key={fecha}>
+                  <th className="px-2 py-3 text-center min-w-[96px]">
                     {/* EL ENCABEZADO MARCA LA COLUMNA ENTERA: ese día de todo el mundo. Es el gesto
                         con el que se programa una jornada completa —un domingo, un festivo— sin
                         recorrer la lista persona por persona. Vuelve a tocarse y se desmarca, porque
@@ -2027,6 +2044,15 @@ export default function CalendarioDeTurnos() {
                       {festivos.has(fecha) && <div className="text-[10px] font-medium text-violet-700">Festivo</div>}
                     </button>
                   </th>
+                  {/* EL TOTAL DE LA SEMANA, al cerrar cada una. Sin esta columna, en un mes el tope de
+                      42 horas no tiene dónde compararse y la alarma desaparece justo donde más
+                      jornadas se programan de una vez. */}
+                  {haySemanales && cierraSemana.has(fecha) && (
+                    <th className="px-2 py-3 text-center text-[11px] font-semibold text-muted uppercase tracking-wider bg-gray-50">
+                      Sem
+                    </th>
+                  )}
+                  </Fragment>
                 );
               })}
               {/* Decía «Semana» fijo, y en la vista de día encabezaba el total de UN día con esa
@@ -2098,7 +2124,8 @@ export default function CalendarioDeTurnos() {
                       // se puede arrastrar por encima de un día pasado o de un descanso trabajado,
                       // que no son botones. Lo que se escriba de esa selección lo decide después
                       // `planDeEscritura`, no el gesto.
-                      <td key={dia.fecha}
+                      <Fragment key={dia.fecha}>
+                      <td
                         onPointerDown={() => iniciarArrastre(suya)}
                         onPointerOver={() => extenderArrastre(suya)}
                         className={`px-1.5 py-2.5 align-middle ${marcada ? 'bg-primary/20' : ''}`}>
@@ -2123,6 +2150,36 @@ export default function CalendarioDeTurnos() {
                           )}
                         </div>
                       </td>
+                      {/* EL TOTAL DE ESA SEMANA, al cerrarla. Se compara contra el tope AQUÍ y no
+                          contra el total de la fila: en un mes ese total son treinta jornadas y
+                          compararlo con 42 horas pintaría a la empresa entera en ámbar. El tope es
+                          semanal, así que su sitio es esta celda.
+
+                          Los minutos los suma `minutosDeLaSemana`, que trata como CERO una fecha sin
+                          fila: las columnas de relleno son de otro mes y esa persona puede no tener
+                          día ahí. Sumar `undefined` daría un total en blanco sin decir por qué. */}
+                      {haySemanales && cierraSemana.has(dia.fecha) && (() => {
+                        const suSemana = semanas.find(s => s.fechas[s.fechas.length - 1] === dia.fecha);
+                        const minutos = minutosDeLaSemana(
+                          suSemana?.fechas ?? [],
+                          Object.fromEntries(fila.dias.map(d => [d.fecha, d.minutosEsperados])),
+                        );
+                        const pasaLaSemana = minutos > tope * 60;
+                        return (
+                          <td className="bg-gray-50 px-2 py-2.5 text-center align-middle">
+                            <div className={`text-[12px] font-semibold tabular-nums ${
+                              pasaLaSemana ? 'text-amber-700' : 'text-ink'}`}>
+                              {horasDeMinutos(minutos)}
+                            </div>
+                            {pasaLaSemana && (
+                              <div className="text-[10px] font-medium text-amber-700">
+                                +{horasDeMinutos(minutos - tope * 60)}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })()}
+                      </Fragment>
                     );
                   })}
                   <td className="px-4 py-2.5 text-right">

@@ -111,11 +111,16 @@ const rangoPedido = () => {
   return llamadas[llamadas.length - 1][1].params as { desde: string; hasta: string };
 };
 
+// CUÁNTAS COLUMNAS DE DÍA tiene la rejilla, contadas por el botón que marca ese día de todos.
+//
+// Antes contaba encabezados y restaba dos («Persona» y «Total»). Eso se rompe en cuanto el encabezado
+// gana columnas —y va a ganarlas: el total por semana dentro del mes—, y se rompería POR LA RAZÓN
+// EQUIVOCADA: parecería que el mes dejó de dibujar sus días cuando lo único que cambió es cuántos
+// encabezados hay. Contar los botones de día es inmune a eso, porque hay exactamente uno por día.
 const columnas = async () => {
   const tabla = (await screen.findAllByRole('table'))[0];
   const encabezado = within(tabla).getAllByRole('row')[0];
-  // Menos «Persona» al principio y «Total» al final.
-  return within(encabezado).getAllByRole('columnheader').length - 2;
+  return within(encabezado).getAllByRole('button', { name: /^Marcar el día/ }).length;
 };
 
 beforeEach(() => { get.mockReset(); put.mockReset(); del.mockReset(); });
@@ -157,6 +162,35 @@ describe('qué dibuja la rejilla', () => {
     expect(await columnas()).toBe(COLUMNAS_DEL_MES);
   });
 
+
+  it('en MES cada semana lleva su propio total', async () => {
+    // EL GUARDIA DE LAS 42 HORAS ES SEMANAL. En la vista de mes el único total era el del mes entero,
+    // y comparar treinta jornadas contra un tope semanal no significa nada: la alarma desaparecía
+    // justo donde más jornadas se programan de una vez.
+    //
+    // SE CUENTAN LAS CELDAS DE LA FILA Y NO EL RÓTULO «Sem» del encabezado, y la diferencia importa:
+    // con el encabezado puesto y la fila sin su celda, la tabla queda desalineada y una prueba que
+    // buscara el rótulo pasaría igual sin haber comprobado nada. Pasó de verdad mientras se escribía.
+    montar();
+    await cargado();
+    await elegirModo('Mes');
+    await cargado();
+
+    const tabla = (await screen.findAllByRole('table'))[0];
+    const primeraFila = within(tabla).getAllByRole('row')[1];
+    // Persona + un día por columna + un total por semana + el total del período.
+    expect(within(primeraFila).getAllByRole('cell'))
+      .toHaveLength(1 + COLUMNAS_DEL_MES + COLUMNAS_DEL_MES / 7 + 1);
+  });
+
+  it('y en SEMANA no se repite: el total de la fila YA es el de esa semana', async () => {
+    // Con una sola semana, una celda semanal diría exactamente el mismo número que la de al lado.
+    montar();
+    await cargado();
+    const tabla = (await screen.findAllByRole('table'))[0];
+    const primeraFila = within(tabla).getAllByRole('row')[1];
+    expect(within(primeraFila).getAllByRole('cell')).toHaveLength(1 + 7 + 1);
+  });
 
   it('y las iniciales siguen siendo ciertas pasada la séptima columna', async () => {
     // El defecto concreto: `INICIALES_DE_DIA[i]` con `i` = número de columna devuelve `undefined`
