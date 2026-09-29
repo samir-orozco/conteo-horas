@@ -55,6 +55,9 @@ const diaDe = (fecha: string, extra: Record<string, unknown> = {}) => ({
 
 const personaDe = (id: string, nombre: string, apellido: string, dias: string[] = DIAS) => ({
   id, nombre, apellido, cargo: 'Guarda',
+  // Se agrega a mano porque nadie tipa este fixture: sin esto la prueba seguiría verde ejercitando una
+  // fila que no existe (CLAUDE.md §9.2). En plural, como viene de la respuesta.
+  sedes: [{ id: 's1', nombre: 'Norte' }],
   descanso: { tipo: 'PRESUMIDO', dia: null },
   minutosEsperados: 2100, descansosConTurno: 0,
   descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 0, clase: 'NINGUNO' },
@@ -116,6 +119,115 @@ const arrastrarDe = async (desde: HTMLElement, hasta: HTMLElement) => {
 beforeEach(() => { put.mockReset(); del.mockReset(); });
 
 describe('marcar varias celdas', () => {
+  // LA BARRA DE HERRAMIENTAS (28 de septiembre de 2026). La maqueta la tiene desde el principio y la
+  // vista no la tenía: buscador, filtro de sede y filtro de cargo.
+  //
+  // NO ES ADORNO, Y POR ESO ESTAS PRUEBAS VIVEN EN ESTE ARCHIVO Y NO EN EL DE LA VISTA: filtrar cambia
+  // la lista que recorre la SELECCIÓN. Marcar una columna o arrastrar un rectángulo solo puede alcanzar
+  // a quien se está viendo, y lo que se aplique se le escribe a esa gente y a nadie más.
+
+  // Cuántas personas se ven, contadas por el botón que marca su fila.
+  const personasALaVista = () =>
+    screen.getAllByRole('button', { name: /^Marcar la semana de/ }).map(b => b.getAttribute('aria-label'));
+
+  it('el buscador deja solo a quien coincide', async () => {
+    const usuario = userEvent.setup();
+    montar();
+    await celda('Ana', DOMINGO);
+    expect(personasALaVista()).toHaveLength(3);
+
+    await usuario.type(screen.getByRole('searchbox', { name: /buscar/i }), 'beto');
+
+    expect(personasALaVista()).toEqual(['Marcar la semana de Beto Lara']);
+  });
+
+  it('el buscador ignora las tildes, que es como la gente escribe', async () => {
+    const usuario = userEvent.setup();
+    montar([{ ...personaDe('c1', 'Julián', 'Torres') }, BETO]);
+    await celda('Julián', DOMINGO);
+
+    await usuario.type(screen.getByRole('searchbox', { name: /buscar/i }), 'julian');
+
+    expect(personasALaVista()).toEqual(['Marcar la semana de Julián Torres']);
+  });
+
+  it('el filtro de cargo deja solo ese cargo', async () => {
+    const usuario = userEvent.setup();
+    montar([ANA, { ...personaDe('c2', 'Beto', 'Lara'), cargo: 'Supervisor' }, CIRO]);
+    await celda('Ana', DOMINGO);
+
+    await usuario.selectOptions(screen.getByRole('combobox', { name: /cargo/i }), 'Supervisor');
+
+    expect(personasALaVista()).toEqual(['Marcar la semana de Beto Lara']);
+  });
+
+  it('el filtro de sede deja a quien la TIENE ENTRE LAS SUYAS', async () => {
+    // El caso que la maqueta no puede tener, porque allí cada persona tiene una sola sede: Beto está
+    // en las dos, y filtrando por cualquiera de ellas tiene que aparecer.
+    const usuario = userEvent.setup();
+    montar([
+      ANA,
+      { ...personaDe('c2', 'Beto', 'Lara'), sedes: [{ id: 's1', nombre: 'Norte' }, { id: 's2', nombre: 'Centro' }] },
+      { ...personaDe('c3', 'Ciro', 'Peña'), sedes: [{ id: 's2', nombre: 'Centro' }] },
+    ]);
+    await celda('Ana', DOMINGO);
+
+    await usuario.selectOptions(screen.getByRole('combobox', { name: /sede/i }), 's2');
+
+    expect(personasALaVista()).toEqual([
+      'Marcar la semana de Beto Lara',
+      'Marcar la semana de Ciro Peña',
+    ]);
+  });
+
+  it('los desplegables NO se quedan sin opciones al filtrar', async () => {
+    // Se llenan con la lista SIN filtrar. Llenándolos con la filtrada, al elegir «Supervisor»
+    // desaparecerían los demás cargos del propio desplegable y no habría forma de volver: el filtro se
+    // convertiría en una puerta de una sola dirección.
+    const usuario = userEvent.setup();
+    montar([ANA, { ...personaDe('c2', 'Beto', 'Lara'), cargo: 'Supervisor' }, CIRO]);
+    await celda('Ana', DOMINGO);
+
+    const deCargo = screen.getByRole('combobox', { name: /cargo/i });
+    await usuario.selectOptions(deCargo, 'Supervisor');
+
+    expect(within(deCargo).getByRole('option', { name: 'Guarda' })).toBeInTheDocument();
+    expect(within(deCargo).getByRole('option', { name: /todos los cargos/i })).toBeInTheDocument();
+  });
+
+  it('una respuesta SIN el campo de sedes no deja la pantalla en blanco', async () => {
+    // ESTO PASÓ DE VERDAD hoy, y en 110 pruebas a la vez: con `sedes` ausente, el `flatMap` que llena
+    // el desplegable reventaba con «Cannot read properties of undefined» y el componente no dibujaba
+    // NADA. Un `<body><div /></body>`.
+    //
+    // Y pasa en producción sin que nadie toque el código: una respuesta vieja en caché, o un backend
+    // anterior al 28 de septiembre de 2026, no traen el campo. Quedarse sin filtro de sede es mucho
+    // menos grave que quedarse sin calendario.
+    //
+    // La prueba existe porque el arreglo es UNA guarda de tres caracteres, y sin esto la suite seguiría
+    // verde el día que alguien la quite: los demás fixtures ya traen el campo.
+    // `sedes: undefined` y no una desestructuración que descarte el campo: dice lo mismo, se lee
+    // mejor, y no deja una variable tirada que el linter marca con razón.
+    montar([{ ...personaDe('c1', 'Ana', 'Ríos'), sedes: undefined }]);
+
+    expect(await celda('Ana', DOMINGO)).toBeInTheDocument();
+    const deSede = screen.getByRole('combobox', { name: /sede/i });
+    expect(within(deSede).getAllByRole('option')).toHaveLength(1);
+  });
+
+  it('FILTRAR LIMPIA LO MARCADO, y esa es la parte que cuesta dinero', async () => {
+    // Sin esto quedarían celdas marcadas de gente que dejó de verse, y al aplicar se les escribiría a
+    // ciegas: jornadas puestas a alguien que quien programa ni siquiera tenía en pantalla.
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+    expect(await tarjeta()).toHaveTextContent(/7 jornadas/);
+
+    await usuario.type(screen.getByRole('searchbox', { name: /buscar/i }), 'beto');
+
+    expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
+  });
+
   it('arrastrar de una celda a otra marca el rectángulo', async () => {
     montar();
     await arrastrarDe(await celda('Ana', VIERNES), await celda('Beto', DOMINGO));

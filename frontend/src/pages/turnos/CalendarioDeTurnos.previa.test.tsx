@@ -56,6 +56,7 @@ const personaDe = (
   fila: Record<string, unknown> = {},
 ) => ({
   id, nombre, apellido, cargo: 'Guarda',
+  sedes: [{ id: 's1', nombre: 'Norte' }],
   descanso: { tipo: 'PRESUMIDO', dia: null },
   minutosEsperados: 2100, descansosConTurno: 0,
   // CUÁNTO EXIGIRÍA CADA TURNO DEL CATÁLOGO A ESTA PERSONA, que el servidor calcula con la misma

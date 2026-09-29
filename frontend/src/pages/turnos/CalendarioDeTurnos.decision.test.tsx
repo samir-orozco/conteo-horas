@@ -55,6 +55,7 @@ const FILA = {
   id: 'c1', nombre: 'Julián', apellido: 'Torres', cargo: 'Guarda',
   descanso: { tipo: 'ROTATIVO', dia: null },
   minutosEsperados: 2880, descansosConTurno: 1,
+  sedes: [{ id: 's1', nombre: 'Norte' }],
   descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 1, clase: 'OCASIONAL' },
   propuesta: null,
   dias: DIAS.map(f => (f === TRABAJADO ? diaDe(f, { estado: 'DESCANSO_TRABAJADO' }) : diaDe(f))),

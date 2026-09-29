@@ -42,6 +42,7 @@ const diaDe = (fecha: string, extra: Record<string, unknown> = {}) => ({
 
 const filaDe = (id: string, nombre: string, apellido: string, dia: Record<string, unknown>) => ({
   id, nombre, apellido, cargo: 'Guarda',
+  sedes: [{ id: 's1', nombre: 'Norte' }],
   descanso: { tipo: 'PRESUMIDO', dia: null },
   minutosEsperados: 420, descansosConTurno: 0,
   descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 0, clase: 'NINGUNO' },

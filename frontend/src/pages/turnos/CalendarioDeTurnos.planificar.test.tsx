@@ -60,6 +60,7 @@ const FILA = {
   id: 'c1', nombre: 'Julián', apellido: 'Torres', cargo: 'Guarda',
   descanso: { tipo: 'PRESUMIDO', dia: null },
   minutosEsperados: 2100, descansosConTurno: 0,
+  sedes: [{ id: 's1', nombre: 'Norte' }],
   descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 0, clase: 'NINGUNO' },
   dias: DIAS.map(f => diaDe(f)),
 };

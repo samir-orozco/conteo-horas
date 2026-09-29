@@ -91,6 +91,16 @@ export default async function turnoRoutes(app: FastifyInstance) {
           // Sin estas tres no se puede saber qué día descansa nadie, y la guarda legal de
           // `estadoDescansoDe` no tendría con qué decidir.
           descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
+          // LAS SEDES DE CADA PERSONA, para el filtro de la pantalla (28 de septiembre de 2026).
+          //
+          // EN PLURAL, y no es un detalle de forma: `ColaboradorSede` es una tabla puente, así que una
+          // persona puede estar asignada a VARIAS. El filtro correcto es «tiene esta entre las suyas»,
+          // no «su sede es esta»; con la segunda lectura, un supervisor que recorre dos sedes
+          // desaparecería del filtro de una de ellas estando asignado a las dos.
+          //
+          // Mismo `select` que usa `colaboradores.ts`, no uno nuevo: el id para filtrar y el nombre
+          // para mostrarlo.
+          sedes: { select: { sedeId: true, sede: { select: { nombre: true } } } },
           horario: { include: { franjas: true } },
         },
         orderBy: [{ nombre: 'asc' }, { apellido: 'asc' }],
@@ -405,6 +415,9 @@ export default async function turnoRoutes(app: FastifyInstance) {
         nombre: persona.nombre,
         apellido: persona.apellido,
         cargo: persona.cargo,
+        // Las sedes a las que está asignada. Van con id y nombre: el id es con lo que filtra la
+        // pantalla, el nombre es lo que lee una persona.
+        sedes: persona.sedes.map(s => ({ id: s.sedeId, nombre: s.sede.nombre })),
         // El estado ya resuelto, no las tres columnas crudas: la pantalla no puede volver a
         // decidir si el acuerdo escrito alcanza, porque esa decisión es la que protege el recargo.
         descanso: { tipo: estado.tipo, dia: estado.tipo === 'FIJO' ? estado.dia : null },

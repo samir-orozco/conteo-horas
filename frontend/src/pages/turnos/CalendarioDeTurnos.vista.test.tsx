@@ -78,6 +78,7 @@ const montar = () => {
             // no puede encender la alarma semanal.
             minutosEsperados: dias.length * 420,
             descansosConTurno: 0,
+            sedes: [{ id: 's1', nombre: 'Norte' }],
             descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 0, clase: 'NINGUNO' },
             dias: dias.map(diaDe),
             propuesta: null,

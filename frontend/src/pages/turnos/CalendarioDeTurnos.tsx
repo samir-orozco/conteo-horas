@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, Fragment } from 'react';
-import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw, Search } from 'lucide-react';
 import api from '../../lib/api';
 import {
   hoyEnBogota, horasDeMinutos, sePuedePintar, inicialDeDia,
@@ -15,6 +15,9 @@ import { estadoDelProgreso } from './progresoDelBloque';
 // A qué se devuelve cada celda para deshacer un envío. Puro, probado y mutado: el caso que se hace mal
 // es el día que NADIE había pintado, que se despinta en vez de repintarse.
 import { accionParaDeshacer } from './deshacerElLote';
+// A quién se ve con los filtros de arriba. Puro, probado y mutado: de esta lista sale qué se puede
+// seleccionar, y por lo tanto a quién se le escribe al aplicar un bloque.
+import { quienSeVe, type FiltrosDeLaRejilla } from './quienSeVe';
 // Las cuentas y los avisos de la previa. También puros, probados y mutados: la pantalla los APLICA,
 // no los decide. De ellos depende que alguien apruebe o cancele un envío de cien jornadas.
 import {
@@ -120,6 +123,9 @@ type FilaDelCalendario = {
   nombre: string;
   apellido: string;
   cargo: string | null;
+  // LAS SEDES A LAS QUE ESTÁ ASIGNADA, en plural: `ColaboradorSede` es una tabla puente y un
+  // supervisor puede recorrer varias. El filtro pregunta «¿tiene esta entre las suyas?».
+  sedes: { id: string; nombre: string }[];
   descanso: { tipo: 'PRESUMIDO' | 'FIJO' | 'ROTATIVO'; dia: string | null };
   minutosEsperados: number;
   // Lo PROGRAMADO en la semana: cuántos de sus días de descanso tienen turno encima. Sale del
@@ -1556,6 +1562,9 @@ const MODOS: ModoDeVista[] = ['MES', 'SEMANA', 'DIA'];
 
 export default function CalendarioDeTurnos() {
   const [modo, setModo] = useState<ModoDeVista>('SEMANA');
+  // A QUIÉN SE VE. La maqueta tiene estos tres desde el principio y la vista no los tenía: con doce
+  // personas se vive sin ellos, con ciento cincuenta programarle a una obliga a recorrer la lista.
+  const [filtros, setFiltros] = useState<FiltrosDeLaRejilla>({ texto: '', cargo: '', sedeId: '' });
   // El ancla es CUALQUIER día dentro del período mostrado, no su primer día: así «Hoy» es siempre
   // hoy en los tres modos, y cambiar de modo no obliga a recalcularla.
   const [ancla, setAncla] = useState(() => hoyEnBogota());
@@ -1830,7 +1839,25 @@ export default function CalendarioDeTurnos() {
     }
   };
 
-  const filas = cargando ? [] : datos?.filas ?? [];
+  // TODAS las que respondió el servidor, y `filas` ya filtradas. La diferencia importa dos veces:
+  //
+  //   · LOS DESPLEGABLES SE LLENAN CON `todas`. Si se llenaran con las filtradas, al elegir «Supervisor»
+  //     desaparecerían los demás cargos de la lista y no habría forma de volver.
+  //   · `filas` es lo que recorre la REJILLA Y LA SELECCIÓN. Marcar una columna o arrastrar un
+  //     rectángulo solo puede alcanzar a quien se está viendo, y eso es exactamente lo que hace la
+  //     maqueta con `visibles()`.
+  const todas = cargando ? [] : datos?.filas ?? [];
+  const filas = quienSeVe(todas, filtros);
+  // Los cargos que de verdad hay, sin repetir y sin los vacíos: hay gente sin cargo puesto.
+  const cargosQueHay = [...new Set(todas.map(f => f.cargo).filter((c): c is string => Boolean(c)))].sort();
+  // Las sedes que de verdad hay. Por `Map` y no por `Set`: son objetos, y dos personas de la misma sede
+  // traen dos objetos distintos con el mismo id.
+  //
+  // `?? []` NO ES DEFENSA PARANOICA: una respuesta vieja en caché, o un backend anterior al 28 de
+  // septiembre de 2026, no trae este campo, y sin la guarda `flatMap` revienta y la pantalla entera se
+  // queda EN BLANCO. Quedarse sin filtro de sede es mucho menos grave que quedarse sin calendario.
+  const sedesQueHay = [...new Map(todas.flatMap(f => f.sedes ?? []).map(s => [s.id, s])).values()]
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
   const tope = datos?.horasSemanales ?? 42;
   // EL TOPE LEGAL ES SEMANAL, Y SOLO SE COMPARA CONTRA ÉL EN LA VISTA DE SEMANA.
   //
@@ -2018,6 +2045,14 @@ export default function CalendarioDeTurnos() {
   };
 
   const limpiarMarcadas = () => { setMarcadas({}); setResultado(null); cerrarRango(); };
+
+  // FILTRAR LIMPIA LO MARCADO, igual que en la maqueta, y no es cosmética: sin esto quedarían celdas
+  // marcadas de gente que dejó de verse, y al aplicar se les escribirían jornadas a personas que quien
+  // programa ni siquiera tenía en pantalla.
+  const cambiarFiltro = (cambio: Partial<FiltrosDeLaRejilla>) => {
+    setFiltros(antes => ({ ...antes, ...cambio }));
+    limpiarMarcadas();
+  };
 
   // CAMBIAR DE PERÍODO LIMPIA LO MARCADO (28 de septiembre de 2026).
   //
@@ -2527,6 +2562,29 @@ export default function CalendarioDeTurnos() {
       <div className={`mt-1 mb-4 text-[10px] font-extrabold uppercase tracking-[0.06em] text-center sm:text-left ${
         etiquetaPeriodo.esActual ? 'text-ink' : 'text-muted'}`}>
         {etiquetaPeriodo.texto}
+      </div>
+
+      {/* LA BARRA DE HERRAMIENTAS (28 de septiembre de 2026). Buscador, sede y cargo, como en la
+          maqueta. No es adorno: lo que filtra es la lista que recorre la SELECCIÓN. */}
+      <div className="mb-4 flex flex-wrap items-center gap-2.5 rounded-card border border-gray-200 bg-white p-2.5">
+        <div className="relative min-w-[200px] flex-[2_1_240px]">
+          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input type="search" aria-label="Buscar empleado" placeholder="Buscar empleado..."
+            value={filtros.texto} onChange={e => cambiarFiltro({ texto: e.target.value })}
+            className="w-full rounded-xl border border-gray-200 py-2 pl-9 pr-3 text-sm text-ink placeholder:text-gray-400 focus:border-primary-dark focus:outline-none" />
+        </div>
+        {/* El valor vacío es «todas», y por eso la opción va primero y sin id: un desplegable que
+            empezara en una sede concreta escondería a media empresa sin que nadie lo hubiera pedido. */}
+        <select aria-label="Sede" value={filtros.sedeId} onChange={e => cambiarFiltro({ sedeId: e.target.value })}
+          className="min-w-[150px] flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-ink focus:border-primary-dark focus:outline-none">
+          <option value="">Todas las sedes</option>
+          {sedesQueHay.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+        </select>
+        <select aria-label="Cargo" value={filtros.cargo} onChange={e => cambiarFiltro({ cargo: e.target.value })}
+          className="min-w-[150px] flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-ink focus:border-primary-dark focus:outline-none">
+          <option value="">Todos los cargos</option>
+          {cargosQueHay.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
 
       {/* UNA TARJETA POR FILA EN EL TELÉFONO (24 de septiembre de 2026, pedido del dueño).

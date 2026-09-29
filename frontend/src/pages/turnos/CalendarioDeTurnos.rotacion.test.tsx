@@ -48,6 +48,7 @@ const diaDe = (fecha: string, extra: Record<string, unknown> = {}) => ({
 
 const personaDe = (id: string, nombre: string, apellido: string, fechas: string[] = DIAS) => ({
   id, nombre, apellido, cargo: 'Guarda',
+  sedes: [{ id: 's1', nombre: 'Norte' }],
   descanso: { tipo: 'PRESUMIDO', dia: null },
   minutosEsperados: 2100, descansosConTurno: 0,
   descansoHabitual: { porMes: {}, mes: MES, trabajados: 0, clase: 'NINGUNO' },
