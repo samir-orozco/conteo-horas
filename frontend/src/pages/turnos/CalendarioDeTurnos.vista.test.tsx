@@ -51,18 +51,22 @@ const PRIMERA_COLUMNA = sumarDias(PRIMERO_DEL_MES, -RELLENO_ANTES);
 const ULTIMA_COLUMNA = sumarDias(ULTIMO_DEL_MES, RELLENO_DESPUES);
 const COLUMNAS_DEL_MES = DIAS_DEL_MES + RELLENO_ANTES + RELLENO_DESPUES;
 
-const diaDe = (fecha: string) => ({
+// `extra` para que una prueba pueda pedir un día distinto sin escribir el objeto entero. Antes solo
+// tomaba la fecha, y pasarle un segundo argumento no fallaba: se ignoraba en silencio, que es la
+// clase de instrumento del que avisa la sección 12 del CLAUDE.md.
+const diaDe = (fecha: string, extra: Record<string, unknown> = {}) => ({
   fecha, estado: 'TRABAJA', horaEntrada: '08:00', horaSalida: '16:00',
   minutosEsperados: 420, esFestivo: false, origen: 'AUTO', turno: null,
   horarioNombre: 'Jornada demo', decision: null, esDescansoObligatorio: false,
   toleranciaMin: 10, toleranciaSalidaMin: 0, ajustaEntrada: false,
   almuerzoMin: 60, almuerzoInicio: '12:00', almuerzoFin: '13:00', descansos: [],
+  ...extra,
 });
 
 // El servidor de mentira RESPONDE A LO QUE LE PIDEN, como haría el de verdad: devuelve el rango
 // que se le pasó y una fila con esos días. Un doble que ignorara los parámetros dejaría pasar
 // justamente el defecto de pedir el rango equivocado (CLAUDE.md §9.2).
-const montar = () => {
+const montar = (sinDescanso = false) => {
   get.mockImplementation((url: string, cfg?: { params?: { desde: string; hasta: string } }) => {
     if (url === '/turnos/calendario') {
       const { desde, hasta } = cfg!.params!;
@@ -80,7 +84,11 @@ const montar = () => {
             descansosConTurno: 0,
             sedes: [{ id: 's1', nombre: 'Norte' }],
             descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 0, clase: 'NINGUNO' },
-            dias: dias.map(diaDe),
+            // EL DOMINGO DESCANSA, salvo que la prueba pida lo contrario. Sin un día libre, la fila
+            // entra en «semana sin descanso» y esa es otra rama de la columna de la persona.
+            dias: dias.map(f => (!sinDescanso && new Date(`${f}T12:00:00Z`).getUTCDay() === 0
+              ? diaDe(f, { estado: 'DESCANSO', horaEntrada: null, horaSalida: null, minutosEsperados: 0 })
+              : diaDe(f))),
             propuesta: null,
           }],
         },
@@ -313,12 +321,41 @@ describe('qué dibuja la rejilla', () => {
 // use, que es otra cosa: al conectarla, la suite entera siguió verde con la fila diciendo solo el
 // cargo. O sea que nadie miraba esa línea y quitarla no habría puesto nada en rojo.
 describe('de quién es cada fila', () => {
+  const primeraFila = async () => {
+    const tabla = (await screen.findAllByRole('table'))[0];
+    return within(tabla).getAllByRole('row')[1];
+  };
+
   it('debajo del nombre va «cargo · sede», no solo el cargo', async () => {
     montar();
     await cargado();
-    const tabla = (await screen.findAllByRole('table'))[0];
-    const primeraFila = within(tabla).getAllByRole('row')[1];
-    expect(primeraFila).toHaveTextContent('Guarda · Norte');
+    expect(await primeraFila()).toHaveTextContent('Guarda · Norte');
+  });
+
+  // LA SEGUNDA LÍNEA ES UNA COSA O LA OTRA, NUNCA LAS DOS (29 de septiembre de 2026, lo vio el dueño
+  // en la pantalla: «la etiqueta elimina el texto»). Antes el cargo y el aviso compartían renglón y
+  // el cargo se recortaba para hacerle sitio: quedaba un muñón de una letra que no dice nada.
+  describe('cuando hay un incumplimiento, manda el aviso', () => {
+    it('la línea pasa a decir cuántas semanas quedan sin descanso', async () => {
+      montar(true);
+      await cargado();
+      expect(await primeraFila()).toHaveTextContent('1 semana sin descanso');
+    });
+
+    it('y el cargo NO se recorta a un muñón: desaparece del renglón', async () => {
+      // Lo que se prohíbe es el «G…» de antes. O está entero o no está.
+      montar(true);
+      await cargado();
+      expect((await primeraFila()).textContent ?? '').not.toContain('Guarda');
+    });
+
+    it('PERO NO SE PIERDE: sale al pasar el puntero por el nombre', async () => {
+      // Priorizar no es esconder. Si alguien quita el `title` para simplificar, este caso lo dice.
+      montar(true);
+      await cargado();
+      const boton = within(await primeraFila()).getByRole('button', { name: /^Marcar/ });
+      expect(boton).toHaveAttribute('title', expect.stringContaining('Guarda · Norte'));
+    });
   });
 });
 

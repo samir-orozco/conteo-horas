@@ -3080,47 +3080,52 @@ export default function CalendarioDeTurnos() {
                         para quien navega con lector de pantalla. */}
                     <button type="button" onClick={() => marcarFila(fila)}
                       aria-label={`Marcar ${PERIODO[modo].elArt} de ${fila.nombre} ${fila.apellido}`}
+                      // El cargo y la sede salen aquí cuando el renglón lo ocupa un aviso. Ponerlos en
+                      // el `title` y no borrarlos es la diferencia entre priorizar y esconder.
+                      title={`${fila.nombre} ${fila.apellido} · ${cargoYSede(fila)}`}
                       className="flex items-center gap-2.5 rounded-lg text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary">
                       <Inicial nombre={fila.nombre} apellido={fila.apellido} />
-                      {/* El tope existe para que la columna se ajuste al contenido SIN quedar a
-                          merced de un nombre larguísimo: hasta ahí crece, y de ahí en adelante el
-                          `truncate` hace su trabajo. Sin tope, `w-px` deja que un solo nombre de
-                          cuarenta letras vuelva a robarse la pantalla. */}
-                      <div className="w-[150px] min-w-0">
+                      {/* ANCHO FIJO para que la columna no quede a merced de un nombre largo: hasta
+                          ahí llega y de ahí en adelante recorta. */}
+                      <div className="w-[170px] min-w-0">
                         <div className="truncate text-[13px] font-bold text-ink">{fila.nombre} {fila.apellido}</div>
-                        {/* «Guarda · Centro», como en la maqueta. Los dos datos faltan por separado, y aquí una
-                            persona puede tener VARIAS sedes, cosa que la maqueta no contempla: la línea la arma
-                            `cargoYSede`, que está probada. */}
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          <span className="truncate text-[11px] text-muted">{cargoYSede(fila)}</span>
-                          {/* EL AVISO DE DESCANSOS TRABAJADOS, pegado al nombre como en la maqueta. El dato ya
-                              existía pero solo como un número en la tarjeta de arriba: decía que hay tres y no
-                              quiénes son, así que para encontrarlos había que abrir persona por persona.
-                              `shrink-0` para que sea el cargo el que se recorte y no el aviso: si se recortan
-                              los dos, lo que se pierde es la palabra que dice cuánto cuesta. */}
-                          {/* Y EL SEGUNDO AVISO: las semanas que le quedarían sin NINGÚN descanso.
-                              Estaba solo dentro de la previa, o sea después de armar el envío, y ahí
-                              ya es tarde para lo único que sirve: mirar la rejilla y ver a quién hay
-                              que darle un día. El artículo 173 no admite matices. */}
-                          {sinDescansoDe(fila) > 0 && (
-                            <span title="Por norma, cada semana necesita un día de descanso remunerado"
-                              className="flex shrink-0 items-center gap-1 rounded-full bg-rose-100 px-1.5 py-px text-[10px] font-bold text-rose-900">
-                              <AlertTriangle size={9} aria-hidden="true" className="shrink-0" />
-                              {sinDescansoDe(fila)} {sinDescansoDe(fila) === 1 ? 'semana' : 'semanas'} sin descanso
-                            </span>
-                          )}
-                          {(() => {
-                            const aviso = avisoDeDescansos(fila.descansoHabitual);
-                            if (!aviso) return null;
-                            return (
-                              <span className={`flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-bold ${
-                                aviso.grave ? 'bg-rose-100 text-rose-900' : 'bg-amber-100 text-amber-900'}`}>
-                                <AlertTriangle size={9} aria-hidden="true" className="shrink-0" />
-                                {aviso.texto}
-                              </span>
-                            );
-                          })()}
-                        </div>
+                        {/* LA SEGUNDA LÍNEA ES UNA COSA O LA OTRA, NUNCA LAS DOS (29 de septiembre de
+                            2026, lo vio el dueño: «la etiqueta elimina el texto»).
+
+                            Antes el cargo y los avisos compartían el renglón y el cargo se recortaba
+                            para dejarles sitio: quedaba un muñón de una letra —«G…», «S…»— que no
+                            dice nada y encima ensucia. La maqueta hace eso mismo y ahí se la deja.
+
+                            Cuando hay aviso manda el aviso, porque es lo que pide una acción: el
+                            cargo y la sede no cambian nada de lo que hay que hacer esta semana. No se
+                            pierden, salen al pasar el puntero por el nombre.
+
+                            Y los avisos ENVUELVEN si son dos. Solo crece la fila de quien tiene dos
+                            incumplimientos a la vez, que es exactamente la que merece el sitio. */}
+                        {(() => {
+                          const semanas = sinDescansoDe(fila);
+                          const habitual = avisoDeDescansos(fila.descansoHabitual);
+                          if (semanas === 0 && !habitual) {
+                            return <div className="truncate text-[11px] text-muted">{cargoYSede(fila)}</div>;
+                          }
+                          return (
+                            <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                              {semanas > 0 && (
+                                <span className="flex items-center gap-1 rounded-full bg-rose-100 px-1.5 py-px text-[10px] font-bold text-rose-900">
+                                  <AlertTriangle size={9} aria-hidden="true" className="shrink-0" />
+                                  {semanas} {semanas === 1 ? 'semana' : 'semanas'} sin descanso
+                                </span>
+                              )}
+                              {habitual && (
+                                <span className={`flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-bold ${
+                                  habitual.grave ? 'bg-rose-100 text-rose-900' : 'bg-amber-100 text-amber-900'}`}>
+                                  <AlertTriangle size={9} aria-hidden="true" className="shrink-0" />
+                                  {habitual.texto}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </button>
                   </td>
