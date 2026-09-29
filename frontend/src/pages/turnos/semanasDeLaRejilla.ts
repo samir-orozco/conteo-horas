@@ -150,3 +150,51 @@ export function semanasEnterasSinDescanso(
     .filter(s => s.fechas.every(f => trabajado[f] === true))
     .map(s => s.lunes);
 }
+
+// ────────── EL DESCANSO QUE A UN ROTATIVO HAY QUE MARCARLE (29 de septiembre de 2026) ──────────
+//
+// Para alguien con descanso ROTATIVO, cuál de los siete días lleva el descanso lo decide lo que esté
+// MARCADO como descanso en esa semana: si hay exactamente uno, ese es; con ninguno o con dos, el
+// motor no puede afirmarlo y cae al DOMINGO. Esa caída es deliberada y correcta —un turno pintado
+// puede AGREGAR un recargo, nunca quitarlo—, pero deja un olvido caro: quien programa a un rotativo
+// de lunes a domingo pensando «esta persona descansa el martes» y no marca el martes, le deja el
+// domingo trabajado sobre su descanso obligatorio. Eso paga recargo, y desde el tercero del mes
+// obliga a compensar con tiempo.
+//
+// EL DOMINGO ESTÁ EN LA CONDICIÓN A PROPÓSITO. Lo normal es programar de lunes a sábado y dejar el
+// domingo en blanco, y ahí no pasa nada: el domingo es su descanso y no lo trabaja. Avisando a todo
+// rotativo sin descanso marcado, el aviso saldría en el caso más común de la pantalla y aprendería a
+// ignorarse, que es como se desarma un aviso (§10, el mismo razonamiento del tope del linter).
+//
+// SE SOLAPA CON «pintarías sobre el descanso obligatorio» Y LOS DOS SE QUEDAN, que es una decisión y
+// no un descuido. Aquel es POR CELDA y dice lo que cuesta; este es POR SEMANA y dice que tiene
+// arreglo —marcarle el día—, que es lo que aquel no puede decir. Y aquel cubre las semanas que esta
+// función no juzga: en la vista de mes, las filas cortadas por el borde.
+//
+// EL DOMINGO SE CALCULA DESDE EL LUNES y no se toma como la séptima columna: hoy las columnas de una
+// semana entera vienen en orden, pero eso lo decide otro módulo, y el día que deje de ser cierto
+// esto miraría un día cualquiera sin que nada falle.
+export function semanasConDomingoEnRiesgo(
+  dias: readonly string[],
+  trabajado: Readonly<Record<string, boolean>>,
+  descansoMarcado: Readonly<Record<string, boolean>>,
+  esRotativo: boolean,
+): string[] {
+  // A un FIJO o un PRESUMIDO no se le avisa: su día lo pone la ley o un acuerdo escrito, y marcar
+  // otro no lo mueve. Trabajarle el domingo también cuesta, pero eso no es un olvido que se pueda
+  // arreglar marcando algo, y el aviso por celda es el que le corresponde.
+  if (!esRotativo) return [];
+  return semanasDeLasColumnas(dias)
+    // SOLO LAS ENTERAS, igual que sus dos hermanas de este archivo: con tres días a la vista no se
+    // puede afirmar que no hay ningún descanso marcado, porque puede estar en los cuatro que faltan.
+    .filter(s => s.fechas.length === 7)
+    // LOS SIETE TRABAJADOS SON DEL OTRO AVISO. «Semanas que quedarían sin ningún descanso» ya lo dice
+    // y es más grave: no es que el domingo salga caro, es que la semana es ilegal (art. 173). Dos
+    // avisos sobre la misma semana harían que el segundo se leyera como eco del primero.
+    .filter(s => !s.fechas.every(f => trabajado[f] === true))
+    // EXACTAMENTE UNO RESUELVE LA SEMANA, que es la misma cuenta que hace `descansoDeLaSemana` en el
+    // backend. Ni cero ni dos: las dos caen al domingo, por razones distintas y con el mismo costo.
+    .filter(s => s.fechas.filter(f => descansoMarcado[f] === true).length !== 1)
+    .filter(s => trabajado[sumarDias(s.lunes, 6)] === true)
+    .map(s => s.lunes);
+}

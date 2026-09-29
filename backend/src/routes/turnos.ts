@@ -342,6 +342,19 @@ export default async function turnoRoutes(app: FastifyInstance) {
           // AUTO = salió del horario · MANUAL = lo ajustó el admin. Null = ese día no tiene fila
           // todavía y lo está resolviendo el horario vigente.
           origen: extra?.origen ?? null,
+          // SI ALGUIEN MARCÓ ESTE DÍA COMO DESCANSO CON EL BOTÓN (29 de septiembre de 2026).
+          //
+          // Es la columna de la que sale CUÁL de los siete días lleva el descanso de una semana
+          // rotativa (`descansoDeLaSemana`, dentro de `reescribirSemanaDe`). Viaja porque la
+          // programación en bloque tiene que poder avisar, ANTES de escribir, «a esta persona le va a
+          // quedar el domingo cobrado como descanso trabajado porque no le marcaste ninguno».
+          //
+          // NO SE PUEDE DEDUCIR EN LA PANTALLA, y es la tercera vez que este archivo lo dice: un día
+          // marcado a mano y el domingo presumido llegan los dos como `DESCANSO`, y `origen: MANUAL`
+          // lo lleva también un día al que le pintaron un turno. Deducirlo sería la copia que ya se
+          // separó una vez: `propuestaDeDescanso` estuvo seis días leyendo `plantilla.esDescanso`
+          // mientras el motor leía esta columna, diciéndole a la pantalla lo contrario que la nómina.
+          descansoPintado: extra?.descansoPintado === true,
           // Viaja por `extras` y NO por `combinarDiasEsperados`, igual que `esDescanso` y `origen`:
           // `DiaEsperadoCalculado` no lo lleva, así que al combinar se perdería.
           //
@@ -387,7 +400,15 @@ export default async function turnoRoutes(app: FastifyInstance) {
               // en blanco en un hueco proponible. No es lo mismo que `programado`: el horario
               // programa los siete y aun así ninguno está pintado.
               pintado: !!e?.plantilla,
-              esDescansoDeTurno: e?.plantilla?.esDescanso === true,
+              // LA COLUMNA DEL DÍA, NO LA PLANTILLA (29 de septiembre de 2026). Aquí decía
+              // `e?.plantilla?.esDescanso === true`, que es el modelo anterior al 23 de septiembre,
+              // cuando el descanso era un turno del catálogo. `reescribirSemanaDe` se migró aquel
+              // día a `descansoPintado` y esta línea se quedó, así que las dos mitades del mismo
+              // producto leían columnas distintas: el motor liquidaba el martes y la pantalla decía
+              // «esta semana no tiene ningún día de descanso». Quien le hacía caso y marcaba
+              // también el domingo dejaba la semana con dos marcas, y el descanso se caía al
+              // domingo. O sea que obedecer el aviso movía el descanso que el aviso echaba en falta.
+              descansoMarcado: e?.descansoPintado === true,
             };
           }),
           estado,

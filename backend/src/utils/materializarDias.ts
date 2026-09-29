@@ -88,7 +88,9 @@ export async function materializarColaborador(
   // filtra por la columna en vez de traer la relación para mirarla después.
   const planPorSemana = descansosPlanificadosPorSemana(pintados.map(p => ({
     fecha: p.fecha,
-    esDescansoDeTurno: true,
+    // `true` fijo y no una columna: la consulta de arriba YA filtró por `descansoPintado: true`,
+    // así que cada fila que llega aquí es, por construcción, un día marcado como descanso.
+    descansoMarcado: true,
   })));
   // Una semana sin plan o ambigua no está en el mapa, y entonces va `null`: cae al domingo, que es
   // la dirección segura.

@@ -24,8 +24,8 @@ import type { EstadoDescanso } from './descansoObligatorio';
 // Y NO_APLICA para quien no es rotativo: sin acuerdo escrito pintar no mueve el descanso de nadie,
 // así que proponerle algo sería ofrecerle una decisión que no puede tomar.
 
-const dia = (d: string, pintado = false, esDescansoDeTurno = false) =>
-  ({ dia: d, pintado, esDescansoDeTurno });
+const dia = (d: string, pintado = false, descansoMarcado = false) =>
+  ({ dia: d, pintado, descansoMarcado });
 
 const SEMANA = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 
@@ -34,7 +34,11 @@ const SEMANA = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', '
 const semana = (opciones: { enBlanco?: string[]; descanso?: string[] } = {}) =>
   SEMANA.map(d => {
     if (opciones.enBlanco?.includes(d)) return dia(d, false, false);
-    if (opciones.descanso?.includes(d)) return dia(d, true, true);
+    // MARCADO Y SIN PLANTILLA, que es la forma real desde el 23 de septiembre de 2026: marcar un día
+    // como descanso limpia `plantillaId` y enciende `descansoPintado`. Antes este helper lo
+    // construía como un turno del catálogo con `esDescanso`, y por eso estas pruebas seguían verdes
+    // mientras la pantalla decía lo contrario que el motor.
+    if (opciones.descanso?.includes(d)) return dia(d, false, true);
     return dia(d, true, false);
   });
 
@@ -69,7 +73,7 @@ describe('propuestaDeDescanso', () => {
     // a decidir, que es exactamente lo que el dueño no quiso.
     const s = semana({ enBlanco: ['JUEVES'] });
     expect(propuestaDeDescanso(s, ROTATIVO)).toEqual({ estado: 'PROPUESTA', dia: 'JUEVES' });
-    expect(descansoDeLaSemana(s.map(d => ({ dia: d.dia, esDescanso: d.esDescansoDeTurno })))).toBeNull();
+    expect(descansoDeLaSemana(s.map(d => ({ dia: d.dia, esDescanso: d.descansoMarcado })))).toBeNull();
   });
 
   it('con DOS días en blanco no se propone: no se puede saber cuál', () => {
@@ -104,5 +108,58 @@ describe('propuestaDeDescanso', () => {
     // que no existe, y el backend lo rechazaría con un error que nadie sabría explicar.
     const rara = SEMANA.map(d => (d === 'JUEVES' ? dia('DIA_RARO', false) : dia(d, true)));
     expect(propuestaDeDescanso(rara, ROTATIVO)).toEqual({ estado: 'SIN_DESCANSO' });
+  });
+});
+
+// ────────── LAS DOS FUENTES TIENEN QUE LEER LA MISMA COLUMNA (29 de septiembre de 2026) ──────────
+//
+// El 23 de septiembre el descanso dejó de ser un turno del catálogo y pasó a ser `descansoPintado`,
+// una columna del DÍA. `reescribirSemanaDe` se migró en su momento; el otro lado, el que alimenta
+// esta propuesta desde la ruta, se quedó leyendo `plantilla.esDescanso`. Es exactamente el §9.3:
+// parecía una sola regla y eran dos, y la que quedó atrás gobierna lo que se le muestra a quien
+// programa.
+//
+// LO QUE COSTABA: a alguien ROTATIVO con su martes marcado como descanso, la pantalla le decía
+// «esta semana no tiene ningún día de descanso». Si le hacía caso y marcaba también el domingo, el
+// motor pasaba a ver DOS descansos, devolvía `null` y el descanso de esa persona se caía al
+// domingo. Obedecer el aviso movía el descanso que el aviso decía que faltaba.
+//
+// ESTA PRUEBA ES LA GUARDA y por eso afirma las dos funciones a la vez: mientras las dos contesten
+// lo mismo sobre la misma semana, da igual cuál se toque después.
+
+describe('la propuesta y el motor leen la misma columna', () => {
+  // La forma REAL con la que llega un día marcado con el botón «Descanso»: `descansoPintado` en
+  // true y NINGUNA plantilla encima, porque marcar un día libre limpia `plantillaId`.
+  const marcado = (d: string) => dia(d, false, true);
+  const conTurno = (d: string) => dia(d, true, false);
+
+  it('un día marcado como descanso deja la semana RESUELTA, no sin descanso', () => {
+    const s = SEMANA.map(d => (d === 'MARTES' ? marcado(d) : conTurno(d)));
+    expect(propuestaDeDescanso(s, ROTATIVO)).toEqual({ estado: 'RESUELTA', dia: 'MARTES' });
+  });
+
+  it('y dice EL MISMO día que liquida el motor', () => {
+    // `descansoDeLaSemana` es lo que corre dentro de `reescribirSemanaDe`, alimentado con
+    // `descansoPintado`. Si esta afirmación se cae, la pantalla y la nómina discrepan.
+    const s = SEMANA.map(d => (d === 'MARTES' ? marcado(d) : conTurno(d)));
+    const delMotor = descansoDeLaSemana(s.map(d => ({ dia: d.dia, esDescanso: d.descansoMarcado })));
+    const deLaPantalla = propuestaDeDescanso(s, ROTATIVO);
+    expect(deLaPantalla).toEqual({ estado: 'RESUELTA', dia: delMotor });
+  });
+
+  it('con un hueco además del día marcado, sigue mandando lo marcado', () => {
+    // El caso que salía SIN_DESCANSO: cinco turnos, el martes marcado y el domingo en blanco.
+    const s = SEMANA.map(d => {
+      if (d === 'MARTES') return marcado(d);
+      if (d === 'DOMINGO') return dia(d, false, false);
+      return conTurno(d);
+    });
+    expect(propuestaDeDescanso(s, ROTATIVO)).toEqual({ estado: 'RESUELTA', dia: 'MARTES' });
+  });
+
+  it('DOS días marcados siguen siendo AMBIGUA, que es lo que el motor también ve', () => {
+    const s = SEMANA.map(d => (d === 'MARTES' || d === 'DOMINGO' ? marcado(d) : conTurno(d)));
+    expect(propuestaDeDescanso(s, ROTATIVO)).toEqual({ estado: 'AMBIGUA' });
+    expect(descansoDeLaSemana(s.map(d => ({ dia: d.dia, esDescanso: d.descansoMarcado })))).toBeNull();
   });
 });

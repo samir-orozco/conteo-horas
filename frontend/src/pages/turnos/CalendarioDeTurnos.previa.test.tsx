@@ -171,12 +171,26 @@ describe('elegir algo en la tarjeta no escribe: primero lo cuenta', () => {
     expect(caja).toHaveTextContent(/Ya tenían ese mismo turno.*1/s);
   });
 
-  it('cuenta aparte las que no se tocan porque el día ya pasó', async () => {
+  it('el día que ya pasó NO LLEGA a la previa: ni se escribe ni se cuenta', async () => {
+    // CAMBIÓ DE SENTIDO el 29 de septiembre de 2026. Antes este caso afirmaba `/ya pasó.*1/`, o sea
+    // que el día ido entraba a la selección y la previa lo contaba aparte. El dueño pidió que no se
+    // pueda ni marcar («si no lo puedo cambiar, sería bueno que no lo deje seleccionar tampoco»), así
+    // que ya no llega hasta aquí y no hay nada que contar.
+    //
+    // LA LÍNEA DEL CONTADOR SIGUE EN LA VENTANA y no se quitó: `hoy` se vuelve a leer en cada dibujado,
+    // así que una pestaña abierta que cruza la medianoche despierta con celdas marcadas ayer que ahora
+    // son del pasado. Es el único camino que le queda y por eso se afirma su AUSENCIA aquí, que es
+    // distinto de afirmar que la línea no existe.
     const usuario = userEvent.setup();
     const ayer = sumarDias(HOY, -1);
     montar([personaDe('c1', 'Ana', 'Ríos', [{ fecha: ayer }, { fecha: DOMINGO }])]);
     await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
-    expect(await previa()).toHaveTextContent(/ya pasó.*1/s);
+    const caja = await previa();
+    expect(caja).toHaveTextContent(/Se escriben.*1 jornada/s);
+    // LA ETIQUETA EXACTA DE LA FILA Y NO `/ya pasó/`: la ventana lleva un pie fijo que dice «Lo que ya
+    // pasó no se toca nunca», así que el patrón flojo daba un rojo falso. Es la misma trampa que ya
+    // costó un rato con `getByText` y un patrón corto.
+    expect(caja).not.toHaveTextContent(/No se tocan porque el día ya pasó/);
   });
 });
 
@@ -314,15 +328,21 @@ describe('decidir', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(/2 jornadas/);
   });
 
-  it('con todo en el pasado, no ofrece aplicar nada', async () => {
-    // Un botón que no puede escribir ninguna jornada promete algo que no va a pasar.
+  it('con todo en el pasado NO SE LLEGA a la previa: no hay nada que marcar', async () => {
+    // AFIRMA MÁS QUE ANTES, no menos. Hasta el 29 de septiembre de 2026 la tarjeta aparecía, se podía
+    // elegir un turno, se abría la previa y el botón «Aplicar» salía apagado: cuatro pasos para llegar
+    // a «no se puede». Ahora la selección no ocurre, así que la tarjeta con la que se elige el turno
+    // nunca sale y la previa no tiene por dónde abrirse.
+    //
+    // El botón apagado sigue existiendo y sigue probado: lo cubre el caso en que todo lo marcado ya
+    // tiene ese mismo turno, que es el otro camino a «0 se escriben».
     const usuario = userEvent.setup();
     const ayer = sumarDias(HOY, -1);
     const antier = sumarDias(HOY, -2);
     montar([personaDe('c1', 'Ana', 'Ríos', [{ fecha: antier }, { fecha: ayer }])]);
-    await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
-    const caja = await previa();
-    expect(within(caja).getByRole('button', { name: /aplicar/i })).toBeDisabled();
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+    expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /antes de aplicar/i })).not.toBeInTheDocument();
   });
 
   it('avisa de las semanas que quedarían SIN NINGÚN descanso', async () => {
@@ -464,5 +484,69 @@ describe('decidir', () => {
     arrastrarDe(await celda('Ana', VIERNES), await celda('Beto', DOMINGO));
     await usuario.click(within(await tarjeta()).getByRole('button', { name: /Noche/ }));
     expect(await previa()).toHaveTextContent(/Se escriben.*6 jornadas/s);
+  });
+});
+
+// ────────── EL ROTATIVO AL QUE LE FALTA MARCAR EL DESCANSO (29 de septiembre de 2026) ──────────
+//
+// Para alguien de descanso ROTATIVO, cuál de los siete días descansa lo decide lo que esté MARCADO
+// como descanso esa semana. Sin ninguna marca, el motor no puede afirmarlo y cae al DOMINGO. Quien
+// programa de lunes a domingo pensando «esta persona descansa el lunes» y no marca el lunes le deja
+// el domingo trabajado sobre su descanso obligatorio: recargo, y desde el tercero del mes,
+// compensación en tiempo obligatoria.
+//
+// ES EL ÚNICO AVISO DE ESTA VENTANA CON REMEDIO, y por eso escribe el remedio: los otros dicen lo que
+// cuesta o lo que no se puede, y este dice qué botón tocar. Pintar turnos no mueve el descanso de un
+// rotativo; marcarlo sí, y eso no es obvio mirando la pantalla.
+//
+// SE MIRA CÓMO QUEDARÍA LA SEMANA y no cómo está: de los siete días el envío toca los que estén
+// marcados, y juzgar solo esos diría que falta el descanso de una semana que lo tiene puesto el lunes.
+describe('el aviso del descanso rotativo sin marcar', () => {
+  const ROTATIVO = { descanso: { tipo: 'ROTATIVO', dia: null } };
+  // El lunes es el día que quien programa cree libre. Se le da a la persona la semana entera para que
+  // la semana esté COMPLETA, que es requisito del aviso: con días de menos no se puede afirmar que no
+  // hay ninguna marca, porque podría estar en los que no se ven.
+  const semanaCon = (extraDelLunes: Record<string, unknown>) =>
+    DIAS.map((f, i) => (i === 0 ? { fecha: f, extra: extraDelLunes } : { fecha: f }));
+  const LUNES_VACIO = { estado: 'SIN_TURNO', horaEntrada: null, horaSalida: null, minutosEsperados: 0 };
+  const LUNES_MARCADO = {
+    estado: 'DESCANSO', descansoPintado: true, horaEntrada: null, horaSalida: null, minutosEsperados: 0,
+  };
+
+  it('avisa, dice de quién y de qué semana, y dice CÓMO se arregla', async () => {
+    const usuario = userEvent.setup();
+    montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_VACIO), ROTATIVO)]);
+    await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
+    const caja = await previa();
+    expect(caja).toHaveTextContent(/Descanso rotativo sin marcar/i);
+    expect(caja).toHaveTextContent(/Ana Ríos/);
+    // El remedio con el nombre del botón, no «falta marcar el descanso» a secas.
+    expect(caja).toHaveTextContent(/Márcales su día libre con Descanso/i);
+  });
+
+  it('NO avisa si el día libre ya está marcado como descanso', async () => {
+    montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_MARCADO), ROTATIVO)]);
+    const usuario = userEvent.setup();
+    await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
+    expect(await previa()).not.toHaveTextContent(/Descanso rotativo sin marcar/i);
+  });
+
+  it('NO avisa a quien no es rotativo, con la misma semana', async () => {
+    // Su día lo pone la ley o un acuerdo, y marcar otro no lo mueve: no hay nada que le falte marcar.
+    // Que trabajarle el domingo cuesta ya lo dice el aviso del descanso obligatorio, que es por celda.
+    const usuario = userEvent.setup();
+    montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_VACIO))]);
+    await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
+    expect(await previa()).not.toHaveTextContent(/Descanso rotativo sin marcar/i);
+  });
+
+  it('un envío de QUITAR no avisa: no se puede saber qué exigiría el horario', async () => {
+    // Quitar devuelve el día a lo que su horario pida, y el horario no viaja día por día a esta
+    // pantalla. Inventarse que queda libre daría avisos falsos y lo contrario los daría al revés.
+    const usuario = userEvent.setup();
+    montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_VACIO), ROTATIVO)]);
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+    await usuario.click(within(await tarjeta()).getByRole('button', { name: 'Quitar el turno de lo marcado' }));
+    expect(await previa()).not.toHaveTextContent(/Descanso rotativo sin marcar/i);
   });
 });

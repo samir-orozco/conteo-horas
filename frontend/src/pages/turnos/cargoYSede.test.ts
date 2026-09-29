@@ -61,3 +61,69 @@ describe('la línea de cargo y sede', () => {
     expect(cargoYSede({ cargo: 'Guarda', sedes: undefined })).toBe('Guarda');
   });
 });
+
+// ────────── EL TERCER DATO: CUÁNDO DESCANSA (29 de septiembre de 2026, pedido del dueño) ──────────
+//
+// Sale de una conversación concreta: pintarle turnos a alguien de descanso ROTATIVO no le mueve el
+// descanso, hay que marcárselo con el botón «Descanso». Quien programa no puede acordarse de eso si
+// no ve quién es rotativo, y el tipo de descanso no estaba en ninguna parte de la rejilla: había que
+// abrir persona por persona.
+//
+// SOLO SE ESCRIBE LO QUE SE APARTA DEL DOMINGO, y esa es toda la decisión. Casi todo el mundo
+// descansa el domingo: ponérselo a las veinte filas gasta la línea entera en repetir lo que ya se
+// supone, y entonces lo que de verdad hay que ver —los tres rotativos— deja de saltar a la vista.
+//
+// Por eso FIJO-domingo y PRESUMIDO no escriben nada, aunque sean estados distintos por dentro: los
+// dos significan lo mismo para quien programa, «descansa el domingo». La ausencia no es un dato que
+// falte, es el caso normal.
+//
+// UNA LÍNEA Y NO UN CHIP: los chips de esta columna son avisos —«3 descansos», «1 semana sin
+// descanso»—, o sea cosas que están MAL. Ser rotativo no está mal, es un atributo, y pintarlo con la
+// forma de una alarma haría que las alarmas de verdad se leyeran como atributos.
+
+const conDescanso = (
+  tipo: 'PRESUMIDO' | 'FIJO' | 'ROTATIVO', dia: string | null = null,
+) => ({ ...p('Guarda', 'Centro'), descanso: { tipo, dia } });
+
+describe('cuándo descansa, en la misma línea', () => {
+  it('ROTATIVO se dice, porque es a quien hay que marcarle el descanso a mano', () => {
+    expect(cargoYSede(conDescanso('ROTATIVO'))).toBe('Guarda · Centro · descanso rotativo');
+  });
+
+  it('FIJO en otro día se dice CUÁL, que es lo que evita programarle encima', () => {
+    expect(cargoYSede(conDescanso('FIJO', 'MIERCOLES'))).toBe('Guarda · Centro · descansa miércoles');
+  });
+
+  it('FIJO EN DOMINGO NO SE DICE: es lo que ya se supone de todo el mundo', () => {
+    // Escribirlo en las veinte filas gastaría la línea en repetir el caso normal, y los rotativos
+    // dejarían de saltar a la vista, que es para lo único que este dato está aquí.
+    expect(cargoYSede(conDescanso('FIJO', 'DOMINGO'))).toBe('Guarda · Centro');
+  });
+
+  it('PRESUMIDO tampoco: por dentro es otro estado, para quien programa es el mismo domingo', () => {
+    expect(cargoYSede(conDescanso('PRESUMIDO'))).toBe('Guarda · Centro');
+  });
+
+  it('FIJO sin día no se inventa uno', () => {
+    // Pasa con datos viejos. `estadoDescansoDe` ya cae a PRESUMIDO en ese caso, así que esto no
+    // debería llegar; si llega, callar es lo correcto y nombrar un día sería inventarlo.
+    expect(cargoYSede(conDescanso('FIJO', null))).toBe('Guarda · Centro');
+  });
+
+  it('SIN el campo no revienta ni escribe nada', () => {
+    // La misma razón que `sedes` es opcional: un navegador con la respuesta anterior en caché lo
+    // trae sin él. Ya dejó esta pantalla en blanco una vez.
+    expect(cargoYSede(p('Guarda', 'Centro'))).toBe('Guarda · Centro');
+  });
+
+  it('sin cargo ni sede, el descanso va SOLO y no detrás de una raya', () => {
+    // La raya es el respaldo de «no hay nada que decir». Con algo que decir, «— · descanso rotativo»
+    // sería una raya que ya no significa nada.
+    expect(cargoYSede({ cargo: null, sedes: [], descanso: { tipo: 'ROTATIVO', dia: null } }))
+      .toBe('descanso rotativo');
+  });
+
+  it('y sin nada de nada sigue siendo la raya', () => {
+    expect(cargoYSede({ cargo: null, sedes: [], descanso: { tipo: 'PRESUMIDO', dia: null } })).toBe('—');
+  });
+});

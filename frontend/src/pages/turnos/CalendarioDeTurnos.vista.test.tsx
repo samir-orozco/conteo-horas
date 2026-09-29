@@ -426,3 +426,117 @@ describe('lo que dice la pantalla deja de hablar de la semana', () => {
     expect(screen.queryByRole('button', { name: /semana anterior/i })).toBeNull();
   });
 });
+
+// ────────── EL DESCANSO ROTATIVO, EN LA COLUMNA DE LA PERSONA (29 de septiembre de 2026) ──────────
+//
+// Sale de una pregunta del dueño sobre cómo conviven el horario asignado y los turnos pintados. Dos
+// cosas nuevas, y las dos en esta columna porque es donde se mira antes de programar:
+//
+//   1. CUÁNDO DESCANSA, en la línea del cargo. Solo cuando se aparta del domingo: a quien descansa el
+//      domingo no se le escribe nada, porque es lo que ya se supone de todo el mundo y ponerlo en las
+//      veinte filas gastaría la línea en repetir el caso normal.
+//   2. EL CHIP «descanso sin marcar», cuando una semana de un rotativo va a trabajar el domingo sin
+//      que ningún día esté marcado como descanso. Sin marca, el descanso de esa semana cae al domingo
+//      y trabajarlo se paga con recargo.
+//
+// LO QUE ESTÁ EN JUEGO: pintarle turnos a un rotativo NO le mueve el descanso; hay que marcárselo con
+// el botón «Descanso». Quien programa no puede acordarse de eso si no ve quién es rotativo, y hasta
+// hoy el tipo de descanso no estaba en ninguna parte de la rejilla.
+describe('el descanso de la persona, en su columna', () => {
+  // La misma lectura que usa el bloque de «de quién es cada fila»: la primera fila del cuerpo. Es un
+  // ayudante local en los dos sitios y no uno compartido porque los dos bloques miran la misma cosa
+  // por razones distintas, y unirlos ataría un bloque al otro.
+  const primeraFila = async () => {
+    const tabla = (await screen.findAllByRole('table'))[0];
+    return within(tabla).getAllByRole('row')[1];
+  };
+
+  // El lunes SIN NADA y el resto trabajado, domingo incluido. Es la forma exacta del caso que cuesta:
+  // seis días de trabajo, uno libre que nadie marcó, y el domingo entre los trabajados.
+  const montarDescanso = (
+    descanso: { tipo: string; dia: string | null },
+    marcaElLunes = false,
+  ) => {
+    get.mockImplementation((url: string, cfg?: { params?: { desde: string; hasta: string } }) => {
+      if (url === '/turnos/calendario') {
+        const { desde, hasta } = cfg!.params!;
+        const dias: string[] = [];
+        for (let d = desde; d <= hasta; d = sumarDias(d, 1)) dias.push(d);
+        const esLunes = (f: string) => new Date(`${f}T12:00:00Z`).getUTCDay() === 1;
+        return Promise.resolve({
+          data: {
+            desde, hasta, horasSemanales: 42, minimoHabitual: 3,
+            filas: [{
+              id: 'c1', nombre: 'Julián', apellido: 'Torres', cargo: 'Guarda',
+              descanso,
+              minutosEsperados: dias.length * 420,
+              descansosConTurno: 0,
+              sedes: [{ id: 's1', nombre: 'Norte' }],
+              descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 0, clase: 'NINGUNO' },
+              propuesta: { estado: 'NO_APLICA' },
+              dias: dias.map(f => (esLunes(f)
+                ? diaDe(f, marcaElLunes
+                  // MARCADO A MANO: `descansoPintado` es la columna de la que sale cuál de los siete
+                  // días lleva el descanso de la semana. No se deduce del estado, porque el domingo
+                  // presumido también llega como `DESCANSO`.
+                  ? { estado: 'DESCANSO', descansoPintado: true, horaEntrada: null, horaSalida: null, minutosEsperados: 0 }
+                  // SIN NADA: es el día que quien programa cree que es el descanso y el motor ve como
+                  // un hueco.
+                  : { estado: 'SIN_TURNO', horaEntrada: null, horaSalida: null, minutosEsperados: 0 })
+                : diaDe(f))),
+            }],
+          },
+        });
+      }
+      if (url === '/plantillas-turno') return Promise.resolve({ data: [] });
+      return Promise.reject(new Error('url inesperada: ' + url));
+    });
+    return render(<CalendarioDeTurnos />);
+  };
+
+  const PRESUMIDO = { tipo: 'PRESUMIDO', dia: null };
+  const ROTATIVO = { tipo: 'ROTATIVO', dia: null };
+
+  it('«descanso rotativo» sale en la línea del cargo, junto a la sede', async () => {
+    montarDescanso(ROTATIVO);
+    await cargado();
+    expect(await primeraFila()).toHaveTextContent('Guarda · Norte · descanso rotativo');
+  });
+
+  it('un FIJO en otro día dice CUÁL, que es lo que evita programarle encima', async () => {
+    montarDescanso({ tipo: 'FIJO', dia: 'MIERCOLES' });
+    await cargado();
+    expect(await primeraFila()).toHaveTextContent('Guarda · Norte · descansa miércoles');
+  });
+
+  it('a quien descansa el domingo NO se le escribe nada: es el caso normal', async () => {
+    // Ni el PRESUMIDO ni el FIJO-domingo. Por dentro son estados distintos; para quien programa
+    // significan lo mismo, y escribirlo en las veinte filas taparía a los rotativos.
+    montarDescanso(PRESUMIDO);
+    await cargado();
+    expect(await primeraFila()).toHaveTextContent('Guarda · Norte');
+    expect(await primeraFila()).not.toHaveTextContent(/descans/);
+  });
+
+  it('EL CHIP SALE cuando un rotativo trabajaría el domingo sin ningún día marcado', async () => {
+    montarDescanso(ROTATIVO);
+    await cargado();
+    expect(await primeraFila()).toHaveTextContent('descanso sin marcar');
+  });
+
+  it('y NO sale en cuanto el día libre está marcado como descanso', async () => {
+    // Es lo que mueve el descanso de la semana: con el lunes marcado, el domingo deja de ser el
+    // obligatorio y trabajarlo no paga recargo de descanso.
+    montarDescanso(ROTATIVO, true);
+    await cargado();
+    expect(await primeraFila()).not.toHaveTextContent('descanso sin marcar');
+  });
+
+  it('a quien NO es rotativo no se le pone el chip, aunque la semana sea igual', async () => {
+    // Su día lo pone la ley o un acuerdo escrito y marcar otro no lo mueve, así que no hay nada que
+    // le falte marcar. Trabajarle el domingo también cuesta, pero de eso avisa el otro aviso.
+    montarDescanso(PRESUMIDO);
+    await cargado();
+    expect(await primeraFila()).not.toHaveTextContent('descanso sin marcar');
+  });
+});

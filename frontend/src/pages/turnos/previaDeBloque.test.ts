@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { conteoDePrevia, descansosPisados, cruzanAHabitual } from './previaDeBloque';
+import { conteoDePrevia, descansosPisados, cruzanAHabitual, semanaResultanteDe } from './previaDeBloque';
 import type { CeldaParaPrevia } from './previaDeBloque';
 
 // LO QUE SE DICE ANTES DE ESCRIBIR (28 de septiembre de 2026).
@@ -243,5 +243,79 @@ describe('quién cruza a descanso habitual con esto', () => {
     expect(cruzanAHabitual(
       [{ colaboradorId: 'c1', trabajadosEnElMes: 2, pisaEsteEnvio: 1, descansoRotativo: false }], 3,
     )).toEqual([{ colaboradorId: 'c1', antes: 2, despues: 3 }]);
+  });
+});
+
+// ────────── CÓMO QUEDA LA SEMANA DESPUÉS DE ESTE ENVÍO (29 de septiembre de 2026) ──────────
+//
+// Los avisos de esta ventana miran celdas sueltas: «pintarías sobre el descanso obligatorio de tres
+// jornadas». El del descanso rotativo no puede: «a esta persona le va a quedar el domingo cobrado»
+// es una pregunta de la SEMANA ENTERA, y la semana entera son siete días de los que este envío toca
+// unos pocos. Hay que juntar lo que la rejilla ya tiene con lo que se está a punto de escribir.
+//
+// ES PURO PORQUE DE AQUÍ SALE UN AVISO QUE CAMBIA PLATA, y porque juntarlo mal no se ve: el
+// resultado es una semana plausible y equivocada, que es exactamente la forma en que este producto
+// se rompe según su propio CLAUDE.md.
+//
+// «QUITAR» NO SE PUEDE PREDECIR, Y SE DICE EN VEZ DE ADIVINARLO. Quitar un turno devuelve el día a
+// lo que su HORARIO exija, y el horario no viaja a esta pantalla día por día: solo viaja lo que hoy
+// está escrito. Inventarse que el día queda libre daría avisos falsos, e inventarse que queda
+// trabajado los daría al revés. Devolver `null` deja al aviso callado, que es lo único que se puede
+// afirmar. Y no es un hueco grande: un envío es o todo «Quitar» o turnos y descansos, nunca
+// mezclado, porque `accionDeLoPendiente` solo produce QUITAR desde la rama `IGUAL`.
+
+describe('cómo queda la semana de una persona después del envío', () => {
+  const dia = (fecha: string, trabajado: boolean, descansoMarcado = false) =>
+    ({ fecha, trabajado, descansoMarcado });
+  const TRES = [dia('2026-09-28', true), dia('2026-09-29', true), dia('2026-09-30', false)];
+  const TURNO = { tipo: 'TURNO' as const, plantillaId: 'p1' };
+
+  it('sin tocar nada, la semana queda como estaba', () => {
+    const r = semanaResultanteDe(TRES, () => null);
+    expect(r).toEqual({
+      trabajado: { '2026-09-28': true, '2026-09-29': true, '2026-09-30': false },
+      descansoMarcado: { '2026-09-28': false, '2026-09-29': false, '2026-09-30': false },
+    });
+  });
+
+  it('un TURNO deja el día trabajado y SIN marca de descanso', () => {
+    // La segunda mitad importa tanto como la primera: pintarle un turno encima a un día que estaba
+    // marcado como descanso le quita la marca, y con ella el descanso de esa semana.
+    const antes = [dia('2026-09-30', false, true)];
+    const r = semanaResultanteDe(antes, () => TURNO);
+    expect(r).toEqual({ trabajado: { '2026-09-30': true }, descansoMarcado: { '2026-09-30': false } });
+  });
+
+  it('un DESCANSO deja el día marcado y no trabajado', () => {
+    const r = semanaResultanteDe([dia('2026-09-30', true)], () => ({ tipo: 'DESCANSO' }));
+    expect(r).toEqual({ trabajado: { '2026-09-30': false }, descansoMarcado: { '2026-09-30': true } });
+  });
+
+  it('SOLO cambian los días que este envío toca', () => {
+    // Lo demás se copia tal cual de la rejilla. Si se perdiera, una semana con su descanso ya
+    // marcado el lunes saldría como si no lo tuviera en cuanto se le pintara el miércoles.
+    const r = semanaResultanteDe(
+      [dia('2026-09-28', false, true), dia('2026-09-29', false), dia('2026-09-30', false)],
+      f => (f === '2026-09-30' ? TURNO : null),
+    );
+    expect(r?.descansoMarcado['2026-09-28']).toBe(true);
+    expect(r?.trabajado['2026-09-29']).toBe(false);
+    expect(r?.trabajado['2026-09-30']).toBe(true);
+  });
+
+  it('QUITAR devuelve NULL: no se puede saber qué exige el horario ese día', () => {
+    expect(semanaResultanteDe(TRES, () => ({ tipo: 'QUITAR' }))).toBeNull();
+  });
+
+  it('un SOLO quitar entre muchos turnos ya deja la semana sin predecir', () => {
+    // Basta uno: el día que no se puede afirmar puede ser justo el que llevaba el descanso.
+    const r = semanaResultanteDe(TRES, f => (f === '2026-09-29' ? { tipo: 'QUITAR' } : TURNO));
+    expect(r).toBeNull();
+  });
+
+  it('sin días, dos mapas vacíos y no un nulo', () => {
+    // Vacío es «no hay nada que decir de esta persona»; nulo es «no se puede saber». Confundirlos
+    // haría que una fila sin días se leyera como impredecible.
+    expect(semanaResultanteDe([], () => null)).toEqual({ trabajado: {}, descansoMarcado: {} });
   });
 });

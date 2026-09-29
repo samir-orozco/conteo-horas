@@ -236,8 +236,14 @@ export function reescrituraDeSemana(
 // La clave es el LUNES de la semana, en "YYYY-MM-DD". Una semana sin plan o AMBIGUA no entra en el
 // mapa: quien pregunta recibe `undefined`, pasa `null`, y cae al domingo. Así la regla de la
 // ambigüedad vive en un solo sitio (`descansoDeLaSemana`) en vez de escribirse dos veces.
+//
+// EL CAMPO SE LLAMA `descansoMarcado` Y NO `esDescansoDeTurno` desde el 29 de septiembre de 2026.
+// Es SOLO un cambio de nombre, sin ningún cambio de comportamiento: quien la llama ya consultaba
+// `descansoPintado` desde el 23 de septiembre. Se renombra porque el nombre viejo es exactamente lo
+// que indujo el error en la otra mitad, `propuestaDeDescanso`, que se quedó alimentada con
+// `plantilla.esDescanso` durante seis días diciéndole a la pantalla lo contrario que el motor.
 export function descansosPlanificadosPorSemana(
-  dias: readonly { fecha: Date; esDescansoDeTurno: boolean }[],
+  dias: readonly { fecha: Date; descansoMarcado: boolean }[],
 ): Map<string, string> {
   const porSemana = new Map<string, { dia: unknown; esDescanso: boolean }[]>();
   for (const d of dias) {
@@ -246,8 +252,8 @@ export function descansosPlanificadosPorSemana(
     const entrada = {
       dia: diaSemanaDeFechaBogota(d.fecha),
       // `=== true` y no un truthy: lo que llega de la relación puede ser `null`, y `null` no es un
-      // turno de descanso.
-      esDescanso: d.esDescansoDeTurno === true,
+      // día marcado como descanso.
+      esDescanso: d.descansoMarcado === true,
     };
     const lista = porSemana.get(clave);
     if (lista) lista.push(entrada);
@@ -287,14 +293,20 @@ export type PropuestaDeDescanso =
   | { estado: 'AMBIGUA' };
 
 export function propuestaDeDescanso(
-  dias: readonly { dia: unknown; pintado: boolean; esDescansoDeTurno: boolean }[],
+  dias: readonly { dia: unknown; pintado: boolean; descansoMarcado: boolean }[],
   estado: EstadoDescanso,
 ): PropuestaDeDescanso {
   if (estado.tipo !== 'ROTATIVO') return { estado: 'NO_APLICA' };
 
   // El MISMO conjunto que usa `descansoDeLaSemana`, no una segunda versión: si contaran distinto,
   // la pantalla diría «resuelta el miércoles» mientras el motor liquida el domingo.
-  const marcados = diasConTurnoDeDescanso(dias.map(d => ({ dia: d.dia, esDescanso: d.esDescansoDeTurno })));
+  //
+  // Y SALE DE LA MISMA COLUMNA, que es lo que faltaba hasta el 29 de septiembre de 2026: este campo
+  // se llamaba `esDescansoDeTurno` y la ruta lo alimentaba con `plantilla.esDescanso`, o sea con el
+  // modelo viejo, el del turno de descanso del catálogo. El motor ya leía `descansoPintado`, la
+  // columna del día, desde el 23 de septiembre. Compartir la función no alcanzaba: lo que las
+  // separaba era el dato que cada una recibía. Se renombró para que el nombre no invite a repetirlo.
+  const marcados = diasConTurnoDeDescanso(dias.map(d => ({ dia: d.dia, esDescanso: d.descansoMarcado })));
   // Lo que alguien ELIGIÓ manda sobre lo que se puede deducir de un hueco.
   if (marcados.size === 1) return { estado: 'RESUELTA', dia: Array.from(marcados)[0] };
   if (marcados.size > 1) return { estado: 'AMBIGUA' };

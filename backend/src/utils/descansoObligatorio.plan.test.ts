@@ -19,7 +19,7 @@ import { descansosPlanificadosPorSemana } from './descansoObligatorio';
 // se escribe dos veces.
 
 const bog = (iso: string) => new Date(`${iso}T05:00:00.000Z`);
-const dia = (iso: string, esDescansoDeTurno = false) => ({ fecha: bog(iso), esDescansoDeTurno });
+const dia = (iso: string, descansoMarcado = false) => ({ fecha: bog(iso), descansoMarcado });
 
 describe('descansosPlanificadosPorSemana', () => {
   it('una semana con el descanso en miércoles queda indexada por su lunes', () => {

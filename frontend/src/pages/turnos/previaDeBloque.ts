@@ -177,3 +177,57 @@ export function cruzanAHabitual(
   }
   return cruzan;
 }
+
+// ────────── CÓMO QUEDA LA SEMANA DE UNA PERSONA DESPUÉS DE ESTE ENVÍO (29 de septiembre de 2026) ──────────
+//
+// Los demás avisos de esta ventana miran celdas sueltas. El del descanso rotativo no puede: «a esta
+// persona le va a quedar el domingo cobrado como descanso trabajado» es una pregunta de la SEMANA
+// entera, y de esos siete días este envío toca unos pocos. Hay que juntar lo que la rejilla ya tiene
+// con lo que está a punto de escribirse, y eso es lo que hace esto.
+//
+// LOS DOS MAPAS SALEN JUNTOS Y NO POR SEPARADO porque una misma acción mueve los dos a la vez y en
+// direcciones contrarias: pintar un turno pone el día en trabajado Y le quita la marca de descanso.
+// Calculándolos aparte, quien llamara podría actualizar uno y olvidar el otro, y entonces una
+// persona a la que se le pinta un turno encima de su día libre seguiría contando con ese descanso.
+//
+// UN CASO POR VALOR Y NO UN `? :` (§9.4): son tres acciones hoy y la cuarta ya está prevista.
+//
+// `QUITAR` DEVUELVE NULL EN VEZ DE ADIVINAR. Quitar devuelve el día a lo que su HORARIO exija, y el
+// horario no viaja a esta pantalla día por día: solo viaja lo que hoy está escrito. Suponer que el
+// día queda libre daría avisos falsos y suponer que queda trabajado los daría al revés. Callar es lo
+// único que se puede afirmar. Tampoco deja un hueco grande: un envío es o todo «Quitar» o turnos y
+// descansos, nunca mezclado, porque `accionDeLoPendiente` solo produce QUITAR desde la rama `IGUAL`.
+export type DiaDeLaSemanaResultante = { fecha: string; trabajado: boolean; descansoMarcado: boolean };
+
+export function semanaResultanteDe(
+  dias: readonly DiaDeLaSemanaResultante[],
+  accionDe: (fecha: string) => AccionDeEscritura | null,
+): { trabajado: Record<string, boolean>; descansoMarcado: Record<string, boolean> } | null {
+  const trabajado: Record<string, boolean> = {};
+  const descansoMarcado: Record<string, boolean> = {};
+
+  for (const dia of dias) {
+    const accion = accionDe(dia.fecha);
+    // Sin acción, el día se copia tal cual. Perder esto haría que una semana con su descanso ya
+    // marcado el lunes saliera como si no lo tuviera en cuanto se le pintara el miércoles.
+    if (accion === null) {
+      trabajado[dia.fecha] = dia.trabajado;
+      descansoMarcado[dia.fecha] = dia.descansoMarcado;
+      continue;
+    }
+    switch (accion.tipo) {
+      case 'TURNO':
+        trabajado[dia.fecha] = true;
+        descansoMarcado[dia.fecha] = false;
+        break;
+      case 'DESCANSO':
+        trabajado[dia.fecha] = false;
+        descansoMarcado[dia.fecha] = true;
+        break;
+      case 'QUITAR':
+        // Basta uno: el día que no se puede afirmar puede ser justo el que llevaba el descanso.
+        return null;
+    }
+  }
+  return { trabajado, descansoMarcado };
+}

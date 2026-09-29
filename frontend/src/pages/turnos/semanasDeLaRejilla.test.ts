@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   semanasDeLasColumnas, minutosDeLaSemana, semanasEnterasDelMes, semanasSobreElTope,
   mesQueSePrograma, semanasEnterasSinDescanso,
+  semanasConDomingoEnRiesgo,
 } from './semanasDeLaRejilla';
 import { sumarDias } from './semana';
 
@@ -349,5 +350,106 @@ describe('las semanas sin ningún descanso', () => {
 
   it('sin columnas no hay semanas', () => {
     expect(semanasEnterasSinDescanso([], {})).toEqual([]);
+  });
+});
+
+// ────────── EL DESCANSO QUE A UN ROTATIVO HAY QUE MARCARLE (29 de septiembre de 2026) ──────────
+//
+// Sale de una pregunta del dueño: «¿cómo funciona la asignación de horario rotativo si la persona ya
+// tiene un horario asignado?». Al mirarlo apareció el hueco.
+//
+// LA MECÁNICA, que hay que tener clara para leer lo de abajo: para alguien con descanso ROTATIVO,
+// cuál de los siete días lleva el descanso lo decide lo que esté MARCADO como descanso en esa
+// semana. Si hay exactamente uno, ese es. Si no hay ninguno, o hay dos, el motor no puede afirmarlo
+// y cae al DOMINGO, que es la dirección segura: un turno pintado puede AGREGAR un recargo, nunca
+// quitarlo.
+//
+// LO QUE CUESTA: quien programa a un rotativo de lunes a domingo pensando «esta persona descansa el
+// martes» y no MARCA el martes, le deja el domingo trabajado sobre su descanso obligatorio. Eso paga
+// recargo, y desde el tercero del mes obliga a compensar con tiempo. El dato para verlo existía
+// —está en la rejilla, día por día— pero no había quien lo sumara por semana.
+//
+// POR QUÉ EL DOMINGO ENTRA EN LA CONDICIÓN Y NO SE AVISA A TODO ROTATIVO SIN DESCANSO MARCADO: lo
+// normal es programar de lunes a sábado y dejar el domingo en blanco, y ahí NO pasa nada malo —el
+// domingo es su descanso y no lo trabaja—. Avisando sin mirar el domingo, el aviso saldría en el
+// caso más común de todos y aprendería a ignorarse, que es como se desarma un aviso.
+
+describe('las semanas en que a un rotativo se le va a cobrar el domingo', () => {
+  const SEM = ['2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27'];
+  const LUNES = '2026-09-21';
+  const DOMINGO = '2026-09-27';
+  const mapa = (fechas: readonly string[]) => Object.fromEntries(fechas.map(f => [f, true]));
+
+  it('trabaja los siete menos el martes, sin marcar nada: el domingo se le cobra', () => {
+    // El caso de la pregunta. Quien lo programó cree que descansa el martes; para el motor, el
+    // martes es un día en blanco y el descanso sigue siendo el domingo.
+    const trabajado = mapa(SEM.filter(f => f !== '2026-09-22'));
+    expect(semanasConDomingoEnRiesgo(SEM, trabajado, {}, true)).toEqual([LUNES]);
+  });
+
+  it('con el martes MARCADO como descanso, no hay nada que avisar', () => {
+    // Es lo que mueve el descanso de la semana. El domingo deja de ser el obligatorio y trabajarlo
+    // no paga recargo de descanso.
+    const trabajado = mapa(SEM.filter(f => f !== '2026-09-22'));
+    expect(semanasConDomingoEnRiesgo(SEM, trabajado, mapa(['2026-09-22']), true)).toEqual([]);
+  });
+
+  it('DOS días marcados vuelven a dejarlo al aire, igual que ninguno', () => {
+    // El motor no puede elegir entre dos y cae al domingo. Para quien mira es el mismo problema con
+    // otra causa, y el remedio es el mismo: dejar uno solo.
+    const trabajado = mapa(SEM.filter(f => f !== '2026-09-22' && f !== '2026-09-23'));
+    expect(semanasConDomingoEnRiesgo(SEM, trabajado, mapa(['2026-09-22', '2026-09-23']), true)).toEqual([LUNES]);
+  });
+
+  it('si NO trabaja el domingo, no se avisa aunque no haya marcado nada', () => {
+    // Lunes a sábado con el domingo libre es la programación más común que existe. Avisar aquí
+    // sacaría el aviso en casi todas las filas y lo volvería ruido.
+    const trabajado = mapa(SEM.filter(f => f !== DOMINGO));
+    expect(semanasConDomingoEnRiesgo(SEM, trabajado, {}, true)).toEqual([]);
+  });
+
+  it('a quien NO es rotativo no se le avisa: su descanso no lo mueve el calendario', () => {
+    // Un FIJO o un PRESUMIDO tiene su día por ley o por acuerdo, y marcar otro no lo cambia.
+    // Trabajarle el domingo sí cuesta, pero de eso avisa «pintarías sobre el descanso obligatorio»,
+    // que es el aviso que le corresponde y que no tiene remedio: no es un olvido, es una decisión.
+    //
+    // ES EXACTAMENTE LA MISMA SEMANA DEL PRIMER CASO, que sí avisa, y solo cambia el último
+    // argumento. Antes esta prueba usaba los siete días trabajados y pasaba igual con la guarda
+    // borrada, porque la excluía el filtro del otro aviso: verde por una razón que no era la suya.
+    // Se descubrió mutando, no leyéndola.
+    const trabajado = mapa(SEM.filter(f => f !== '2026-09-22'));
+    expect(semanasConDomingoEnRiesgo(SEM, trabajado, {}, true)).toEqual([LUNES]);
+    expect(semanasConDomingoEnRiesgo(SEM, trabajado, {}, false)).toEqual([]);
+  });
+
+  it('LOS SIETE TRABAJADOS SON DEL OTRO AVISO, no de este', () => {
+    // «Semanas que quedarían sin ningún descanso» ya lo dice, y es más grave: no es que el domingo
+    // salga caro, es que la semana es ilegal (art. 173). Dos avisos sobre la misma semana harían que
+    // el segundo se leyera como una repetición del primero.
+    expect(semanasConDomingoEnRiesgo(SEM, mapa(SEM), {}, true)).toEqual([]);
+  });
+
+  it('UNA SEMANA CORTADA NO SE JUZGA, aunque se le vea el domingo trabajado', () => {
+    // En la vista de mes la primera fila viene partida. Aquí se ve de miércoles a domingo: el
+    // domingo está trabajado, no hay ningún descanso marcado entre lo visible, y aun así no se
+    // avisa, porque el lunes y el martes —donde puede estar marcado— no están en pantalla.
+    //
+    // ANTES ESTA PRUEBA CORTABA POR EL OTRO LADO (lunes a miércoles) y pasaba con el filtro borrado,
+    // porque sin domingo la condición del domingo ya la excluía. Verde por una razón que no era la
+    // suya; se descubrió mutando.
+    const cortada = SEM.slice(2);
+    const trabajado = mapa(cortada.filter(f => f !== '2026-09-24'));
+    expect(semanasConDomingoEnRiesgo(cortada, trabajado, {}, true)).toEqual([]);
+  });
+
+  it('un mes entero devuelve TODAS las semanas en riesgo, no solo la primera', () => {
+    const dos = [...SEM, '2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'];
+    // En las dos descansa el martes de verdad, y en ninguna lo marcó.
+    const trabajado = mapa(dos.filter(f => f !== '2026-09-22' && f !== '2026-09-29'));
+    expect(semanasConDomingoEnRiesgo(dos, trabajado, {}, true)).toEqual([LUNES, '2026-09-28']);
+  });
+
+  it('sin columnas no hay nada que decir', () => {
+    expect(semanasConDomingoEnRiesgo([], {}, {}, true)).toEqual([]);
   });
 });

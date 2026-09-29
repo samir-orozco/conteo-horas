@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CalendarioDeTurnos from './CalendarioDeTurnos';
-import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias, diasEntre } from './semana';
+import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias, diasEntre, sePuedePintar } from './semana';
 
 // LA VENTANA DE ROTACIÓN (28 de septiembre de 2026).
 //
@@ -280,6 +280,10 @@ describe('aplicar la rotación', () => {
     await usuario.click(within(await ventana()).getByRole('button', { name: /cancelar/i }));
 
     expect(put).not.toHaveBeenCalled();
-    expect(await tarjeta()).toHaveTextContent(/7 jornadas/);
+    // CUÁNTAS SON SE DERIVA y no se escribe: desde el 29 de septiembre de 2026 una celda de un día
+    // pasado no se puede marcar, así que la semana en curso deja entre una y siete, según el día en
+    // que se corra la suite. Se usa `sePuedePintar`, la misma función de la pantalla.
+    const cuantas = DIAS.filter(f => sePuedePintar(f, HOY)).length;
+    expect(await tarjeta()).toHaveTextContent(new RegExp(`${cuantas} jornada`));
   });
 });

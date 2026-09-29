@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CalendarioDeTurnos from './CalendarioDeTurnos';
-import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias } from './semana';
+import { vistaDelCalendario } from './vistaDelCalendario';
+import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias, sePuedePintar } from './semana';
 
 // LA PROGRAMACIÓN EN BLOQUE (28 de septiembre de 2026).
 //
@@ -41,6 +42,19 @@ const SABADO = DIAS[5];
 const VIERNES = DIAS[4];
 const numeroDe = (fecha: string) => Number(fecha.slice(8, 10));
 
+// CUÁNTOS DÍAS DE ESTA SEMANA SE PUEDEN ESCRIBIR TODAVÍA (29 de septiembre de 2026).
+//
+// Estas pruebas decían «7 jornadas» a pelo, y eso dejó de ser cierto el día que una celda de un día
+// pasado dejó de poder marcarse: la semana en curso lleva entre cero y seis días ya idos, así que el
+// número cambia SEGÚN EL DÍA EN QUE SE CORRA LA SUITE. Un lunes son siete y un domingo es uno.
+//
+// SE DERIVA CON `sePuedePintar`, la misma función que usa la pantalla, y no con una comparación
+// escrita aquí: con una copia, esta prueba y el componente podrían discrepar y la prueba seguiría
+// verde. Quién decide la regla lo prueban `seleccionEnBloque.test.ts` y `semana.test.ts`; lo que estas
+// comprueban es el GESTO, o sea que tocar el nombre marca la fila.
+const ESCRIBIBLES = DIAS.filter(f => sePuedePintar(f, HOY));
+const CUANTAS = new RegExp(`${ESCRIBIBLES.length} jornada`);
+
 // OJO CON ESTE FIXTURE: `montar` recibe `unknown[]` a propósito, y el precio es que NADIE lo tipa.
 // Cuando la respuesta gane un campo hay que agregarlo aquí a mano o la prueba sigue verde ejercitando
 // un día que no existe (CLAUDE.md §9.2).
@@ -77,9 +91,17 @@ const CATALOGO = [
 ];
 
 const montar = (filas: unknown[] = [ANA, BETO, CIRO]) => {
-  get.mockImplementation((url: string) => {
+  // EL MOCK CONTESTA EL RANGO QUE LE PIDEN, igual que el servidor (29 de septiembre de 2026). Antes
+  // devolvía siempre la semana en curso, y la pantalla deriva `cargando` de comparar el `desde` que
+  // contestó contra el que tiene en pantalla: al navegar a otra semana se quedaba en «Cargando» para
+  // siempre, sin filas. Ninguna prueba lo notaba porque las que navegaban solo comprobaban que la
+  // tarjeta DESAPARECÍA, y desaparecía por el motivo equivocado.
+  get.mockImplementation((url: string, cfg?: { params?: { desde?: string; hasta?: string } }) => {
     if (url === '/turnos/calendario') {
-      return Promise.resolve({ data: { desde: LUNES, hasta: DOMINGO, horasSemanales: 42, filas } });
+      return Promise.resolve({ data: {
+        desde: cfg?.params?.desde ?? LUNES, hasta: cfg?.params?.hasta ?? DOMINGO,
+        horasSemanales: 42, filas,
+      } });
     }
     if (url === '/plantillas-turno') return Promise.resolve({ data: CATALOGO });
     return Promise.reject(new Error('url inesperada: ' + url));
@@ -221,7 +243,7 @@ describe('marcar varias celdas', () => {
     const usuario = userEvent.setup();
     montar();
     await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
-    expect(await tarjeta()).toHaveTextContent(/7 jornadas/);
+    expect(await tarjeta()).toHaveTextContent(CUANTAS);
 
     await usuario.type(screen.getByRole('searchbox', { name: /buscar/i }), 'beto');
 
@@ -302,14 +324,14 @@ describe('marcar varias celdas', () => {
     const usuario = userEvent.setup();
     montar();
     await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
-    expect(await tarjeta()).toHaveTextContent(/Ana Ríos · 7 días/);
+    expect(await tarjeta()).toHaveTextContent(new RegExp(`Ana Ríos · ${ESCRIBIBLES.length} día`));
   });
 
   it('el nombre de la persona marca su fila entera', async () => {
     const usuario = userEvent.setup();
     montar();
     await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
-    expect(await tarjeta()).toHaveTextContent(/7 jornadas/);
+    expect(await tarjeta()).toHaveTextContent(CUANTAS);
   });
 
   it('y volver a tocarlo la desmarca', async () => {
@@ -381,7 +403,7 @@ describe('marcar varias celdas', () => {
     const usuario = userEvent.setup();
     montar();
     await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
-    expect(await tarjeta()).toHaveTextContent(/7 jornadas/);
+    expect(await tarjeta()).toHaveTextContent(CUANTAS);
 
     // Dos toques seguidos sobre la misma celda.
     const suya = await celda('Ana', DOMINGO);
@@ -468,14 +490,125 @@ describe('marcar varias celdas', () => {
     expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
   });
 
-  it('los días que ya pasaron se cuentan aparte y se dicen', async () => {
-    // El caso que la pantalla tiene que distinguir de «no marcaste nada»: aquí sí hubo selección, y
-    // la respuesta honesta es que parte no se puede escribir.
+  // ────────── UN DÍA QUE YA PASÓ NO ENTRA A LA SELECCIÓN (29 de septiembre de 2026) ──────────
+  //
+  // Pedido del dueño con estas palabras: «si no lo puedo cambiar, sería bueno que no lo deje
+  // seleccionar tampoco». Hasta hoy entraba, se pintaba apagado, y la tarjeta lo contaba aparte
+  // («1 ya pasó y no se escribe»). Eso es contarle a alguien que parte de lo que pidió no se hizo,
+  // cuando salía más barato no dejárselo pedir.
+  //
+  // ESTAS PRUEBAS SUSTITUYEN A «los días que ya pasaron se cuentan aparte y se dicen», que afirmaba
+  // justo lo contrario y era correcta hasta hoy. No se borró un caso: se le dio la vuelta.
+  //
+  // EL CONTADOR DE LA TARJETA NO SE QUITÓ, y no es olvido. `hoy` se vuelve a leer en cada dibujado, así
+  // que una pestaña abierta que cruza la medianoche despierta con celdas marcadas ayer que ahora son
+  // del pasado. Ese es el único camino que le queda, y es el que tiene que seguir cubriendo.
+
+  it('tocar el nombre de la persona NO marca el día que ya pasó', async () => {
     const ayer = sumarDias(HOY, -1);
     const usuario = userEvent.setup();
     montar([personaDe('c1', 'Ana', 'Ríos', [ayer, ...DIAS])]);
     await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
-    expect(await tarjeta()).toHaveTextContent(/1 ya pasó y no se escribe/);
+    const caja = await tarjeta();
+    // La fila tiene un día MÁS que la semana (ayer) y aun así se marcan los mismos.
+    expect(caja).toHaveTextContent(CUANTAS);
+    expect(caja).not.toHaveTextContent(/ya pasó/);
+  });
+
+  it('NI UN CLIC NI UN ARRASTRE marcan una celda que ya pasó', async () => {
+    // Es el caso más directo de lo que pidió el dueño, y el único que toca la guarda del gesto: los
+    // otros dos pasan por el botón de la fila y por el del encabezado.
+    //
+    // SE NAVEGA A LA SEMANA ANTERIOR para que TODAS las columnas sean del pasado. Contra la semana en
+    // curso esto dependería del día en que se corriera la suite, y un lunes no habría ninguna celda
+    // pasada que tocar.
+    //
+    // SE BUSCAN COMO CELDAS DE LA TABLA Y NO COMO BOTONES a propósito: una celda que ya pasó se dibuja
+    // como un `div`, sin botón, desde antes de este cambio. Lo que la seguía metiendo en la selección
+    // era el `pointerdown` del `td` que la envuelve, y es eso lo que esta prueba aprieta.
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /semana anterior/i }));
+    // SE LLEGA A LA FILA POR EL BOTÓN DE LA PERSONA y de ahí al `tr`, que es la única forma: el gesto
+    // vive en el `td`, que no tiene rol ni nombre accesible por los que preguntar. Es la excepción a
+    // «consultar por lo que ve una persona» y es deliberada: lo que se está apretando es justamente un
+    // manejador colgado de un elemento sin semántica.
+    const suBoton = await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i });
+    const suFila = suBoton.closest('tr') as HTMLElement;
+    const celdas = within(suFila).getAllByRole('cell');
+    // [0] es la persona y la última el total; en medio, un `td` por columna.
+    const primera = celdas[1];
+    const ultima = celdas[celdas.length - 2];
+
+    await usuario.click(primera);
+    expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
+
+    await arrastrarDe(primera, ultima);
+    expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
+  });
+
+  it('un arrastre que CRUZA la frontera solo marca la parte de adelante', async () => {
+    // El otro camino del filtro, y el que faltaba: el arrastre no puede EMPEZAR en una celda ida —de
+    // eso se encarga la guarda del gesto— pero sí puede TERMINAR en una, y entonces el rectángulo
+    // abarca columnas de los dos lados.
+    //
+    // SE HACE EN LA VISTA DE MES porque ahí la frontera está dentro de la rejilla siempre: el mes
+    // empieza en el lunes de la semana del día 1, que salvo un caso al año queda por detrás de hoy. En
+    // la vista de semana esto sería vacuo los lunes.
+    //
+    // EL NÚMERO ESPERADO SE DERIVA de la misma vista y la misma regla que usa la pantalla, no de un
+    // literal: con un número escrito a mano, esta prueba cambiaría de veredicto cada día.
+    const usuario = userEvent.setup();
+    const mes = vistaDelCalendario('MES', HOY);
+    const delMes = mes.dias.filter(f => sePuedePintar(f, HOY));
+    montar([personaDe('c1', 'Ana', 'Ríos', mes.dias)]);
+    await usuario.click(await screen.findByRole('button', { name: /^Mes$/ }));
+
+    const suBoton = await screen.findByRole('button', { name: /marcar el mes de Ana Ríos/i });
+    const celdas = within(suBoton.closest('tr') as HTMLElement).getAllByRole('cell');
+    // DÓNDE CAE EL `td` DE UN DÍA. La fila no es [persona, 42 días, total]: la vista de mes intercala
+    // un total por semana, así que los días y las celdas no van uno a uno. Con `length - 2` se apunta
+    // al total de la última semana y el arrastre no arranca (probado: la tarjeta no aparecía).
+    const tdDelDia = (i: number) => celdas[1 + i + Math.floor(i / 7)];
+
+    // DE HOY HACIA ATRÁS, hasta la primera columna del mes. El rectángulo abarca todo lo ido más hoy,
+    // y de eso solo hoy se puede escribir.
+    await arrastrarDe(tdDelDia(mes.dias.indexOf(HOY)), tdDelDia(0));
+    expect(await tarjeta()).toHaveTextContent(/1 jornada/);
+    expect(delMes.length).toBeLessThan(mes.dias.length); // que de verdad haya frontera que cruzar
+  });
+
+  it('con TODA la fila en el pasado, la tarjeta no aparece', async () => {
+    // Antes aparecía diciendo «0 se escriben, 3 ya pasaron», o sea una tarjeta que ofrecía aplicar
+    // nada. Ahora no hay nada que marcar y por tanto nada que ofrecer.
+    const usuario = userEvent.setup();
+    const idos = [sumarDias(HOY, -3), sumarDias(HOY, -2), sumarDias(HOY, -1)];
+    montar([personaDe('c1', 'Ana', 'Ríos', idos)]);
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+    expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
+  });
+
+  it('el encabezado de un día que ya pasó no se puede pulsar', async () => {
+    // Un botón que se pulsa y no hace nada es peor que uno apagado: se pulsa dos veces, se mira si
+    // pasó algo, y se acaba dudando de la pantalla. Se consulta por el rol y el estado, que es lo que
+    // ve quien usa lector de pantalla, no por una clase de CSS.
+    //
+    // SE NAVEGA A LA SEMANA ANTERIOR Y A LA SIGUIENTE, y no se cuentan los apagados de la semana en
+    // curso. La primera versión de esta prueba hacía eso y era VACUA LOS LUNES: con la semana entera
+    // por delante esperaba cero apagados, que es lo que sale también sin la guarda puesta. Verde un
+    // día de cada siete sin comprobar nada. Contra una semana entera ida y otra entera por venir, los
+    // dos extremos se afirman siempre.
+    const usuario = userEvent.setup();
+    montar();
+    const apagados = async () =>
+      (await screen.findAllByRole('button', { name: /^Marcar el día / })).filter(b => b.hasAttribute('disabled'));
+
+    await usuario.click(await screen.findByRole('button', { name: /semana anterior/i }));
+    expect(await apagados()).toHaveLength(7);
+
+    await usuario.click(screen.getByRole('button', { name: /semana siguiente/i }));
+    await usuario.click(screen.getByRole('button', { name: /semana siguiente/i }));
+    expect(await apagados()).toHaveLength(0);
   });
 });
 
