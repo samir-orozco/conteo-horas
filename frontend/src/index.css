@@ -128,6 +128,20 @@ body {
 .hp-ripple { animation: hp-ripple 1s ease-out infinite; }
 .hp-shake { animation: hp-shake 0.5s ease-in-out both; }
 .hp-shake-suave { animation: hp-shake-suave 0.18s ease-in-out; }
+/* EL TEMBLOR DEL CONTADOR DE UN AVISO REPETIDO (29 de septiembre de 2026, pedido del dueño).
+   No se reusa `hp-shake` a propósito: aquella mueve ±10 px, que sobre una pastilla de 18 px es un
+   salto de media pastilla y se lee como un fallo de dibujo. Esta crece y vuelve, con un bamboleo de
+   dos píxeles, que es lo que hace que el ojo vaya al número sin que el aviso parezca romperse.
+   Se REDISPARA cambiando la `key` del elemento en React: una animación CSS no se repite sola si la
+   clase ya estaba puesta. */
+@keyframes hp-tembleque {
+  0%   { transform: scale(1)    translateX(0); }
+  22%  { transform: scale(1.35) translateX(-2px); }
+  45%  { transform: scale(1.18) translateX(2px); }
+  68%  { transform: scale(1.08) translateX(-1px); }
+  100% { transform: scale(1)    translateX(0); }
+}
+.hp-tembleque { animation: hp-tembleque 0.42s cubic-bezier(0.34, 1.4, 0.5, 1) both; }
 .hp-fade-bg { animation: hp-fade-bg 0.4s ease-out both; }
 .hp-fade-out { animation: hp-fade-out 0.35s ease-in both; }
 .hp-pop-out { animation: hp-pop-out 0.32s cubic-bezier(0.4, 0, 1, 1) both; }
@@ -167,6 +181,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .hp-float, .hp-float-slow, .hp-spin-slow, .hp-ripple, .hp-scan-line, .hp-sacudida { animation: none; }
+  /* El número sigue cambiando, que es el dato; lo que se quita es el movimiento. */
+  .hp-tembleque { animation: none; }
   .hp-reveal { opacity: 1; }
 }
 

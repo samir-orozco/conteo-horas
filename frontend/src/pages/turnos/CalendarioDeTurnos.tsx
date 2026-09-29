@@ -68,6 +68,7 @@ import {
 import { nombreDelDia } from '../../lib/diasDeLaSemana';
 import { CLASES_COLOR, PUNTO_COLOR, CELDA_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
 import { PilaDeAvisos, type Aviso } from '../../components/Toast';
+import { sumarRepeticion } from '../../components/contadorDelAviso';
 import { rotuloDeCelda, type OrigenDelRotulo } from './rotuloDeCelda';
 // Dónde cabe un panel flotante sin salirse de la pantalla. Vive en `lib/` porque el pedido del
 // dueño fue para TODA esta clase de elementos, no solo para este.
@@ -2062,6 +2063,25 @@ export default function CalendarioDeTurnos() {
   const avisar = (aviso: Omit<Aviso, 'id'>) =>
     setAvisos(previos => [...previos, { ...aviso, id: siguienteAviso.current++ }]);
 
+  // UN AVISO QUE PUEDE REPETIRSE: el mismo sube un número en vez de apilar otro igual (29 de
+  // septiembre de 2026, pedido del dueño). La cuenta y su tope viven en `sumarRepeticion`, que está
+  // probada y mutada; aquí solo está la plomería de buscarlo en la lista.
+  //
+  // SE BUSCA POR `clave` Y NO POR EL TÍTULO: el título es texto que alguien va a reescribir, y el día
+  // que lo haga dejarían de juntarse sin que nada falle.
+  const avisarRepetible = (clave: string, aviso: Omit<Aviso, 'id' | 'clave' | 'veces'>) =>
+    setAvisos(previos => {
+      const cual = previos.findIndex(a => a.clave === clave);
+      if (cual === -1) {
+        return [...previos, { ...aviso, clave, veces: 1, id: siguienteAviso.current++ }];
+      }
+      // Se devuelve una copia con ESA entrada cambiada. Mutar la del sitio dejaría a React sin ver el
+      // cambio, y el número no subiría aunque el estado sí.
+      const ahora = [...previos];
+      ahora[cual] = { ...ahora[cual], veces: sumarRepeticion(ahora[cual].veces ?? 1) };
+      return ahora;
+    });
+
   const [progreso, setProgreso] = useState<
     { bloquesHechos: number; bloques: number; escritas: number; total: number } | null
   >(null);
@@ -2364,6 +2384,19 @@ export default function CalendarioDeTurnos() {
     });
   };
 
+  // EL MISMO AVISO PARA LOS TRES GESTOS que pueden toparse con un día ido: la celda, el encabezado
+  // del día y el nombre de la persona. Escrito tres veces se separaría a la primera, y lo que se
+  // separaría es la única explicación de por qué la pantalla no responde (§9.3).
+  //
+  // EL MOTIVO SE DICE ENTERO y no «no se puede»: no es un capricho de la pantalla. Reescribir un día
+  // ido cambia lo que ese día exigía, y de ahí salen la tardanza y las horas extra de un período que
+  // puede estar ya liquidado.
+  const avisarDiaPasado = () => avisarRepetible('dia-pasado', {
+    tipo: 'aviso',
+    titulo: 'Ese día ya pasó y no se puede programar',
+    texto: 'Cambiar un día ido reescribiría lo que exigía, y de ahí salen la tardanza y las horas extra de un período que quizá ya se liquidó.',
+  });
+
   const cerrarRango = () => { rangoAbierto.current = false; arrastre.current = null; };
 
   // EL PRIMER CLIC ABRE EL RANGO Y EL SEGUNDO LO CIERRA, que es el gesto de la maqueta y el único
@@ -2389,7 +2422,15 @@ export default function CalendarioDeTurnos() {
     // Y no se hace `preventDefault`: el clic sigue su camino hasta el botón de la celda, que abre el
     // panel del día. Un día pasado no se puede reprogramar, pero sí mirar, y ver con qué reglas se
     // liquidó es justo lo que se va a buscar ahí.
-    if (!sePuedePintar(celda.fecha, hoy)) return;
+    if (!sePuedePintar(celda.fecha, hoy)) {
+      // Y SE DICE POR QUÉ (29 de septiembre de 2026, pedido del dueño). Antes el clic no hacía NADA:
+      // la celda estaba apagada, pero «apagada» no explica nada a quien acaba de intentarlo, y lo
+      // normal es volver a hacer clic. El motivo no es un capricho de la pantalla, así que se dice
+      // entero: reescribir un día ido cambia lo que ese día exigía, y de ahí salen la tardanza y las
+      // horas extra de un período que puede estar ya liquidado.
+      avisarDiaPasado();
+      return;
+    }
 
     // DOBLE CLIC: BORRA TODO Y DEJA SOLO ESA. Es el cuarto gesto de la maqueta y sirve para corregir
     // una selección grande sin empezar de cero. `cerrarRango` deja `arrastre.current` en nulo, así que
@@ -2493,6 +2534,10 @@ export default function CalendarioDeTurnos() {
   const marcarFila = (fila: FilaDelCalendario) => {
     const suyas = fila.dias.map(d => ({ colaboradorId: fila.id, fecha: d.fecha }));
     const { celdas, apagar } = alternarConjunto(suyas, c => Boolean(marcadas[claveDeCelda(c)]), hoy);
+    // CERO CELDAS ES QUE TODO SU PERÍODO YA PASÓ, y entonces este botón no hace nada. Sin decirlo, es
+    // el mismo silencio que el clic en una celda ida: se pulsa dos veces y se acaba dudando de la
+    // pantalla.
+    if (celdas.length === 0) { avisarDiaPasado(); return; }
     marcar(celdas, apagar);
     cerrarRango();
   };
@@ -2500,6 +2545,7 @@ export default function CalendarioDeTurnos() {
   const marcarColumna = (fecha: string) => {
     const esas = filas.map(f => ({ colaboradorId: f.id, fecha }));
     const { celdas, apagar } = alternarConjunto(esas, c => Boolean(marcadas[claveDeCelda(c)]), hoy);
+    if (celdas.length === 0) { avisarDiaPasado(); return; }
     marcar(celdas, apagar);
     cerrarRango();
   };
@@ -3409,19 +3455,30 @@ export default function CalendarioDeTurnos() {
                         con el que se programa una jornada completa —un domingo, un festivo— sin
                         recorrer la lista persona por persona. Vuelve a tocarse y se desmarca, porque
                         marcar una columna por error no puede obligar a limpiar todo. */}
-                    {/* EL ENCABEZADO DE UNA COLUMNA QUE YA PASÓ NO SE OFRECE. Un botón que se puede
-                        pulsar y no hace nada es peor que uno apagado: se pulsa dos veces, se mira si
-                        pasó algo, y se acaba dudando de la pantalla. `disabled` además lo saca del
-                        recorrido con el tabulador y se lo dice a quien usa lector de pantalla, cosa
-                        que un manejador que se sale por dentro no hace. */}
+                    {/* EL ENCABEZADO DE UNA COLUMNA IDA SE VE APAGADO PERO SÍ SE PULSA, y explica por
+                        qué (29 de septiembre de 2026, pedido del dueño).
+
+                        ESTUVO `disabled` UNAS HORAS, con este argumento: «un botón que se puede pulsar
+                        y no hace nada es peor que uno apagado». El argumento era bueno mientras no
+                        hubiera nada que decir; con el aviso puesto se da la vuelta, porque ahora el
+                        clic SÍ hace algo: explicar.
+
+                        Y `disabled` tenía un precio que no se vio entonces: saca el botón del recorrido
+                        del tabulador, así que quien navega con teclado no podía ni llegar a él y nunca
+                        se enteraba del motivo. `aria-disabled` lo sigue anunciando como no disponible y
+                        lo deja alcanzable, que es justo lo que hace falta para poder explicarse. */}
                     <button type="button" onClick={() => marcarColumna(fecha)}
-                      disabled={!sePuedePintar(fecha, hoy)}
+                      aria-disabled={!sePuedePintar(fecha, hoy)}
                       aria-label={rotuloDeColumna(fecha)}
                       // SIN RELLENO LATERAL EN EL MES. Medido: la columna mide 34 px, el `th` se come 4
                       // con su `px-0.5` y este botón otros 8, así que al círculo de 26 le quedaban 22 y
                       // salía aplastado en un óvalo. Quitando estos 8 caben los 26 justos.
-                      className={`w-full rounded-lg py-0.5 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark disabled:cursor-default disabled:hover:bg-transparent ${
-                        enMes ? 'px-0' : 'px-1'}`}>
+                      // El aspecto apagado se pinta a mano y ya no con las variantes `disabled:`: el
+                      // botón dejó de estarlo. Lo que se quita es la invitación a pulsar —el fondo al
+                      // pasar el puntero— no la posibilidad.
+                      className={`w-full rounded-lg py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark ${
+                        enMes ? 'px-0' : 'px-1'} ${
+                        sePuedePintar(fecha, hoy) ? 'hover:bg-gray-100' : 'cursor-default'}`}>
                       {/* Sale de la FECHA y no del número de columna: con `[i]`, de la octava columna
                           en adelante el encabezado salía en blanco.
 

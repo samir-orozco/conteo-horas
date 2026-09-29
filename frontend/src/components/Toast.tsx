@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { Check, AlertTriangle, X } from 'lucide-react';
+import { rotuloDelContador } from './contadorDelAviso';
 
 // EL AVISO FLOTANTE DE LA ESQUINA (rehecho el 28 de septiembre de 2026, con el diseño de la maqueta).
 //
@@ -19,6 +20,18 @@ export type Aviso = {
   titulo: string;
   texto?: string;
   accion?: { texto: string; al: () => void };
+  // ───── UN AVISO QUE SE REPITE NO SE APILA: SUBE UN NÚMERO (29 de septiembre de 2026) ─────
+  //
+  // `clave` es cómo quien avisa dice «este es el mismo de antes». Sin ella, hacer clic ocho veces en
+  // una celda de un día pasado deja ocho avisos idénticos tapando la esquina, y el octavo no dice
+  // nada que no dijera el primero.
+  //
+  // Es OPCIONAL porque la mayoría de los avisos no se repiten: «Programación deshecha» pasa una vez.
+  // Un aviso sin clave se apila como siempre.
+  clave?: string;
+  // Cuántas veces ha pasado. Lo lleva la lista y no el componente: el componente se vuelve a dibujar
+  // con el número nuevo, y guardándolo dentro se perdería la cuenta en cuanto React lo remonte.
+  veces?: number;
 };
 
 // Cuánto dura en pantalla. Diez segundos el aviso completo, porque puede llevar el deshacer dentro;
@@ -35,11 +48,12 @@ const TINTE: Record<TipoDeAviso, { franja: string; icono: string }> = {
   aviso: { franja: 'from-amber-200', icono: 'text-amber-600' },
 };
 
-export function AvisoFlotante({ tipo, titulo, texto, accion, onCerrar, ms = MS_AVISO }: {
+export function AvisoFlotante({ tipo, titulo, texto, accion, veces = 1, onCerrar, ms = MS_AVISO }: {
   tipo: TipoDeAviso;
   titulo: string;
   texto?: string;
   accion?: { texto: string; al: () => void };
+  veces?: number;
   onCerrar: () => void;
   ms?: number;
 }) {
@@ -64,10 +78,13 @@ export function AvisoFlotante({ tipo, titulo, texto, accion, onCerrar, ms = MS_A
     if (reloj.current) clearTimeout(reloj.current);
   }, []);
 
+  // `veces` ENTRE LAS DEPENDENCIAS, y no es un descuido: cada repetición REARMA la cuenta atrás. Sin
+  // esto, alguien que hace clic ocho veces en el segundo nueve ve desaparecer el aviso mientras el
+  // contador sube, o sea la única explicación de por qué su clic no hace nada.
   useEffect(() => {
     contar(ms);
     return parar;
-  }, [contar, parar, ms]);
+  }, [contar, parar, ms, veces]);
 
   const t = TINTE[tipo];
 
@@ -86,6 +103,21 @@ export function AvisoFlotante({ tipo, titulo, texto, accion, onCerrar, ms = MS_A
       <span aria-hidden="true"
         className={`relative grid h-[38px] w-[38px] shrink-0 place-items-center rounded-xl bg-white shadow-[0_0_0_1px_rgba(0,0,0,.06)] ${t.icono}`}>
         {tipo === 'ok' ? <Check size={19} strokeWidth={2.5} /> : <AlertTriangle size={19} />}
+        {/* EL CONTADOR, COLGADO DEL ICONO. Cuántas veces ha pasado esto mismo desde que salió el
+            aviso. No sale la primera vez: ese caso lo decide `rotuloDelContador`, que devuelve `null`.
+
+            LA `key` ES EL NÚMERO, y de eso depende el temblor: una animación CSS no se vuelve a
+            lanzar si la clase ya estaba puesta. Cambiando la `key`, React monta un elemento NUEVO y
+            la animación arranca otra vez. Es lo mismo que pasa con `hmr` y los efectos: el CSS no
+            reacciona a que el contenido cambie, solo a que el elemento nazca.
+
+            `aria-hidden` NO, aquí: el número es información. El icono de al lado sí lo lleva. */}
+        {rotuloDelContador(veces) && (
+          <span key={veces}
+            className="hp-tembleque absolute -right-1.5 -top-1.5 grid h-[19px] min-w-[19px] place-items-center rounded-full bg-ink px-1 text-[10px] font-extrabold leading-none text-white tabular-nums">
+            {rotuloDelContador(veces)}
+          </span>
+        )}
       </span>
 
       <div className="relative min-w-0">
@@ -118,7 +150,7 @@ export function PilaDeAvisos({ avisos, onCerrar }: { avisos: Aviso[]; onCerrar: 
         // SE CIERRA POR SU `id` Y NO POR SU POSICIÓN: la lista cambia mientras hay avisos en pantalla,
         // y cerrar «el segundo» cerraría a otro en cuanto entre uno nuevo.
         <AvisoFlotante key={a.id} tipo={a.tipo} titulo={a.titulo} texto={a.texto} accion={a.accion}
-          onCerrar={() => onCerrar(a.id)} />
+          veces={a.veces} onCerrar={() => onCerrar(a.id)} />
       ))}
     </div>
   );

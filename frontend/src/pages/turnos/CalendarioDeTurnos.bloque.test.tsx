@@ -578,6 +578,120 @@ describe('marcar varias celdas', () => {
     expect(delMes.length).toBeLessThan(mes.dias.length); // que de verdad haya frontera que cruzar
   });
 
+  // ────────── Y SE DICE POR QUÉ (29 de septiembre de 2026, pedido del dueño) ──────────
+  //
+  // No basta con que el clic no haga nada: «apagada» no le explica nada a quien acaba de intentarlo,
+  // y lo normal es volver a hacer clic. Sale un aviso con el motivo.
+  //
+  // EL AVISO NO SE APILA: sube un número. Ocho avisos idénticos tapando la esquina no dicen nada que
+  // no dijera el primero, y encima esconden los avisos de verdad que puedan salir detrás.
+
+  const avisos = () => screen.queryAllByRole('status');
+
+  const tocarUnDiaIdo = async (usuario: ReturnType<typeof userEvent.setup>, veces: number) => {
+    const suBoton = await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i });
+    const celda = within(suBoton.closest('tr') as HTMLElement).getAllByRole('cell')[1];
+    for (let i = 0; i < veces; i++) {
+      fireEvent.pointerDown(celda, { pointerId: 1, button: 0 });
+      fireEvent.pointerUp(window, { pointerId: 1 });
+      // Un respiro entre clics: sin él, React agrupa los `setState` y la cuenta sube de golpe, que es
+      // lo que pasa de verdad al pulsar rápido pero no lo que esta prueba quiere medir.
+      await usuario.click(document.body);
+    }
+  };
+
+  it('AL TOCAR UN DÍA IDO SALE UN AVISO QUE DICE POR QUÉ', async () => {
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /semana anterior/i }));
+    await tocarUnDiaIdo(usuario, 1);
+
+    expect(avisos()).toHaveLength(1);
+    // Por lo que LEE una persona, no por una clase: el aviso tiene que decir que ya pasó.
+    expect(avisos()[0]).toHaveTextContent(/ya pasó y no se puede programar/i);
+  });
+
+  it('y al repetirlo NO se apila: es el mismo con un número', async () => {
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /semana anterior/i }));
+    await tocarUnDiaIdo(usuario, 3);
+
+    expect(avisos()).toHaveLength(1);
+    expect(avisos()[0]).toHaveTextContent(/^3/);
+  });
+
+  it('EL PRIMERO NO LLEVA NÚMERO: un «1» al lado de un aviso recién salido no informa de nada', async () => {
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /semana anterior/i }));
+    await tocarUnDiaIdo(usuario, 1);
+    expect(avisos()[0]).not.toHaveTextContent(/^1/);
+  });
+
+  it('y se planta en «9+», que es donde el dueño pidió que dejara de subir', async () => {
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /semana anterior/i }));
+    await tocarUnDiaIdo(usuario, 14);
+
+    expect(avisos()).toHaveLength(1);
+    expect(avisos()[0]).toHaveTextContent(/^9\+/);
+  });
+
+  it('PASADO EL TOPE LA PASTILLA DEJA DE TEMBLAR, que es lo que se ve de «no deja dar más»', async () => {
+    // ESTA AFIRMACIÓN EXISTE PORQUE LA ANTERIOR NO ALCANZA. Se descubrió mutando: quitándole el tope
+    // a `sumarRepeticion`, la prueba de arriba seguía verde, porque el rótulo pinta «9+» para
+    // cualquier número de diez en adelante y once se ve igual que diez.
+    //
+    // Lo que SÍ cambia es esto: el temblor se redispara montando un elemento nuevo (la `key` es el
+    // número). Si la cuenta siguiera subiendo, cada clic pasado el tope montaría otra pastilla y
+    // seguiría temblando. Que sea el MISMO nodo es la forma observable de «la cuenta se detuvo».
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /semana anterior/i }));
+
+    await tocarUnDiaIdo(usuario, 10);
+    const pastilla = within(avisos()[0]).getByText('9+');
+
+    await tocarUnDiaIdo(usuario, 3);
+    expect(within(avisos()[0]).getByText('9+')).toBe(pastilla);
+  });
+
+  it('Y AL PULSARLO SALE EL MISMO AVISO, con su contador', async () => {
+    // Pedido del dueño al ver el aviso de la celda: «ojalá lo podamos aplicar también a las columnas
+    // de las fechas que no permiten». Es el MISMO aviso, así que un clic en la celda y otro en el
+    // encabezado suben el mismo contador en vez de sacar dos avisos que dicen lo mismo.
+    const usuario = userEvent.setup();
+    montar();
+    await usuario.click(await screen.findByRole('button', { name: /semana anterior/i }));
+    const idos = (await screen.findAllByRole('button', { name: /^Marcar el día / }))
+      .filter(b => b.getAttribute('aria-disabled') === 'true');
+
+    await usuario.click(idos[0]);
+    expect(avisos()).toHaveLength(1);
+    expect(avisos()[0]).toHaveTextContent(/ya pasó y no se puede programar/i);
+
+    await usuario.click(idos[1]);
+    expect(avisos()).toHaveLength(1);
+    expect(avisos()[0]).toHaveTextContent(/^2/);
+  });
+
+  it('y el nombre de una persona cuyos días ya pasaron avisa igual', async () => {
+    // Mismo silencio, mismo remedio: el botón de la fila tampoco tenía nada que marcar y no lo decía.
+    //
+    // LOS DÍAS SE LE PONEN A LA PERSONA y no se navega a una semana pasada, porque `marcarFila` mira
+    // los días de la FILA —los que trae la respuesta— y no las columnas que se ven. La primera versión
+    // de esta prueba navegaba y fallaba: la fila seguía trayendo los días de esta semana.
+    const usuario = userEvent.setup();
+    const idos = [sumarDias(HOY, -3), sumarDias(HOY, -2), sumarDias(HOY, -1)];
+    montar([personaDe('c1', 'Ana', 'Ríos', idos)]);
+    await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
+
+    expect(avisos()).toHaveLength(1);
+    expect(avisos()[0]).toHaveTextContent(/ya pasó y no se puede programar/i);
+  });
+
   it('con TODA la fila en el pasado, la tarjeta no aparece', async () => {
     // Antes aparecía diciendo «0 se escriben, 3 ya pasaron», o sea una tarjeta que ofrecía aplicar
     // nada. Ahora no hay nada que marcar y por tanto nada que ofrecer.
@@ -588,7 +702,7 @@ describe('marcar varias celdas', () => {
     expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
   });
 
-  it('el encabezado de un día que ya pasó no se puede pulsar', async () => {
+  it('el encabezado de un día que ya pasó se anuncia como no disponible', async () => {
     // Un botón que se pulsa y no hace nada es peor que uno apagado: se pulsa dos veces, se mira si
     // pasó algo, y se acaba dudando de la pantalla. Se consulta por el rol y el estado, que es lo que
     // ve quien usa lector de pantalla, no por una clase de CSS.
@@ -600,8 +714,12 @@ describe('marcar varias celdas', () => {
     // dos extremos se afirman siempre.
     const usuario = userEvent.setup();
     montar();
+    // `aria-disabled` Y NO `disabled` desde el 29 de septiembre de 2026: el botón se puede pulsar y
+    // explica por qué no se puede programar ese día. `disabled` lo sacaba del recorrido del tabulador,
+    // así que quien navega con teclado nunca llegaba a la explicación.
     const apagados = async () =>
-      (await screen.findAllByRole('button', { name: /^Marcar el día / })).filter(b => b.hasAttribute('disabled'));
+      (await screen.findAllByRole('button', { name: /^Marcar el día / }))
+        .filter(b => b.getAttribute('aria-disabled') === 'true');
 
     await usuario.click(await screen.findByRole('button', { name: /semana anterior/i }));
     expect(await apagados()).toHaveLength(7);
