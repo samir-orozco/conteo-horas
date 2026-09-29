@@ -190,20 +190,6 @@ export function abreviaturaDeDia(iso: string): string {
   return ABREVIATURAS_DE_DIA[diaSemana === 0 ? 6 : diaSemana - 1];
 }
 
-// SÁBADO Y DOMINGO (28 de septiembre de 2026).
-//
-// La rejilla del mes tiene hasta 42 columnas y nada distinguía el fin de semana del resto, que es
-// justo donde hay que mirar: es donde caen los descansos obligatorios y los recargos.
-//
-// `getUTCDay()` ES DEFENSIVO, NO ES LO QUE SOSTIENE EL RESULTADO, y conviene no confundirlo: medido
-// con una mutación, cambiarlo por `getDay()` deja las 42 pruebas de este archivo en verde, porque
-// `aFecha` ancla a MEDIODÍA UTC y las siete horas de la zona en que corren no cruzan el día. El
-// guardia real es ese anclaje. Se escribe `getUTCDay()` por coherencia con el resto del archivo, y
-// lo que de verdad rompería esto es leer la fecha a medianoche local.
-export function esFinDeSemana(iso: string): boolean {
-  const diaSemana = aFecha(iso).getUTCDay(); // 0 = domingo, 6 = sábado
-  return diaSemana === 0 || diaSemana === 6;
-}
 
 // SI UN DÍA NO ES DEL MES QUE SE ESTÁ VIENDO (28 de septiembre de 2026).
 //

@@ -3,7 +3,7 @@ import {
   hoyEnBogota, sumarDias, lunesDeLaSemana, diasDeLaSemana, rotuloDeSemana, horasDeMinutos,
   horarioCorto, abreviaturaDeDia,
   sePuedePintar, inicialDeDia, diasEntre, nombreDelMes, rotuloCorto,
-  esFinDeSemana, esDeOtroMes,
+  esDeOtroMes,
 } from './semana';
 
 // Estas pruebas corren en América/Los Ángeles (vite.config.ts lo fija a propósito). Todo lo que
@@ -257,46 +257,6 @@ describe('diasEntre', () => {
     // `new Date(iso)` leído en local, este tramo empieza a medir 4 días y 1 hora y la cuenta se
     // parte. Por eso se queda.
     expect(diasEntre('2026-10-30', '2026-11-03')).toBe(4);
-  });
-});
-
-describe('si un día es fin de semana', () => {
-  // POR QUÉ NO SE DEDUCE EN EL JSX: un fin de semana mal marcado no rompe nada a la vista. Corre el
-  // sábado y el domingo un día y sigue pareciendo una rejilla normal, en la pantalla con la que se
-  // programan los turnos de todo el mes.
-  //
-  // LO QUE ESTAS PRUEBAS **NO** SUJETAN, y hay que decirlo porque la primera versión de este
-  // comentario afirmaba lo contrario: no distinguen `getUTCDay()` de `getDay()`. Medido con una
-  // mutación, cambiar uno por otro deja las 42 pruebas de este archivo en verde. La razón es que
-  // `aFecha` ancla la fecha a MEDIODÍA UTC, y las siete horas de América/Los Ángeles no alcanzan a
-  // cruzar el día: las dos lecturas caen en la misma fecha.
-  //
-  // Lo que sí rompería es leer la fecha a medianoche local (`new Date('2026-10-05')`), que en esa
-  // zona da el domingo 4. O sea que el guardia real es el anclaje de `aFecha`, y `getUTCDay()` es
-  // coherencia con el resto del archivo, no lo que sostiene el resultado. La única forma de cazar esa
-  // mutación sería correr estas pruebas en una zona a más de doce horas de UTC, y la zona está fija a
-  // propósito (CLAUDE.md §7).
-
-  it('el sábado y el domingo lo son', () => {
-    expect(esFinDeSemana('2026-10-03')).toBe(true); // sábado
-    expect(esFinDeSemana('2026-10-04')).toBe(true); // domingo
-  });
-
-  it('y el resto de la semana no', () => {
-    expect(esFinDeSemana('2026-09-28')).toBe(false); // lunes
-    expect(esFinDeSemana('2026-09-29')).toBe(false); // martes
-    expect(esFinDeSemana('2026-09-30')).toBe(false); // miércoles
-    expect(esFinDeSemana('2026-10-01')).toBe(false); // jueves
-    expect(esFinDeSemana('2026-10-02')).toBe(false); // viernes
-  });
-
-  it('el lunes siguiente tampoco, y el sábado siguiente sí', () => {
-    // Estos dos casos NO cazan un `getDay()`: ver el comentario de arriba, está medido. Lo que
-    // sujetan es el anclaje de `aFecha`: el día que alguien lo cambie por un `new Date(iso)` leído en
-    // local, el lunes 5 se leerá como el domingo 4 en la zona de estas pruebas y este caso se pondrá
-    // rojo. Por eso se quedan, aunque no sean el discriminador que este comentario decía antes.
-    expect(esFinDeSemana('2026-10-05')).toBe(false);
-    expect(esFinDeSemana('2026-10-10')).toBe(true);
   });
 });
 

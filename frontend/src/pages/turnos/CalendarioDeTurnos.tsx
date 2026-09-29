@@ -1,9 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, Fragment } from 'react';
-import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw, Search, Calendar, Bed, MapPin, Briefcase } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw, Search, Calendar, Bed, MapPin, Briefcase, Eraser } from 'lucide-react';
 import api from '../../lib/api';
 import {
   hoyEnBogota, horasDeMinutos, sePuedePintar, inicialDeDia, abreviaturaDeDia,
-  esFinDeSemana, esDeOtroMes,
+  esDeOtroMes,
 } from './semana';
 // La selección en bloque y el guardado por bloques: dos decisiones puras, probadas y mutadas aparte.
 // Qué celdas caen dentro de un rectángulo y qué se va a escribir de verdad NO se deciden aquí.
@@ -1140,9 +1140,17 @@ function TarjetaDeBloque({
         </div>
 
         {/* LAS FIJAS. Icono arriba y texto abajo, que fue lo que pidió el dueño, y fuera del carril
-            porque no son turnos del catálogo. «Quitar turno» y no «Quitar» a secas: se lee como
-            «deseleccionar» y es lo contrario, porque esto ESCRIBE en los días marcados dejándolos sin
-            turno. */}
+            porque no son turnos del catálogo.
+
+            «QUITAR» A SECAS, por decisión del dueño el 29 de septiembre de 2026. Antes decía «Quitar
+            turno» con este argumento, que sigue siendo cierto: a secas se lee como «deseleccionar», y
+            es lo contrario, porque esto ESCRIBE en los días marcados dejándolos sin turno. Y encima
+            «Cancelar», que sí deselecciona, está justo al lado.
+
+            La ambigüedad se resuelve por otro lado, ya que la palabra no puede: el nombre accesible
+            dice «Quitar el turno de lo marcado» —que contiene la palabra visible, como pide la norma
+            de accesibilidad—, y los iconos dejan de parecerse. Quitar lleva una goma de borrar y
+            Cancelar la equis; antes los dos tiraban de la equis. */}
         {/* Las tres fijas bajan debajo del carril y se centran cuando no hay ancho, envolviendo si
             hace falta: apiladas, una raya vertical de separación no separaría nada. */}
         {/* LA RAYA SOLO DESDE `sm`, y no es un descuido: el comentario de arriba ya había decidido que
@@ -1157,9 +1165,11 @@ function TarjetaDeBloque({
             Descanso
           </button>
           <button type="button" disabled={ocupado} onClick={onQuitar}
+            aria-label="Quitar el turno de lo marcado"
+            title="Deja sin turno los días marcados. No es lo mismo que cancelar la selección."
             className="flex w-[4.5rem] flex-col items-center gap-0.5 rounded-xl border border-gray-200 px-2 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60">
-            <X size={15} />
-            Quitar turno
+            <Eraser size={15} />
+            Quitar
           </button>
           {/* LA ROTACIÓN VIVE AQUÍ, junto a los turnos, porque es lo que pidió el dueño con esas
               palabras: «en el modal donde están los turnos, que se ponga el 6x1 o el 4x2». No es un
@@ -1189,8 +1199,14 @@ function TarjetaDeBloque({
             <RotateCw size={15} />
             Rotación
           </button>
+          {/* CON LA MISMA FORMA QUE LAS OTRAS TRES (29 de septiembre de 2026, pedido del dueño:
+              «dejar a todos con el icono y la palabra, centrado»). Antes era texto suelto y se leía
+              como si fuera de otra clase; lo es —no escribe nada— pero eso lo dice el borde punteado
+              que NO lleva, no la falta de icono. */}
           <button type="button" onClick={onCancelar}
-            className="self-center rounded-xl px-3 py-2 text-[12px] font-semibold text-muted hover:text-ink">
+            title="Deja de marcar. No cambia ningún día."
+            className="flex w-[4.5rem] flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 text-[11px] font-semibold text-muted hover:bg-gray-50 hover:text-ink">
+            <X size={15} />
             Cancelar
           </button>
         </div>
@@ -1924,11 +1940,15 @@ export default function CalendarioDeTurnos() {
 
   // PRECEDENCIA: «de otro mes» manda sobre «fin de semana». Un domingo de relleno es las dos cosas, y
   // lo primero que hay que ver es que ese día NO es del mes que dice el título.
-  const fondoDeColumna = (fecha: string) => {
-    if (enMes && esDeOtroMes(fecha, ancla)) return 'bg-gray-100';
-    if (esFinDeSemana(fecha)) return 'bg-rose-50';
-    return '';
-  };
+  // EL FIN DE SEMANA YA NO SE TIÑE (29 de septiembre de 2026, decisión del dueño). Llevaba un rosa
+  // de fondo y con él la rejilla tenía dos columnas de catorce en color de alarma permanentemente,
+  // sin que pasara nada: en este producto sábado y domingo son días de trabajo como cualquier otro
+  // —quien tiene turno rotativo trabaja el domingo—, y el día que de verdad importa es el DESCANSO
+  // OBLIGATORIO de cada persona, que no cae el mismo día para todas y ya se pinta en su celda.
+  //
+  // El gris del mes ajeno se queda: ese sí dice algo que no está en ninguna otra parte, que esa
+  // columna es de otro mes y no cuenta para el total.
+  const fondoDeColumna = (fecha: string) => (enMes && esDeOtroMes(fecha, ancla) ? 'bg-gray-100' : '');
 
   // La raya solo entre semanas, nunca al principio: en la primera columna no separa nada de nada, y
   // en la vista de semana no hay dos semanas que separar.
@@ -2985,14 +3005,30 @@ export default function CalendarioDeTurnos() {
             Es un MÍNIMO, así que la vista de mes no necesita otro número: con 31 columnas de 96px
             la tabla crece sola y el contenedor la desplaza, con la columna de la persona fija
             (`sticky left-0`) para no perder de vista de quién es cada fila. */}
-        <table className="w-full min-w-[920px] border-collapse">
+        {/* `table-fixed` Y NO AUTOMÁTICA (29 de septiembre de 2026, pedido del dueño: «que las cards
+            siempre ocupen el espacio disponible, pero que tengan un tamaño mínimo»).
+
+            Con la tabla automática el ancho de cada columna lo decide su CONTENIDO, y el nombre de un
+            turno va sin partir: una persona con «Jornada nocturna» ensanchaba su columna y las siete
+            quedaban desparejas. Poner un `max-width` a la celda no lo arregla —el cálculo de la tabla
+            mira el contenido sin partir, no el tope de la caja—, y fijar el ancho lo arreglaba pero
+            dejaba un hueco a los lados cuando sobraba sitio.
+
+            Con ancho fijo: persona y total llevan su medida escrita, y las columnas de día se REPARTEN
+            lo que queda a partes iguales. Así llenan el sitio y miden todas lo mismo.
+
+            EL MÍNIMO ES EL `min-w` DE LA TABLA, y por eso cambia con el modo: es lo que garantiza que
+            una columna de día no baje del tamaño en que su contenido se sigue leyendo. Por debajo de
+            ahí la tabla se desplaza a lo ancho, que es lo correcto: encoger más sería dejar celdas
+            ilegibles. */}
+          <table className={`w-full table-fixed border-collapse ${enMes ? 'min-w-[1740px]' : 'min-w-[984px]'}`}>
           <thead>
             <tr className="border-b border-gray-200">
               {/* `w-px` + `whitespace-nowrap` es el modo de decirle a una tabla `w-full` que esta
                   columna ocupe lo que ocupa su CONTENIDO y no una parte proporcional del ancho.
                   Sin eso se llevaba un tercio de la pantalla para mostrar un nombre corto, y las
                   columnas de los días quedaban apretadas al lado de un hueco en blanco. */}
-              <th className="sticky left-0 bg-white z-10 w-px whitespace-nowrap text-left text-xs font-bold text-muted px-4 py-3">
+              <th className="sticky left-0 bg-white z-10 w-[251px] whitespace-nowrap text-left text-xs font-bold text-muted px-4 py-3">
                 Persona
               </th>
               {enDia && eje ? (
@@ -3027,7 +3063,7 @@ export default function CalendarioDeTurnos() {
                       porque la celda ya no lleva horario y el nombre se recorta. Sigue habiendo
                       desplazamiento horizontal —cerrarlo del todo pide un nombre corto por turno, que
                       no existe en el catálogo—, pero de cuatro pantallas pasa a algo más de dos. */}
-                  <th className={`py-3 text-center ${enMes ? 'px-0.5 min-w-[32px]' : 'px-1.5 min-w-[75px]'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
+                  <th className={`py-3 text-center ${enMes ? 'px-0.5' : 'px-1.5'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
                     {/* EL ENCABEZADO MARCA LA COLUMNA ENTERA: ese día de todo el mundo. Es el gesto
                         con el que se programa una jornada completa —un domingo, un festivo— sin
                         recorrer la lista persona por persona. Vuelve a tocarse y se desmarca, porque
@@ -3051,8 +3087,12 @@ export default function CalendarioDeTurnos() {
                           que hay que buscar comparando siete columnas entre sí; la píldora se ve sin
                           comparar nada, que es lo que tiene que hacer la referencia de «dónde estoy». */}
                       <div className="text-sm tabular-nums">
+                        {/* LA PÍLDORA NO PUEDE ENSANCHAR SU COLUMNA. Medido: con relleno lateral, la
+                            columna de hoy se iba a 51 px contra 32 las demás, y su celda salía media
+                            vez más ancha que el resto. Con un ancho fijo, las siete columnas piden lo
+                            mismo y la rejilla queda pareja. */}
                         <span className={esHoy
-                          ? 'inline-block rounded-full bg-ink px-2.5 py-0.5 font-bold text-white'
+                          ? 'inline-grid h-[22px] w-[30px] place-items-center rounded-full bg-ink font-bold text-white'
                           : 'text-muted'}>
                           {Number(fecha.slice(8, 10))}
                         </span>
@@ -3064,7 +3104,7 @@ export default function CalendarioDeTurnos() {
                       42 horas no tiene dónde compararse y la alarma desaparece justo donde más
                       jornadas se programan de una vez. */}
                   {haySemanales && cierraSemana.has(fecha) && (
-                    <th className="px-2 py-3 text-center text-[11px] font-semibold text-muted uppercase tracking-wider bg-gray-50">
+                    <th className="w-[64px] px-2 py-3 text-center text-[11px] font-semibold text-muted uppercase tracking-wider bg-gray-50">
                       Sem
                     </th>
                   )}
@@ -3075,7 +3115,10 @@ export default function CalendarioDeTurnos() {
                   palabra. Se encontró midiendo los anchos de las columnas en el navegador, no
                   leyendo: la búsqueda de rótulos falsos había buscado «Total semanal» y «Resumen de
                   la semana», y este es un «Semana» pelado que no coincidía con ninguno de los dos. */}
-              <th className="whitespace-nowrap px-4 py-3 text-right text-xs font-bold text-muted">
+              {/* CENTRADO SOBRE SU COLUMNA, no pegado a la derecha (29 de septiembre de 2026, pedido
+                  del dueño). Con el rótulo a la derecha y el contenido a la izquierda, los dos se ven
+                  desalineados y la columna PARECE más ancha de lo que es. */}
+              <th className="w-[152px] whitespace-nowrap px-3 py-3 text-center text-xs font-bold text-muted">
                 {PERIODO[modo].unidad}
               </th>
             </tr>
@@ -3097,7 +3140,7 @@ export default function CalendarioDeTurnos() {
                       cargo y dos chips— y con el relleno de antes quedaban pegados al borde de la fila.
 
                       Solo crece la fila de quien los tiene, que es exactamente la que merece el sitio. */}
-                  <td className="sticky left-0 bg-white z-10 w-px whitespace-nowrap px-4 py-3.5">
+                  <td className="sticky left-0 bg-white z-10 w-[251px] whitespace-nowrap px-4 py-3.5">
                     {/* EL NOMBRE MARCA SU FILA ENTERA, que es el gesto de «a esta persona, todo el
                         período». Dice qué período con todas las letras («Marcar la semana de…»,
                         «Marcar el mes de…»): en un mes, un rótulo que dijera «semana» sería falso
@@ -3243,7 +3286,19 @@ export default function CalendarioDeTurnos() {
                             Va en el ENVOLTORIO y no en cada rama porque el envoltorio es quien lleva
                             el halo de la selección y el visto: fijándolo aquí, los tres —caja, halo y
                             visto— comparten una sola medida y no pueden separarse. */}
-                        <div className={`relative mx-auto flex rounded-xl ${enMes ? 'h-[35px] w-[28px]' : 'w-[75px]'} ${
+                        {/* LLENAN EL SITIO QUE HAY, CON UN MÍNIMO (29 de septiembre de 2026, pedido del dueño).
+                            Antes tenían un ancho FIJO y, cuando la columna era más ancha, quedaba
+                            un hueco a los lados. `w-full` con `min-w` las deja crecer sin bajar
+                            nunca del tamaño en que el contenido se sigue leyendo.
+
+                            EL TECHO NO ES UN CAPRICHO: sin él, `w-full` deja de poner tope a la
+                            columna y el nombre del turno vuelve a ensancharla, que es justo lo que se
+                            arregló fijando el ancho. Con suelo y techo iguales en las siete, las
+                            columnas miden lo mismo tanto si sobra sitio como si falta.
+
+                            Y por eso la píldora de HOY lleva ancho fijo: si vuelve a ensanchar su
+                            columna, su celda sale más ancha que las demás. */}
+                        <div className={`relative flex w-full rounded-xl ${enMes ? 'h-[35px]' : 'h-[48px]'} ${
                           !marcada ? ''
                             : sePuedePintar(dia.fecha, hoy)
                               ? 'shadow-[0_0_0_2.5px_rgba(240,198,63,0.4)]'
@@ -3332,7 +3387,7 @@ export default function CalendarioDeTurnos() {
                       La barra se corta en 100% y el porcentaje no: `progresoDelTope` lo explica y lo
                       prueba. Reescalar el carril para que quepa un 120% haría que 50 h se vieran MÁS
                       cortas que 42 h en la fila de al lado, y dos filas dejarían de compararse. */}
-                  <td className="whitespace-nowrap px-4 py-2">
+                  <td className="whitespace-nowrap px-3 py-2">
                     {(() => {
                       // `topeAplica` NO SE PUEDE SALTAR: en el mes el total de la fila son treinta
                       // jornadas, y compararlo con las 42 horas SEMANALES pintaría de rojo a la
@@ -3340,14 +3395,14 @@ export default function CalendarioDeTurnos() {
                       // que es donde de verdad se puede comparar.
                       if (!topeAplica) {
                         return (
-                          <div className="text-right text-sm font-bold tabular-nums text-ink">
+                          <div className="text-center text-sm font-bold tabular-nums text-ink">
                             {horasDeMinutos(fila.minutosEsperados)}
                           </div>
                         );
                       }
                       const p = progresoDelTope(fila.minutosEsperados, tope * 60);
                       return (
-                        <div className="w-[128px]">
+                        <div className="mx-auto w-[128px]">
                           <div className="flex items-baseline gap-1.5">
                             <span className={`text-sm font-extrabold tabular-nums ${p.pasa ? 'text-red-600' : 'text-ink'}`}>
                               {horasDeMinutos(fila.minutosEsperados)}

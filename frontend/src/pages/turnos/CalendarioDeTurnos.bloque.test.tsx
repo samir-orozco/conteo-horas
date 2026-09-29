@@ -566,7 +566,11 @@ describe('aplicar a lo marcado', () => {
     }));
     montar([{ ...personaDe('c1', 'Ana', 'Ríos'), dias: pintados }]);
     await arrastrarDe(await celda('Ana', SABADO), await celda('Ana', DOMINGO));
-    await usuario.click(within(await tarjeta()).getByRole('button', { name: /quitar turno/i }));
+    // POR EL NOMBRE ACCESIBLE COMPLETO, y no por un trozo. En pantalla el botón dice solo «Quitar»
+    // desde el 29 de septiembre de 2026, y a secas eso se lee como «deseleccionar»: es lo contrario,
+    // porque ESCRIBE en los días marcados dejándolos sin turno, y «Cancelar» está justo al lado.
+    // Afirmando el nombre entero, esta prueba también guarda esa desambiguación.
+    await usuario.click(within(await tarjeta()).getByRole('button', { name: 'Quitar el turno de lo marcado' }));
     await aplicarEnLaPrevia(usuario);
 
     expect(del).toHaveBeenCalledWith('/turnos/dia', { params: { colaboradorId: 'c1', fecha: SABADO } });
