@@ -495,7 +495,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     if (compacta) {
       return (
         <div title={`Descanso trabajado${dia.decision === 'PENDIENTE' ? ' · pendiente de decidir' : ''}`}
-          className={`grid h-[35px] w-full place-items-center rounded-lg border-[1.5px] border-transparent bg-orange-50 text-orange-900 shadow-[inset_0_0_0_2px_rgb(253,186,116)]${bordeMarcado}`}>
+          className={`grid h-full w-full place-items-center rounded-lg border-[1.5px] border-transparent bg-orange-50 text-orange-900 shadow-[inset_0_0_0_2px_rgb(253,186,116)]${bordeMarcado}`}>
           <AlertTriangle size={13} aria-hidden="true" />
           <span className="sr-only">Descanso trabajado</span>
         </div>
@@ -523,7 +523,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
       // `inset 0 0 0 2px #fdba74`). El borde queda libre para el amarillo de lo marcado, así que una
       // celda de descanso trabajado Y marcada dice las dos cosas a la vez en vez de que una tape a la
       // otra.
-      <div className={`flex min-h-[36px] flex-col justify-center rounded-xl border-[1.5px] border-transparent bg-orange-50 px-2 py-1.5 text-orange-900 shadow-[inset_0_0_0_2px_rgb(253,186,116)]${bordeMarcado}`}>
+      <div className={`flex h-full w-full flex-col justify-center rounded-xl border-[1.5px] border-transparent bg-orange-50 px-2 py-1.5 text-orange-900 shadow-[inset_0_0_0_2px_rgb(253,186,116)]${bordeMarcado}`}>
         <div className="flex items-center gap-1.5 text-[11px] font-bold whitespace-nowrap">
           <AlertTriangle size={11} className="shrink-0" />
           <span className="truncate">{suRotulo.texto}</span>
@@ -567,7 +567,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     // El fondo es el mismo #ECEFF4 de la maqueta en los dos casos.
     return (
       <div className={`flex items-center justify-center rounded-xl border-[1.5px] text-center text-[11px] font-medium ${
-        compacta ? 'h-[35px] w-full flex-col rounded-lg' : 'min-h-[36px] gap-1.5 px-2 py-1.5'} ${
+        compacta ? 'h-full w-full flex-col rounded-lg' : 'h-full w-full gap-1.5 px-2 py-1.5'} ${
         obligatorio ? '' : 'flex-col gap-0.5'} ${
         obligatorio
           ? 'border-transparent bg-[#eceff4] text-[#5b6472]'
@@ -605,8 +605,8 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
         title={[rotulo.texto, horas].filter(Boolean).join(' · ')}
         className={`rounded-xl border-[1.5px] border-transparent ${
         compacta
-          ? 'grid h-[35px] w-full place-items-center rounded-lg px-0.5 text-[11px] font-extrabold'
-          : 'flex min-h-[36px] flex-col justify-center px-2 py-1.5'} ${tono}${bordeMarcado}`}>
+          ? 'grid h-full w-full place-items-center rounded-lg px-0.5 text-[11px] font-extrabold'
+          : 'flex h-full w-full flex-col justify-center px-2 py-1.5'} ${tono}${bordeMarcado}`}>
         {/* EN EL MES VA EL CÓDIGO CORTO, como en la maqueta, y no el nombre. Medido antes de tocarlo:
             con el nombre entero la tabla de un mes pesaba más de tres mil píxeles dentro de un
             contenedor de mil, o sea que para llegar a la última semana había que raspar a lo ancho.
@@ -647,8 +647,8 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     // EN EL MES, UN CUADRO PUNTEADO Y NO UNA RAYA, como en la maqueta: un mes es una cuadrícula, y una
     // raya suelta entre cuadros rompe la retícula que deja contar días de un vistazo.
     return compacta
-      ? <div className={`h-[35px] w-full rounded-lg border-[1.5px] border-dashed border-gray-200${bordeMarcado}`} />
-      : <div className="py-1.5 text-center text-[11px] text-gray-300">—</div>;
+      ? <div className={`h-full w-full rounded-lg border-[1.5px] border-dashed border-gray-200${bordeMarcado}`} />
+      : <div className="grid h-full w-full place-items-center text-[11px] text-gray-300">—</div>;
   }
 
   // UNA CELDA VACÍA MARCADA DEJA DE OFRECER «AGREGAR» (28 de septiembre de 2026), como en la maqueta,
@@ -656,15 +656,15 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
   // ya marcada no invita a nada, está esperando que se elija qué ponerle a todo el bloque. Y deja sitio
   // para que se vea el visto, que es lo que dice que está marcada.
   if (marcada) {
-    return <div className={`border-[1.5px] border-dashed bg-primary-light ${
-      compacta ? 'h-[35px] w-full rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`} />;
+    return <div className={`h-full w-full border-[1.5px] border-dashed bg-primary-light ${
+      compacta ? 'rounded-lg' : 'rounded-xl'}${bordeMarcado}`} />;
   }
 
   return (
     // SOLO EL «+», sin la palabra y sin relleno, como en la maqueta. La palabra «Agregar» ensanchaba
     // la columna para repetir lo que el signo ya dice, en TODAS las celdas vacías de la pantalla.
-    <div className={`flex items-center justify-center border-[1.5px] border-dashed border-gray-300 text-gray-300 ${
-      compacta ? 'h-[35px] w-full rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`}>
+    <div className={`flex h-full w-full items-center justify-center border-[1.5px] border-dashed border-gray-300 text-gray-300 ${
+      compacta ? 'rounded-lg' : 'rounded-xl'}${bordeMarcado}`}>
       <Plus size={14} className="shrink-0" />
       <span className="sr-only">Agregar</span>
     </div>
@@ -2771,7 +2771,10 @@ export default function CalendarioDeTurnos() {
     },
   ) => {
     const clase = opciones?.clase
-      ?? 'w-full text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-primary hover:opacity-80 transition-opacity';
+      // `h-full` Y `block`: el botón es el hijo del envoltorio, y si no llena su alto la celda
+      // queda más corta que el halo de la selección. Medido: envoltorio 48, celda 36, y los seis
+      // píxeles de hueco arriba y abajo se veían como DOS contornos concéntricos.
+      ?? 'block h-full w-full text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-primary hover:opacity-80 transition-opacity';
     // `sePuedeAgregar` llega desde aquí y no desde quien llama: es el único sitio que sabe si este
     // día es pintable, y el hueco con el «+» solo se ofrece donde el servidor lo va a aceptar.
     const dibujar = opciones?.contenido
@@ -3020,8 +3023,12 @@ export default function CalendarioDeTurnos() {
             EL MÍNIMO ES EL `min-w` DE LA TABLA, y por eso cambia con el modo: es lo que garantiza que
             una columna de día no baje del tamaño en que su contenido se sigue leyendo. Por debajo de
             ahí la tabla se desplaza a lo ancho, que es lo correcto: encoger más sería dejar celdas
-            ilegibles. */}
-          <table className={`w-full table-fixed border-collapse ${enMes ? 'min-w-[1740px]' : 'min-w-[984px]'}`}>
+            ilegibles.
+
+            Los dos números salen de una cuenta y no de probar: persona (251) + total (152) + las
+            columnas «Sem» (hasta seis de 64 en un mes) + los días por su mínimo (32 en el mes, 83 en
+            la semana). Con el primer valor que puse, 1740, las celdas del mes salían a 24 px. */}
+          <table className={`w-full table-fixed border-collapse ${enMes ? 'min-w-[1907px]' : 'min-w-[984px]'}`}>
           <thead>
             <tr className="border-b border-gray-200">
               {/* `w-px` + `whitespace-nowrap` es el modo de decirle a una tabla `w-full` que esta
