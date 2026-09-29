@@ -228,6 +228,56 @@ describe('marcar varias celdas', () => {
     expect(screen.queryByRole('region', { name: /marcad/i })).not.toBeInTheDocument();
   });
 
+  // LA FILA DE RESUMEN Y LA LEYENDA (28 de septiembre de 2026). La maqueta tiene cuatro tarjetas y una
+  // leyenda de colores; la vista tenía otras cuatro tarjetas y ninguna leyenda.
+  //
+  // Quedan SEIS por decisión del dueño: las cuatro de la maqueta más las dos suyas que ella no tiene.
+  // La que sale es «trabajaron su descanso», y su alarma NO se pierde: el aviso de descanso habitual
+  // pasa a ser la nota de «descansos marcados», que es donde se lee en contexto.
+
+  it('la fila de resumen tiene las seis tarjetas', async () => {
+    montar();
+    await celda('Ana', DOMINGO);
+
+    for (const rotulo of [
+      /personas en la lista/i,
+      /turnos programados/i,
+      /descansos marcados/i,
+      /semanas por encima/i,
+      /horas programadas/i,
+      /promedio por persona/i,
+    ]) {
+      expect(screen.getByText(rotulo)).toBeInTheDocument();
+    }
+  });
+
+  it('cuenta los turnos programados y los descansos marcados', async () => {
+    // Ana: dos días con turno y uno libre. La cuenta la decide `conteoDeLaRejilla`, que es pura y está
+    // mutada; aquí se comprueba que la pantalla la APLICA y muestra sus dos números.
+    const dias = DIAS.map((f, i) => (i === 0
+      ? diaDe(f, { estado: 'DESCANSO' })
+      : i < 3 ? diaDe(f) : diaDe(f, { estado: 'SIN_TURNO', horaEntrada: null, horaSalida: null, minutosEsperados: 0 })));
+    montar([{ ...personaDe('c1', 'Ana', 'Ríos'), dias }]);
+    await celda('Ana', DOMINGO);
+
+    const turnos = screen.getByText(/turnos programados/i).closest('div')!.parentElement!;
+    expect(turnos).toHaveTextContent('2');
+    const descansos = screen.getByText(/descansos marcados/i).closest('div')!.parentElement!;
+    expect(descansos).toHaveTextContent('1');
+  });
+
+  it('la leyenda dice de qué color es cada turno del catálogo', async () => {
+    // El catálogo de este archivo tiene «Mañana» y «Noche». La leyenda los nombra a los dos y agrega
+    // «Descanso», que no es un turno del catálogo y por eso va aparte y en gris.
+    montar();
+    await celda('Ana', DOMINGO);
+
+    const leyenda = screen.getByRole('list', { name: /colores de los turnos/i });
+    expect(within(leyenda).getByText('Mañana')).toBeInTheDocument();
+    expect(within(leyenda).getByText('Noche')).toBeInTheDocument();
+    expect(within(leyenda).getByText('Descanso')).toBeInTheDocument();
+  });
+
   it('arrastrar de una celda a otra marca el rectángulo', async () => {
     montar();
     await arrastrarDe(await celda('Ana', VIERNES), await celda('Beto', DOMINGO));

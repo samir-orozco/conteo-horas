@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, Fragment } from 'react';
-import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw, Search, Calendar } from 'lucide-react';
 import api from '../../lib/api';
 import {
   hoyEnBogota, horasDeMinutos, sePuedePintar, inicialDeDia,
@@ -18,6 +18,9 @@ import { accionParaDeshacer } from './deshacerElLote';
 // A quién se ve con los filtros de arriba. Puro, probado y mutado: de esta lista sale qué se puede
 // seleccionar, y por lo tanto a quién se le escribe al aplicar un bloque.
 import { quienSeVe, type FiltrosDeLaRejilla } from './quienSeVe';
+// Cuántos turnos y cuántos descansos hay en lo que se está viendo. Puro, probado y mutado: la cuenta
+// descarta las columnas de relleno del mes, y equivocarse ahí da un número más grande y plausible.
+import { conteoDeLaRejilla } from './conteoDeLaRejilla';
 // Las cuentas y los avisos de la previa. También puros, probados y mutados: la pantalla los APLICA,
 // no los decide. De ellos depende que alguien apruebe o cancele un envío de cien jornadas.
 import {
@@ -1873,15 +1876,31 @@ export default function CalendarioDeTurnos() {
 
   const minutosTotales = filas.reduce((a, f) => a + f.minutosEsperados, 0);
   const promedio = filas.length ? Math.round(minutosTotales / filas.length) : 0;
-  // La cuenta LEGAL: del mes calendario y sobre días con marcación.
+  // AQUÍ VIVÍA `trabajaronSuDescanso`, que alimentaba una tarjeta propia. Esa tarjeta se quitó el 28
+  // de septiembre de 2026 al pasar a las seis de la maqueta, y con ella el contador.
   //
-  // Antes esta línea miraba `descansosConTurno`, que es lo PROGRAMADO, mientras la tarjeta decía
-  // «trabajan». Medido contra la base el 21 de septiembre de 2026 los dos conjuntos resultaron
-  // disjuntos (3 programados y 0 trabajados en las mismas personas), así que esa palabra era falsa.
-  const trabajaronSuDescanso = filas.filter(f => f.descansoHabitual.trabajados > 0).length;
+  // Lo que NO se pierde, porque era lo que de verdad importaba: la alarma del compensatorio, que
+  // ahora es la nota de «descansos marcados». Y el hallazgo que dejó aquel comentario queda dicho,
+  // porque cuesta de encontrar: `descansosConTurno` es lo PROGRAMADO y `descansoHabitual.trabajados`
+  // es lo que ocurrió con marcación. Medido contra la base el 21 de septiembre de 2026, los dos
+  // conjuntos resultaron DISJUNTOS —3 programados y 0 trabajados en las mismas personas—, así que
+  // usar el primero para decir «trabajaron» era falso.
   // Quiénes ya cruzaron a habitual. Es la única alarma de verdad: ahí la compensación en tiempo
   // deja de ser opcional. Uno o dos se pagan con recargo y no exigen nada más.
   const habituales = filas.filter(f => f.descansoHabitual.clase === 'HABITUAL').length;
+  // LOS DOS NÚMEROS QUE LA MAQUETA TIENE Y LA VISTA NO: turnos programados y descansos marcados.
+  //
+  // El mes va en `null` fuera de la vista de mes, y eso no es pereza: una semana puede cruzar de mes
+  // legítimamente —la del 28 de septiembre llega al 4 de octubre— y esos siete días SON la semana que
+  // se está viendo. En el mes, en cambio, las columnas de los extremos son de otro mes y contarlas
+  // inflaría los dos números con jornadas que el título ni nombra.
+  //
+  // `conteoDeTarjetas` y no `conteo`: ese nombre YA está tomado por el de la previa, unas líneas más
+  // abajo. Dos variables casi iguales en el mismo archivo es como se confunden.
+  const conteoDeTarjetas = conteoDeLaRejilla(
+    filas.map(f => f.dias),
+    modo === 'MES' ? ancla.slice(0, 7) : null,
+  );
   // CUÁNTAS SEMANAS-PERSONA PASAN DEL TOPE (28 de septiembre de 2026).
   //
   // Antes esto contaba PERSONAS cuyo total del período pasaba de 42 h, y solo en la vista de semana:
@@ -2587,31 +2606,65 @@ export default function CalendarioDeTurnos() {
         </select>
       </div>
 
-      {/* UNA TARJETA POR FILA EN EL TELÉFONO (24 de septiembre de 2026, pedido del dueño).
-          Con dos columnas en pantalla angosta no cabía el rótulo: «Horas programadas», «Promedio
-          por persona» y «Trabajaron su descanso» se partían en dos y tres líneas, y la tarjeta
-          crecía a lo alto para sostener un texto que a lo ancho tenía sitio de sobra. A fila
-          completa cada rótulo entra en una línea. El corte es el mismo `sm` del encabezado. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        <Tarjeta icono={Users} valor={String(filas.length)} titulo="Personas" />
-        <Tarjeta icono={Clock} valor={horasDeMinutos(minutosTotales)} titulo="Horas programadas" nota={PERIODO[modo].enEl} />
-        <Tarjeta icono={Scale} valor={horasDeMinutos(promedio)} titulo="Promedio por persona"
-          // «semanales» va siempre, y no solo en la vista de semana: debajo de un promedio mensual,
-          // un «tope legal 42 h» a secas se lee como si ese promedio tuviera que caber ahí.
-          // SEÑALA SEMANAS Y NO PERSONAS, y por eso ahora también avisa en la vista de mes: el tope es
-          // semanal, así que «3 semanas por encima de 42 h» es cierto mire uno un mes o una semana.
-          // Sin nada que señalar sigue diciendo la regla, que es lo que evita leer un promedio
-          // mensual como si tuviera que caber en 42 h.
-          nota={semanasSobreTope > 0
-            ? `${semanasSobreTope} semana${semanasSobreTope === 1 ? '' : 's'} por encima de ${tope} h`
-            : `tope legal ${tope} h semanales`}
-          alerta={semanasSobreTope > 0} />
-        <Tarjeta icono={AlertTriangle} valor={String(trabajaronSuDescanso)} titulo="Trabajaron su descanso"
+      {/* SEIS TARJETAS EN UNA FILA (28 de septiembre de 2026, decisión del dueño): las CUATRO de la
+          maqueta —personas, turnos programados, descansos marcados y semanas sobre el tope— más las
+          dos que la vista ya tenía y ella no: horas programadas y promedio por persona.
+
+          LA QUE SALE ES «trabajaron su descanso», y su alarma NO se pierde: el aviso de descanso
+          habitual pasa a ser la nota de «descansos marcados», que es donde se lee en contexto.
+
+          Una tarjeta por fila en el teléfono, que es de lo que ya se quejó el dueño el 24 de
+          septiembre: con dos columnas en pantalla angosta los rótulos se partían en tres líneas. */}
+      <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <Tarjeta icono={Users} valor={String(filas.length)} titulo="personas en la lista" />
+        <Tarjeta icono={Calendar} valor={String(conteoDeTarjetas.turnos)} titulo="turnos programados"
+          nota={PERIODO[modo].enEl} />
+        <Tarjeta icono={Moon} valor={String(conteoDeTarjetas.descansos)} titulo="descansos marcados"
+          // LA ALARMA DEL COMPENSATORIO SE MUDA AQUÍ al quitarse su propia tarjeta. Es la única de
+          // verdad: uno o dos descansos trabajados se pagan con recargo, pero desde el tercero del mes
+          // la compensación en tiempo deja de ser opcional (art. 181).
           nota={habituales > 0
             ? `${habituales} en descanso habitual: compensar en tiempo`
-            : 'en el mes, con recargo'}
+            : undefined}
           alerta={habituales > 0} />
+        {/* EL RÓTULO NO CAMBIA ENTRE SEMANA Y MES, al revés que la maqueta, que dice «pasan de 42 h
+            esta semana» en una y «semanas por encima» en la otra. «Semanas por encima» es cierto en
+            los dos casos —en una semana el número es cero o uno— y evita una rama más donde
+            equivocarse. El tope sale de la jornada legal vigente, no escrito aquí. */}
+        <Tarjeta icono={AlertTriangle} valor={String(semanasSobreTope)}
+          titulo={`semanas por encima de ${tope} h`}
+          nota={semanasSobreTope > 0 ? undefined : `tope legal ${tope} h semanales`}
+          alerta={semanasSobreTope > 0} />
+        <Tarjeta icono={Clock} valor={horasDeMinutos(minutosTotales)} titulo="horas programadas"
+          nota={PERIODO[modo].enEl} />
+        <Tarjeta icono={Scale} valor={horasDeMinutos(promedio)} titulo="promedio por persona" />
       </div>
+
+      {/* LA LEYENDA DE COLORES, que la maqueta tiene y la vista no tenía. Sin ella, el color de una
+          celda no se puede leer: hay que abrir el día para saber qué turno es.
+
+          SALE DEL CATÁLOGO y no de una lista escrita a mano: los turnos son de cada empresa. El punto
+          usa `PUNTO_COLOR`, el mismo relleno entero de la pastilla del carril, y no `CLASES_COLOR`,
+          que es un par fondo claro + texto oscuro pensado para llevar el nombre escrito ENCIMA: en un
+          círculo vacío los ocho colores se verían casi iguales.
+
+          «Descanso» va aparte y en gris fijo: no es un turno del catálogo, es una acción sobre el día. */}
+      {catalogo.length > 0 && (
+        <ul aria-label="Colores de los turnos"
+          className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1">
+          {catalogo.map(turno => (
+            <li key={turno.id} className="flex items-center gap-1.5 text-[11px] text-muted">
+              <span aria-hidden="true"
+                className={`h-2.5 w-2.5 shrink-0 rounded-full ${PUNTO_COLOR[normalizarColor(turno.color)]}`} />
+              {turno.nombre}
+            </li>
+          ))}
+          <li className="flex items-center gap-1.5 text-[11px] text-muted">
+            <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-gray-300" />
+            Descanso
+          </li>
+        </ul>
+      )}
 
       {error && (
         <div className="mb-4 rounded-card border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div>
