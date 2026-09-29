@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   semanasDeLasColumnas, minutosDeLaSemana, semanasEnterasDelMes, semanasSobreElTope,
-  mesQueSePrograma,
+  mesQueSePrograma, semanasEnterasSinDescanso,
 } from './semanasDeLaRejilla';
 import { sumarDias } from './semana';
 
@@ -293,5 +293,61 @@ describe('qué mes se está programando', () => {
 
   it('sin fechas no hay mes, y lo dice en vez de inventarlo', () => {
     expect(mesQueSePrograma([])).toBeNull();
+  });
+});
+
+// LAS SEMANAS QUE QUEDARÍAN SIN NINGÚN DESCANSO, persona por persona (29 de septiembre de 2026).
+//
+// La maqueta lleva este aviso pegado al nombre —«1 semana sin descanso»— y la vista no lo tenía por
+// fila: solo salía dentro de la previa, o sea DESPUÉS de haber armado el envío. Ahí ya es tarde para
+// lo único que sirve: mirar la rejilla y ver a quién hay que darle un día.
+//
+// EL ARTÍCULO 173 no admite matices: todo trabajador tiene derecho a un día de descanso remunerado
+// por semana. Siete de siete trabajados es ilegal, no «apretado».
+//
+// SOLO LAS SEMANAS ENTERAS, y esa es toda la decisión. En la vista de semana las siete columnas son
+// una semana completa; en la de mes, la primera y la última pueden venir cortadas por el borde del
+// mes. Juzgar una semana de la que solo se ven tres días diría «sin descanso» de alguien que descansa
+// el jueves, que no está en pantalla.
+describe('las semanas sin ningún descanso', () => {
+  const semana = (desde: string) => Array.from({ length: 7 }, (_, i) => sumarDias(desde, i));
+  const todos = (fechas: string[], valor: boolean) =>
+    Object.fromEntries(fechas.map(f => [f, valor]));
+
+  it('siete de siete trabajados es una semana sin descanso', () => {
+    const dias = semana('2026-09-28');
+    expect(semanasEnterasSinDescanso(dias, todos(dias, true))).toEqual(['2026-09-28']);
+  });
+
+  it('con UN solo día libre ya no lo es', () => {
+    const dias = semana('2026-09-28');
+    const trabajado = { ...todos(dias, true), '2026-10-04': false };
+    expect(semanasEnterasSinDescanso(dias, trabajado)).toEqual([]);
+  });
+
+  it('un día del que no se sabe nada cuenta como no trabajado', () => {
+    // Una fecha que no está en el mapa es un día sin nada programado. No es un descanso decidido,
+    // pero tampoco es trabajo: afirmar que esa semana es ilegal sería inventarse la jornada.
+    const dias = semana('2026-09-28');
+    const trabajado = todos(dias, true);
+    delete trabajado['2026-10-01'];
+    expect(semanasEnterasSinDescanso(dias, trabajado)).toEqual([]);
+  });
+
+  it('en un mes salen todas las semanas malas, en orden', () => {
+    const dias = [...semana('2026-09-28'), ...semana('2026-10-05'), ...semana('2026-10-12')];
+    const trabajado = { ...todos(dias, true), '2026-10-11': false };
+    expect(semanasEnterasSinDescanso(dias, trabajado)).toEqual(['2026-09-28', '2026-10-12']);
+  });
+
+  it('UNA SEMANA CORTADA POR EL BORDE NO SE JUZGA, aunque todo lo visible esté trabajado', () => {
+    // El caso del mes: la última fila de la rejilla puede traer tres días. Con esos tres trabajados,
+    // una regla ingenua diría «semana sin descanso» de alguien que descansa el sábado siguiente.
+    const dias = ['2026-10-05', '2026-10-06', '2026-10-07'];
+    expect(semanasEnterasSinDescanso(dias, todos(dias, true))).toEqual([]);
+  });
+
+  it('sin columnas no hay semanas', () => {
+    expect(semanasEnterasSinDescanso([], {})).toEqual([]);
   });
 });

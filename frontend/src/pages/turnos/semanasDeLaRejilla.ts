@@ -129,3 +129,24 @@ export function mesQueSePrograma(fechas: readonly string[]): string | null {
   }
   return mejor;
 }
+
+// LAS SEMANAS QUE QUEDARÍAN SIN NINGÚN DESCANSO, para el aviso que va pegado al nombre. El bloque de
+// la prueba tiene el porqué; el resumen es el artículo 173: un día de descanso remunerado por semana,
+// sin matices. Siete de siete trabajados es ilegal, no «apretado».
+//
+// REUSA `semanasDeLasColumnas` y no recorre las fechas por su cuenta: el aviso de las 42 horas agrupa
+// exactamente igual, y dos copias de «a qué semana pertenece este día» es como se separan (§9.3).
+//
+// SOLO LAS ENTERAS: en el mes, la primera y la última fila pueden venir cortadas por el borde. Juzgar
+// una semana de la que se ven tres días diría «sin descanso» de alguien que descansa el jueves.
+export function semanasEnterasSinDescanso(
+  dias: readonly string[],
+  trabajado: Readonly<Record<string, boolean>>,
+): string[] {
+  return semanasDeLasColumnas(dias)
+    .filter(s => s.fechas.length === 7)
+    // `=== true` y no una comprobación laxa: una fecha que no está en el mapa es un día sin nada
+    // programado, y eso no es trabajo. Contarla como trabajada inventaría una jornada.
+    .filter(s => s.fechas.every(f => trabajado[f] === true))
+    .map(s => s.lunes);
+}

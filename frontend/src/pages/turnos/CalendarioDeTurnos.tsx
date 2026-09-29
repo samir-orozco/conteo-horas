@@ -53,6 +53,7 @@ import { vistaDelCalendario, moverVista, type ModoDeVista } from './vistaDelCale
 // en lo que hay en pantalla, para la tarjeta de resumen. No son lo mismo y no se sustituyen.
 import {
   semanasDeLasColumnas, minutosDeLaSemana, semanasSobreElTope, mesQueSePrograma,
+  semanasEnterasSinDescanso,
 } from './semanasDeLaRejilla';
 import { nombreDelDia } from '../../lib/diasDeLaSemana';
 import { CLASES_COLOR, PUNTO_COLOR, CELDA_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
@@ -276,7 +277,9 @@ function descansoEnPalabras(d: FilaDelCalendario['descanso']): string {
 
 function Inicial({ nombre, apellido }: { nombre: string; apellido: string }) {
   return (
-    <div className="bg-primary/30 rounded-full w-8 h-8 shrink-0 flex items-center justify-center text-xs font-bold text-ink">
+    // 30 px y `primary-light`, medido en la maqueta. El `primary/30` de antes es el mismo amarillo a
+    // un tercio de opacidad, y sobre la fila marcada —que se tiñe de amarillo— se perdía.
+    <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-primary-light text-[11px] font-extrabold text-ink">
       {`${nombre[0] ?? ''}${apellido[0] ?? ''}`.toUpperCase()}
     </div>
   );
@@ -2703,6 +2706,16 @@ export default function CalendarioDeTurnos() {
   // propiedad del CONJUNTO: mirando un turno solo no se puede saber si su inicial ya está tomada.
   const codigosDeTurno = useMemo(() => codigosDelCatalogo(catalogo), [catalogo]);
 
+  // CUÁNTAS SEMANAS ENTERAS DE LO QUE SE VE le quedarían sin ningún descanso a esta persona. La
+  // decisión vive en `semanasEnterasSinDescanso`, que está probada y mutada: aquí solo se traduce la
+  // fila a «qué días trabaja». Un descanso trabajado SÍ cuenta como trabajo, que es justo el caso que
+  // hace ilegal una semana sin que ninguna celda vacía lo delate.
+  const sinDescansoDe = (fila: FilaDelCalendario) => semanasEnterasSinDescanso(
+    dias,
+    Object.fromEntries(fila.dias.map(d =>
+      [d.fecha, d.estado === 'TRABAJA' || d.estado === 'DESCANSO_TRABAJADO'])),
+  ).length;
+
   const enDia = modo === 'DIA';
   // El mes es el único modo donde el ancho aprieta: 42 columnas contra un contenedor de mil y pico.
   // Ver el comentario de `Celda` con la medida.
@@ -3073,8 +3086,8 @@ export default function CalendarioDeTurnos() {
                           merced de un nombre larguísimo: hasta ahí crece, y de ahí en adelante el
                           `truncate` hace su trabajo. Sin tope, `w-px` deja que un solo nombre de
                           cuarenta letras vuelva a robarse la pantalla. */}
-                      <div className="min-w-0 max-w-[180px]">
-                        <div className="text-sm font-medium text-ink truncate">{fila.nombre} {fila.apellido}</div>
+                      <div className="w-[150px] min-w-0">
+                        <div className="truncate text-[13px] font-bold text-ink">{fila.nombre} {fila.apellido}</div>
                         {/* «Guarda · Centro», como en la maqueta. Los dos datos faltan por separado, y aquí una
                             persona puede tener VARIAS sedes, cosa que la maqueta no contempla: la línea la arma
                             `cargoYSede`, que está probada. */}
@@ -3085,6 +3098,17 @@ export default function CalendarioDeTurnos() {
                               quiénes son, así que para encontrarlos había que abrir persona por persona.
                               `shrink-0` para que sea el cargo el que se recorte y no el aviso: si se recortan
                               los dos, lo que se pierde es la palabra que dice cuánto cuesta. */}
+                          {/* Y EL SEGUNDO AVISO: las semanas que le quedarían sin NINGÚN descanso.
+                              Estaba solo dentro de la previa, o sea después de armar el envío, y ahí
+                              ya es tarde para lo único que sirve: mirar la rejilla y ver a quién hay
+                              que darle un día. El artículo 173 no admite matices. */}
+                          {sinDescansoDe(fila) > 0 && (
+                            <span title="Por norma, cada semana necesita un día de descanso remunerado"
+                              className="flex shrink-0 items-center gap-1 rounded-full bg-rose-100 px-1.5 py-px text-[10px] font-bold text-rose-900">
+                              <AlertTriangle size={9} aria-hidden="true" className="shrink-0" />
+                              {sinDescansoDe(fila)} {sinDescansoDe(fila) === 1 ? 'semana' : 'semanas'} sin descanso
+                            </span>
+                          )}
                           {(() => {
                             const aviso = avisoDeDescansos(fila.descansoHabitual);
                             if (!aviso) return null;
