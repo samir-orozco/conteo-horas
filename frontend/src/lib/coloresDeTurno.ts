@@ -68,24 +68,29 @@ export const PUNTO_COLOR: Record<ColorDeTurno, string> = {
 
 // EL TERCER MAPA: LA CELDA DE LA REJILLA (28 de septiembre de 2026, para igualar la maqueta).
 //
-// Fondo muy claro, texto oscuro y BORDE del color. Los tres mapas resuelven contrastes distintos y
-// por eso no se sustituyen; el bloque de la prueba lo cuenta entero.
+// Fondo muy claro y texto oscuro, SIN BORDE. Los tres mapas resuelven contrastes distintos y por eso
+// no se sustituyen; el bloque de la prueba lo cuenta entero.
 //
-// El resumen: una pastilla suelta se lee sobre blanco y aguanta un fondo medio; una celda vive
-// pegada a otras treinta y encima lleva el anillo amarillo de la selección, que sobre un fondo `-200`
-// compite con el relleno en vez de destacar. Con el fondo claro, el color lo sostienen el borde y el
-// punto que va antes del nombre, y el amarillo de lo marcado manda.
+// El resumen: una pastilla suelta se lee sobre blanco y aguanta un fondo medio; una celda vive pegada
+// a otras treinta, así que el fondo va muy claro y el color lo sostiene el PUNTO que va antes del
+// nombre.
+//
+// POR QUÉ NO LLEVA BORDE, que es lo que la maqueta hace y yo había supuesto al revés: el borde de la
+// celda es lo que se pinta de amarillo cuando está marcada. Si cada turno se queda con el suyo, ese
+// estado tiene que pelear contra ocho colores distintos en la cascada, que es exactamente el defecto
+// que apareció con la celda de descanso trabajado. Dejándolo transparente, el amarillo no compite
+// con nada.
 //
 // Literales por la misma razón que los otros dos: Tailwind purga lo que no encuentra escrito.
 export const CELDA_COLOR: Record<ColorDeTurno, string> = {
-  grafito: 'bg-gray-50 text-gray-800 border-gray-300',
-  ambar: 'bg-amber-50 text-amber-900 border-amber-300',
-  indigo: 'bg-indigo-50 text-indigo-900 border-indigo-300',
-  esmeralda: 'bg-emerald-50 text-emerald-900 border-emerald-300',
-  rubi: 'bg-rose-50 text-rose-900 border-rose-300',
-  cobalto: 'bg-sky-50 text-sky-900 border-sky-300',
-  violeta: 'bg-violet-50 text-violet-900 border-violet-300',
-  ocre: 'bg-orange-50 text-orange-900 border-orange-300',
+  grafito: 'bg-gray-100 text-gray-800',
+  ambar: 'bg-amber-50 text-amber-900',
+  indigo: 'bg-indigo-50 text-indigo-900',
+  esmeralda: 'bg-emerald-50 text-emerald-900',
+  rubi: 'bg-rose-50 text-rose-900',
+  cobalto: 'bg-sky-50 text-sky-900',
+  violeta: 'bg-violet-50 text-violet-900',
+  ocre: 'bg-orange-50 text-orange-900',
 };
 
 // Lo que llega del servidor puede ser de una versión anterior de la paleta, o de un turno cuyo color

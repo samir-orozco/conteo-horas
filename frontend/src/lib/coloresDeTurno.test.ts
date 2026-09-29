@@ -102,11 +102,23 @@ describe('el color de una celda de la rejilla', () => {
     }
   });
 
-  it('trae fondo, texto Y BORDE, en clases completas que Tailwind pueda encontrar escritas', () => {
+  it('trae fondo y texto, en clases completas que Tailwind pueda encontrar escritas', () => {
     for (const color of COLORES_DE_TURNO) {
       expect(CELDA_COLOR[color], `celda de ${color}`).toMatch(/\bbg-[a-z]+-\d{2,3}\b/);
       expect(CELDA_COLOR[color], `celda de ${color}`).toMatch(/\btext-[a-z]+-\d{2,3}\b/);
-      expect(CELDA_COLOR[color], `celda de ${color}`).toMatch(/\bborder-[a-z]+-\d{2,3}\b/);
+    }
+  });
+
+  it('Y NO TRAE BORDE DE COLOR, que es lo que la maqueta no tiene', () => {
+    // Esta prueba nació al revés: exigía un `border-*` porque yo había supuesto que la celda de la
+    // maqueta llevaba borde del color del turno. Al abrirla y MEDIRLA, su borde resultó ser
+    // `1.5px solid rgba(0, 0, 0, 0)`: transparente. El color lo sostienen el fondo y el punto.
+    //
+    // Y NO ES ESTÉTICA: el borde de la celda es lo que se pinta de amarillo cuando está marcada. Si
+    // cada turno se queda con el suyo, ese estado tiene que pelear contra ocho colores distintos, que
+    // es justo el defecto de la cascada que apareció con el descanso trabajado.
+    for (const color of COLORES_DE_TURNO) {
+      expect(CELDA_COLOR[color], `celda de ${color}`).not.toMatch(/\bborder-/);
     }
   });
 

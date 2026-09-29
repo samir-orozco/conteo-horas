@@ -376,14 +376,17 @@ function Tarjeta({ icono: Icono, tinte, valor, titulo, nota, alerta }: {
 // Vive FUERA de `Celda` desde el 22 de septiembre de 2026, cuando la vista de día estrenó su barra
 // de horas: la barra tiene que llevar exactamente el mismo color que la celda de la semana, y dos
 // copias de esta tabla se habrían separado al primer color nuevo del catálogo (CLAUDE.md §9.3).
-// BORDE Y NO ANILLO desde el 28 de septiembre de 2026, al igualar la maqueta. La celda de un turno
-// del catálogo lleva ahora borde de su color (`CELDA_COLOR`), así que los tres orígenes tienen que
-// dibujar el contorno con la MISMA propiedad: mezclando `ring` y `border`, el grosor y el radio no
-// coinciden y dos celdas vecinas se ven desalineadas por medio píxel.
+// SIN BORDE, igual que los del catálogo. En la maqueta la celda de un turno es fondo y nada más: su
+// borde existe pero es transparente, y solo se pinta cuando la celda está marcada. Un borde de
+// reposo por origen obligaría a que ese amarillo peleara en la cascada contra tres colores más.
+//
+// EL BLANCO DEL HORARIO PASA A GRIS CLARO. Sobre una tabla blanca, una celda blanca sin borde
+// desaparece: el día quedaría indistinguible de un hueco, y un día que el horario programa SÍ exige
+// presencia. El gris es lo mínimo que la hace existir sin darle un color que nadie eligió.
 const NEUTRO: Record<OrigenDelRotulo, string> = {
   CATALOGO: '', // no se usa: ese caso trae su propio color
-  HORARIO: 'bg-white text-ink border-gray-300',
-  NINGUNO: 'bg-gray-50 text-gray-400 border-gray-200',
+  HORARIO: 'bg-gray-100 text-ink',
+  NINGUNO: 'bg-gray-50 text-gray-400',
 };
 
 // EL PUNTO DE COLOR ANTES DEL NOMBRE, como en la maqueta. No es adorno: con el fondo claro que ahora
@@ -482,7 +485,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     if (compacta) {
       return (
         <div title={`Descanso trabajado${dia.decision === 'PENDIENTE' ? ' · pendiente de decidir' : ''}`}
-          className={`grid h-[26px] w-full place-items-center rounded-lg border-[1.5px] border-amber-300 bg-amber-100 text-amber-900${bordeMarcado}`}>
+          className={`grid h-[26px] w-full place-items-center rounded-lg border-[1.5px] border-transparent bg-orange-50 text-orange-900 shadow-[inset_0_0_0_2px_rgb(253,186,116)]${bordeMarcado}`}>
           <AlertTriangle size={13} aria-hidden="true" />
           <span className="sr-only">Descanso trabajado</span>
         </div>
@@ -506,7 +509,11 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     // fila necesita saber QUÉ se le puso encima a ese descanso para decidir si estuvo bien.
     const { rotulo: suRotulo } = tonoDeJornada(dia);
     return (
-      <div className={`flex min-h-[36px] flex-col justify-center rounded-xl border-[1.5px] border-orange-300 bg-orange-50 px-2 py-1.5 text-orange-900${bordeMarcado}`}>
+      // EL AVISO VA EN UN ANILLO INTERIOR y no en el borde, como en la maqueta (medido allí:
+      // `inset 0 0 0 2px #fdba74`). El borde queda libre para el amarillo de lo marcado, así que una
+      // celda de descanso trabajado Y marcada dice las dos cosas a la vez en vez de que una tape a la
+      // otra.
+      <div className={`flex min-h-[36px] flex-col justify-center rounded-xl border-[1.5px] border-transparent bg-orange-50 px-2 py-1.5 text-orange-900 shadow-[inset_0_0_0_2px_rgb(253,186,116)]${bordeMarcado}`}>
         <div className="flex items-center gap-1.5 text-[11px] font-bold whitespace-nowrap">
           <AlertTriangle size={11} className="shrink-0" />
           <span className="truncate">{suRotulo.texto}</span>
@@ -586,7 +593,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
         // forma de saber a qué horario corresponden. La maqueta hace lo mismo con el motivo del
         // descanso obligatorio: lo que no cabe en la celda no se borra, se mueve al puntero.
         title={compacta ? [rotulo.texto, horas].filter(Boolean).join(' · ') : undefined}
-        className={`rounded-xl border-[1.5px] ${
+        className={`rounded-xl border-[1.5px] border-transparent ${
         compacta
           ? 'grid h-[26px] w-full place-items-center rounded-lg px-0.5 text-[11px] font-extrabold'
           : 'flex min-h-[36px] flex-col justify-center px-2 py-1.5'} ${tono}${bordeMarcado}`}>
@@ -3192,14 +3199,24 @@ export default function CalendarioDeTurnos() {
                           Object.fromEntries(fila.dias.map(d => [d.fecha, d.minutosEsperados])),
                         );
                         const pasaLaSemana = minutos > tope * 60;
+                        // `whitespace-nowrap` POR LA MISMA RAZÓN QUE EL TOTAL DE LA SEMANA: sin él,
+                        // «6,8 h» se parte en dos renglones en esta columna estrecha, y una sola celda
+                        // que envuelve estira la FILA ENTERA del mes. Es el mismo defecto en la otra
+                        // vista, y no se vio hasta abrirla.
+                        //
+                        // Y EN ROJO, como en la maqueta, no en ámbar: pasarse del tope legal no es una
+                        // advertencia suave, y el ámbar ya lo gasta el amarillo de lo marcado.
+                        //
+                        // Va con `//` y NO con `{/* */}`: esto está en posición de EXPRESIÓN, dentro
+                        // del `return` de la función. Una llave ahí abre un objeto y el parser revienta.
                         return (
-                          <td className="bg-gray-50 px-2 py-2.5 text-center align-middle">
-                            <div className={`text-[12px] font-semibold tabular-nums ${
-                              pasaLaSemana ? 'text-amber-700' : 'text-ink'}`}>
+                          <td className="whitespace-nowrap bg-gray-50 px-2 py-1 text-center align-middle">
+                            <div className={`text-[12px] font-bold tabular-nums ${
+                              pasaLaSemana ? 'text-red-600' : 'text-ink'}`}>
                               {horasDeMinutos(minutos)}
                             </div>
                             {pasaLaSemana && (
-                              <div className="text-[10px] font-medium text-amber-700">
+                              <div className="text-[10px] font-bold text-red-600 tabular-nums">
                                 +{horasDeMinutos(minutos - tope * 60)}
                               </div>
                             )}
