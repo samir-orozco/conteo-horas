@@ -30,7 +30,15 @@ export default function Turnos() {
         {/* EL SUBTÍTULO ES DE LA MAQUETA. No es relleno: esta pantalla y «Configuración → Horario»
             se parecen lo bastante como para que alguien entre aquí buscando las tolerancias. Una
             línea que diga qué se hace aquí ahorra ese viaje. */}
-        <h2 className="text-2xl font-bold text-ink">Turnos</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-ink">Turnos</h2>
+          {/* BETA, pedido del dueño el 28 de septiembre de 2026. El módulo se está estrenando y va a
+              cambiar de forma: la etiqueta es lo que le dice a un cliente que lo que ve hoy puede no
+              ser lo de la semana que viene, y es lo que hace que un cambio no se lea como un fallo. */}
+          <span className="rounded-full bg-primary-light px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[#8a6d1f]">
+            Beta
+          </span>
+        </div>
         <p className="mt-0.5 mb-5 text-[13px] text-muted">Organiza y programa los turnos de tu equipo</p>
         <div className="border-b border-gray-200">
           <nav className="flex gap-6 -mb-px overflow-x-auto">

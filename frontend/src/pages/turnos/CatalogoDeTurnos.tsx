@@ -4,8 +4,9 @@ import api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ListaDeDescansos from '../configuracion/ListaDeDescansos';
 import { MAX_DESCANSOS_POR_FRANJA, minutosEntre, type Ventana } from '../../lib/descansos';
-import { COLORES_DE_TURNO, ETIQUETA_COLOR, CLASES_COLOR, PUNTO_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
+import { COLORES_DE_TURNO, ETIQUETA_COLOR, PUNTO_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
 import { cuerpoDeLaPlantilla, type FormularioDePlantilla } from './cuerpoDeLaPlantilla';
+import { horasDeMinutos } from './semana';
 
 // EL CATÁLOGO DE TURNOS DE LA EMPRESA (19 de septiembre de 2026, turnos rotativos paso 1).
 //
@@ -140,33 +141,61 @@ export default function CatalogoDeTurnos() {
         ) : (
           <div className="space-y-2">
             {turnos.map(p => (
-              <div key={p.id} className="border border-gray-200 rounded-xl px-4 py-3 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium text-ink flex items-center gap-2">
-                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${CLASES_COLOR[normalizarColor(p.color)]}`}>
-                      {p.nombre}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {/* TODO turno tiene horario desde el 23 de septiembre de 2026. Antes había aquí
-                        una rama para el día libre, que decía «no se espera que marque» en vez de
-                        unas horas; se fue con el concepto: un descanso ya no es un turno del
-                        catálogo sino una acción sobre el día, en el calendario. */}
-                    <span>De {p.horaEntrada} a {p.horaSalida}</span>
-                    {p.almuerzoInicio && p.almuerzoFin && (
-                      <span>Almuerzo {p.almuerzoInicio}–{p.almuerzoFin}</span>
-                    )}
-                    {p.descansos?.length > 0 && (
-                      <span>{p.descansos.length} descanso{p.descansos.length > 1 ? 's' : ''}</span>
-                    )}
-                    {p.sedeId && <span>{sedes.find(s => s.id === p.sedeId)?.nombre ?? 'Sede'}</span>}
-                  </p>
+              <div key={p.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 px-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  {/* EL COLOR, EN UN CUADRO Y SIN ICONO DENTRO (28 de septiembre de 2026, decisión del
+                      dueño: «sin los iconos de los turnos, el sol y la luna»).
+                      
+                      Un sol o una luna se DEDUCEN de la hora de entrada, y esa deducción ya costó cara
+                      una vez en este producto: la celda del calendario nombraba «Mañana» o «Noche»
+                      mirando el reloj, y el dueño vio un fin de semana en verde preguntando quién se
+                      lo había asignado. Nadie: lo decía el icono.
+                      
+                      El cuadro sí dice algo que nadie deduce: el color que ESTE turno va a tener en la
+                      rejilla. Es el mismo `PUNTO_COLOR` del punto de la celda y de la leyenda, así que
+                      el catálogo y el calendario no pueden separarse. */}
+                  <span aria-hidden="true"
+                    className={`h-10 w-10 shrink-0 rounded-xl ${PUNTO_COLOR[normalizarColor(p.color)]}`} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-ink">{p.nombre}</p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted">
+                      {/* TODO turno tiene horario desde el 23 de septiembre de 2026. Antes había aquí
+                          una rama para el día libre, que decía «no se espera que marque» en vez de
+                          unas horas; se fue con el concepto: un descanso ya no es un turno del
+                          catálogo sino una acción sobre el día, en el calendario. */}
+                      <span>De {p.horaEntrada} a {p.horaSalida}</span>
+                      {/* CUÁNTO DURA LA FRANJA, que es lo que no se lee de un vistazo en un turno que
+                          cruza la medianoche: «De 20:00 a 05:00» son nueve horas y hay que contarlas.
+                          `minutosEntre` ya resuelve el cruce y está probada.
+
+                          ES LA FRANJA Y NO LO QUE SE TRABAJA, y por eso el almuerzo sigue estando al
+                          lado: restarlo aquí en silencio daría un número que no coincide con ninguno
+                          de los dos extremos escritos justo antes. */}
+                      {p.horaEntrada && p.horaSalida && (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock size={12} aria-hidden="true" />
+                          {horasDeMinutos(minutosEntre(p.horaEntrada, p.horaSalida))} de franja
+                        </span>
+                      )}
+                      {p.almuerzoInicio && p.almuerzoFin && (
+                        <span>Almuerzo {p.almuerzoInicio}–{p.almuerzoFin}</span>
+                      )}
+                      {p.descansos?.length > 0 && (
+                        <span>{p.descansos.length} descanso{p.descansos.length > 1 ? 's' : ''}</span>
+                      )}
+                      {p.sedeId && <span>{sedes.find(s => s.id === p.sedeId)?.nombre ?? 'Sede'}</span>}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => abrir(p)} className="p-2 text-gray-400 hover:text-ink" title="Editar"
-                    aria-label={`Editar ${p.nombre}`}><Pencil size={15} /></button>
-                  <button onClick={() => setEliminando(p)} className="p-2 text-gray-400 hover:text-red-500" title="Eliminar"
-                    aria-label={`Eliminar ${p.nombre}`}><Trash2 size={15} /></button>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <button onClick={() => abrir(p)} title="Editar" aria-label={`Editar ${p.nombre}`}
+                    className="grid h-9 w-9 place-items-center rounded-lg bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-ink">
+                    <Pencil size={15} />
+                  </button>
+                  <button onClick={() => setEliminando(p)} title="Eliminar" aria-label={`Eliminar ${p.nombre}`}
+                    className="grid h-9 w-9 place-items-center rounded-lg bg-red-50 text-red-500 transition-colors hover:bg-red-100">
+                    <Trash2 size={15} />
+                  </button>
                 </div>
               </div>
             ))}

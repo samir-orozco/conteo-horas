@@ -485,7 +485,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     if (compacta) {
       return (
         <div title={`Descanso trabajado${dia.decision === 'PENDIENTE' ? ' · pendiente de decidir' : ''}`}
-          className={`grid h-[26px] w-full place-items-center rounded-lg border-[1.5px] border-transparent bg-orange-50 text-orange-900 shadow-[inset_0_0_0_2px_rgb(253,186,116)]${bordeMarcado}`}>
+          className={`grid h-[35px] w-full place-items-center rounded-lg border-[1.5px] border-transparent bg-orange-50 text-orange-900 shadow-[inset_0_0_0_2px_rgb(253,186,116)]${bordeMarcado}`}>
           <AlertTriangle size={13} aria-hidden="true" />
           <span className="sr-only">Descanso trabajado</span>
         </div>
@@ -595,7 +595,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
         title={compacta ? [rotulo.texto, horas].filter(Boolean).join(' · ') : undefined}
         className={`rounded-xl border-[1.5px] border-transparent ${
         compacta
-          ? 'grid h-[26px] w-full place-items-center rounded-lg px-0.5 text-[11px] font-extrabold'
+          ? 'grid h-[35px] w-full place-items-center rounded-lg px-0.5 text-[11px] font-extrabold'
           : 'flex min-h-[36px] flex-col justify-center px-2 py-1.5'} ${tono}${bordeMarcado}`}>
         {/* EN EL MES VA EL CÓDIGO CORTO, como en la maqueta, y no el nombre. Medido antes de tocarlo:
             con el nombre entero la tabla de un mes pesaba más de tres mil píxeles dentro de un
@@ -633,7 +633,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     // EN EL MES, UN CUADRO PUNTEADO Y NO UNA RAYA, como en la maqueta: un mes es una cuadrícula, y una
     // raya suelta entre cuadros rompe la retícula que deja contar días de un vistazo.
     return compacta
-      ? <div className={`h-[26px] w-full rounded-lg border-[1.5px] border-dashed border-gray-200${bordeMarcado}`} />
+      ? <div className={`h-[35px] w-full rounded-lg border-[1.5px] border-dashed border-gray-200${bordeMarcado}`} />
       : <div className="py-1.5 text-center text-[11px] text-gray-300">—</div>;
   }
 
@@ -643,14 +643,14 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
   // para que se vea el visto, que es lo que dice que está marcada.
   if (marcada) {
     return <div className={`border-[1.5px] border-dashed bg-primary-light ${
-      compacta ? 'h-[26px] rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`} />;
+      compacta ? 'h-[35px] rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`} />;
   }
 
   return (
     // SOLO EL «+», sin la palabra y sin relleno, como en la maqueta. La palabra «Agregar» ensanchaba
     // la columna para repetir lo que el signo ya dice, en TODAS las celdas vacías de la pantalla.
     <div className={`flex items-center justify-center border-[1.5px] border-dashed border-gray-300 text-gray-300 ${
-      compacta ? 'h-[26px] rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`}>
+      compacta ? 'h-[35px] rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`}>
       <Plus size={14} className="shrink-0" />
       <span className="sr-only">Agregar</span>
     </div>
@@ -2990,7 +2990,7 @@ export default function CalendarioDeTurnos() {
                       porque la celda ya no lleva horario y el nombre se recorta. Sigue habiendo
                       desplazamiento horizontal —cerrarlo del todo pide un nombre corto por turno, que
                       no existe en el catálogo—, pero de cuatro pantallas pasa a algo más de dos. */}
-                  <th className={`py-3 text-center ${enMes ? 'px-0.5 min-w-[38px]' : 'px-1.5 min-w-[75px]'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
+                  <th className={`py-3 text-center ${enMes ? 'px-0.5 min-w-[32px]' : 'px-1.5 min-w-[75px]'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
                     {/* EL ENCABEZADO MARCA LA COLUMNA ENTERA: ese día de todo el mundo. Es el gesto
                         con el que se programa una jornada completa —un domingo, un festivo— sin
                         recorrer la lista persona por persona. Vuelve a tocarse y se desmarca, porque
@@ -3166,20 +3166,30 @@ export default function CalendarioDeTurnos() {
                             Una celda ya pasada no lleva halo: está dentro de la selección pero NO se
                             va a escribir, y prometer lo contrario con el mismo destaque sería mentir.
                             La previa lo dice aparte. */}
-                        <div className={`relative rounded-xl ${
+                        <div className={`relative flex rounded-xl ${
                           !marcada ? ''
                             : sePuedePintar(dia.fecha, hoy)
                               ? 'shadow-[0_0_0_2.5px_rgba(240,198,63,0.4)]'
                               : 'opacity-60'}`}>
                           {celdaDeDia(fila, dia, { marcada, apagada: !sePuedePintar(dia.fecha, hoy) })}
+                        {/* EL VISTO ES MÁS CHICO EN EL MES, medido en la maqueta: 13 px sobre una celda
+                            con turno y 18 sobre una vacía, contra 16 y 24 en la semana. Con el tamaño
+                            de la semana tapaba la letra del código corto, que en el mes es TODO lo que
+                            la celda dice.
+
+                            El comentario va AQUÍ y no dentro del `&&`: ahí sería un segundo hijo sin
+                            envoltorio y el parser lo rechaza. Es el mismo tropiezo de hace un rato. */}
                           {marcada && (
                             <span aria-hidden="true"
-                              className={`absolute grid place-items-center ${
+                              className={[
+                                'absolute grid place-items-center',
+                                esCeldaVacia(dia) ? 'inset-0 m-auto rounded-lg' : 'right-1 top-1 rounded',
                                 esCeldaVacia(dia)
-                                  ? 'inset-0 m-auto h-6 w-6 rounded-lg'
-                                  : 'right-1 top-1 h-4 w-4 rounded'} ${
-                                sePuedePintar(dia.fecha, hoy) ? 'bg-primary-dark text-ink' : 'bg-gray-300 text-gray-600'}`}>
-                              <Check size={esCeldaVacia(dia) ? 16 : 11} strokeWidth={3} />
+                                  ? (enMes ? 'h-[18px] w-[18px]' : 'h-6 w-6')
+                                  : (enMes ? 'h-[13px] w-[13px]' : 'h-4 w-4'),
+                                sePuedePintar(dia.fecha, hoy) ? 'bg-primary-dark text-ink' : 'bg-gray-300 text-gray-600',
+                              ].join(' ')}>
+                              <Check size={esCeldaVacia(dia) ? (enMes ? 12 : 16) : (enMes ? 9 : 11)} strokeWidth={3} />
                             </span>
                           )}
                         </div>
