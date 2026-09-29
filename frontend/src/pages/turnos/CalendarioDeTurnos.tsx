@@ -442,12 +442,30 @@ function esCeldaVacia(dia: DiaDelCalendario): boolean {
   return dia.estado !== 'TRABAJA' && dia.estado !== 'DESCANSO' && dia.estado !== 'DESCANSO_TRABAJADO';
 }
 
-function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false, codigo }: {
+function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false, apagada = false, codigo }: {
   dia: DiaDelCalendario; sePuedeAgregar?: boolean; compacta?: boolean; marcada?: boolean;
+  // Marcada PERO de un día que ya pasó: entra en la selección y no se va a escribir.
+  apagada?: boolean;
   // El código corto del turno, para la vista de mes. Lo calcula `codigosDelCatalogo` mirando el
   // catálogo ENTERO, porque si dos turnos chocan solo se sabe teniéndolos todos delante.
   codigo?: string;
 }) {
+  // EL BORDE DE UNA CELDA MARCADA LO CAMBIA LA PROPIA CELDA, y por eso esto es una variable y no un
+  // anillo puesto por fuera.
+  //
+  // Con el anillo por fuera se veían DOS contornos a la vez: el anillo del envoltorio y el borde
+  // punteado de la celda, uno dentro del otro. La maqueta tiene uno solo: la celda cambia el COLOR
+  // de su propio borde y conserva su ESTILO —punteado si está vacía, sólido si lleva turno—, y por
+  // fuera va un halo translúcido que no se lee como un segundo borde.
+  //
+  // Una variable y no cuatro copias: la usan las cuatro ramas, pero la regla está escrita una vez.
+  //
+  // LLEVA `!` Y NO ES PEREZA. Cada rama trae ya su propio `border-*`, y dos utilidades del mismo
+  // `border-color` NO se ordenan por su posición en el atributo `class`: gana la que Tailwind haya
+  // escrito más abajo en la hoja, que uno no controla. Medido: la celda de descanso trabajado se
+  // quedaba naranja con el `border-primary-dark` puesto al final de la cadena. El `!` lo zanja, que
+  // es lo que corresponde a un estado que manda sobre el color de reposo.
+  const bordeMarcado = !marcada ? '' : apagada ? ' !border-[#ddd0a4]' : ' !border-primary-dark';
   // EL HORARIO COMO CABE EN LA CELDA: «6–14» y no «06:00–14:00». La regla vive en `horarioCorto`,
   // que está probada: en los 75 px útiles de la celda, esos cuatro ceros son un tercio del renglón
   // repitiendo lo mismo en cada casilla de la pantalla.
@@ -464,7 +482,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     if (compacta) {
       return (
         <div title={`Descanso trabajado${dia.decision === 'PENDIENTE' ? ' · pendiente de decidir' : ''}`}
-          className="grid h-[26px] w-full place-items-center rounded-lg border border-amber-300 bg-amber-100 text-amber-900">
+          className={`grid h-[26px] w-full place-items-center rounded-lg border-[1.5px] border-amber-300 bg-amber-100 text-amber-900${bordeMarcado}`}>
           <AlertTriangle size={13} aria-hidden="true" />
           <span className="sr-only">Descanso trabajado</span>
         </div>
@@ -488,7 +506,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     // fila necesita saber QUÉ se le puso encima a ese descanso para decidir si estuvo bien.
     const { rotulo: suRotulo } = tonoDeJornada(dia);
     return (
-      <div className="flex min-h-[36px] flex-col justify-center rounded-xl border-[1.5px] border-orange-300 bg-orange-50 px-2 py-1.5 text-orange-900">
+      <div className={`flex min-h-[36px] flex-col justify-center rounded-xl border-[1.5px] border-orange-300 bg-orange-50 px-2 py-1.5 text-orange-900${bordeMarcado}`}>
         <div className="flex items-center gap-1.5 text-[11px] font-bold whitespace-nowrap">
           <AlertTriangle size={11} className="shrink-0" />
           <span className="truncate">{suRotulo.texto}</span>
@@ -536,7 +554,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
         obligatorio ? '' : 'flex-col gap-0.5'} ${
         obligatorio
           ? 'border-transparent bg-[#eceff4] text-[#5b6472]'
-          : 'border-transparent bg-gray-100 text-muted'}`}>
+          : 'border-transparent bg-gray-100 text-muted'}${bordeMarcado}`}>
         <Bed size={compacta ? 13 : 15} aria-hidden="true" className="shrink-0" />
         {compacta ? <span className="sr-only">Descanso</span> : 'Descanso'}
       </div>
@@ -571,7 +589,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
         className={`rounded-xl border-[1.5px] ${
         compacta
           ? 'grid h-[26px] w-full place-items-center rounded-lg px-0.5 text-[11px] font-extrabold'
-          : 'flex min-h-[36px] flex-col justify-center px-2 py-1.5'} ${tono}`}>
+          : 'flex min-h-[36px] flex-col justify-center px-2 py-1.5'} ${tono}${bordeMarcado}`}>
         {/* EN EL MES VA EL CÓDIGO CORTO, como en la maqueta, y no el nombre. Medido antes de tocarlo:
             con el nombre entero la tabla de un mes pesaba más de tres mil píxeles dentro de un
             contenedor de mil, o sea que para llegar a la última semana había que raspar a lo ancho.
@@ -608,7 +626,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     // EN EL MES, UN CUADRO PUNTEADO Y NO UNA RAYA, como en la maqueta: un mes es una cuadrícula, y una
     // raya suelta entre cuadros rompe la retícula que deja contar días de un vistazo.
     return compacta
-      ? <div className="h-[26px] w-full rounded-lg border border-dashed border-gray-200" />
+      ? <div className={`h-[26px] w-full rounded-lg border-[1.5px] border-dashed border-gray-200${bordeMarcado}`} />
       : <div className="py-1.5 text-center text-[11px] text-gray-300">—</div>;
   }
 
@@ -617,15 +635,15 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
   // ya marcada no invita a nada, está esperando que se elija qué ponerle a todo el bloque. Y deja sitio
   // para que se vea el visto, que es lo que dice que está marcada.
   if (marcada) {
-    return <div className={`border border-dashed border-primary-dark bg-primary-light ${
-      compacta ? 'h-[26px] rounded-lg' : 'min-h-[36px] rounded-xl'}`} />;
+    return <div className={`border-[1.5px] border-dashed bg-primary-light ${
+      compacta ? 'h-[26px] rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`} />;
   }
 
   return (
     // SOLO EL «+», sin la palabra y sin relleno, como en la maqueta. La palabra «Agregar» ensanchaba
     // la columna para repetir lo que el signo ya dice, en TODAS las celdas vacías de la pantalla.
     <div className={`flex items-center justify-center border-[1.5px] border-dashed border-gray-300 text-gray-300 ${
-      compacta ? 'h-[26px] rounded-lg' : 'min-h-[36px] rounded-xl'}`}>
+      compacta ? 'h-[26px] rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`}>
       <Plus size={14} className="shrink-0" />
       <span className="sr-only">Agregar</span>
     </div>
@@ -2698,6 +2716,7 @@ export default function CalendarioDeTurnos() {
       contenido?: (sePuedeAgregar: boolean) => React.ReactNode;
       // Si está marcada. Lo necesita la celda para esconder el «Agregar» del hueco.
       marcada?: boolean;
+      apagada?: boolean;
     },
   ) => {
     const clase = opciones?.clase
@@ -2707,7 +2726,7 @@ export default function CalendarioDeTurnos() {
     const dibujar = opciones?.contenido
       ?? ((sePuedeAgregar: boolean) => (
         <Celda dia={dia} sePuedeAgregar={sePuedeAgregar} compacta={enMes}
-          marcada={opciones?.marcada === true}
+          marcada={opciones?.marcada === true} apagada={opciones?.apagada === true}
           codigo={dia.turno ? codigosDeTurno[dia.turno.id] : undefined} />
       ));
 
@@ -3132,12 +3151,20 @@ export default function CalendarioDeTurnos() {
                             Está dentro de la selección —el rectángulo la abarca— pero NO se va a
                             escribir, y la previa lo dice aparte: «no se tocan porque el día ya pasó».
                             Pintarla igual que las demás prometería una escritura que no va a ocurrir. */}
+                        {/* SOLO EL HALO, SIN ANILLO. El contorno lo pinta la propia celda cambiando
+                            el color de SU borde; poner además un anillo aquí dibujaba DOS contornos
+                            concéntricos, uno sólido y otro punteado. Es el halo translúcido de la
+                            maqueta, que no se lee como un borde.
+
+                            Una celda ya pasada no lleva halo: está dentro de la selección pero NO se
+                            va a escribir, y prometer lo contrario con el mismo destaque sería mentir.
+                            La previa lo dice aparte. */}
                         <div className={`relative rounded-xl ${
                           !marcada ? ''
                             : sePuedePintar(dia.fecha, hoy)
-                              ? 'ring-2 ring-primary-dark ring-offset-1 ring-offset-white'
-                              : 'opacity-60 ring-1 ring-gray-300'}`}>
-                          {celdaDeDia(fila, dia, { marcada })}
+                              ? 'shadow-[0_0_0_2.5px_rgba(240,198,63,0.4)]'
+                              : 'opacity-60'}`}>
+                          {celdaDeDia(fila, dia, { marcada, apagada: !sePuedePintar(dia.fecha, hoy) })}
                           {marcada && (
                             <span aria-hidden="true"
                               className={`absolute grid place-items-center ${
