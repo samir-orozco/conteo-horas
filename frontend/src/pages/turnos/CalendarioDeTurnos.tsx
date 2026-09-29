@@ -48,7 +48,9 @@ import { vistaDelCalendario, moverVista, type ModoDeVista } from './vistaDelCale
 // `semanasSobreElTope` (de aquí) es la función que dice QUÉ semanas de un mes se pasan y en cuánto,
 // para la previa; `semanasSobreTope`, más abajo, es un NÚMERO local: cuántas semanas-persona se pasan
 // en lo que hay en pantalla, para la tarjeta de resumen. No son lo mismo y no se sustituyen.
-import { semanasDeLasColumnas, minutosDeLaSemana, semanasSobreElTope } from './semanasDeLaRejilla';
+import {
+  semanasDeLasColumnas, minutosDeLaSemana, semanasSobreElTope, mesQueSePrograma,
+} from './semanasDeLaRejilla';
 import { nombreDelDia } from '../../lib/diasDeLaSemana';
 import { CLASES_COLOR, PUNTO_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
 import { rotuloDeCelda, type OrigenDelRotulo } from './rotuloDeCelda';
@@ -433,8 +435,18 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false 
   // el día se marca con un botón que dice «Marcar como descanso», el resultado tiene que llamarse
   // igual que la acción: nadie debería tener que deducir que lo que pidió salió con otro nombre.
   if (dia.estado === 'DESCANSO') {
+    // EL DESCANSO OBLIGATORIO SE VE DISTINTO DE UNO MARCADO A MANO (28 de septiembre de 2026), como en
+    // la maqueta con su clase `obligatorio`: fondo asentado en vez del recuadro punteado.
+    //
+    // No son la misma cosa y confundirlos cuesta dinero: sobre el obligatorio, pintar un turno paga
+    // recargo y desde el tercero del mes obliga a compensar con tiempo. Sobre uno marcado a mano, no.
+    // Hasta hoy los dos se veían igual, y para distinguirlos había que abrir el día.
+    const obligatorio = dia.esDescansoObligatorio === true;
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 px-2 py-1.5 text-center text-[11px] font-medium text-muted">
+      <div className={`rounded-lg px-2 py-1.5 text-center text-[11px] font-medium ${
+        obligatorio
+          ? 'bg-slate-200 text-slate-600'
+          : 'border border-dashed border-gray-300 text-muted'}`}>
         Descanso
       </div>
     );
@@ -1073,9 +1085,9 @@ function VentanaDeRotacion({
   return (
     <div className="fixed inset-0 !mt-0 z-[80] flex items-center justify-center bg-black/50 p-4">
       <div role="dialog" aria-modal="true" aria-label={`Rotación de ${nombre}`}
-        className="hp-pop max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+        className="hp-pop max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-xl">
         <div className="border-b border-gray-100 px-6 pt-5 pb-4">
-          <h3 className="text-lg font-bold text-ink">Rotación de {nombre}</h3>
+          <h3 className="text-xl font-extrabold text-ink">Rotación de {nombre}</h3>
           <p className="mt-1 text-sm text-muted">
             Se aplica sobre los días que tienes marcados, semana tras semana.
           </p>
@@ -1084,16 +1096,20 @@ function VentanaDeRotacion({
         <div className="space-y-5 p-6">
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Tipo de rotación</span>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {/* DOS POR DOS Y GRANDES, como en la maqueta, y no cuatro en fila. Con cuatro columnas
+                cada tarjeta se queda en unos setenta píxeles: el nombre del patrón entra, pero «6 de
+                trabajo, 1 de descanso» —que es lo único que explica QUÉ es un 6x1— se parte en tres
+                renglones minúsculos. Es una elección que se hace una vez y hay que poder leerla. */}
+            <div className="mt-2 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {(Object.keys(ROTACIONES) as PatronDeRotacion[]).map(patron => (
                 <button key={patron} type="button" aria-pressed={rot.patron === patron}
                   onClick={() => onPatron(patron)}
-                  className={`rounded-xl border px-3 py-2 text-left transition-colors ${
+                  className={`rounded-xl border-2 px-4 py-3 text-left transition-colors ${
                     rot.patron === patron
-                      ? 'border-primary bg-primary/10 text-ink'
+                      ? 'border-primary-dark bg-primary-light text-ink'
                       : 'border-gray-200 text-muted hover:border-gray-300'}`}>
-                  <span className="block text-sm font-bold">{patron}</span>
-                  <span className="block text-[10px] leading-tight">
+                  <span className="block text-base font-extrabold text-ink">{patron}</span>
+                  <span className="block text-[12px] leading-tight">
                     {ROTACIONES[patron].trabaja} de trabajo, {ROTACIONES[patron].descansa} de descanso
                   </span>
                 </button>
@@ -1108,10 +1124,13 @@ function VentanaDeRotacion({
               {catalogo.map(t => (
                 <button key={t.id} type="button" aria-pressed={rot.plantillaId === t.id}
                   onClick={() => onTurno(t.id)}
-                  className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${
+                  // GRANDES, como en la maqueta: esta lista es la que se mira para elegir, y una
+                  // pastilla de doce píxeles con su punto de color al lado no deja distinguir un turno
+                  // de otro de un vistazo, que es justo para lo que sirve el color.
+                  className={`rounded-xl px-3 py-2 text-[13px] font-bold ring-2 transition-colors ${
                     rot.plantillaId === t.id
-                      ? CLASES_COLOR[normalizarColor(t.color)]
-                      : 'bg-gray-100 text-muted'}`}>
+                      ? `${CLASES_COLOR[normalizarColor(t.color)]} ring-ink/70`
+                      : 'bg-gray-100 text-muted ring-transparent'}`}>
                   {/* Apagada cuando no es la elegida: el punto pierde su color para que el elegido se
                       distinga de un vistazo, que es de lo que vive esta lista. */}
                   <PastillaDeTurno turno={t} activa={rot.plantillaId === t.id} />
@@ -1135,13 +1154,24 @@ function VentanaDeRotacion({
                   const entra = marcadas.has(fecha) && sePuedePintar(fecha, hoy);
                   const trabaja = accionDelDia(rot.patron, rot.desfase, diasEntre(primerDia, fecha)) === 'TURNO';
                   return (
+                    // CAJAS LEGIBLES, como en la maqueta: la inicial arriba y el número grande
+                    // debajo. Antes eran tres renglones de diez píxeles —inicial, número y una T o una
+                    // D— y había que acercarse a la pantalla para leer en qué día arranca el ciclo,
+                    // que es la única pregunta que esta tira contesta.
+                    // CADA CAJA DICE SI ESE DÍA TRABAJA O DESCANSA, y no solo con el color.
+                    //
+                    // La maqueta lo deja al color, y copiarlo tal cual sería copiar un defecto: correr
+                    // el arranque del ciclo es un botón cuyo ÚNICO efecto sería un cambio de tono, así
+                    // que quien no distinga bien los colores no vería que pasó nada. Con el nombre
+                    // accesible, además, una prueba puede afirmar el SIGNIFICADO y no un texto suelto.
                     <div key={fecha}
-                      className={`shrink-0 rounded-lg px-1.5 py-1 text-center text-[10px] leading-tight ${
+                      aria-label={`${rotuloCorto(fecha)}: ${
+                        !entra ? 'no entra en el envío' : trabaja ? 'trabaja' : 'descansa'}`}
+                      className={`w-10 shrink-0 rounded-lg px-1 py-1.5 text-center leading-tight ${
                         !entra ? 'bg-gray-50 text-gray-300'
-                          : trabaja ? 'bg-primary/20 text-ink' : 'bg-gray-200 text-muted'}`}>
-                      <div className="font-semibold">{inicialDeDia(fecha)}</div>
-                      <div className="tabular-nums">{Number(fecha.slice(8, 10))}</div>
-                      <div className="font-bold">{!entra ? '·' : trabaja ? 'T' : 'D'}</div>
+                          : trabaja ? 'bg-primary-light text-ink' : 'bg-gray-200 text-muted'}`}>
+                      <div className="text-[11px] font-bold">{inicialDeDia(fecha)}</div>
+                      <div className="text-sm font-extrabold tabular-nums">{Number(fecha.slice(8, 10))}</div>
                     </div>
                   );
                 })}
@@ -1511,6 +1541,7 @@ function PreviaDeBloque({
 const PERIODO: Record<ModoDeVista, { unidad: string; deEl: string; enEl: string; elArt: string }> = {
   DIA: { unidad: 'Día', deEl: 'del día', enEl: 'en el día', elArt: 'el día' },
   SEMANA: { unidad: 'Semana', deEl: 'de la semana', enEl: 'en la semana', elArt: 'la semana' },
+  QUINCENA: { unidad: 'Quincena', deEl: 'de la quincena', enEl: 'en la quincena', elArt: 'la quincena' },
   MES: { unidad: 'Mes', deEl: 'del mes', enEl: 'en el mes', elArt: 'el mes' },
 };
 
@@ -1561,7 +1592,7 @@ const MS_DOBLE_CLIC = 400;
 // De MAYOR a menor, como en la maqueta del dueño: Mes · Semana · Día. El orden no es decorativo,
 // es el que deja «Semana» —el modo por defecto y el que más se usa— en el medio, donde cae el
 // pulgar y donde la vista en blanco de la pista gris lo destaca.
-const MODOS: ModoDeVista[] = ['MES', 'SEMANA', 'DIA'];
+const MODOS: ModoDeVista[] = ['MES', 'QUINCENA', 'SEMANA', 'DIA'];
 
 export default function CalendarioDeTurnos() {
   const [modo, setModo] = useState<ModoDeVista>('SEMANA');
@@ -2207,10 +2238,14 @@ export default function CalendarioDeTurnos() {
   // justo lo contrario de para lo que existe una rotación.
   const puedeRotar = cuenta.personas === 1 && catalogo.length > 0;
 
-  // El mes que se está programando sale de la PRIMERA fecha marcada, no del período en pantalla: se
-  // puede estar viendo una semana que cruza de mes, y el veredicto tiene que hablar del mes al que
-  // pertenece lo que se va a escribir.
-  const mesDeLaSeleccion = seleccion.map(c => c.fecha).sort()[0]?.slice(0, 7) ?? hoy.slice(0, 7);
+  // El mes que se está programando sale de LO MARCADO y no del período en pantalla: se puede estar
+  // viendo una semana que cruza de mes, y el veredicto tiene que hablar del mes al que pertenece lo
+  // que se va a escribir.
+  //
+  // «El mes que pone más días» y no «el del primero»: la rejilla de un mes empieza en el lunes de su
+  // primera semana, así que marcar la fila entera de alguien en septiembre incluye el 31 de agosto y
+  // con la regla vieja el veredicto entero hablaba de agosto. Está contado en `mesQueSePrograma`.
+  const mesDeLaSeleccion = mesQueSePrograma(seleccion.map(c => c.fecha)) ?? hoy.slice(0, 7);
   // El ancla del ciclo: el primer día del período mostrado. Así dos personas con el mismo desfase
   // quedan alineadas entre sí, que es de lo que vive una rotación en un equipo.
   const primerDiaDelPeriodo = dias[0] ?? hoy;
@@ -2848,12 +2883,21 @@ export default function CalendarioDeTurnos() {
 
                             El anillo va aquí y no en cada rama de `Celda`: son cuatro ramas y cuatro
                             copias del mismo borde se separan a la primera. */}
+                        {/* UNA CELDA YA PASADA SE VE MARCADA PERO APAGADA, como en la maqueta
+                            (`.jornada.bloqueada.sel`): sin halo, en tono apagado y con el visto gris.
+                            Está dentro de la selección —el rectángulo la abarca— pero NO se va a
+                            escribir, y la previa lo dice aparte: «no se tocan porque el día ya pasó».
+                            Pintarla igual que las demás prometería una escritura que no va a ocurrir. */}
                         <div className={`relative rounded-lg ${
-                          marcada ? 'ring-2 ring-primary-dark ring-offset-1 ring-offset-white' : ''}`}>
+                          !marcada ? ''
+                            : sePuedePintar(dia.fecha, hoy)
+                              ? 'ring-2 ring-primary-dark ring-offset-1 ring-offset-white'
+                              : 'opacity-60 ring-1 ring-gray-300'}`}>
                           {celdaDeDia(fila, dia, { marcada })}
                           {marcada && (
                             <span aria-hidden="true"
-                              className="absolute right-1 top-1 grid h-4 w-4 place-items-center rounded bg-primary-dark text-ink">
+                              className={`absolute right-1 top-1 grid h-4 w-4 place-items-center rounded ${
+                                sePuedePintar(dia.fecha, hoy) ? 'bg-primary-dark text-ink' : 'bg-gray-300 text-gray-600'}`}>
                               <Check size={11} strokeWidth={3} />
                             </span>
                           )}

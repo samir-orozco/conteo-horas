@@ -104,3 +104,28 @@ export function semanasSobreElTope(
   }
   return salen;
 }
+
+// EL MES QUE SE ESTÁ PROGRAMANDO: el que pone más días, no el del primero.
+//
+// De este valor cuelga qué calendario se pide y qué semanas se juzgan, así que equivocarlo no pinta
+// mal una etiqueta: da por bueno un mes en el que no se va a escribir nada. El bloque de la prueba
+// cuenta el caso que lo destapó.
+//
+// CUENTA DÍAS DISTINTOS y no entradas: la selección lleva una por persona y por día, y contando
+// entradas el veredicto se movería según a cuánta gente haya marcada, sin que cambie una sola fecha.
+//
+// EL EMPATE SE ROMPE HACIA EL MES QUE EMPIEZA ANTES, y no porque sea mejor respuesta: porque tiene
+// que haber una. Recorriendo los meses en orden y quedándose solo con quien SUPERA al mejor, el
+// resultado no depende del orden en que llegaron las fechas.
+export function mesQueSePrograma(fechas: readonly string[]): string | null {
+  const cuantos = new Map<string, number>();
+  for (const fecha of new Set(fechas)) {
+    const mes = fecha.slice(0, 7);
+    cuantos.set(mes, (cuantos.get(mes) ?? 0) + 1);
+  }
+  let mejor: string | null = null;
+  for (const mes of [...cuantos.keys()].sort()) {
+    if (mejor === null || cuantos.get(mes)! > cuantos.get(mejor)!) mejor = mes;
+  }
+  return mejor;
+}

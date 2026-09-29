@@ -57,6 +57,22 @@ export function etiquetaDelPeriodo(modo: ModoDeVista, ancla: string, hoy: string
         diasEntre(lunesDeLaSemana(hoy), lunesDeLaSemana(ancla)) / 7,
         'Semana en curso', 'Semana siguiente', 'Semana pasada', 'semanas',
       );
+    // LA QUINCENA NO SE CUENTA EN QUINCENAS, y esto es lo único delicado de este archivo.
+    //
+    // El rango arranca en el LUNES DEL ANCLA, así que las quincenas de esta vista NO caen en una
+    // rejilla fija: dos anclas separadas por una semana producen quincenas que se solapan siete días.
+    // «En 2 quincenas» sería inventarse una unidad que no existe, porque no hay una quincena 1, una 2
+    // y una 3 sobre las que contar.
+    //
+    // Lo que sí es cierto siempre: o es la que contiene HOY —la que arranca en el lunes de esta
+    // semana— o no lo es, y entonces la distancia honesta va en SEMANAS, que es la unidad en la que de
+    // verdad se mueve. `porDiferencia` encaja tal cual: cero semanas ES la quincena en curso.
+    case 'QUINCENA':
+      return porDiferencia(
+        diasEntre(lunesDeLaSemana(hoy), lunesDeLaSemana(ancla)) / 7,
+        'Quincena en curso', 'Semana siguiente', 'Semana pasada', 'semanas',
+      );
+
     case 'MES':
       return porDiferencia(
         mesesAbsolutos(ancla) - mesesAbsolutos(hoy),

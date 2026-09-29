@@ -111,12 +111,21 @@ export function rotuloCorto(iso: string): string {
 }
 
 // "15 al 21 de septiembre" · "29 de septiembre al 5 de octubre" cuando cruza de mes.
-export function rotuloDeSemana(lunes: string): string {
-  const domingo = sumarDias(lunes, 6);
+// UN RANGO DICHO COMO LO DIRÍA UNA PERSONA: «28 al 4 de octubre» si no cambia el mes, y «28 de
+// septiembre al 11 de octubre» si cambia.
+//
+// Se extrajo de `rotuloDeSemana` el 28 de septiembre de 2026, cuando entró la vista de QUINCENA y
+// necesitó el mismo formato con catorce días en vez de siete. Dos copias del formato es como se
+// separan (CLAUDE.md §9.3): el día que alguien cambie «al» por un guion, solo se acordaría de una.
+export function rotuloDeRango(desde: string, hasta: string): string {
   const diaDe = (iso: string) => aFecha(iso).getUTCDate();
-  return nombreDelMes(lunes) === nombreDelMes(domingo)
-    ? `${diaDe(lunes)} al ${diaDe(domingo)} de ${nombreDelMes(domingo)}`
-    : `${diaDe(lunes)} de ${nombreDelMes(lunes)} al ${diaDe(domingo)} de ${nombreDelMes(domingo)}`;
+  return nombreDelMes(desde) === nombreDelMes(hasta)
+    ? `${diaDe(desde)} al ${diaDe(hasta)} de ${nombreDelMes(hasta)}`
+    : `${diaDe(desde)} de ${nombreDelMes(desde)} al ${diaDe(hasta)} de ${nombreDelMes(hasta)}`;
+}
+
+export function rotuloDeSemana(lunes: string): string {
+  return rotuloDeRango(lunes, sumarDias(lunes, 6));
 }
 
 // "martes, 22 de septiembre" · "septiembre de 2026" — los otros dos rótulos del encabezado, para

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CalendarioDeTurnos from './CalendarioDeTurnos';
-import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias } from './semana';
+import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias, diasEntre } from './semana';
 
 // LA VENTANA DE ROTACIÓN (28 de septiembre de 2026).
 //
@@ -169,7 +169,13 @@ describe('llegar a la rotación', () => {
     await usuario.click(within(await tarjeta()).getByRole('button', { name: /rotación/i }));
     await ventana();
     const rangos = get.mock.calls.filter(c => c[0] === '/turnos/calendario').map(c => c[1]?.params);
-    expect(rangos).toContainEqual(expect.objectContaining({ desde: `${MES}-01` }));
+    // SE AFIRMA «UN MES ENTERO», NO «SEPTIEMBRE». Antes esto exigía el mes de HOY, y pasaba solo
+    // porque la regla vieja tomaba el mes del primer día marcado. La semana en curso puede cruzar de
+    // mes —la del 28 de septiembre de 2026 pone tres días en septiembre y cuatro en octubre—, así que
+    // esa versión afirmaba de rebote un defecto y además dependía del día en que se corriera.
+    // Cuál es el mes lo decide `mesQueSePrograma` y se prueba aparte, con fechas fijas.
+    const pidioUnMes = rangos.some(r => /-01$/.test(r?.desde ?? '') && diasEntre(r.desde, r.hasta) + 1 >= 28);
+    expect(pidioUnMes).toBe(true);
   });
 });
 
@@ -214,12 +220,24 @@ describe('el veredicto del mes', () => {
     expect(within(caja).getByText(/el descanso se corre tres días cada semana/i)).toBeInTheDocument();
   });
 
-  it('correr el arranque del ciclo también vuelve a juzgar', async () => {
+  it('correr el arranque del ciclo cambia QUÉ DÍAS trabaja', async () => {
+    // AFIRMA EL SIGNIFICADO Y NO EL TEXTO SUELTO. La primera versión comparaba `textContent` de la
+    // ventana entera antes y después, y pasaba de rebote: la tira mostraba una «T» o una «D» por día y
+    // esas letras cambiaban. Al agrandar la tira, esas letras se fueron y la prueba cayó —con razón,
+    // porque entonces correr el ciclo solo cambiaba colores y no había nada que una persona con
+    // problemas de color pudiera notar.
+    //
+    // Ahora cada caja lleva su nombre accesible («28 de septiembre: trabaja»), así que se puede
+    // comprobar lo que de verdad importa: que el reparto de días CAMBIA.
     const usuario = userEvent.setup();
     const caja = await abrir(usuario);
-    const antes = caja.textContent ?? '';
+    const trabajanAntes = within(caja).getAllByLabelText(/: trabaja$/).map(e => e.getAttribute('aria-label'));
+    expect(trabajanAntes.length).toBeGreaterThan(0);
+
     await usuario.click(within(caja).getByRole('button', { name: /correr un día adelante/i }));
-    expect(caja.textContent).not.toBe(antes);
+
+    const trabajanDespues = within(caja).getAllByLabelText(/: trabaja$/).map(e => e.getAttribute('aria-label'));
+    expect(trabajanDespues).not.toEqual(trabajanAntes);
   });
 });
 

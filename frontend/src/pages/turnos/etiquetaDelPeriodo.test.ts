@@ -100,3 +100,40 @@ describe('la etiqueta del mes', () => {
     expect(etiquetaDelPeriodo('MES', '2027-09-15', '2026-09-28')).toEqual({ texto: 'En 12 meses', esActual: false });
   });
 });
+
+
+describe('la etiqueta de la quincena', () => {
+  // LAS QUINCENAS DE ESTA VISTA NO CAEN EN UNA REJILLA FIJA, y por eso esta etiqueta no cuenta
+  // quincenas. El rango arranca en el LUNES DEL ANCLA, así que dos anclas separadas por una semana
+  // producen quincenas que se solapan siete días. Decir «en 2 quincenas» sería inventarse una unidad
+  // que no existe: no hay una quincena 1, una 2 y una 3 sobre las que contar.
+  //
+  // Lo que sí es cierto siempre: o la quincena mostrada es la que contiene HOY —la que arranca en el
+  // lunes de esta semana— o no lo es, y entonces la distancia honesta se dice en SEMANAS, que es la
+  // unidad en la que de verdad se mueve.
+
+  it('la que arranca el lunes de esta semana es la quincena en curso', () => {
+    expect(etiquetaDelPeriodo('QUINCENA', '2026-09-28', '2026-09-30'))
+      .toEqual({ texto: 'Quincena en curso', esActual: true });
+  });
+
+  it('cualquier día de esa misma semana da lo mismo', () => {
+    // El ancla es un día cualquiera del período, no su primer día.
+    expect(etiquetaDelPeriodo('QUINCENA', '2026-10-04', '2026-09-28'))
+      .toEqual({ texto: 'Quincena en curso', esActual: true });
+  });
+
+  it('una semana más adelante YA NO es la misma quincena, y se dice en semanas', () => {
+    // Aunque el 5 de octubre esté DENTRO de los catorce días que hoy se ven, la quincena que arranca
+    // ahí es otra: va del 5 al 18. Decir «en curso» sería falso.
+    expect(etiquetaDelPeriodo('QUINCENA', '2026-10-05', '2026-09-28'))
+      .toEqual({ texto: 'Semana siguiente', esActual: false });
+  });
+
+  it('más lejos se cuenta en semanas, hacia los dos lados', () => {
+    expect(etiquetaDelPeriodo('QUINCENA', '2026-10-19', '2026-09-28'))
+      .toEqual({ texto: 'En 3 semanas', esActual: false });
+    expect(etiquetaDelPeriodo('QUINCENA', '2026-09-14', '2026-09-28'))
+      .toEqual({ texto: 'Hace 2 semanas', esActual: false });
+  });
+});

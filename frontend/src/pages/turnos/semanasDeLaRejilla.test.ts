@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   semanasDeLasColumnas, minutosDeLaSemana, semanasEnterasDelMes, semanasSobreElTope,
+  mesQueSePrograma,
 } from './semanasDeLaRejilla';
+import { sumarDias } from './semana';
 
 // LAS SEMANAS QUE HAY DENTRO DE LA REJILLA (28 de septiembre de 2026).
 //
@@ -230,5 +232,66 @@ describe('las semanas que se pasan del tope', () => {
 
   it('un mapa vacío no produce ninguna', () => {
     expect(semanasSobreElTope({}, '2026-10', 42 * 60)).toEqual([]);
+  });
+});
+
+// QUÉ MES SE ESTÁ PROGRAMANDO (28 de septiembre de 2026).
+//
+// SALIÓ DE UN DEFECTO VISTO EN EL NAVEGADOR, no de un repaso teórico. El veredicto de la rotación
+// decía «cada semana de AGOSTO le queda con su día de descanso» sobre una selección de 35 días que
+// iban del 31 de agosto al 4 de octubre. Treinta y cuatro de esos días no son de agosto.
+//
+// La causa: el mes se tomaba de la PRIMERA fecha marcada. La rejilla de un mes arranca en el lunes
+// de su primera semana, así que salvo que el mes empiece lunes —tres o cuatro veces al año— la
+// primera casilla es del mes anterior. Marcar la fila entera de una persona bastaba para disparar el
+// error, que es el gesto para el que existe la rotación.
+//
+// Y NO ERA UNA ETIQUETA. De este valor cuelga la petición del calendario que se juzga y el recorte de
+// `semanasEnterasDelMes`: con «agosto» la app pedía agosto, medía las semanas de agosto y daba por
+// bueno un mes en el que no iba a escribir nada. Un «todo bien» de un mes que no se miró es
+// exactamente el fallo del que habla el encabezado del CLAUDE.md: plausible y equivocado.
+
+describe('qué mes se está programando', () => {
+  const rango = (desde: string, cuantos: number) =>
+    Array.from({ length: cuantos }, (_, i) => sumarDias(desde, i));
+
+  it('EL CASO REAL: la rejilla de septiembre arranca el 31 de agosto y aun así el mes es septiembre', () => {
+    // 35 días: el 31 de agosto, los 30 de septiembre y los 4 primeros de octubre.
+    expect(mesQueSePrograma(rango('2026-08-31', 35))).toBe('2026-09');
+  });
+
+  it('un mes que SÍ empieza lunes no cambia de respuesta', () => {
+    // Junio de 2026 empieza lunes, así que su rejilla no trae días prestados. Es el caso en el que la
+    // regla vieja acertaba, y tiene que seguir acertando con la nueva.
+    expect(mesQueSePrograma(rango('2026-06-01', 30))).toBe('2026-06');
+  });
+
+  it('en una semana que cruza de mes gana el mes que pone más días', () => {
+    // Lunes 31 de agosto a domingo 6 de septiembre: uno contra seis.
+    expect(mesQueSePrograma(rango('2026-08-31', 7))).toBe('2026-09');
+    // Lunes 28 de septiembre a domingo 4 de octubre: tres contra cuatro.
+    expect(mesQueSePrograma(rango('2026-09-28', 7))).toBe('2026-10');
+  });
+
+  it('un solo día es su propio mes', () => {
+    expect(mesQueSePrograma(['2026-08-31'])).toBe('2026-08');
+  });
+
+  it('LA MISMA FECHA REPETIDA NO PESA MÁS, aunque haya tres personas marcadas', () => {
+    // La selección lleva una entrada por persona y por día. Si contara entradas en vez de días, tres
+    // personas marcadas en agosto y una en septiembre moverían el veredicto sin que cambie ni una
+    // fecha. Se cuentan días distintos.
+    const tresPersonasElUltimoDeAgosto = ['2026-08-31', '2026-08-31', '2026-08-31'];
+    expect(mesQueSePrograma([...tresPersonasElUltimoDeAgosto, ...rango('2026-09-01', 2)])).toBe('2026-09');
+  });
+
+  it('en un empate manda el mes en el que empieza', () => {
+    // Una quincena partida siete y siete. No hay respuesta mejor que otra, pero sí tiene que haber
+    // UNA: si dependiera del orden en que llegan las fechas, el mismo gesto daría veredictos distintos.
+    expect(mesQueSePrograma(rango('2026-09-24', 14))).toBe('2026-09');
+  });
+
+  it('sin fechas no hay mes, y lo dice en vez de inventarlo', () => {
+    expect(mesQueSePrograma([])).toBeNull();
   });
 });
