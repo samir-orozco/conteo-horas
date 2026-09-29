@@ -3107,52 +3107,58 @@ export default function CalendarioDeTurnos() {
                       // El cargo y la sede salen aquí cuando el renglón lo ocupa un aviso. Ponerlos en
                       // el `title` y no borrarlos es la diferencia entre priorizar y esconder.
                       title={`${fila.nombre} ${fila.apellido} · ${cargoYSede(fila)}`}
-                      className="flex items-center gap-2.5 rounded-lg text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary">
+                      // `items-start` y no `items-center`: con los avisos debajo, el bloque tiene
+                      // cuatro renglones y un avatar centrado se iba al medio, lejos del nombre al que
+                      // pertenece. Arriba queda a la altura de la línea que nombra a la persona.
+                      className="flex items-start gap-2.5 rounded-lg text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary">
                       <Inicial id={fila.id} nombre={fila.nombre} apellido={fila.apellido} />
-                      {/* EL CHIP EN SU PROPIA COLUMNA, no dentro del renglón del cargo (29 de
-                          septiembre de 2026, propuesta del dueño). Es mejor que lo que había: antes
-                          el aviso y el cargo se disputaban un renglón, así que o el cargo se recortaba
-                          a un muñón de una letra o desaparecía. Con dos columnas se ven los dos.
+                      {/* LOS AVISOS DEBAJO DEL NOMBRE, uno sobre otro (29 de septiembre de 2026,
+                          decisión del dueño). Estuvieron en una columna aparte a la derecha unas
+                          horas; puestos aquí, la columna de la persona se lee como un solo bloque de
+                          arriba abajo —quién es, qué hace, qué le pasa— en vez de como dos cosas
+                          pegadas.
 
-                          El nombre y el cargo recortan dentro de su ancho; el aviso NO, porque es lo
-                          que pide una acción y recortarlo lo dejaría en «3 desc…». */}
-                      <div className="w-[150px] min-w-0">
+                          EL BLOQUE MIDE 175 px Y NO 150 porque el chip más largo pide eso. Los chips
+                          NO se recortan: «1 semana sin desc…» no dice nada. Lo que recorta es el
+                          nombre y el cargo, que tienen el nombre completo en el `title` del botón. */}
+                      <div className="w-[175px] min-w-0">
                         <div className="truncate text-[13px] font-bold leading-snug text-ink">
                           {fila.nombre} {fila.apellido}
                         </div>
                         <div className="truncate text-[11px] leading-snug text-muted">{cargoYSede(fila)}</div>
+                        {(() => {
+                          const semanas = sinDescansoDe(fila);
+                          const habitual = avisoDeDescansos(fila.descansoHabitual);
+                          if (semanas === 0 && !habitual) return null;
+                          return (
+                            <div className="mt-1 flex flex-col items-start gap-1">
+                              {semanas > 0 && (
+                                <span title="Por norma, cada semana necesita un día de descanso remunerado"
+                                  className="flex items-center gap-1 whitespace-nowrap rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
+                                  <AlertTriangle size={11} aria-hidden="true" className="shrink-0" />
+                                  {semanas} {semanas === 1 ? 'semana' : 'semanas'} sin descanso
+                                </span>
+                              )}
+                              {habitual && (
+                                // LA PALABRA VA EN EL `title` Y EN EL NOMBRE ACCESIBLE, no solo en el
+                                // color. En pantalla el chip dice «3 descansos» y el rosa lo distingue
+                                // del ámbar, pero quien no distinga bien los colores vería el mismo
+                                // aviso en los dos casos, y no lo son: desde el tercero del mes,
+                                // compensar en tiempo deja de ser opcional.
+                                <span title={habitual.grave
+                                  ? 'Descanso habitual: desde el tercero del mes hay que compensar en tiempo'
+                                  : 'Descanso ocasional: se paga con recargo'}
+                                  className={`flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                                    habitual.grave ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}>
+                                  <AlertTriangle size={11} aria-hidden="true" className="shrink-0" />
+                                  {habitual.cuantos}
+                                  <span className="sr-only"> · {habitual.palabra}</span>
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
-                      {(() => {
-                        const semanas = sinDescansoDe(fila);
-                        const habitual = avisoDeDescansos(fila.descansoHabitual);
-                        if (semanas === 0 && !habitual) return null;
-                        return (
-                          <div className="mt-0.5 flex shrink-0 flex-col items-start gap-1.5">
-                            {semanas > 0 && (
-                              <span title="Por norma, cada semana necesita un día de descanso remunerado"
-                                className="flex items-center gap-1 whitespace-nowrap rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
-                                <AlertTriangle size={11} aria-hidden="true" className="shrink-0" />
-                                {semanas} {semanas === 1 ? 'semana' : 'semanas'} sin descanso
-                              </span>
-                            )}
-                            {habitual && (
-                              // LA PALABRA VA EN EL `title` Y NO SOLO EN EL COLOR. En la pantalla el chip
-                              // dice «3 descansos» y el rosa lo distingue del ámbar, pero quien no
-                              // distinga bien los colores vería el mismo aviso en los dos casos, y no lo
-                              // son: desde el tercero del mes, compensar en tiempo deja de ser opcional.
-                              <span title={habitual.grave
-                                ? 'Descanso habitual: desde el tercero del mes hay que compensar en tiempo'
-                                : 'Descanso ocasional: se paga con recargo'}
-                                className={`flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                                  habitual.grave ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}>
-                                <AlertTriangle size={11} aria-hidden="true" className="shrink-0" />
-                                {habitual.cuantos}
-                                <span className="sr-only"> · {habitual.palabra}</span>
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })()}
                     </button>
                   </td>
                   {enDia && eje ? (
