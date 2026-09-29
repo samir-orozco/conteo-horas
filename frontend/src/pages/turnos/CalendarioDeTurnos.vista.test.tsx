@@ -307,6 +307,21 @@ describe('qué dibuja la rejilla', () => {
   });
 });
 
+// LA COLUMNA DE LA PERSONA DICE DE QUÉ SEDE ES (28 de septiembre de 2026, pedido del dueño).
+//
+// `cargoYSede` está probada aparte con sus ocho casos. Lo que se comprueba AQUÍ es que la pantalla la
+// use, que es otra cosa: al conectarla, la suite entera siguió verde con la fila diciendo solo el
+// cargo. O sea que nadie miraba esa línea y quitarla no habría puesto nada en rojo.
+describe('de quién es cada fila', () => {
+  it('debajo del nombre va «cargo · sede», no solo el cargo', async () => {
+    montar();
+    await cargado();
+    const tabla = (await screen.findAllByRole('table'))[0];
+    const primeraFila = within(tabla).getAllByRole('row')[1];
+    expect(primeraFila).toHaveTextContent('Guarda · Norte');
+  });
+});
+
 describe('las flechas se mueven en la unidad del modo', () => {
   it('en MES avanzan un mes, no siete días', async () => {
     montar();

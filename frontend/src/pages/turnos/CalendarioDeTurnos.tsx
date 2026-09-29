@@ -16,6 +16,7 @@ import { estadoDelProgreso } from './progresoDelBloque';
 // es el día que NADIE había pintado, que se despinta en vez de repintarse.
 import { accionParaDeshacer } from './deshacerElLote';
 import { codigosDelCatalogo } from './codigoDeTurno';
+import { cargoYSede } from './cargoYSede';
 // A quién se ve con los filtros de arriba. Puro, probado y mutado: de esta lista sale qué se puede
 // seleccionar, y por lo tanto a quién se le escribe al aplicar un bloque.
 import { quienSeVe, type FiltrosDeLaRejilla } from './quienSeVe';
@@ -3015,7 +3016,10 @@ export default function CalendarioDeTurnos() {
                           cuarenta letras vuelva a robarse la pantalla. */}
                       <div className="min-w-0 max-w-[180px]">
                         <div className="text-sm font-medium text-ink truncate">{fila.nombre} {fila.apellido}</div>
-                        <div className="text-[11px] text-muted truncate">{fila.cargo || '—'}</div>
+                        {/* «Guarda · Centro», como en la maqueta. Los dos datos faltan por separado, y aquí una
+                            persona puede tener VARIAS sedes, cosa que la maqueta no contempla: la línea la arma
+                            `cargoYSede`, que está probada. */}
+                        <div className="text-[11px] text-muted truncate">{cargoYSede(fila)}</div>
                       </div>
                     </button>
                   </td>
@@ -3171,7 +3175,7 @@ export default function CalendarioDeTurnos() {
                           <Inicial nombre={fila.nombre} apellido={fila.apellido} />
                           <div className="min-w-0">
                             <div className="text-sm font-medium text-ink truncate">{fila.nombre} {fila.apellido}</div>
-                            <div className="text-[11px] text-muted truncate">{fila.cargo || '—'}</div>
+                            <div className="text-[11px] text-muted truncate">{cargoYSede(fila)}</div>
                           </div>
                         </div>
                       </td>
