@@ -110,22 +110,26 @@ export function rotuloCorto(iso: string): string {
   return `${aFecha(iso).getUTCDate()} de ${nombreDelMes(iso)}`;
 }
 
-// "15 al 21 de septiembre" · "29 de septiembre al 5 de octubre" cuando cruza de mes.
-// UN RANGO DICHO COMO LO DIRÍA UNA PERSONA: «28 al 4 de octubre» si no cambia el mes, y «28 de
-// septiembre al 11 de octubre» si cambia.
+// "28 sep – 4 oct 2026": el rótulo del botón que va entre las dos flechas de navegación.
 //
-// Se extrajo de `rotuloDeSemana` el 28 de septiembre de 2026, cuando entró la vista de QUINCENA y
-// necesitó el mismo formato con catorce días en vez de siete. Dos copias del formato es como se
-// separan (CLAUDE.md §9.3): el día que alguien cambie «al» por un guion, solo se acordaría de una.
-export function rotuloDeRango(desde: string, hasta: string): string {
-  const diaDe = (iso: string) => aFecha(iso).getUTCDate();
-  return nombreDelMes(desde) === nombreDelMes(hasta)
-    ? `${diaDe(desde)} al ${diaDe(hasta)} de ${nombreDelMes(hasta)}`
-    : `${diaDe(desde)} de ${nombreDelMes(desde)} al ${diaDe(hasta)} de ${nombreDelMes(hasta)}`;
-}
-
+// EL FORMATO ES EL DEL BOTÓN, no el de un título, y por eso es corto y de ancho estable. Tiene 200 px
+// de ancho mínimo y se pulsa repetido para avanzar. El formato anterior («28 de septiembre al 4 de
+// octubre») cambiaba de largo según la semana, y con él se movían las flechas justo mientras alguien
+// hacía clic en ellas.
+//
+// NO COLAPSA EL MES cuando los dos extremos caen en el mismo, por esa misma razón: colapsarlo ahorra
+// ocho caracteres una semana de cada cinco y hace que el botón respire de tamaño.
+//
+// EL AÑO ES EL DEL FINAL. Navegando hacia adelante, el final es hacia donde se va: la semana del 28
+// de diciembre de 2026 se rotula «28 dic – 3 ene 2027», que es el dato que avisa de que se cruzó.
+//
+// ESTUVO PARTIDA EN DOS unas horas el 28 de septiembre de 2026, con un `rotuloDeRango` aparte que
+// compartían la semana y la quincena. Al salir la quincena le quedó un solo autor, y una función
+// extraída para compartir que ya no comparte nada es una indirección de más.
 export function rotuloDeSemana(lunes: string): string {
-  return rotuloDeRango(lunes, sumarDias(lunes, 6));
+  const breve = (iso: string) => `${aFecha(iso).getUTCDate()} ${nombreDelMes(iso).slice(0, 3)}`;
+  const domingo = sumarDias(lunes, 6);
+  return `${breve(lunes)} – ${breve(domingo)} ${aFecha(domingo).getUTCFullYear()}`;
 }
 
 // "martes, 22 de septiembre" · "septiembre de 2026" — los otros dos rótulos del encabezado, para
@@ -170,6 +174,22 @@ export function inicialDeDia(iso: string): string {
   return INICIALES_DE_DIA[diaSemana === 0 ? 6 : diaSemana - 1];
 }
 
+// LA ABREVIATURA PARA EL ENCABEZADO DE LA SEMANA: «Lun», «Mar», «Mié»… (28 de septiembre de 2026).
+//
+// Con la inicial sola, lunes y martes son los dos «M» y martes y miércoles también: en la mitad de
+// las columnas el encabezado no distingue un día de otro. En la semana hay sitio de sobra para las
+// tres letras; en el mes, con hasta cuarenta y dos columnas, no lo hay, y por eso siguen conviviendo.
+//
+// SALE DE LA MISMA CUENTA que `inicialDeDia`, con el domingo al final, y su prueba afirma que las
+// dos tablas empiezan por la misma letra: dos cuentas distintas nombrarían distinto el mismo día en
+// el mes y en la semana.
+const ABREVIATURAS_DE_DIA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+export function abreviaturaDeDia(iso: string): string {
+  const diaSemana = aFecha(iso).getUTCDay();
+  return ABREVIATURAS_DE_DIA[diaSemana === 0 ? 6 : diaSemana - 1];
+}
+
 // SÁBADO Y DOMINGO (28 de septiembre de 2026).
 //
 // La rejilla del mes tiene hasta 42 columnas y nada distinguía el fin de semana del resto, que es
@@ -206,4 +226,18 @@ export function horasDeMinutos(minutos: number): string {
   const horas = minutos / 60;
   const texto = Number.isInteger(horas) ? String(horas) : horas.toFixed(1).replace('.', ',');
   return `${texto} h`;
+}
+
+// "6–14" · "8:30–17:15": el horario como cabe en una celda de la rejilla. Ver el bloque de la prueba.
+//
+// Cada extremo se decide SOLO, y esa es toda la decisión: un turno de 6:00 a 14:30 se escribe
+// «6–14:30» y no se recorta entero ni se deja entero. Mirar los dos juntos obligaría a elegir entre
+// perder los minutos de un lado o cargar con los ceros del otro.
+export function horarioCorto(entrada: string, salida: string): string {
+  const breve = (hhmm: string) => {
+    const [hh, mm] = hhmm.split(':');
+    // `Number` y no un recorte de ceros: '00' tiene que quedar en «0» y no en cadena vacía.
+    return mm === '00' ? String(Number(hh)) : `${Number(hh)}:${mm}`;
+  };
+  return `${breve(entrada)}–${breve(salida)}`;
 }

@@ -1,8 +1,8 @@
-import { useState, useEffect, useLayoutEffect, useRef, Fragment } from 'react';
-import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw, Search, Calendar } from 'lucide-react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, Fragment } from 'react';
+import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw, Search, Calendar, Bed, MapPin, Briefcase } from 'lucide-react';
 import api from '../../lib/api';
 import {
-  hoyEnBogota, horasDeMinutos, sePuedePintar, inicialDeDia,
+  hoyEnBogota, horasDeMinutos, sePuedePintar, inicialDeDia, abreviaturaDeDia,
   esFinDeSemana, esDeOtroMes,
 } from './semana';
 // La selección en bloque y el guardado por bloques: dos decisiones puras, probadas y mutadas aparte.
@@ -15,6 +15,7 @@ import { estadoDelProgreso } from './progresoDelBloque';
 // A qué se devuelve cada celda para deshacer un envío. Puro, probado y mutado: el caso que se hace mal
 // es el día que NADIE había pintado, que se despinta en vez de repintarse.
 import { accionParaDeshacer } from './deshacerElLote';
+import { codigosDelCatalogo } from './codigoDeTurno';
 // A quién se ve con los filtros de arriba. Puro, probado y mutado: de esta lista sale qué se puede
 // seleccionar, y por lo tanto a quién se le escribe al aplicar un bloque.
 import { quienSeVe, type FiltrosDeLaRejilla } from './quienSeVe';
@@ -33,7 +34,7 @@ import { proyeccionDelMes, proyeccionDelBloque, minutosProyectados } from './pro
 // Qué se le escribe a cada día con lo que está pendiente: una acción igual para todas las celdas, o
 // una rotación que reparte turnos y descansos por el ciclo. Puro, probado y mutado aparte.
 import { accionDeLoPendiente, type LoPendiente } from './loPendiente';
-import { diasEntre, sumarDias, nombreDelMes, rotuloCorto } from './semana';
+import { diasEntre, sumarDias, nombreDelMes, rotuloCorto, horarioCorto } from './semana';
 // Dónde está parado el calendario respecto a hoy. Puro, probado y mutado aparte: es aritmética de
 // calendario, que es la que falla en silencio (una diferencia de meses mal contada dice «hace once
 // meses» del mes que viene).
@@ -52,7 +53,8 @@ import {
   semanasDeLasColumnas, minutosDeLaSemana, semanasSobreElTope, mesQueSePrograma,
 } from './semanasDeLaRejilla';
 import { nombreDelDia } from '../../lib/diasDeLaSemana';
-import { CLASES_COLOR, PUNTO_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
+import { CLASES_COLOR, PUNTO_COLOR, CELDA_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
+import { PilaDeAvisos, type Aviso } from '../../components/Toast';
 import { rotuloDeCelda, type OrigenDelRotulo } from './rotuloDeCelda';
 // Dónde cabe un panel flotante sin salirse de la pantalla. Vive en `lib/` porque el pedido del
 // dueño fue para TODA esta clase de elementos, no solo para este.
@@ -332,19 +334,30 @@ function PistaDeLaFila({ fila, dia, eje, celda }: {
   );
 }
 
-function Tarjeta({ icono: Icono, valor, titulo, nota, alerta }: {
-  icono: typeof Users; valor: string; titulo: string; nota?: string; alerta?: boolean;
+// UNA TIRA Y NO TARJETAS SUELTAS (28 de septiembre de 2026, al igualar la maqueta). Allí el cambio
+// se hizo el 26 con este motivo, y vale igual aquí: seis cajas con borde propio y un número grande
+// cada una se leen como el asunto de la pantalla, y no lo son. El asunto es la rejilla. Los seis
+// datos siguen estando, dentro de una sola caja y separados por una línea fina.
+//
+// CADA ICONO CON SU COLOR, también de la maqueta. No es decoración: son seis celdas iguales pegadas
+// en fila, y el color es lo que deja saltar a la de alerta sin leer los seis rótulos.
+//
+// EN DOS COLUMNAS EN PANTALLA CHICA, y ahí la raya divisoria se quita: separa bien cuando están en
+// una fila, pero al envolver queda colgando a la izquierda de la primera de cada fila nueva,
+// marcando una separación que ahí no significa nada.
+function Tarjeta({ icono: Icono, tinte, valor, titulo, nota, alerta }: {
+  icono: typeof Users; tinte: string; valor: string; titulo: string; nota?: string; alerta?: boolean;
 }) {
   return (
-    <div className={`rounded-card border px-4 py-3 flex items-center gap-3 ${
-      alerta ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white'}`}>
-      <div className={`rounded-lg p-2 shrink-0 ${alerta ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-muted'}`}>
-        <Icono size={16} />
+    <div className="flex min-w-0 flex-[1_1_calc(50%-1px)] items-center gap-2.5 px-2.5 py-1.5 sm:flex-[1_1_150px] sm:px-3 sm:[&+&]:border-l sm:[&+&]:border-gray-100">
+      <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-[9px] ${
+        alerta ? 'bg-red-100 text-red-600' : tinte}`}>
+        <Icono size={15} />
       </div>
       <div className="min-w-0">
-        <div className={`text-lg font-bold leading-tight tabular-nums ${alerta ? 'text-amber-900' : 'text-ink'}`}>{valor}</div>
-        <div className={`text-[11px] leading-tight ${alerta ? 'text-amber-800' : 'text-muted'}`}>{titulo}</div>
-        {nota && <div className={`text-[10px] leading-tight mt-0.5 ${alerta ? 'text-amber-700' : 'text-gray-400'}`}>{nota}</div>}
+        <div className={`text-base font-extrabold leading-tight tabular-nums ${alerta ? 'text-red-700' : 'text-ink'}`}>{valor}</div>
+        <div className="text-[11px] leading-[1.25] text-muted">{titulo}</div>
+        {nota && <div className={`mt-px text-[10px] leading-tight ${alerta ? 'text-red-700' : 'text-gray-400'}`}>{nota}</div>}
       </div>
     </div>
   );
@@ -361,18 +374,36 @@ function Tarjeta({ icono: Icono, valor, titulo, nota, alerta }: {
 // Vive FUERA de `Celda` desde el 22 de septiembre de 2026, cuando la vista de día estrenó su barra
 // de horas: la barra tiene que llevar exactamente el mismo color que la celda de la semana, y dos
 // copias de esta tabla se habrían separado al primer color nuevo del catálogo (CLAUDE.md §9.3).
+// BORDE Y NO ANILLO desde el 28 de septiembre de 2026, al igualar la maqueta. La celda de un turno
+// del catálogo lleva ahora borde de su color (`CELDA_COLOR`), así que los tres orígenes tienen que
+// dibujar el contorno con la MISMA propiedad: mezclando `ring` y `border`, el grosor y el radio no
+// coinciden y dos celdas vecinas se ven desalineadas por medio píxel.
 const NEUTRO: Record<OrigenDelRotulo, string> = {
   CATALOGO: '', // no se usa: ese caso trae su propio color
-  HORARIO: 'bg-white text-ink ring-1 ring-gray-300',
-  NINGUNO: 'bg-gray-50 text-gray-400 ring-1 ring-gray-200',
+  HORARIO: 'bg-white text-ink border-gray-300',
+  NINGUNO: 'bg-gray-50 text-gray-400 border-gray-200',
+};
+
+// EL PUNTO DE COLOR ANTES DEL NOMBRE, como en la maqueta. No es adorno: con el fondo claro que ahora
+// lleva la celda, el punto es lo que sostiene de qué turno se trata cuando la celda está marcada y el
+// amarillo de la selección domina el contorno.
+//
+// Los dos orígenes sin catálogo también llevan punto, en gris. Sin él, una fila mezclada queda con
+// unas celdas empezando en el punto y otras en la letra, y el ojo lee eso como desalineación.
+const PUNTO_NEUTRO: Record<OrigenDelRotulo, string> = {
+  CATALOGO: '', // no se usa
+  HORARIO: 'bg-gray-400',
+  NINGUNO: 'bg-gray-300',
 };
 
 function tonoDeJornada(dia: DiaDelCalendario) {
   const rotulo = rotuloDeCelda(dia.turno, dia.horarioNombre);
-  const tono = rotulo.origen === 'CATALOGO' && dia.turno
-    ? CLASES_COLOR[normalizarColor(dia.turno.color)]
-    : NEUTRO[rotulo.origen];
-  return { rotulo, tono };
+  const delCatalogo = rotulo.origen === 'CATALOGO' && dia.turno;
+  return {
+    rotulo,
+    tono: delCatalogo ? CELDA_COLOR[normalizarColor(dia.turno!.color)] : NEUTRO[rotulo.origen],
+    punto: delCatalogo ? PUNTO_COLOR[normalizarColor(dia.turno!.color)] : PUNTO_NEUTRO[rotulo.origen],
+  };
 }
 
 // `compacta` ES LA VISTA DE MES (28 de septiembre de 2026). Medido en el navegador antes de tocar
@@ -398,21 +429,53 @@ function tonoDeJornada(dia: DiaDelCalendario) {
 // («Mñ», «Tr»), y con eso la tabla baja a 1630 px. Ese campo no existe en el catálogo —solo hay
 // `nombre`—, y ponerlo pide una decisión de producto y un cambio de esquema, no CSS. Mientras no
 // exista, el mes se sigue desplazando a lo ancho: menos que antes, pero se desplaza.
-function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false }: {
+// ¿ESTA CELDA ESTÁ VACÍA? Lo preguntan DOS sitios: `Celda`, para ofrecer el «+», y el envoltorio de
+// la rejilla, para decidir dónde va el visto. En una celda vacía va centrado y grande, como en la
+// maqueta (`.jornada.t-vacio.sel .tic`); sobre un turno taparía el nombre, que es justo el dato que
+// hace falta para saber qué se va a sobrescribir.
+//
+// Escrita una sola vez porque si no, el día que aparezca un estado nuevo, solo se acordaría uno de
+// los dos y el visto saldría centrado encima del nombre de un turno.
+function esCeldaVacia(dia: DiaDelCalendario): boolean {
+  return dia.estado !== 'TRABAJA' && dia.estado !== 'DESCANSO' && dia.estado !== 'DESCANSO_TRABAJADO';
+}
+
+function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false, codigo }: {
   dia: DiaDelCalendario; sePuedeAgregar?: boolean; compacta?: boolean; marcada?: boolean;
+  // El código corto del turno, para la vista de mes. Lo calcula `codigosDelCatalogo` mirando el
+  // catálogo ENTERO, porque si dos turnos chocan solo se sabe teniéndolos todos delante.
+  codigo?: string;
 }) {
-  const horas = dia.horaEntrada && dia.horaSalida ? `${dia.horaEntrada}–${dia.horaSalida}` : null;
+  // EL HORARIO COMO CABE EN LA CELDA: «6–14» y no «06:00–14:00». La regla vive en `horarioCorto`,
+  // que está probada: en los 75 px útiles de la celda, esos cuatro ceros son un tercio del renglón
+  // repitiendo lo mismo en cada casilla de la pantalla.
+  const horas = dia.horaEntrada && dia.horaSalida ? horarioCorto(dia.horaEntrada, dia.horaSalida) : null;
 
   // El descanso trabajado manda sobre el turno pintado: es el dato que cuesta dinero, y pintarlo
   // como un día cualquiera lo escondería.
   if (dia.estado === 'DESCANSO_TRABAJADO') {
+    // EN EL MES, SOLO EL TRIÁNGULO, como en la maqueta. Esta rama se había quedado sin compactar y era
+    // la que mandaba el ancho de la rejilla: medido, sus columnas iban a 90 px mientras las de un turno
+    // con código corto median 56. Una sola celda ancha estira su columna el mes entero.
+    //
+    // Lo que se esconde no se pierde: el `title` lo dice con palabras, y el panel del día lo explica.
+    if (compacta) {
+      return (
+        <div title={`Descanso trabajado${dia.decision === 'PENDIENTE' ? ' · pendiente de decidir' : ''}`}
+          className="grid h-[26px] w-full place-items-center rounded-lg border border-amber-300 bg-amber-100 text-amber-900">
+          <AlertTriangle size={13} aria-hidden="true" />
+          <span className="sr-only">Descanso trabajado</span>
+        </div>
+      );
+    }
+
     return (
-      <div className="rounded-lg bg-amber-100 ring-1 ring-amber-300 px-2 py-1.5">
+      <div className="flex min-h-[36px] flex-col justify-center rounded-xl border border-amber-300 bg-amber-100 px-2 py-1.5">
         <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-amber-900 whitespace-nowrap">
           <AlertTriangle size={11} className="shrink-0" />
           Descanso
         </div>
-        {!compacta && horas && <div className="text-[11px] text-amber-800 tabular-nums text-center whitespace-nowrap">{horas}</div>}
+        {horas && <div className="text-[11px] text-amber-800 tabular-nums text-center whitespace-nowrap">{horas}</div>}
         {/* SOLO SE AVISA LO QUE FALTA (22 de septiembre de 2026). Un día ya decidido no dice nada
             extra: la ausencia de la palabra es la señal de que está atendido. Poner también un
             «resuelto» llenaría la rejilla de ruido y haría que «pendiente» dejara de saltar a la
@@ -442,12 +505,20 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false 
     // recargo y desde el tercero del mes obliga a compensar con tiempo. Sobre uno marcado a mano, no.
     // Hasta hoy los dos se veían igual, y para distinguirlos había que abrir el día.
     const obligatorio = dia.esDescansoObligatorio === true;
+    // EL ICONO ARRIBA Y LA PALABRA DEBAJO, como en la maqueta, donde lo eligió el dueño el 25 de
+    // septiembre: una celda de turno ocupa dos renglones (nombre y horario) y la de descanso ocupaba
+    // uno solo, así que al lado de las demás se veía hueca y el renglón quedaba desparejo.
+    //
+    // EN EL MES NO CABEN LOS DOS: la celda mide 26 px. Va el icono solo, y la palabra sigue estando
+    // para quien lee con lector de pantalla y para las pruebas, que consultan por lo que se lee.
     return (
-      <div className={`rounded-lg px-2 py-1.5 text-center text-[11px] font-medium ${
+      <div className={`flex flex-col items-center justify-center rounded-xl border text-center text-[11px] font-medium ${
+        compacta ? 'px-1 py-1' : 'min-h-[36px] gap-0.5 px-2 py-1.5'} ${
         obligatorio
-          ? 'bg-slate-200 text-slate-600'
-          : 'border border-dashed border-gray-300 text-muted'}`}>
-        Descanso
+          ? 'border-transparent bg-slate-200 text-slate-600'
+          : 'border-dashed border-gray-300 text-muted'}`}>
+        <Bed size={compacta ? 13 : 15} aria-hidden="true" className="shrink-0" />
+        {compacta ? <span className="sr-only">Descanso</span> : 'Descanso'}
       </div>
     );
   }
@@ -468,21 +539,39 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false 
     // pura y está probada. El color dice de dónde viene el nombre: lo que alguien ELIGIÓ lleva el
     // color que le puso en el catálogo, lo que IMPONE el horario va en blanco con borde, y solo lo
     // que no tiene nada detrás se queda con el gris de «esto está pendiente».
-    const { rotulo, tono } = tonoDeJornada(dia);
+    const { rotulo, tono, punto } = tonoDeJornada(dia);
 
     return (
-      <div className={`rounded-lg ${compacta ? 'px-1.5 py-1' : 'px-2 py-1.5'} ${tono}`}>
-        {/* En compacto NO lleva `whitespace-nowrap`, y eso es TODO el ahorro de ancho: una tabla de
-            ancho automático le da a la columna lo que mide su contenido sin partir, así que el
-            `nowrap` la estiraba hasta la frase completa. Dejándolo partir, la columna se estrecha
-            hasta la palabra más larga. `break-words` es para el nombre que ni partido cabe: antes
-            que desbordar la celda, se corta la palabra. */}
-        <div className={compacta
-          ? 'text-[11px] font-semibold leading-tight break-words'
-          : 'flex items-center gap-1.5 text-[11px] font-semibold whitespace-nowrap'}>
-          {rotulo.texto}
-        </div>
-        {!compacta && horas && <div className="text-[11px] tabular-nums opacity-80 whitespace-nowrap">{horas}</div>}
+      <div
+        // EL NOMBRE COMPLETO, AL PASAR EL PUNTERO, y solo donde la celda no lo dice. Sin esto, una
+        // empresa de horario fijo —que es media clientela— vería un mes entero de letras sueltas sin
+        // forma de saber a qué horario corresponden. La maqueta hace lo mismo con el motivo del
+        // descanso obligatorio: lo que no cabe en la celda no se borra, se mueve al puntero.
+        title={compacta ? [rotulo.texto, horas].filter(Boolean).join(' · ') : undefined}
+        className={`rounded-xl border ${
+        compacta
+          ? 'grid h-[26px] w-full place-items-center rounded-lg px-0.5 text-[11px] font-extrabold'
+          : 'flex min-h-[36px] flex-col justify-center px-2 py-1.5'} ${tono}`}>
+        {/* EN EL MES VA EL CÓDIGO CORTO, como en la maqueta, y no el nombre. Medido antes de tocarlo:
+            con el nombre entero la tabla de un mes pesaba más de tres mil píxeles dentro de un
+            contenedor de mil, o sea que para llegar a la última semana había que raspar a lo ancho.
+            Partirlo en dos renglones ayudaba, pero seguía mandando el nombre más largo del catálogo.
+
+            EL NOMBRE NO SE PIERDE: va en el rótulo accesible del botón de la celda, en el panel del
+            día y en la leyenda de colores que está encima de la rejilla. Y la letra no está sola: se
+            pinta con el color del turno, así que una «M» amarilla y una «M» azul no se confunden.
+
+            El `??` es la red para un día cuyo turno no esté en el catálogo cargado —una respuesta
+            vieja en caché, un turno recién borrado—: antes que una celda muda, su inicial. */}
+        {compacta ? codigo ?? rotulo.texto.charAt(0).toUpperCase() : (
+          <>
+            <div className="flex items-center gap-1.5 text-[11px] font-bold whitespace-nowrap">
+              <span aria-hidden="true" className={`h-[7px] w-[7px] shrink-0 rounded-full ${punto}`} />
+              {rotulo.texto}
+            </div>
+            {horas && <div className="text-[11px] tabular-nums opacity-[.78] whitespace-nowrap">{horas}</div>}
+          </>
+        )}
       </div>
     );
   }
@@ -495,20 +584,28 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false 
   //
   // Solo donde de verdad se puede agregar. Un día ya pasado también llega aquí, y ofrecerle un «+»
   // sería prometer un clic que el servidor va a rechazar con un 400.
-  if (!sePuedeAgregar) return <div className="py-1.5 text-center text-[11px] text-gray-300">—</div>;
+  if (!sePuedeAgregar) {
+    // EN EL MES, UN CUADRO PUNTEADO Y NO UNA RAYA, como en la maqueta: un mes es una cuadrícula, y una
+    // raya suelta entre cuadros rompe la retícula que deja contar días de un vistazo.
+    return compacta
+      ? <div className="h-[26px] w-full rounded-lg border border-dashed border-gray-200" />
+      : <div className="py-1.5 text-center text-[11px] text-gray-300">—</div>;
+  }
 
   // UNA CELDA VACÍA MARCADA DEJA DE OFRECER «AGREGAR» (28 de septiembre de 2026), como en la maqueta,
   // donde `.jornada.t-vacio.sel .n { display: none }`. El «+» es la invitación a poner algo; una celda
   // ya marcada no invita a nada, está esperando que se elija qué ponerle a todo el bloque. Y deja sitio
   // para que se vea el visto, que es lo que dice que está marcada.
   if (marcada) {
-    return <div className="min-h-[2.1rem] rounded-lg border border-dashed border-primary-dark bg-primary-light" />;
+    return <div className={`border border-dashed border-primary-dark bg-primary-light ${
+      compacta ? 'h-[26px] rounded-lg' : 'min-h-[36px] rounded-xl'}`} />;
   }
 
   return (
-    <div className="flex items-center justify-center gap-1 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-2 py-1.5 text-[11px] font-medium text-gray-400">
+    <div className={`flex items-center justify-center gap-1 border border-dashed border-gray-300 bg-gray-50 text-[11px] font-medium text-gray-400 ${
+      compacta ? 'h-[26px] rounded-lg' : 'min-h-[36px] rounded-xl px-2 py-1.5'}`}>
       <Plus size={12} className="shrink-0" />
-      Agregar
+      {!compacta && 'Agregar'}
     </div>
   );
 }
@@ -1541,7 +1638,6 @@ function PreviaDeBloque({
 const PERIODO: Record<ModoDeVista, { unidad: string; deEl: string; enEl: string; elArt: string }> = {
   DIA: { unidad: 'Día', deEl: 'del día', enEl: 'en el día', elArt: 'el día' },
   SEMANA: { unidad: 'Semana', deEl: 'de la semana', enEl: 'en la semana', elArt: 'la semana' },
-  QUINCENA: { unidad: 'Quincena', deEl: 'de la quincena', enEl: 'en la quincena', elArt: 'la quincena' },
   MES: { unidad: 'Mes', deEl: 'del mes', enEl: 'en el mes', elArt: 'el mes' },
 };
 
@@ -1592,7 +1688,12 @@ const MS_DOBLE_CLIC = 400;
 // De MAYOR a menor, como en la maqueta del dueño: Mes · Semana · Día. El orden no es decorativo,
 // es el que deja «Semana» —el modo por defecto y el que más se usa— en el medio, donde cae el
 // pulgar y donde la vista en blanco de la pista gris lo destaca.
-const MODOS: ModoDeVista[] = ['MES', 'QUINCENA', 'SEMANA', 'DIA'];
+// DE LO CHICO A LO GRANDE, como en la maqueta. `DIA` va primero porque la maqueta no lo tiene y el
+// orden ascendente es el único que no obliga a inventarle un sitio.
+//
+// SIN QUINCENA, por decisión del dueño el 28 de septiembre de 2026: catorce columnas no son ni la
+// semana, que se lee entera de un vistazo, ni el mes. Rompía la rejilla sin resolver nada.
+const MODOS: ModoDeVista[] = ['DIA', 'SEMANA', 'MES'];
 
 export default function CalendarioDeTurnos() {
   const [modo, setModo] = useState<ModoDeVista>('SEMANA');
@@ -1706,6 +1807,16 @@ export default function CalendarioDeTurnos() {
   //
   // Lleva las JORNADAS además de los bloques porque el porcentaje se calcula sobre ellas: los bloques
   // no son iguales y el último puede llevar una o seis. Ver `progresoDelBloque`.
+  // LOS AVISOS FLOTANTES. Los levanta `aplicarABloque` al terminar, y son la única manera de que el
+  // «deshacer» siga a mano después de cerrar la ventana de progreso: hasta ahora, cerrarla dejaba
+  // una escritura de cientos de filas sin marcha atrás visible en ninguna parte.
+  //
+  // El `id` es un contador y no la posición: la lista cambia mientras hay avisos en pantalla.
+  const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const siguienteAviso = useRef(1);
+  const avisar = (aviso: Omit<Aviso, 'id'>) =>
+    setAvisos(previos => [...previos, { ...aviso, id: siguienteAviso.current++ }]);
+
   const [progreso, setProgreso] = useState<
     { bloquesHechos: number; bloques: number; escritas: number; total: number } | null
   >(null);
@@ -2432,9 +2543,14 @@ export default function CalendarioDeTurnos() {
     // pasado nadie lo tocó, así que meterlo aquí haría que deshacer escribiera sobre algo que no
     // cambió. Se guarda ANTES de empezar, porque al terminar la selección se limpia.
     const escritas0 = new Set(plan.escribe.map(e => `${e.colaboradorId}|${e.fecha}`));
-    setLoQueHabia(paraDeshacer === null
+    // EN UNA VARIABLE LOCAL Y NO SOLO EN EL ESTADO. El aviso que se levanta al final lleva el
+    // «deshacer» dentro, y su función queda cerrada sobre ESTA pasada: si leyera `loQueHabia`,
+    // leería el valor de la pintada anterior y desharía el envío de antes. Es la trampa clásica de
+    // un cierre sobre estado de React, y aquí costaría cientos de filas mal escritas.
+    const elAntes = paraDeshacer === null
       ? null
-      : paraDeshacer.filter(c => escritas0.has(`${c.colaboradorId}|${c.fecha}`)));
+      : paraDeshacer.filter(c => escritas0.has(`${c.colaboradorId}|${c.fecha}`));
+    setLoQueHabia(elAntes);
 
     let escritas = 0;
     const fallos: string[] = [];
@@ -2469,6 +2585,60 @@ export default function CalendarioDeTurnos() {
     setResultado({ escritas, bloqueadas: plan.bloqueadas, fallos });
     setMarcadas({});
     setRecarga(n => n + 1);
+
+    // EL AVISO, como en la maqueta. Dice lo mismo que la ventana, pero sobrevive a cerrarla, y por
+    // eso lleva el deshacer dentro cuando hay algo que deshacer.
+    //
+    // `paraDeshacer === null` significa que lo que acaba de correr YA era un deshacer: entonces el
+    // aviso no ofrece deshacer —eso sería aplicar otra vez— y dice que se volvió atrás.
+    const cortado = detener.current && escritas < plan.escribe.length;
+    const conFallos = fallos.length > 0;
+    // EL AVISO DICE LO QUE PASÓ DE VERDAD, no «aplicada» a secas. Se detuvo, falló algo, o quedaron
+    // días fuera por haber pasado: las tres cosas caben a la vez y las tres cambian lo que hay que
+    // hacer después. Un «listo» sobre un envío con negativas del servidor es la clase de mentira
+    // plausible de la que habla el encabezado del CLAUDE.md.
+    const detalle = [
+      `${jornadas(escritas)} ${cortado ? 'alcanzaron a escribirse' : 'escritas'}.`,
+      cortado ? 'Lo demás quedó sin tocar.' : null,
+      plan.bloqueadas > 0 ? `${plan.bloqueadas} no se tocaron porque el día ya pasó.` : null,
+      conFallos ? `${fallos.length} no se pudieron guardar.` : null,
+    ].filter(Boolean).join(' ');
+
+    if (paraDeshacer === null) {
+      avisar({ tipo: 'ok', titulo: 'Programación deshecha', texto: 'Quedó como estaba antes de aplicar.' });
+    } else {
+      avisar({
+        tipo: cortado || conFallos ? 'aviso' : 'ok',
+        titulo: cortado ? 'Se detuvo la programación'
+          : conFallos ? 'La programación terminó con errores'
+            : 'Programación aplicada',
+        texto: detalle,
+        accion: elAntes && elAntes.length > 0
+          ? { texto: 'Deshacer esta programación', al: () => deshacerElLote(elAntes) }
+          : undefined,
+      });
+    }
+  };
+
+  // DESHACER ES OTRO ENVÍO POR BLOQUES, por la misma máquina y con la misma ventana. Cada celda
+  // vuelve a lo que `accionParaDeshacer` diga de su foto anterior, y se pasa `null` como foto del
+  // nuevo envío: deshacer un deshacer no se ofrece, porque eso es aplicar otra vez.
+  //
+  // LA FOTO ENTRA POR PARÁMETRO y no se lee del estado: la piden DOS sitios —el botón de la ventana
+  // y la acción del aviso flotante—, y el segundo queda cerrado sobre la pasada en la que nació.
+  // Leyendo el estado, cada uno desharía un envío distinto.
+  const deshacerElLote = (antes: CeldaParaPrevia[]) => {
+    const porClave = new Map(antes.map(c => [`${c.colaboradorId}|${c.fecha}`, c] as const));
+    aplicarABloque(
+      antes.map(c => ({ colaboradorId: c.colaboradorId, fecha: c.fecha })),
+      celda => {
+        const suya = porClave.get(`${celda.colaboradorId}|${celda.fecha}`);
+        // No puede faltar: las celdas salen de esa misma foto. Se comprueba igual porque el tipo lo
+        // permite, y adivinar aquí escribiría algo que nadie pidió.
+        return suya ? accionParaDeshacer(suya) : { tipo: 'QUITAR' };
+      },
+      null,
+    );
   };
 
   // LA VISTA DE DÍA EN HORAS (22 de septiembre de 2026). Pedido del dueño: «que no vea arriba la M
@@ -2478,6 +2648,10 @@ export default function CalendarioDeTurnos() {
   // El eje se calcula con las jornadas de TODAS las personas de ese día, no con cada una por su
   // lado: si cada fila tuviera su propio eje, dos barras del mismo largo significarían horarios
   // distintos y la pantalla dejaría de poder compararse de un vistazo, que es para lo que sirve.
+  // LOS CÓDIGOS CORTOS, uno por turno del catálogo. Se calculan de una porque la unicidad es una
+  // propiedad del CONJUNTO: mirando un turno solo no se puede saber si su inicial ya está tomada.
+  const codigosDeTurno = useMemo(() => codigosDelCatalogo(catalogo), [catalogo]);
+
   const enDia = modo === 'DIA';
   // El mes es el único modo donde el ancho aprieta: 42 columnas contra un contenedor de mil y pico.
   // Ver el comentario de `Celda` con la medida.
@@ -2510,7 +2684,9 @@ export default function CalendarioDeTurnos() {
     // día es pintable, y el hueco con el «+» solo se ofrece donde el servidor lo va a aceptar.
     const dibujar = opciones?.contenido
       ?? ((sePuedeAgregar: boolean) => (
-        <Celda dia={dia} sePuedeAgregar={sePuedeAgregar} compacta={enMes} marcada={opciones?.marcada === true} />
+        <Celda dia={dia} sePuedeAgregar={sePuedeAgregar} compacta={enMes}
+          marcada={opciones?.marcada === true}
+          codigo={dia.turno ? codigosDeTurno[dia.turno.id] : undefined} />
       ));
 
     return dia.estado === 'DESCANSO_TRABAJADO' ? (
@@ -2547,75 +2723,74 @@ export default function CalendarioDeTurnos() {
 
   return (
     <div className="p-6 md:p-8">
-      {/* EL ENCABEZADO, con la distribución de la maqueta del dueño (22 de septiembre de 2026):
-          título grande a la izquierda, el selector de modo centrado, y la navegación agrupada a la
-          derecha con «Hoy» ENTRE las dos flechas.
+      {/* LA CABECERA, COMO EN LA MAQUETA (28 de septiembre de 2026). Todo a la derecha y en dos filas:
+          arriba el segmentado y la navegación, debajo la etiqueta de período.
 
-          Tres columnas desde `sm` y no `justify-between`: con `between`, el selector queda «en
-          medio de lo que sobre», y se corre de sitio cada vez que el título cambia de largo (de
-          «Septiembre de 2026» a «28 de septiembre al 4 de octubre» hay bastante diferencia). Con la
-          rejilla, la columna del medio está centrada respecto a la pantalla y no se mueve nunca.
-
-          EN PANTALLA ANGOSTA SE APILA Y SE CENTRA (24 de septiembre de 2026, pedido del dueño con
-          la pantalla estrecha delante). Antes era `flex-wrap`, que no es lo mismo: al envolver, el
-          título y el selector se quedaban juntos en la primera línea y la navegación caía sola a la
-          izquierda, alineada con nada. Apilar en columna pone las tres piezas una debajo de otra y
-          centradas, que es lo que se ve cuando no hay ancho para las tres en fila. */}
-      <div className="mb-5 flex flex-col items-center gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr]">
-        <h3 className="text-2xl sm:text-3xl font-light tracking-tight text-ink text-center sm:text-left">{vista.rotulo}</h3>
-
-        {/* MES · SEMANA · DÍA. `aria-pressed` y no un `select`: son tres opciones fijas y la
+          EL RANGO DEJÓ DE SER UN TÍTULO Y PASÓ A SER EL BOTÓN DEL MEDIO. No es un cambio de sitio
+          cualquiera: ahí también ES el «ir a hoy», así que el texto que dice dónde estás es el mismo
+          control que te devuelve. Y por eso cambió de formato a «28 sep – 4 oct 2026», que es de
+          ancho estable: el largo cambiaba de tamaño según la semana y movía las flechas mientras
+          alguien hacía clic repetido en ellas. */}
+      <div className="mb-1 flex flex-col items-center gap-2 sm:items-end">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+        {/* DÍA · SEMANA · MES. `aria-pressed` y no un `select`: son opciones fijas y la
             encendida tiene que verse sin abrir nada. */}
         <div role="group" aria-label="Cómo se ve el calendario"
-          className="flex items-center gap-1 rounded-2xl bg-gray-100 p-1 sm:justify-self-center">
+          className="flex items-center gap-[3px] rounded-xl bg-gray-200 p-[3px]">
           {MODOS.map(m => (
             <button key={m} type="button" onClick={() => verEnModo(m)} aria-pressed={modo === m}
-              className={`rounded-xl px-4 py-1.5 text-sm transition-colors ${
+              className={`rounded-[9px] px-4 py-1.5 text-[13px] transition-colors ${
                 modo === m
-                  ? 'bg-white text-ink font-bold shadow-sm'
-                  : 'text-muted font-medium hover:text-ink'}`}>
+                  ? 'bg-white text-ink font-extrabold shadow-sm'
+                  : 'text-muted font-semibold hover:text-ink'}`}>
               {PERIODO[m].unidad}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2 sm:justify-self-end">
+        {/* BLANCOS CON BORDE, como en la maqueta, y no grises: el gris del segmentado que va al lado
+            es el fondo de un grupo de opciones, y usarlo también para los controles de navegación
+            hacía que las dos cosas se leyeran como una sola pieza. */}
+        <div className="flex items-center gap-2">
           {/* Las flechas se mueven en la UNIDAD DEL MODO, y lo dicen: en un mes, «Semana anterior»
               sería una etiqueta falsa para quien navega con lector de pantalla. */}
           <button type="button" onClick={() => irAlPeriodo(a => moverVista(modo, a, -1))}
             aria-label={`${PERIODO[modo].unidad} anterior`}
-            className="grid h-9 w-9 place-items-center rounded-xl bg-gray-100 text-ink hover:bg-gray-200 transition-colors">
-            <ChevronLeft size={18} />
+            className="grid h-[38px] w-[38px] place-items-center rounded-[11px] border border-gray-200 bg-white text-ink transition-colors hover:bg-gray-50">
+            <ChevronLeft size={16} />
           </button>
-          {/* «Hoy» va SIEMPRE y en el medio, como en la maqueta. Antes solo aparecía cuando hoy no
-              estaba a la vista, y eso tiene un costo que no se ve hasta que se usa: un botón que
-              aparece y desaparece EMPUJA a las flechas de sitio, justo mientras se está haciendo
-              clic repetido en ellas para avanzar semanas. */}
+          {/* EL RANGO ES EL BOTÓN DEL MEDIO, y también lleva a hoy. Dos controles que hacen lo mismo
+              no es un descuido: uno se pulsa porque dice dónde estás, el otro porque dice a dónde
+              vas, y la maqueta los tiene los dos. El ancho mínimo es lo que impide que las flechas
+              bailen al cambiar de período. */}
           <button type="button" onClick={() => irAlPeriodo(hoy)}
-            className="rounded-xl bg-gray-100 px-5 py-2 text-sm font-bold text-ink hover:bg-gray-200 transition-colors">
-            Hoy
+            className="h-[38px] min-w-[200px] rounded-[11px] border border-gray-200 bg-white px-4 text-[13px] font-bold text-ink transition-colors hover:bg-gray-50">
+            {vista.rotulo}
           </button>
           <button type="button" onClick={() => irAlPeriodo(a => moverVista(modo, a, 1))}
             aria-label={`${PERIODO[modo].unidad} siguiente`}
-            className="grid h-9 w-9 place-items-center rounded-xl bg-gray-100 text-ink hover:bg-gray-200 transition-colors">
-            <ChevronRight size={18} />
+            className="grid h-[38px] w-[38px] place-items-center rounded-[11px] border border-gray-200 bg-white text-ink transition-colors hover:bg-gray-50">
+            <ChevronRight size={16} />
+          </button>
+          <button type="button" onClick={() => irAlPeriodo(hoy)}
+            className="h-[38px] rounded-[11px] border border-gray-200 bg-white px-[18px] text-[13px] font-bold text-ink transition-colors hover:bg-gray-50">
+            Hoy
           </button>
         </div>
-      </div>
+        </div>
 
-      {/* DÓNDE ESTÁ PARADO EL CALENDARIO, debajo del encabezado (28 de septiembre de 2026).
-          El título dice «28 sep – 4 oct» o «Septiembre de 2026», y eso no contesta la pregunta que uno
-          se hace al llegar: ¿esto es la semana en curso, o me fui tres semanas adelante con las
-          flechas? Programar en el período equivocado no se ve raro en pantalla; se ve igual que
-          programar en el correcto.
+        {/* DÓNDE ESTÁ PARADO EL CALENDARIO (28 de septiembre de 2026). El botón dice «28 sep – 4 oct
+            2026» o «Septiembre de 2026», y eso no contesta la pregunta que uno se hace al llegar:
+            ¿esto es la semana en curso, o me fui tres semanas adelante con las flechas? Programar en
+            el período equivocado no se ve raro en pantalla; se ve igual que programar en el correcto.
 
-          EL COLOR NO ES EL DE ALERTA, y ahí se deja la maqueta a propósito: allí el período actual va
-          con el color de aviso. Estar en la semana en curso no es un aviso, y gastar ese color en lo
-          normal lo desgasta para cuando de verdad haya algo mal. Va en tinta fuerte cuando es el
-          período de hoy y apagada cuando no. */}
-      <div className={`mt-1 mb-4 text-[10px] font-extrabold uppercase tracking-[0.06em] text-center sm:text-left ${
-        etiquetaPeriodo.esActual ? 'text-ink' : 'text-muted'}`}>
-        {etiquetaPeriodo.texto}
+            EN ÁMBAR CUANDO ES EL PERÍODO ACTUAL, como la maqueta y por decisión del dueño. Yo la
+            había puesto en tinta negra con el argumento de no gastar el color de aviso en algo
+            normal; queda constancia del argumento, no de la decisión. */}
+        <div className={`text-[10px] font-extrabold uppercase tracking-[0.06em] ${
+          etiquetaPeriodo.esActual ? 'text-amber-800' : 'text-muted'}`}>
+          {etiquetaPeriodo.texto}
+        </div>
       </div>
 
       {/* LA BARRA DE HERRAMIENTAS (28 de septiembre de 2026). Buscador, sede y cargo, como en la
@@ -2629,32 +2804,41 @@ export default function CalendarioDeTurnos() {
         </div>
         {/* El valor vacío es «todas», y por eso la opción va primero y sin id: un desplegable que
             empezara en una sede concreta escondería a media empresa sin que nadie lo hubiera pedido. */}
-        <select aria-label="Sede" value={filtros.sedeId} onChange={e => cambiarFiltro({ sedeId: e.target.value })}
-          className="min-w-[150px] flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-ink focus:border-primary-dark focus:outline-none">
-          <option value="">Todas las sedes</option>
-          {sedesQueHay.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-        </select>
-        <select aria-label="Cargo" value={filtros.cargo} onChange={e => cambiarFiltro({ cargo: e.target.value })}
-          className="min-w-[150px] flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm text-ink focus:border-primary-dark focus:outline-none">
-          <option value="">Todos los cargos</option>
-          {cargosQueHay.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+        {/* UN <select> NO ADMITE UN ICONO DENTRO, así que va encima de su zona izquierda y el campo se
+            abre hueco con el relleno, igual que el buscador. `pointer-events-none` para que el icono
+            no se coma el clic que tiene que abrir la lista. Es lo mismo que hace la maqueta. */}
+        <div className="relative flex min-w-[165px] flex-1 items-center">
+          <MapPin size={15} className="pointer-events-none absolute left-3 text-muted" />
+          <select aria-label="Sede" value={filtros.sedeId} onChange={e => cambiarFiltro({ sedeId: e.target.value })}
+            className="w-full rounded-xl border border-gray-200 py-2 pl-9 pr-3 text-sm text-ink focus:border-primary-dark focus:outline-none">
+            <option value="">Todas las sedes</option>
+            {sedesQueHay.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          </select>
+        </div>
+        <div className="relative flex min-w-[165px] flex-1 items-center">
+          <Briefcase size={15} className="pointer-events-none absolute left-3 text-muted" />
+          <select aria-label="Cargo" value={filtros.cargo} onChange={e => cambiarFiltro({ cargo: e.target.value })}
+            className="w-full rounded-xl border border-gray-200 py-2 pl-9 pr-3 text-sm text-ink focus:border-primary-dark focus:outline-none">
+            <option value="">Todos los cargos</option>
+            {cargosQueHay.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
       </div>
 
-      {/* SEIS TARJETAS EN UNA FILA (28 de septiembre de 2026, decisión del dueño): las CUATRO de la
-          maqueta —personas, turnos programados, descansos marcados y semanas sobre el tope— más las
-          dos que la vista ya tenía y ella no: horas programadas y promedio por persona.
+      {/* SEIS EN UNA TIRA (28 de septiembre de 2026, decisión del dueño): las CUATRO de la maqueta
+          —personas, turnos programados, descansos marcados y semanas sobre el tope— más las dos que
+          la vista ya tenía y ella no: horas programadas y promedio por persona.
 
           LA QUE SALE ES «trabajaron su descanso», y su alarma NO se pierde: el aviso de descanso
-          habitual pasa a ser la nota de «descansos marcados», que es donde se lee en contexto.
-
-          Una tarjeta por fila en el teléfono, que es de lo que ya se quejó el dueño el 24 de
-          septiembre: con dos columnas en pantalla angosta los rótulos se partían en tres líneas. */}
-      <div className="grid grid-cols-1 gap-3 mb-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <Tarjeta icono={Users} valor={String(filas.length)} titulo="personas en la lista" />
-        <Tarjeta icono={Calendar} valor={String(conteoDeTarjetas.turnos)} titulo="turnos programados"
+          habitual pasa a ser la nota de «descansos marcados», que es donde se lee en contexto. */}
+      <div className="mb-3 flex flex-wrap items-stretch rounded-card border border-gray-200 bg-white px-0.5 py-1">
+        <Tarjeta icono={Users} tinte="bg-indigo-50 text-indigo-600"
+          valor={String(filas.length)} titulo="personas en la lista" />
+        <Tarjeta icono={Calendar} tinte="bg-emerald-50 text-emerald-600"
+          valor={String(conteoDeTarjetas.turnos)} titulo="turnos programados"
           nota={PERIODO[modo].enEl} />
-        <Tarjeta icono={Moon} valor={String(conteoDeTarjetas.descansos)} titulo="descansos marcados"
+        <Tarjeta icono={Moon} tinte="bg-primary-light text-[#8a6d1f]"
+          valor={String(conteoDeTarjetas.descansos)} titulo="descansos marcados"
           // LA ALARMA DEL COMPENSATORIO SE MUDA AQUÍ al quitarse su propia tarjeta. Es la única de
           // verdad: uno o dos descansos trabajados se pagan con recargo, pero desde el tercero del mes
           // la compensación en tiempo deja de ser opcional (art. 181).
@@ -2666,13 +2850,14 @@ export default function CalendarioDeTurnos() {
             esta semana» en una y «semanas por encima» en la otra. «Semanas por encima» es cierto en
             los dos casos —en una semana el número es cero o uno— y evita una rama más donde
             equivocarse. El tope sale de la jornada legal vigente, no escrito aquí. */}
-        <Tarjeta icono={AlertTriangle} valor={String(semanasSobreTope)}
+        <Tarjeta icono={AlertTriangle} tinte="bg-red-50 text-red-600" valor={String(semanasSobreTope)}
           titulo={`semanas por encima de ${tope} h`}
           nota={semanasSobreTope > 0 ? undefined : `tope legal ${tope} h semanales`}
           alerta={semanasSobreTope > 0} />
-        <Tarjeta icono={Clock} valor={horasDeMinutos(minutosTotales)} titulo="horas programadas"
-          nota={PERIODO[modo].enEl} />
-        <Tarjeta icono={Scale} valor={horasDeMinutos(promedio)} titulo="promedio por persona" />
+        <Tarjeta icono={Clock} tinte="bg-sky-50 text-sky-600"
+          valor={horasDeMinutos(minutosTotales)} titulo="horas programadas" nota={PERIODO[modo].enEl} />
+        <Tarjeta icono={Scale} tinte="bg-violet-50 text-violet-600"
+          valor={horasDeMinutos(promedio)} titulo="promedio por persona" />
       </div>
 
       {/* LA LEYENDA DE COLORES, que la maqueta tiene y la vista no tenía. Sin ella, el color de una
@@ -2757,7 +2942,7 @@ export default function CalendarioDeTurnos() {
                       porque la celda ya no lleva horario y el nombre se recorta. Sigue habiendo
                       desplazamiento horizontal —cerrarlo del todo pide un nombre corto por turno, que
                       no existe en el catálogo—, pero de cuatro pantallas pasa a algo más de dos. */}
-                  <th className={`py-3 text-center ${enMes ? 'px-1 min-w-[56px]' : 'px-2 min-w-[96px]'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
+                  <th className={`py-3 text-center ${enMes ? 'px-0.5 min-w-[38px]' : 'px-2 min-w-[96px]'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
                     {/* EL ENCABEZADO MARCA LA COLUMNA ENTERA: ese día de todo el mundo. Es el gesto
                         con el que se programa una jornada completa —un domingo, un festivo— sin
                         recorrer la lista persona por persona. Vuelve a tocarse y se desmarca, porque
@@ -2765,9 +2950,17 @@ export default function CalendarioDeTurnos() {
                     <button type="button" onClick={() => marcarColumna(fecha)}
                       aria-label={rotuloDeColumna(fecha)}
                       className="w-full rounded-lg px-1 py-0.5 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary">
-                      {/* La inicial sale de la FECHA y no del número de columna: con `[i]`, de la
-                          octava columna en adelante el encabezado salía en blanco. */}
-                      <div className={`text-xs font-semibold ${esHoy ? 'text-ink' : 'text-muted'}`}>{inicialDeDia(fecha)}</div>
+                      {/* Sale de la FECHA y no del número de columna: con `[i]`, de la octava columna
+                          en adelante el encabezado salía en blanco.
+
+                          TRES LETRAS EN LA SEMANA Y UNA EN EL RESTO, como en la maqueta. Con la
+                          inicial sola, lunes y martes son «L» y «M» pero martes y miércoles son «M»
+                          y «M»: en la mitad de las columnas hay que contar desde la izquierda para
+                          saber en qué día se está pintando. En la semana sobra ancho para las tres;
+                          en un mes de cuarenta y dos columnas, no. */}
+                      <div className={`text-xs font-semibold ${esHoy ? 'text-ink' : 'text-muted'}`}>
+                        {modo === 'SEMANA' ? abreviaturaDeDia(fecha) : inicialDeDia(fecha)}
+                      </div>
                       <div className={`text-sm tabular-nums ${esHoy ? 'font-bold text-ink' : 'text-muted'}`}>
                         {Number(fecha.slice(8, 10))}
                       </div>
@@ -2888,7 +3081,7 @@ export default function CalendarioDeTurnos() {
                             Está dentro de la selección —el rectángulo la abarca— pero NO se va a
                             escribir, y la previa lo dice aparte: «no se tocan porque el día ya pasó».
                             Pintarla igual que las demás prometería una escritura que no va a ocurrir. */}
-                        <div className={`relative rounded-lg ${
+                        <div className={`relative rounded-xl ${
                           !marcada ? ''
                             : sePuedePintar(dia.fecha, hoy)
                               ? 'ring-2 ring-primary-dark ring-offset-1 ring-offset-white'
@@ -2896,9 +3089,12 @@ export default function CalendarioDeTurnos() {
                           {celdaDeDia(fila, dia, { marcada })}
                           {marcada && (
                             <span aria-hidden="true"
-                              className={`absolute right-1 top-1 grid h-4 w-4 place-items-center rounded ${
+                              className={`absolute grid place-items-center ${
+                                esCeldaVacia(dia)
+                                  ? 'inset-0 m-auto h-6 w-6 rounded-lg'
+                                  : 'right-1 top-1 h-4 w-4 rounded'} ${
                                 sePuedePintar(dia.fecha, hoy) ? 'bg-primary-dark text-ink' : 'bg-gray-300 text-gray-600'}`}>
-                              <Check size={11} strokeWidth={3} />
+                              <Check size={esCeldaVacia(dia) ? 16 : 11} strokeWidth={3} />
                             </span>
                           )}
                         </div>
@@ -3063,11 +3259,15 @@ export default function CalendarioDeTurnos() {
       {/* CÓMO QUEDÓ LO QUE SE APLICÓ. Se queda en pantalla hasta la siguiente vez: un resultado que
           se desvanece solo obliga a haber estado mirando justo en ese momento.
 
-          Dos papeles distintos y no uno: todo bien es un `status` (se anuncia sin interrumpir), y
-          algo que no se pudo escribir es un `alert`. Meter las dos cosas en el mismo sitio dejaría
-          las negativas del servidor con el mismo peso que un «listo». */}
+          Lo que NO se pudo escribir sigue siendo un `alert`: una negativa del servidor no puede tener
+          el mismo peso que un «listo».
+
+          EL DE «TODO BIEN» YA NO ES UN `status`, desde que el aviso flotante dice lo mismo: dos
+          regiones vivas con el mismo texto se leen DOS VECES seguidas con un lector de pantalla. El
+          que anuncia es el aviso, porque además lleva dentro el deshacer; este se queda como
+          registro en pantalla, que es para lo que sirve estar quieto. */}
       {resultado && resultado.fallos.length === 0 && (
-        <p role="status" className="mt-3 flex items-center gap-2 rounded-card border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900">
+        <p className="mt-3 flex items-center gap-2 rounded-card border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900">
           <Check size={15} className="shrink-0" />
           {jornadas(resultado.escritas)} escritas.
           {resultado.bloqueadas > 0 && ` ${resultado.bloqueadas} no se tocaron porque el día ya pasó.`}
@@ -3107,6 +3307,11 @@ export default function CalendarioDeTurnos() {
           «empieza de cero». */}
       {/* LA VENTANA DEL ENVÍO. Se queda con su estado final hasta que la cierre una persona: antes se
           desvanecía sola y el final se veía como un parpadeo, sin decir cuánto se escribió. */}
+      {/* LOS AVISOS FLOTANTES, abajo a la derecha. Sobreviven a cerrar la ventana de progreso, y por
+          eso son los que de verdad sostienen el «deshacer»: hasta ahora, cerrarla dejaba una
+          escritura de cientos de filas sin marcha atrás a la vista en ninguna parte. */}
+      <PilaDeAvisos avisos={avisos} onCerrar={id => setAvisos(ps => ps.filter(a => a.id !== id))} />
+
       {progreso && (
         <VentanaDeProgreso
           estado={estadoDelProgreso({ ...progreso, detenido })}
@@ -3115,24 +3320,7 @@ export default function CalendarioDeTurnos() {
           detenido={detenido}
           sePuedeDeshacer={loQueHabia !== null && loQueHabia.length > 0}
           onDetener={() => { detener.current = true; setDetenido(true); }}
-          // DESHACER ES OTRO ENVÍO POR BLOQUES, por la misma máquina y con esta misma ventana. Cada
-          // celda vuelve a lo que `accionParaDeshacer` diga de su foto anterior, y se pasa `null` como
-          // foto del nuevo envío: deshacer un deshacer no se ofrece.
-          onDeshacer={() => {
-            const antes = loQueHabia;
-            if (!antes) return;
-            const porClave = new Map(antes.map(c => [`${c.colaboradorId}|${c.fecha}`, c] as const));
-            aplicarABloque(
-              antes.map(c => ({ colaboradorId: c.colaboradorId, fecha: c.fecha })),
-              celda => {
-                const suya = porClave.get(`${celda.colaboradorId}|${celda.fecha}`);
-                // No puede faltar: las celdas salen de esa misma foto. Se comprueba igual porque el
-                // tipo lo permite, y adivinar aquí escribiría algo que nadie pidió.
-                return suya ? accionParaDeshacer(suya) : { tipo: 'QUITAR' };
-              },
-              null,
-            );
-          }}
+          onDeshacer={() => { if (loQueHabia) deshacerElLote(loQueHabia); }}
           onCerrar={() => setProgreso(null)} />
       )}
 

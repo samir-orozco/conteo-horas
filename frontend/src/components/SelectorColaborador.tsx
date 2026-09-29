@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Users, Search, Check } from 'lucide-react';
+import { sinTildes } from '../lib/texto';
 
 // Selector de colaborador con buscador. Un <select> nativo obliga a recorrer una
 // lista larga a ciegas: con cuarenta personas, escribir tres letras es la única
@@ -25,7 +26,7 @@ export default function SelectorColaborador({
   const [busca, setBusca] = useState('');
 
   const elegido = colaboradores.find(c => c.id === valor);
-  const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const norm = sinTildes;
   const lista = busca.trim()
     ? colaboradores.filter(c => norm(`${c.nombre} ${c.apellido}`).includes(norm(busca.trim())))
     : colaboradores;

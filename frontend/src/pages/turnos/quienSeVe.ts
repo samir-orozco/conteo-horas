@@ -1,3 +1,4 @@
+import { sinTildes } from '../../lib/texto';
 // A QUIÉN SE VE EN LA REJILLA (28 de septiembre de 2026).
 //
 // La maqueta tiene buscador, filtro de sede y filtro de cargo; la vista no tenía ninguno. Con doce
@@ -23,14 +24,6 @@ export type FiltrosDeLaRejilla = {
   cargo: string;
   sedeId: string;
 };
-
-// Sin tildes y en minúscula, para comparar lo que una persona escribe con lo que hay guardado.
-//
-// LAS DOS DIRECCIONES IMPORTAN: nadie escribe «Julián» con tilde en un buscador, y quien sí la escriba
-// tampoco puede quedarse sin resultados. Sin esto, media lista de nombres colombianos no se encuentra.
-function sinTildes(texto: string): string {
-  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-}
 
 // GENÉRICA EN LA PERSONA para que quien llame no pierda el tipo por el camino: la pantalla le pasa
 // filas del calendario, que traen muchísimo más que estos cinco campos, y tiene que recuperarlas

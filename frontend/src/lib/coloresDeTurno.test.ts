@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { COLORES_DE_TURNO, COLOR_POR_DEFECTO, ETIQUETA_COLOR, CLASES_COLOR, PUNTO_COLOR, normalizarColor } from './coloresDeTurno';
+import {
+  COLORES_DE_TURNO, COLOR_POR_DEFECTO, ETIQUETA_COLOR, CLASES_COLOR, PUNTO_COLOR, CELDA_COLOR,
+  normalizarColor,
+} from './coloresDeTurno';
 
 // La paleta de los turnos del catálogo (19 de septiembre de 2026).
 //
@@ -76,6 +79,48 @@ describe('normalizarColor', () => {
   it('cae al color por defecto con lo que no es de la paleta', () => {
     for (const raro of ['#ff0000', 'rojo', '', 'GRAFITO', 7, null, undefined, {}]) {
       expect(normalizarColor(raro)).toBe(COLOR_POR_DEFECTO);
+    }
+  });
+});
+
+// EL TERCER MAPA: LA CELDA DE LA REJILLA (28 de septiembre de 2026).
+//
+// No es un capricho tener tres. Cada uno resuelve un problema de contraste distinto:
+//
+//   CLASES_COLOR  fondo medio + texto oscuro — una PASTILLA suelta, que se lee sobre blanco.
+//   PUNTO_COLOR   relleno entero — un círculo VACÍO, que sin relleno se vería igual en los ocho.
+//   CELDA_COLOR   fondo muy claro + borde del color — una celda pegada a otras treinta.
+//
+// POR QUÉ LA CELDA NO PUEDE USAR EL PRIMERO: la rejilla marca la selección con un anillo amarillo,
+// y sobre un fondo `-200` ese anillo compite con el relleno en vez de destacar. Con el fondo claro
+// el color sigue leyéndose —lo sostienen el borde y el punto— y el amarillo de lo marcado manda,
+// que es lo que tiene que pasar cuando alguien está eligiendo a quién le va a escribir el turno.
+describe('el color de una celda de la rejilla', () => {
+  it('los ocho lo tienen, sin huecos', () => {
+    for (const color of COLORES_DE_TURNO) {
+      expect(CELDA_COLOR[color], `celda de ${color}`).toBeTruthy();
+    }
+  });
+
+  it('trae fondo, texto Y BORDE, en clases completas que Tailwind pueda encontrar escritas', () => {
+    for (const color of COLORES_DE_TURNO) {
+      expect(CELDA_COLOR[color], `celda de ${color}`).toMatch(/\bbg-[a-z]+-\d{2,3}\b/);
+      expect(CELDA_COLOR[color], `celda de ${color}`).toMatch(/\btext-[a-z]+-\d{2,3}\b/);
+      expect(CELDA_COLOR[color], `celda de ${color}`).toMatch(/\bborder-[a-z]+-\d{2,3}\b/);
+    }
+  });
+
+  it('no hay dos que pinten igual', () => {
+    const pintados = COLORES_DE_TURNO.map(c => CELDA_COLOR[c]);
+    expect(new Set(pintados).size).toBe(COLORES_DE_TURNO.length);
+  });
+
+  it('EL FONDO ES MÁS CLARO QUE EL DE LA PASTILLA, que es la razón de que exista este mapa', () => {
+    // Si alguien lo iguala a `CLASES_COLOR`, el anillo de selección vuelve a pelearse con el relleno
+    // y no hay nada que lo delate mirando la pantalla de a una celda.
+    for (const color of COLORES_DE_TURNO) {
+      const nivel = (clases: string) => Number(clases.match(/\bbg-[a-z]+-(\d{2,3})\b/)![1]);
+      expect(nivel(CELDA_COLOR[color]), `fondo de ${color}`).toBeLessThan(nivel(CLASES_COLOR[color]));
     }
   });
 });

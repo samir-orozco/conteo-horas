@@ -202,7 +202,7 @@ describe('un día sin turno asignado no puede aparentar que lo tiene', () => {
     // Sin asignar no es lo mismo que sin obligación. Si se borraran las horas, la celda diría que
     // ese día no hay nada que cumplir, y sí lo hay.
     montar();
-    expect(await celdaDe(numeroDe(DOMINGO))).toHaveTextContent('10:00–16:00');
+    expect(await celdaDe(numeroDe(DOMINGO))).toHaveTextContent('10–16');
   });
 
   it('un día PINTADO sí muestra el nombre que le puso una persona', async () => {
@@ -242,7 +242,7 @@ describe('un día que el horario programa SÍ está asignado', () => {
 
   it('y conserva las horas, que es lo que ese horario exige', async () => {
     montar([{ ...FILA, dias: FILA.dias.map(d => ({ ...d, horarioNombre: 'Jornada demo' })) }]);
-    expect(await celdaDe(numeroDe(DOMINGO))).toHaveTextContent('10:00–16:00');
+    expect(await celdaDe(numeroDe(DOMINGO))).toHaveTextContent('10–16');
   });
 
   it('un turno pintado le gana al nombre del horario', async () => {

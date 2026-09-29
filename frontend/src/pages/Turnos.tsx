@@ -27,7 +27,11 @@ export default function Turnos() {
   return (
     <div className="w-full">
       <div className="px-6 md:px-8 pt-6 md:pt-8">
-        <h2 className="text-2xl font-bold text-ink mb-5">Turnos</h2>
+        {/* EL SUBTÍTULO ES DE LA MAQUETA. No es relleno: esta pantalla y «Configuración → Horario»
+            se parecen lo bastante como para que alguien entre aquí buscando las tolerancias. Una
+            línea que diga qué se hace aquí ahorra ese viaje. */}
+        <h2 className="text-2xl font-bold text-ink">Turnos</h2>
+        <p className="mt-0.5 mb-5 text-[13px] text-muted">Organiza y programa los turnos de tu equipo</p>
         <div className="border-b border-gray-200">
           <nav className="flex gap-6 -mb-px overflow-x-auto">
             {TABS.map(t => (

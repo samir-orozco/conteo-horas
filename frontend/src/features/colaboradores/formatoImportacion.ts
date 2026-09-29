@@ -1,6 +1,7 @@
 import { descargarExcelHojas } from '../../lib/exportar';
 import { normalizarFecha } from './fechaImportada';
 import { alEscribirMiles } from '../../lib/dinero';
+import { sinTildes } from '../../lib/texto';
 
 // Las manda el servidor (GET /colaboradores/formato). No se declaran aquí a
 // propósito: son el contrato entre el archivo que se descarga y el validador
@@ -16,8 +17,10 @@ export type FilaCruda = Record<string, string>;
 
 // "Cédula" y "CEDULA" son la misma columna. La mitad de los Excel que circulan
 // perdieron las tildes por el camino.
-const normalizar = (v: unknown) =>
-  String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+//
+// El quitar tildes sale de `lib/texto`, que es donde vive esa regla desde el 28 de septiembre de
+// 2026. Lo de aquí es lo propio de un Excel: que la celda puede venir vacía y que hay que recortar.
+const normalizar = (v: unknown) => sinTildes(String(v ?? '')).trim();
 
 const celda = (v: unknown) => (v === null || v === undefined ? '' : String(v).trim());
 

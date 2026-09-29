@@ -1,4 +1,4 @@
-import { sumarDias, lunesDeLaSemana, diasDeLaSemana, rotuloDeSemana, rotuloDeDia, rotuloDeMes, rotuloDeRango } from './semana';
+import { sumarDias, lunesDeLaSemana, diasDeLaSemana, rotuloDeSemana, rotuloDeDia, rotuloDeMes } from './semana';
 
 // DÍA, SEMANA Y MES (22 de septiembre de 2026).
 //
@@ -18,10 +18,14 @@ import { sumarDias, lunesDeLaSemana, diasDeLaSemana, rotuloDeSemana, rotuloDeDia
 // con la columna de la persona fija (`sticky left-0`), así que 31 columnas se recorren sin perder
 // de vista de quién es cada fila.
 
-// QUINCENA entró el 28 de septiembre de 2026: la maqueta la tenía y la vista no. Agregar un modo a
-// esta unión hace fallar a compilar `etiquetaDelPeriodo` por su `never`, y eso es a propósito: obliga
-// a venir a escribir el caso nuevo en vez de heredar en silencio el comportamiento de otro modo.
-export type ModoDeVista = 'DIA' | 'SEMANA' | 'QUINCENA' | 'MES';
+// TRES MODOS Y NO CUATRO. La quincena entró el 28 de septiembre de 2026 copiando la maqueta y salió
+// el mismo día, por decisión del dueño: catorce columnas no son ni la semana, que se lee entera de un
+// vistazo, ni el mes, que ya se recorre a lo ancho. Rompía la rejilla sin resolver nada que la semana
+// no resolviera.
+//
+// Agregar un modo a esta unión hace fallar a compilar `etiquetaDelPeriodo` por su `never`, y eso es a
+// propósito: obliga a venir a escribir el caso nuevo en vez de heredar en silencio el de otro modo.
+export type ModoDeVista = 'DIA' | 'SEMANA' | 'MES';
 
 export type Vista = {
   desde: string;  // primer día mostrado
@@ -86,17 +90,6 @@ export function vistaDelCalendario(modo: ModoDeVista, ancla: string): Vista {
     return { desde: lunes, hasta: dias[6], dias, rotulo: rotuloDeSemana(lunes) };
   }
 
-  // LA QUINCENA SON DOS SEMANAS COMPLETAS DESDE EL LUNES, y no del 1 al 15.
-  //
-  // Cada empresa planifica en su propio período, pero la unidad que LIQUIDA no cambia: el tope de 42
-  // horas y el descanso obligatorio son SEMANALES. Del 1 al 15 parte dos semanas por la mitad, y
-  // entonces pintar un día reescribe la semana entera de esa persona tocando días que no están en
-  // pantalla. Es el mismo defecto que ya obligó a dibujar el mes con semanas completas.
-  if (modo === 'QUINCENA') {
-    const lunes = lunesDeLaSemana(ancla);
-    const dias = Array.from({ length: 14 }, (_, i) => sumarDias(lunes, i));
-    return { desde: lunes, hasta: dias[13], dias, rotulo: rotuloDeRango(lunes, dias[13]) };
-  }
 
   if (modo === 'MES') {
     const primero = primeroDelMes(ancla);
@@ -119,9 +112,6 @@ export function moverVista(modo: ModoDeVista, ancla: string, pasos: number): str
 
   if (modo === 'SEMANA') return sumarDias(ancla, 7 * pasos);
 
-  // Catorce días de golpe. No hace falta ir al lunes primero: `vistaDelCalendario` ya lo hace con el
-  // ancla que reciba, así que el resultado cae siempre dentro de la quincena siguiente.
-  if (modo === 'QUINCENA') return sumarDias(ancla, 14 * pasos);
 
   if (modo === 'MES') {
     // Ni sumar 31 días ni conservar el día del mes: las dos formas se saltan febrero entero

@@ -193,13 +193,17 @@ describe('qué dibuja la rejilla', () => {
     expect(within(primeraFila).getAllByRole('cell')).toHaveLength(1 + 7 + 1);
   });
 
-  it('en MES la celda se compacta: dice el turno, no el horario', async () => {
-    // MEDIDO EN EL NAVEGADOR ANTES DE ESCRIBIR ESTO: en la vista de mes la tabla mide 4001 px dentro
-    // de un contenedor de 1006, o sea que se ve la CUARTA PARTE del mes y hay que raspar a lo ancho
-    // para llegar a la última semana. Con 42 columnas no caben dos renglones por celda.
+  it('en MES la celda se compacta a un código corto, y el nombre se mueve al puntero', async () => {
+    // MEDIDO EN EL NAVEGADOR ANTES DE ESCRIBIR ESTO: en la vista de mes la tabla medía 4001 px dentro
+    // de un contenedor de 1006, o sea que se veía la CUARTA PARTE del mes y había que raspar a lo
+    // ancho para llegar a la última semana. Con 42 columnas no cabe el nombre de un turno.
     //
-    // El horario no se pierde: sigue en la vista de semana, en el panel del día y en la pastilla del
-    // catálogo. En el mes lo que hay que leer de un vistazo es QUÉ turno lleva cada día.
+    // PRIMERO SE PARTIÓ EN DOS RENGLONES y no alcanzó: la columna seguía midiendo lo que el nombre
+    // más largo del catálogo. El 28 de septiembre pasó al código corto de la maqueta.
+    //
+    // NADA SE PIERDE, Y ESO ES LO QUE ESTA PRUEBA PROTEGE: el nombre sale al pasar el puntero, y
+    // sigue entero en la vista de semana, en el panel del día y en la leyenda. Si alguien quita el
+    // `title` para simplificar, una empresa de horario fijo se queda con un mes de letras mudas.
     montar();
     await cargado();
     await elegirModo('Mes');
@@ -207,18 +211,25 @@ describe('qué dibuja la rejilla', () => {
 
     const tabla = (await screen.findAllByRole('table'))[0];
     const primeraFila = within(tabla).getAllByRole('row')[1];
-    expect(primeraFila).toHaveTextContent('Jornada demo');
-    expect(primeraFila.textContent ?? '').not.toMatch(/\d{2}:\d{2}/);
+    expect(primeraFila.textContent ?? '', 'el nombre entero ya no cabe').not.toContain('Jornada demo');
+    expect(primeraFila.textContent ?? '', 'ni el horario').not.toMatch(/\d{2}:\d{2}/);
+
+    const conNombre = within(primeraFila).getAllByTitle(/Jornada demo/);
+    expect(conNombre.length, 'el nombre sigue a un gesto de distancia').toBeGreaterThan(0);
   });
 
   it('y en SEMANA la celda SÍ dice el horario', async () => {
     // El contraste, que es lo que impide «compactar» también donde hay sitio de sobra: con siete
     // columnas el horario cabe y es lo que se está mirando al programar el día a día.
+    //
+    // EL PATRÓN CAMBIÓ CON EL FORMATO CORTO: la celda dice «8–17» y ya no «08:00–17:00», así que
+    // buscar `\d{2}:\d{2}` dejaría de encontrarlo aunque el horario siguiera ahí. Se afirma el
+    // horario del fixture, que es lo que la prueba quiere decir.
     montar();
     await cargado();
     const tabla = (await screen.findAllByRole('table'))[0];
     const primeraFila = within(tabla).getAllByRole('row')[1];
-    expect(primeraFila.textContent ?? '').toMatch(/\d{2}:\d{2}/);
+    expect(primeraFila.textContent ?? '').toContain('8–16'); // el horario del fixture: 08:00–16:00
   });
 
   it('en MES no hay dos columnas que se llamen igual', async () => {
@@ -339,10 +350,13 @@ describe('lo que dice la pantalla deja de hablar de la semana', () => {
   });
 
   it('el encabezado nombra el mes, no un rango de semana', async () => {
+    // EL RÓTULO YA NO ES UN ENCABEZADO: desde que la cabecera se igualó a la maqueta es el BOTÓN que
+    // va entre las dos flechas, y que además lleva a hoy. Lo que la prueba afirma no cambia —que al
+    // pasar a mes el período se nombra como un mes—, cambia dónde se lee.
     montar();
     await cargado();
     await elegirModo('Mes');
-    expect(await screen.findByRole('heading', { name: vistaDelCalendario('MES', HOY).rotulo }))
+    expect(await screen.findByRole('button', { name: vistaDelCalendario('MES', HOY).rotulo }))
       .toBeInTheDocument();
   });
 

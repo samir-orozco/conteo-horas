@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   hoyEnBogota, sumarDias, lunesDeLaSemana, diasDeLaSemana, rotuloDeSemana, horasDeMinutos,
+  horarioCorto, abreviaturaDeDia,
   sePuedePintar, inicialDeDia, diasEntre, nombreDelMes, rotuloCorto,
   esFinDeSemana, esDeOtroMes,
 } from './semana';
@@ -100,13 +101,28 @@ describe('una fecha dicha como la diría una persona', () => {
   });
 });
 
+// EL RÓTULO DEL BOTÓN DE RANGO (28 de septiembre de 2026).
+//
+// Cambió de «28 de septiembre al 4 de octubre» a «28 sep – 4 oct 2026» porque cambió de sitio: era
+// un título de 30 px a la izquierda y pasa a ser el botón que va ENTRE las flechas, con 200 px de
+// ancho mínimo. En esa caja el formato largo envuelve a dos renglones y empuja las flechas.
+//
+// EL MES NO SE COLAPSA aunque los dos extremos caigan en el mismo, al revés que el formato viejo.
+// En un botón que se pulsa repetido para avanzar, que el texto cambie de «21 al 27 de septiembre»
+// a «28 sep – 4 oct 2026» según la semana mueve el ancho y con él las flechas de sitio.
+//
+// Y EL AÑO VA SIEMPRE, que es lo que distingue navegar tres semanas de navegar catorce meses.
 describe('rotuloDeSemana', () => {
-  it('dentro de un mes nombra el mes una sola vez', () => {
-    expect(rotuloDeSemana('2026-09-21')).toBe('21 al 27 de septiembre');
+  it('dentro de un mes NO colapsa el mes: los dos extremos lo dicen', () => {
+    expect(rotuloDeSemana('2026-09-21')).toBe('21 sep – 27 sep 2026');
   });
 
-  it('cuando cruza de mes nombra los dos', () => {
-    expect(rotuloDeSemana('2026-09-28')).toBe('28 de septiembre al 4 de octubre');
+  it('cuando cruza de mes, cada extremo con el suyo', () => {
+    expect(rotuloDeSemana('2026-09-28')).toBe('28 sep – 4 oct 2026');
+  });
+
+  it('y cuando cruza de AÑO manda el del final, que es donde se está entrando', () => {
+    expect(rotuloDeSemana('2026-12-28')).toBe('28 dic – 3 ene 2027');
   });
 });
 
@@ -317,5 +333,75 @@ describe('si un día es de otro mes', () => {
     expect(esDeOtroMes('2027-01-04', '2026-01-01')).toBe(true);
     expect(esDeOtroMes('2025-12-29', '2026-01-01')).toBe(true);
     expect(esDeOtroMes('2027-01-03', '2026-12-01')).toBe(true);
+  });
+});
+
+// EL HORARIO COMO SE ESCRIBE EN UNA CELDA (28 de septiembre de 2026).
+//
+// La celda de la rejilla tiene 75 px útiles. «10:00–16:00» son once caracteres con dos puntos que no
+// dicen nada: todos los turnos redondos de este producto empiezan y terminan en punto, así que esos
+// cuatro ceros ocupan un tercio del renglón para repetir lo mismo en cada celda de la pantalla.
+//
+// La maqueta lo resolvió escribiendo a mano un campo `cortas` por turno («6–14»). Aquí no sirve: los
+// turnos los crea cada cliente desde el catálogo y nadie va a escribir dos formatos de cada uno. Se
+// deriva, y por eso es una función con pruebas y no un `replace` metido en el JSX.
+//
+// LO QUE NO ES REDONDO NO SE TOCA. Un turno de 8:30 a 17:15 se escribe entero: recortar ahí sería
+// mentir sobre la hora a la que alguien entra, que es justo el dato que la celda existe para decir.
+describe('horarioCorto', () => {
+  it('quita los :00, que es lo que sobra en un turno redondo', () => {
+    expect(horarioCorto('10:00', '16:00')).toBe('10–16');
+  });
+
+  it('y quita el cero de la izquierda', () => {
+    expect(horarioCorto('06:00', '14:00')).toBe('6–14');
+  });
+
+  it('un turno que cruza la medianoche se dice igual: la celda no explica, nombra', () => {
+    expect(horarioCorto('22:00', '06:00')).toBe('22–6');
+  });
+
+  it('LOS MINUTOS QUE NO SON CERO SE QUEDAN, los dos lados por separado', () => {
+    expect(horarioCorto('08:30', '17:15')).toBe('8:30–17:15');
+    // Y uno redondo junto a uno que no lo es: cada extremo se decide solo.
+    expect(horarioCorto('06:00', '14:30')).toBe('6–14:30');
+    expect(horarioCorto('07:45', '16:00')).toBe('7:45–16');
+  });
+
+  it('la medianoche es «0» y no una cadena vacía', () => {
+    // '00:00' quitando ceros a la izquierda se queda en nada si se hace con un replace ingenuo.
+    expect(horarioCorto('00:00', '08:00')).toBe('0–8');
+  });
+});
+
+// LA ABREVIATURA DEL DÍA PARA EL ENCABEZADO DE LA SEMANA (28 de septiembre de 2026).
+//
+// La maqueta escribe «Mar 29» en la vista de semana y solo «M 29» en la de mes, y la razón es de
+// ancho: en la semana hay siete columnas y sobra sitio; en un mes hay hasta cuarenta y dos.
+//
+// LO QUE ESTO RESUELVE NO ES ESTÉTICO: con la inicial sola, lunes y martes son «L» y «M», y martes y
+// miércoles son «M» y «M». O sea que en la mitad de las columnas el encabezado no distingue un día
+// de otro, y hay que contar desde la izquierda para saber en cuál se está pintando.
+describe('abreviaturaDeDia', () => {
+  it('los siete, empezando en lunes como toda la rejilla', () => {
+    const lunes = '2026-09-28';
+    expect([0, 1, 2, 3, 4, 5, 6].map(i => abreviaturaDeDia(sumarDias(lunes, i))))
+      .toEqual(['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']);
+  });
+
+  it('DOMINGO VA AL FINAL, que es donde lo pone el resto del archivo', () => {
+    // El error que caza: `getUTCDay()` devuelve 0 para el domingo, así que una tabla indexada sin
+    // corregir lo pondría primero y correría los otros seis un sitio. Todos los días de la rejilla
+    // saldrían con el nombre del anterior, que es plausible y no salta a la vista.
+    expect(abreviaturaDeDia('2026-10-04')).toBe('Dom');
+    expect(abreviaturaDeDia('2026-09-28')).toBe('Lun');
+  });
+
+  it('empieza con la misma letra que la inicial, porque son la misma cuenta', () => {
+    // Si las dos tablas se separan, el mes y la semana nombrarían distinto el mismo día.
+    for (let i = 0; i < 7; i++) {
+      const f = sumarDias('2026-09-28', i);
+      expect(abreviaturaDeDia(f).charAt(0), f).toBe(inicialDeDia(f));
+    }
   });
 });
