@@ -3092,7 +3092,12 @@ export default function CalendarioDeTurnos() {
             {filas.map(fila => {
               return (
                 <tr key={fila.id} className="border-b border-gray-100 last:border-0">
-                  <td className="sticky left-0 bg-white z-10 w-px whitespace-nowrap px-4 py-2.5">
+                  {/* MÁS AIRE VERTICAL Y LOS AVISOS UNO DEBAJO DE OTRO (29 de septiembre de 2026, pedido del
+                      dueño). Con dos incumplimientos a la vez la celda lleva cuatro renglones —nombre,
+                      cargo y dos chips— y con el relleno de antes quedaban pegados al borde de la fila.
+
+                      Solo crece la fila de quien los tiene, que es exactamente la que merece el sitio. */}
+                  <td className="sticky left-0 bg-white z-10 w-px whitespace-nowrap px-4 py-3.5">
                     {/* EL NOMBRE MARCA SU FILA ENTERA, que es el gesto de «a esta persona, todo el
                         período». Dice qué período con todas las letras («Marcar la semana de…»,
                         «Marcar el mes de…»): en un mes, un rótulo que dijera «semana» sería falso
@@ -3112,17 +3117,17 @@ export default function CalendarioDeTurnos() {
                           El nombre y el cargo recortan dentro de su ancho; el aviso NO, porque es lo
                           que pide una acción y recortarlo lo dejaría en «3 desc…». */}
                       <div className="w-[150px] min-w-0">
-                        <div className="truncate text-[13px] font-bold leading-tight text-ink">
+                        <div className="truncate text-[13px] font-bold leading-snug text-ink">
                           {fila.nombre} {fila.apellido}
                         </div>
-                        <div className="truncate text-[11px] leading-tight text-muted">{cargoYSede(fila)}</div>
+                        <div className="truncate text-[11px] leading-snug text-muted">{cargoYSede(fila)}</div>
                       </div>
                       {(() => {
                         const semanas = sinDescansoDe(fila);
                         const habitual = avisoDeDescansos(fila.descansoHabitual);
                         if (semanas === 0 && !habitual) return null;
                         return (
-                          <div className="flex shrink-0 flex-col items-start gap-1">
+                          <div className="mt-0.5 flex shrink-0 flex-col items-start gap-1.5">
                             {semanas > 0 && (
                               <span title="Por norma, cada semana necesita un día de descanso remunerado"
                                 className="flex items-center gap-1 whitespace-nowrap rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
