@@ -18,7 +18,10 @@ import logoCompleto from '../assets/logo-completo.svg';
 
 // `panel: true` = ítem que abre un panel (campana), no una ruta.
 // `submenu: true` = ítem que abre un modal con varias rutas para elegir (Reportes).
-type NavItem = { to?: string; label: string; icon: any; panel?: boolean; submenu?: boolean };
+// `beta: true` = módulo que se está estrenando y todavía va a cambiar de forma. La etiqueta vive
+// en el MENÚ y no en el título de la pantalla (decisión del dueño el 29 de septiembre de 2026):
+// ahí se ve ANTES de entrar, que es cuando sirve para decidir si uno se apoya en ese módulo.
+type NavItem = { to?: string; label: string; icon: any; panel?: boolean; submenu?: boolean; beta?: boolean };
 type NavSection = { titulo: string; items: NavItem[] };
 
 const navEmpresa: NavSection[] = [
@@ -30,7 +33,7 @@ const navEmpresa: NavSection[] = [
       { to: '/app/kiosco', label: 'Marcador', icon: Clock },
       { to: '/app/colaboradores', label: 'Colaboradores', icon: Users },
       // En General y no en Herramientas: es una pantalla de todos los días, no una utilidad.
-      { to: '/app/turnos', label: 'Turnos', icon: CalendarRange },
+      { to: '/app/turnos', label: 'Turnos', icon: CalendarRange, beta: true },
       { to: '/app/registros', label: 'Registros', icon: BarChart2 },
       { to: '/app/revision', label: 'Revisión', icon: ScanFace },
     ],
@@ -104,7 +107,15 @@ export default function Layout() {
               <ReportesNav key={item.label} onNav={onNav} />
             ) : (
               <NavLink key={item.to} to={item.to!} end={item.to === '/app' || item.to === '/admin'} onClick={onNav} className={linkClass}>
-                <item.icon size={18} />{item.label}
+                <item.icon size={18} />
+                {item.label}
+                {/* Fuera del flujo del texto y empujada a la derecha, para que el nombre del módulo
+                    siga alineado con los demás del menú. */}
+                {item.beta && (
+                  <span className="ml-auto rounded-full bg-primary-light px-1.5 py-px text-[9px] font-extrabold uppercase tracking-wider text-[#8a6d1f]">
+                    Beta
+                  </span>
+                )}
               </NavLink>
             ))}
           </div>
