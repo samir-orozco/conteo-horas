@@ -126,10 +126,32 @@ const rangoPedido = () => {
 // gana columnas —y va a ganarlas: el total por semana dentro del mes—, y se rompería POR LA RAZÓN
 // EQUIVOCADA: parecería que el mes dejó de dibujar sus días cuando lo único que cambió es cuántos
 // encabezados hay. Contar los botones de día es inmune a eso, porque hay exactamente uno por día.
-const columnas = async () => {
+//
+// LA FILA DE LOS DÍAS SE BUSCA POR SU CONTENIDO Y NO POR SU ÍNDICE (29 de septiembre de 2026). Era
+// `getAllByRole('row')[0]`, y el día que el mes ganó un renglón de encabezado —«Semana 4 · 21 sep –
+// 27 sep», pedido del dueño— ese cero pasó a apuntar a los rótulos de semana y cuatro pruebas se
+// pusieron rojas diciendo «no encuentro ningún botón de día». Un índice es una suposición sobre la
+// forma del encabezado; «la fila que tiene los botones de día» es lo que estas pruebas quieren decir.
+const filaDeLosDias = async () => {
   const tabla = (await screen.findAllByRole('table'))[0];
-  const encabezado = within(tabla).getAllByRole('row')[0];
-  return within(encabezado).getAllByRole('button', { name: /^Marcar el día/ }).length;
+  const cual = within(tabla).getAllByRole('row')
+    .find(tr => within(tr).queryAllByRole('button', { name: /^Marcar el día/ }).length > 0);
+  if (!cual) throw new Error('no hay ninguna fila de encabezado con botones de día');
+  return cual;
+};
+
+const columnas = async () =>
+  within(await filaDeLosDias()).getAllByRole('button', { name: /^Marcar el día/ }).length;
+
+// LA PRIMERA FILA DEL CUERPO, por lo mismo: es la que lleva el botón que marca a una persona entera.
+// `getAllByRole('row')[1]` significaba «la de después del encabezado», y eso deja de ser cierto en
+// cuanto el encabezado tiene dos renglones. Cinco sitios lo daban por hecho.
+const primeraFilaDelCuerpo = async () => {
+  const tabla = (await screen.findAllByRole('table'))[0];
+  const cual = within(tabla).getAllByRole('row')
+    .find(tr => within(tr).queryAllByRole('button', { name: /^Marcar (la semana|el mes|el día) de / }).length > 0);
+  if (!cual) throw new Error('no hay ninguna fila de persona');
+  return cual;
 };
 
 beforeEach(() => { get.mockReset(); put.mockReset(); del.mockReset(); });
@@ -185,10 +207,11 @@ describe('qué dibuja la rejilla', () => {
     await elegirModo('Mes');
     await cargado();
 
-    const tabla = (await screen.findAllByRole('table'))[0];
-    const primeraFila = within(tabla).getAllByRole('row')[1];
+    // Por CONTENIDO y no por índice, por lo mismo que `filaDeLosDias`: `row[1]` era la primera del
+    // cuerpo solo mientras el encabezado tuviera un renglón.
+    const suya = await primeraFilaDelCuerpo();
     // Persona + un día por columna + un total por semana + el total del período.
-    expect(within(primeraFila).getAllByRole('cell'))
+    expect(within(suya).getAllByRole('cell'))
       .toHaveLength(1 + COLUMNAS_DEL_MES + COLUMNAS_DEL_MES / 7 + 1);
   });
 
@@ -196,8 +219,7 @@ describe('qué dibuja la rejilla', () => {
     // Con una sola semana, una celda semanal diría exactamente el mismo número que la de al lado.
     montar();
     await cargado();
-    const tabla = (await screen.findAllByRole('table'))[0];
-    const primeraFila = within(tabla).getAllByRole('row')[1];
+    const primeraFila = await primeraFilaDelCuerpo();
     expect(within(primeraFila).getAllByRole('cell')).toHaveLength(1 + 7 + 1);
   });
 
@@ -217,8 +239,7 @@ describe('qué dibuja la rejilla', () => {
     await elegirModo('Mes');
     await cargado();
 
-    const tabla = (await screen.findAllByRole('table'))[0];
-    const primeraFila = within(tabla).getAllByRole('row')[1];
+    const primeraFila = await primeraFilaDelCuerpo();
     expect(primeraFila.textContent ?? '', 'el nombre entero ya no cabe').not.toContain('Jornada demo');
     expect(primeraFila.textContent ?? '', 'ni el horario').not.toMatch(/\d{2}:\d{2}/);
 
@@ -235,8 +256,7 @@ describe('qué dibuja la rejilla', () => {
     // horario del fixture, que es lo que la prueba quiere decir.
     montar();
     await cargado();
-    const tabla = (await screen.findAllByRole('table'))[0];
-    const primeraFila = within(tabla).getAllByRole('row')[1];
+    const primeraFila = await primeraFilaDelCuerpo();
     expect(primeraFila.textContent ?? '').toContain('8–16'); // el horario del fixture: 08:00–16:00
   });
 
@@ -257,9 +277,7 @@ describe('qué dibuja la rejilla', () => {
     await elegirModo('Mes');
     await cargado();
 
-    const tabla = (await screen.findAllByRole('table'))[0];
-    const encabezado = within(tabla).getAllByRole('row')[0];
-    const nombres = within(encabezado)
+    const nombres = within(await filaDeLosDias())
       .getAllByRole('button', { name: /^Marcar el día/ })
       .map(b => b.getAttribute('aria-label'));
 
@@ -308,8 +326,7 @@ describe('qué dibuja la rejilla', () => {
     await cargado();
     await elegirModo('Mes');
     await cargado();
-    const tabla = (await screen.findAllByRole('table'))[0];
-    const celdas = within(within(tabla).getAllByRole('row')[0]).getAllByRole('columnheader');
+    const celdas = within(await filaDeLosDias()).getAllByRole('columnheader');
     // La columna 10 del mes: su inicial tiene que ser una letra de verdad.
     expect(celdas[10]).toHaveTextContent(/^[LMJVSD]/);
   });
@@ -321,10 +338,7 @@ describe('qué dibuja la rejilla', () => {
 // use, que es otra cosa: al conectarla, la suite entera siguió verde con la fila diciendo solo el
 // cargo. O sea que nadie miraba esa línea y quitarla no habría puesto nada en rojo.
 describe('de quién es cada fila', () => {
-  const primeraFila = async () => {
-    const tabla = (await screen.findAllByRole('table'))[0];
-    return within(tabla).getAllByRole('row')[1];
-  };
+  const primeraFila = () => primeraFilaDelCuerpo();
 
   it('debajo del nombre va «cargo · sede», no solo el cargo', async () => {
     montar();
@@ -446,10 +460,7 @@ describe('el descanso de la persona, en su columna', () => {
   // La misma lectura que usa el bloque de «de quién es cada fila»: la primera fila del cuerpo. Es un
   // ayudante local en los dos sitios y no uno compartido porque los dos bloques miran la misma cosa
   // por razones distintas, y unirlos ataría un bloque al otro.
-  const primeraFila = async () => {
-    const tabla = (await screen.findAllByRole('table'))[0];
-    return within(tabla).getAllByRole('row')[1];
-  };
+  const primeraFila = () => primeraFilaDelCuerpo();
 
   // El lunes SIN NADA y el resto trabajado, domingo incluido. Es la forma exacta del caso que cuesta:
   // seis días de trabajo, uno libre que nadie marcó, y el domingo entre los trabajados.

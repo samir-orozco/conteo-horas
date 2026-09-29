@@ -127,9 +127,31 @@ export function rotuloCorto(iso: string): string {
 // compartían la semana y la quincena. Al salir la quincena le quedó un solo autor, y una función
 // extraída para compartir que ya no comparte nada es una indirección de más.
 export function rotuloDeSemana(lunes: string): string {
-  const breve = (iso: string) => `${aFecha(iso).getUTCDate()} ${nombreDelMes(iso).slice(0, 3)}`;
   const domingo = sumarDias(lunes, 6);
-  return `${breve(lunes)} – ${breve(domingo)} ${aFecha(domingo).getUTCFullYear()}`;
+  return `${rangoBreve(lunes)} ${aFecha(domingo).getUTCFullYear()}`;
+}
+
+// "28 sep – 4 oct": el rango sin el año. Sale a su propia función el 29 de septiembre de 2026 porque
+// lo necesita también el encabezado de cada semana del mes, y escribir «día + mes abreviado» por
+// segunda vez es como se separan dos formatos que la gente ve a dos centímetros uno del otro (§9.3).
+function rangoBreve(lunes: string): string {
+  const breve = (iso: string) => `${aFecha(iso).getUTCDate()} ${nombreDelMes(iso).slice(0, 3)}`;
+  return `${breve(lunes)} – ${breve(sumarDias(lunes, 6))}`;
+}
+
+// "Semana 1 · 28 sep – 4 oct": el encabezado de cada grupo de siete columnas en la vista de mes
+// (29 de septiembre de 2026, maqueta del dueño).
+//
+// EL NÚMERO ES EL DE LA VISTA Y NO EL DEL AÑO. La semana ISO del 28 de septiembre de 2026 es la 40, y
+// «Semana 40» no le dice nada a quien mira un mes de cinco filas: lo que necesita es «esta es la
+// primera de las que veo». Por eso entra como ÍNDICE y no se calcula aquí: quien dibuja la rejilla ya
+// sabe en qué posición va cada grupo, y deducirlo aquí obligaría a saber también dónde empieza la
+// vista, que es una decisión de otro módulo.
+//
+// SIN AÑO, al revés que `rotuloDeSemana`: el año está en el título del período, justo encima, y
+// repetirlo cinco veces en una fila de encabezado gasta el ancho que este rótulo viene a dar.
+export function rotuloDeSemanaEnLaVista(lunes: string, indice: number): string {
+  return `Semana ${indice + 1} · ${rangoBreve(lunes)}`;
 }
 
 // "martes, 22 de septiembre" · "septiembre de 2026" — los otros dos rótulos del encabezado, para

@@ -99,3 +99,26 @@ export function alternarConjunto<T extends { fecha: string }>(
   const suyas = escribibles(celdas, hoy);
   return { celdas: suyas, apagar: suyas.every(estaMarcada) };
 }
+
+// SI UNA FILA O UNA COLUMNA ESTÁ ENTERA, para pintarle el fondo (29 de septiembre de 2026).
+//
+// Pedido del dueño: «que cuando la selección es general, se marque toda la fila o columna amarillo
+// claro». Siete halos sueltos no se leen como «esta persona entera»: hay que recorrerlos y comprobar
+// que no falta ninguno. Un fondo continuo lo dice sin contar nada.
+//
+// SE APOYA EN `alternarConjunto` Y NO REPITE LA CUENTA: es la misma pregunta que decide si el botón de
+// la persona marca o desmarca. Con dos versiones, el fondo diría «entera» de una fila que el botón
+// todavía va a marcar.
+//
+// LA DIFERENCIA CON `apagar` ES EL CONJUNTO VACÍO, y es la razón de que esto exista aparte: `every`
+// sobre una lista vacía es `true`, así que una fila entera en el pasado —donde no hay NADA que
+// marcar— saldría «completa» y se pintaría sin que nadie la haya tocado. Para el interruptor eso da
+// igual, porque apagar cero celdas no hace nada; para un fondo, no.
+export function conjuntoCompleto<T extends { fecha: string }>(
+  celdas: readonly T[],
+  estaMarcada: (celda: T) => boolean,
+  hoy: string,
+): boolean {
+  const { celdas: suyas, apagar } = alternarConjunto(celdas, estaMarcada, hoy);
+  return suyas.length > 0 && apagar;
+}

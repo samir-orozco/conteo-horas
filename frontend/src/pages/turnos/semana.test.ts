@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   hoyEnBogota, sumarDias, lunesDeLaSemana, diasDeLaSemana, rotuloDeSemana, horasDeMinutos,
+  rotuloDeSemanaEnLaVista,
   horarioCorto, abreviaturaDeDia,
   sePuedePintar, inicialDeDia, diasEntre, nombreDelMes, rotuloCorto,
   esDeOtroMes,
@@ -363,5 +364,46 @@ describe('abreviaturaDeDia', () => {
       const f = sumarDias('2026-09-28', i);
       expect(abreviaturaDeDia(f).charAt(0), f).toBe(inicialDeDia(f));
     }
+  });
+});
+
+// ────────── EL RÓTULO DE CADA SEMANA EN LA VISTA DE MES (29 de septiembre de 2026) ──────────
+//
+// Pedido del dueño con una maqueta: «que la parte superior de mes se vea mucho más amplia». En un mes
+// hay cuarenta y dos columnas de una letra y un número, y para saber en qué semana se está pintando
+// hay que contar desde la izquierda. La maqueta pone encima de cada grupo de siete un rótulo que dice
+// cuál es y qué días abarca.
+//
+// EL NÚMERO ES EL DE LA VISTA Y NO EL DEL AÑO, y esa es toda la decisión. La semana ISO del 28 de
+// septiembre de 2026 es la 40, y «Semana 40» no le dice nada a quien está mirando un mes con cinco
+// filas: lo que necesita es «esta es la primera de las que veo». La numeración del año existe y sirve
+// para otras cosas, pero aquí sería un número grande y ajeno.
+//
+// SIN AÑO, al revés que `rotuloDeSemana`: el año ya está en el título del período, justo encima, y
+// repetirlo cinco veces en una fila de encabezado gasta el ancho que este cambio viene a dar.
+//
+// SIN PUNTO EN LA ABREVIATURA DEL MES. La maqueta escribe «28 abr. – 4 may.»; el resto del producto
+// escribe «28 sep – 4 oct» en el botón de navegación, que está a dos centímetros de aquí. Dos formas
+// de abreviar el mismo mes en la misma pantalla se leen como un descuido, y la que ya existe manda.
+
+describe('el rótulo de una semana dentro de la vista', () => {
+  it('dice qué número de la vista es y qué días abarca', () => {
+    expect(rotuloDeSemanaEnLaVista('2026-09-28', 0)).toBe('Semana 1 · 28 sep – 4 oct');
+  });
+
+  it('el número cuenta desde uno, no desde cero', () => {
+    // El índice llega en base cero porque viene de un `map`. Publicar «Semana 0» sería filtrar una
+    // cuenta de programador a una pantalla que lee alguien que programa turnos.
+    expect(rotuloDeSemanaEnLaVista('2026-10-05', 1)).toBe('Semana 2 · 5 oct – 11 oct');
+  });
+
+  it('una semana que cruza el año NO lo dice: el título del período ya está encima', () => {
+    expect(rotuloDeSemanaEnLaVista('2026-12-28', 4)).toBe('Semana 5 · 28 dic – 3 ene');
+  });
+
+  it('abrevia el mes igual que el botón de navegación, sin punto', () => {
+    // «28 abr. – 4 may.» de la maqueta contra «28 sep – 4 oct» del botón que está dos centímetros
+    // más arriba. Dos formas de abreviar el mismo mes en la misma pantalla se leen como un descuido.
+    expect(rotuloDeSemanaEnLaVista('2026-04-27', 0)).toBe('Semana 1 · 27 abr – 3 may');
   });
 });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, Fragment } from 'react';
-import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw, Search, Calendar, Bed, MapPin, Briefcase, Eraser } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertTriangle, Users, Clock, Scale, X, Plus, Check, Moon, RotateCw, Search, Calendar, Bed, MapPin, Briefcase, Eraser, FileText, Info } from 'lucide-react';
 import api from '../../lib/api';
 import {
   hoyEnBogota, horasDeMinutos, sePuedePintar, inicialDeDia, abreviaturaDeDia,
@@ -7,7 +7,10 @@ import {
 } from './semana';
 // La selección en bloque y el guardado por bloques: dos decisiones puras, probadas y mutadas aparte.
 // Qué celdas caen dentro de un rectángulo y qué se va a escribir de verdad NO se deciden aquí.
-import { claveDeCelda, celdasDelRectangulo, escribibles, alternarConjunto, type Celda as CeldaMarcada } from './seleccionEnBloque';
+import {
+  claveDeCelda, celdasDelRectangulo, escribibles, alternarConjunto, conjuntoCompleto,
+  type Celda as CeldaMarcada,
+} from './seleccionEnBloque';
 import { bloquesDe, planDeEscritura, type AccionDeEscritura } from './aplicacionPorBloques';
 // Por dónde va el envío: el porcentaje, los círculos y si terminó o se cortó. Puro, probado y mutado
 // aparte. El porcentaje va sobre JORNADAS y no sobre bloques, y ahí está el porqué.
@@ -19,6 +22,7 @@ import { codigosDelCatalogo } from './codigoDeTurno';
 import { cargoYSede } from './cargoYSede';
 import { colorDeAvatar } from '../../lib/colorDeAvatar';
 import { progresoDelTope } from './progresoDelTope';
+import { fondoDeLaColumna } from './fondoDeLaColumna';
 import { avisoDeDescansos } from './avisoDeDescansos';
 // A quién se ve con los filtros de arriba. Puro, probado y mutado: de esta lista sale qué se puede
 // seleccionar, y por lo tanto a quién se le escribe al aplicar un bloque.
@@ -39,7 +43,9 @@ import { proyeccionDelMes, proyeccionDelBloque, minutosProyectados } from './pro
 // Qué se le escribe a cada día con lo que está pendiente: una acción igual para todas las celdas, o
 // una rotación que reparte turnos y descansos por el ciclo. Puro, probado y mutado aparte.
 import { accionDeLoPendiente, type LoPendiente } from './loPendiente';
-import { diasEntre, sumarDias, nombreDelMes, rotuloCorto, horarioCorto } from './semana';
+import {
+  diasEntre, sumarDias, nombreDelMes, rotuloCorto, horarioCorto, rotuloDeSemanaEnLaVista,
+} from './semana';
 // Dónde está parado el calendario respecto a hoy. Puro, probado y mutado aparte: es aritmética de
 // calendario, que es la que falla en silencio (una diferencia de meses mal contada dice «hace once
 // meses» del mes que viene).
@@ -1598,6 +1604,98 @@ function VentanaDeProgreso({
   );
 }
 
+// ────────── UN AVISO DE LA VENTANA, CON SU CHROME EN UN SOLO SITIO (29 de septiembre de 2026) ──────────
+//
+// Los cinco avisos de «Antes de aplicar» llevaban su caja, su borde, su icono y su lista escritos
+// cinco veces. Eso ya se había separado una vez sin que nadie lo notara: dos usaban `border-rose-300`
+// y dos `border-rose-200`. Con una sola pieza, el día que el dueño pida más aire lo pide una vez.
+//
+// DOS TONOS Y UN CASO POR VALOR (§9.4), no un booleano `grave`: son un conjunto cerrado hoy y el
+// tercero ya se ve venir. Lo que significan no es decorativo:
+//
+//   grave  «esto no se puede»: una semana sin descanso es ilegal, pasarse de 42 h también.
+//   aviso  «esto te va a costar», o «esto tiene arreglo».
+//
+// Pintarlos igual haría que lo ilegal dejara de distinguirse de lo caro.
+const TONO_DEL_AVISO = {
+  grave: { caja: 'border-rose-200 bg-rose-50', circulo: 'bg-rose-100 text-rose-600', texto: 'text-rose-900' },
+  aviso: { caja: 'border-amber-200 bg-amber-50', circulo: 'bg-amber-100 text-amber-600', texto: 'text-amber-900' },
+} as const;
+
+function AvisoDeLaPrevia({ tono, titulo, nota, children }: {
+  tono: keyof typeof TONO_DEL_AVISO;
+  titulo: string;
+  // La línea que explica cómo se arregla, cuando el aviso tiene arreglo. La mayoría no lo tiene.
+  //
+  // `ReactNode` y no `string`: el remedio nombra un botón de la pantalla y ese nombre va resaltado.
+  // Con comillas en vez de negrita, además, se rompía la prueba que lo afirma.
+  nota?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const t = TONO_DEL_AVISO[tono];
+  return (
+    <div className={`rounded-2xl border p-4 ${t.caja}`}>
+      <div className="flex items-start gap-3">
+        {/* EL ICONO DENTRO DE UN CÍRCULO, como en la maqueta. Antes iba suelto en la línea del título
+            y con tres avisos seguidos la ventana parecía una lista de viñetas, no tres bloques. */}
+        <span className={`mt-px grid h-7 w-7 shrink-0 place-items-center rounded-full ${t.circulo}`}>
+          <AlertTriangle size={15} aria-hidden="true" />
+        </span>
+        <div className={`min-w-0 flex-1 ${t.texto}`}>
+          <p className="text-[14px] font-bold leading-snug">{titulo}</p>
+          {nota && <p className="mt-1 text-[12.5px] leading-relaxed opacity-90">{nota}</p>}
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-[12.5px] leading-relaxed marker:text-current">
+            {children}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// UNO DE LOS DOS CONTADORES DE ARRIBA. Ver `PreviaDeBloque` para por qué el número manda.
+function ContadorDeLaPrevia({ icono, rotulo, valor, apagado = false }: {
+  icono: React.ReactNode;
+  rotulo: string;
+  valor: string;
+  // El de «ya tenían ese mismo turno» se pinta en gris: no es una noticia, es la parte que no pasa
+  // nada. En el mismo negro que el otro, repasar una semana ya programada daría dos números fuertes
+  // y habría que leerlos para saber cuál importa.
+  apagado?: boolean;
+}) {
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white text-muted shadow-sm">
+        {icono}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-[12.5px] leading-tight text-muted">{rotulo}</span>
+        <span className={`block text-[22px] font-extrabold leading-tight tabular-nums ${apagado ? 'text-gray-400' : 'text-ink'}`}>
+          {valor}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+// ────────── ANTES DE APLICAR (rediseñada el 29 de septiembre de 2026, maqueta del dueño) ──────────
+//
+// LO QUE CAMBIÓ Y POR QUÉ, que no es todo cosmética:
+//
+//   · EL NÚMERO ES EL ANCLA. «Se escriben 7 jornadas» estaba en letra chica, alineado a la derecha y
+//     peleando con su propia etiqueta, siendo el dato del que depende el «sí». Ahora es lo más grande
+//     de la ventana, dentro de una tarjeta con el que NO cambia nada al lado para poder compararlos.
+//   · CANCELAR ES UN BOTÓN, no un texto suelto. Al lado de un botón amarillo lleno, un texto pelado se
+//     lee como «la opción menor», y aquí cancelar es una respuesta tan legítima como aplicar.
+//   · LA VENTANA ES MÁS ANCHA (672 px contra 512). Los renglones de los avisos —«Sofía Ramos, semana
+//     del 12 de octubre: 63 h»— se partían en dos y la lista se leía como el doble de larga.
+//
+// LO QUE NO SE COPIÓ DE LA MAQUETA, Y ES LO QUE IMPORTA: allí la ventana entera se desplaza. La
+// maqueta está dibujada con DOS avisos y esta ventana puede llevar CUATRO a la vez, más la fila de
+// los días ya pasados. Con el aire nuevo eso pasa del 90 % de la pantalla, y con un desplazamiento
+// único «Aplicar» queda por debajo del corte: se podría confirmar sin haber visto el último aviso,
+// que es justo lo que esta ventana existe para impedir. El encabezado y el pie quedan FIJOS y solo
+// se desplaza el medio.
 function PreviaDeBloque({
   titulo, conteo, pisados, rotativos, habituales, sinDescanso, sobreElTope, topeHoras, ocupado,
   onCancelar, onAplicar,
@@ -1627,142 +1725,143 @@ function PreviaDeBloque({
 
   return (
     <div className="fixed inset-0 !mt-0 z-[80] flex items-center justify-center bg-black/50 p-4">
+      {/* `flex-col` con `overflow-hidden` y no `overflow-y-auto` en la caja entera: es lo que deja el
+          pie pegado abajo mientras el medio se desplaza. Ver el comentario de arriba. */}
       <div role="dialog" aria-modal="true" aria-label="Antes de aplicar"
-        className="hp-pop max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl">
-        <div className="border-b border-gray-100 px-6 pt-5 pb-4">
-          <h3 className="text-lg font-bold text-ink">Antes de aplicar</h3>
-          <p className="mt-1 text-sm text-muted">{titulo}</p>
+        className="hp-pop flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-xl">
+
+        <div className="flex shrink-0 items-start gap-4 border-b border-gray-100 px-6 pt-6 pb-5">
+          <span aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary-light text-ink">
+            <Calendar size={22} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-xl font-extrabold leading-tight text-ink">Antes de aplicar</h3>
+            <p className="mt-1 text-sm leading-snug text-muted">{titulo}</p>
+          </div>
+          {/* LA X HACE LO MISMO QUE CANCELAR y por eso lo dice en su nombre accesible. Una X que no
+              diga qué hace, en una ventana que está a punto de escribir jornadas, es justo donde
+              alguien duda si cierra o confirma.
+
+              DICE «sin escribir nada» Y NO «sin aplicar»: con la palabra «aplicar» dentro, el nombre
+              de este botón choca con el del otro y `getByRole('button', { name: /aplicar/i })`
+              encuentra dos. Lo cazaron once pruebas a la primera. Y de paso se lee mejor: nombra la
+              consecuencia en vez del botón que no se pulsó. */}
+          <button type="button" onClick={onCancelar} aria-label="Cerrar sin escribir nada"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gray-100 text-muted hover:bg-gray-200 hover:text-ink focus:outline-none focus:ring-2 focus:ring-primary">
+            <X size={17} />
+          </button>
         </div>
 
-        <div className="space-y-4 p-6">
-          <dl className="space-y-1.5">
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="text-[13px] text-muted">Se escriben</dt>
-              <dd className="text-sm font-bold text-ink">{jornadas(conteo.escribe)}</dd>
-            </div>
+        {/* `min-h-0` es lo que permite que este hijo se encoja dentro del flex y aparezca su propio
+            desplazamiento. Sin él, el flex le respeta el alto del contenido y el pie se va abajo. */}
+        <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-6">
+          <div className="flex items-stretch rounded-2xl bg-gray-50">
+            <ContadorDeLaPrevia icono={<FileText size={18} />} rotulo="Se escriben" valor={jornadas(conteo.escribe)} />
+            <div aria-hidden="true" className="my-3 w-px shrink-0 bg-gray-200" />
             {/* «Igual» es que no hacía falta. Sin separarlo, repasar una semana ya programada
                 anunciaría ciento cuarenta escrituras y un cambio real quedaría indistinguible de un
                 repaso inofensivo. */}
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="text-[13px] text-muted">Ya tenían ese mismo turno</dt>
-              <dd className="text-sm font-medium text-gray-400 tabular-nums">{conteo.iguales}</dd>
-            </div>
-            {/* Solo cuando hay alguna: una fila en cero es ruido, y su ausencia ya dice que no hay. */}
-            {conteo.bloqueadas > 0 && (
-              <div className="flex items-baseline justify-between gap-3">
-                <dt className="text-[13px] text-muted">No se tocan porque el día ya pasó</dt>
-                <dd className="text-sm font-medium text-gray-400 tabular-nums">{conteo.bloqueadas}</dd>
-              </div>
-            )}
-          </dl>
+            <ContadorDeLaPrevia icono={<Users size={18} />} rotulo="Ya tenían ese mismo turno"
+              valor={String(conteo.iguales)} apagado />
+          </div>
+
+          {/* FUERA DE LA TARJETA Y SOLO CUANDO HAY ALGUNA. No es un tercer contador: la tarjeta compara
+              dos resultados del envío y esto es lo que el envío ni siquiera intentó.
+
+              NO SE QUITÓ aunque desde el 29 de septiembre una celda de un día pasado ya no se puede
+              marcar: `hoy` se vuelve a leer en cada dibujado, así que una pestaña abierta que cruza la
+              medianoche despierta con celdas marcadas ayer que ahora son del pasado. Es el único
+              camino que le queda y sigue siendo real. */}
+          {conteo.bloqueadas > 0 && (
+            <p className="flex items-baseline justify-between gap-3 px-1 text-[12.5px] text-muted">
+              <span>No se tocan porque el día ya pasó</span>
+              <span className="font-semibold tabular-nums">{conteo.bloqueadas}</span>
+            </p>
+          )}
 
           {/* LOS AVISOS SE SEPARAN A PROPÓSITO. Pintar sobre el descanso obligatorio puede terminar en
               recargo; cruzar a habitual cambia una obligación; una semana entera sin descanso no es un
               riesgo, es una infracción. Un solo aviso juntándolos los volvería ruido.
 
-              ESTE VA PRIMERO por eso mismo: los otros dos dicen «esto te va a costar», y este dice
-              «esto no se puede». Y es el único que ve el MES completo y no solo las celdas tocadas:
-              una semana se completa marcando dos días sobre cinco que ya estaban, sin pisar nada. */}
+              ESTE VA PRIMERO por eso mismo: los otros dicen «esto te va a costar», y este dice «esto no
+              se puede». Y es el único que ve el MES completo y no solo las celdas tocadas: una semana
+              se completa marcando dos días sobre cinco que ya estaban, sin pisar nada. */}
           {sinDescanso.length > 0 && (
-            <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2.5">
-              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-rose-900">
-                <AlertTriangle size={13} className="shrink-0" />
-                Semanas que quedarían sin ningún descanso
-              </p>
-              <ul className="mt-1 list-disc pl-5 text-[12px] text-rose-900">
-                {sinDescanso.map(s => (
-                  <li key={`${s.nombre}|${s.lunes}`}>{s.nombre}, semana del {rotuloCorto(s.lunes)}</li>
-                ))}
-              </ul>
-            </div>
+            <AvisoDeLaPrevia tono="grave" titulo="Semanas que quedarían sin ningún descanso">
+              {sinDescanso.map(s => (
+                <li key={`${s.nombre}|${s.lunes}`}>{s.nombre}, semana del {rotuloCorto(s.lunes)}</li>
+              ))}
+            </AvisoDeLaPrevia>
           )}
 
           {/* EL TOPE DE HORAS, que es semanal. Va junto al de arriba porque son de la misma familia:
               los dos dicen «esto no se puede», no «esto te va a costar». Y se dice EN CUÁNTO quedaría
               cada semana: «se pasa» sin el número obliga a ir a contarlo a mano. */}
           {sobreElTope.length > 0 && (
-            <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2.5">
-              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-rose-900">
-                <AlertTriangle size={13} className="shrink-0" />
-                Semanas que se pasarían del tope de {topeHoras} horas
-              </p>
-              <ul className="mt-1 list-disc pl-5 text-[12px] text-rose-900">
-                {sobreElTope.map(s => (
-                  <li key={`${s.nombre}|${s.lunes}`}>
-                    {s.nombre}, semana del {rotuloCorto(s.lunes)}: <b>{horasDeMinutos(s.minutos)}</b>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <AvisoDeLaPrevia tono="grave" titulo={`Semanas que se pasarían del tope de ${topeHoras} horas`}>
+              {sobreElTope.map(s => (
+                <li key={`${s.nombre}|${s.lunes}`}>
+                  {s.nombre}, semana del {rotuloCorto(s.lunes)}: <b>{horasDeMinutos(s.minutos)}</b>
+                </li>
+              ))}
+            </AvisoDeLaPrevia>
           )}
 
           {habituales.length > 0 && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5">
-              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-rose-900">
-                <AlertTriangle size={13} className="shrink-0" />
-                Pasarían a descanso habitual: compensar con tiempo deja de ser opcional
-              </p>
-              <ul className="mt-1 list-disc pl-5 text-[12px] text-rose-900">
-                {habituales.map(h => (
-                  <li key={h.nombre}>
-                    {h.nombre} pasaría de <b>{h.antes}</b> a <b>{h.despues}</b> descansos trabajados este mes
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <AvisoDeLaPrevia tono="grave" titulo="Pasarían a descanso habitual: compensar con tiempo deja de ser opcional">
+              {habituales.map(h => (
+                <li key={h.nombre}>
+                  {h.nombre} pasaría de <b>{h.antes}</b> a <b>{h.despues}</b> descansos trabajados este mes
+                </li>
+              ))}
+            </AvisoDeLaPrevia>
           )}
 
           {/* VA ANTES DE «pintarías sobre el descanso obligatorio» porque es el mismo domingo dicho de
               otra manera: aquel dice lo que cuesta, este dice cómo se evita. Leído al revés, quien
-              mira ya decidió cancelar antes de enterarse de que había arreglo. */}
+              mira ya decidió cancelar antes de enterarse de que había arreglo.
+
+              EL REMEDIO SE ESCRIBE, no se deja deducir: «falta marcar el descanso» no le dice a nadie
+              qué botón tocar, y este aviso existe justamente porque el gesto no es obvio. */}
           {rotativos.length > 0 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-900">
-                <AlertTriangle size={13} className="shrink-0" />
-                Descanso rotativo sin marcar: esas semanas descansarían el domingo
-              </p>
-              {/* EL REMEDIO SE ESCRIBE, no se deja deducir. «Falta marcar el descanso» no le dice a
-                  nadie qué botón tocar, y este aviso existe justamente porque el gesto no es obvio:
-                  pintar turnos no mueve el descanso de un rotativo, marcarlo sí. */}
-              <p className="mt-1 text-[12px] text-amber-900">
-                Márcales su día libre con <b>Descanso</b> y el domingo dejará de contar como descanso
-                trabajado.
-              </p>
-              <ul className="mt-1 list-disc pl-5 text-[12px] text-amber-900">
-                {rotativos.map(r => (
-                  <li key={`${r.nombre}|${r.lunes}`}>{r.nombre}, semana del {rotuloCorto(r.lunes)}</li>
-                ))}
-              </ul>
-            </div>
+            <AvisoDeLaPrevia tono="aviso"
+              titulo="Descanso rotativo sin marcar: esas semanas descansarían el domingo"
+              nota={<>Márcales su día libre con <b>Descanso</b> y el domingo dejará de contar como descanso trabajado.</>}>
+              {rotativos.map(r => (
+                <li key={`${r.nombre}|${r.lunes}`}>{r.nombre}, semana del {rotuloCorto(r.lunes)}</li>
+              ))}
+            </AvisoDeLaPrevia>
           )}
 
           {pisados.length > 0 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-900">
-                <AlertTriangle size={13} className="shrink-0" />
-                Pintarías sobre el descanso obligatorio de {jornadas(pisados.length)}
-              </p>
-              <ul className="mt-1 list-disc pl-5 text-[12px] text-amber-900">
-                {/* La fecha dicha con palabras. Antes salía "2026-09-28" en crudo, que es la clave
-                    con la que se escribe el día y no algo que un administrador tenga que leer. */}
-                {pisados.map(p => (
-                  <li key={`${p.nombre}|${p.fecha}`}>{p.nombre}, el {rotuloCorto(p.fecha)}</li>
-                ))}
-              </ul>
-            </div>
+            <AvisoDeLaPrevia tono="aviso" titulo={`Pintarías sobre el descanso obligatorio de ${jornadas(pisados.length)}`}>
+              {/* La fecha dicha con palabras. Antes salía "2026-09-28" en crudo, que es la clave
+                  con la que se escribe el día y no algo que un administrador tenga que leer. */}
+              {pisados.map(p => (
+                <li key={`${p.nombre}|${p.fecha}`}>{p.nombre}, el {rotuloCorto(p.fecha)}</li>
+              ))}
+            </AvisoDeLaPrevia>
           )}
 
-          <p className="text-[11px] leading-relaxed text-muted">
-            Lo que ya pasó no se toca nunca. Si alguien ya empezó su jornada de hoy, el servidor lo
-            rechaza y el motivo se muestra al terminar.
-          </p>
+          <div className="flex items-start gap-2.5 border-t border-gray-100 pt-4 text-[11.5px] leading-relaxed text-muted">
+            <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gray-100">
+              <Info size={13} />
+            </span>
+            <p className="min-w-0 flex-1">
+              Lo que ya pasó no se toca nunca. Si alguien ya empezó su jornada de hoy, el servidor lo
+              rechaza y el motivo se muestra al terminar.
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-6 py-4">
-          <button type="button" onClick={onCancelar} className="px-4 py-2 text-sm text-muted">Cancelar</button>
+        <div className="flex shrink-0 items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+          <button type="button" onClick={onCancelar}
+            className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-ink hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary">
+            Cancelar
+          </button>
           {/* Sin nada que escribir el botón no se ofrece activo: prometería algo que no va a pasar. */}
           <button type="button" onClick={onAplicar} disabled={ocupado || conteo.escribe === 0}
-            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-ink hover:bg-primary-dark disabled:opacity-60">
+            className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-ink hover:bg-primary-dark disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-dark">
             Aplicar
           </button>
         </div>
@@ -2017,8 +2116,6 @@ export default function CalendarioDeTurnos() {
   //
   // El gris del mes ajeno se queda: ese sí dice algo que no está en ninguna otra parte, que esa
   // columna es de otro mes y no cuenta para el total.
-  const fondoDeColumna = (fecha: string) => (enMes && esDeOtroMes(fecha, ancla) ? 'bg-gray-100' : '');
-
   // La raya solo entre semanas, nunca al principio: en la primera columna no separa nada de nada, y
   // en la vista de semana no hay dos semanas que separar.
   const corteDeSemana = (fecha: string) =>
@@ -2143,6 +2240,35 @@ export default function CalendarioDeTurnos() {
   //     maqueta con `visibles()`.
   const todas = cargando ? [] : datos?.filas ?? [];
   const filas = quienSeVe(todas, filtros);
+
+  // ────── LO QUE SIGUE DEPENDE DE `filas` Y POR ESO VIVE AQUÍ ABAJO (29 de septiembre de 2026) ──────
+  //
+  // Estuvo cuatrocientas líneas más arriba, junto al resto de los ayudantes de la rejilla, y la
+  // pantalla se caía entera con «Cannot access 'filas' before initialization». `tsc` no dice nada: un
+  // `const` leído antes de su declaración es un error de EJECUCIÓN, no de tipos. Se vio abriendo el
+  // navegador, que es exactamente lo que el §5.5 del CLAUDE.md pide no saltarse.
+  // QUÉ COLUMNAS Y QUÉ FILAS ESTÁN MARCADAS ENTERAS (29 de septiembre de 2026, maqueta del dueño).
+  //
+  // Siete halos sueltos no se leen como «esta persona entera»: hay que recorrerlos y comprobar que no
+  // falta ninguno. Un fondo continuo lo dice sin contar nada.
+  //
+  // LAS COLUMNAS SE CALCULAN UNA VEZ, en un conjunto, y no dentro del doble bucle: allí serían 42
+  // columnas × 20 filas × 20 filas de comprobación en cada dibujado.
+  const estaMarcada = (c: CeldaMarcada) => Boolean(marcadas[claveDeCelda(c)]);
+  const columnasEnteras = new Set(
+    dias.filter(fecha => conjuntoCompleto(filas.map(f => ({ colaboradorId: f.id, fecha })), estaMarcada, hoy)),
+  );
+  const filaEntera = (fila: FilaDelCalendario) => conjuntoCompleto(
+    fila.dias.map(d => ({ colaboradorId: fila.id, fecha: d.fecha })), estaMarcada, hoy,
+  );
+
+  // La precedencia entre los cuatro fondos vive en `fondoDeLaColumna`, que es pura y está probada y
+  // mutada. Aquí solo se resuelve cuál de los tres hechos ocurre.
+  const fondoDeColumna = (fecha: string, enFilaEntera = false) => fondoDeLaColumna({
+    enSeleccionEntera: enFilaEntera || columnasEnteras.has(fecha),
+    esHoy: fecha === hoy,
+    deOtroMes: enMes && esDeOtroMes(fecha, ancla),
+  });
   // Los cargos que de verdad hay, sin repetir y sin los vacíos: hay gente sin cargo puesto.
   const cargosQueHay = [...new Set(todas.map(f => f.cargo).filter((c): c is string => Boolean(c)))].sort();
   // Las sedes que de verdad hay. Por `Map` y no por `Set`: son objetos, y dos personas de la misma sede
@@ -2974,15 +3100,49 @@ export default function CalendarioDeTurnos() {
         <div className="hp-dos-esquinas w-full">
           <div>
         {/* DÍA · SEMANA · MES. `aria-pressed` y no un `select`: son opciones fijas y la
-            encendida tiene que verse sin abrir nada. */}
+            encendida tiene que verse sin abrir nada.
+
+            LA PÍLDORA SE DESLIZA (29 de septiembre de 2026, vídeo del dueño). Antes el blanco saltaba
+            de una opción a otra sin transición, y lo que se ve al saltar es un parpadeo: no queda
+            claro de dónde vino, así que no hay nada que ligue lo que se pulsó con lo que cambió. Con
+            el deslizamiento, el ojo sigue la píldora y la rejilla de abajo cambia al final del
+            recorrido.
+
+            LAS TRES OPCIONES MIDEN LO MISMO, y de eso depende todo lo demás: la píldora es un tercio
+            del carril y se mueve un ancho entero por posición. Con anchos distintos habría que medir
+            cada botón con una referencia y recalcular al cambiar el tamaño de la ventana, que es
+            mucha maquinaria para un control de tres opciones.
+
+            Y SE IGUALAN CON `grid-cols-3`, NO CON `flex-1`. Con flex se probó primero y salieron
+            52 / 83 / 59 px: `flex: 1 1 0%` reparte el sobrante, pero ningún hijo baja de su ancho
+            mínimo de contenido, y «Semana» es más ancha que las otras dos. Con una rejilla de tres
+            columnas iguales, las tres miden lo que la más ancha y la píldora cae clavada. Medido en
+            el navegador, no supuesto.
+
+            EL FONDO BAJA A `gray-100`, más claro que el `gray-200` de antes: con el gris oscuro, la
+            píldora blanca y el carril tenían casi el mismo peso y el conjunto se leía como una caja
+            gris con un agujero, en vez de como tres opciones con una encendida. */}
         <div role="group" aria-label="Cómo se ve el calendario"
-          className="flex items-center gap-[3px] rounded-xl bg-gray-200 p-[3px]">
+          className="relative grid grid-cols-3 items-center rounded-xl bg-gray-100 p-[3px]">
+          {/* `aria-hidden`: es puro dibujo. Quién está encendido lo dice `aria-pressed` en su botón, y
+              anunciar esto además sería decirlo dos veces a quien usa lector de pantalla.
+
+              `motion-reduce:transition-none` porque quien pidió menos movimiento al sistema operativo
+              no lo pidió para las demás páginas y no para esta. */}
+          <span aria-hidden="true"
+            className="pointer-events-none absolute inset-y-[3px] left-[3px] rounded-[9px] bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
+            style={{
+              width: `calc((100% - 6px) / ${MODOS.length})`,
+              transform: `translateX(${MODOS.indexOf(modo) * 100}%)`,
+            }} />
           {MODOS.map(m => (
             <button key={m} type="button" onClick={() => verEnModo(m)} aria-pressed={modo === m}
-              className={`rounded-[9px] px-4 py-1.5 text-[13px] transition-colors ${
+              // `relative` para quedar POR ENCIMA de la píldora, que es absoluta: sin esto el blanco
+              // se dibuja sobre el texto y la opción encendida se lee en blanco sobre blanco.
+              className={`relative rounded-[9px] px-4 py-1.5 text-center text-[13px] transition-colors ${
                 modo === m
-                  ? 'bg-white text-ink font-extrabold shadow-sm'
-                  : 'text-muted font-semibold hover:text-ink'}`}>
+                  ? 'text-ink font-extrabold'
+                  : 'text-muted font-semibold hover:bg-gray-200/60 hover:text-ink'}`}>
               {PERIODO[m].unidad}
             </button>
           ))}
@@ -3165,6 +3325,45 @@ export default function CalendarioDeTurnos() {
             la semana). Con el primer valor que puse, 1740, las celdas del mes salían a 24 px. */}
           <table className={`w-full table-fixed border-collapse ${enMes ? 'min-w-[1907px]' : 'min-w-[984px]'}`}>
           <thead>
+            {/* ────── QUÉ SEMANA ES CADA GRUPO DE SIETE (29 de septiembre de 2026, maqueta del dueño) ──────
+                «Que la parte superior de mes se vea mucho más amplia». En un mes hay cuarenta y dos
+                columnas de una letra y un número, y para saber en qué semana se está pintando hay que
+                CONTAR desde la izquierda. Este renglón lo dice, y de paso da el aire que se pidió.
+
+                SOLO EN EL MES. En la vista de semana el botón de navegación ya dice «28 sep – 4 oct»
+                dos centímetros más arriba, y repetirlo sería gastar un renglón en decir lo mismo.
+
+                `colSpan` SOBRE LAS FECHAS QUE TIENE EL GRUPO y no un 7 fijo: hoy la vista de mes
+                siempre trae semanas completas, pero eso lo decide `vistaDelCalendario`, y con un 7
+                escrito aquí una vista que empezara a media semana descuadraría la tabla entera.
+
+                LOS ANCHOS SE REPITEN Y NO SON DECORACIÓN. La tabla es `table-fixed`, y en una tabla
+                fija los anchos de columna los fijan las celdas de la PRIMERA fila que no llevan
+                `colSpan`. Al meter este renglón sin ellos, la columna de la persona se fue de 251 px
+                a 45 y su contenido se dibujaba encima del total de la semana. Se vio en el navegador,
+                no compilando: `tsc` no tiene nada que decir de esto. Los `<th>` de los grupos llevan
+                `colSpan` y por eso no fijan ancho de ninguna columna suelta.
+
+                Y ESTE COMENTARIO VA AQUÍ ARRIBA, no debajo del `&&`: ahí estaría en posición de
+                EXPRESIÓN y la llave abriría un objeto. Es la tercera vez que este archivo tropieza
+                con lo mismo. */}
+            {haySemanales && enMes && (
+              <tr className="border-b border-gray-100">
+                <th className="sticky left-0 z-10 w-[251px] bg-white" />
+                {semanas.map((semana, i) => (
+                  <Fragment key={semana.lunes}>
+                    <th colSpan={semana.fechas.length}
+                      className={`whitespace-nowrap px-2 pt-3 pb-1.5 text-center text-[11px] font-bold text-muted ${
+                        corteDeSemana(semana.fechas[0])}`}>
+                      {rotuloDeSemanaEnLaVista(semana.lunes, i)}
+                    </th>
+                    {/* La columna del total de esa semana, que va entre grupo y grupo. */}
+                    <th className="w-[64px] bg-gray-50" />
+                  </Fragment>
+                ))}
+                <th className="w-[152px]" />
+              </tr>
+            )}
             <tr className="border-b border-gray-200">
               {/* `w-px` + `whitespace-nowrap` es el modo de decirle a una tabla `w-full` que esta
                   columna ocupe lo que ocupa su CONTENIDO y no una parte proporcional del ancho.
@@ -3205,7 +3404,7 @@ export default function CalendarioDeTurnos() {
                       porque la celda ya no lleva horario y el nombre se recorta. Sigue habiendo
                       desplazamiento horizontal —cerrarlo del todo pide un nombre corto por turno, que
                       no existe en el catálogo—, pero de cuatro pantallas pasa a algo más de dos. */}
-                  <th className={`py-3 text-center ${enMes ? 'px-0.5' : 'px-1.5'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
+                  <th className={`text-center ${enMes ? 'px-0.5 pt-1 pb-2.5' : 'px-1.5 py-3'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
                     {/* EL ENCABEZADO MARCA LA COLUMNA ENTERA: ese día de todo el mundo. Es el gesto
                         con el que se programa una jornada completa —un domingo, un festivo— sin
                         recorrer la lista persona por persona. Vuelve a tocarse y se desmarca, porque
@@ -3218,7 +3417,11 @@ export default function CalendarioDeTurnos() {
                     <button type="button" onClick={() => marcarColumna(fecha)}
                       disabled={!sePuedePintar(fecha, hoy)}
                       aria-label={rotuloDeColumna(fecha)}
-                      className="w-full rounded-lg px-1 py-0.5 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary disabled:cursor-default disabled:hover:bg-transparent">
+                      // SIN RELLENO LATERAL EN EL MES. Medido: la columna mide 34 px, el `th` se come 4
+                      // con su `px-0.5` y este botón otros 8, así que al círculo de 26 le quedaban 22 y
+                      // salía aplastado en un óvalo. Quitando estos 8 caben los 26 justos.
+                      className={`w-full rounded-lg py-0.5 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark disabled:cursor-default disabled:hover:bg-transparent ${
+                        enMes ? 'px-0' : 'px-1'}`}>
                       {/* Sale de la FECHA y no del número de columna: con `[i]`, de la octava columna
                           en adelante el encabezado salía en blanco.
 
@@ -3227,25 +3430,60 @@ export default function CalendarioDeTurnos() {
                           y «M»: en la mitad de las columnas hay que contar desde la izquierda para
                           saber en qué día se está pintando. En la semana sobra ancho para las tres;
                           en un mes de cuarenta y dos columnas, no. */}
-                      <div className={`text-xs font-semibold ${esHoy ? 'text-ink' : 'text-muted'}`}>
+                      {/* MÁS AIRE ENTRE LA LETRA Y EL NÚMERO en el mes (29 de septiembre de 2026): iban
+                          pegados, y con cuarenta y dos columnas eso se lee como un bloque de ruido en
+                          vez de como dos datos. */}
+                      <div className={`text-xs font-semibold ${enMes ? 'mb-1' : ''} ${esHoy ? 'text-ink' : 'text-muted'}`}>
                         {modo === 'SEMANA' ? abreviaturaDeDia(fecha) : inicialDeDia(fecha)}
                       </div>
                       {/* HOY, EN UNA PÍLDORA OSCURA, como en la maqueta (medido allí: fondo #303030,
                           texto blanco, radio completo). Poner hoy en negrita y ya es una diferencia
                           que hay que buscar comparando siete columnas entre sí; la píldora se ve sin
                           comparar nada, que es lo que tiene que hacer la referencia de «dónde estoy». */}
-                      <div className="text-sm tabular-nums">
+                      {/* CENTRADO DE VERDAD (29 de septiembre de 2026, visto por el dueño: «quedan
+                          torcidos»). El número vivía dentro de un `inline-grid`, y un elemento en
+                          línea se alinea por su LÍNEA BASE con el texto que lo rodea: la píldora
+                          quedaba medio píxel corrida y el número no caía en su centro. Con un `flex`
+                          que centra y un `grid` de bloque dentro, no hay línea base que valga.
+
+                          Y `leading-none`: el alto de línea heredado empujaba el número hacia abajo
+                          dentro de su propia píldora. */}
+                      <div className="flex justify-center text-sm leading-none tabular-nums">
                         {/* LA PÍLDORA NO PUEDE ENSANCHAR SU COLUMNA. Medido: con relleno lateral, la
                             columna de hoy se iba a 51 px contra 32 las demás, y su celda salía media
                             vez más ancha que el resto. Con un ancho fijo, las siete columnas piden lo
                             mismo y la rejilla queda pareja. */}
-                        <span className={esHoy
-                          ? 'inline-grid h-[22px] w-[30px] place-items-center rounded-full bg-ink font-bold text-white'
-                          : 'text-muted'}>
+                        {/* EL FESTIVO TAMBIÉN LLEVA PÍLDORA (29 de septiembre de 2026, maqueta del
+                            dueño: «que se vea mejor el festivo»). Antes solo tenía la palabra debajo,
+                            en 10 px, y en un mes de cuarenta y dos columnas eso no se ve: hay que ir
+                            a buscarlo. Con el número dentro de una píldora lila, el día salta antes
+                            de leer nada, que es lo que hace falta para no programarle a alguien un
+                            turno que se paga con recargo sin darse cuenta.
+
+                            HOY GANA AL FESTIVO cuando coinciden, y no al revés: «dónde estoy» es la
+                            referencia con la que se lee toda la rejilla, y el festivo sigue dicho con
+                            la palabra debajo. Con el mismo ancho fijo los dos, para que ninguna de
+                            las dos píldoras ensanche su columna. */}
+                        {/* CÍRCULOS PERFECTOS Y NO ÓVALOS (pedido del dueño). Eran 22 × 30, que es
+                            un óvalo tumbado. El ancho fijo estaba para que la píldora no ensanchara su
+                            columna, y eso sigue haciendo falta: 26 × 26 cabe en los 33 px útiles de una
+                            columna del mes, así que las cuarenta y dos siguen midiendo lo mismo.
+
+                            LAS DOS MIDEN IGUAL a propósito: con tamaños distintos, hoy y un festivo
+                            harían que sus columnas se vieran de anchos distintos. */}
+                        {/* `shrink-0`: está dentro de un `flex`, y un hijo de flex se encoge antes que
+                            desbordar. Sin esto, el día que una columna se estreche el círculo vuelve a
+                            aplastarse en un óvalo sin que nada falle, que es como salió la primera vez. */}
+                        <span className={`grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full ${
+                          esHoy ? 'bg-ink font-bold text-white'
+                            : festivos.has(fecha) ? 'bg-violet-100 font-bold text-violet-700'
+                              : 'text-muted'}`}>
                           {Number(fecha.slice(8, 10))}
                         </span>
                       </div>
-                      {festivos.has(fecha) && <div className="text-[10px] font-medium text-violet-700">Festivo</div>}
+                      {festivos.has(fecha) && (
+                        <div className="mt-0.5 text-[10px] font-semibold leading-none text-violet-700">Festivo</div>
+                      )}
                     </button>
                   </th>
                   {/* EL TOTAL DE LA SEMANA, al cerrar cada una. Sin esta columna, en un mes el tope de
@@ -3281,6 +3519,9 @@ export default function CalendarioDeTurnos() {
               </td></tr>
             )}
             {filas.map(fila => {
+              // SU FILA ENTERA MARCADA pinta el fondo de todas sus celdas. Se calcula UNA vez aquí y
+              // no dentro del bucle de los días: en un mes son cuarenta y dos preguntas por persona.
+              const suyaEntera = filaEntera(fila);
               return (
                 <tr key={fila.id} className="border-b border-gray-100 last:border-0">
                   {/* MÁS AIRE VERTICAL Y LOS AVISOS UNO DEBAJO DE OTRO (29 de septiembre de 2026, pedido del
@@ -3288,7 +3529,15 @@ export default function CalendarioDeTurnos() {
                       cargo y dos chips— y con el relleno de antes quedaban pegados al borde de la fila.
 
                       Solo crece la fila de quien los tiene, que es exactamente la que merece el sitio. */}
-                  <td className="sticky left-0 bg-white z-10 w-[251px] whitespace-nowrap px-4 py-3.5">
+                  {/* LA COLUMNA DE LA PERSONA TAMBIÉN SE TIÑE cuando su fila está entera (29 de
+                      septiembre de 2026, pedido del dueño: «pongamos el fondo del amarillo claro, como
+                      en las columnas»). Antes se quedaba blanca y la banda empezaba después del nombre,
+                      así que la fila no se leía como una sola cosa.
+
+                      POR ESO EL TINTE ES OPACO. Esta celda es `sticky`: con un color con alfa se vería
+                      por debajo lo que va pasando al desplazar. Está explicado en `fondoDeLaColumna`. */}
+                  <td className={`sticky left-0 z-10 w-[251px] whitespace-nowrap px-4 py-3.5 ${
+                    suyaEntera ? fondoDeColumna(dias[0], true) : 'bg-white'}`}>
                     {/* EL NOMBRE MARCA SU FILA ENTERA, que es el gesto de «a esta persona, todo el
                         período». Dice qué período con todas las letras («Marcar la semana de…»,
                         «Marcar el mes de…»): en un mes, un rótulo que dijera «semana» sería falso
@@ -3301,7 +3550,17 @@ export default function CalendarioDeTurnos() {
                       // `items-start` y no `items-center`: con los avisos debajo, el bloque tiene
                       // cuatro renglones y un avatar centrado se iba al medio, lejos del nombre al que
                       // pertenece. Arriba queda a la altura de la línea que nombra a la persona.
-                      className="flex items-start gap-2.5 rounded-lg text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary">
+                      // `focus-visible` Y NO `focus` (29 de septiembre de 2026). El dueño vio un borde
+                      // amarillo alrededor del nombre al marcar la fila entera y pidió quitarlo. NO era
+                      // un estilo de selección: era el anillo de FOCO, que con `focus:` sale también al
+                      // pulsar con el ratón. Quitarlo del todo habría dejado sin referencia a quien
+                      // navega con el tabulador; `focus-visible` lo reserva para el teclado, que es
+                      // para quien se inventó.
+                      //
+                      // Va con `//` y no con `{/* */}`: esto está entre ATRIBUTOS, y ahí una llave abre
+                      // una expresión. Es el mismo tropiezo de esta mañana, en otro sitio del archivo.
+                      className={`flex items-start gap-2.5 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark ${
+                        suyaEntera ? '' : 'hover:bg-gray-50'}`}>
                       <Inicial id={fila.id} nombre={fila.nombre} apellido={fila.apellido} />
                       {/* LOS AVISOS DEBAJO DEL NOMBRE, uno sobre otro (29 de septiembre de 2026,
                           decisión del dueño). Estuvieron en una columna aparte a la derecha unas
@@ -3414,7 +3673,7 @@ export default function CalendarioDeTurnos() {
                         // anillo de abajo, que se ve igual sobre cualquier color de turno. Antes era un
                         // `bg-primary/20` aquí, y encima había que hacerlo excluyente con el fondo del
                         // fin de semana porque los dos eran `background-color`.
-                        className={`align-middle ${enMes ? 'px-0.5 py-1' : 'px-1 py-1'} ${corteDeSemana(dia.fecha)} ${fondoDeColumna(dia.fecha)}`}>
+                        className={`align-middle ${enMes ? 'px-0.5 py-1' : 'px-1 py-1'} ${corteDeSemana(dia.fecha)} ${fondoDeColumna(dia.fecha, suyaEntera)}`}>
                         {/* TRES CASOS Y NO DOS (22 de septiembre de 2026).
                             Un DESCANSO TRABAJADO abre su propio modal, y NO mira `sePuedePintar`:
                             por definición ya ocurrió, así que es pasado o de hoy, y colgándolo del
@@ -3521,19 +3780,35 @@ export default function CalendarioDeTurnos() {
                         //
                         // Va con `//` y NO con `{/* */}`: esto está en posición de EXPRESIÓN, dentro
                         // del `return` de la función. Una llave ahí abre un objeto y el parser revienta.
-                        return (
-                          <td className="whitespace-nowrap bg-gray-50 px-2 py-1 text-center align-middle">
-                            <div className={`text-[12px] font-bold tabular-nums ${
-                              pasaLaSemana ? 'text-red-600' : 'text-ink'}`}>
-                              {horasDeMinutos(minutos)}
-                            </div>
-                            {pasaLaSemana && (
-                              <div className="text-[10px] font-bold text-red-600 tabular-nums">
-                                +{horasDeMinutos(minutos - tope * 60)}
+                        // LA BARRA TAMBIÉN AQUÍ (29 de septiembre de 2026, maqueta del dueño). El
+                          // total de la fila ya la tenía desde esta mañana y esta columna no, así que
+                          // en un mes —donde el tope SEMANAL es el que gobierna— el número estaba solo
+                          // y había que dividir de cabeza para saber si 46 h de 42 es mucho.
+                          //
+                          // `progresoDelTope` es la misma que usa el total de la fila, no una copia:
+                          // la barra se corta en 100 % y el porcentaje no, y ese matiz está explicado
+                          // y probado allí.
+                          const p = progresoDelTope(minutos, tope * 60);
+                          return (
+                            <td className={`whitespace-nowrap px-2 py-1 text-center align-middle ${
+                              suyaEntera ? fondoDeColumna(dia.fecha, true) : 'bg-gray-50'}`}>
+                              <div className={`text-[12px] font-bold tabular-nums ${
+                                pasaLaSemana ? 'text-red-600' : 'text-ink'}`}>
+                                {horasDeMinutos(minutos)}
                               </div>
-                            )}
-                          </td>
-                        );
+                              {pasaLaSemana && (
+                                <div className="text-[10px] font-bold text-red-600 tabular-nums">
+                                  +{horasDeMinutos(minutos - tope * 60)}
+                                </div>
+                              )}
+                              {/* SIN NÚMERO DENTRO: el porcentaje ya está en el total de la fila y
+                                  aquí no cabe. La barra sola contesta «¿es mucho?» antes de leer. */}
+                              <div className="mx-auto mt-1 h-1 w-[46px] overflow-hidden rounded-full bg-gray-200">
+                                <div className={`h-full rounded-full ${p.pasa ? 'bg-red-500' : 'bg-primary-dark'}`}
+                                  style={{ width: `${p.ancho}%` }} />
+                              </div>
+                            </td>
+                          );
                       })()}
                       </Fragment>
                     );

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { claveDeCelda, celdasDelRectangulo, escribibles, alternarConjunto } from './seleccionEnBloque';
+import {
+  claveDeCelda, celdasDelRectangulo, escribibles, alternarConjunto, conjuntoCompleto,
+} from './seleccionEnBloque';
 
 // LA SELECCIÓN EN BLOQUE (28 de septiembre de 2026).
 //
@@ -203,5 +205,56 @@ describe('alternar una fila o una columna entera', () => {
     const marcadas = new Set(['2026-09-29', '2026-09-30']);
     const r = alternarConjunto(semana, x => marcadas.has(x.fecha), '2026-09-29');
     expect(r.apagar).toBe(false);
+  });
+});
+
+// ────────── CUÁNDO UNA FILA O UNA COLUMNA ESTÁ ENTERA (29 de septiembre de 2026) ──────────
+//
+// Pedido del dueño con una maqueta: «que cuando la selección es general, se marque toda la fila o
+// columna amarillo claro». Hoy una fila entera marcada son siete celdas con su halo, y siete halos
+// sueltos no se leen como «esta persona entera»: hay que recorrerlos y comprobar que no falta ninguno.
+// Un fondo continuo lo dice sin contar nada.
+//
+// SE APOYA EN `alternarConjunto` Y NO REPITE LA CUENTA: es exactamente la misma pregunta que decide si
+// el botón de la persona marca o desmarca, y tenerla en dos sitios es como se separan (§9.3). Si
+// discreparan, el fondo diría «entera» de una fila que el botón todavía va a marcar.
+//
+// LA DIFERENCIA CON `apagar` ES EL CONJUNTO VACÍO, y por eso esto existe en vez de usar aquel
+// directamente: `every` sobre una lista vacía es `true`, así que una fila entera en el pasado —donde
+// no hay NADA que marcar— saldría como «completa» y se pintaría de amarillo sin que nadie la haya
+// tocado. Para el interruptor eso da igual (apagar cero celdas no hace nada); para un fondo, no.
+
+describe('cuándo un conjunto está entero', () => {
+  const c = (fecha: string) => ({ colaboradorId: 'c1', fecha });
+  const HOY = '2026-09-29';
+  const ninguna = () => false;
+  const todas = () => true;
+
+  it('todas las escribibles marcadas: está entera', () => {
+    expect(conjuntoCompleto(['2026-09-29', '2026-09-30'].map(c), todas, HOY)).toBe(true);
+  });
+
+  it('con una sin marcar, no', () => {
+    const marcadas = new Set(['2026-09-29']);
+    expect(conjuntoCompleto(['2026-09-29', '2026-09-30'].map(c), x => marcadas.has(x.fecha), HOY)).toBe(false);
+  });
+
+  it('LOS DÍAS PASADOS NO CUENTAN: una fila que empieza el lunes puede estar entera un jueves', () => {
+    // Si contaran, ninguna fila de la semana en curso estaría entera jamás y el fondo no saldría
+    // nunca, que es el mismo defecto que ya tuvo el interruptor del botón.
+    const semana = ['2026-09-28', '2026-09-29', '2026-09-30'].map(c);
+    const marcadas = new Set(['2026-09-29', '2026-09-30']);
+    expect(conjuntoCompleto(semana, x => marcadas.has(x.fecha), HOY)).toBe(true);
+  });
+
+  it('UNA FILA ENTERA EN EL PASADO NO ESTÁ ENTERA, está vacía', () => {
+    // El caso que separa esto de `alternarConjunto`: ahí no hay nada que marcar, y `every` sobre una
+    // lista vacía dice `true`. Pintarla de amarillo diría que alguien la seleccionó, y nadie pudo.
+    expect(conjuntoCompleto(['2026-09-01', '2026-09-02'].map(c), ninguna, HOY)).toBe(false);
+    expect(conjuntoCompleto(['2026-09-01', '2026-09-02'].map(c), todas, HOY)).toBe(false);
+  });
+
+  it('sin celdas tampoco', () => {
+    expect(conjuntoCompleto([], todas, HOY)).toBe(false);
   });
 });
