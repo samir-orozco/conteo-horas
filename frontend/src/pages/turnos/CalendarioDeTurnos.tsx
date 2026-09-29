@@ -2797,7 +2797,17 @@ export default function CalendarioDeTurnos() {
           ancho estable: el largo cambiaba de tamaño según la semana y movía las flechas mientras
           alguien hacía clic repetido en ellas. */}
       <div className="mb-1 flex flex-col items-center gap-2 sm:items-end">
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+        {/* UNO EN CADA ESQUINA, Y APILADOS Y CENTRADOS CUANDO NO QUEPAN (29 de septiembre de 2026,
+            pedido del dueño). Antes los dos grupos iban juntos a la derecha y se leían como una sola
+            barra de siete controles; separados, cada uno dice lo suyo: a la izquierda CÓMO se mira,
+            a la derecha DÓNDE se está.
+
+            `flex-col` de base y `sm:flex-row` a partir de ahí, y no `flex-wrap`: al envolver, el
+            segundo grupo cae a la izquierda alineado con nada, que es de lo que ya se quejó el dueño
+            el 24 de septiembre. Apilando en columna las dos piezas quedan centradas, una debajo de
+            la otra. */}
+        <div className="hp-dos-esquinas w-full">
+          <div>
         {/* DÍA · SEMANA · MES. `aria-pressed` y no un `select`: son opciones fijas y la
             encendida tiene que verse sin abrir nada. */}
         <div role="group" aria-label="Cómo se ve el calendario"
@@ -2842,6 +2852,7 @@ export default function CalendarioDeTurnos() {
             Hoy
           </button>
         </div>
+          </div>
         </div>
 
         {/* DÓNDE ESTÁ PARADO EL CALENDARIO (28 de septiembre de 2026). El botón dice «28 sep – 4 oct
@@ -2852,6 +2863,8 @@ export default function CalendarioDeTurnos() {
             EN ÁMBAR CUANDO ES EL PERÍODO ACTUAL, como la maqueta y por decisión del dueño. Yo la
             había puesto en tinta negra con el argumento de no gastar el color de aviso en algo
             normal; queda constancia del argumento, no de la decisión. */}
+        {/* Se queda pegada a la navegación, que es a lo que se refiere: en angosto va centrada como
+            todo lo demás. */}
         <div className={`text-[10px] font-extrabold uppercase tracking-[0.06em] ${
           etiquetaPeriodo.esActual ? 'text-amber-800' : 'text-muted'}`}>
           {etiquetaPeriodo.texto}

@@ -178,3 +178,31 @@ body {
    a la vista. */
 .hp-tabs-scroll { scrollbar-width: none; -ms-overflow-style: none; }
 .hp-tabs-scroll::-webkit-scrollbar { display: none; }
+/* LAS DOS ESQUINAS DE LA CABECERA DE TURNOS (29 de septiembre de 2026, pedido del dueño: «uno al
+   lado del otro, pero en esquinas diferentes, y al momento en que en el responsive se junten, uno
+   encima del otro pero centrado»).
+
+   POR QUÉ NO ES UN `sm:` DE TAILWIND. Los puntos de corte de Tailwind miden la VENTANA, y aquí eso
+   mide lo que no es: la barra lateral ocupa 232 px y desaparece por debajo de `md`, así que en una
+   ventana de 700 px hay MÁS sitio que en una de 800. Con un punto de corte por ventana, la fila se
+   partía justo donde sobraba espacio y seguía junta donde no cabía. Medido: a 800 px de ventana los
+   dos grupos pedían 571 y el contenedor tenía 566, y aun así no se apilaban.
+
+   Una consulta de CONTENEDOR mide el sitio real. Va escrita a mano y no con el plugin
+   `@tailwindcss/container-queries` para no sumar una dependencia por dos reglas. */
+.hp-dos-esquinas {
+  container-type: inline-size;
+}
+.hp-dos-esquinas > * {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+@container (min-width: 600px) {
+  .hp-dos-esquinas > * {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
