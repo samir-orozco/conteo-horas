@@ -332,25 +332,30 @@ describe('de quién es cada fila', () => {
     expect(await primeraFila()).toHaveTextContent('Guarda · Norte');
   });
 
-  // LA SEGUNDA LÍNEA ES UNA COSA O LA OTRA, NUNCA LAS DOS (29 de septiembre de 2026, lo vio el dueño
-  // en la pantalla: «la etiqueta elimina el texto»). Antes el cargo y el aviso compartían renglón y
-  // el cargo se recortaba para hacerle sitio: quedaba un muñón de una letra que no dice nada.
-  describe('cuando hay un incumplimiento, manda el aviso', () => {
-    it('la línea pasa a decir cuántas semanas quedan sin descanso', async () => {
+  // EL AVISO Y EL CARGO SE VEN LOS DOS, cada uno en su sitio (29 de septiembre de 2026, propuesta del
+  // dueño). Hubo dos versiones anteriores y las dos estaban mal:
+  //
+  //   1. Compartían renglón y el cargo se recortaba para hacerle sitio al chip: quedaba un «G…» que
+  //      no dice nada. Lo vio el dueño: «la etiqueta elimina el texto».
+  //   2. El aviso reemplazaba al cargo, que evitaba el muñón pero escondía la sede.
+  //
+  // Con el chip en su PROPIA COLUMNA no hay que elegir. Esta prueba existe para que nadie vuelva a
+  // meterlos en el mismo renglón «para ahorrar espacio».
+  describe('cuando hay un incumplimiento', () => {
+    it('sale el aviso de las semanas sin descanso', async () => {
       montar(true);
       await cargado();
       expect(await primeraFila()).toHaveTextContent('1 semana sin descanso');
     });
 
-    it('y el cargo NO se recorta a un muñón: desaparece del renglón', async () => {
-      // Lo que se prohíbe es el «G…» de antes. O está entero o no está.
+    it('Y EL CARGO SIGUE ENTERO, no recortado a un muñón', async () => {
+      // Lo que se prohíbe es el «G…»: o está entero o no está. Aquí está entero.
       montar(true);
       await cargado();
-      expect((await primeraFila()).textContent ?? '').not.toContain('Guarda');
+      expect(await primeraFila()).toHaveTextContent('Guarda · Norte');
     });
 
-    it('PERO NO SE PIERDE: sale al pasar el puntero por el nombre', async () => {
-      // Priorizar no es esconder. Si alguien quita el `title` para simplificar, este caso lo dice.
+    it('y el nombre completo sigue a un gesto de distancia', async () => {
       montar(true);
       await cargado();
       const boton = within(await primeraFila()).getByRole('button', { name: /^Marcar/ });

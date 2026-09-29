@@ -6,7 +6,12 @@
 
 type Habitual = { trabajados: number; clase: 'NINGUNO' | 'OCASIONAL' | 'HABITUAL' };
 
-export function avisoDeDescansos({ trabajados, clase }: Habitual): { texto: string; grave: boolean } | null {
+// DEVUELVE EL NÚMERO Y LA PALABRA POR SEPARADO desde el 29 de septiembre de 2026, no una frase ya
+// unida. El chip de la rejilla escribe «3 descansos» y deja «habitual» para el nombre accesible y el
+// texto al pasar el puntero, porque en la columna no cabe la frase entera. Uniéndolos aquí, quien
+// llama tendría que partir la cadena para escribir la mitad, que es la forma de que se separen.
+export function avisoDeDescansos({ trabajados, clase }: Habitual):
+  { cuantos: string; palabra: string; grave: boolean } | null {
   // `NINGUNO` no dibuja nada aunque venga con número: ese estado el servidor no debería mandarlo, y
   // ponerle una palabra aquí sería inventarse una categoría legal. Que falte el chip se nota y se
   // pregunta; que diga «ocasional» sin serlo, no.
@@ -16,8 +21,8 @@ export function avisoDeDescansos({ trabajados, clase }: Habitual): { texto: stri
   // puede cambiar; deduciéndolo aquí, la pantalla diría «ocasional» de alguien a quien el servidor ya
   // cuenta como habitual, y la compensación en tiempo no se reclamaría.
   return {
-    texto: `${trabajados} ${trabajados === 1 ? 'descanso' : 'descansos'} · ${
-      clase === 'HABITUAL' ? 'habitual' : 'ocasional'}`,
+    cuantos: `${trabajados} ${trabajados === 1 ? 'descanso' : 'descansos'}`,
+    palabra: clase === 'HABITUAL' ? 'habitual' : 'ocasional',
     grave: clase === 'HABITUAL',
   };
 }

@@ -17,6 +17,8 @@ import { estadoDelProgreso } from './progresoDelBloque';
 import { accionParaDeshacer } from './deshacerElLote';
 import { codigosDelCatalogo } from './codigoDeTurno';
 import { cargoYSede } from './cargoYSede';
+import { colorDeAvatar } from '../../lib/colorDeAvatar';
+import { progresoDelTope } from './progresoDelTope';
 import { avisoDeDescansos } from './avisoDeDescansos';
 // A quién se ve con los filtros de arriba. Puro, probado y mutado: de esta lista sale qué se puede
 // seleccionar, y por lo tanto a quién se le escribe al aplicar un bloque.
@@ -275,11 +277,16 @@ function descansoEnPalabras(d: FilaDelCalendario['descanso']): string {
   return 'Domingo';
 }
 
-function Inicial({ nombre, apellido }: { nombre: string; apellido: string }) {
+// UN COLOR POR PERSONA (29 de septiembre de 2026, propuesta del dueño). En una rejilla de veinte
+// filas, veinte círculos del mismo amarillo no ayudan a nada: para volver a encontrar a alguien tras
+// desplazarse hay que leer los nombres. El reparto lo hace `colorDeAvatar`, que está probado, y sale
+// del `id` y no del nombre: corregirle una tilde a alguien no le cambia el color.
+//
+// Las iniciales van `aria-hidden`: el nombre está justo al lado y «J T Julián Torres» es ruido.
+function Inicial({ id, nombre, apellido }: { id: string; nombre: string; apellido: string }) {
   return (
-    // 30 px y `primary-light`, medido en la maqueta. El `primary/30` de antes es el mismo amarillo a
-    // un tercio de opacidad, y sobre la fila marcada —que se tiñe de amarillo— se perdía.
-    <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-primary-light text-[11px] font-extrabold text-ink">
+    <div aria-hidden="true"
+      className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold ${colorDeAvatar(id)}`}>
       {`${nombre[0] ?? ''}${apellido[0] ?? ''}`.toUpperCase()}
     </div>
   );
@@ -3083,7 +3090,6 @@ export default function CalendarioDeTurnos() {
               </td></tr>
             )}
             {filas.map(fila => {
-              const sePasa = topeAplica && fila.minutosEsperados > tope * 60;
               return (
                 <tr key={fila.id} className="border-b border-gray-100 last:border-0">
                   <td className="sticky left-0 bg-white z-10 w-px whitespace-nowrap px-4 py-2.5">
@@ -3097,49 +3103,51 @@ export default function CalendarioDeTurnos() {
                       // el `title` y no borrarlos es la diferencia entre priorizar y esconder.
                       title={`${fila.nombre} ${fila.apellido} · ${cargoYSede(fila)}`}
                       className="flex items-center gap-2.5 rounded-lg text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary">
-                      <Inicial nombre={fila.nombre} apellido={fila.apellido} />
-                      {/* ANCHO FIJO para que la columna no quede a merced de un nombre largo: hasta
-                          ahí llega y de ahí en adelante recorta. */}
-                      <div className="w-[170px] min-w-0">
-                        <div className="truncate text-[13px] font-bold text-ink">{fila.nombre} {fila.apellido}</div>
-                        {/* LA SEGUNDA LÍNEA ES UNA COSA O LA OTRA, NUNCA LAS DOS (29 de septiembre de
-                            2026, lo vio el dueño: «la etiqueta elimina el texto»).
+                      <Inicial id={fila.id} nombre={fila.nombre} apellido={fila.apellido} />
+                      {/* EL CHIP EN SU PROPIA COLUMNA, no dentro del renglón del cargo (29 de
+                          septiembre de 2026, propuesta del dueño). Es mejor que lo que había: antes
+                          el aviso y el cargo se disputaban un renglón, así que o el cargo se recortaba
+                          a un muñón de una letra o desaparecía. Con dos columnas se ven los dos.
 
-                            Antes el cargo y los avisos compartían el renglón y el cargo se recortaba
-                            para dejarles sitio: quedaba un muñón de una letra —«G…», «S…»— que no
-                            dice nada y encima ensucia. La maqueta hace eso mismo y ahí se la deja.
-
-                            Cuando hay aviso manda el aviso, porque es lo que pide una acción: el
-                            cargo y la sede no cambian nada de lo que hay que hacer esta semana. No se
-                            pierden, salen al pasar el puntero por el nombre.
-
-                            Y los avisos ENVUELVEN si son dos. Solo crece la fila de quien tiene dos
-                            incumplimientos a la vez, que es exactamente la que merece el sitio. */}
-                        {(() => {
-                          const semanas = sinDescansoDe(fila);
-                          const habitual = avisoDeDescansos(fila.descansoHabitual);
-                          if (semanas === 0 && !habitual) {
-                            return <div className="truncate text-[11px] text-muted">{cargoYSede(fila)}</div>;
-                          }
-                          return (
-                            <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                              {semanas > 0 && (
-                                <span className="flex items-center gap-1 rounded-full bg-rose-100 px-1.5 py-px text-[10px] font-bold text-rose-900">
-                                  <AlertTriangle size={9} aria-hidden="true" className="shrink-0" />
-                                  {semanas} {semanas === 1 ? 'semana' : 'semanas'} sin descanso
-                                </span>
-                              )}
-                              {habitual && (
-                                <span className={`flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-bold ${
-                                  habitual.grave ? 'bg-rose-100 text-rose-900' : 'bg-amber-100 text-amber-900'}`}>
-                                  <AlertTriangle size={9} aria-hidden="true" className="shrink-0" />
-                                  {habitual.texto}
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })()}
+                          El nombre y el cargo recortan dentro de su ancho; el aviso NO, porque es lo
+                          que pide una acción y recortarlo lo dejaría en «3 desc…». */}
+                      <div className="w-[150px] min-w-0">
+                        <div className="truncate text-[13px] font-bold leading-tight text-ink">
+                          {fila.nombre} {fila.apellido}
+                        </div>
+                        <div className="truncate text-[11px] leading-tight text-muted">{cargoYSede(fila)}</div>
                       </div>
+                      {(() => {
+                        const semanas = sinDescansoDe(fila);
+                        const habitual = avisoDeDescansos(fila.descansoHabitual);
+                        if (semanas === 0 && !habitual) return null;
+                        return (
+                          <div className="flex shrink-0 flex-col items-start gap-1">
+                            {semanas > 0 && (
+                              <span title="Por norma, cada semana necesita un día de descanso remunerado"
+                                className="flex items-center gap-1 whitespace-nowrap rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
+                                <AlertTriangle size={11} aria-hidden="true" className="shrink-0" />
+                                {semanas} {semanas === 1 ? 'semana' : 'semanas'} sin descanso
+                              </span>
+                            )}
+                            {habitual && (
+                              // LA PALABRA VA EN EL `title` Y NO SOLO EN EL COLOR. En la pantalla el chip
+                              // dice «3 descansos» y el rosa lo distingue del ámbar, pero quien no
+                              // distinga bien los colores vería el mismo aviso en los dos casos, y no lo
+                              // son: desde el tercero del mes, compensar en tiempo deja de ser opcional.
+                              <span title={habitual.grave
+                                ? 'Descanso habitual: desde el tercero del mes hay que compensar en tiempo'
+                                : 'Descanso ocasional: se paga con recargo'}
+                                className={`flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                                  habitual.grave ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}>
+                                <AlertTriangle size={11} aria-hidden="true" className="shrink-0" />
+                                {habitual.cuantos}
+                                <span className="sr-only"> · {habitual.palabra}</span>
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </button>
                   </td>
                   {enDia && eje ? (
@@ -3306,16 +3314,58 @@ export default function CalendarioDeTurnos() {
                       envolvía en los 88 px de la columna. Una sola celda que envuelve estira la
                       FILA ENTERA, y era lo que dejaba la tabla en 84 px por fila contra los 58
                       de la maqueta. */}
-                  <td className="whitespace-nowrap px-4 py-2.5 text-right">
-                    <span className={`text-sm font-bold tabular-nums ${sePasa ? 'text-red-600' : 'text-ink'}`}>
-                      {horasDeMinutos(fila.minutosEsperados).replace(' h', '')}
-                    </span>
-                    <span className="text-sm text-muted tabular-nums"> / {tope} h</span>
-                    {sePasa && (
-                      <div className="text-[10px] font-bold text-red-600 tabular-nums">
-                        +{horasDeMinutos(fila.minutosEsperados - tope * 60)}
-                      </div>
-                    )}
+                  {/* EL TOTAL COMO BARRA (29 de septiembre de 2026, propuesta del dueño). «50,3 / 42 h»
+                      obliga a dividir de cabeza para saber si eso es mucho; la barra lo contesta antes
+                      de leer los números, que es de lo que se trata mirando veinte filas.
+
+                      La barra se corta en 100% y el porcentaje no: `progresoDelTope` lo explica y lo
+                      prueba. Reescalar el carril para que quepa un 120% haría que 50 h se vieran MÁS
+                      cortas que 42 h en la fila de al lado, y dos filas dejarían de compararse. */}
+                  <td className="whitespace-nowrap px-4 py-2">
+                    {(() => {
+                      // `topeAplica` NO SE PUEDE SALTAR: en el mes el total de la fila son treinta
+                      // jornadas, y compararlo con las 42 horas SEMANALES pintaría de rojo a la
+                      // empresa entera. Ahí el tope semanal vive en la columna «Sem» de cada semana,
+                      // que es donde de verdad se puede comparar.
+                      if (!topeAplica) {
+                        return (
+                          <div className="text-right text-sm font-bold tabular-nums text-ink">
+                            {horasDeMinutos(fila.minutosEsperados)}
+                          </div>
+                        );
+                      }
+                      const p = progresoDelTope(fila.minutosEsperados, tope * 60);
+                      return (
+                        <div className="w-[128px]">
+                          <div className="flex items-baseline gap-1.5">
+                            <span className={`text-sm font-extrabold tabular-nums ${p.pasa ? 'text-red-600' : 'text-ink'}`}>
+                              {horasDeMinutos(fila.minutosEsperados)}
+                            </span>
+                            <span className="text-[11px] text-muted tabular-nums">de {tope} h</span>
+                          </div>
+                          <div className="mt-1 flex items-center gap-1.5">
+                            {/* `role="img"` con su nombre: la barra es un dibujo, y sin esto un lector
+                                de pantalla solo oiría el porcentaje suelto, sin saber de qué. */}
+                            <div role="img" aria-label={`${p.pct}% de ${tope} horas`}
+                              className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
+                              <div style={{ width: `${p.ancho}%` }}
+                                className={`h-full rounded-full ${p.pasa ? 'bg-red-500' : 'bg-primary-dark'}`} />
+                            </div>
+                            <span className={`shrink-0 rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
+                              p.pasa ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-muted'}`}>
+                              {p.pct}%
+                            </span>
+                          </div>
+                          {/* CUÁNTO SE PASÓ, que es el dato con el que se decide a quién quitarle una
+                              jornada. El porcentaje dice que hay exceso; esto dice cuánto. */}
+                          {p.pasa && (
+                            <div className="mt-0.5 text-[10px] font-bold tabular-nums text-red-600">
+                              +{horasDeMinutos(fila.minutosEsperados - tope * 60)} de más
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                 </tr>
               );
@@ -3348,7 +3398,7 @@ export default function CalendarioDeTurnos() {
                     <tr key={fila.id} className="border-b border-gray-100 last:border-0">
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
-                          <Inicial nombre={fila.nombre} apellido={fila.apellido} />
+                          <Inicial id={fila.id} nombre={fila.nombre} apellido={fila.apellido} />
                           <div className="min-w-0">
                             <div className="text-sm font-medium text-ink truncate">{fila.nombre} {fila.apellido}</div>
                             <div className="text-[11px] text-muted truncate">{cargoYSede(fila)}</div>
