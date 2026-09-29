@@ -17,6 +17,7 @@ import { estadoDelProgreso } from './progresoDelBloque';
 import { accionParaDeshacer } from './deshacerElLote';
 import { codigosDelCatalogo } from './codigoDeTurno';
 import { cargoYSede } from './cargoYSede';
+import { avisoDeDescansos } from './avisoDeDescansos';
 // A quién se ve con los filtros de arriba. Puro, probado y mutado: de esta lista sale qué se puede
 // seleccionar, y por lo tanto a quién se le escribe al aplicar un bloque.
 import { quienSeVe, type FiltrosDeLaRejilla } from './quienSeVe';
@@ -470,26 +471,37 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
       );
     }
 
+    // DOS RENGLONES Y NO TRES, que es lo que de verdad hace que esta tabla se parezca a la maqueta.
+    //
+    // MEDIDO EN LAS DOS PANTALLAS RENDERIZADAS, a 800 px: la fila de la maqueta mide 58 px y la de la
+    // app medía 87. La causa era esta celda, la única con tres renglones (nombre, horario y el chip
+    // «Pendiente»): pesaba 66 px mientras las demás medían 51, y UNA sola celda así estira la fila
+    // ENTERA. La maqueta ya había pasado por esto y dejó su nota: «el segundo renglón dice una cosa
+    // u otra, nunca las dos».
+    //
+    // QUÉ SE VA Y QUÉ SE QUEDA. El horario se va: en una celda marcada como descanso trabajado el
+    // dato que hay que leer es ese, y el rango horario está en el panel del día, en la pastilla del
+    // catálogo y en el propio nombre del turno. «Pendiente» NO se va, porque es lo único que pide una
+    // acción: baja al segundo renglón, pegado a la palabra.
+    //
+    // Y ARRIBA VA EL NOMBRE DEL TURNO y no la palabra «Descanso», como en la maqueta: quien mira la
+    // fila necesita saber QUÉ se le puso encima a ese descanso para decidir si estuvo bien.
+    const { rotulo: suRotulo } = tonoDeJornada(dia);
     return (
-      <div className="flex min-h-[36px] flex-col justify-center rounded-xl border border-amber-300 bg-amber-100 px-2 py-1.5">
-        <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-amber-900 whitespace-nowrap">
+      <div className="flex min-h-[36px] flex-col justify-center rounded-xl border-[1.5px] border-orange-300 bg-orange-50 px-2 py-1.5 text-orange-900">
+        <div className="flex items-center gap-1.5 text-[11px] font-bold whitespace-nowrap">
           <AlertTriangle size={11} className="shrink-0" />
-          Descanso
+          <span className="truncate">{suRotulo.texto}</span>
         </div>
-        {horas && <div className="text-[11px] text-amber-800 tabular-nums text-center whitespace-nowrap">{horas}</div>}
         {/* SOLO SE AVISA LO QUE FALTA (22 de septiembre de 2026). Un día ya decidido no dice nada
-            extra: la ausencia de la palabra es la señal de que está atendido. Poner también un
-            «resuelto» llenaría la rejilla de ruido y haría que «pendiente» dejara de saltar a la
-            vista, que es lo único que tiene que hacer.
+            extra: la ausencia de la palabra es la señal de que está atendido.
 
             `=== 'PENDIENTE'` y no una comprobación laxa: aquí `undefined` (una respuesta vieja en
             caché, un backend anterior) SÍ debe comportarse distinto, porque marcarlo pendiente
             sería inventar un aviso. */}
-        {dia.decision === 'PENDIENTE' && (
-          <div className="mt-1 rounded-full bg-rose-100 text-rose-900 text-[10px] font-semibold text-center">
-            Pendiente
-          </div>
-        )}
+        <div className="truncate text-[11px] opacity-[.78]">
+          descanso{dia.decision === 'PENDIENTE' && ' · pendiente'}
+        </div>
       </div>
     );
   }
@@ -512,12 +524,19 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     //
     // EN EL MES NO CABEN LOS DOS: la celda mide 26 px. Va el icono solo, y la palabra sigue estando
     // para quien lee con lector de pantalla y para las pruebas, que consultan por lo que se lee.
+    // LOS DOS DESCANSOS NO SE DIBUJAN IGUAL, y eso sale de abrir la maqueta y medirla, no de leer su
+    // CSS: el que alguien MARCÓ lleva el icono encima de la palabra, y el OBLIGATORIO sin pintar lo
+    // lleva al lado. Son dos hechos distintos —«decidí que descansa» y «la ley dice que hoy le toca»—
+    // y en la maqueta se distinguen por la forma antes que por el color.
+    //
+    // El fondo es el mismo #ECEFF4 de la maqueta en los dos casos.
     return (
-      <div className={`flex flex-col items-center justify-center rounded-xl border text-center text-[11px] font-medium ${
-        compacta ? 'px-1 py-1' : 'min-h-[36px] gap-0.5 px-2 py-1.5'} ${
+      <div className={`flex items-center justify-center rounded-xl border-[1.5px] text-center text-[11px] font-medium ${
+        compacta ? 'flex-col px-1 py-1' : 'min-h-[36px] gap-1.5 px-2 py-1.5'} ${
+        obligatorio ? '' : 'flex-col gap-0.5'} ${
         obligatorio
-          ? 'border-transparent bg-slate-200 text-slate-600'
-          : 'border-dashed border-gray-300 text-muted'}`}>
+          ? 'border-transparent bg-[#eceff4] text-[#5b6472]'
+          : 'border-transparent bg-gray-100 text-muted'}`}>
         <Bed size={compacta ? 13 : 15} aria-hidden="true" className="shrink-0" />
         {compacta ? <span className="sr-only">Descanso</span> : 'Descanso'}
       </div>
@@ -549,7 +568,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
         // forma de saber a qué horario corresponden. La maqueta hace lo mismo con el motivo del
         // descanso obligatorio: lo que no cabe en la celda no se borra, se mueve al puntero.
         title={compacta ? [rotulo.texto, horas].filter(Boolean).join(' · ') : undefined}
-        className={`rounded-xl border ${
+        className={`rounded-xl border-[1.5px] ${
         compacta
           ? 'grid h-[26px] w-full place-items-center rounded-lg px-0.5 text-[11px] font-extrabold'
           : 'flex min-h-[36px] flex-col justify-center px-2 py-1.5'} ${tono}`}>
@@ -603,10 +622,12 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
   }
 
   return (
-    <div className={`flex items-center justify-center gap-1 border border-dashed border-gray-300 bg-gray-50 text-[11px] font-medium text-gray-400 ${
-      compacta ? 'h-[26px] rounded-lg' : 'min-h-[36px] rounded-xl px-2 py-1.5'}`}>
-      <Plus size={12} className="shrink-0" />
-      {!compacta && 'Agregar'}
+    // SOLO EL «+», sin la palabra y sin relleno, como en la maqueta. La palabra «Agregar» ensanchaba
+    // la columna para repetir lo que el signo ya dice, en TODAS las celdas vacías de la pantalla.
+    <div className={`flex items-center justify-center border-[1.5px] border-dashed border-gray-300 text-gray-300 ${
+      compacta ? 'h-[26px] rounded-lg' : 'min-h-[36px] rounded-xl'}`}>
+      <Plus size={14} className="shrink-0" />
+      <span className="sr-only">Agregar</span>
     </div>
   );
 }
@@ -2908,7 +2929,7 @@ export default function CalendarioDeTurnos() {
                   columna ocupe lo que ocupa su CONTENIDO y no una parte proporcional del ancho.
                   Sin eso se llevaba un tercio de la pantalla para mostrar un nombre corto, y las
                   columnas de los días quedaban apretadas al lado de un hueco en blanco. */}
-              <th className="sticky left-0 bg-white z-10 w-px whitespace-nowrap text-left text-xs font-semibold text-muted uppercase tracking-wider px-4 py-3">
+              <th className="sticky left-0 bg-white z-10 w-px whitespace-nowrap text-left text-xs font-bold text-muted px-4 py-3">
                 Persona
               </th>
               {enDia && eje ? (
@@ -2943,7 +2964,7 @@ export default function CalendarioDeTurnos() {
                       porque la celda ya no lleva horario y el nombre se recorta. Sigue habiendo
                       desplazamiento horizontal —cerrarlo del todo pide un nombre corto por turno, que
                       no existe en el catálogo—, pero de cuatro pantallas pasa a algo más de dos. */}
-                  <th className={`py-3 text-center ${enMes ? 'px-0.5 min-w-[38px]' : 'px-2 min-w-[96px]'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
+                  <th className={`py-3 text-center ${enMes ? 'px-0.5 min-w-[38px]' : 'px-1.5 min-w-[75px]'} ${fondoDeColumna(fecha)} ${corteDeSemana(fecha)}`}>
                     {/* EL ENCABEZADO MARCA LA COLUMNA ENTERA: ese día de todo el mundo. Es el gesto
                         con el que se programa una jornada completa —un domingo, un festivo— sin
                         recorrer la lista persona por persona. Vuelve a tocarse y se desmarca, porque
@@ -2962,8 +2983,16 @@ export default function CalendarioDeTurnos() {
                       <div className={`text-xs font-semibold ${esHoy ? 'text-ink' : 'text-muted'}`}>
                         {modo === 'SEMANA' ? abreviaturaDeDia(fecha) : inicialDeDia(fecha)}
                       </div>
-                      <div className={`text-sm tabular-nums ${esHoy ? 'font-bold text-ink' : 'text-muted'}`}>
-                        {Number(fecha.slice(8, 10))}
+                      {/* HOY, EN UNA PÍLDORA OSCURA, como en la maqueta (medido allí: fondo #303030,
+                          texto blanco, radio completo). Poner hoy en negrita y ya es una diferencia
+                          que hay que buscar comparando siete columnas entre sí; la píldora se ve sin
+                          comparar nada, que es lo que tiene que hacer la referencia de «dónde estoy». */}
+                      <div className="text-sm tabular-nums">
+                        <span className={esHoy
+                          ? 'inline-block rounded-full bg-ink px-2.5 py-0.5 font-bold text-white'
+                          : 'text-muted'}>
+                          {Number(fecha.slice(8, 10))}
+                        </span>
                       </div>
                       {festivos.has(fecha) && <div className="text-[10px] font-medium text-violet-700">Festivo</div>}
                     </button>
@@ -2983,7 +3012,7 @@ export default function CalendarioDeTurnos() {
                   palabra. Se encontró midiendo los anchos de las columnas en el navegador, no
                   leyendo: la búsqueda de rótulos falsos había buscado «Total semanal» y «Resumen de
                   la semana», y este es un «Semana» pelado que no coincidía con ninguno de los dos. */}
-              <th className="px-4 py-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">
+              <th className="whitespace-nowrap px-4 py-3 text-right text-xs font-bold text-muted">
                 {PERIODO[modo].unidad}
               </th>
             </tr>
@@ -3019,7 +3048,25 @@ export default function CalendarioDeTurnos() {
                         {/* «Guarda · Centro», como en la maqueta. Los dos datos faltan por separado, y aquí una
                             persona puede tener VARIAS sedes, cosa que la maqueta no contempla: la línea la arma
                             `cargoYSede`, que está probada. */}
-                        <div className="text-[11px] text-muted truncate">{cargoYSede(fila)}</div>
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <span className="truncate text-[11px] text-muted">{cargoYSede(fila)}</span>
+                          {/* EL AVISO DE DESCANSOS TRABAJADOS, pegado al nombre como en la maqueta. El dato ya
+                              existía pero solo como un número en la tarjeta de arriba: decía que hay tres y no
+                              quiénes son, así que para encontrarlos había que abrir persona por persona.
+                              `shrink-0` para que sea el cargo el que se recorte y no el aviso: si se recortan
+                              los dos, lo que se pierde es la palabra que dice cuánto cuesta. */}
+                          {(() => {
+                            const aviso = avisoDeDescansos(fila.descansoHabitual);
+                            if (!aviso) return null;
+                            return (
+                              <span className={`flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-bold ${
+                                aviso.grave ? 'bg-rose-100 text-rose-900' : 'bg-amber-100 text-amber-900'}`}>
+                                <AlertTriangle size={9} aria-hidden="true" className="shrink-0" />
+                                {aviso.texto}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </button>
                   </td>
@@ -3063,7 +3110,7 @@ export default function CalendarioDeTurnos() {
                         // anillo de abajo, que se ve igual sobre cualquier color de turno. Antes era un
                         // `bg-primary/20` aquí, y encima había que hacerlo excluyente con el fondo del
                         // fin de semana porque los dos eran `background-color`.
-                        className={`align-middle ${enMes ? 'px-0.5 py-1' : 'px-1.5 py-2.5'} ${corteDeSemana(dia.fecha)} ${fondoDeColumna(dia.fecha)}`}>
+                        className={`align-middle ${enMes ? 'px-0.5 py-1' : 'px-1 py-1'} ${corteDeSemana(dia.fecha)} ${fondoDeColumna(dia.fecha)}`}>
                         {/* TRES CASOS Y NO DOS (22 de septiembre de 2026).
                             Un DESCANSO TRABAJADO abre su propio modal, y NO mira `sePuedePintar`:
                             por definición ya ocurrió, así que es pasado o de hoy, y colgándolo del
@@ -3135,11 +3182,28 @@ export default function CalendarioDeTurnos() {
                       </Fragment>
                     );
                   })}
-                  <td className="px-4 py-2.5 text-right">
-                    <span className={`text-sm font-semibold tabular-nums ${sePasa ? 'text-amber-700' : 'text-ink'}`}>
-                      {horasDeMinutos(fila.minutosEsperados)}
+                  {/* «40 / 42 h» Y NO «40 h», como en la maqueta: el número solo no dice si está bien
+                      o mal, y obliga a acordarse del tope. Con el tope al lado, la comparación la hace
+                      la pantalla. Cuando se pasa, debajo va CUÁNTO se pasó, que es el dato con el que
+                      se decide a quién quitarle una jornada.
+
+                      El tope sale de la jornada legal vigente y no escrito aquí: baja a 42 en 2026 y
+                      a 42 se quedará mientras la ley no cambie otra vez. */}
+                  {/* `whitespace-nowrap` NO ES COSMÉTICO: medido clonando cada celda a su propio
+                      ancho, esta pedía 83 px mientras las demás pedían 56, porque «50,3 / 42 h»
+                      envolvía en los 88 px de la columna. Una sola celda que envuelve estira la
+                      FILA ENTERA, y era lo que dejaba la tabla en 84 px por fila contra los 58
+                      de la maqueta. */}
+                  <td className="whitespace-nowrap px-4 py-2.5 text-right">
+                    <span className={`text-sm font-bold tabular-nums ${sePasa ? 'text-red-600' : 'text-ink'}`}>
+                      {horasDeMinutos(fila.minutosEsperados).replace(' h', '')}
                     </span>
-                    {sePasa && <div className="text-[10px] text-amber-700">pasa de {tope} h</div>}
+                    <span className="text-sm text-muted tabular-nums"> / {tope} h</span>
+                    {sePasa && (
+                      <div className="text-[10px] font-bold text-red-600 tabular-nums">
+                        +{horasDeMinutos(fila.minutosEsperados - tope * 60)}
+                      </div>
+                    )}
                   </td>
                 </tr>
               );
