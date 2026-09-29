@@ -557,7 +557,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
     // El fondo es el mismo #ECEFF4 de la maqueta en los dos casos.
     return (
       <div className={`flex items-center justify-center rounded-xl border-[1.5px] text-center text-[11px] font-medium ${
-        compacta ? 'flex-col px-1 py-1' : 'min-h-[36px] gap-1.5 px-2 py-1.5'} ${
+        compacta ? 'h-[35px] w-full flex-col rounded-lg' : 'min-h-[36px] gap-1.5 px-2 py-1.5'} ${
         obligatorio ? '' : 'flex-col gap-0.5'} ${
         obligatorio
           ? 'border-transparent bg-[#eceff4] text-[#5b6472]'
@@ -592,7 +592,7 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
         // empresa de horario fijo —que es media clientela— vería un mes entero de letras sueltas sin
         // forma de saber a qué horario corresponden. La maqueta hace lo mismo con el motivo del
         // descanso obligatorio: lo que no cabe en la celda no se borra, se mueve al puntero.
-        title={compacta ? [rotulo.texto, horas].filter(Boolean).join(' · ') : undefined}
+        title={[rotulo.texto, horas].filter(Boolean).join(' · ')}
         className={`rounded-xl border-[1.5px] border-transparent ${
         compacta
           ? 'grid h-[35px] w-full place-items-center rounded-lg px-0.5 text-[11px] font-extrabold'
@@ -610,9 +610,13 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
             vieja en caché, un turno recién borrado—: antes que una celda muda, su inicial. */}
         {compacta ? codigo ?? rotulo.texto.charAt(0).toUpperCase() : (
           <>
-            <div className="flex items-center gap-1.5 text-[11px] font-bold whitespace-nowrap">
+            <div className="flex min-w-0 items-center gap-1.5 text-[11px] font-bold">
               <span aria-hidden="true" className={`h-[7px] w-[7px] shrink-0 rounded-full ${punto}`} />
-              {rotulo.texto}
+              {/* RECORTADO, como en la maqueta, donde un turno largo sale «Noc…». Antes iba con
+                  `whitespace-nowrap` y sin tope, así que un nombre largo ENSANCHABA su columna: la
+                  rejilla tenía celdas de 67, 112 y 131 px según a quién le tocara el turno de nombre
+                  más largo, que es lo que el dueño vio. El nombre entero sale al pasar el puntero. */}
+              <span className="truncate">{rotulo.texto}</span>
             </div>
             {horas && <div className="text-[11px] tabular-nums opacity-[.78] whitespace-nowrap">{horas}</div>}
           </>
@@ -643,14 +647,14 @@ function Celda({ dia, sePuedeAgregar = false, compacta = false, marcada = false,
   // para que se vea el visto, que es lo que dice que está marcada.
   if (marcada) {
     return <div className={`border-[1.5px] border-dashed bg-primary-light ${
-      compacta ? 'h-[35px] rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`} />;
+      compacta ? 'h-[35px] w-full rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`} />;
   }
 
   return (
     // SOLO EL «+», sin la palabra y sin relleno, como en la maqueta. La palabra «Agregar» ensanchaba
     // la columna para repetir lo que el signo ya dice, en TODAS las celdas vacías de la pantalla.
     <div className={`flex items-center justify-center border-[1.5px] border-dashed border-gray-300 text-gray-300 ${
-      compacta ? 'h-[35px] rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`}>
+      compacta ? 'h-[35px] w-full rounded-lg' : 'min-h-[36px] rounded-xl'}${bordeMarcado}`}>
       <Plus size={14} className="shrink-0" />
       <span className="sr-only">Agregar</span>
     </div>
@@ -3166,7 +3170,19 @@ export default function CalendarioDeTurnos() {
                             Una celda ya pasada no lleva halo: está dentro de la selección pero NO se
                             va a escribir, y prometer lo contrario con el mismo destaque sería mentir.
                             La previa lo dice aparte. */}
-                        <div className={`relative flex rounded-xl ${
+                        {/* EN EL MES, UNA CAJA DE TAMAÑO FIJO Y CENTRADA (29 de septiembre de 2026,
+                            pedido del dueño: «que todos los divs, indiferente de lo que tengan, sean
+                            del mismo tamaño»).
+
+                            Antes cada celda ocupaba el ancho de SU columna, y las columnas no miden
+                            igual: la de hoy lleva la píldora oscura del número y se va a 51 px contra
+                            32 las demás, así que su celda salía media vez más ancha. Encima, un par de
+                            ramas no pedían ancho y quedaban del tamaño de su contenido.
+
+                            Va en el ENVOLTORIO y no en cada rama porque el envoltorio es quien lleva
+                            el halo de la selección y el visto: fijándolo aquí, los tres —caja, halo y
+                            visto— comparten una sola medida y no pueden separarse. */}
+                        <div className={`relative mx-auto flex rounded-xl ${enMes ? 'h-[35px] w-[28px]' : 'w-[75px]'} ${
                           !marcada ? ''
                             : sePuedePintar(dia.fecha, hoy)
                               ? 'shadow-[0_0_0_2.5px_rgba(240,198,63,0.4)]'
