@@ -11,6 +11,9 @@ const diasEsperados_1 = require("../utils/diasEsperados");
 // Los descansos no remunerados se guardan como texto y viajan como `{ inicio, fin }[]`, igual que
 // los de una franja. El formato de la columna es cosa de la base y no de la pantalla.
 const descansos_1 = require("../utils/descansos");
+// Qué exige un turno del catálogo, con la MISMA cuenta que corre al pintar un día. Es pura, tiene 24
+// casos y se usa aquí solo para responder, nunca para escribir.
+const pintarDia_1 = require("../utils/pintarDia");
 const descansoObligatorio_1 = require("../utils/descansoObligatorio");
 const diasDeLaSemana_1 = require("../utils/diasDeLaSemana");
 const calendarioDeTurnos_1 = require("../utils/calendarioDeTurnos");
@@ -81,6 +84,16 @@ async function turnoRoutes(app) {
                     // Sin estas tres no se puede saber qué día descansa nadie, y la guarda legal de
                     // `estadoDescansoDe` no tendría con qué decidir.
                     descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
+                    // LAS SEDES DE CADA PERSONA, para el filtro de la pantalla (28 de septiembre de 2026).
+                    //
+                    // EN PLURAL, y no es un detalle de forma: `ColaboradorSede` es una tabla puente, así que una
+                    // persona puede estar asignada a VARIAS. El filtro correcto es «tiene esta entre las suyas»,
+                    // no «su sede es esta»; con la segunda lectura, un supervisor que recorre dos sedes
+                    // desaparecería del filtro de una de ellas estando asignado a las dos.
+                    //
+                    // Mismo `select` que usa `colaboradores.ts`, no uno nuevo: el id para filtrar y el nombre
+                    // para mostrarlo.
+                    sedes: { select: { sedeId: true, sede: { select: { nombre: true } } } },
                     horario: { include: { franjas: true } },
                 },
                 orderBy: [{ nombre: 'asc' }, { apellido: 'asc' }],
@@ -114,10 +127,19 @@ async function turnoRoutes(app) {
                     // Dos columnas de la plantilla y no la entera: la celda pinta un recuadro con un rótulo,
                     // y traerse sus descansos y sus ventanas de almuerzo sería cargar el mes de toda la
                     // empresa para no usarlo.
-                    // `esDescanso` NO viaja al frontend: se usa aquí para calcular la propuesta de la semana
-                    // (qué día sugerirle a quien planifica) y nada más. La celda ya distingue un descanso por
-                    // `dia.estado`, así que mandarlo además sería un campo que nadie lee.
-                    plantilla: { select: { nombre: true, color: true, esDescanso: true } },
+                    // El `esDescanso` DE LA PLANTILLA (o sea, si el turno pintado es un turno de descanso) no
+                    // viaja al frontend: se usa aquí para calcular la propuesta de la semana (qué día sugerirle
+                    // a quien planifica) y nada más.
+                    //
+                    // OJO, NO CONFUNDIRLO CON EL DEL DÍA (28 de septiembre de 2026). El de la fila —el de
+                    // arriba, junto a `origen`— SÍ viaja desde hoy, como `esDescansoObligatorio`, y la razón
+                    // está escrita donde se agrega: `dia.estado` NO alcanza para distinguir el descanso
+                    // obligatorio de uno marcado a mano, y de esa diferencia depende un aviso que cuesta plata.
+                    // El `id` viaja desde el 28 de septiembre de 2026, y es una palabra con una consecuencia:
+                    // sin él la pantalla sabe que el día tiene un turno pintado pero no CUÁL, así que la previa
+                    // de la programación en bloque no podía distinguir «ya tiene este mismo turno» de «tiene
+                    // otro». Comparar por nombre habría sido lo otro, y dos turnos pueden llamarse igual.
+                    plantilla: { select: { id: true, nombre: true, color: true, esDescanso: true } },
                 },
                 orderBy: { fecha: 'asc' },
             }),
@@ -170,6 +192,27 @@ async function turnoRoutes(app) {
             where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
             select: { colaboradorId: true, fecha: true, decision: true },
         })).map(d => [`${d.colaboradorId}|${(0, fechas_1.claveDiaBogota)(d.fecha)}`, d.decision]));
+        // EL CATÁLOGO ACTIVO, PARA PODER DECIR CUÁNTO EXIGIRÍA CADA TURNO (28 de septiembre de 2026).
+        //
+        // La previa de la programación en bloque tiene que avisar «con esto la semana quedaría en 56 h»
+        // ANTES de escribir, y el tope de 42 es semanal. Para eso hace falta saber cuántos minutos exige
+        // cada turno del catálogo, y eso NO se puede calcular en la pantalla: hay que convertir una franja
+        // en minutos exigidos (cruce de medianoche, menos el almuerzo no pagado, menos los descansos no
+        // remunerados), y rehacerlo allí pondría en dos sitios la regla de la que salen las horas extra.
+        //
+        // Va DESPUÉS del `Promise.all` por la misma razón que las dos consultas de arriba: meterla dentro
+        // obliga a tocar también su desestructuración sesenta líneas más arriba.
+        //
+        // Se traen también los de descanso, que dan cero: así el mapa está completo y la pantalla no
+        // necesita un caso aparte para ellos.
+        const plantillasDelCatalogo = await prisma_1.prisma.plantillaTurno.findMany({
+            where: { empresaId, activa: true },
+            select: {
+                id: true, esDescanso: true, horaEntrada: true, horaSalida: true,
+                tieneAlmuerzo: true, almuerzoInicio: true, almuerzoFin: true, descansos: true,
+                toleranciaMin: true, toleranciaSalidaMin: true, ajustaEntrada: true,
+            },
+        });
         const festivosDelRango = new Set(festivos.map(f => (0, fechas_1.claveDiaBogota)(f.fecha)));
         // La jornada legal del final del rango: 42 horas hoy, y sube o baja sola con la Ley 2101
         // porque sale de la tabla de vigencias. Escribirla a mano en la pantalla la habría congelado.
@@ -238,6 +281,22 @@ async function turnoRoutes(app) {
                     // `null` cuando el día no es un descanso trabajado; `PENDIENTE` cuando lo es y nadie ha
                     // decidido todavía, que es el caso que el dueño pidió poder ver sin abrir el modal.
                     decision: (0, descansoCompensatorio_1.decisionDelDia)(estadoDia === 'DESCANSO_TRABAJADO', decisionPorDia.get(`${persona.id}|${clave}`)),
+                    // SI ESTE DÍA ES SU DESCANSO OBLIGATORIO (28 de septiembre de 2026).
+                    //
+                    // Ya estaba calculado dos líneas arriba para decidir el estado de la celda, y hasta hoy se
+                    // tiraba. Viaja porque la programación en bloque tiene que poder avisar «pintarías sobre el
+                    // descanso obligatorio de tres jornadas» ANTES de escribir, y eso es por celda.
+                    //
+                    // NO SE PUEDE DEDUCIR DE `estado`, que fue lo primero que se intentó: un día marcado a mano
+                    // como descanso también sale `DESCANSO` sin ser el obligatorio, así que deducirlo daría un
+                    // aviso falso justo en el caso que cuesta dinero.
+                    //
+                    // Y NO SE PUEDE DEDUCIR EN LA PANTALLA de `descanso.tipo`: la regla lleva dentro la guarda
+                    // del acuerdo escrito (sin papel, cualquier día declarado vale como domingo), y una segunda
+                    // copia es como se separan. Ya pasó en la maqueta de esto mismo: su copia se quedó leyendo
+                    // el tipo en crudo y le decía «pactado por escrito» a alguien a quien el motor trata como
+                    // presumido.
+                    esDescansoObligatorio: esDescanso,
                     horaEntrada: d.horaEntrada,
                     horaSalida: d.horaSalida,
                     minutosEsperados: d.minutosEsperados,
@@ -272,8 +331,11 @@ async function turnoRoutes(app) {
                     // `null` significa «a este día no lo pintó ningún turno». La celda NO se inventa entonces
                     // un nombre a partir de las horas: eso se quitó el 21 de septiembre de 2026 porque se leía
                     // como un turno asignado que nadie había asignado. Cae a `horarioNombre`, aquí abajo.
+                    // El `id` va junto al nombre y al color porque quien lo necesita es la previa del bloque:
+                    // para decir cuántas jornadas NO cambian hay que comparar el turno que el día ya tiene
+                    // contra el que se le va a poner, y eso se compara por identidad, no por nombre.
                     turno: extra?.plantilla
-                        ? { nombre: extra.plantilla.nombre, color: extra.plantilla.color }
+                        ? { id: extra.plantilla.id, nombre: extra.plantilla.nombre, color: extra.plantilla.color }
                         : null,
                     // El nombre del horario que rige ESTE día, para la celda que nadie pintó. Un día que el
                     // horario programa sí está asignado, y decir «sin asignar» de todo lo no pintado dejaba
@@ -330,11 +392,29 @@ async function turnoRoutes(app) {
                 nombre: persona.nombre,
                 apellido: persona.apellido,
                 cargo: persona.cargo,
+                // Las sedes a las que está asignada. Van con id y nombre: el id es con lo que filtra la
+                // pantalla, el nombre es lo que lee una persona.
+                sedes: persona.sedes.map(s => ({ id: s.sedeId, nombre: s.sede.nombre })),
                 // El estado ya resuelto, no las tres columnas crudas: la pantalla no puede volver a
                 // decidir si el acuerdo escrito alcanza, porque esa decisión es la que protege el recargo.
                 descanso: { tipo: estado.tipo, dia: estado.tipo === 'FIJO' ? estado.dia : null },
                 propuesta,
                 minutosEsperados: dias.reduce((a, d) => a + d.minutosEsperados, 0),
+                // CUÁNTOS MINUTOS LE EXIGIRÍA A ESTA PERSONA CADA TURNO DEL CATÁLOGO (28 de septiembre de 2026).
+                //
+                // POR PERSONA Y NO SOLO POR TURNO, y esa es la parte que no se puede recortar: cuando un turno
+                // descuenta almuerzo pero no trae ventana propia, la cuenta cae al `almuerzoMin` del horario
+                // de CADA persona. Publicar un número por turno sería correcto para unos y falso para otros, y
+                // como el respaldo sin horario da cero, el número saldría de MÁS: alarmas de 42 h que no son
+                // ciertas. Un aviso legal que a veces miente es peor que no tenerlo.
+                //
+                // Se le pasa `persona.horario` igual que hace `pintarDiaDeColaborador`, que es el camino que
+                // escribe de verdad. Un turno con horas inválidas devuelve `null` y NO entra en el mapa: la
+                // pantalla no puede decir un veredicto de algo que ni siquiera se puede pintar.
+                minutosPorTurno: Object.fromEntries(plantillasDelCatalogo
+                    .map(p => [p.id, (0, pintarDia_1.diaDesdePlantilla)(p, horario)])
+                    .filter((par) => par[1] !== null)
+                    .map(([id, campos]) => [id, campos.minutosEsperados])),
                 // Cuántos de sus días de descanso tienen turno PROGRAMADO encima en este rango. Es un dato
                 // del horario, no de lo que ocurrió: sirve para pintar la semana, y NO para la regla legal.
                 descansosConTurno: dias.filter(d => d.estado === 'DESCANSO_TRABAJADO').length,
@@ -353,7 +433,12 @@ async function turnoRoutes(app) {
                 dias,
             };
         });
-        return { desde, hasta, horasSemanales, filas };
+        // `minimoHabitual` viaja por la MISMA razón que `horasSemanales`, y con el precedente hecho: son
+        // los dos números legales que la pantalla nombra, y escribirlos a mano allí los congelaría. El
+        // comentario de la constante ya lo advertía («la pantalla también lo nombra: escribirlo dos veces
+        // es como se separan»). Lo usa la previa de la programación en bloque para decir quién cruza a
+        // descanso habitual con lo que está a punto de aplicarse.
+        return { desde, hasta, horasSemanales, minimoHabitual: descansoHabitual_1.MINIMO_HABITUAL, filas };
     });
     // ───────────── EL PLANIFICADOR: pintar un día con un turno del catálogo ─────────────
     //
