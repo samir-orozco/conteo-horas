@@ -1476,10 +1476,15 @@ function VentanaDeRotacion({
 // `estadoDelProgreso`, que es puro y está probado y mutado: de ese número depende que alguien espere o
 // detenga, y un porcentaje sobre el denominador equivocado no se ve mal, se ve plausible.
 function VentanaDeProgreso({
-  estado, escritas, total, detenido, sePuedeDeshacer, onDetener, onDeshacer, onCerrar,
+  estado, escritas, total, fallos, detenido, sePuedeDeshacer, onDetener, onDeshacer, onCerrar,
 }: {
   estado: ReturnType<typeof estadoDelProgreso>;
   escritas: number;
+  // LOS MOTIVOS, no su cuenta. La ventana enseñaba «209 de 598» y se guardaba POR QUÉ faltaban las
+  // otras: quien la miraba no tenía forma de saber si el servidor rechazó por días pasados, por una
+  // jornada ya empezada o por otra cosa. Se muestra el primero, que en un envío es casi siempre el
+  // mismo motivo repetido.
+  fallos: string[];
   total: number;
   detenido: boolean;
   // Hay una foto del antes que revertir. Falso cuando lo que acaba de correr YA era un deshacer.
@@ -1488,7 +1493,10 @@ function VentanaDeProgreso({
   onDeshacer: () => void;
   onCerrar: () => void;
 }) {
-  const acabo = estado.terminado || estado.cortado;
+  // LOS TRES FINALES, no dos. Faltaba `conFallos` y el pie seguía ofreciendo «Detener al terminar
+  // este bloque» sobre un envío que ya había acabado: un botón que promete parar algo que no está
+  // corriendo. Se vio tumbando el backend a mitad de un envío de 966 jornadas, no leyéndolo.
+  const acabo = estado.terminado || estado.cortado || estado.conFallos;
 
   return (
     <div className="fixed inset-0 !mt-0 z-[90] flex items-center justify-center bg-black/50 p-4">
@@ -1499,24 +1507,31 @@ function VentanaDeProgreso({
               y el otro dejó jornadas sin escribir. */}
           <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${
             estado.cortado ? 'bg-rose-100 text-rose-700'
-              : estado.terminado ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-primary-light text-ink'}`}>
-            {estado.cortado ? <AlertTriangle size={20} /> : estado.terminado ? <Check size={20} /> : <Clock size={20} />}
+              : estado.conFallos ? 'bg-amber-100 text-amber-700'
+                : estado.terminado ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-primary-light text-ink'}`}>
+            {estado.cortado || estado.conFallos ? <AlertTriangle size={20} />
+              : estado.terminado ? <Check size={20} /> : <Clock size={20} />}
           </div>
           <div className="min-w-0">
             <h3 className="text-lg font-bold text-ink">
-              {estado.cortado ? 'Se detuvo' : estado.terminado ? 'Listo' : 'Programando'}
+              {estado.cortado ? 'Se detuvo'
+                : estado.conFallos ? 'Quedó a medias'
+                  : estado.terminado ? 'Listo' : 'Programando'}
             </h3>
+            {/* CON FALLOS SE DICE EL NÚMERO QUE FALTA, no «hubo errores»: lo que alguien necesita
+                saber es cuántas jornadas quedaron sin escribir para decidir si lo vuelve a intentar. */}
             <p className="mt-0.5 text-xs text-muted">
               {estado.cortado ? 'Lo que alcanzó a escribirse se quedó escrito.'
-                : estado.terminado ? 'Puedes cerrar esta ventana cuando quieras.'
-                  : 'No cierres esta ventana.'}
+                : estado.conFallos ? `El servidor no aceptó ${total - escritas} de las ${total}.`
+                  : estado.terminado ? 'Puedes cerrar esta ventana cuando quieras.'
+                    : 'No cierres esta ventana.'}
             </p>
           </div>
           {/* EL PORCENTAJE SOLO SE PONE VERDE SI TERMINÓ DE VERDAD: en un envío cortado, el verde
               diría «todo bien» sobre una escritura incompleta. */}
           <span className={`ml-auto text-2xl font-extrabold tabular-nums ${
-            estado.terminado ? 'text-emerald-700' : 'text-muted'}`}>
+            estado.terminado ? 'text-emerald-700' : estado.conFallos ? 'text-amber-700' : 'text-muted'}`}>
             {estado.pct}%
           </span>
         </div>
@@ -1541,7 +1556,8 @@ function VentanaDeProgreso({
           </div>
         ) : (
           <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-gray-200">
-            <div className={`h-full rounded-full transition-all ${estado.terminado ? 'bg-emerald-600' : 'bg-primary'}`}
+            <div className={`h-full rounded-full transition-all ${
+              estado.terminado ? 'bg-emerald-600' : estado.conFallos ? 'bg-amber-500' : 'bg-primary'}`}
               style={{ width: `${estado.pct}%` }} />
           </div>
         )}
@@ -1573,6 +1589,25 @@ function VentanaDeProgreso({
           </div>
         </div>
         <p className="mt-2 text-right text-[11px] text-muted tabular-nums">de {jornadas(total)}</p>
+
+        {/* EL MOTIVO, Y NO SOLO LA CUENTA (29 de septiembre de 2026). El dueño vio «209 de 598» sin
+            una palabra de por qué, y desde ahí no hay nada que hacer salvo volver a intentarlo a
+            ciegas. Los motivos ya se venían guardando; solo no se enseñaban.
+
+            SE MUESTRA EL PRIMERO Y CUÁNTOS LO REPITEN: en un envío de cientos, el servidor rechaza
+            casi siempre por la misma razón, y listar trescientas líneas iguales tapa la ventana. Si
+            hay más de uno distinto, se dice que los hay. */}
+        {estado.conFallos && fallos.length > 0 && (
+          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] leading-relaxed text-amber-900">
+            <p className="font-bold">Por qué no se escribieron</p>
+            <p className="mt-0.5">{fallos[0]}</p>
+            {new Set(fallos).size > 1 && (
+              <p className="mt-1 text-[11px] opacity-80">
+                Y {new Set(fallos).size - 1} {new Set(fallos).size === 2 ? 'motivo distinto' : 'motivos distintos'} más.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="mt-5 flex items-center justify-end gap-3">
           {acabo ? (
@@ -2083,7 +2118,10 @@ export default function CalendarioDeTurnos() {
     });
 
   const [progreso, setProgreso] = useState<
-    { bloquesHechos: number; bloques: number; escritas: number; total: number } | null
+    // `fallos` VIAJA EN EL ESTADO y no se queda en la variable local del envío: la ventana se dibuja
+    // desde aquí, así que un motivo que solo exista dentro de la función no llega nunca a la pantalla.
+    // Era exactamente lo que pasaba: se guardaban y no se enseñaban.
+    { bloquesHechos: number; bloques: number; escritas: number; total: number; fallos: string[] } | null
   >(null);
   // PEDIR DETENER ES UNA BANDERA QUE SE MIRA ENTRE BLOQUES, no dentro. Cortar a mitad de un bloque
   // dejaría seis peticiones en vuelo sin saber cuáles llegaron; al terminar el bloque, lo escrito está
@@ -2937,7 +2975,7 @@ export default function CalendarioDeTurnos() {
     const fallos: string[] = [];
     // Estado de ARRANQUE explícito: la ventana se reutiliza entre envíos, y sin esto el segundo
     // empezaría mostrando el «Listo» del primero.
-    setProgreso({ bloquesHechos: 0, bloques: bloques.length, escritas: 0, total: plan.escribe.length });
+    setProgreso({ bloquesHechos: 0, bloques: bloques.length, escritas: 0, total: plan.escribe.length, fallos: [] });
     try {
       for (let i = 0; i < bloques.length; i++) {
         // SE MIRA ANTES DE EMPEZAR EL BLOQUE, no dentro: lo que se empieza se termina, así que al
@@ -2954,6 +2992,9 @@ export default function CalendarioDeTurnos() {
         }
         setProgreso({
           bloquesHechos: i + 1, bloques: bloques.length, escritas, total: plan.escribe.length,
+          // Una copia: `fallos` se sigue llenando en las vueltas siguientes, y pasando la misma
+          // referencia React vería el mismo array y no volvería a dibujar.
+          fallos: [...fallos],
         });
       }
     } finally {
@@ -4116,6 +4157,7 @@ export default function CalendarioDeTurnos() {
           estado={estadoDelProgreso({ ...progreso, detenido })}
           escritas={progreso.escritas}
           total={progreso.total}
+          fallos={progreso.fallos}
           detenido={detenido}
           sePuedeDeshacer={loQueHabia !== null && loQueHabia.length > 0}
           onDetener={() => { detener.current = true; setDetenido(true); }}

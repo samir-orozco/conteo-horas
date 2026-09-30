@@ -118,3 +118,69 @@ describe('los círculos de los bloques', () => {
     expect(r.seVenLosPasos).toBe(false);
   });
 });
+
+// ────────── «LISTO» AL 35 % (29 de septiembre de 2026, defecto visto por el dueño) ──────────
+//
+// La ventana decía «Listo», con su visto verde y el porcentaje en verde, encima de una barra al 35 %
+// y de «209 jornadas escritas de 598». Las tres cosas a la vez, y la primera es falsa.
+//
+// LA CAUSA, y es de una línea: `terminado` significaba «se enviaron todos los BLOQUES», no «se
+// escribió todo». Con 100 de 100 bloques enviados y 389 escrituras rechazadas por el servidor, el
+// envío estaba terminado y roto al mismo tiempo, y la ventana solo sabía decir lo primero.
+//
+// SON TRES FINALES Y NO DOS, que es lo que faltaba modelar:
+//
+//   terminado   se enviaron todos los bloques y se escribió todo. Verde, «Listo».
+//   cortado     alguien pulsó Detener y quedaron bloques sin enviar. Rojo, «Se detuvo».
+//   conFallos   se enviaron todos los bloques y el servidor rechazó parte. NUEVO.
+//
+// EL TERCERO NO ES «CORTADO»: nadie detuvo nada, el envío llegó hasta el final. Y no es «terminado»:
+// falta lo que el servidor no aceptó. Meterlo en cualquiera de los dos vuelve a mentir, en un sentido
+// o en el otro.
+
+describe('cuando se envía todo pero el servidor rechaza parte', () => {
+  // El caso real del dueño, con sus números.
+  const elCaso = { bloques: 100, bloquesHechos: 100, escritas: 209, total: 598, detenido: false };
+
+  it('NO dice que terminó', () => {
+    expect(estadoDelProgreso(elCaso).terminado).toBe(false);
+  });
+
+  it('tampoco dice que se cortó: nadie detuvo nada', () => {
+    expect(estadoDelProgreso(elCaso).cortado).toBe(false);
+  });
+
+  it('lo dice con su propio estado', () => {
+    expect(estadoDelProgreso(elCaso).conFallos).toBe(true);
+  });
+
+  it('y el porcentaje sigue siendo el de las jornadas, no el de los bloques', () => {
+    // 209 de 598 es 35 %. Sobre bloques habría dicho 100 %, que es justo lo que se veía al lado del
+    // «Listo» y lo que hacía que las dos mitades de la ventana se contradijeran.
+    expect(estadoDelProgreso(elCaso).pct).toBe(35);
+  });
+
+  it('escribirlo TODO sigue siendo terminado, y sin fallos', () => {
+    const r = estadoDelProgreso({ bloques: 100, bloquesHechos: 100, escritas: 598, total: 598, detenido: false });
+    expect(r).toMatchObject({ terminado: true, cortado: false, conFallos: false });
+  });
+
+  it('a medio camino no hay fallos todavía: lo que falta puede estar por enviarse', () => {
+    // Con cincuenta bloques hechos, que `escritas` vaya por debajo del total es lo NORMAL. Decir
+    // «hubo fallos» ahí alarmaría en cada envío, y a mitad de camino no se puede afirmar.
+    const r = estadoDelProgreso({ bloques: 100, bloquesHechos: 50, escritas: 300, total: 598, detenido: false });
+    expect(r).toMatchObject({ terminado: false, cortado: false, conFallos: false });
+  });
+
+  it('un envío CORTADO no se llama además fallido', () => {
+    // Quedan jornadas sin escribir, sí, pero porque alguien lo detuvo. «Se detuvo» ya lo explica, y
+    // decir las dos cosas mandaría a buscar un error del servidor que no hubo.
+    const r = estadoDelProgreso({ bloques: 100, bloquesHechos: 40, escritas: 240, total: 598, detenido: true });
+    expect(r).toMatchObject({ cortado: true, conFallos: false });
+  });
+
+  it('sin nada que escribir no se inventa un fallo', () => {
+    const r = estadoDelProgreso({ bloques: 0, bloquesHechos: 0, escritas: 0, total: 0, detenido: false });
+    expect(r).toMatchObject({ terminado: true, conFallos: false });
+  });
+});
