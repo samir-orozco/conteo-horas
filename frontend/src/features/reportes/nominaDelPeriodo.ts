@@ -52,14 +52,29 @@ export type Periodo = { desde: string; hasta: string };
 
 // Los conceptos que calcula el motor de horas, con el nombre corto que lleva su columna. HOD va
 // aparte: es la hora ordinaria, que ya paga el salario, y por eso no entra en el detalle.
+//
+// «DESCANSO OBLIGATORIO» Y NO «DOMINICAL» (30 de septiembre de 2026). Lo pidió el dueño mirando el
+// reporte: «los reportes solo toman como dominical los días domingos, cuando sabemos que son los días
+// de descanso». La Ley 2466 de 2025 (art. 14) reescribió el art. 179 del CST —ya no dice «domingo»,
+// dice «día de descanso obligatorio»— y su parágrafo 2° lo cierra para todo el Código. Así que quien
+// pacta trabajar los domingos y descansar el martes tiene SU MARTES en esta columna, y llamarla
+// «Dominical» le decía al contador que esa persona trabajó un domingo que no trabajó.
+//
+// NO ES UN CONCEPTO NUEVO, es el mismo con su nombre al día: mismo artículo, misma tarifa, mismo
+// código 25 de Siigo. Partirlo en dos habría sido inventar una novedad que la nómina electrónica no
+// tiene dónde recibir.
+//
+// EL NOMBRE ESTÁ EN DOS SITIOS Y LOS DOS SE MUEVEN JUNTOS (§9.3): estos títulos, que son los del
+// Excel, y `tipos_hora.nombre` en la base, que es lo que se ve en la pantalla de Reportes. Cambiar
+// solo uno deja la pantalla diciendo una cosa y el archivo otra.
 const COLUMNAS_DE_CONCEPTO: { codigo: string; titulo: string }[] = [
   { codigo: 'HON', titulo: 'Recargo nocturno (h)' },
-  { codigo: 'HDD', titulo: 'Dominical o festivo (h)' },
-  { codigo: 'HND', titulo: 'Dominical o festivo nocturno (h)' },
+  { codigo: 'HDD', titulo: 'Descanso obligatorio o festivo (h)' },
+  { codigo: 'HND', titulo: 'Descanso obligatorio o festivo nocturno (h)' },
   { codigo: 'HED', titulo: 'Extra diurna (h)' },
   { codigo: 'HEN', titulo: 'Extra nocturna (h)' },
-  { codigo: 'HEDD', titulo: 'Extra diurna dominical o festiva (h)' },
-  { codigo: 'HEND', titulo: 'Extra nocturna dominical o festiva (h)' },
+  { codigo: 'HEDD', titulo: 'Extra diurna descanso o festivo (h)' },
+  { codigo: 'HEND', titulo: 'Extra nocturna descanso o festivo (h)' },
 ];
 
 const ORDINARIA = 'HOD';

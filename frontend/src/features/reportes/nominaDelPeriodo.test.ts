@@ -23,6 +23,10 @@ const ANA: PersonaDeNomina = {
     { codigo: 'HED', nombre: 'Hora Extra Diurna', horas: 4, valorHora: 9_114.58, recargo: 1.25, esExtra: true, factorPagado: 1.25, subtotal: 45_572.9 },
     // El motor devuelve la línea del concepto aunque ese período no tenga horas de ese tipo.
     { codigo: 'HEN', nombre: 'Hora Extra Nocturna', horas: 0, valorHora: 9_114.58, recargo: 1.75, esExtra: true, factorPagado: 1.75, subtotal: 0 },
+    // SU DÍA DE DESCANSO TRABAJADO. Ana es cajera de un local que abre los siete días: su descanso
+    // obligatorio es el MARTES, no el domingo, así que estas ocho horas son de un martes. Van con un
+    // número distinto de todo lo demás para que ninguna columna pase la prueba en lugar de otra.
+    { codigo: 'HDD', nombre: 'Hora Diurna Descanso obligatorio/Festivo', horas: 8, valorHora: 9_114.58, recargo: 1.9, esExtra: false, factorPagado: 0.9, subtotal: 65_625 },
   ],
   totalRecargos: 19_140.62, totalExtra: 45_572.9, totalAdicional: 64_713.52,
   novedades: [{ tipo: 'VACACIONES', remunerado: true, dias: 3, parciales: 0 }],
@@ -101,6 +105,31 @@ describe('hojasDeNomina', () => {
     expect(col('Extra nocturna (h)')).toBe(0);
   });
 
+  // ────────── LA COLUMNA NO SE LLAMA «DOMINICAL» (30 de septiembre de 2026) ──────────
+  //
+  // Lo pidió el dueño mirando el reporte: «los reportes solo toman como dominical los días domingos,
+  // cuando sabemos que son los días de descanso». La etiqueta se quedó con el nombre viejo de la
+  // norma.
+  //
+  // La Ley 2466 de 2025 (art. 14) reescribió el art. 179 del CST: ya no dice «domingo», dice «día de
+  // descanso obligatorio», y su parágrafo 2° lo cierra —«cuando este Código haga referencia a
+  // "dominical", se entenderá que trata de "día de descanso obligatorio"»—. O sea que las ocho horas
+  // de Ana, que son de un MARTES, son legítimamente de esta columna, y llamarla «Dominical» le dice
+  // al contador que su cajera trabajó un domingo que no trabajó.
+  //
+  // EL CÁLCULO NO CAMBIA NI UN PESO: es el mismo concepto, el mismo artículo y la misma tarifa. Lo
+  // único viejo era el nombre.
+  it('la columna del descanso trabajado NO se llama «dominical», que es el nombre viejo de la norma', () => {
+    const r = hoja([ANA], 'Resumen');
+    const col = (titulo: string) => r.filas[0][r.columnas.indexOf(titulo)];
+    expect(r.columnas).toContain('Descanso obligatorio o festivo (h)');
+    // Y trae las horas del MARTES de Ana, que es lo que hace de esta prueba algo más que un texto.
+    expect(col('Descanso obligatorio o festivo (h)')).toBe(8);
+    // Afirmado en positivo Y en negativo: sin esto, agregar la columna nueva y dejar la vieja al lado
+    // pasaría la prueba y el contador vería las ocho horas dos veces.
+    expect(r.columnas.filter(c => /dominical/i.test(c))).toEqual([]);
+  });
+
   it('el resumen cierra con lo que se paga además del salario', () => {
     const r = hoja([ANA], 'Resumen');
     const col = (titulo: string) => r.filas[0][r.columnas.indexOf(titulo)];
@@ -115,7 +144,8 @@ describe('hojasDeNomina', () => {
     const d = hoja([ANA], 'Detalle');
     expect(d.columnas).toEqual(['Cédula', 'Nombre', 'Código', 'Concepto', 'Horas', 'Valor hora', 'Subtotal']);
     // HOD no va: la hora ordinaria ya la paga el salario, y en el detalle solo va lo que se suma.
-    expect(d.filas.map(f => f[2])).toEqual(['HON', 'HED']);
+    // HEN tampoco: tiene cero horas. HDD sí, que son las ocho del martes de descanso de Ana.
+    expect(d.filas.map(f => f[2])).toEqual(['HON', 'HED', 'HDD']);
     expect(d.filas[0]).toEqual(['1020345678', 'Ana Giraldo', 'HON', 'Hora Ordinaria Nocturna', 6, 9_114.58, 19_140.62]);
   });
 

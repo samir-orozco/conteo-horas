@@ -320,7 +320,7 @@ export default function Reportes() {
           {/* Aviso del modelo de pago */}
           <div className="bg-primary/20 border border-primary/40 rounded-xl px-4 py-3 mb-5 flex items-start gap-2 text-sm text-ink">
             <Info size={16} className="mt-0.5 shrink-0" />
-            <span>El <b>salario base</b> ya cubre las horas ordinarias del mes. Aquí se calcula lo que se paga <b>además</b> del salario: recargos (nocturno, dominical/festivo) y horas extra.</span>
+            <span>El <b>salario base</b> ya cubre las horas ordinarias del mes. Aquí se calcula lo que se paga <b>además</b> del salario: recargos (nocturno, descanso obligatorio/festivo) y horas extra.</span>
           </div>
 
           {/* Tabla detalle */}
