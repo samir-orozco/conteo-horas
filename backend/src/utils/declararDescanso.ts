@@ -16,11 +16,18 @@ type LoQueSeEscribe = {
 // ESCRIBIR LA DECLARACIÓN DEL DÍA DE DESCANSO, HORARIO POR HORARIO (extraído el 29 de septiembre de
 // 2026).
 //
-// Estaba dentro de `POST /descanso-revisado`, que es el modal que se pregunta una sola vez. Al
-// llevarlo también al formulario del horario —«el descanso se define por el horario, no por el
-// trabajador», corrección del dueño— hacían falta los dos caminos, y copiar cincuenta líneas que
-// CONGELAN EL PASADO y mueven un recargo es exactamente lo que el §9.3 dice que se separa a la
-// primera. Se extrae entero y los dos lo llaman.
+// Estaba dentro de `POST /descanso-revisado`, que es el modal que se pregunta una sola vez. Salió
+// aquí cuando el formulario del horario iba a necesitar lo mismo, para no copiar cincuenta líneas que
+// CONGELAN EL PASADO y mueven un recargo.
+//
+// HOY VUELVE A TENER UN SOLO LLAMADOR: el dueño pidió quitar esa sección del formulario. La otra
+// versión de este archivo dice, sobre `rotuloDeSemana`, que «una función extraída para compartir que
+// ya no comparte nada es una indirección de más», y es verdad. Se queda igual por dos razones y no
+// por inercia: devolverla adentro son cincuenta líneas movidas a mano sobre una transacción que toca
+// el recargo de todo el mundo, que es riesgo sin ganancia; y aquí el porqué del congelado se lee
+// entero, mientras que dentro de la ruta competía con la validación del cuerpo.
+//
+// Si aparece un segundo llamador, esto ya está. Si no aparece nunca, sigue siendo legible.
 //
 // LO QUE NO ENTRA AQUÍ, a propósito: marcar la empresa como revisada. Eso es del modal y solo del
 // modal. Declarando desde el formulario UN horario, cerrar la revisión saltaría los otros tres que

@@ -6,7 +6,6 @@ import { pareceIncluirAuxilio } from '../utils/salarioSospechoso';
 import { revisionPendiente } from '../utils/revisionPendiente';
 import { preguntasDeDescanso, revisionDescansoPendiente } from '../utils/revisionDescanso';
 import { declararDescansoDeHorarios } from '../utils/declararDescanso';
-import { limpiarDeclaracionDeDescanso } from '../utils/cuerpoDeDeclaracionDeDescanso';
 import { limpiarRespuestasDeDescanso } from '../utils/cuerpoDeRespuestaDescanso';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
 import { enviarTelegram, telegramConfigurado } from '../utils/telegram';
@@ -303,10 +302,9 @@ export default async function configuracionRoutes(app: FastifyInstance) {
     const ahora = new Date();
     const porHorario = new Map(horarios.map(h => [h.id, h.colaboradores.map(c => c.id)]));
 
-    // EL CUERPO SALIÓ A `declararDescansoDeHorarios` el 29 de septiembre de 2026, cuando el mismo
-    // trabajo pasó a hacer falta también en el formulario del horario. Congela el pasado ANTES de
-    // declarar, que es lo que impide que declarar «descansan el miércoles» le quite el recargo a
-    // todos los domingos ya liquidados.
+    // EL CUERPO SALIÓ A `declararDescansoDeHorarios` el 29 de septiembre de 2026. Congela el pasado
+    // ANTES de declarar, que es lo que impide que declarar «descansan el miércoles» le quite el
+    // recargo a todos los domingos ya liquidados. Allí está el porqué entero.
     await declararDescansoDeHorarios(porHorario, limpio.datos, ahora);
 
     // MARCAR LA EMPRESA COMO REVISADA SE QUEDA AQUÍ y no se fue con el resto: es de ESTE camino. Es
@@ -315,47 +313,6 @@ export default async function configuracionRoutes(app: FastifyInstance) {
     await prisma.empresa.update({ where: { id: empresaId }, data: { descansoRevisadoEn: ahora } });
 
     return { ok: true };
-  });
-
-  // ───────── DECLARAR EL DESCANSO DE UN HORARIO, DESDE SU FORMULARIO (29 de septiembre de 2026) ─────────
-  //
-  // Corrección del dueño: «el descanso se define por el horario, no por el trabajador». Tenía razón,
-  // y el producto ya lo trataba así —el modal pregunta POR HORARIO— pero solo se podía responder UNA
-  // vez: `revisionDescansoPendiente` devuelve `false` en cuanto la empresa tiene fecha de revisión, y
-  // desde entonces no había forma de cambiarlo desde ninguna pantalla.
-  //
-  // ESTA RUTA NO MIRA SI HAY PREGUNTAS PENDIENTES, al revés que la de arriba: cualquier horario de la
-  // empresa se puede declarar cuando haga falta, que es justo lo que faltaba. Lo que sí comprueba,
-  // igual que aquella, es el ALCANCE: el horario tiene que ser de esta empresa, y eso se resuelve
-  // consultando, no leyendo el cuerpo.
-  app.put('/horarios/:id/descanso', auth, async (request, reply) => {
-    const empresaId = request.empresaId!;
-    const { id } = request.params as { id: string };
-
-    const horario = await prisma.horario.findFirst({
-      where: { id, empresaId },
-      select: { id: true, colaboradores: { where: { activo: true }, select: { id: true } } },
-    });
-    if (!horario) return reply.status(404).send({ error: 'Horario no encontrado.' });
-
-    // SU PROPIO VALIDADOR Y NO EL DEL MODAL, y el motivo está en `cuerpoDeDeclaracionDeDescanso`:
-    // aquel rechaza `PRESUMIDO` a propósito, porque responder «lo presumido» en una revisión que se
-    // hace una vez no es declarar nada. Un formulario que se EDITA sí tiene que poder volver al
-    // domingo por ley, y eso además borra la fecha del acuerdo.
-    const limpio = limpiarDeclaracionDeDescanso(request.body);
-    if (!limpio.ok) return reply.status(400).send({ error: limpio.motivo });
-
-    // SIN GENTE NO SE DECLARA NADA, y se dice: un horario recién creado no tiene a quién escribirle,
-    // y devolver «ok» dejaría a quien lo guardó creyendo que quedó declarado.
-    if (horario.colaboradores.length === 0) {
-      return reply.status(400).send({ error: 'Ese horario todavía no tiene a nadie asignado.' });
-    }
-
-    const hecho = await declararDescansoDeHorarios(
-      new Map([[id, horario.colaboradores.map(c => c.id)]]),
-      [{ horarioId: id, ...limpio.datos }],
-    );
-    return { ok: true, personas: hecho.personas };
   });
 
   app.get('/kiosco-estado', auth, async (request) => {

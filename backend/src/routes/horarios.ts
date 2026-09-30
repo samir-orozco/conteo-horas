@@ -3,7 +3,6 @@ import { prisma } from '../prisma';
 import { jornadaVigente } from '../utils/vigencias';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { regenerarDiasDeHorario, regenerarDiasDeVarios } from '../utils/materializarDias';
-import { descansoDelHorario } from '../utils/descansoDelHorario';
 import {
   FranjaConVentanas, franjasConVentanaImposible, franjaParaGuardar, franjaBasicaValida,
   franjaParaResponder, pantallaViejaBorraDescansos, mensajeVentanasImposibles,
@@ -31,29 +30,10 @@ export default async function horarioRoutes(app: FastifyInstance) {
       include: {
         franjas: true,
         _count: { select: { colaboradores: { where: { activo: true } } } },
-        // LAS TRES COLUMNAS DEL DESCANSO DE SU GENTE (29 de septiembre de 2026). El descanso se
-        // declara por HORARIO —corrección del dueño— pero se guarda por persona, porque
-        // `descansoAcuerdoEn` es el acuerdo escrito y la ley lo pide así. Para ENSEÑARLO en el
-        // formulario del horario hay que leerlo de ellos.
-        //
-        // `select` corto y solo de los ACTIVOS: sin esto vienen las dos fotos en base64 y el
-        // descriptor facial de cada uno, que esta pantalla no pinta.
-        colaboradores: {
-          where: { activo: true },
-          select: { descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true },
-        },
       },
       orderBy: { nombre: 'asc' },
     });
-    return horarios.map(({ colaboradores, ...h }) => ({
-      ...h,
-      franjas: h.franjas.map(franjaParaResponder),
-      // YA RESUELTO, no las columnas crudas: la guarda legal del acuerdo escrito vive en
-      // `estadoDescansoDe`, y dejar que la pantalla la repitiera es como se separan (§9.3). Puede
-      // ser `'MIXTO'` —su gente no coincide— o `null` —no tiene gente—, y la pantalla dice cada
-      // caso distinto.
-      descanso: descansoDelHorario(colaboradores),
-    }));
+    return horarios.map(h => ({ ...h, franjas: h.franjas.map(franjaParaResponder) }));
   });
 
   // Norma de jornada máxima semanal vigente hoy (Ley 2101), para la etiqueta de cumplimiento
