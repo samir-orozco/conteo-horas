@@ -5,8 +5,9 @@ import { auxilioVigente } from '../utils/auxilioTransporte';
 import { pareceIncluirAuxilio } from '../utils/salarioSospechoso';
 import { revisionPendiente } from '../utils/revisionPendiente';
 import { preguntasDeDescanso, revisionDescansoPendiente } from '../utils/revisionDescanso';
+import { declararDescansoDeHorarios } from '../utils/declararDescanso';
+import { limpiarDeclaracionDeDescanso } from '../utils/cuerpoDeDeclaracionDeDescanso';
 import { limpiarRespuestasDeDescanso } from '../utils/cuerpoDeRespuestaDescanso';
-import { rangoDiaBogota } from '../utils/fechas';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
 import { enviarTelegram, telegramConfigurado } from '../utils/telegram';
 import { capacidadesEmpresa } from '../utils/capacidades';
@@ -300,56 +301,61 @@ export default async function configuracionRoutes(app: FastifyInstance) {
     if (!limpio.ok) return reply.status(400).send({ error: limpio.motivo });
 
     const ahora = new Date();
-    // Medianoche de Bogotá de HOY: la frontera entre lo que se congela y lo que sigue a la
-    // declaración nueva. El día de hoy cuenta como futuro, igual que en `materializarDias`.
-    const { inicioDia } = rangoDiaBogota(ahora);
     const porHorario = new Map(horarios.map(h => [h.id, h.colaboradores.map(c => c.id)]));
 
-    await prisma.$transaction(async (tx) => {
-      for (const respuesta of limpio.datos) {
-        const ids = porHorario.get(respuesta.horarioId) ?? [];
-        if (ids.length === 0) continue;
-        const marcas = ids.map(() => '?').join(',');
+    // EL CUERPO SALIÓ A `declararDescansoDeHorarios` el 29 de septiembre de 2026, cuando el mismo
+    // trabajo pasó a hacer falta también en el formulario del horario. Congela el pasado ANTES de
+    // declarar, que es lo que impide que declarar «descansan el miércoles» le quite el recargo a
+    // todos los domingos ya liquidados.
+    await declararDescansoDeHorarios(porHorario, limpio.datos, ahora);
 
-        // 1. CONGELAR EL PASADO, ANTES de declarar nada.
-        //
-        // Las filas de `DiaEsperado` anteriores a la columna tienen `esDescanso` en NULL, que
-        // significa «esta fila nunca lo calculó». El motor las resuelve cayendo al respaldo, que es
-        // la declaración de HOY. Sin este paso, declarar «descansan el miércoles» reescribiría
-        // todos sus domingos pasados como días ordinarios y les quitaría el recargo del 90% de
-        // forma retroactiva y silenciosa.
-        //
-        // Se congela lo que la regla decía ANTES, que para todo el mundo era la presunción legal:
-        // el domingo. `DAYOFWEEK(fecha) = 1` es domingo, y NO se da por supuesto: se comprobó
-        // contra las filas reales el 21 de septiembre de 2026 cotejándolo con `getUTCDay()`.
-        //
-        // El plan de esta consulta se midió a volumen de producción, no sobre la base local: con
-        // 1.048.576 filas usa `Index range scan` sobre (colaboradorId, fecha), coste 99. En la
-        // tabla local de 1.969 filas el optimizador elige `Table scan`, que es lo que §8.4 avisa
-        // que pasa al medir en pequeño.
-        await tx.$executeRawUnsafe(
-          `UPDATE dias_esperados SET esDescanso = (DAYOFWEEK(fecha) = 1)
-           WHERE colaboradorId IN (${marcas}) AND esDescanso IS NULL AND fecha < ?`,
-          ...ids, inicioDia,
-        );
-
-        // 2. Ahora sí, la declaración. Solo a los ACTIVOS: cambiarle la declaración a alguien
-        // retirado movería la lectura de su historial, y su liquidación ya está entregada.
-        await tx.colaborador.updateMany({
-          where: { id: { in: ids } },
-          data: { descansoTipo: respuesta.tipo, descansoDia: respuesta.dia, descansoAcuerdoEn: ahora },
-        });
-      }
-
-      await tx.empresa.update({ where: { id: empresaId }, data: { descansoRevisadoEn: ahora } });
-    }, {
-      // Por encima de los 5 segundos por defecto: una empresa grande son decenas de miles de filas
-      // que congelar, y que la transacción se corte a la mitad dejaría a unos horarios declarados y
-      // a otros no, con la empresa marcada como respondida.
-      timeout: 30_000,
-    });
+    // MARCAR LA EMPRESA COMO REVISADA SE QUEDA AQUÍ y no se fue con el resto: es de ESTE camino. Es
+    // lo que cierra el modal para siempre, y el formulario del horario declara de a uno, así que
+    // hacerlo allí saltaría los horarios que sigan sin respuesta.
+    await prisma.empresa.update({ where: { id: empresaId }, data: { descansoRevisadoEn: ahora } });
 
     return { ok: true };
+  });
+
+  // ───────── DECLARAR EL DESCANSO DE UN HORARIO, DESDE SU FORMULARIO (29 de septiembre de 2026) ─────────
+  //
+  // Corrección del dueño: «el descanso se define por el horario, no por el trabajador». Tenía razón,
+  // y el producto ya lo trataba así —el modal pregunta POR HORARIO— pero solo se podía responder UNA
+  // vez: `revisionDescansoPendiente` devuelve `false` en cuanto la empresa tiene fecha de revisión, y
+  // desde entonces no había forma de cambiarlo desde ninguna pantalla.
+  //
+  // ESTA RUTA NO MIRA SI HAY PREGUNTAS PENDIENTES, al revés que la de arriba: cualquier horario de la
+  // empresa se puede declarar cuando haga falta, que es justo lo que faltaba. Lo que sí comprueba,
+  // igual que aquella, es el ALCANCE: el horario tiene que ser de esta empresa, y eso se resuelve
+  // consultando, no leyendo el cuerpo.
+  app.put('/horarios/:id/descanso', auth, async (request, reply) => {
+    const empresaId = request.empresaId!;
+    const { id } = request.params as { id: string };
+
+    const horario = await prisma.horario.findFirst({
+      where: { id, empresaId },
+      select: { id: true, colaboradores: { where: { activo: true }, select: { id: true } } },
+    });
+    if (!horario) return reply.status(404).send({ error: 'Horario no encontrado.' });
+
+    // SU PROPIO VALIDADOR Y NO EL DEL MODAL, y el motivo está en `cuerpoDeDeclaracionDeDescanso`:
+    // aquel rechaza `PRESUMIDO` a propósito, porque responder «lo presumido» en una revisión que se
+    // hace una vez no es declarar nada. Un formulario que se EDITA sí tiene que poder volver al
+    // domingo por ley, y eso además borra la fecha del acuerdo.
+    const limpio = limpiarDeclaracionDeDescanso(request.body);
+    if (!limpio.ok) return reply.status(400).send({ error: limpio.motivo });
+
+    // SIN GENTE NO SE DECLARA NADA, y se dice: un horario recién creado no tiene a quién escribirle,
+    // y devolver «ok» dejaría a quien lo guardó creyendo que quedó declarado.
+    if (horario.colaboradores.length === 0) {
+      return reply.status(400).send({ error: 'Ese horario todavía no tiene a nadie asignado.' });
+    }
+
+    const hecho = await declararDescansoDeHorarios(
+      new Map([[id, horario.colaboradores.map(c => c.id)]]),
+      [{ horarioId: id, ...limpio.datos }],
+    );
+    return { ok: true, personas: hecho.personas };
   });
 
   app.get('/kiosco-estado', auth, async (request) => {

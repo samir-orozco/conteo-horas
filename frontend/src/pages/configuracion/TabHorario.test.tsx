@@ -152,3 +152,115 @@ describe('TabHorario · los descansos no remunerados', () => {
     expect(screen.queryByText(/NaN/)).toBeNull();
   });
 });
+
+// ────────── EL DÍA DE DESCANSO, EN EL FORMULARIO DEL HORARIO (29 de septiembre de 2026) ──────────
+//
+// Corrección del dueño: «el descanso se define por el horario, no por el trabajador». El producto ya
+// lo trataba así —el modal de revisión pregunta POR HORARIO— pero solo se podía responder UNA vez: en
+// cuanto la empresa quedaba marcada como revisada, `revisionDescansoPendiente` devuelve `false` y no
+// había forma de cambiarlo desde ninguna pantalla. Había que tocar la base.
+//
+// SE GUARDA APARTE, con su propio botón y su propia ruta. Son dos escrituras distintas y la de aquí
+// mueve un recargo: metida en el «Guardar» del horario, cambiar una hora de entrada reescribiría de
+// paso el día de descanso de toda su gente.
+
+describe('el día de descanso del horario', () => {
+  const conDescanso = (descanso: unknown) => {
+    get.mockImplementation((url: string) => Promise.resolve({
+      data: url === '/horarios' ? [{ ...OFICINA, descanso }, PLANTA]
+        : url === '/configuracion/legales' ? LEGALES
+        : url === '/suscripcion/mi-plan' ? { features: { multiHorario: true } }
+        : {},
+    }));
+  };
+  const seccion = () => screen.getByText('Día de descanso').closest('div') as HTMLElement;
+
+  it('dice A CUÁNTA GENTE se le aplica, y que rige desde hoy', async () => {
+    // Las dos cosas importan y ninguna es decorativa: esta escritura toca la declaración de cada
+    // persona del horario, y lo que ya se liquidó no se toca. Sin decirlo, quien guarda no sabe el
+    // alcance de lo que acaba de hacer ni si acaba de reescribir el mes pasado.
+    conDescanso({ tipo: 'PRESUMIDO', dia: null });
+    montar();
+    await abrirOficina();
+    expect(seccion()).toHaveTextContent(/a las 3 personas de este horario/);
+    expect(seccion()).toHaveTextContent(/solo desde hoy/);
+  });
+
+  it('LEE LO QUE YA HAY: un fijo llega con su día puesto', async () => {
+    conDescanso({ tipo: 'FIJO', dia: 'MIERCOLES' });
+    montar();
+    await abrirOficina();
+    expect(screen.getByLabelText(/Día de descanso fijo/i)).toHaveValue('MIERCOLES');
+  });
+
+  it('el selector del día SOLO sale con «otro día fijo»', async () => {
+    // En los otros dos no hay día que elegir, y dejarlo a la vista invitaría a elegir uno que no se
+    // va a guardar.
+    conDescanso({ tipo: 'ROTATIVO', dia: null });
+    montar();
+    await abrirOficina();
+    expect(screen.queryByLabelText(/Día de descanso fijo/i)).not.toBeInTheDocument();
+  });
+
+  it('MIXTO se dice, y no se preselecciona ninguna', async () => {
+    // Su gente no coincide. Elegir una por él haría que guardar sin tocar nada le cambiara el día a
+    // la mitad, en silencio. Arranca en el domingo por ley, que es lo que hay que elegir a conciencia
+    // para salir de ahí.
+    conDescanso('MIXTO');
+    montar();
+    await abrirOficina();
+    expect(seccion()).toHaveTextContent(/su gente no coincide/i);
+    expect(screen.queryByLabelText(/Día de descanso fijo/i)).not.toBeInTheDocument();
+    // Y CAE AL DOMINGO POR LEY. Faltaba esta afirmación y se notó mutando: sin ella, dejar que
+    // MIXTO se preseleccionara solo dejaba los tres radios sin marcar, y las dos comprobaciones de
+    // arriba seguían pasando. Un formulario con tres opciones y ninguna marcada no es «no elige»:
+    // es un estado que el primer clic en Guardar convierte en lo que sea.
+    expect(screen.getByRole('radio', { name: /El domingo, por ley/i })).toBeChecked();
+  });
+
+  it('guardar manda el tipo y el día a SU ruta, no a la del horario', async () => {
+    const usuario = userEvent.setup();
+    put.mockResolvedValue({ data: { ok: true, personas: 3 } });
+    conDescanso({ tipo: 'FIJO', dia: 'MIERCOLES' });
+    montar();
+    await abrirOficina();
+    await usuario.click(screen.getByRole('button', { name: /Guardar el día de descanso/i }));
+
+    expect(put).toHaveBeenCalledWith('/configuracion/horarios/h1/descanso', { tipo: 'FIJO', dia: 'MIERCOLES' });
+  });
+
+  it('un ROTATIVO no manda día, aunque se hubiera elegido uno antes', async () => {
+    // El residuo de haber cambiado de idea. Guardarlo dejaría una declaración que dice dos cosas.
+    const usuario = userEvent.setup();
+    put.mockResolvedValue({ data: { ok: true, personas: 3 } });
+    conDescanso({ tipo: 'FIJO', dia: 'MIERCOLES' });
+    montar();
+    await abrirOficina();
+    await usuario.click(screen.getByRole('radio', { name: /Rotativo/i }));
+    await usuario.click(screen.getByRole('button', { name: /Guardar el día de descanso/i }));
+
+    expect(put).toHaveBeenCalledWith('/configuracion/horarios/h1/descanso', { tipo: 'ROTATIVO', dia: null });
+  });
+
+  it('y al guardar dice A CUÁNTOS les cambió, que es lo que el servidor sabe', async () => {
+    const usuario = userEvent.setup();
+    put.mockResolvedValue({ data: { ok: true, personas: 3 } });
+    conDescanso({ tipo: 'PRESUMIDO', dia: null });
+    montar();
+    await abrirOficina();
+    await usuario.click(screen.getByRole('button', { name: /Guardar el día de descanso/i }));
+
+    expect(await screen.findByText(/Guardado para 3 personas/i)).toBeInTheDocument();
+  });
+
+  it('si el servidor se niega, lo dice y NO se lo calla', async () => {
+    const usuario = userEvent.setup();
+    put.mockRejectedValue({ response: { data: { error: 'Ese horario todavía no tiene a nadie asignado.' } } });
+    conDescanso({ tipo: 'PRESUMIDO', dia: null });
+    montar();
+    await abrirOficina();
+    await usuario.click(screen.getByRole('button', { name: /Guardar el día de descanso/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/todavía no tiene a nadie/i);
+  });
+});

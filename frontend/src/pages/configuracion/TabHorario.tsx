@@ -7,11 +7,17 @@ import { useMiPlan } from '../../lib/plan';
 import { minutosEntre, minutosDeLosDescansos, MAX_DESCANSOS_POR_FRANJA } from '../../lib/descansos';
 import ListaDeDescansos from './ListaDeDescansos';
 import { cuerpoDelHorario, type Franja, type FormularioDeHorario } from './cuerpoDelHorario';
+import { NOMBRE_DEL_DIA } from '../../lib/diasDeLaSemana';
 
 export type Horario = {
   id: string; nombre: string; toleranciaMin: number; almuerzoMin?: number;
   toleranciaSalidaMin?: number; ajustaEntrada?: boolean; fotoEnDescanso?: boolean;
   franjas: Franja[]; _count?: { colaboradores: number };
+  // QUÉ DÍA DESCANSA SU GENTE, ya resuelto por el servidor con la guarda legal del acuerdo escrito
+  // dentro. `'MIXTO'` es que su gente no coincide y `null` que no tiene gente: son dos cosas
+  // distintas y la pantalla las dice distinto. Opcional porque una respuesta vieja en caché no lo
+  // trae, y sin `?` la pantalla se quedaría en blanco.
+  descanso?: { tipo: 'PRESUMIDO' | 'FIJO' | 'ROTATIVO'; dia: string | null } | 'MIXTO' | null;
 };
 
 // Vuelta a "HH:MM". Da la vuelta al día para que un almuerzo de madrugada no
@@ -73,6 +79,16 @@ export default function TabHorario() {
   const [formHorario, setFormHorario] = useState<FormularioDeHorario>(HORARIO_VACIO);
   const [errorHorario, setErrorHorario] = useState('');
   const [eliminandoHorario, setEliminandoHorario] = useState<Horario | null>(null);
+  // EL DESCANSO VA EN SU PROPIO ESTADO Y SE GUARDA CON SU PROPIO BOTÓN, no con el del horario. Son
+  // dos escrituras distintas —una toca el horario, la otra la declaración de cada persona— y la
+  // segunda mueve un recargo. Metiéndolas en el mismo «Guardar», cambiar una hora de entrada
+  // reescribiría de paso el día de descanso de todo el mundo.
+  const [descanso, setDescanso] = useState<{ tipo: 'PRESUMIDO' | 'FIJO' | 'ROTATIVO'; dia: string }>(
+    { tipo: 'PRESUMIDO', dia: 'DOMINGO' },
+  );
+  const [guardandoDescanso, setGuardandoDescanso] = useState(false);
+  const [errorDescanso, setErrorDescanso] = useState('');
+  const [descansoGuardado, setDescansoGuardado] = useState('');
   // Desde cuándo aplicó el último cambio. Sin decirlo, el administrador que le
   // cambia el horario a alguien que ya marcó cree que no se guardó — que es
   // justo lo que pasaba cuando el cambio aplicaba siempre desde mañana.
@@ -106,6 +122,15 @@ export default function TabHorario() {
   const abrirHorario = (h?: Horario) => {
     setEditandoHorario(h ?? null);
     setErrorHorario('');
+    setErrorDescanso('');
+    setDescansoGuardado('');
+    // MIXTO no se puede preseleccionar: elegir uno de los dos por él haría que guardar sin tocar
+    // nada le cambiara el día a la mitad de su gente, en silencio. Arranca en el domingo por ley, que
+    // es lo que hay que elegir a conciencia para salir de ahí.
+    const suyo = h?.descanso;
+    setDescanso(suyo && suyo !== 'MIXTO'
+      ? { tipo: suyo.tipo, dia: suyo.dia ?? 'DOMINGO' }
+      : { tipo: 'PRESUMIDO', dia: 'DOMINGO' });
     setFormHorario(h
       ? {
           nombre: h.nombre, toleranciaMin: h.toleranciaMin, almuerzoMin: h.almuerzoMin ?? 0,
@@ -141,6 +166,31 @@ export default function TabHorario() {
       cargarHorarios();
     } catch (err: any) {
       setErrorHorario(err.response?.data?.error ?? 'No pudimos guardar el horario');
+    }
+  };
+
+  const guardarDescanso = async () => {
+    if (!editandoHorario) return;
+    setErrorDescanso('');
+    setDescansoGuardado('');
+    setGuardandoDescanso(true);
+    try {
+      const { data } = await api.put(`/configuracion/horarios/${editandoHorario.id}/descanso`, {
+        tipo: descanso.tipo, dia: descanso.tipo === 'FIJO' ? descanso.dia : null,
+      });
+      // SE DICE A CUÁNTA GENTE LE CAMBIÓ, y no «guardado» a secas: esta escritura toca la declaración
+      // de cada persona del horario, y el número es lo que deja ver el alcance de lo que se acaba de
+      // hacer. El servidor lo devuelve porque él es quien sabe cuántos activos hay.
+      setDescansoGuardado(`Guardado para ${data.personas} persona${data.personas === 1 ? '' : 's'}.`);
+      cargarHorarios();
+    } catch (err) {
+      // `unknown` Y NO `any`, aunque el resto de este archivo use `any`: el linter del frontend
+      // cuenta cada uno como un error, y este es NUEVO. Lo que ya estaba es deuda que se baja
+      // aparte; lo que se agrega hoy no la aumenta.
+      const delServidor = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setErrorDescanso(delServidor ?? 'No pudimos guardar el día de descanso');
+    } finally {
+      setGuardandoDescanso(false);
     }
   };
 
@@ -557,6 +607,79 @@ export default function TabHorario() {
                   </span>
                 </label>
               </div>
+
+              {/* ───────── EL DÍA DE DESCANSO DE ESTE HORARIO (29 de septiembre de 2026) ─────────
+                  Corrección del dueño: «el descanso se define por el horario, no por el trabajador».
+                  El producto ya lo trataba así —el modal de revisión pregunta POR HORARIO— pero solo
+                  se podía responder UNA vez: en cuanto la empresa quedaba marcada como revisada, no
+                  había forma de cambiarlo desde ninguna pantalla. Aquí sí.
+
+                  SOLO AL EDITAR. Un horario recién creado todavía no tiene a nadie asignado, y la
+                  declaración se escribe en su gente: ofrecerlo sería ofrecer un botón que el servidor
+                  rechaza con «ese horario todavía no tiene a nadie».
+
+                  SE GUARDA APARTE, con su propio botón. Son dos escrituras distintas y la de aquí
+                  mueve un recargo: metida en el «Guardar» de arriba, cambiar una hora de entrada
+                  reescribiría de paso el día de descanso de toda su gente. */}
+              {editandoHorario && (
+                <div className="bg-blue-50/60 rounded-xl p-4">
+                  <p className="text-xs font-medium text-ink">Día de descanso</p>
+                  <p className="text-[11px] text-muted mt-1 leading-relaxed">
+                    La ley presume el domingo salvo acuerdo escrito con el trabajador. Se aplica a{' '}
+                    {/* «a las 1 personas» salía así en pantalla. El español no deja armar esto pegando
+                        trozos, igual que los rótulos del período en el calendario. */}
+                    {(editandoHorario._count?.colaboradores ?? 0) === 1
+                      ? 'la única persona'
+                      : `las ${editandoHorario._count?.colaboradores ?? 0} personas`}{' '}
+                    de este horario, y <b>solo desde hoy</b>: los días ya liquidados se quedan como estaban.
+                  </p>
+
+                  {editandoHorario.descanso === 'MIXTO' && (
+                    <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
+                      Ahora mismo su gente no coincide: hay más de una declaración entre ellos. Elegir
+                      una aquí se la pone a todos.
+                    </p>
+                  )}
+
+                  <div className="mt-3 space-y-2">
+                    {([
+                      ['PRESUMIDO', 'El domingo, por ley', 'Sin acuerdo escrito. Es el caso normal.'],
+                      ['FIJO', 'Otro día fijo', 'Necesita acuerdo escrito con cada trabajador.'],
+                      ['ROTATIVO', 'Rotativo', 'Lo define el cronograma de cada semana. También necesita acuerdo escrito.'],
+                    ] as const).map(([tipo, titulo, nota]) => (
+                      <label key={tipo} className="flex items-start gap-2 cursor-pointer">
+                        <input type="radio" name="tipoDeDescanso" checked={descanso.tipo === tipo}
+                          onChange={() => { setDescanso(d => ({ ...d, tipo })); setDescansoGuardado(''); }}
+                          className="mt-0.5 accent-primary" />
+                        <span className="text-xs text-ink/80">
+                          {titulo}
+                          <span className="block text-[11px] text-muted">{nota}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* El selector solo con FIJO: en los otros dos no hay día que elegir, y dejarlo a la
+                      vista invitaría a elegir uno que no se va a guardar. */}
+                  {descanso.tipo === 'FIJO' && (
+                    <select value={descanso.dia}
+                      onChange={e => { setDescanso(d => ({ ...d, dia: e.target.value })); setDescansoGuardado(''); }}
+                      aria-label="Día de descanso fijo"
+                      className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                      {DIAS_SEMANA.map(d => <option key={d} value={d}>{NOMBRE_DEL_DIA[d] ?? d}</option>)}
+                    </select>
+                  )}
+
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button type="button" onClick={guardarDescanso} disabled={guardandoDescanso}
+                      className="px-3 py-2 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark rounded-lg disabled:opacity-60">
+                      {guardandoDescanso ? 'Guardando…' : 'Guardar el día de descanso'}
+                    </button>
+                    {descansoGuardado && <span className="text-[11px] font-semibold text-emerald-700">{descansoGuardado}</span>}
+                  </div>
+                  {errorDescanso && <p role="alert" className="mt-2 text-[11px] text-red-600">{errorDescanso}</p>}
+                </div>
+              )}
 
 
               <div className="space-y-3">
