@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X, ChevronRight, FileSignature, Laptop, FileSpreadsheet, History, ListFilter, ScanFace, ArrowLeftRight, Coffee,
-  Clock, LogIn,
+  Clock, LogIn, CalendarDays, MousePointerSquareDashed, ShieldAlert, Tag,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import giraIzquierda from '../assets/rostro/gira-izquierda.svg';
-import { debeMostrarNovedades, vistaKey, apagadoKey, guiaKey } from './novedadesVisibles';
+import { debeMostrarNovedades, loteEsIneludible, vistaKey, apagadoKey, guiaKey } from './novedadesVisibles';
 
 // Novedades de la versión: se muestran UNA vez por usuario al entrar.
 //
@@ -32,6 +32,100 @@ const Chip = ({ tono, children }: { tono: string; children: React.ReactNode }) =
 );
 
 const NOVEDADES: Novedad[] = [
+  // Despliegue del 30 de septiembre de 2026: el módulo de turnos.
+  {
+    icono: CalendarDays,
+    titulo: 'Programa los turnos de tu equipo en un calendario',
+    texto: 'Arma tu catálogo de turnos —Mañana, Noche, el que uses— cada uno con su color, y repártelos en una rejilla de día, semana o mes. Cada persona lleva su total de horas de la semana y te avisa si se pasa de las 42. Está en el menú, bajo «Turnos».',
+    enlace: { texto: 'Abrir el calendario de turnos', a: '/app/turnos' },
+    vista: (
+      <div className="w-full max-w-[260px] rounded-xl bg-white/95 border border-gray-200 shadow-sm p-2.5">
+        <div className="grid grid-cols-[auto_repeat(4,1fr)] gap-1 text-[9px]">
+          <span />
+          {['L', 'M', 'M', 'J'].map((d, i) => (
+            <span key={i} className="text-center font-semibold text-muted">{d}</span>
+          ))}
+          {[
+            { n: 'Ana', t: [['Mañana', 'bg-emerald-200 text-emerald-900'], ['Mañana', 'bg-emerald-200 text-emerald-900'], ['Libre', 'bg-gray-100 text-gray-500'], ['Mañana', 'bg-emerald-200 text-emerald-900']] },
+            { n: 'Luis', t: [['Noche', 'bg-sky-200 text-sky-900'], ['Noche', 'bg-sky-200 text-sky-900'], ['Noche', 'bg-sky-200 text-sky-900'], ['Libre', 'bg-gray-100 text-gray-500']] },
+            { n: 'Sara', t: [['Tarde', 'bg-amber-200 text-amber-900'], ['Libre', 'bg-gray-100 text-gray-500'], ['Tarde', 'bg-amber-200 text-amber-900'], ['Tarde', 'bg-amber-200 text-amber-900']] },
+          ].map(f => (
+            <Fragment key={f.n}>
+              <span className="pr-1 font-medium text-ink self-center">{f.n}</span>
+              {f.t.map(([texto, clase], i) => (
+                <span key={i} className={`rounded px-1 py-1 text-center font-semibold truncate ${clase}`}>{texto}</span>
+              ))}
+            </Fragment>
+          ))}
+        </div>
+        <div className="mt-2 flex items-center gap-1.5 border-t border-gray-100 pt-1.5">
+          <span className="text-[9px] text-muted">Ana</span>
+          <span className="h-1.5 flex-1 rounded-full bg-gray-100 overflow-hidden">
+            <span className="block h-full w-[78%] rounded-full bg-primary-dark" />
+          </span>
+          <span className="text-[9px] font-semibold text-ink tabular-nums">33 h / 42 h</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    icono: MousePointerSquareDashed,
+    titulo: 'Marca un bloque de celdas y prográmalas de una',
+    texto: 'Haz clic en una esquina y en la otra: todo lo que quede en medio se marca. Eliges el turno una vez y se escribe en todas. Antes de escribir nada te dice cuántas jornadas cambian, cuántas quedan igual y cuáles no se pueden tocar, y puedes cancelar ahí mismo.',
+    enlace: { texto: 'Probarlo en el calendario', a: '/app/turnos' },
+    vista: (
+      <div className="w-full max-w-[250px] rounded-xl bg-white/95 border border-gray-200 shadow-sm p-3">
+        <div className="grid grid-cols-4 gap-1">
+          {Array.from({ length: 8 }, (_, i) => (
+            <span key={i} className={`h-6 rounded ${i >= 1 && i <= 6 ? 'bg-[#fff7df] ring-2 ring-primary-dark' : 'bg-gray-100'}`} />
+          ))}
+        </div>
+        <div className="mt-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-[10px]">
+          <p className="font-semibold text-ink">Se escriben 6 jornadas</p>
+          <p className="text-muted">2 quedan igual · 1 no se puede tocar</p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    icono: ShieldAlert,
+    titulo: 'Te avisa antes de que una programación salga cara',
+    texto: 'Antes de escribir revisa lo que vas a dejar: semanas que se pasan de las 42 horas, semanas que quedarían sin ningún día de descanso, y a quién le falta marcarle su día libre. Cada aviso dice a quién le pasa y de qué semana, y el que tiene arreglo te dice cuál es.',
+    vista: (
+      <div className="w-full max-w-[250px] flex flex-col gap-1.5">
+        {[
+          ['bg-rose-50 border-rose-200 text-rose-900', '1 semana sin ningún descanso'],
+          ['bg-amber-50 border-amber-200 text-amber-900', '2 semanas por encima de 42 h'],
+          ['bg-amber-50 border-amber-200 text-amber-900', 'Sin horario y sin descanso marcado'],
+        ].map(([clase, texto]) => (
+          <div key={texto} className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[10px] font-semibold ${clase}`}>
+            <ShieldAlert size={11} className="shrink-0" /> {texto}
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    icono: Tag,
+    titulo: 'El recargo ya no se llama «dominical»',
+    texto: 'La ley cambió el nombre: lo que se paga con recargo es el día de DESCANSO OBLIGATORIO, que no siempre es el domingo. Quien trabaja los domingos y descansa el miércoles cobra el recargo por su miércoles, no por su domingo. En tus reportes verás «Descanso obligatorio o festivo» donde antes decía «Dominical».',
+    enlace: { texto: 'Ver el reporte de nómina', a: '/app/reportes/nomina' },
+    vista: (
+      <div className="w-full max-w-[250px] rounded-xl bg-white/95 border border-gray-200 shadow-sm p-3 text-[10px]">
+        <div className="flex items-center gap-2 border-b border-gray-100 pb-1.5">
+          <span className="text-gray-400 line-through">Dominical o festivo</span>
+        </div>
+        <div className="flex items-center gap-2 pt-1.5">
+          <span className="font-semibold text-ink">Descanso obligatorio o festivo</span>
+        </div>
+        <div className="mt-2 rounded-lg bg-primary-light/60 px-2 py-1.5 text-[9px] text-ink">
+          Miércoles trabajado · descansa ese día<br />
+          <b>8 h con recargo</b>
+        </div>
+      </div>
+    ),
+  },
+
   // Despliegue del 14 de septiembre de 2026.
   {
     icono: ScanFace,
@@ -287,6 +381,9 @@ export default function Novedades({ forzado = false, onCerrar }: { forzado?: boo
     vioEstaVersion: !!usuario && !!localStorage.getItem(vistaKey(usuario.id)),
     apagadas: !!usuario && !!localStorage.getItem(apagadoKey(usuario.id)),
     forzado,
+    // Si ESTE lote es de los que se muestran aunque las tenga apagadas. Lo decide una constante en
+    // `novedadesVisibles.ts` y no una condición aquí, para que la regla siga siendo pura y probada.
+    ineludible: loteEsIneludible(),
   });
 
   const cerrar = () => {

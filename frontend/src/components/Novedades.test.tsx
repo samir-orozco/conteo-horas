@@ -28,12 +28,18 @@ describe('Novedades', () => {
     // anterior se queda detrás, en vez de reemplazarse.
     render(<Novedades />);
     expect(screen.getByText('Novedades de HoraPro')).toBeInTheDocument();
-    expect(screen.getByText(/registra su rostro desde su celular/i)).toBeInTheDocument();
+    expect(screen.getByText(/programa los turnos de tu equipo/i)).toBeInTheDocument();
   });
 
-  it('cuenta las diez novedades: las de los últimos despliegues primero y las de antes detrás', async () => {
+  it('cuenta las catorce novedades: las de los últimos despliegues primero y las de antes detrás', async () => {
     render(<Novedades />);
     const titulos = [
+      // Despliegue del 30 de septiembre de 2026: el módulo de turnos.
+      /programa los turnos de tu equipo/i,
+      /marca un bloque de celdas/i,
+      /antes de que una programación salga cara/i,
+      /ya no se llama «dominical»/i,
+      // Y lo anterior, que se queda detrás.
       /registra su rostro desde su celular/i,
       /te dice hacia dónde girar/i,
       /hasta tres descansos/i,

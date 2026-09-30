@@ -5,8 +5,23 @@
 // la pantalla a quien ya dijo que no, o no contarle a un cliente lo que cambió.
 
 // Lote de novedades que se está mostrando. Subirla hace que vuelvan a aparecer,
-// salvo a quien pidió no verlas más.
-export const VERSION = '2026-09-14';
+// salvo a quien pidió no verlas más (ver `LOTE_INELUDIBLE`).
+export const VERSION = '2026-09-30';
+
+// EL LOTE QUE SE LE MUESTRA A TODOS, INCLUIDO A QUIEN APAGÓ LAS NOVEDADES.
+//
+// Pedido del dueño para el lanzamiento del módulo de turnos (30 de septiembre de 2026): «quiero que
+// aparezca a todos los usuarios».
+//
+// ES UNA MARCA POR LOTE Y NO UNA REGLA NUEVA, a propósito. Pisar «no volver a mostrarme las
+// novedades» es pisar una decisión que alguien tomó a conciencia, y escrito como regla permanente esa
+// opción dejaría de significar nada. Así solo se pisa cuando alguien viene aquí y lo escribe.
+//
+// AL SUBIR VERSION HAY QUE DECIDIR ESTO TAMBIÉN: dejar la constante apuntando al lote viejo haría que
+// el nuevo no fuera ineludible —correcto y silencioso— pero dejarla en `VERSION` por inercia haría
+// ineludibles todos los lotes futuros, que es justo lo que no se quiere. Por eso se escribe la fecha
+// a mano y no se pone `= VERSION`.
+const LOTE_INELUDIBLE = '2026-09-30';
 
 export const vistaKey = (id: string) => `horapro_novedades_${VERSION}_${id}`;
 export const apagadoKey = (id: string) => `horapro_novedades_off_${id}`;
@@ -21,7 +36,13 @@ export type ContextoNovedades = {
   apagadas: boolean;
   // Las está pidiendo desde el menú de ayuda.
   forzado: boolean;
+  // Si ESTE lote es de los que se muestran aunque las tenga apagadas.
+  ineludible: boolean;
 };
+
+// Si el lote que se está mostrando es ineludible. Se calcula aquí y no en el componente para que
+// `debeMostrarNovedades` siga siendo pura y se pueda probar sin tocar `localStorage`.
+export const loteEsIneludible = () => VERSION === LOTE_INELUDIBLE;
 
 export function debeMostrarNovedades(c: ContextoNovedades): boolean {
   // El super admin no es cliente del producto: no le interesa lo que cambió
@@ -36,9 +57,14 @@ export function debeMostrarNovedades(c: ContextoNovedades): boolean {
   // pantalla encima.
   if (!c.vioLaGuia) return false;
 
+  // Un lote ineludible se salta el apagado, pero NO el "ya lo vi": se muestra UNA vez, como
+  // cualquier otro. Repetirlo en cada carga a quien lo cerró no es insistir, es acosar.
+  if (c.vioEstaVersion) return false;
+  if (c.ineludible) return true;
+
   // Dos llaves distintas a propósito: "ya vi las de septiembre" y "no me
   // muestres novedades nunca" son decisiones distintas. Mezclarlas obligaría a
   // elegir entre repetirle a alguien lo que ya leyó, o no contarle nunca lo que
   // viene después.
-  return !c.apagadas && !c.vioEstaVersion;
+  return !c.apagadas;
 }
