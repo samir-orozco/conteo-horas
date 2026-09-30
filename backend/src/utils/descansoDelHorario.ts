@@ -61,6 +61,17 @@ const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DO
 // única sin horario que ha marcado domingos—, cuyo agosto pasó de 251.000 a 121.000: dos domingos
 // perdieron el recargo y una hora cruzó el tope de las 42 y se volvió extra.
 //
+// MEDIDO DESPUÉS CONTRA PRODUCCIÓN, y el número de verdad es otro: 105 personas activas sin horario en
+// 14 empresas, de las cuales 25 han trabajado 28 domingos. El recargo en juego son unos 2,7 millones.
+// Se le puso ese número delante y REAFIRMÓ la decisión el 30 de septiembre de 2026.
+//
+// Y EL ARGUMENTO EN CONTRA, escrito para que quien lo discuta no tenga que volver a buscarlo: el art.
+// 172 del CST no lo tocó la reforma de 2025 y sigue diciendo que el empleador está obligado a dar
+// descanso dominical remunerado. O sea que la lectura alternativa —a falta de horario y de
+// programación, el descanso es el DOMINGO— tiene respaldo legal, y hoy en producción esas 105 personas
+// no tienen cómo conseguir que les marquen un día, porque el módulo de turnos no está desplegado.
+// Cambiarlo es una línea de esta función: devolver `DOMINGO` cuando `descansoProgramado` no es válido.
+//
 // El código hacía lo contrario a propósito —«un turno pintado puede AGREGAR un recargo, nunca
 // quitarlo»— y esto lo cambia. Queda escrito para que el día que alguien lo discuta se sepa que se
 // eligió con el precio a la vista, no que se olvidó.
