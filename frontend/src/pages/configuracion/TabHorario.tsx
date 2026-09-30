@@ -8,6 +8,7 @@ import { minutosEntre, minutosDeLosDescansos, MAX_DESCANSOS_POR_FRANJA } from '.
 import ListaDeDescansos from './ListaDeDescansos';
 import { cuerpoDelHorario, type Franja, type FormularioDeHorario } from './cuerpoDelHorario';
 import { NOMBRE_DEL_DIA } from '../../lib/diasDeLaSemana';
+import { descansoSegunLasFranjas } from './descansoSegunLasFranjas';
 
 export type Horario = {
   id: string; nombre: string; toleranciaMin: number; almuerzoMin?: number;
@@ -608,78 +609,104 @@ export default function TabHorario() {
                 </label>
               </div>
 
-              {/* ───────── EL DÍA DE DESCANSO DE ESTE HORARIO (29 de septiembre de 2026) ─────────
-                  Corrección del dueño: «el descanso se define por el horario, no por el trabajador».
-                  El producto ya lo trataba así —el modal de revisión pregunta POR HORARIO— pero solo
-                  se podía responder UNA vez: en cuanto la empresa quedaba marcada como revisada, no
-                  había forma de cambiarlo desde ninguna pantalla. Aquí sí.
+              {/* ───────── EL DÍA DE DESCANSO SALE DE LAS FRANJAS (29 de septiembre de 2026) ─────────
+                  Corrección del dueño, con sus palabras: «a lo que me refería del día de descanso son
+                  las que se hacen en la franja de horario, no se asigna directamente».
 
-                  SOLO AL EDITAR. Un horario recién creado todavía no tiene a nadie asignado, y la
-                  declaración se escribe en su gente: ofrecerlo sería ofrecer un botón que el servidor
-                  rechaza con «ese horario todavía no tiene a nadie».
+                  La primera versión de esto lo PREGUNTABA SIEMPRE, y era pedir lo que ya está dicho:
+                  los días que no cubre ninguna franja son los libres. Medido contra la base, de 11
+                  horarios activos 10 se resuelven solos.
 
-                  SE GUARDA APARTE, con su propio botón. Son dos escrituras distintas y la de aquí
-                  mueve un recargo: metida en el «Guardar» de arriba, cambiar una hora de entrada
-                  reescribiría de paso el día de descanso de toda su gente. */}
-              {editandoHorario && (
-                <div className="bg-blue-50/60 rounded-xl p-4">
-                  <p className="text-xs font-medium text-ink">Día de descanso</p>
-                  <p className="text-[11px] text-muted mt-1 leading-relaxed">
-                    La ley presume el domingo salvo acuerdo escrito con el trabajador. Se aplica a{' '}
-                    {/* «a las 1 personas» salía así en pantalla. El español no deja armar esto pegando
-                        trozos, igual que los rótulos del período en el calendario. */}
-                    {(editandoHorario._count?.colaboradores ?? 0) === 1
-                      ? 'la única persona'
-                      : `las ${editandoHorario._count?.colaboradores ?? 0} personas`}{' '}
-                    de este horario, y <b>solo desde hoy</b>: los días ya liquidados se quedan como estaban.
-                  </p>
+                  AHORA SOLO PREGUNTA CUANDO LAS FRANJAS NO PUEDEN CONTESTAR, que son dos casos: que
+                  cubran los siete días —lo normal en vigilancia— o que sobren dos o más, porque solo
+                  UNO de ellos es el descanso obligatorio y el otro es un día no laborable, que no es lo
+                  mismo y no paga recargo.
 
-                  {editandoHorario.descanso === 'MIXTO' && (
-                    <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
-                      Ahora mismo su gente no coincide: hay más de una declaración entre ellos. Elegir
-                      una aquí se la pone a todos.
-                    </p>
-                  )}
+                  SE CALCULA SOBRE LAS FRANJAS QUE SE ESTÁN EDITANDO y no sobre las guardadas: así la
+                  respuesta cambia mientras se tocan los días, que es cuando se puede hacer algo con
+                  ella. La decisión vive en `descansoSegunLasFranjas`, que es pura y está mutada.
 
-                  <div className="mt-3 space-y-2">
-                    {([
-                      ['PRESUMIDO', 'El domingo, por ley', 'Sin acuerdo escrito. Es el caso normal.'],
-                      ['FIJO', 'Otro día fijo', 'Necesita acuerdo escrito con cada trabajador.'],
-                      ['ROTATIVO', 'Rotativo', 'Lo define el cronograma de cada semana. También necesita acuerdo escrito.'],
-                    ] as const).map(([tipo, titulo, nota]) => (
-                      <label key={tipo} className="flex items-start gap-2 cursor-pointer">
-                        <input type="radio" name="tipoDeDescanso" checked={descanso.tipo === tipo}
-                          onChange={() => { setDescanso(d => ({ ...d, tipo })); setDescansoGuardado(''); }}
-                          className="mt-0.5 accent-primary" />
-                        <span className="text-xs text-ink/80">
-                          {titulo}
-                          <span className="block text-[11px] text-muted">{nota}</span>
-                        </span>
-                      </label>
-                    ))}
+                  SOLO AL EDITAR: un horario recién creado no tiene a nadie a quien declararle nada, y
+                  el servidor lo rechaza con «todavía no tiene a nadie asignado». */}
+              {editandoHorario && (() => {
+                const dicen = descansoSegunLasFranjas(formHorario.franjas);
+                return (
+                  <div className="bg-blue-50/60 rounded-xl p-4">
+                    <p className="text-xs font-medium text-ink">Día de descanso</p>
+
+                    {dicen.caso === 'DEDUCIDO' ? (
+                      // NADA QUE ELEGIR, y por eso no hay ningún control: las franjas ya lo dijeron.
+                      // Ofrecer aquí un selector sería pedir lo que está a la vista dos centímetros
+                      // más abajo, y dejar que alguien lo contradiga sin querer.
+                      <p className="text-[11px] text-muted mt-1 leading-relaxed">
+                        Descansa el <b className="text-ink">{(NOMBRE_DEL_DIA[dicen.dia ?? ''] ?? '').toLowerCase()}</b>,
+                        que es el día que no cubre ninguna franja. No hay nada que declarar.
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-[11px] text-muted mt-1 leading-relaxed">
+                          {dicen.caso === 'SIN_DIA_LIBRE'
+                            ? 'Las franjas cubren los siete días, así que no hay ninguno libre del que deducirlo. Hay que decirlo.'
+                            : 'Sobran varios días libres y solo uno es el descanso obligatorio: los demás son días no laborables, que no pagan recargo.'}
+                          {' '}La ley presume el domingo salvo acuerdo escrito. Se aplica a{' '}
+                          {(editandoHorario._count?.colaboradores ?? 0) === 1
+                            ? 'la única persona'
+                            : `las ${editandoHorario._count?.colaboradores ?? 0} personas`}{' '}
+                          de este horario, y <b>solo desde hoy</b>: los días ya liquidados se quedan como estaban.
+                        </p>
+
+                        {editandoHorario.descanso === 'MIXTO' && (
+                          <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
+                            Ahora mismo su gente no coincide: hay más de una declaración entre ellos. Elegir
+                            una aquí se la pone a todos.
+                          </p>
+                        )}
+
+                        <div className="mt-3 space-y-2">
+                          {([
+                            ['PRESUMIDO', 'El domingo, por ley', 'Sin acuerdo escrito. Es el caso normal.'],
+                            ['FIJO', 'Otro día fijo', 'Necesita acuerdo escrito con cada trabajador.'],
+                            ['ROTATIVO', 'Rotativo', 'Lo define el cronograma de cada semana. También necesita acuerdo escrito.'],
+                          ] as const).map(([tipo, titulo, nota]) => (
+                            <label key={tipo} className="flex items-start gap-2 cursor-pointer">
+                              <input type="radio" name="tipoDeDescanso" checked={descanso.tipo === tipo}
+                                onChange={() => { setDescanso(d => ({ ...d, tipo })); setDescansoGuardado(''); }}
+                                className="mt-0.5 accent-primary" />
+                              <span className="text-xs text-ink/80">
+                                {titulo}
+                                <span className="block text-[11px] text-muted">{nota}</span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+
+                        {/* El selector solo con FIJO, y SOLO CON LOS DÍAS QUE DE VERDAD SOBRAN cuando
+                            sobran: ofrecer un día que las franjas trabajan sería ofrecer una
+                            declaración que contradice el propio horario. Con los siete cubiertos no
+                            sobra ninguno, así que ahí se ofrecen todos. */}
+                        {descanso.tipo === 'FIJO' && (
+                          <select value={descanso.dia}
+                            onChange={e => { setDescanso(d => ({ ...d, dia: e.target.value })); setDescansoGuardado(''); }}
+                            aria-label="Día de descanso fijo"
+                            className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                            {(dicen.caso === 'VARIOS_LIBRES' ? dicen.libres : DIAS_SEMANA)
+                              .map(d => <option key={d} value={d}>{NOMBRE_DEL_DIA[d] ?? d}</option>)}
+                          </select>
+                        )}
+
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                          <button type="button" onClick={guardarDescanso} disabled={guardandoDescanso}
+                            className="px-3 py-2 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark rounded-lg disabled:opacity-60">
+                            {guardandoDescanso ? 'Guardando…' : 'Guardar el día de descanso'}
+                          </button>
+                          {descansoGuardado && <span className="text-[11px] font-semibold text-emerald-700">{descansoGuardado}</span>}
+                        </div>
+                        {errorDescanso && <p role="alert" className="mt-2 text-[11px] text-red-600">{errorDescanso}</p>}
+                      </>
+                    )}
                   </div>
-
-                  {/* El selector solo con FIJO: en los otros dos no hay día que elegir, y dejarlo a la
-                      vista invitaría a elegir uno que no se va a guardar. */}
-                  {descanso.tipo === 'FIJO' && (
-                    <select value={descanso.dia}
-                      onChange={e => { setDescanso(d => ({ ...d, dia: e.target.value })); setDescansoGuardado(''); }}
-                      aria-label="Día de descanso fijo"
-                      className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
-                      {DIAS_SEMANA.map(d => <option key={d} value={d}>{NOMBRE_DEL_DIA[d] ?? d}</option>)}
-                    </select>
-                  )}
-
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <button type="button" onClick={guardarDescanso} disabled={guardandoDescanso}
-                      className="px-3 py-2 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark rounded-lg disabled:opacity-60">
-                      {guardandoDescanso ? 'Guardando…' : 'Guardar el día de descanso'}
-                    </button>
-                    {descansoGuardado && <span className="text-[11px] font-semibold text-emerald-700">{descansoGuardado}</span>}
-                  </div>
-                  {errorDescanso && <p role="alert" className="mt-2 text-[11px] text-red-600">{errorDescanso}</p>}
-                </div>
-              )}
+                );
+              })()}
 
 
               <div className="space-y-3">

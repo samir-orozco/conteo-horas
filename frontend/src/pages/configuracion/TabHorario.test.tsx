@@ -153,21 +153,30 @@ describe('TabHorario · los descansos no remunerados', () => {
   });
 });
 
-// ────────── EL DÍA DE DESCANSO, EN EL FORMULARIO DEL HORARIO (29 de septiembre de 2026) ──────────
+// ────────── EL DÍA DE DESCANSO SALE DE LAS FRANJAS (29 de septiembre de 2026) ──────────
 //
-// Corrección del dueño: «el descanso se define por el horario, no por el trabajador». El producto ya
-// lo trataba así —el modal de revisión pregunta POR HORARIO— pero solo se podía responder UNA vez: en
-// cuanto la empresa quedaba marcada como revisada, `revisionDescansoPendiente` devuelve `false` y no
-// había forma de cambiarlo desde ninguna pantalla. Había que tocar la base.
+// Corrección del dueño, con sus palabras: «a lo que me refería del día de descanso son las que se
+// hacen en la franja de horario, no se asigna directamente».
 //
-// SE GUARDA APARTE, con su propio botón y su propia ruta. Son dos escrituras distintas y la de aquí
-// mueve un recargo: metida en el «Guardar» del horario, cambiar una hora de entrada reescribiría de
-// paso el día de descanso de toda su gente.
+// LA PRIMERA VERSIÓN DE ESTAS PRUEBAS DABA POR HECHO QUE SIEMPRE SE PREGUNTA, y por eso las siete se
+// pusieron rojas al darle la vuelta a la sección: el fixture `OFICINA` trabaja de lunes a sábado, así
+// que sobra el domingo y ya no hay nada que preguntar. Fallaron por la razón correcta.
+//
+// Los tres casos se prueban por separado porque se ven distintos: uno no lleva ningún control.
+
+const CUBRE_LOS_SIETE = {
+  ...OFICINA,
+  franjas: [{ ...OFICINA.franjas[0], dias: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'] }],
+};
+const SOLO_ENTRE_SEMANA = {
+  ...OFICINA,
+  franjas: [{ ...OFICINA.franjas[0], dias: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'] }],
+};
 
 describe('el día de descanso del horario', () => {
-  const conDescanso = (descanso: unknown) => {
+  const conHorario = (h: unknown, descanso: unknown) => {
     get.mockImplementation((url: string) => Promise.resolve({
-      data: url === '/horarios' ? [{ ...OFICINA, descanso }, PLANTA]
+      data: url === '/horarios' ? [{ ...(h as object), descanso }, PLANTA]
         : url === '/configuracion/legales' ? LEGALES
         : url === '/suscripcion/mi-plan' ? { features: { multiHorario: true } }
         : {},
@@ -175,11 +184,44 @@ describe('el día de descanso del horario', () => {
   };
   const seccion = () => screen.getByText('Día de descanso').closest('div') as HTMLElement;
 
+  it('SI LAS FRANJAS LO DICEN, no se pregunta nada', async () => {
+    // Lunes a sábado: sobra el domingo y ese es. Un selector aquí pediría lo que está a la vista dos
+    // centímetros más abajo, y dejaría que alguien contradijera su propio horario sin querer.
+    conHorario(OFICINA, { tipo: 'PRESUMIDO', dia: null });
+    montar();
+    await abrirOficina();
+    expect(seccion()).toHaveTextContent(/Descansa el domingo/i);
+    expect(seccion()).toHaveTextContent(/No hay nada que declarar/i);
+    expect(screen.queryByRole('button', { name: /Guardar el día de descanso/i })).not.toBeInTheDocument();
+  });
+
+  it('CON LOS SIETE CUBIERTOS sí se pregunta, y se dice por qué', async () => {
+    // El caso más común en vigilancia, que es la clientela de esto.
+    conHorario(CUBRE_LOS_SIETE, { tipo: 'PRESUMIDO', dia: null });
+    montar();
+    await abrirOficina();
+    expect(seccion()).toHaveTextContent(/cubren los siete días/i);
+    expect(screen.getByRole('button', { name: /Guardar el día de descanso/i })).toBeInTheDocument();
+  });
+
+  it('CON VARIOS LIBRES también, y el selector SOLO ofrece los que sobran', async () => {
+    // Lunes a viernes deja sábado y domingo. Ofrecer el miércoles sería ofrecer una declaración que
+    // contradice el propio horario.
+    const usuario = userEvent.setup();
+    conHorario(SOLO_ENTRE_SEMANA, { tipo: 'PRESUMIDO', dia: null });
+    montar();
+    await abrirOficina();
+    expect(seccion()).toHaveTextContent(/Sobran varios días libres/i);
+    await usuario.click(screen.getByRole('radio', { name: /Otro día fijo/i }));
+    const opciones = Array.from(screen.getByLabelText(/Día de descanso fijo/i).querySelectorAll('option'))
+      .map(o => (o as HTMLOptionElement).value);
+    expect(opciones).toEqual(['SABADO', 'DOMINGO']);
+  });
+
   it('dice A CUÁNTA GENTE se le aplica, y que rige desde hoy', async () => {
-    // Las dos cosas importan y ninguna es decorativa: esta escritura toca la declaración de cada
-    // persona del horario, y lo que ya se liquidó no se toca. Sin decirlo, quien guarda no sabe el
-    // alcance de lo que acaba de hacer ni si acaba de reescribir el mes pasado.
-    conDescanso({ tipo: 'PRESUMIDO', dia: null });
+    // Las dos cosas importan: esta escritura toca la declaración de cada persona del horario, y lo
+    // que ya se liquidó no se toca. Sin decirlo, quien guarda no sabe el alcance de lo que hizo.
+    conHorario(CUBRE_LOS_SIETE, { tipo: 'PRESUMIDO', dia: null });
     montar();
     await abrirOficina();
     expect(seccion()).toHaveTextContent(/a las 3 personas de este horario/);
@@ -187,41 +229,35 @@ describe('el día de descanso del horario', () => {
   });
 
   it('LEE LO QUE YA HAY: un fijo llega con su día puesto', async () => {
-    conDescanso({ tipo: 'FIJO', dia: 'MIERCOLES' });
+    conHorario(CUBRE_LOS_SIETE, { tipo: 'FIJO', dia: 'MIERCOLES' });
     montar();
     await abrirOficina();
     expect(screen.getByLabelText(/Día de descanso fijo/i)).toHaveValue('MIERCOLES');
   });
 
   it('el selector del día SOLO sale con «otro día fijo»', async () => {
-    // En los otros dos no hay día que elegir, y dejarlo a la vista invitaría a elegir uno que no se
-    // va a guardar.
-    conDescanso({ tipo: 'ROTATIVO', dia: null });
+    conHorario(CUBRE_LOS_SIETE, { tipo: 'ROTATIVO', dia: null });
     montar();
     await abrirOficina();
     expect(screen.queryByLabelText(/Día de descanso fijo/i)).not.toBeInTheDocument();
   });
 
-  it('MIXTO se dice, y no se preselecciona ninguna', async () => {
-    // Su gente no coincide. Elegir una por él haría que guardar sin tocar nada le cambiara el día a
-    // la mitad, en silencio. Arranca en el domingo por ley, que es lo que hay que elegir a conciencia
-    // para salir de ahí.
-    conDescanso('MIXTO');
+  it('MIXTO se dice, y cae al domingo por ley', async () => {
+    // Su gente no coincide. Preseleccionar una por él haría que guardar sin tocar nada le cambiara el
+    // día a la mitad, en silencio.
+    conHorario(CUBRE_LOS_SIETE, 'MIXTO');
     montar();
     await abrirOficina();
     expect(seccion()).toHaveTextContent(/su gente no coincide/i);
-    expect(screen.queryByLabelText(/Día de descanso fijo/i)).not.toBeInTheDocument();
-    // Y CAE AL DOMINGO POR LEY. Faltaba esta afirmación y se notó mutando: sin ella, dejar que
-    // MIXTO se preseleccionara solo dejaba los tres radios sin marcar, y las dos comprobaciones de
-    // arriba seguían pasando. Un formulario con tres opciones y ninguna marcada no es «no elige»:
-    // es un estado que el primer clic en Guardar convierte en lo que sea.
+    // Faltaba esta afirmación y se notó mutando: sin ella, dejar que MIXTO se preseleccionara solo
+    // dejaba los tres radios sin marcar, y las comprobaciones de arriba seguían pasando.
     expect(screen.getByRole('radio', { name: /El domingo, por ley/i })).toBeChecked();
   });
 
   it('guardar manda el tipo y el día a SU ruta, no a la del horario', async () => {
     const usuario = userEvent.setup();
     put.mockResolvedValue({ data: { ok: true, personas: 3 } });
-    conDescanso({ tipo: 'FIJO', dia: 'MIERCOLES' });
+    conHorario(CUBRE_LOS_SIETE, { tipo: 'FIJO', dia: 'MIERCOLES' });
     montar();
     await abrirOficina();
     await usuario.click(screen.getByRole('button', { name: /Guardar el día de descanso/i }));
@@ -233,7 +269,7 @@ describe('el día de descanso del horario', () => {
     // El residuo de haber cambiado de idea. Guardarlo dejaría una declaración que dice dos cosas.
     const usuario = userEvent.setup();
     put.mockResolvedValue({ data: { ok: true, personas: 3 } });
-    conDescanso({ tipo: 'FIJO', dia: 'MIERCOLES' });
+    conHorario(CUBRE_LOS_SIETE, { tipo: 'FIJO', dia: 'MIERCOLES' });
     montar();
     await abrirOficina();
     await usuario.click(screen.getByRole('radio', { name: /Rotativo/i }));
@@ -245,7 +281,7 @@ describe('el día de descanso del horario', () => {
   it('y al guardar dice A CUÁNTOS les cambió, que es lo que el servidor sabe', async () => {
     const usuario = userEvent.setup();
     put.mockResolvedValue({ data: { ok: true, personas: 3 } });
-    conDescanso({ tipo: 'PRESUMIDO', dia: null });
+    conHorario(CUBRE_LOS_SIETE, { tipo: 'PRESUMIDO', dia: null });
     montar();
     await abrirOficina();
     await usuario.click(screen.getByRole('button', { name: /Guardar el día de descanso/i }));
@@ -256,7 +292,7 @@ describe('el día de descanso del horario', () => {
   it('si el servidor se niega, lo dice y NO se lo calla', async () => {
     const usuario = userEvent.setup();
     put.mockRejectedValue({ response: { data: { error: 'Ese horario todavía no tiene a nadie asignado.' } } });
-    conDescanso({ tipo: 'PRESUMIDO', dia: null });
+    conHorario(CUBRE_LOS_SIETE, { tipo: 'PRESUMIDO', dia: null });
     montar();
     await abrirOficina();
     await usuario.click(screen.getByRole('button', { name: /Guardar el día de descanso/i }));
