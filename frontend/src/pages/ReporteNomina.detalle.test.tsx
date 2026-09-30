@@ -216,4 +216,24 @@ describe('el detalle de una persona en el reporte de nómina', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('row', { name: /Ana Gómez/ })).toBeInTheDocument();
   });
+
+  // ────────── «JORNADA ORDINARIA» Y NO «ORDINARIAS» (30 de septiembre de 2026) ──────────
+  //
+  // Esta columna pinta `minutosOrdinarios`, que es la suma de TODO lo que no es extra: diurnas,
+  // nocturnas y de descanso. El Excel de esta misma pantalla tenía una columna «Horas ordinarias»
+  // que contaba SOLO las diurnas. Mismo rótulo, dos cifras distintas: para una persona real eran
+  // 89h 25m aquí y 73,92 allá, y nada decía por qué.
+  //
+  // Se desambiguan por los dos lados: aquí «Jornada ordinaria», que se lee como el agregado que es,
+  // y allá «Ordinaria diurna (h)», que nombra su concepto como las otras siete columnas.
+  //
+  // Ana trae 1.440 minutos, o sea 24 h, y ninguna otra columna de la fila muestra ese número: sin eso
+  // la prueba pasaría con la columna equivocada.
+  it('la columna del agregado se llama «Jornada ordinaria», no «Ordinarias»', async () => {
+    montar();
+    const fila = await screen.findByText('Ana Gómez');
+    expect(screen.getByRole('columnheader', { name: 'Jornada ordinaria' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Ordinarias' })).toBeNull();
+    expect(fila.closest('tr')!).toHaveTextContent('24h 00m');
+  });
 });

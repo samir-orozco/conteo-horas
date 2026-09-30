@@ -90,8 +90,12 @@ export function hojasDeNomina(personas: PersonaDeNomina[], periodo: Periodo): Ho
       // Los dos números, cada uno con su nombre (decisión del dueño, 15 de septiembre de 2026). Antes
       // iba uno solo rotulado «Días con marcación» que en realidad eran marcaciones cerradas: medido
       // contra la base, 11 para quien trabajó 5 días y 0 para quien trabajó 2 sin marcar la salida.
+      // «ORDINARIA DIURNA (h)» Y NO «HORAS ORDINARIAS» (30 de septiembre de 2026). Esta columna cuenta
+      // SOLO las HOD, así que nombra su concepto igual que las siete de `COLUMNAS_DE_CONCEPTO` que
+      // vienen detrás. El nombre viejo chocaba con la columna «Ordinarias» de la pantalla, que suma
+      // TODO lo que no es extra: mismo rótulo y dos cifras distintas para la misma persona.
       'Cédula', 'Nombre', 'Cargo', 'Salario mensual', 'Valor hora', 'Auxilio de transporte',
-      'Días con marcación', 'Marcaciones cerradas', 'Horas ordinarias',
+      'Días con marcación', 'Marcaciones cerradas', 'Ordinaria diurna (h)',
       ...COLUMNAS_DE_CONCEPTO.map(c => c.titulo),
       'Recargos', 'Extras', 'Total adicional',
     ],

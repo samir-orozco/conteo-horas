@@ -188,7 +188,13 @@ export default function ReporteNomina() {
                 <th className="px-3 py-2 text-left">Colaborador</th>
                 {variasSedes && <th className="px-3 py-2 text-left">Sede</th>}
                 <th className="px-3 py-2 text-right">Salario base</th>
-                <th className="px-3 py-2 text-right">Ordinarias</th>
+                {/* «JORNADA ORDINARIA» Y NO «ORDINARIAS» (30 de septiembre de 2026). Esta celda pinta
+                    `minutosOrdinarios`, o sea TODO lo que no es extra: diurnas, nocturnas y de descanso.
+                    El Excel de esta misma pantalla tenía una columna «Horas ordinarias» que contaba SOLO
+                    las diurnas, y para la misma persona daba 73,92 donde aquí salen 89h 25m. Mismo
+                    rótulo, dos cifras. Ahora cada una nombra lo suyo: aquí el agregado, allá el
+                    concepto («Ordinaria diurna (h)»). */}
+                <th className="px-3 py-2 text-right">Jornada ordinaria</th>
                 <th className="px-3 py-2 text-right">Recargos</th>
                 <th className="px-3 py-2 text-right">Extras</th>
                 <th className="px-3 py-2 text-right">Total adicional</th>

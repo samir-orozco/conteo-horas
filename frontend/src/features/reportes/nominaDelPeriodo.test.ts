@@ -96,13 +96,29 @@ describe('hojasDeNomina', () => {
     expect([col(1, 'Días con marcación'), col(1, 'Marcaciones cerradas')]).toEqual([2, 0]);
   });
 
+  // ────────── «ORDINARIA DIURNA» Y NO «HORAS ORDINARIAS» (30 de septiembre de 2026) ──────────
+  //
+  // Los dos nombres existian y significaban COSAS DISTINTAS: esta columna del Excel contaba solo las
+  // HOD, y la columna «Ordinarias» de la pantalla de nomina cuenta `minutosOrdinarios`, que es la
+  // suma de TODO lo que no es extra —diurnas, nocturnas y de descanso—. Para Ana eran 73,92 en el
+  // archivo y 89h 25m en la pantalla, con el mismo rotulo.
+  //
+  // Se desambiguan por los dos lados: aqui pasa a nombrar SU concepto, como las otras siete columnas
+  // de esta hoja («Recargo nocturno (h)», «Extra diurna (h)»...), y alla pasa a «Jornada ordinaria»,
+  // que se lee como el agregado que es.
   it('el resumen trae las horas de cada concepto en su columna, y en cero el que no tuvo', () => {
     const r = hoja([ANA], 'Resumen');
     const col = (titulo: string) => r.filas[0][r.columnas.indexOf(titulo)];
-    expect(col('Horas ordinarias')).toBe(104);
+    expect(col('Ordinaria diurna (h)')).toBe(104);
     expect(col('Recargo nocturno (h)')).toBe(6);
     expect(col('Extra diurna (h)')).toBe(4);
     expect(col('Extra nocturna (h)')).toBe(0);
+    // Afirmado tambien en negativo, por lo mismo que con «dominical»: agregar la columna nueva y
+    // dejar la vieja al lado pasaria igual, y quedarian las dos en el archivo.
+    expect(r.columnas).not.toContain('Horas ordinarias');
+    // Y que sigue contando SOLO las diurnas: si algun dia contara como la pantalla, este numero
+    // subiria a 114 (104 + 6 nocturnas + 4 de descanso) sin que el titulo cambiara.
+    expect(col('Ordinaria diurna (h)')).not.toBe(114);
   });
 
   // ────────── LA COLUMNA NO SE LLAMA «DOMINICAL» (30 de septiembre de 2026) ──────────

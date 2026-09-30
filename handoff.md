@@ -28,22 +28,35 @@ Tres reglas que gobiernan esto y no se tocan sin pensarlo:
 
 ## Current State
 
-**Actualizado el 23 de septiembre de 2026, con las ramas medidas después de un
-`git fetch` y no leídas de memoria.** Lo que decía antes este párrafo («todo en
-`master` (`c8d570e`), árbol limpio, 225 pruebas») llevaba semanas siendo falso en
-los cuatro datos.
+**Actualizado el 30 de septiembre de 2026, con todo medido después de un `git
+fetch` y no leído de memoria.** Lo que decía antes llevaba 64 commits siendo
+falso, que es el mismo defecto que este archivo ya se había denunciado a sí mismo
+dos veces. Ver *Por qué este archivo se desactualiza*, al final.
 
-`develop` va **dos commits por delante de `master`** (`1bc2620`) y **sin subir a
-`origin`**, que sigue en `f0dbe33`. Su punta es el commit del módulo de turnos.
+`develop` va **69 commits por delante de `master`** y su punta es `a3176a2`.
+`origin/develop` está en `6df5e43`: faltan por subir los tres commits de hoy.
 
 | | backend | frontend |
 |---|---|---|
-| pruebas | **82 archivos / 1438** | **119 archivos / 1190** |
+| pruebas | **83 archivos / 1490** (+1 fallo esperado) | **149 archivos / 1735** |
 | tipos | `tsc --noEmit` limpio | `tsc -b` limpio |
-| lint | 173, en su tope | 65 errores / 6 avisos, la línea base |
+| lint | 173 avisos, 0 errores — su tope | 65 errores / 6 avisos, la línea base |
 
-El árbol **no** está limpio: quedan cinco archivos fuera a propósito (ver
-*Archivos sueltos*).
+El árbol **no** está limpio: `.claude/launch.json` se queda fuera a propósito.
+
+### Las ramas, medidas el 30 de septiembre
+
+```
+master           1bc2620  =  origin          ← lo que hay en producción
+develop          a3176a2  ≠  origin 6df5e43  ← faltan 3 commits por subir
+backend-build    942435e  =  origin
+frontend-build   4bb51c2  =  origin
+prisma-build     8842cac  ≠  origin f743ab4  ← el ref local está atrasado
+```
+
+Ojo con `prisma-build`: el local va detrás de `origin`. Un `git show
+prisma-build:<archivo>` lee el artefacto VIEJO. Se alinea antes de inspeccionarlo
+(§12.7).
 
 ### Producción
 
@@ -53,25 +66,50 @@ api                       → {"status":"ok"}
 PUT /registros/jornada/x  → 401                   ✓ el lote de jornadas está arriba
 ```
 
-### Lo único pendiente de desplegar
+### Lo pendiente de desplegar — 30 de septiembre de 2026
 
-> **ESTA SECCIÓN ESTÁ DESACTUALIZADA y no se borró porque puede seguir
-> importando.** Dice que falta desplegar `04787ce`, pero medido el 23 de
-> septiembre de 2026 `backend-build` está en **`4cb7eee`**, del 19/09, o sea más
-> adelante. **No se comprobó** si esos dos arreglos llegaron a producción: hay que
-> verificarlo contra el servidor antes de darlos por desplegados o por pendientes.
+**Son 71 commits**, desde `7c427e3` (el auxilio de transporte, 17 de septiembre,
+que es lo que corre hoy) hasta `a3176a2`. Ya no es «un despliegue de solo
+backend»: es el módulo de turnos entero, el registro del sistema, el modelo nuevo
+del día de descanso y el renombre del concepto dominical.
 
-`backend-build` (`04787ce`) tiene **dos arreglos compilados y subidos que
-producción todavía no corre**. Los dos tocan dinero:
+**Dos SQL, en este orden, ANTES de tocar ningún artefacto:**
 
-1. `f4816d3` — mover una jornada de día validaba los cruces contra el día de
-   ORIGEN. Mudar una jornada del 20 al 21 podía dejar dos solapadas el 21 y
-   contar esas horas **dos veces**.
-2. `04787ce` — las horas extra se clasificaban con el horario **de hoy**. En modo
-   `HORARIO`, cambiar un horario reescribía los extras de períodos ya liquidados.
+1. `sql/dia-esperado-descanso.sql` — crea `dias_esperados.esDescanso`. Comprobado
+   contra `information_schema` el 30 de septiembre: **no existe en producción**.
+   Sin esto el backend nuevo revienta, porque la ruta de liquidación la pide por
+   nombre.
+2. `sql/nombre-descanso-obligatorio.sql` — renombra el concepto en `tipos_hora`.
+   Probado en local con el texto exacto del archivo: 16 filas, cero con el nombre
+   viejo después, recargos intactos.
 
-**El frontend NO cambia**: es un despliegue de solo backend. Comandos exactos en
-*Next step*.
+**Cuatro ramas y no tres**, porque el diff toca `schema.prisma`. Lo decide el
+comando, no la memoria (§11):
+
+```
+git diff --name-only 7c427e3..HEAD | grep -q 'schema.prisma' \
+  && echo "OBLIGATORIO actualizar prisma-build" || echo "prisma-build no se toca"
+```
+
+Orden: **SQL → `prisma-build` → `backend-build` → `frontend-build`.**
+`prisma-build` va antes que el backend; al revés hay una ventana con el código
+nuevo contra el cliente viejo, que es lo que tumbó el kiosco el 10 de septiembre.
+
+**Lo que cambia para el kiosco:** un solo cambio, en `backend/src/routes/worker.ts`
+— una cédula que no existe queda registrada en el registro del sistema. Entró con
+`3b5eeb4`.
+
+**Lo que cambia para la nómina, y hay que saberlo antes de subir:**
+
+- El día de descanso pasa a salir de las FRANJAS del horario. Medido contra
+  producción: **8 personas activas** tienen un horario cuyo día libre no es el
+  domingo (WE HOSPITALITY con COCINA 1 los lunes y BUFFET los martes, Beaujon,
+  Nature Smith). A esas les cambia qué día lleva recargo.
+- **105 personas activas no tienen horario**, en 14 empresas. Con la regla
+  vigente, una semana suya sin programar **no tiene día de descanso obligatorio**.
+  De ellas, 25 han trabajado 28 domingos: unos **2,7 millones** de recargo que
+  dejan de pagarse. Es una decisión del dueño, reafirmada dos veces con el número
+  delante, y el argumento en contra está escrito en `descansoDelHorario.ts`.
 
 ### Repositorio
 
@@ -287,56 +325,24 @@ reportarle al hosting.
 
 ## Next step
 
-> **Lo que decía antes esta sección quedó viejo y se corrigió el 9 de septiembre
-> de 2026.** Decía «desplegar `backend-build` (`04787ce`)», pero `04787ce` y
-> `f4816d3` son commits de la rama de ARTEFACTOS, no de la fuente: su código
-> fuente ya está en `master` y en producción. `backend-build` avanzó desde
-> entonces hasta `9b38f87`, que es lo que corre hoy. La prueba de que está
-> desplegado es que el 8 de septiembre se subió un `.docx` en producción, y esa
-> validación es de backend. Los comandos de abajo se dejan porque la mecánica
-> sigue siendo la buena para el próximo despliegue de backend.
+**El despliegue de la noche del 30 de septiembre de 2026.** Los 71 commits de
+arriba, con sus dos SQL y sus cuatro ramas. Lo primero, subir `develop` a
+`origin`: van tres commits de hoy sin empujar.
 
-**Lo que sigue de verdad:** fundir la política en `master` y alinear `develop`.
-Después, los prerrequisitos biométricos de la sección de más abajo.
+El orden y las comprobaciones están en *Lo pendiente de desplegar* y la mecánica
+en `DESPLIEGUE.md`. Las tres que no se pueden saltar:
 
-<details><summary>Mecánica del despliegue de backend, para la próxima vez</summary>
+1. **El SQL va ANTES del código.** `dias_esperados.esDescanso` no existe en
+   producción y el backend nuevo la pide por nombre.
+2. **`prisma-build` va ANTES de `backend-build`.** Se comprueba en el servidor con
+   un número y no con una impresión, ANTES del restart:
+   `grep -c "esDescanso" ~/horapro-co-api/node_modules/.prisma/client/index.d.ts`
+   — cero significa que el cliente es el viejo y que el kiosco se va a caer.
+3. **Los artefactos se compilan desde un árbol limpio**, nunca desde el de
+   trabajo, y se inspeccionan por `origin/<rama>` después de un `fetch`.
 
-[EN EL SERVIDOR]
-
-```bash
-cd ~/horapro-repo && git fetch origin && git checkout -f backend-build && git pull && rm -rf ~/horapro-co-api/dist && cp -R deploy-backend/dist ~/horapro-co-api/
-```
-
-Después, **cPanel → Setup Node.js App → Restart**. No hay comando; es el botón, y
-sin él el proceso sigue con el código viejo.
-
-Comprobar que arrancó:
-
-```bash
-curl -s https://horapro.co/api/health
-```
-
-**No debería mover ningún número.** Medido en producción: Luciana Vargas Tejada
-no tiene ningún día en que el congelado y el vigente difieran. Para confirmarlo
-sobre los demás, antes o después de desplegar:
-
-```bash
-source ~/nodevenv/horapro-co-api/22/bin/activate && cd ~/horapro-co-api && set -a && . ./.env && set +a && node medir-extras.cjs "NOMBRE" 2026-07-01 2026-08-14
-```
-
-Cualquiera con «NINGÚN día difiere» está garantizado que no se mueve.
-
-Vuelta atrás:
-
-```bash
-cd ~/horapro-repo && git checkout -f backend-build && git reset --hard e4371b4 && rm -rf ~/horapro-co-api/dist && cp -R deploy-backend/dist ~/horapro-co-api/
-```
-
-Y Restart otra vez.
-
-</details>
-
----
+Después del despliegue: alinear `master` con lo desplegado, que es lo que hace que
+«volver atrás» signifique algo.
 
 ## La política de privacidad está publicada
 
@@ -382,6 +388,41 @@ la política está escrita y publicada.
   del reclamo en trámite (sección 12).
 
 ---
+
+## QA de nómina: lo que está cubierto y lo que no
+
+`backend/prisma/qa-nomina-septiembre.ts` siembra dos personas —ANA con horario
+fijo L-V, BRUNO sin horario con turnos de noche y el miércoles marcado— con doce
+casos, y `qa-nomina-verificar.ts` pide la liquidación por las rutas reales y la
+imprime al lado de lo calculado a mano. Se deshacen con `--borrar` (cédulas 88*).
+
+Cubierto y cotejado el 30 de septiembre: jornada con almuerzo, almuerzo sin
+regreso, llegada tarde sin justificar y con permiso, salida temprana con permiso,
+horas hasta las 19:30 (el nocturno empieza a las 7 p.m.), festivo trabajado,
+domingo trabajado por quien descansa el domingo, y el descanso trabajado de quien
+no tiene horario. Y el caso que de verdad importa: **los domingos de Bruno salen
+HON y no dominical**, porque su descanso es el miércoles.
+
+### Lo que NO está en el guion: trabajar el sábado siendo de lunes a viernes
+
+Pregunta del dueño el 30 de septiembre, medida ese día pero **no incorporada al
+guion**, por decisión suya: «déjemoslo así por el momento».
+
+A alguien de L-V le sobran DOS días libres, y el descanso obligatorio es **uno**:
+el domingo, por el art. 172. El sábado no es descanso. Medido:
+
+| día trabajado (8 h) | se liquida | adicional |
+|---|---|---|
+| sábado | `HOD` ×1 | 0 |
+| domingo | `HDD` ×1,9 | 60.000 |
+
+Pero el sábado **no sale gratis**: en la semana completa empujó 6 h por encima de
+las 42 y salieron como `HED`. Y el domingo, al haberse pasado ya el tope, salió
+como `HEDD` —extra Y de descanso— en vez de `HDD`.
+
+**Para agregarlo:** dos registros más en el reparto de ANA, un sábado y su
+domingo, con la semana de L-V completa para que se vea el tope. Cambia los
+totales del Excel de muestra.
 
 ## Pendiente de fondo
 
@@ -1281,3 +1322,34 @@ en medio del trabajo de turnos, y conviene saber que no tiene nada que ver:
 Tardó 1021 ms, que es cara de espera agotada: bajo la carga de la suite entera se
 le acaba el tiempo. **No está diagnosticada**, solo acotada. Si vuelve a salir en
 rojo, el sitio donde mirar es cómo espera esa prueba, no el módulo de turnos.
+
+---
+
+## Por qué este archivo se desactualiza, y qué hacer con eso
+
+Pregunta del dueño el 30 de septiembre de 2026: «cuando hacemos los cambios
+pendientes del handoff, ¿este se actualiza para que no los repitamos?».
+
+**No se actualiza solo.** Lo actualiza quien trabaja, cuando se acuerda, y la
+prueba de que eso no basta está en este mismo archivo: se tocó por última vez el
+25 de septiembre y desde entonces habían entrado **64 commits**. Dos secciones
+llevaban encima su propio aviso de «esto quedó viejo» —uno del 9 y otro del 23 de
+septiembre— sin que nadie las arreglara. O sea que el archivo ya sabía que mentía
+y siguió mintiendo.
+
+Y hay un segundo problema, más silencioso: cuando algo queda viejo, aquí se le ha
+puesto un aviso ENCIMA en vez de reescribirlo. Es honesto, pero el archivo crece y
+hay que leer avisos de avisos para saber qué es cierto. **Lo viejo se reescribe,
+no se anota.**
+
+Las tres reglas, para que esto deje de pasar:
+
+1. **Un commit que cambia el estado del despliegue toca este archivo en el MISMO
+   commit.** Si el diff mueve una rama de artefacto, un SQL pendiente o el número
+   de commits sin desplegar, `handoff.md` entra con él.
+2. **Nada de estado escrito de memoria.** Las ramas, las pruebas y el lint se
+   miden con un comando y se pegan medidos, con la fecha. Este archivo denunció
+   dos veces haber escrito de memoria datos que llevaban semanas siendo falsos.
+3. **Lo que se hace, se borra de aquí.** Un pendiente que ya se hizo y sigue
+   escrito cuesta más que no haberlo escrito: la próxima sesión lo va a volver a
+   hacer, o va a perder el tiempo comprobando que ya está.
