@@ -14,7 +14,8 @@ import { leerDescansos } from '../utils/descansos';
 // Qué exige un turno del catálogo, con la MISMA cuenta que corre al pintar un día. Es pura, tiene 24
 // casos y se usa aquí solo para responder, nunca para escribir.
 import { diaDesdePlantilla } from '../utils/pintarDia';
-import { estadoDescansoDe, propuestaDeDescanso } from '../utils/descansoObligatorio';
+import { propuestaDeDescanso } from '../utils/descansoObligatorio';
+import { fuenteDelDescansoDe, diaDeDescansoDelHorario } from '../utils/descansoDelHorario';
 import { diaSemanaDeFechaBogota } from '../utils/diasDeLaSemana';
 import { descansoDelDia, estadoDelDia } from '../utils/calendarioDeTurnos';
 import { jornadaVigente } from '../utils/vigencias';
@@ -88,9 +89,6 @@ export default async function turnoRoutes(app: FastifyInstance) {
         where: { empresaId, activo: true },
         select: {
           id: true, nombre: true, apellido: true, cargo: true,
-          // Sin estas tres no se puede saber qué día descansa nadie, y la guarda legal de
-          // `estadoDescansoDe` no tendría con qué decidir.
-          descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
           // LAS SEDES DE CADA PERSONA, para el filtro de la pantalla (28 de septiembre de 2026).
           //
           // EN PLURAL, y no es un detalle de forma: `ColaboradorSede` es una tabla puente, así que una
@@ -254,14 +252,13 @@ export default async function turnoRoutes(app: FastifyInstance) {
 
     const contadorPorPersona = new Map<string, Record<string, number>>();
     for (const p of personas) {
-      const declarado = estadoDescansoDe(p);
+      const fuente = fuenteDelDescansoDe(p.horario);
       const suyos = diasMesPorPersona.get(p.id) ?? [];
       contadorPorPersona.set(p.id, descansosTrabajadosPorMes(suyos.map(d => ({
         fecha: d.fecha,
-        // Donde la fila no lo calculó (null), se cae a la declaración con la MISMA función que usa
-        // el motor. Así el contador y la liquidación no pueden discrepar sobre qué día era su
-        // descanso.
-        esDescanso: descansoDelDia(d.esDescanso, diaSemanaDeFechaBogota(d.fecha), declarado),
+        // Donde la fila no lo calculó (null), se cae al horario con la MISMA función que usa el
+        // motor. Así el contador y la liquidación no pueden discrepar sobre qué día era su descanso.
+        esDescanso: descansoDelDia(d.esDescanso, diaSemanaDeFechaBogota(d.fecha), fuente),
         trabajado: conMarca.has(`${p.id}|${claveDiaBogota(d.fecha)}`),
       }))));
     }
@@ -280,13 +277,13 @@ export default async function turnoRoutes(app: FastifyInstance) {
       // combinar se perderían. Se unen con la MISMA doctrina, no con una segunda versión de qué
       // días trabaja la persona: eso ya lo decidió `combinarDiasEsperados` arriba.
       const extras = new Map(mias.map(f => [claveDiaBogota(f.fecha), f]));
-      // La guarda legal: un día declarado sin acuerdo escrito vale como PRESUMIDO, o sea domingo.
-      const estado = estadoDescansoDe(persona);
+      // DE DÓNDE SALE SU DESCANSO: de las franjas de su horario, o de la programación si no tiene.
+      const fuente = fuenteDelDescansoDe(horario);
 
       const dias = combinados.map(d => {
         const clave = claveDiaBogota(d.fecha);
         const extra = extras.get(clave);
-        const esDescanso = descansoDelDia(extra?.esDescanso, diaSemanaDeFechaBogota(d.fecha), estado);
+        const esDescanso = descansoDelDia(extra?.esDescanso, diaSemanaDeFechaBogota(d.fecha), fuente);
         // Se calcula UNA vez y se usa para dos cosas: lo que la celda pinta, y si ese día necesita
         // una decisión. Calcularlo dos veces permitiría que alguien cambiara una y dejara la otra.
         const estadoDia = estadoDelDia({
@@ -308,11 +305,9 @@ export default async function turnoRoutes(app: FastifyInstance) {
           // como descanso también sale `DESCANSO` sin ser el obligatorio, así que deducirlo daría un
           // aviso falso justo en el caso que cuesta dinero.
           //
-          // Y NO SE PUEDE DEDUCIR EN LA PANTALLA de `descanso.tipo`: la regla lleva dentro la guarda
-          // del acuerdo escrito (sin papel, cualquier día declarado vale como domingo), y una segunda
-          // copia es como se separan. Ya pasó en la maqueta de esto mismo: su copia se quedó leyendo
-          // el tipo en crudo y le decía «pactado por escrito» a alguien a quien el motor trata como
-          // presumido.
+          // Y NO SE PUEDE DEDUCIR EN LA PANTALLA a partir del horario: la regla decide entre las
+          // franjas y la programación, y una segunda copia es como se separan. Ya pasó en la maqueta
+          // de esto mismo: su copia leía el dato en crudo y decía una cosa distinta de la del motor.
           esDescansoObligatorio: esDescanso,
           horaEntrada: d.horaEntrada,
           horaSalida: d.horaSalida,
@@ -411,7 +406,7 @@ export default async function turnoRoutes(app: FastifyInstance) {
               descansoMarcado: e?.descansoPintado === true,
             };
           }),
-          estado,
+          fuente,
         )
         : null;
 
@@ -439,9 +434,15 @@ export default async function turnoRoutes(app: FastifyInstance) {
         // Las sedes a las que está asignada. Van con id y nombre: el id es con lo que filtra la
         // pantalla, el nombre es lo que lee una persona.
         sedes: persona.sedes.map(s => ({ id: s.sedeId, nombre: s.sede.nombre })),
-        // El estado ya resuelto, no las tres columnas crudas: la pantalla no puede volver a
-        // decidir si el acuerdo escrito alcanza, porque esa decisión es la que protege el recargo.
-        descanso: { tipo: estado.tipo, dia: estado.tipo === 'FIJO' ? estado.dia : null },
+        // DE DÓNDE SALE SU DESCANSO, ya resuelto (30 de septiembre de 2026): con horario, el día que
+        // dicen sus franjas; sin horario, no hay día fijo y lo pone la programación de cada semana.
+        //
+        // RESUELTO AQUÍ Y NO EN LA PANTALLA: «si sobra uno ese, si sobran varios el domingo» es una
+        // regla que decide el recargo dominical, y una segunda copia en el frontend es como se separan
+        // (§9.3). La pantalla solo lee el resultado.
+        descanso: fuente.de === 'HORARIO'
+          ? { de: 'HORARIO' as const, dia: diaDeDescansoDelHorario(fuente.diasQueTrabaja) }
+          : { de: 'PROGRAMACION' as const, dia: null },
         propuesta,
         minutosEsperados: dias.reduce((a, d) => a + d.minutosEsperados, 0),
         // CUÁNTOS MINUTOS LE EXIGIRÍA A ESTA PERSONA CADA TURNO DEL CATÁLOGO (28 de septiembre de 2026).
@@ -596,7 +597,10 @@ export default async function turnoRoutes(app: FastifyInstance) {
   //
   // Los límites del mes salen de `claveDiaBogota` y NO de `getUTCMonth()`: en UTC, un día que en
   // Bogotá es 30 de septiembre ya dice octubre, y el contador miraría el mes que no es.
-  async function claseDelMesDe(persona: { id: string; descansoTipo: string; descansoDia: string | null; descansoAcuerdoEn: Date | null }, fecha: Date) {
+  async function claseDelMesDe(
+    persona: { id: string; horario: { franjas: { dias: unknown }[] } | null },
+    fecha: Date,
+  ) {
     const [anio, mes] = claveDiaBogota(fecha).split('-').map(Number);
     const desdeMes = new Date(Date.UTC(anio, mes - 1, 1, 5, 0, 0));
     const hastaMes = new Date(Date.UTC(anio, mes, 1, 5, 0, 0));
@@ -611,17 +615,19 @@ export default async function turnoRoutes(app: FastifyInstance) {
       }),
     ]);
     const conMarca = new Set(marcas.map(r => claveDiaBogota(r.fecha)));
-    const estado = estadoDescansoDe(persona);
+    const fuente = fuenteDelDescansoDe(persona.horario);
     const porMes = descansosTrabajadosPorMes(dias.map(d => ({
       fecha: d.fecha,
-      esDescanso: descansoDelDia(d.esDescanso, diaSemanaDeFechaBogota(d.fecha), estado),
+      esDescanso: descansoDelDia(d.esDescanso, diaSemanaDeFechaBogota(d.fecha), fuente),
       trabajado: conMarca.has(claveDiaBogota(d.fecha)),
     })));
     return clasificarDescansos(porMes[claveDiaBogota(fecha).slice(0, 7)] ?? 0);
   }
 
+  // Las franjas del horario, que es de donde sale su día de descanso. Nada más: el modal no pinta
+  // ningún otro dato de la persona.
   const PARA_DECIDIR = {
-    id: true, descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
+    id: true, horario: { select: { franjas: { select: { dias: true } } } },
   } as const;
 
   // Lo que el modal necesita para abrirse: lo decidido (o que no hay nada), la clase del mes, qué

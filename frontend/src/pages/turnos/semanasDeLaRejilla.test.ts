@@ -353,50 +353,51 @@ describe('las semanas sin ningún descanso', () => {
   });
 });
 
-// ────────── EL DESCANSO QUE A UN ROTATIVO HAY QUE MARCARLE (29 de septiembre de 2026) ──────────
+// ────────── EL DESCANSO QUE HAY QUE MARCARLE A QUIEN NO TIENE HORARIO (29 de septiembre de 2026) ──────────
 //
 // Sale de una pregunta del dueño: «¿cómo funciona la asignación de horario rotativo si la persona ya
 // tiene un horario asignado?». Al mirarlo apareció el hueco.
 //
-// LA MECÁNICA, que hay que tener clara para leer lo de abajo: para alguien con descanso ROTATIVO,
-// cuál de los siete días lleva el descanso lo decide lo que esté MARCADO como descanso en esa
-// semana. Si hay exactamente uno, ese es. Si no hay ninguno, o hay dos, el motor no puede afirmarlo
-// y cae al DOMINGO, que es la dirección segura: un turno pintado puede AGREGAR un recargo, nunca
-// quitarlo.
+// LA MECÁNICA, que hay que tener clara para leer lo de abajo: a quien NO tiene horario, cuál de los
+// siete días lleva el descanso lo decide lo que esté MARCADO como descanso en esa semana. Si hay
+// exactamente uno, ese es. Si no hay ninguno, o hay dos, el motor no puede afirmarlo y esa semana se
+// queda SIN descanso obligatorio.
 //
-// LO QUE CUESTA: quien programa a un rotativo de lunes a domingo pensando «esta persona descansa el
-// martes» y no MARCA el martes, le deja el domingo trabajado sobre su descanso obligatorio. Eso paga
-// recargo, y desde el tercero del mes obliga a compensar con tiempo. El dato para verlo existía
-// —está en la rejilla, día por día— pero no había quien lo sumara por semana.
+// LO QUE CUESTA, actualizado el 30 de septiembre de 2026 con la regla del dueño: quien programa de
+// lunes a domingo pensando «esta persona descansa el martes» y no MARCA el martes, le deja el domingo
+// trabajado sin ningún descanso obligatorio en la semana. Antes esa falta caía al DOMINGO y el domingo
+// pagaba recargo; ahora no cae a ninguna parte, así que ese domingo se paga como día ordinario, sin el
+// 90%. Las semanas que este aviso señala son EXACTAMENTE las mismas; lo que cambió es la dirección en
+// la que el olvido duele.
 //
-// POR QUÉ EL DOMINGO ENTRA EN LA CONDICIÓN Y NO SE AVISA A TODO ROTATIVO SIN DESCANSO MARCADO: lo
-// normal es programar de lunes a sábado y dejar el domingo en blanco, y ahí NO pasa nada malo —el
-// domingo es su descanso y no lo trabaja—. Avisando sin mirar el domingo, el aviso saldría en el
-// caso más común de todos y aprendería a ignorarse, que es como se desarma un aviso.
+// POR QUÉ EL DOMINGO ENTRA EN LA CONDICIÓN Y NO SE AVISA A TODO EL QUE NO TENGA HORARIO: lo normal es
+// programar de lunes a sábado y dejar el domingo en blanco, y ahí NO pasa nada malo, porque nadie
+// trabaja ese día. Avisando sin mirar el domingo, el aviso saldría en el caso más común de todos y
+// aprendería a ignorarse, que es como se desarma un aviso.
 
-describe('las semanas en que a un rotativo se le va a cobrar el domingo', () => {
+describe('las semanas en que a alguien sin horario se le programa el domingo sin marcarle descanso', () => {
   const SEM = ['2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27'];
   const LUNES = '2026-09-21';
   const DOMINGO = '2026-09-27';
   const mapa = (fechas: readonly string[]) => Object.fromEntries(fechas.map(f => [f, true]));
 
-  it('trabaja los siete menos el martes, sin marcar nada: el domingo se le cobra', () => {
-    // El caso de la pregunta. Quien lo programó cree que descansa el martes; para el motor, el
-    // martes es un día en blanco y el descanso sigue siendo el domingo.
+  it('trabaja los siete menos el martes, sin marcar nada: se avisa', () => {
+    // El caso de la pregunta. Quien lo programó cree que descansa el martes; para el motor, el martes
+    // es un día en blanco y esa semana no tiene ningún descanso obligatorio.
     const trabajado = mapa(SEM.filter(f => f !== '2026-09-22'));
     expect(semanasConDomingoEnRiesgo(SEM, trabajado, {}, true)).toEqual([LUNES]);
   });
 
   it('con el martes MARCADO como descanso, no hay nada que avisar', () => {
-    // Es lo que mueve el descanso de la semana. El domingo deja de ser el obligatorio y trabajarlo
-    // no paga recargo de descanso.
+    // Es lo que le pone el descanso a la semana: el martes pasa a ser el obligatorio, y el domingo
+    // trabajado es un día ordinario a propósito y no por olvido.
     const trabajado = mapa(SEM.filter(f => f !== '2026-09-22'));
     expect(semanasConDomingoEnRiesgo(SEM, trabajado, mapa(['2026-09-22']), true)).toEqual([]);
   });
 
   it('DOS días marcados vuelven a dejarlo al aire, igual que ninguno', () => {
-    // El motor no puede elegir entre dos y cae al domingo. Para quien mira es el mismo problema con
-    // otra causa, y el remedio es el mismo: dejar uno solo.
+    // El motor no puede elegir entre dos y la semana se queda sin descanso. Para quien mira es el
+    // mismo problema con otra causa, y el remedio es el mismo: dejar uno solo.
     const trabajado = mapa(SEM.filter(f => f !== '2026-09-22' && f !== '2026-09-23'));
     expect(semanasConDomingoEnRiesgo(SEM, trabajado, mapa(['2026-09-22', '2026-09-23']), true)).toEqual([LUNES]);
   });
@@ -408,10 +409,10 @@ describe('las semanas en que a un rotativo se le va a cobrar el domingo', () => 
     expect(semanasConDomingoEnRiesgo(SEM, trabajado, {}, true)).toEqual([]);
   });
 
-  it('a quien NO es rotativo no se le avisa: su descanso no lo mueve el calendario', () => {
-    // Un FIJO o un PRESUMIDO tiene su día por ley o por acuerdo, y marcar otro no lo cambia.
-    // Trabajarle el domingo sí cuesta, pero de eso avisa «pintarías sobre el descanso obligatorio»,
-    // que es el aviso que le corresponde y que no tiene remedio: no es un olvido, es una decisión.
+  it('a quien SÍ tiene horario no se le avisa: su descanso no lo mueve el calendario', () => {
+    // Su día libre lo dicen sus franjas, siempre hay uno, y marcar otro no lo cambia. Trabajárselo sí
+    // cuesta, pero de eso avisa «pintarías sobre el descanso obligatorio», que es el aviso que le
+    // corresponde y que no tiene remedio: no es un olvido, es una decisión.
     //
     // ES EXACTAMENTE LA MISMA SEMANA DEL PRIMER CASO, que sí avisa, y solo cambia el último
     // argumento. Antes esta prueba usaba los siete días trabajados y pasaba igual con la guarda
@@ -423,8 +424,8 @@ describe('las semanas en que a un rotativo se le va a cobrar el domingo', () => 
   });
 
   it('LOS SIETE TRABAJADOS SON DEL OTRO AVISO, no de este', () => {
-    // «Semanas que quedarían sin ningún descanso» ya lo dice, y es más grave: no es que el domingo
-    // salga caro, es que la semana es ilegal (art. 173). Dos avisos sobre la misma semana harían que
+    // «Semanas que quedarían sin ningún descanso» ya lo dice, y es más grave: no es que el domingo se
+    // pague mal, es que la persona no descansa (art. 173). Dos avisos sobre la misma semana harían que
     // el segundo se leyera como una repetición del primero.
     expect(semanasConDomingoEnRiesgo(SEM, mapa(SEM), {}, true)).toEqual([]);
   });

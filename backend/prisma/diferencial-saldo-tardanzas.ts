@@ -21,6 +21,7 @@ const PERIODOS = [
   ['2026-07-01', '2026-07-31'],
   ['2026-08-01', '2026-08-31'],
   ['2026-09-01', '2026-09-10'],
+  ['2026-09-01', '2026-09-30'],
 ];
 
 type RespLiquidacion = { saldo: unknown; totalAdicional: number; totalRecargos: number; totalExtra: number; registrosCont: number };

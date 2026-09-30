@@ -1,4 +1,4 @@
-import { esDescansoObligatorio, type EstadoDescanso } from './descansoObligatorio';
+import { esDescansoObligatorioDe, type FuenteDelDescanso } from './descansoDelHorario';
 
 // LO QUE EL CALENDARIO DE TURNOS PINTA EN CADA CELDA (20 de septiembre de 2026).
 //
@@ -23,12 +23,13 @@ import { esDescansoObligatorio, type EstadoDescanso } from './descansoObligatori
 export function descansoDelDia(
   congelado: boolean | null | undefined,
   diaSemana: string,
-  estado: EstadoDescanso,
+  fuente: FuenteDelDescanso,
 ): boolean {
   if (typeof congelado === 'boolean') return congelado;
-  // Sin planificador todavía, el día planificado va en `null`: un ROTATIVO cae al domingo, que es
-  // la dirección segura. Cuando el planificador llegue, ese tercer argumento es su gancho.
-  return esDescansoObligatorio(diaSemana, estado, null);
+  // El día programado va en `null`: esta función resuelve una celda suelta y «cuál de los siete
+  // lleva el descanso» es una pregunta de la SEMANA. Quien tiene horario se resuelve igual con sus
+  // franjas; quien no lo tiene se queda sin descanso en esa celda hasta que se programe.
+  return esDescansoObligatorioDe(diaSemana, fuente, null);
 }
 
 // Lo que se pinta en la celda. Son cuatro estados y no dos booleanos sueltos por lo que dice

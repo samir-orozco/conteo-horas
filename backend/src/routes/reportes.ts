@@ -19,7 +19,7 @@ import { COLABORADOR_SIN_FOTOS } from '../utils/columnasDeColaborador';
 // La guarda legal: convierte las tres columnas crudas en el estado que el motor entiende, y por el
 // camino descarta cualquier día declarado SIN acuerdo escrito. Se resuelve aquí, una vez por
 // persona, y nunca dentro del motor: así no hay ninguna rama que pueda saltársela.
-import { estadoDescansoDe } from '../utils/descansoObligatorio';
+import { fuenteDelDescansoDe } from '../utils/descansoDelHorario';
 
 
 // Lo que devuelven los dos resúmenes que se filtran por sede. El filtro decide
@@ -162,7 +162,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // de un período ya liquidado.
     const extraConfig = construirExtraConfig(modoExtra, horario, diasEsperados);
 
-    const r = liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados, estadoDescansoDe(colaborador));
+    const r = liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados, fuenteDelDescansoDe(colaborador.horario));
 
     // Saldo de tiempo no remunerado: lo que el horario exigía contra lo que
     // realmente trabajó. Va en su propio campo y NUNCA dentro de `liquidacion`,
@@ -217,9 +217,8 @@ export default async function reporteRoutes(app: FastifyInstance) {
         where: { empresaId, activo: true },
         select: {
           id: true, nombre: true, apellido: true, salarioMensual: true, modalidad: true,
-          // Las tres del descanso: sin ellas el motor no puede saber qué día descansa esta persona
-          // y este resumen daría cifras distintas de /liquidacion para la misma gente.
-          descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
+          // El horario con sus franjas: de ahí sale qué día descansa esta persona, y sin eso este
+          // resumen daría cifras distintas de /liquidacion para la misma gente.
           horario: { include: { franjas: true } },
         },
         orderBy: { nombre: 'asc' },
@@ -288,7 +287,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
       const registros = porColaborador.get(col.id) ?? [];
       const dias = combinarDiasEsperados(desdeF, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
       const extraConfig = construirExtraConfig(modoExtra, horario, dias);
-      const r = liquidarRegistros(registros as any, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, estadoDescansoDe(col));
+      const r = liquidarRegistros(registros as any, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, fuenteDelDescansoDe(col.horario));
       return {
         colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
         totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
@@ -463,10 +462,10 @@ export default async function reporteRoutes(app: FastifyInstance) {
         where: { empresaId, activo: true },
         select: {
           id: true, nombre: true, apellido: true, cedula: true, numeroContrato: true, cargo: true,
+          // Las franjas del horario dicen qué día descansa, por lo mismo que en los otros dos
+          // reportes: este es el archivo que se sube al ERP, así que es el que no puede discrepar de
+          // la liquidación.
           salarioMensual: true, auxilioTransporte: true, modalidad: true, horario: { include: { franjas: true } },
-          // Las tres del descanso, por lo mismo que en los otros dos reportes: este es el archivo
-          // que se sube al ERP, así que es el que no puede discrepar de la liquidación.
-          descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
         },
         orderBy: { nombre: 'asc' },
       }),
@@ -537,7 +536,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
       }));
       const r = liquidarRegistros(
         suyos, horario, extraConfig, festivosDates,
-        tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, estadoDescansoDe(col),
+        tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, fuenteDelDescansoDe(col.horario),
       );
       return {
         colaboradorId: col.id, cedula: col.cedula, numeroContrato: col.numeroContrato, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,

@@ -4,9 +4,6 @@ import { prisma } from '../prisma';
 import { auxilioVigente } from '../utils/auxilioTransporte';
 import { pareceIncluirAuxilio } from '../utils/salarioSospechoso';
 import { revisionPendiente } from '../utils/revisionPendiente';
-import { preguntasDeDescanso, revisionDescansoPendiente } from '../utils/revisionDescanso';
-import { declararDescansoDeHorarios } from '../utils/declararDescanso';
-import { limpiarRespuestasDeDescanso } from '../utils/cuerpoDeRespuestaDescanso';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
 import { enviarTelegram, telegramConfigurado } from '../utils/telegram';
 import { capacidadesEmpresa } from '../utils/capacidades';
@@ -232,88 +229,21 @@ export default async function configuracionRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  // QUÉ DÍA DESCANSA LA GENTE DE ESTA EMPRESA (21 de septiembre de 2026).
+  // EL AVISO DEL DÍA DE DESCANSO SE FUE COMPLETO (30 de septiembre de 2026, regla del dueño).
   //
-  // La ley presume el domingo SALVO acuerdo escrito. Hasta hoy nadie podía declarar otro día, así
-  // que la presunción se cumplía sola; desde que el motor lee la declaración, hay que preguntarla.
+  // Aquí vivían `/descanso-pendiente` y `/descanso-revisado`: el modal que le preguntaba a cada
+  // empresa, horario por horario, qué día descansa su gente y si había acuerdo escrito. Con sus
+  // palabras: «nosotros solo sabemos el día de descanso de un trabajador a través del horario fijo;
+  // si no tiene horario, no tiene día fijo y lo pone la programación». O sea que la pregunta no hacía
+  // falta, porque la respuesta ya estaba en las franjas.
   //
-  // Se pregunta por HORARIO y no por persona: quienes comparten horario comparten el patrón de
-  // días, y preguntarle a cada uno sería pedir treinta y cinco veces la misma respuesta.
+  // Con las dos rutas se fueron `revisionDescanso.ts`, `cuerpoDeRespuestaDescanso.ts` y
+  // `declararDescanso.ts`, más las tres columnas de `colaboradores` que llenaban. NO HABÍA NADA QUE
+  // MIGRAR: medido contra producción antes de borrarlas, esas columnas no existen allí.
   //
-  // Y NO se le pregunta a todo el mundo, al revés que con el auxilio. Un horario que no cubre el
-  // domingo ya está respondido por la ley, y el motor hace hoy exactamente eso. Quién ve el aviso
-  // lo decide `preguntasDeDescanso`, que es pura y tiene sus pruebas: aquí solo queda la plomería.
-  app.get('/descanso-pendiente', auth, async (request) => {
-    const empresaId = request.empresaId!;
-    const [empresa, horarios] = await Promise.all([
-      prisma.empresa.findUnique({ where: { id: empresaId }, select: { descansoRevisadoEn: true } }),
-      prisma.horario.findMany({
-        where: { empresaId, activo: true },
-        select: {
-          id: true, nombre: true,
-          franjas: { select: { dias: true } },
-          // Los ACTIVOS, contados a mano y NO con `_count`: el conteo de la relación incluye a los
-          // retirados. Medido el 21 de septiembre de 2026, el horario «Turno diurno» daba _count=1
-          // con cero activos, así que el modal habría preguntado por un horario que no cumple nadie
-          // y habría dicho «afecta a 1 persona».
-          colaboradores: { where: { activo: true }, select: { id: true } },
-        },
-        orderBy: { nombre: 'asc' },
-      }),
-    ]);
-
-    const preguntas = preguntasDeDescanso(horarios.map(h => ({
-      id: h.id, nombre: h.nombre, franjas: h.franjas, personas: h.colaboradores.length,
-    })));
-
-    return {
-      pendiente: revisionDescansoPendiente(empresa?.descansoRevisadoEn ?? null, preguntas.length),
-      horarios: preguntas,
-    };
-  });
-
-  // Guardar la declaración del día de descanso, horario por horario.
-  //
-  // ES EL ÚNICO CAMINO DE ESCRITURA sobre `descansoTipo`, `descansoDia` y `descansoAcuerdoEn`. Se
-  // comprobó antes de escribirlo que no hubiera otro. Esa última columna es la afirmación de que
-  // existe un acuerdo escrito con el trabajador, y es lo único que autoriza a mover el descanso
-  // fuera del domingo y con él a dejar de pagar el recargo dominical.
-  app.post('/descanso-revisado', auth, async (request, reply) => {
-    const empresaId = request.empresaId!;
-
-    // El ALCANCE se recalcula aquí y no se toma del cuerpo: quién puede responder por qué horarios
-    // no lo puede decidir quien manda la petición.
-    const horarios = await prisma.horario.findMany({
-      where: { empresaId, activo: true },
-      select: {
-        id: true, nombre: true,
-        franjas: { select: { dias: true } },
-        colaboradores: { where: { activo: true }, select: { id: true } },
-      },
-    });
-    const preguntas = preguntasDeDescanso(horarios.map(h => ({
-      id: h.id, nombre: h.nombre, franjas: h.franjas, personas: h.colaboradores.length,
-    })));
-
-    const cuerpo = request.body as { respuestas?: unknown } | null;
-    const limpio = limpiarRespuestasDeDescanso(cuerpo?.respuestas, preguntas.map(p => p.id));
-    if (!limpio.ok) return reply.status(400).send({ error: limpio.motivo });
-
-    const ahora = new Date();
-    const porHorario = new Map(horarios.map(h => [h.id, h.colaboradores.map(c => c.id)]));
-
-    // EL CUERPO SALIÓ A `declararDescansoDeHorarios` el 29 de septiembre de 2026. Congela el pasado
-    // ANTES de declarar, que es lo que impide que declarar «descansan el miércoles» le quite el
-    // recargo a todos los domingos ya liquidados. Allí está el porqué entero.
-    await declararDescansoDeHorarios(porHorario, limpio.datos, ahora);
-
-    // MARCAR LA EMPRESA COMO REVISADA SE QUEDA AQUÍ y no se fue con el resto: es de ESTE camino. Es
-    // lo que cierra el modal para siempre, y el formulario del horario declara de a uno, así que
-    // hacerlo allí saltaría los horarios que sigan sin respuesta.
-    await prisma.empresa.update({ where: { id: empresaId }, data: { descansoRevisadoEn: ahora } });
-
-    return { ok: true };
-  });
+  // `Empresa.descansoRevisadoEn` se fue del esquema con ellas, y NO hace falta ningún ALTER: Prisma
+  // ignora una columna que esté en la base y no en el esquema. Al revés —declararla y que no exista—
+  // sí rompería, porque Prisma nombra todas las columnas escalares en un `findMany` sin `select`.
 
   app.get('/kiosco-estado', auth, async (request) => {
     const empresaId = request.empresaId!;

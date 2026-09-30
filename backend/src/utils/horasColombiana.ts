@@ -3,7 +3,7 @@ import { toZonedTime } from 'date-fns-tz';
 
 // Con alias para no tocar ni una línea del cálculo: este paso solo quita la copia de la lista.
 import { DIAS_SEMANA as DIAS } from './diasDeLaSemana';
-import { esDescansoObligatorio, type EstadoDescanso } from './descansoObligatorio';
+import { esDescansoObligatorioDe, type FuenteDelDescanso } from './descansoDelHorario';
 
 const TZ = 'America/Bogota';
 
@@ -113,12 +113,15 @@ export function claveDeDescanso(fecha: Date): string {
 export type DescansoConfig = {
   // FECHA "yyyy-MM-dd" de Bogotá → si ESE día era su descanso obligatorio. Sale de `DiaEsperado`.
   porFecha?: Record<string, boolean>;
-  // Respaldo para las fechas sin fila congelada: lo que la persona tiene declarado hoy.
-  // Ausente = PRESUMIDO, o sea el domingo, que es el comportamiento de siempre.
-  estado?: EstadoDescanso;
+  // Respaldo para las fechas sin fila congelada: de dónde sale el descanso de esa persona, o sea su
+  // horario si tiene y la programación si no. Ausente = presunción legal, o sea el domingo.
+  fuente?: FuenteDelDescanso;
 };
 
-const PRESUMIDO: EstadoDescanso = { tipo: 'PRESUMIDO' };
+// EL RESPALDO CUANDO NADIE PASA UNA FUENTE: un horario que no cubre ningún día. Sobran los siete, no
+// hay ninguno que se pueda señalar, y manda la presunción legal. Es el domingo, o sea el
+// comportamiento de siempre, escrito como lo que es en vez de como un caso aparte.
+const POR_PRESUNCION: FuenteDelDescanso = { de: 'HORARIO', diasQueTrabaja: [] };
 
 function esDescansoDeLaFecha(zc: Date, diaSemana: string, cfg: DescansoConfig): boolean {
   // `hasOwnProperty` y no `??`, por lo mismo que las franjas de abajo: un día congelado como
@@ -128,9 +131,9 @@ function esDescansoDeLaFecha(zc: Date, diaSemana: string, cfg: DescansoConfig): 
     const clave = claveDeFechaBogota(zc);
     if (Object.prototype.hasOwnProperty.call(cfg.porFecha, clave)) return cfg.porFecha[clave];
   }
-  // Sin fila congelada no hay semana planificada que consultar, así que un ROTATIVO cae al domingo.
-  // Es la dirección segura: un turno puede agregar un recargo, nunca quitarlo.
-  return esDescansoObligatorio(diaSemana, cfg.estado ?? PRESUMIDO, null);
+  // Sin fila congelada no hay semana programada que consultar, así que se pasa `null`: quien tiene
+  // horario se resuelve con sus franjas igual, y quien no lo tiene se queda sin descanso ese día.
+  return esDescansoObligatorioDe(diaSemana, cfg.fuente ?? POR_PRESUNCION, null);
 }
 
 function esExtraPorModo(extra: ExtraConfig, zc: Date, hora: number, superoTope: boolean): boolean {

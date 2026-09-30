@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import CalendarioDeTurnos from './CalendarioDeTurnos';
 import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana } from './semana';
 
-// LA SEMANA ROTATIVA SE PROPONE, NO SE ASUME (22 de septiembre de 2026).
+// LA SEMANA DE QUIEN NO TIENE HORARIO SE PROPONE, NO SE ASUME (22 de septiembre de 2026).
 //
 // Decidido con el dueño: un día en blanco NO se toma como descanso. El olvido de planificarlo y la
 // decisión de dejarlo libre producen el mismo dato, así que asumir dejaría de pagar un recargo por
@@ -13,8 +13,12 @@ import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana } from './semana';
 //
 // Los cuatro estados los decide el backend (`propuestaDeDescanso`, pura y mutada). Aquí se prueba
 // que la pantalla los MUESTRA distintos, y sobre todo que `SIN_DESCANSO` y `AMBIGUA` no digan lo
-// mismo: las dos caen al domingo, pero una es una omisión y la otra un error ya cometido, y a quien
-// planificó dos descansos decirle «no hay descanso» lo manda a buscar lo que no falta.
+// mismo: las dos dejan la semana sin descanso, pero una es una omisión y la otra un error ya cometido,
+// y a quien planificó dos descansos decirle «no hay descanso» lo manda a buscar lo que no falta.
+//
+// A QUIÉN LE APLICA, actualizado el 30 de septiembre de 2026: a quien NO tiene horario. Antes era a
+// quien tuviera declarado un descanso ROTATIVO; esa declaración por persona se borró y el corte ahora
+// es el horario, que es el dato que sí existe.
 
 const { get, put, del } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn(), del: vi.fn() }));
 vi.mock('../../lib/api', () => ({
@@ -46,7 +50,7 @@ const diaDe = (fecha: string) => ({
 
 const FILA = {
   id: 'c1', nombre: 'Julián', apellido: 'Torres', cargo: 'Guarda',
-  descanso: { tipo: 'ROTATIVO', dia: null },
+  descanso: { de: 'PROGRAMACION', dia: null },
   minutosEsperados: 2880, descansosConTurno: 0,
   sedes: [{ id: 's1', nombre: 'Norte' }],
   descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 0, clase: 'NINGUNO' },
@@ -109,10 +113,10 @@ describe('cuando se puede proponer', () => {
   it('y el propuesto es el único que se destaca, sin quedar preseleccionado', async () => {
     // Resaltado NO es elegido: marcar el descanso mueve un recargo, así que sigue haciendo falta un
     // clic. Se comprueba por lo que dice la fila, no por una clase: mientras nadie elija, el aviso
-    // sigue diciendo que el domingo se está tomando.
+    // sigue diciendo que la semana queda sin descanso.
     montar(PROPUESTA);
     await esperarLaRejilla();
-    expect(screen.getByText(/Sin marcar, descansa el domingo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sin marcar, esta semana no tiene descanso/i)).toBeInTheDocument();
     expect(put).not.toHaveBeenCalled();
   });
 
@@ -174,14 +178,14 @@ describe('cuando se puede proponer', () => {
 });
 
 describe('cuando no se puede proponer', () => {
-  it('sin descanso deducible avisa que se está tomando el domingo', async () => {
+  it('sin descanso deducible avisa que la semana queda sin descanso', async () => {
     montar({ estado: 'SIN_DESCANSO' });
-    expect(await screen.findByText(/se está tomando el domingo/i)).toBeInTheDocument();
+    expect(await screen.findByText(/esta semana queda sin descanso/i)).toBeInTheDocument();
   });
 
   it('y no ofrece confirmar nada', async () => {
     montar({ estado: 'SIN_DESCANSO' });
-    await screen.findByText(/se está tomando el domingo/i);
+    await screen.findByText(/esta semana queda sin descanso/i);
     // SIGUE OFRECIENDO LAS TARJETAS, y eso cambió a propósito el 29 de septiembre: antes aquí no
     // había nada que tocar, y era justo el caso en que más falta hacía —sobran varios días libres y
     // el sistema no puede deducir cuál—. Lo que no hay es ninguna resaltada: inventarse una sería
@@ -191,14 +195,14 @@ describe('cuando no se puede proponer', () => {
   });
 
   it('dos descansos pintados dicen algo DISTINTO de «sin descanso»', async () => {
-    // Las dos caen al domingo, pero por razones opuestas. Si el aviso fuera el mismo, quien
-    // planificó dos se pondría a buscar el que no falta.
+    // Las dos dejan la semana sin descanso, pero por razones opuestas. Si el aviso fuera el mismo,
+    // quien planificó dos se pondría a buscar el que no falta.
     // OJO con el patrón: el primero fue `/dos/i` y pasaba SIN implementar nada, porque encajaba con
     // el encabezado «DESCANSOS TRABAJA-DOS (MES)» de la tabla de resumen. Una prueba que pasa antes
     // de existir lo que prueba no prueba nada (CLAUDE.md §9.1).
     montar({ estado: 'AMBIGUA' });
     expect(await screen.findByText(/dos descansos/i)).toBeInTheDocument();
-    expect(screen.queryByText(/se está tomando el domingo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/esta semana queda sin descanso/i)).not.toBeInTheDocument();
   });
 });
 
@@ -207,10 +211,10 @@ describe('cuando no hay nada que decir', () => {
     montar({ estado: 'RESUELTA', dia: 'MIERCOLES', fecha: DIAS[2] });
     await esperarLaRejilla();
     expect(screen.queryByRole('button', { name: /miércoles/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/se está tomando el domingo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/esta semana queda sin descanso/i)).not.toBeInTheDocument();
   });
 
-  it('a quien no es rotativo no se le propone nada', async () => {
+  it('a quien tiene horario no se le propone nada', async () => {
     montar({ estado: 'NO_APLICA' });
     await esperarLaRejilla();
     expect(screen.queryByRole('button', { name: /jueves/i })).not.toBeInTheDocument();
@@ -220,6 +224,6 @@ describe('cuando no hay nada que decir', () => {
     // `null` significa «no se calculó para este rango», que es distinto de «no aplica».
     montar(null);
     await esperarLaRejilla();
-    expect(screen.queryByText(/se está tomando el domingo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/esta semana queda sin descanso/i)).not.toBeInTheDocument();
   });
 });

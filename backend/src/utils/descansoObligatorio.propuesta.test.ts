@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { propuestaDeDescanso, descansoDeLaSemana } from './descansoObligatorio';
-import type { EstadoDescanso } from './descansoObligatorio';
+import type { FuenteDelDescanso } from './descansoDelHorario';
 
 // QUÉ LE DICE LA PANTALLA A QUIEN PLANIFICA UNA SEMANA ROTATIVA (22 de septiembre de 2026).
 //
@@ -21,8 +21,10 @@ import type { EstadoDescanso } from './descansoObligatorio';
 //   AMBIGUA       hay dos descansos pintados. Es un error de planificación, no una omisión, y se
 //                 ve distinto: también cae al domingo, pero por otra razón.
 //
-// Y NO_APLICA para quien no es rotativo: sin acuerdo escrito pintar no mueve el descanso de nadie,
-// así que proponerle algo sería ofrecerle una decisión que no puede tomar.
+// Y NO_APLICA PARA QUIEN TIENE HORARIO (30 de septiembre de 2026): su día de descanso ya lo dicen las
+// franjas, así que proponerle otro sería ofrecerle una decisión que la programación no puede tomar.
+// Antes el corte era «quien no es ROTATIVO», o sea una declaración por persona que nunca llegó a
+// producción; ahora es «quien tiene horario», que es el dato que sí existe.
 
 const dia = (d: string, pintado = false, descansoMarcado = false) =>
   ({ dia: d, pintado, descansoMarcado });
@@ -42,29 +44,38 @@ const semana = (opciones: { enBlanco?: string[]; descanso?: string[] } = {}) =>
     return dia(d, true, false);
   });
 
-const ROTATIVO: EstadoDescanso = { tipo: 'ROTATIVO' };
-const PRESUMIDO: EstadoDescanso = { tipo: 'PRESUMIDO' };
-const FIJO: EstadoDescanso = { tipo: 'FIJO', dia: 'MARTES' };
+// A quien se le programa: no tiene horario, así que su descanso lo pone la semana.
+const SIN_HORARIO: FuenteDelDescanso = { de: 'PROGRAMACION' };
+const HORARIO_L_A_S: FuenteDelDescanso = {
+  de: 'HORARIO',
+  diasQueTrabaja: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'],
+};
+const HORARIO_SIETE_DIAS: FuenteDelDescanso = {
+  de: 'HORARIO',
+  diasQueTrabaja: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'],
+};
 
 describe('propuestaDeDescanso', () => {
-  it('a quien es PRESUMIDO no se le propone nada', () => {
-    // Su descanso lo fija la ley, no el calendario. Proponerle mover el descanso sería ofrecerle
-    // una decisión que sin acuerdo escrito no puede tomar.
-    expect(propuestaDeDescanso(semana({ enBlanco: ['JUEVES'] }), PRESUMIDO)).toEqual({ estado: 'NO_APLICA' });
+  it('a quien TIENE HORARIO no se le propone nada: su día ya lo dicen las franjas', () => {
+    expect(propuestaDeDescanso(semana({ enBlanco: ['JUEVES'] }), HORARIO_L_A_S))
+      .toEqual({ estado: 'NO_APLICA' });
   });
 
-  it('a quien es FIJO tampoco: su día lo fijó un acuerdo', () => {
-    expect(propuestaDeDescanso(semana({ enBlanco: ['JUEVES'] }), FIJO)).toEqual({ estado: 'NO_APLICA' });
+  it('tampoco a quien tiene un horario de SIETE días', () => {
+    // Aunque no le sobre ningún día libre y su descanso sea el domingo por presunción: sigue
+    // teniendo horario, y con horario la programación no mueve el descanso.
+    expect(propuestaDeDescanso(semana({ enBlanco: ['JUEVES'] }), HORARIO_SIETE_DIAS))
+      .toEqual({ estado: 'NO_APLICA' });
   });
 
   it('con el descanso ya pintado, la semana está RESUELTA y dice cuál es', () => {
-    expect(propuestaDeDescanso(semana({ descanso: ['MIERCOLES'] }), ROTATIVO))
+    expect(propuestaDeDescanso(semana({ descanso: ['MIERCOLES'] }), SIN_HORARIO))
       .toEqual({ estado: 'RESUELTA', dia: 'MIERCOLES' });
   });
 
   it('seis turnos y un día en blanco: se PROPONE ese día', () => {
     // El caso que evita los 35 clics. Es una sugerencia, no una declaración.
-    expect(propuestaDeDescanso(semana({ enBlanco: ['JUEVES'] }), ROTATIVO))
+    expect(propuestaDeDescanso(semana({ enBlanco: ['JUEVES'] }), SIN_HORARIO))
       .toEqual({ estado: 'PROPUESTA', dia: 'JUEVES' });
   });
 
@@ -72,42 +83,42 @@ describe('propuestaDeDescanso', () => {
     // La prueba que amarra las dos funciones. Si esto dejara de ser cierto, proponer habría pasado
     // a decidir, que es exactamente lo que el dueño no quiso.
     const s = semana({ enBlanco: ['JUEVES'] });
-    expect(propuestaDeDescanso(s, ROTATIVO)).toEqual({ estado: 'PROPUESTA', dia: 'JUEVES' });
+    expect(propuestaDeDescanso(s, SIN_HORARIO)).toEqual({ estado: 'PROPUESTA', dia: 'JUEVES' });
     expect(descansoDeLaSemana(s.map(d => ({ dia: d.dia, esDescanso: d.descansoMarcado })))).toBeNull();
   });
 
   it('con DOS días en blanco no se propone: no se puede saber cuál', () => {
-    expect(propuestaDeDescanso(semana({ enBlanco: ['JUEVES', 'SABADO'] }), ROTATIVO))
+    expect(propuestaDeDescanso(semana({ enBlanco: ['JUEVES', 'SABADO'] }), SIN_HORARIO))
       .toEqual({ estado: 'SIN_DESCANSO' });
   });
 
   it('con los siete pintados de trabajo tampoco hay dónde proponer', () => {
     // El caso más común de una operación que cubre los siete días: no sobra ningún hueco.
-    expect(propuestaDeDescanso(semana(), ROTATIVO)).toEqual({ estado: 'SIN_DESCANSO' });
+    expect(propuestaDeDescanso(semana(), SIN_HORARIO)).toEqual({ estado: 'SIN_DESCANSO' });
   });
 
   it('con DOS descansos pintados es AMBIGUA, que no es lo mismo que sin descanso', () => {
     // Los dos caen al domingo, pero uno es una omisión y el otro un error ya cometido. Decirle a
     // quien planificó dos que «no hay descanso» le haría buscar lo que no falta.
-    expect(propuestaDeDescanso(semana({ descanso: ['MIERCOLES', 'DOMINGO'] }), ROTATIVO))
+    expect(propuestaDeDescanso(semana({ descanso: ['MIERCOLES', 'DOMINGO'] }), SIN_HORARIO))
       .toEqual({ estado: 'AMBIGUA' });
   });
 
   it('un descanso pintado y además un hueco: manda lo pintado', () => {
     // Lo que alguien ELIGIÓ vale más que lo que se puede deducir de un hueco.
-    expect(propuestaDeDescanso(semana({ descanso: ['MIERCOLES'], enBlanco: ['SABADO'] }), ROTATIVO))
+    expect(propuestaDeDescanso(semana({ descanso: ['MIERCOLES'], enBlanco: ['SABADO'] }), SIN_HORARIO))
       .toEqual({ estado: 'RESUELTA', dia: 'MIERCOLES' });
   });
 
   it('una semana vacía no propone nada y no revienta', () => {
-    expect(propuestaDeDescanso([], ROTATIVO)).toEqual({ estado: 'SIN_DESCANSO' });
+    expect(propuestaDeDescanso([], SIN_HORARIO)).toEqual({ estado: 'SIN_DESCANSO' });
   });
 
   it('un nombre de día que no existe no se puede proponer', () => {
     // Los nombres salen de columnas de texto libre. Proponer «DIA_RARO» pintaría un turno en un día
     // que no existe, y el backend lo rechazaría con un error que nadie sabría explicar.
     const rara = SEMANA.map(d => (d === 'JUEVES' ? dia('DIA_RARO', false) : dia(d, true)));
-    expect(propuestaDeDescanso(rara, ROTATIVO)).toEqual({ estado: 'SIN_DESCANSO' });
+    expect(propuestaDeDescanso(rara, SIN_HORARIO)).toEqual({ estado: 'SIN_DESCANSO' });
   });
 });
 
@@ -135,7 +146,7 @@ describe('la propuesta y el motor leen la misma columna', () => {
 
   it('un día marcado como descanso deja la semana RESUELTA, no sin descanso', () => {
     const s = SEMANA.map(d => (d === 'MARTES' ? marcado(d) : conTurno(d)));
-    expect(propuestaDeDescanso(s, ROTATIVO)).toEqual({ estado: 'RESUELTA', dia: 'MARTES' });
+    expect(propuestaDeDescanso(s, SIN_HORARIO)).toEqual({ estado: 'RESUELTA', dia: 'MARTES' });
   });
 
   it('y dice EL MISMO día que liquida el motor', () => {
@@ -143,7 +154,7 @@ describe('la propuesta y el motor leen la misma columna', () => {
     // `descansoPintado`. Si esta afirmación se cae, la pantalla y la nómina discrepan.
     const s = SEMANA.map(d => (d === 'MARTES' ? marcado(d) : conTurno(d)));
     const delMotor = descansoDeLaSemana(s.map(d => ({ dia: d.dia, esDescanso: d.descansoMarcado })));
-    const deLaPantalla = propuestaDeDescanso(s, ROTATIVO);
+    const deLaPantalla = propuestaDeDescanso(s, SIN_HORARIO);
     expect(deLaPantalla).toEqual({ estado: 'RESUELTA', dia: delMotor });
   });
 
@@ -154,12 +165,12 @@ describe('la propuesta y el motor leen la misma columna', () => {
       if (d === 'DOMINGO') return dia(d, false, false);
       return conTurno(d);
     });
-    expect(propuestaDeDescanso(s, ROTATIVO)).toEqual({ estado: 'RESUELTA', dia: 'MARTES' });
+    expect(propuestaDeDescanso(s, SIN_HORARIO)).toEqual({ estado: 'RESUELTA', dia: 'MARTES' });
   });
 
   it('DOS días marcados siguen siendo AMBIGUA, que es lo que el motor también ve', () => {
     const s = SEMANA.map(d => (d === 'MARTES' || d === 'DOMINGO' ? marcado(d) : conTurno(d)));
-    expect(propuestaDeDescanso(s, ROTATIVO)).toEqual({ estado: 'AMBIGUA' });
+    expect(propuestaDeDescanso(s, SIN_HORARIO)).toEqual({ estado: 'AMBIGUA' });
     expect(descansoDeLaSemana(s.map(d => ({ dia: d.dia, esDescanso: d.descansoMarcado })))).toBeNull();
   });
 });

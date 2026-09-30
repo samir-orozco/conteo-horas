@@ -58,8 +58,17 @@ describe('sin configuración: nada cambia', () => {
   });
 });
 
-describe('con el descanso pactado en miércoles', () => {
-  const DESCANSA_MIERCOLES = { estado: { tipo: 'FIJO' as const, dia: 'MIERCOLES' } };
+// QUIEN LIBRA EL MIÉRCOLES SEGÚN SU HORARIO (30 de septiembre de 2026). Antes este bloque decía
+// «pactado en miércoles» y el dato venía de una declaración por persona con acuerdo escrito. Esas
+// columnas se borraron: el día lo dicen las FRANJAS del horario, que es la regla del dueño. Lo que el
+// motor hace con el dato no cambió ni un minuto; solo cambió de dónde sale.
+describe('con un horario que libra el miércoles', () => {
+  const DESCANSA_MIERCOLES = {
+    fuente: {
+      de: 'HORARIO' as const,
+      diasQueTrabaja: ['LUNES', 'MARTES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'],
+    },
+  };
 
   // ESTE es el caso que hoy se cobra mal. Para esta persona el domingo es un día ordinario.
   it('el domingo pasa a ser ordinario, sin recargo', () => {

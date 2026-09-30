@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { reescrituraDeSemana } from './descansoObligatorio';
-import type { EstadoDescanso } from './descansoObligatorio';
+import type { FuenteDelDescanso } from './descansoDelHorario';
 
 // QUÉ DÍAS DE LA SEMANA HAY QUE REESCRIBIR AL PINTAR UN TURNO (22 de septiembre de 2026).
 //
@@ -37,8 +37,14 @@ const DIAS = [
 // La semana tal como quedó congelada ANTES de planificar: el domingo es el descanso, por presunción.
 const comoEstaba = DIAS.map(d => ({ ...d, esDescanso: d.diaSemana === 'DOMINGO' }));
 
-const ROTATIVO: EstadoDescanso = { tipo: 'ROTATIVO' };
-const PRESUMIDO: EstadoDescanso = { tipo: 'PRESUMIDO' };
+// SIN HORARIO: no tiene día fijo, lo pone la programación de cada semana. Es el único caso en el
+// que reescribir la semana hace algo, y por eso es el que más pruebas tiene aquí.
+const SIN_HORARIO: FuenteDelDescanso = { de: 'PROGRAMACION' };
+// CON HORARIO de lunes a sábado: su día libre es el domingo y la programación no lo mueve.
+const HORARIO_L_A_S: FuenteDelDescanso = {
+  de: 'HORARIO',
+  diasQueTrabaja: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'],
+};
 
 const clave = (r: { fecha: Date; esDescanso: boolean }) =>
   `${r.fecha.toISOString().slice(0, 10)}=${r.esDescanso}`;
@@ -46,19 +52,19 @@ const clave = (r: { fecha: Date; esDescanso: boolean }) =>
 describe('reescrituraDeSemana', () => {
   it('mover el descanso al miércoles apaga el domingo y enciende el miércoles', () => {
     // El caso central. Sin el `false` del domingo, esa semana tendría dos descansos.
-    const cambios = reescrituraDeSemana(comoEstaba, ROTATIVO, 'MIERCOLES', LUNES);
+    const cambios = reescrituraDeSemana(comoEstaba, SIN_HORARIO, 'MIERCOLES', LUNES);
     expect(cambios.map(clave).sort()).toEqual(['2026-09-23=true', '2026-09-27=false']);
   });
 
   it('solo devuelve lo que CAMBIA, no la semana entera', () => {
     // Los otros cinco días ya valían `false` y valen `false`. Reescribirlos les movería el
     // `actualizadoEn` sin que nada haya cambiado, y con eso se pierde la pista de quién tocó qué.
-    const cambios = reescrituraDeSemana(comoEstaba, ROTATIVO, 'MIERCOLES', LUNES);
+    const cambios = reescrituraDeSemana(comoEstaba, SIN_HORARIO, 'MIERCOLES', LUNES);
     expect(cambios).toHaveLength(2);
   });
 
   it('si ya está como debe quedar, no hay nada que escribir', () => {
-    const cambios = reescrituraDeSemana(comoEstaba, ROTATIVO, 'DOMINGO', LUNES);
+    const cambios = reescrituraDeSemana(comoEstaba, SIN_HORARIO, 'DOMINGO', LUNES);
     expect(cambios).toEqual([]);
   });
 
@@ -66,35 +72,53 @@ describe('reescrituraDeSemana', () => {
     // Lo más importante de esta función. Si hoy es jueves y se planifica el descanso del miércoles,
     // el miércoles ya pasó: su fila se queda con lo que se congeló. Reescribirla cambiaría lo que
     // ese día exigía en un período que puede estar liquidado.
-    const cambios = reescrituraDeSemana(comoEstaba, ROTATIVO, 'MIERCOLES', bog('2026-09-24'));
+    const cambios = reescrituraDeSemana(comoEstaba, SIN_HORARIO, 'MIERCOLES', bog('2026-09-24'));
     expect(cambios.map(clave)).toEqual(['2026-09-27=false']);
   });
 
   it('el día de HOY sí se puede reescribir', () => {
     // No es pasado. Que la persona ya haya marcado lo decide `diaTocable`, que es otra guarda y
     // necesita la base; aquí solo se separa pasado de no-pasado.
-    const cambios = reescrituraDeSemana(comoEstaba, ROTATIVO, 'MIERCOLES', bog('2026-09-23'));
+    const cambios = reescrituraDeSemana(comoEstaba, SIN_HORARIO, 'MIERCOLES', bog('2026-09-23'));
     expect(cambios.map(clave).sort()).toEqual(['2026-09-23=true', '2026-09-27=false']);
   });
 
-  it('sin plan, la semana entera cae al domingo', () => {
-    // Nadie pintó el descanso todavía, o hay dos y es ambiguo. La omisión no puede dejar a una
-    // persona sin descanso obligatorio.
+  it('SIN HORARIO Y SIN PROGRAMAR, esa semana no tiene descanso: ni el domingo', () => {
+    // CAMBIO DE COMPORTAMIENTO del 30 de septiembre de 2026, y es una decisión del dueño con su
+    // precio dicho antes de tomarla: «alguien sin horario no tiene día de descanso fijo, solo cuando
+    // se programa se pone el día de descanso». Antes esto caía al DOMINGO, con el argumento de que
+    // un turno pintado puede agregar un recargo y nunca quitarlo. Ahora no: una semana sin programar
+    // no tiene descanso obligatorio, así que su domingo trabajado no paga el 90%.
     const conMiercoles = comoEstaba.map(d =>
       ({ ...d, esDescanso: d.diaSemana === 'MIERCOLES' }));
-    const cambios = reescrituraDeSemana(conMiercoles, ROTATIVO, null, LUNES);
-    expect(cambios.map(clave).sort()).toEqual(['2026-09-23=false', '2026-09-27=true']);
+    const cambios = reescrituraDeSemana(conMiercoles, SIN_HORARIO, null, LUNES);
+    expect(cambios.map(clave)).toEqual(['2026-09-23=false']);
   });
 
-  it('un PRESUMIDO ignora el plan por completo', () => {
-    // Sin acuerdo escrito, pintar un turno no mueve el descanso de nadie. Es la guarda legal, y
-    // tiene que sobrevivir a que alguien pinte un descanso en miércoles.
-    expect(reescrituraDeSemana(comoEstaba, PRESUMIDO, 'MIERCOLES', LUNES)).toEqual([]);
+  it('CON HORARIO manda el horario, y la programación NO lo mueve', () => {
+    // La otra mitad de la regla, con sus palabras: «solo sabemos el día de descanso de un trabajador
+    // a través del horario fijo». Alguien de lunes a sábado descansa el domingo, y marcar el
+    // miércoles en la rejilla no puede contradecirlo. La semana ya está como debe quedar.
+    expect(reescrituraDeSemana(comoEstaba, HORARIO_L_A_S, 'MIERCOLES', LUNES)).toEqual([]);
   });
 
-  it('un FIJO tampoco: su día lo fijó un acuerdo, no el calendario', () => {
-    const fijoMartes: EstadoDescanso = { tipo: 'FIJO', dia: 'MARTES' };
-    const cambios = reescrituraDeSemana(comoEstaba, fijoMartes, 'MIERCOLES', LUNES);
+  it('con un horario que cubre los SIETE días, el descanso sigue siendo el domingo', () => {
+    // Es la forma que toma una operación rotativa metida en una herramienta de horarios fijos:
+    // medido en producción, 10 horarios de 22 cubren los siete días. No sobra ningún día libre, así
+    // que manda la presunción legal.
+    const siete: FuenteDelDescanso = {
+      de: 'HORARIO',
+      diasQueTrabaja: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'],
+    };
+    expect(reescrituraDeSemana(comoEstaba, siete, 'MIERCOLES', LUNES)).toEqual([]);
+  });
+
+  it('un horario cuyo día libre es el martes descansa el martes, no el domingo', () => {
+    const libreMartes: FuenteDelDescanso = {
+      de: 'HORARIO',
+      diasQueTrabaja: ['LUNES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'],
+    };
+    const cambios = reescrituraDeSemana(comoEstaba, libreMartes, 'MIERCOLES', LUNES);
     expect(cambios.map(clave).sort()).toEqual(['2026-09-22=true', '2026-09-27=false']);
   });
 
@@ -107,7 +131,7 @@ describe('reescrituraDeSemana', () => {
     //
     // Esta prueba afirmaba lo contrario cuando se escribió, y se corrigió al derivar el principio.
     const sinCalcular = DIAS.map(d => ({ ...d, esDescanso: null }));
-    const cambios = reescrituraDeSemana(sinCalcular, ROTATIVO, 'MIERCOLES', LUNES);
+    const cambios = reescrituraDeSemana(sinCalcular, SIN_HORARIO, 'MIERCOLES', LUNES);
     expect(cambios.map(clave)).toEqual([
       '2026-09-21=false', '2026-09-22=false', '2026-09-23=true', '2026-09-24=false',
       '2026-09-25=false', '2026-09-26=false', '2026-09-27=false',
@@ -115,6 +139,6 @@ describe('reescrituraDeSemana', () => {
   });
 
   it('una semana vacía no escribe nada y no revienta', () => {
-    expect(reescrituraDeSemana([], ROTATIVO, 'MIERCOLES', LUNES)).toEqual([]);
+    expect(reescrituraDeSemana([], SIN_HORARIO, 'MIERCOLES', LUNES)).toEqual([]);
   });
 });

@@ -57,7 +57,7 @@ const personaDe = (
 ) => ({
   id, nombre, apellido, cargo: 'Guarda',
   sedes: [{ id: 's1', nombre: 'Norte' }],
-  descanso: { tipo: 'PRESUMIDO', dia: null },
+  descanso: { de: 'HORARIO', dia: 'DOMINGO' },
   minutosEsperados: 2100, descansosConTurno: 0,
   // CUÁNTO EXIGIRÍA CADA TURNO DEL CATÁLOGO A ESTA PERSONA, que el servidor calcula con la misma
   // función que corre al pintar. Se escribe a mano aquí por la razón del comentario de `diaDe`: este
@@ -238,9 +238,9 @@ describe('los avisos que cuestan dinero', () => {
     expect(await previa()).toHaveTextContent(/habitual/i);
   });
 
-  it('a un ROTATIVO no se le avisa de habitual, aunque los números crucen', async () => {
+  it('a quien NO tiene horario no se le avisa de habitual, aunque los números crucen', async () => {
     // EL MOTIVO ES DEL DUEÑO Y ES CONDICIONAL, así que conviene escribirlo entero: el compensatorio es
-    // cosa de los turnos fijos. No es que la norma no exista para un rotativo, es que no se dispara
+    // cosa de los turnos fijos. No es que la norma no exista para quien rota, es que no se dispara
     // mientras su rotación sí le dé descanso cada semana. Si deja una semana sin ninguno, eso sale por
     // el OTRO aviso, que es el que de verdad le corresponde.
     //
@@ -249,12 +249,12 @@ describe('los avisos que cuestan dinero', () => {
     // caso sin nadie que lo recogiera.
     //
     // Los números son los mismos que los del caso de arriba —dos trabajados más uno que pisa este
-    // envío son tres— para que lo único que cambie sea el tipo de descanso.
+    // envío son tres— para que lo único que cambie sea de dónde sale el descanso.
     const usuario = userEvent.setup();
     montar([personaDe('c1', 'Ana', 'Ríos',
       [{ fecha: DOMINGO, extra: { esDescansoObligatorio: true } }],
       {
-        descanso: { tipo: 'ROTATIVO', dia: null },
+        descanso: { de: 'PROGRAMACION', dia: null },
         descansoHabitual: { porMes: {}, mes: HOY.slice(0, 7), trabajados: 2, clase: 'OCASIONAL' },
       })]);
     await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
@@ -487,22 +487,21 @@ describe('decidir', () => {
   });
 });
 
-// ────────── EL ROTATIVO AL QUE LE FALTA MARCAR EL DESCANSO (29 de septiembre de 2026) ──────────
+// ────────── QUIEN NO TIENE HORARIO Y LE FALTA MARCAR EL DESCANSO (29 de septiembre de 2026) ──────────
 //
-// Para alguien de descanso ROTATIVO, cuál de los siete días descansa lo decide lo que esté MARCADO
-// como descanso esa semana. Sin ninguna marca, el motor no puede afirmarlo y cae al DOMINGO. Quien
-// programa de lunes a domingo pensando «esta persona descansa el lunes» y no marca el lunes le deja
-// el domingo trabajado sobre su descanso obligatorio: recargo, y desde el tercero del mes,
-// compensación en tiempo obligatoria.
+// A quien NO tiene horario, cuál de los siete días descansa lo decide lo que esté MARCADO como descanso
+// esa semana. Sin ninguna marca, esa semana se queda SIN descanso obligatorio. Quien programa de lunes
+// a domingo pensando «esta persona descansa el lunes» y no marca el lunes le deja el domingo pagado
+// como día ordinario, sin el recargo del 90%.
 //
 // ES EL ÚNICO AVISO DE ESTA VENTANA CON REMEDIO, y por eso escribe el remedio: los otros dicen lo que
-// cuesta o lo que no se puede, y este dice qué botón tocar. Pintar turnos no mueve el descanso de un
-// rotativo; marcarlo sí, y eso no es obvio mirando la pantalla.
+// cuesta o lo que no se puede, y este dice qué botón tocar. Pintar turnos no le pone descanso a nadie;
+// marcarlo sí, y eso no es obvio mirando la pantalla.
 //
 // SE MIRA CÓMO QUEDARÍA LA SEMANA y no cómo está: de los siete días el envío toca los que estén
 // marcados, y juzgar solo esos diría que falta el descanso de una semana que lo tiene puesto el lunes.
-describe('el aviso del descanso rotativo sin marcar', () => {
-  const ROTATIVO = { descanso: { tipo: 'ROTATIVO', dia: null } };
+describe('el aviso de la semana sin descanso marcado', () => {
+  const SIN_HORARIO = { descanso: { de: 'PROGRAMACION', dia: null } };
   // El lunes es el día que quien programa cree libre. Se le da a la persona la semana entera para que
   // la semana esté COMPLETA, que es requisito del aviso: con días de menos no se puede afirmar que no
   // hay ninguna marca, porque podría estar en los que no se ven.
@@ -515,38 +514,38 @@ describe('el aviso del descanso rotativo sin marcar', () => {
 
   it('avisa, dice de quién y de qué semana, y dice CÓMO se arregla', async () => {
     const usuario = userEvent.setup();
-    montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_VACIO), ROTATIVO)]);
+    montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_VACIO), SIN_HORARIO)]);
     await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
     const caja = await previa();
-    expect(caja).toHaveTextContent(/Descanso rotativo sin marcar/i);
+    expect(caja).toHaveTextContent(/Sin horario y sin descanso marcado/i);
     expect(caja).toHaveTextContent(/Ana Ríos/);
     // El remedio con el nombre del botón, no «falta marcar el descanso» a secas.
     expect(caja).toHaveTextContent(/Márcales su día libre con Descanso/i);
   });
 
   it('NO avisa si el día libre ya está marcado como descanso', async () => {
-    montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_MARCADO), ROTATIVO)]);
+    montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_MARCADO), SIN_HORARIO)]);
     const usuario = userEvent.setup();
     await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
-    expect(await previa()).not.toHaveTextContent(/Descanso rotativo sin marcar/i);
+    expect(await previa()).not.toHaveTextContent(/Sin horario y sin descanso marcado/i);
   });
 
-  it('NO avisa a quien no es rotativo, con la misma semana', async () => {
-    // Su día lo pone la ley o un acuerdo, y marcar otro no lo mueve: no hay nada que le falte marcar.
-    // Que trabajarle el domingo cuesta ya lo dice el aviso del descanso obligatorio, que es por celda.
+  it('NO avisa a quien SÍ tiene horario, con la misma semana', async () => {
+    // Su día libre lo dicen sus franjas y marcar otro no lo mueve: no hay nada que le falte marcar. Que
+    // trabajárselo cuesta ya lo dice el aviso del descanso obligatorio, que es por celda.
     const usuario = userEvent.setup();
     montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_VACIO))]);
     await marcarFilaYElegir(usuario, 'Ana Ríos', /Noche/);
-    expect(await previa()).not.toHaveTextContent(/Descanso rotativo sin marcar/i);
+    expect(await previa()).not.toHaveTextContent(/Sin horario y sin descanso marcado/i);
   });
 
   it('un envío de QUITAR no avisa: no se puede saber qué exigiría el horario', async () => {
     // Quitar devuelve el día a lo que su horario pida, y el horario no viaja día por día a esta
     // pantalla. Inventarse que queda libre daría avisos falsos y lo contrario los daría al revés.
     const usuario = userEvent.setup();
-    montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_VACIO), ROTATIVO)]);
+    montar([personaDe('c1', 'Ana', 'Ríos', semanaCon(LUNES_VACIO), SIN_HORARIO)]);
     await usuario.click(await screen.findByRole('button', { name: /marcar la semana de Ana Ríos/i }));
     await usuario.click(within(await tarjeta()).getByRole('button', { name: 'Quitar el turno de lo marcado' }));
-    expect(await previa()).not.toHaveTextContent(/Descanso rotativo sin marcar/i);
+    expect(await previa()).not.toHaveTextContent(/Sin horario y sin descanso marcado/i);
   });
 });

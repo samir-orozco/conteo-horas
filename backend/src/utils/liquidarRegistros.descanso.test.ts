@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { liquidarRegistros } from './liquidarRegistros';
 import { construirExtraConfig } from './tardanzas';
 import type { DiaEsperadoCalculado } from './diasEsperados';
-import type { EstadoDescanso } from './descansoObligatorio';
+import type { FuenteDelDescanso } from './descansoDelHorario';
 
 // LA COSTURA ENTRE EL DÍA CONGELADO Y EL MOTOR DE HORAS (20 de septiembre de 2026).
 //
@@ -47,19 +47,19 @@ const marcaDe = (fecha: Date, dia: number) => ({
 });
 
 const liquidar = (
-  fecha: Date, dia: number, dias: DiaEsperadoCalculado[], estado?: EstadoDescanso,
+  fecha: Date, dia: number, dias: DiaEsperadoCalculado[], fuente?: FuenteDelDescanso,
 ) => liquidarRegistros(
   [marcaDe(fecha, dia)], null, construirExtraConfig('SEMANAL', null, []), [],
-  TIPOS, JORNADAS, 1_500_000, 210, false, dias, estado,
+  TIPOS, JORNADAS, 1_500_000, 210, false, dias, fuente,
 );
 
 const minutosDe = (r: ReturnType<typeof liquidar>, codigo: string) =>
   Math.round((r.liquidacion.find(l => l.codigo === codigo)?.horas ?? 0) * 60);
 
-describe('sin declaración: la liquidación no se mueve', () => {
+describe('sin fuente: la liquidación no se mueve', () => {
   it('un domingo trabajado sigue siendo dominical', () => {
-    // La red de seguridad del cambio entero: todo lo que ya existe tiene `esDescanso` en null y
-    // ninguna persona declarada, así que ningún número de producción puede moverse.
+    // La red de seguridad del cambio entero: quien no pasa el parámetro sigue liquidando contra la
+    // presunción legal, o sea el domingo, así que ningún número se mueve por el camino de siempre.
     const r = liquidar(DOMINGO_13, 13, [diaDe(DOMINGO_13)]);
     expect(minutosDe(r, 'HDD')).toBe(480);
     expect(minutosDe(r, 'HOD')).toBe(0);
@@ -72,13 +72,18 @@ describe('sin declaración: la liquidación no se mueve', () => {
   });
 });
 
-describe('con el descanso pactado en miércoles, el cable lleva la declaración al motor', () => {
-  const FIJO_MIERCOLES: EstadoDescanso = { tipo: 'FIJO', dia: 'MIERCOLES' };
+// EL CABLE LLEVA AL MOTOR EL HORARIO DE LA PERSONA (30 de septiembre de 2026). Antes llevaba una
+// declaración por persona; esas columnas se borraron y ahora el día sale de las FRANJAS. El cable es
+// el mismo y lo que se afirma aquí también: lo único que cambió es de dónde viene el dato.
+describe('con un horario que libra el miércoles, el cable lo lleva al motor', () => {
+  const LIBRA_MIERCOLES: FuenteDelDescanso = {
+    de: 'HORARIO', diasQueTrabaja: ['LUNES', 'MARTES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'],
+  };
 
   it('el domingo deja de cobrar recargo dominical', () => {
     // El caso del cliente que tiene gente trabajando domingos con acuerdo escrito: hoy le cobra
     // el 90% de un día que estaba pactado como ordinario.
-    const r = liquidar(DOMINGO_13, 13, [diaDe(DOMINGO_13)], FIJO_MIERCOLES);
+    const r = liquidar(DOMINGO_13, 13, [diaDe(DOMINGO_13)], LIBRA_MIERCOLES);
     expect(minutosDe(r, 'HOD')).toBe(480);
     expect(minutosDe(r, 'HDD')).toBe(0);
   });
@@ -86,23 +91,25 @@ describe('con el descanso pactado en miércoles, el cable lleva la declaración 
   it('y el miércoles pasa a cobrarlo', () => {
     // La otra mitad, y la que impide que esto sea solo un descuento: mover el descanso no lo
     // borra, lo cambia de día.
-    const r = liquidar(MIERCOLES_9, 9, [diaDe(MIERCOLES_9)], FIJO_MIERCOLES);
+    const r = liquidar(MIERCOLES_9, 9, [diaDe(MIERCOLES_9)], LIBRA_MIERCOLES);
     expect(minutosDe(r, 'HDD')).toBe(480);
     expect(minutosDe(r, 'HOD')).toBe(0);
   });
 });
 
-describe('lo congelado en el día manda sobre lo declarado hoy', () => {
-  const FIJO_MIERCOLES: EstadoDescanso = { tipo: 'FIJO', dia: 'MIERCOLES' };
+describe('lo congelado en el día manda sobre el horario de hoy', () => {
+  const LIBRA_MIERCOLES: FuenteDelDescanso = {
+    de: 'HORARIO', diasQueTrabaja: ['LUNES', 'MARTES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'],
+  };
 
-  it('un domingo congelado como descanso cobra recargo aunque hoy declare el miércoles', () => {
-    // Es la razón de ser de `DiaEsperado`: cambiar la declaración hoy no puede reescribir lo que
-    // ya se liquidó. La fila vieja gana.
-    const r = liquidar(DOMINGO_13, 13, [diaDe(DOMINGO_13, true)], FIJO_MIERCOLES);
+  it('un domingo congelado como descanso cobra recargo aunque hoy su horario libre el miércoles', () => {
+    // Es la razón de ser de `DiaEsperado`: cambiarle el horario hoy no puede reescribir lo que ya se
+    // liquidó. La fila vieja gana.
+    const r = liquidar(DOMINGO_13, 13, [diaDe(DOMINGO_13, true)], LIBRA_MIERCOLES);
     expect(minutosDe(r, 'HDD')).toBe(480);
   });
 
-  it('un domingo congelado como día de trabajo NO cobra recargo, ni con la declaración vacía', () => {
+  it('un domingo congelado como día de trabajo NO cobra recargo, ni sin fuente', () => {
     // El `false` congelado tiene que distinguirse del `null`. Si el cable usara `??` en vez de
     // preguntar si la fecha está, este caso caería al respaldo y volvería a ser dominical.
     const r = liquidar(DOMINGO_13, 13, [diaDe(DOMINGO_13, false)]);

@@ -120,13 +120,13 @@ type DiaDelCalendario = {
   //
   // NO SE DEDUCE DE `estado`, que fue lo primero que se intentó: un día marcado a mano como descanso
   // también llega como `DESCANSO` sin ser el obligatorio, así que deducirlo daría un aviso falso
-  // justo en el caso que cuesta dinero. Y tampoco de `descanso.tipo` de la fila: esa regla lleva
-  // dentro que sin acuerdo escrito cualquier día declarado vale como domingo, y una segunda copia es
-  // como se separan (CLAUDE.md §9.3).
+  // justo en el caso que cuesta dinero. Y tampoco del `descanso` de la fila: esa regla decide entre las
+  // franjas del horario y la programación de la semana, y una segunda copia es como se separan
+  // (CLAUDE.md §9.3).
   esDescansoObligatorio: boolean;
   // SI ALGUIEN MARCÓ ESTE DÍA COMO DESCANSO CON EL BOTÓN. Es la columna de la que sale cuál de los
-  // siete días lleva el descanso de una semana rotativa, y es lo que el aviso del bloque necesita
-  // para decir «a esta persona le falta marcarle el descanso de esta semana».
+  // siete días lleva el descanso de la semana de alguien SIN HORARIO, y es lo que el aviso del bloque
+  // necesita para decir «a esta persona le falta marcarle el descanso de esta semana».
   //
   // OPCIONAL porque el campo se agregó el 29 de septiembre de 2026 y una respuesta anterior en caché
   // llega sin él. Sin `?`, la pantalla trataría «no vino» como «no está marcado» y el aviso saldría
@@ -158,7 +158,9 @@ type FilaDelCalendario = {
   // LAS SEDES A LAS QUE ESTÁ ASIGNADA, en plural: `ColaboradorSede` es una tabla puente y un
   // supervisor puede recorrer varias. El filtro pregunta «¿tiene esta entre las suyas?».
   sedes: { id: string; nombre: string }[];
-  descanso: { tipo: 'PRESUMIDO' | 'FIJO' | 'ROTATIVO'; dia: string | null };
+  // DE DÓNDE SALE SU DESCANSO, ya resuelto por el servidor: con horario, el día que dicen sus franjas;
+  // sin horario, no hay día fijo y lo pone la programación de cada semana.
+  descanso: { de: 'HORARIO' | 'PROGRAMACION'; dia: string | null };
   minutosEsperados: number;
   // Lo PROGRAMADO en la semana: cuántos de sus días de descanso tienen turno encima. Sale del
   // horario, no de lo que ocurrió.
@@ -315,12 +317,11 @@ type PropuestaDeDescanso =
   | { estado: 'SIN_DESCANSO' }
   | { estado: 'AMBIGUA' };
 
-// Qué día descansa esta persona, dicho en palabras. El tipo ya viene con la guarda legal aplicada
-// desde el backend: si alguien declaró un día sin acuerdo escrito, aquí llega como PRESUMIDO.
+// Qué día descansa esta persona, dicho en palabras. Viene ya resuelto del backend: con horario, el día
+// que dicen sus franjas; sin horario, no hay día fijo y lo pone la programación de cada semana.
 function descansoEnPalabras(d: FilaDelCalendario['descanso']): string {
-  if (d.tipo === 'ROTATIVO') return 'Rotativo';
-  if (d.tipo === 'FIJO' && d.dia) return nombreDelDia(d.dia);
-  return 'Domingo';
+  if (d.de === 'PROGRAMACION') return 'Según programación';
+  return d.dia ? nombreDelDia(d.dia) : 'Domingo';
 }
 
 // UN COLOR POR PERSONA (29 de septiembre de 2026, propuesta del dueño). En una rejilla de veinte
@@ -874,9 +875,9 @@ function PanelDeJornada({ ancla, titulo, subtitulo, dia, catalogo, ocupado, erro
 // clic en cada semana de cada persona es fricción real, así que el sistema PROPONE y alguien
 // confirma con un clic.
 //
-// Los cuatro estados se pintan DISTINTOS a propósito. `SIN_DESCANSO` y `AMBIGUA` caen las dos al
-// domingo, pero una es una omisión y la otra un error ya cometido: decirle «no hay descanso» a
-// quien planificó dos lo mandaría a buscar lo que no falta.
+// Los cuatro estados se pintan DISTINTOS a propósito. `SIN_DESCANSO` y `AMBIGUA` dejan las dos la
+// semana sin descanso, pero una es una omisión y la otra un error ya cometido: decirle «no hay
+// descanso» a quien planificó dos lo mandaría a buscar lo que no falta.
 // CÓMO SE PINTA CADA TARJETA. Un mapa y no ternarios anidados, por lo mismo que el resto de este
 // archivo: son cuatro valores cerrados hoy y la quinta rama ya se ve venir.
 //
@@ -947,12 +948,14 @@ function PropuestaDeSemana({ propuesta, dias, trabajado, hoy, onElegir, ocupado 
 
   return (
     <div className="mt-1">
-      {/* SE DICE QUE EL DOMINGO SE ESTÁ TOMANDO MIENTRAS NADIE ELIJA, y no se calla: sin un día
-          marcado el motor cae al domingo, y si esa persona trabaja el domingo eso paga recargo. */}
+      {/* SE DICE QUE LA SEMANA QUEDA SIN DESCANSO MIENTRAS NADIE ELIJA, y no se calla: sin un día
+          marcado, esta persona no tiene descanso obligatorio esa semana, así que un domingo trabajado se
+          le paga sin el recargo del 90%. Antes del 30 de septiembre de 2026 este texto decía «descansa
+          el domingo», que era cierto con la regla anterior y dejó de serlo con la del dueño. */}
       <p className="text-[11px] leading-snug text-amber-800">
         {propuesta.estado === 'PROPUESTA'
-          ? <>Sin marcar, descansa el domingo. ¿Es el <b>{nombreDelDia(propuesta.dia).toLowerCase()}</b>?</>
-          : 'Sin descanso marcado: se está tomando el domingo.'}
+          ? <>Sin marcar, esta semana no tiene descanso. ¿Es el <b>{nombreDelDia(propuesta.dia).toLowerCase()}</b>?</>
+          : 'Sin descanso marcado: esta semana queda sin descanso.'}
       </p>
       <div className="mt-1.5 flex justify-center gap-1">
         {tarjetas.map(t => (
@@ -1783,16 +1786,16 @@ function ContadorDeLaPrevia({ icono, rotulo, valor, apagado = false }: {
 // que es justo lo que esta ventana existe para impedir. El encabezado y el pie quedan FIJOS y solo
 // se desplaza el medio.
 function PreviaDeBloque({
-  titulo, conteo, pisados, rotativos, habituales, sinDescanso, sobreElTope, topeHoras, ocupado,
+  titulo, conteo, pisados, sinMarcar, habituales, sinDescanso, sobreElTope, topeHoras, ocupado,
   onCancelar, onAplicar,
 }: {
   titulo: string;
   conteo: { escribe: number; iguales: number; bloqueadas: number };
   pisados: { nombre: string; fecha: string }[];
-  // Los rotativos a los que este envío les dejaría el domingo cobrado por no tener ningún día
-  // marcado como descanso en esa semana. Va por semana y no por celda a propósito: es el único
-  // aviso de esta ventana que tiene REMEDIO, y el remedio es marcarle un día.
-  rotativos: { nombre: string; lunes: string }[];
+  // A quienes este envío les dejaría la semana sin ningún día marcado como descanso, teniendo el
+  // domingo programado. Va por semana y no por celda a propósito: es el único aviso de esta ventana que
+  // tiene REMEDIO, y el remedio es marcarle un día.
+  sinMarcar: { nombre: string; lunes: string }[];
   habituales: { nombre: string; antes: number; despues: number }[];
   sinDescanso: { nombre: string; lunes: string }[];
   sobreElTope: { nombre: string; lunes: string; minutos: number }[];
@@ -1909,11 +1912,11 @@ function PreviaDeBloque({
 
               EL REMEDIO SE ESCRIBE, no se deja deducir: «falta marcar el descanso» no le dice a nadie
               qué botón tocar, y este aviso existe justamente porque el gesto no es obvio. */}
-          {rotativos.length > 0 && (
+          {sinMarcar.length > 0 && (
             <AvisoDeLaPrevia tono="aviso"
-              titulo="Descanso rotativo sin marcar: esas semanas descansarían el domingo"
-              nota={<>Márcales su día libre con <b>Descanso</b> y el domingo dejará de contar como descanso trabajado.</>}>
-              {rotativos.map(r => (
+              titulo="Sin horario y sin descanso marcado: esas semanas quedarían sin descanso"
+              nota={<>Márcales su día libre con <b>Descanso</b>. Sin marcarlo, el domingo se les paga sin recargo.</>}>
+              {sinMarcar.map(r => (
                 <li key={`${r.nombre}|${r.lunes}`}>{r.nombre}, semana del {rotuloCorto(r.lunes)}</li>
               ))}
             </AvisoDeLaPrevia>
@@ -2736,14 +2739,13 @@ export default function CalendarioDeTurnos() {
 
   const pisados = pendiente ? descansosPisados(celdasParaPrevia, accionPendiente, hoy) : [];
 
-  // ROTATIVOS A LOS QUE ESTE ENVÍO LES DEJARÍA EL DOMINGO COBRADO (29 de septiembre de 2026).
+  // A QUIÉN LE QUEDARÍA LA SEMANA SIN DESCANSO MARCADO (29 de septiembre de 2026).
   //
   // Sale de una pregunta del dueño sobre cómo conviven un horario asignado y los turnos pintados. El
-  // hueco: para alguien de descanso ROTATIVO, cuál de los siete días descansa lo decide lo que esté
-  // MARCADO como descanso esa semana. Sin ninguna marca —o con dos— el motor no puede afirmarlo y
-  // cae al DOMINGO. Quien programa de lunes a domingo pensando «esta persona descansa el martes» y
-  // no marca el martes le deja el domingo trabajado sobre su descanso obligatorio: recargo, y desde
-  // el tercero del mes compensación en tiempo obligatoria.
+  // hueco: a quien NO tiene horario, cuál de los siete días descansa lo decide lo que esté MARCADO
+  // como descanso esa semana. Sin ninguna marca —o con dos— esa semana se queda SIN descanso
+  // obligatorio. Quien programa de lunes a domingo pensando «esta persona descansa el martes» y no
+  // marca el martes le deja el domingo pagado como día ordinario, sin el recargo del 90%.
   //
   // SE MIRA CÓMO QUEDARÍA LA SEMANA, no cómo está: de los siete días este envío toca unos pocos, y
   // juzgar solo lo tocado diría que falta el descanso de una semana que lo tiene marcado el lunes.
@@ -2753,10 +2755,10 @@ export default function CalendarioDeTurnos() {
   // CELDA y dice lo que cuesta; este es por SEMANA y dice que tiene arreglo —marcarle el día—, que es
   // lo que aquel no puede decir. Y aquel cubre lo que este no juzga: en la vista de mes, las semanas
   // cortadas por el borde.
-  const rotativosSinDescanso = !pendiente ? [] : filas.flatMap(fila => {
-    // El tipo DECLARADO de la respuesta, ya resuelto por el servidor con su guarda del acuerdo
-    // escrito. A un FIJO o un PRESUMIDO no le aplica: su día no lo mueve el calendario.
-    if (fila.descanso.tipo !== 'ROTATIVO') return [];
+  const sinMarcarElDescanso = !pendiente ? [] : filas.flatMap(fila => {
+    // Ya resuelto por el servidor. A quien tiene horario no le aplica: su día libre lo dicen sus
+    // franjas y el calendario no lo mueve.
+    if (fila.descanso.de !== 'PROGRAMACION') return [];
     const suyas = new Set(
       Object.values(marcadas).filter(c => c.colaboradorId === fila.id).map(c => c.fecha),
     );
@@ -2793,9 +2795,9 @@ export default function CalendarioDeTurnos() {
       colaboradorId,
       trabajadosEnElMes: filas.find(f => f.id === colaboradorId)?.descansoHabitual.trabajados ?? 0,
       pisaEsteEnvio,
-      // El tipo DECLARADO de la respuesta. A un rotativo este aviso no le aplica: el motivo está en
-      // `cruzanAHabitual`, que es quien lo decide.
-      descansoRotativo: filas.find(f => f.id === colaboradorId)?.descanso.tipo === 'ROTATIVO',
+      // A quien no tiene horario este aviso no le aplica: el motivo está en `cruzanAHabitual`, que es
+      // quien lo decide.
+      sinHorario: filas.find(f => f.id === colaboradorId)?.descanso.de === 'PROGRAMACION',
     })),
     datos.minimoHabitual,
   );
@@ -3131,13 +3133,13 @@ export default function CalendarioDeTurnos() {
   const sinDescansoDe = (fila: FilaDelCalendario) =>
     semanasEnterasSinDescanso(dias, mapasDe(diasDe(fila.dias)).trabajado).length;
 
-  // CUÁNTAS SEMANAS LE QUEDARÍAN CON EL DOMINGO COBRADO por no haberle marcado el descanso. Solo le
-  // aplica a quien es ROTATIVO: al resto, su día lo pone la ley o un acuerdo y marcar otro no lo
-  // mueve. La decisión vive en `semanasConDomingoEnRiesgo`, probada y mutada.
+  // CUÁNTAS SEMANAS LE QUEDARÍAN SIN DESCANSO MARCADO teniendo el domingo programado. Solo le aplica a
+  // quien NO tiene horario: al resto, su día libre lo dicen sus franjas y marcar otro no lo mueve. La
+  // decisión vive en `semanasConDomingoEnRiesgo`, probada y mutada.
   const domingoEnRiesgoDe = (fila: FilaDelCalendario) => {
     const m = mapasDe(diasDe(fila.dias));
     return semanasConDomingoEnRiesgo(
-      dias, m.trabajado, m.descansoMarcado, fila.descanso.tipo === 'ROTATIVO',
+      dias, m.trabajado, m.descansoMarcado, fila.descanso.de === 'PROGRAMACION',
     ).length;
   };
 
@@ -4223,7 +4225,7 @@ export default function CalendarioDeTurnos() {
           titulo={tituloDePendiente()}
           conteo={conteo}
           pisados={pisados.map(c => ({ nombre: nombreDe(c.colaboradorId), fecha: c.fecha }))}
-          rotativos={rotativosSinDescanso.map(r => ({ nombre: nombreDe(r.colaboradorId), lunes: r.lunes }))}
+          sinMarcar={sinMarcarElDescanso.map(r => ({ nombre: nombreDe(r.colaboradorId), lunes: r.lunes }))}
           habituales={habitualesQueCruzan.map(h => ({ nombre: nombreDe(h.colaboradorId), antes: h.antes, despues: h.despues }))}
           sinDescanso={semanasSinDescansoDelEnvio()}
           sobreElTope={semanasSobreElTopeDelEnvio()}

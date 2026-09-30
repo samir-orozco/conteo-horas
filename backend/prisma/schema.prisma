@@ -31,21 +31,15 @@ model Empresa {
   // Las empresas NUEVAS nacen con fecha puesta: su salario ya se capturó con los dos campos
   // separados, así que no tienen nada que revisar y no hace falta clavar una fecha de corte.
   auxilioRevisadoEn    DateTime?
-  // Cuándo esta empresa respondió qué día descansa su gente (21 de septiembre de 2026). Null =
-  // todavía no. Misma doctrina que la de arriba: en el servidor y por empresa, no en localStorage.
+  // AQUÍ ESTABA `descansoRevisadoEn` (30 de septiembre de 2026). Guardaba cuándo cada empresa había
+  // respondido el modal del día de descanso. Ese modal se fue completo con la regla del dueño —el día
+  // lo dicen las franjas del horario, o la programación si no hay horario— y con él su única lectura.
   //
-  // A diferencia del auxilio, NO se le pregunta a todo el mundo. La ley presume el domingo, así que
-  // una empresa cuyos horarios no cubren el domingo ya está respondida sin preguntar nada: quién ve
-  // el aviso lo decide `revisionDescansoPendiente` mirando los días de cada horario. Preguntar de
-  // más es lo que enseña a cerrar los avisos sin leerlos.
-  //
-  // Las empresas NUEVAS nacen en null, AL REVÉS que con el auxilio, y la diferencia no es un
-  // descuido. Allá la puerta es «tiene colaboradores», que acaba siendo cierta siempre, así que sin
-  // marcarlas al nacer verían un aviso que no les toca. Aquí la puerta es «tiene un horario que la
-  // ley no resuelve sola», que es exactamente la condición que debe disparar la pregunta el día que
-  // se cumpla. Marcarlas al nacer haría que una empresa que mañana crea un horario de siete días no
-  // se enterara nunca, y sus domingos se liquidarían con la presunción sin que nadie lo decidiera.
-  descansoRevisadoEn   DateTime?
+  // SE BORRA DEL ESQUEMA Y NO SE DEJA DECLARADA SIN USO, a propósito: Prisma nombra TODAS las columnas
+  // escalares en un `findMany` sin `select`, así que una columna declarada aquí y ausente en la base
+  // rompería cualquier consulta de `empresas`. Al revés es inofensivo: una columna que esté en la base
+  // y no en el esquema, Prisma sencillamente la ignora. Por eso esto no necesita ningún ALTER, exista
+  // o no exista la columna en producción.
   creadoEn             DateTime            @default(now())
   actualizadoEn        DateTime            @updatedAt
   usuarios             Usuario[]
@@ -369,25 +363,19 @@ model Colaborador {
   // al vuelo porque la lista la pide para TODOS: mandar la grande son cientos
   // de kilobytes por carga, y en un plan de 150 personas son megas.
   fotoMini               String?                @db.LongText
-  // EL DÍA DE DESCANSO OBLIGATORIO (20 de septiembre de 2026).
+  // EL DÍA DE DESCANSO NO SE GUARDA EN LA PERSONA (30 de septiembre de 2026, regla del dueño).
   //
-  // La ley presume el domingo SALVO acuerdo escrito. Hasta hoy el motor lo tenía escrito a mano
-  // (`esDomingo` en horasColombiana.ts) y acertaba por una razón frágil: nadie podía registrar otro
-  // día, así que la presunción se cumplía sola. Medido en producción: 22 horarios activos incluyen
-  // el domingo, y en 10 de ellos se trabajan los SIETE días (26 personas).
+  // Aquí vivían `descansoTipo`, `descansoDia` y `descansoAcuerdoEn`: una declaración por persona, con
+  // el acuerdo escrito como guarda. Se borran porque la respuesta ya estaba en otro sitio, con las
+  // palabras del dueño: «solo sabemos el día de descanso de un trabajador a través del horario fijo;
+  // si no tiene horario, no tiene día fijo y lo pone la programación de cada semana».
   //
-  // Es UN campo con tres estados y no dos mecanismos separados (fijo contra rotativo), porque el
-  // acuerdo escrito hace falta en los dos casos y partirlo lo duplicaría o lo perdería. El tercer
-  // valor además evita tener que marcar aparte quién es rotativo: ya lo dice él.
+  // Hoy lo decide `utils/descansoDelHorario.ts` a partir de las FRANJAS del horario, y lo que ese día
+  // exigía sigue congelándose en `DiaEsperado.esDescanso`, que es la columna que protege lo liquidado.
   //
-  // Texto y no enum, siguiendo a `DiaEsperado.origen` y a `Suscripcion.plan`: agregar un cuarto
-  // valor a un enum obliga a un ALTER de esta tabla, que tiene gente.
-  descansoTipo           String                 @default("PRESUMIDO") // PRESUMIDO | FIJO | ROTATIVO
-  descansoDia            String? // solo con FIJO: "MIERCOLES". NULL en los otros dos.
-  // Cuándo se firmó el acuerdo escrito. NULL = no hay acuerdo, y entonces FIJO y ROTATIVO se tratan
-  // como PRESUMIDO: se le sigue pagando el recargo del domingo. El error puede equivocarse hacia
-  // pagar de más, nunca hacia pagar de menos.
-  descansoAcuerdoEn      DateTime?
+  // SE BORRAN SIN MIGRACIÓN Y SIN SQL porque en producción NO EXISTEN: medido contra
+  // `information_schema` antes de tocar nada, de las nueve columnas de este módulo solo dos llegaron
+  // allí, y estas tres no están entre ellas. El módulo de turnos nunca se desplegó.
   // Las decisiones sobre sus días de descanso trabajados. Prisma exige declarar este lado de la
   // relación; sin él el esquema no valida.
   descansosTrabajados    DescansoTrabajado[]
@@ -995,7 +983,7 @@ model DescansoTrabajado {
   fecha              DateTime
   // PENDIENTE | DINERO | COMPENSATORIO.
   //
-  // Texto y no enum, por la MISMA razón que `Colaborador.descansoTipo`: un cuarto valor obligaría a
+  // Texto y no enum, por la MISMA razón que `DiaEsperado.origen`: un cuarto valor obligaría a
   // un ALTER de una tabla con datos. Y aquí ese cuarto valor es plausible de verdad, no teórico: la
   // pregunta de si un mes que pasa a habitual reabre las decisiones anteriores está sin resolver, y
   // su respuesta podría traer un estado nuevo.

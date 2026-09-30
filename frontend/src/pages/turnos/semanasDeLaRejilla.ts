@@ -151,20 +151,23 @@ export function semanasEnterasSinDescanso(
     .map(s => s.lunes);
 }
 
-// ────────── EL DESCANSO QUE A UN ROTATIVO HAY QUE MARCARLE (29 de septiembre de 2026) ──────────
+// ────────── EL DESCANSO QUE HAY QUE MARCARLE A QUIEN NO TIENE HORARIO (29 de septiembre de 2026) ──────────
 //
-// Para alguien con descanso ROTATIVO, cuál de los siete días lleva el descanso lo decide lo que esté
-// MARCADO como descanso en esa semana: si hay exactamente uno, ese es; con ninguno o con dos, el
-// motor no puede afirmarlo y cae al DOMINGO. Esa caída es deliberada y correcta —un turno pintado
-// puede AGREGAR un recargo, nunca quitarlo—, pero deja un olvido caro: quien programa a un rotativo
-// de lunes a domingo pensando «esta persona descansa el martes» y no marca el martes, le deja el
-// domingo trabajado sobre su descanso obligatorio. Eso paga recargo, y desde el tercero del mes
-// obliga a compensar con tiempo.
+// A quien NO tiene horario, cuál de los siete días lleva el descanso lo decide lo que esté MARCADO como
+// descanso en esa semana: si hay exactamente uno, ese es. Con ninguno o con dos, el motor no puede
+// afirmarlo y esa semana se queda SIN descanso obligatorio.
+//
+// LO QUE ESO CUESTA, y es lo que cambió el 30 de septiembre de 2026 con la regla del dueño: antes la
+// falta de marca caía al DOMINGO, así que el domingo trabajado pagaba recargo y el olvido salía caro
+// hacia arriba. Ahora no cae a ninguna parte, así que el olvido sale caro hacia ABAJO: ese domingo se
+// le paga como día ordinario, sin el 90%. El aviso avisa de lo mismo y las semanas que señala son
+// exactamente las mismas; lo que cambió es en qué dirección duele.
 //
 // EL DOMINGO ESTÁ EN LA CONDICIÓN A PROPÓSITO. Lo normal es programar de lunes a sábado y dejar el
-// domingo en blanco, y ahí no pasa nada: el domingo es su descanso y no lo trabaja. Avisando a todo
-// rotativo sin descanso marcado, el aviso saldría en el caso más común de la pantalla y aprendería a
-// ignorarse, que es como se desarma un aviso (§10, el mismo razonamiento del tope del linter).
+// domingo en blanco, y ahí no pasa nada: nadie trabaja ese día. Avisando a todo el que no tenga
+// horario y no tenga descanso marcado, el aviso saldría en el caso más común de la pantalla y
+// aprendería a ignorarse, que es como se desarma un aviso (§10, el mismo razonamiento del tope del
+// linter).
 //
 // SE SOLAPA CON «pintarías sobre el descanso obligatorio» Y LOS DOS SE QUEDAN, que es una decisión y
 // no un descuido. Aquel es POR CELDA y dice lo que cuesta; este es POR SEMANA y dice que tiene
@@ -178,12 +181,12 @@ export function semanasConDomingoEnRiesgo(
   dias: readonly string[],
   trabajado: Readonly<Record<string, boolean>>,
   descansoMarcado: Readonly<Record<string, boolean>>,
-  esRotativo: boolean,
+  sinHorario: boolean,
 ): string[] {
-  // A un FIJO o un PRESUMIDO no se le avisa: su día lo pone la ley o un acuerdo escrito, y marcar
-  // otro no lo mueve. Trabajarle el domingo también cuesta, pero eso no es un olvido que se pueda
+  // A QUIEN TIENE HORARIO NO SE LE AVISA: su día libre lo dicen sus franjas, siempre hay uno, y marcar
+  // otro no lo mueve. Trabajarle ese día también cuesta, pero eso no es un olvido que se pueda
   // arreglar marcando algo, y el aviso por celda es el que le corresponde.
-  if (!esRotativo) return [];
+  if (!sinHorario) return [];
   return semanasDeLasColumnas(dias)
     // SOLO LAS ENTERAS, igual que sus dos hermanas de este archivo: con tres días a la vista no se
     // puede afirmar que no hay ningún descanso marcado, porque puede estar en los cuatro que faltan.

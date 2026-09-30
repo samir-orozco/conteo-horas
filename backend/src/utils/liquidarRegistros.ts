@@ -1,7 +1,7 @@
 import { toZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear } from 'date-fns';
 import { calcularHorasTrabajadas, calcularLiquidacion, descontarAlmuerzo, descontarAlmuerzoOrdinarias, CODIGOS_EXTRA, claveDeDescanso, type DescansoConfig } from './horasColombiana';
-import type { EstadoDescanso } from './descansoObligatorio';
+import type { FuenteDelDescanso } from './descansoDelHorario';
 import { jornadaVigente, tiposVigentes } from './vigencias';
 import { franjaDelDia, HorarioConFranjas, construirExtraConfig } from './tardanzas';
 import { DIAS_SEMANA } from './diasDeLaSemana';
@@ -91,10 +91,10 @@ export function liquidarRegistros(
   // Días materializados del rango: de ahí sale la hora de salida programada para
   // la tolerancia. Si no llegan, la tolerancia sencillamente no se aplica.
   diasEsperados: DiaEsperadoCalculado[] = [],
-  // Lo que la persona tiene declarado HOY, con la guarda legal ya aplicada (`estadoDescansoDe`).
-  // Es el respaldo para las fechas sin fila congelada. Ausente = PRESUMIDO, o sea el domingo, que
-  // es lo que el sistema calculó siempre: por eso los llamadores que no lo pasen no ven cambio.
-  estadoDescanso?: EstadoDescanso,
+  // DE DÓNDE SALE EL DESCANSO DE ESA PERSONA: su horario si tiene, la programación si no. Es el
+  // respaldo para las fechas sin fila congelada. Ausente = presunción legal, o sea el domingo, que es
+  // lo que el sistema calculó siempre: por eso los llamadores que no lo pasen no ven cambio.
+  fuenteDelDescanso?: FuenteDelDescanso,
 ) {
   const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
 
@@ -114,7 +114,7 @@ export function liquidarRegistros(
   for (const d of diasEsperados) {
     if (typeof d.esDescanso === 'boolean') porFecha[claveDeDescanso(d.fecha)] = d.esDescanso;
   }
-  const descansoConfig: DescansoConfig = { porFecha, estado: estadoDescanso };
+  const descansoConfig: DescansoConfig = { porFecha, fuente: fuenteDelDescanso };
 
   // Las pausas se miden por DÍA, el de la FECHA de la jornada: el regreso de la madrugada
   // de un nocturno es del mismo día que su salida, y contado por el día de su entrada su

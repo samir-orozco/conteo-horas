@@ -77,7 +77,7 @@ const montar = (sinDescanso = false) => {
           desde, hasta, horasSemanales: 42,
           filas: [{
             id: 'c1', nombre: 'Julián', apellido: 'Torres', cargo: 'Guarda',
-            descanso: { tipo: 'PRESUMIDO', dia: null },
+            descanso: { de: 'HORARIO', dia: 'DOMINGO' },
             // El total del rango. En un mes pasa de 42 h por definición, que es justo el caso que
             // no puede encender la alarma semanal.
             minutosEsperados: dias.length * 420,
@@ -441,21 +441,24 @@ describe('lo que dice la pantalla deja de hablar de la semana', () => {
   });
 });
 
-// ────────── EL DESCANSO ROTATIVO, EN LA COLUMNA DE LA PERSONA (29 de septiembre de 2026) ──────────
+// ────────── DE DÓNDE SALE SU DESCANSO, EN LA COLUMNA DE LA PERSONA (29 de septiembre de 2026) ──────────
 //
 // Sale de una pregunta del dueño sobre cómo conviven el horario asignado y los turnos pintados. Dos
-// cosas nuevas, y las dos en esta columna porque es donde se mira antes de programar:
+// cosas, y las dos en esta columna porque es donde se mira antes de programar:
 //
 //   1. CUÁNDO DESCANSA, en la línea del cargo. Solo cuando se aparta del domingo: a quien descansa el
 //      domingo no se le escribe nada, porque es lo que ya se supone de todo el mundo y ponerlo en las
 //      veinte filas gastaría la línea en repetir el caso normal.
-//   2. EL CHIP «descanso sin marcar», cuando una semana de un rotativo va a trabajar el domingo sin
-//      que ningún día esté marcado como descanso. Sin marca, el descanso de esa semana cae al domingo
-//      y trabajarlo se paga con recargo.
+//   2. EL CHIP «descanso sin marcar», cuando la semana de alguien SIN HORARIO va a trabajar el domingo
+//      sin que ningún día esté marcado como descanso. Sin marca, esa semana se queda sin descanso
+//      obligatorio y el domingo se le paga sin el recargo del 90%.
 //
-// LO QUE ESTÁ EN JUEGO: pintarle turnos a un rotativo NO le mueve el descanso; hay que marcárselo con
-// el botón «Descanso». Quien programa no puede acordarse de eso si no ve quién es rotativo, y hasta
-// hoy el tipo de descanso no estaba en ninguna parte de la rejilla.
+// LO QUE ESTÁ EN JUEGO: a quien no tiene horario, pintarle turnos NO le pone ningún descanso; hay que
+// marcárselo con el botón «Descanso». Quien programa no puede acordarse de eso si no ve quién es.
+//
+// EL DATO CAMBIÓ DE FUENTE el 30 de septiembre de 2026, con la regla del dueño: antes eran tres estados
+// declarados por persona (PRESUMIDO, FIJO, ROTATIVO) y ahora son dos, HORARIO o PROGRAMACION, resueltos
+// por el backend a partir de las franjas.
 describe('el descanso de la persona, en su columna', () => {
   // La misma lectura que usa el bloque de «de quién es cada fila»: la primera fila del cuerpo. Es un
   // ayudante local en los dos sitios y no uno compartido porque los dos bloques miran la misma cosa
@@ -465,7 +468,7 @@ describe('el descanso de la persona, en su columna', () => {
   // El lunes SIN NADA y el resto trabajado, domingo incluido. Es la forma exacta del caso que cuesta:
   // seis días de trabajo, uno libre que nadie marcó, y el domingo entre los trabajados.
   const montarDescanso = (
-    descanso: { tipo: string; dia: string | null },
+    descanso: { de: string; dia: string | null },
     marcaElLunes = false,
   ) => {
     get.mockImplementation((url: string, cfg?: { params?: { desde: string; hasta: string } }) => {
@@ -505,48 +508,48 @@ describe('el descanso de la persona, en su columna', () => {
     return render(<CalendarioDeTurnos />);
   };
 
-  const PRESUMIDO = { tipo: 'PRESUMIDO', dia: null };
-  const ROTATIVO = { tipo: 'ROTATIVO', dia: null };
+  const CON_HORARIO_DOMINGO = { de: 'HORARIO', dia: 'DOMINGO' };
+  const SIN_HORARIO = { de: 'PROGRAMACION', dia: null };
 
-  it('«descanso rotativo» sale en la línea del cargo, junto a la sede', async () => {
-    montarDescanso(ROTATIVO);
+  it('«descanso según programación» sale en la línea del cargo, junto a la sede', async () => {
+    montarDescanso(SIN_HORARIO);
     await cargado();
-    expect(await primeraFila()).toHaveTextContent('Guarda · Norte · descanso rotativo');
+    expect(await primeraFila()).toHaveTextContent('Guarda · Norte · descanso según programación');
   });
 
-  it('un FIJO en otro día dice CUÁL, que es lo que evita programarle encima', async () => {
-    montarDescanso({ tipo: 'FIJO', dia: 'MIERCOLES' });
+  it('con horario y día libre en otro día dice CUÁL, que es lo que evita programarle encima', async () => {
+    montarDescanso({ de: 'HORARIO', dia: 'MIERCOLES' });
     await cargado();
     expect(await primeraFila()).toHaveTextContent('Guarda · Norte · descansa miércoles');
   });
 
   it('a quien descansa el domingo NO se le escribe nada: es el caso normal', async () => {
-    // Ni el PRESUMIDO ni el FIJO-domingo. Por dentro son estados distintos; para quien programa
-    // significan lo mismo, y escribirlo en las veinte filas taparía a los rotativos.
-    montarDescanso(PRESUMIDO);
+    // Escribirlo en las veinte filas taparía a los que no tienen horario, que son los únicos a los que
+    // hay que marcarles algo.
+    montarDescanso(CON_HORARIO_DOMINGO);
     await cargado();
     expect(await primeraFila()).toHaveTextContent('Guarda · Norte');
     expect(await primeraFila()).not.toHaveTextContent(/descans/);
   });
 
-  it('EL CHIP SALE cuando un rotativo trabajaría el domingo sin ningún día marcado', async () => {
-    montarDescanso(ROTATIVO);
+  it('EL CHIP SALE cuando alguien sin horario trabajaría el domingo sin ningún día marcado', async () => {
+    montarDescanso(SIN_HORARIO);
     await cargado();
     expect(await primeraFila()).toHaveTextContent('descanso sin marcar');
   });
 
   it('y NO sale en cuanto el día libre está marcado como descanso', async () => {
-    // Es lo que mueve el descanso de la semana: con el lunes marcado, el domingo deja de ser el
-    // obligatorio y trabajarlo no paga recargo de descanso.
-    montarDescanso(ROTATIVO, true);
+    // Es lo que le pone el descanso a la semana: con el lunes marcado, ese lunes es el obligatorio y el
+    // domingo trabajado es un día ordinario a propósito.
+    montarDescanso(SIN_HORARIO, true);
     await cargado();
     expect(await primeraFila()).not.toHaveTextContent('descanso sin marcar');
   });
 
-  it('a quien NO es rotativo no se le pone el chip, aunque la semana sea igual', async () => {
-    // Su día lo pone la ley o un acuerdo escrito y marcar otro no lo mueve, así que no hay nada que
-    // le falte marcar. Trabajarle el domingo también cuesta, pero de eso avisa el otro aviso.
-    montarDescanso(PRESUMIDO);
+  it('a quien SÍ tiene horario no se le pone el chip, aunque la semana sea igual', async () => {
+    // Su día libre lo dicen sus franjas y marcar otro no lo mueve, así que no hay nada que le falte
+    // marcar. Trabajárselo también cuesta, pero de eso avisa el otro aviso.
+    montarDescanso(CON_HORARIO_DOMINGO);
     await cargado();
     expect(await primeraFila()).not.toHaveTextContent('descanso sin marcar');
   });

@@ -1,139 +1,28 @@
 // Del módulo sin dependencias y NO de `tardanzas`: tenerla allí cerraba el ciclo
 // horasColombiana → descansoObligatorio → tardanzas → horasColombiana.
-import { DIAS_SEMANA, diaValido, diaSemanaDeFechaBogota } from './diasDeLaSemana';
+import { diaValido, diaSemanaDeFechaBogota } from './diasDeLaSemana';
 // `fechas` no importa nada de `utils` (solo `date-fns-tz`), así que traerlo NO reabre el ciclo que
 // describe el comentario de arriba. Se comprobó leyendo el archivo, no suponiéndolo.
 import { rangoSemanaBogota, claveDiaBogota } from './fechas';
+import { esDescansoObligatorioDe, type FuenteDelDescanso } from './descansoDelHorario';
 
-// QUÉ DÍA ES EL DESCANSO OBLIGATORIO DE UNA PERSONA (20 de septiembre de 2026).
+// LO QUE QUEDA AQUÍ ES LA PREGUNTA DE LA SEMANA: cuál de los siete días lleva el descanso cuando lo
+// pone la programación. De dónde sale el descanso de una persona lo responde `descansoDelHorario.ts`,
+// que es quien tiene la regla.
 //
-// Hasta hoy el motor lo decide con `esDomingo = diaSemana === 'DOMINGO'` escrito a mano
-// (horasColombiana.ts:136). Eso acierta, pero por una razón frágil: nadie ha podido registrar nunca
-// otro día, así que la presunción legal se cumple sola. Medido en producción el 20 de septiembre de
-// 2026: 22 horarios activos incluyen el domingo, y en 10 de ellos (26 personas) se trabajan los
-// SIETE días, que es la forma que toma una operación rotativa metida en una herramienta de horarios
-// fijos.
+// LO QUE VIVÍA AQUÍ Y YA NO (30 de septiembre de 2026, regla del dueño): `deducirDiaDescanso`,
+// `estadoDescansoDe`, `esDescansoObligatorio` y el tipo `EstadoDescanso`. Eran el modelo de la
+// DECLARACIÓN POR PERSONA: tres columnas en `colaboradores` que un modal llenaba una vez, con un
+// acuerdo escrito como guarda legal.
 //
-// La regla legal tiene dos mitades y esta función resuelve SOLO la primera:
+// Se van completas y no se dejan «por si acaso», porque dejarlas sería lo que prohíbe el §9.3: dos
+// versiones de la misma regla, y la vieja gobernando el camino más usado. Su sustituto es una sola
+// frase del dueño: «solo sabemos el día de descanso de un trabajador a través del horario fijo; si no
+// tiene horario, no tiene día fijo y lo pone la programación».
 //
-//   1. ¿Qué día quedaría libre según lo que la persona trabaja?
-//   2. ¿Se puede mover el descanso fuera del domingo?  <- exige acuerdo escrito. NO se deduce.
-//
-// De ahí que la salida distinga dos cosas que es tentador juntar:
-//
-//   PRESUNCION  el domingo está libre. Lo dice la ley y no hace falta ningún acuerdo.
-//   PROPUESTA   el domingo se trabaja y queda un solo día libre. Es lo más probable, y aun así sin
-//               acuerdo escrito no se puede dar por cierto.
-//
-// Tratar una PROPUESTA como si fuera firme sería dejar de pagar un recargo dominical por deducción
-// propia. El error tiene que poder equivocarse hacia pagar de más, nunca hacia pagar de menos.
-
-export type OrigenDelDescanso = 'PRESUNCION' | 'PROPUESTA' | 'AMBIGUO' | 'SIN_DIA_LIBRE';
-
-export type DeduccionDeDescanso =
-  | { dia: string; origen: 'PRESUNCION' | 'PROPUESTA' }
-  | { dia: null; origen: 'AMBIGUO' | 'SIN_DIA_LIBRE' };
-
-// `diaValido` vivía aquí, privada. Se mudó a `diasDeLaSemana` el 21 de septiembre de 2026, al
-// aparecer la tercera necesidad: `descansoDeLaSemana`, más abajo. Al buscarla con `grep` resultó
-// que ya estaban escritas DOS —esta y otra dentro de `cuerpoDeRespuestaDescanso`— y las dos se
-// migran en este mismo commit, que es lo que pide CLAUDE.md §9.3. Se comprobó antes de fundirlas
-// que hacían exactamente lo mismo.
-
-export function deducirDiaDescanso(diasQueTrabaja: readonly unknown[]): DeduccionDeDescanso {
-  const trabaja = new Set(
-    diasQueTrabaja.map(diaValido).filter((d): d is string => d !== null),
-  );
-
-  // El domingo libre manda sobre cualquier otro día libre: alguien de lunes a viernes tiene dos días
-  // sin trabajar y solo uno de ellos es el descanso obligatorio. Por eso esta pregunta va PRIMERO y
-  // no se mira cuántos días quedan libres.
-  if (!trabaja.has('DOMINGO')) return { dia: 'DOMINGO', origen: 'PRESUNCION' };
-
-  const libres = DIAS_SEMANA.filter(d => !trabaja.has(d));
-  if (libres.length === 0) return { dia: null, origen: 'SIN_DIA_LIBRE' };
-  if (libres.length === 1) return { dia: libres[0], origen: 'PROPUESTA' };
-  return { dia: null, origen: 'AMBIGUO' };
-}
-
-// ─────────────────── QUÉ DÍA DESCANSA ESTA PERSONA, EN LA PRÁCTICA ───────────────────
-
-// El estado de cada persona, decidido con el dueño el 20 de septiembre de 2026. Es UN campo con
-// tres valores y no dos mecanismos separados, por una razón concreta: el acuerdo escrito hace falta
-// tanto para fijar otro día como para rotar, y partirlo en dos lo duplicaría o lo perdería.
-//
-// El tercer valor además hace innecesaria una marca aparte de «fijo o rotativo»: ya lo dice él.
-export type EstadoDescanso =
-  | { tipo: 'PRESUMIDO' }            // el domingo, por ley. El valor por defecto de todo el mundo.
-  | { tipo: 'FIJO'; dia: string }    // otro día de la semana. Solo vale con acuerdo escrito.
-  | { tipo: 'ROTATIVO' };            // lo define el turno planificado de esa semana. También exige acuerdo.
-
-// Lo que guardan las tres columnas de `colaboradores`, tal cual salen de la base.
-export type FilaDeDescanso = {
-  descansoTipo: string;
-  descansoDia: string | null;
-  descansoAcuerdoEn: Date | null;
-};
-
-// De las tres columnas al estado que usa el motor.
-//
-// AQUÍ VIVE LA GUARDA LEGAL, y es la razón de que esta función exista en vez de leer las columnas
-// sueltas donde haga falta: la ley presume el domingo SALVO acuerdo escrito, así que declarar otro
-// día sin tener el papel no alcanza para dejar de pagar el recargo dominical.
-//
-// Dicho en plata: si alguien marca a un mesero como «descansa los miércoles» y no hay acuerdo, sus
-// domingos siguen valiendo el 90% de recargo.
-//
-// La comprobación del acuerdo va PRIMERO, antes de mirar el tipo, a propósito: así no hay ninguna
-// rama que pueda saltársela. Y cualquier valor que no se reconozca cae también a PRESUMIDO, porque
-// la columna es texto libre y un dato raro no puede dejar a nadie sin recargo.
-export function estadoDescansoDe(fila: FilaDeDescanso): EstadoDescanso {
-  if (!fila.descansoAcuerdoEn) return { tipo: 'PRESUMIDO' };
-
-  const tipo = typeof fila.descansoTipo === 'string' ? fila.descansoTipo.trim().toUpperCase() : '';
-  if (tipo === 'ROTATIVO') return { tipo: 'ROTATIVO' };
-  if (tipo === 'FIJO') {
-    // Un día pactado que no existe no se puede cumplir, así que la declaración no vale.
-    const dia = diaValido(fila.descansoDia);
-    return dia === null ? { tipo: 'PRESUMIDO' } : { tipo: 'FIJO', dia };
-  }
-  return { tipo: 'PRESUMIDO' };
-}
-
-// La pregunta que hoy responde `esDomingo = diaSemana === 'DOMINGO'` (horasColombiana.ts:136), y la
-// que decide si una hora lleva el recargo del 90%.
-//
-// `diaDeLaFecha` llega ya resuelto por quien llama: el motor lo calcula una vez por minuto y no
-// tiene sentido volver a hacer aquí la conversión de zona horaria.
-//
-// LA REGLA: un turno pintado puede AGREGAR un recargo, nunca quitarlo. Por eso cada camino que no
-// puede afirmar un día cae al DOMINGO en vez de devolver «ninguno»:
-//
-//   - PRESUMIDO ignora por completo lo planificado. Sin acuerdo escrito, pintar un turno no mueve
-//     el descanso de nadie.
-//   - FIJO con un día que no existe (dato viejo, error de escritura) vuelve al domingo.
-//   - ROTATIVO sin semana planificada vuelve al domingo. Que nadie haya pintado el calendario es
-//     una omisión del administrador, y no puede dejar a una persona sin descanso obligatorio.
-export function esDescansoObligatorio(
-  diaDeLaFecha: string,
-  estado: EstadoDescanso,
-  descansoPlanificado: string | null,
-): boolean {
-  const hoy = diaValido(diaDeLaFecha);
-  const esDomingo = hoy === 'DOMINGO';
-
-  if (estado.tipo === 'FIJO') {
-    const pactado = diaValido(estado.dia);
-    return pactado === null ? esDomingo : hoy === pactado;
-  }
-
-  if (estado.tipo === 'ROTATIVO') {
-    const planificado = diaValido(descansoPlanificado);
-    return planificado === null ? esDomingo : hoy === planificado;
-  }
-
-  return esDomingo;
-}
+// NO HABÍA NADA QUE MIGRAR: medido contra la base de producción antes de borrarlas, de las nueve
+// columnas del módulo de turnos solo existen dos, y estas tres no están entre ellas. El módulo nunca
+// se desplegó.
 
 // ────────── CUÁL DE LOS SIETE DÍAS LLEVA EL DESCANSO EN UNA SEMANA PLANIFICADA ──────────
 //
@@ -206,14 +95,14 @@ function diasConTurnoDeDescanso(
 // Hizo falta exactamente esa pista para entender un susto del 21 de septiembre de 2026.
 export function reescrituraDeSemana(
   dias: readonly { fecha: Date; diaSemana: string; esDescanso: boolean | null }[],
-  estado: EstadoDescanso,
+  fuente: FuenteDelDescanso,
   planificado: string | null,
   inicioDeHoy: Date,
 ): { fecha: Date; esDescanso: boolean }[] {
   const cambios: { fecha: Date; esDescanso: boolean }[] = [];
   for (const d of dias) {
     if (d.fecha.getTime() < inicioDeHoy.getTime()) continue;
-    const debeSer = esDescansoObligatorio(d.diaSemana, estado, planificado);
+    const debeSer = esDescansoObligatorioDe(d.diaSemana, fuente, planificado);
     // `!==` y no `!`: una fila en `null` es la AUSENCIA del dato, no un `false`, y el motor la
     // resuelve con el respaldo (o sea, domingo). Dejarla sin escribir haría que esa semana se
     // liquidara contra el domingo justo cuando el plan dice otro día.
@@ -283,8 +172,8 @@ export function descansosPlanificadosPorSemana(
 // error ya cometido: decirle «no hay descanso» a quien planificó dos lo mandaría a buscar lo que no
 // falta.
 //
-// Y `NO_APLICA` para quien no es ROTATIVO: sin acuerdo escrito, pintar no mueve el descanso de
-// nadie, así que proponerle un día sería ofrecerle una decisión que no puede tomar.
+// Y `NO_APLICA` PARA QUIEN TIENE HORARIO: su día de descanso sale de las franjas y la programación
+// no lo mueve, así que proponerle un día sería ofrecerle una decisión que no puede tomar.
 export type PropuestaDeDescanso =
   | { estado: 'NO_APLICA' }
   | { estado: 'RESUELTA'; dia: string }
@@ -294,9 +183,11 @@ export type PropuestaDeDescanso =
 
 export function propuestaDeDescanso(
   dias: readonly { dia: unknown; pintado: boolean; descansoMarcado: boolean }[],
-  estado: EstadoDescanso,
+  fuente: FuenteDelDescanso,
 ): PropuestaDeDescanso {
-  if (estado.tipo !== 'ROTATIVO') return { estado: 'NO_APLICA' };
+  // CON HORARIO NO HAY NADA QUE PROPONER: su día libre ya lo dicen las franjas. El corte era antes
+  // «quien no es ROTATIVO», o sea la declaración por persona; ahora es el dato que sí existe.
+  if (fuente.de === 'HORARIO') return { estado: 'NO_APLICA' };
 
   // El MISMO conjunto que usa `descansoDeLaSemana`, no una segunda versión: si contaran distinto,
   // la pantalla diría «resuelta el miércoles» mientras el motor liquida el domingo.

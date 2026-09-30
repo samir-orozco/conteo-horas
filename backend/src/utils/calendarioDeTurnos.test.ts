@@ -1,46 +1,60 @@
 import { describe, it, expect } from 'vitest';
 import { descansoDelDia, estadoDelDia } from './calendarioDeTurnos';
-import type { EstadoDescanso } from './descansoObligatorio';
+import type { FuenteDelDescanso } from './descansoDelHorario';
 
-const PRESUMIDO: EstadoDescanso = { tipo: 'PRESUMIDO' };
-const FIJO_MIERCOLES: EstadoDescanso = { tipo: 'FIJO', dia: 'MIERCOLES' };
-const ROTATIVO: EstadoDescanso = { tipo: 'ROTATIVO' };
+// LOS TRES CASOS QUE LA CELDA PUEDE ENCONTRAR (30 de septiembre de 2026). Antes eran los tres estados
+// de una declaración por persona; ahora salen del horario, que es donde el dueño dice que está la
+// respuesta: «solo sabemos el día de descanso de un trabajador a través del horario fijo».
+//
+// Un horario de lunes a sábado: le sobra el domingo, que es además lo que presume la ley.
+const HORARIO_L_A_S: FuenteDelDescanso = {
+  de: 'HORARIO', diasQueTrabaja: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'],
+};
+// Uno que libra el MIÉRCOLES: el único caso en que el descanso no es el domingo.
+const LIBRA_MIERCOLES: FuenteDelDescanso = {
+  de: 'HORARIO', diasQueTrabaja: ['LUNES', 'MARTES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'],
+};
+// Sin horario: no tiene día fijo, lo pone la programación de cada semana.
+const SIN_HORARIO: FuenteDelDescanso = { de: 'PROGRAMACION' };
 
 describe('descansoDelDia: donde hay dato congelado manda el dato', () => {
   it('un true congelado manda, aunque la regla de hoy diría que no', () => {
-    // Un miércoles congelado como descanso sigue siéndolo aunque hoy la persona figure PRESUMIDO.
-    // Esta es la razón de ser de la columna: el pasado no se recalcula con la configuración de hoy.
-    expect(descansoDelDia(true, 'MIERCOLES', PRESUMIDO)).toBe(true);
+    // Un miércoles congelado como descanso sigue siéndolo aunque hoy su horario diga que ese día
+    // trabaja. Esta es la razón de ser de la columna: el pasado no se recalcula con lo de hoy.
+    expect(descansoDelDia(true, 'MIERCOLES', HORARIO_L_A_S)).toBe(true);
   });
 
   it('un FALSE congelado manda, y es el caso que obliga a distinguirlo de null', () => {
     // Un domingo que la fila dice que NO era su descanso. Si esto cayera a la regla, volvería a
     // decir "domingo" y el día cambiaría de sentido al releerlo.
-    expect(descansoDelDia(false, 'DOMINGO', PRESUMIDO)).toBe(false);
+    expect(descansoDelDia(false, 'DOMINGO', HORARIO_L_A_S)).toBe(false);
   });
 
-  it('null no es un dato: cae a la regla vigente de la persona', () => {
-    // Las filas anteriores a la función. Para un PRESUMIDO la regla da el domingo, que es
-    // exactamente lo que el motor calcula hoy: nadie ve un número distinto.
-    expect(descansoDelDia(null, 'DOMINGO', PRESUMIDO)).toBe(true);
-    expect(descansoDelDia(null, 'LUNES', PRESUMIDO)).toBe(false);
+  it('null no es un dato: cae al horario vigente de la persona', () => {
+    // Las filas anteriores a la función. Con un horario de lunes a sábado la regla da el domingo, que
+    // es exactamente lo que el motor calcula hoy: nadie ve un número distinto.
+    expect(descansoDelDia(null, 'DOMINGO', HORARIO_L_A_S)).toBe(true);
+    expect(descansoDelDia(null, 'LUNES', HORARIO_L_A_S)).toBe(false);
   });
 
   it('undefined es un día sin fila y se comporta igual que null', () => {
     // `combinarDiasEsperados` rellena con el horario vigente los días sin fila: ahí no hay
     // `esDescanso` de ninguna clase.
-    expect(descansoDelDia(undefined, 'DOMINGO', PRESUMIDO)).toBe(true);
+    expect(descansoDelDia(undefined, 'DOMINGO', HORARIO_L_A_S)).toBe(true);
   });
 
-  it('sin fila, un FIJO con acuerdo descansa su día y no el domingo', () => {
-    expect(descansoDelDia(null, 'MIERCOLES', FIJO_MIERCOLES)).toBe(true);
-    expect(descansoDelDia(null, 'DOMINGO', FIJO_MIERCOLES)).toBe(false);
+  it('sin fila, quien libra el miércoles descansa el miércoles y no el domingo', () => {
+    expect(descansoDelDia(null, 'MIERCOLES', LIBRA_MIERCOLES)).toBe(true);
+    expect(descansoDelDia(null, 'DOMINGO', LIBRA_MIERCOLES)).toBe(false);
   });
 
-  it('sin fila, un ROTATIVO sin semana planificada cae al domingo', () => {
-    // La dirección segura: un turno pintado puede AGREGAR un recargo, nunca quitarlo.
-    expect(descansoDelDia(null, 'DOMINGO', ROTATIVO)).toBe(true);
-    expect(descansoDelDia(null, 'MARTES', ROTATIVO)).toBe(false);
+  it('SIN HORARIO Y SIN PROGRAMAR, la celda no es descanso: tampoco el domingo', () => {
+    // CAMBIO DE COMPORTAMIENTO del 30 de septiembre de 2026, decidido por el dueño: «alguien sin
+    // horario no tiene día de descanso fijo, solo cuando se programa se pone el día de descanso».
+    // Antes esto caía al domingo. `descansoDelDia` resuelve UNA celda y no sabe de la semana, así que
+    // le llega `null` como día programado: sin horario y sin programar, no hay descanso.
+    expect(descansoDelDia(null, 'DOMINGO', SIN_HORARIO)).toBe(false);
+    expect(descansoDelDia(null, 'MARTES', SIN_HORARIO)).toBe(false);
   });
 });
 

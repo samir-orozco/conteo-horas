@@ -15,10 +15,13 @@ type ParaLaLinea = {
   // respuesta anterior en caché lo trae sin él. Ya dejó la pantalla en blanco una vez hoy.
   sedes?: readonly { id: string; nombre: string }[];
   // CUÁNDO DESCANSA, ya resuelto por el servidor (29 de septiembre de 2026). Opcional por lo mismo
-  // que `sedes`. Llega como estado y no como las tres columnas crudas: la guarda del acuerdo escrito
-  // —sin papel, cualquier día declarado vale como domingo— es la que protege el recargo dominical, y
-  // una segunda copia aquí es como se separan (§9.3).
-  descanso?: { tipo: 'PRESUMIDO' | 'FIJO' | 'ROTATIVO'; dia: string | null };
+  // que `sedes`.
+  //
+  // DOS CASOS Y EL DÍA YA DECIDIDO (30 de septiembre de 2026): con horario, el día que dicen sus
+  // franjas; sin horario, no hay día fijo y lo pone la programación de cada semana. La regla de «si
+  // sobra uno ese, si sobran varios el domingo» vive en el backend y NO se repite aquí: de ella sale el
+  // recargo dominical, y una segunda copia es como se separan (§9.3).
+  descanso?: { de: 'HORARIO' | 'PROGRAMACION'; dia: string | null };
 };
 
 // Los días tal como los escribe la base, sin tildes. La lista completa vive en `lib/diasDeLaSemana`
@@ -27,26 +30,24 @@ const DOMINGO = 'DOMINGO';
 
 // CUÁNDO DESCANSA, dicho solo cuando se aparta de lo que se supone.
 //
-// UN CASO POR VALOR y no un `? :` sobre el tipo, que es lo que pide el §9.4: los tres estados de hoy
-// van a ser cuatro (la excepción marcada ya está en el plan), y con un ternario el cuarto heredaría
-// en silencio la rama de otro. Aquí obliga a venir a escribirlo.
+// UN CASO POR VALOR y no un `? :`, que es lo que pide el §9.4: la excepción marcada ya está en el plan
+// y con un ternario el tercer caso heredaría en silencio la rama de otro. Aquí obliga a venir a
+// escribirlo.
 //
-// PRESUMIDO Y FIJO-DOMINGO CALLAN LOS DOS, aunque por dentro sean estados distintos: para quien
-// programa significan lo mismo, «descansa el domingo», que es lo que ya se supone de todo el mundo.
-// Escribirlo en las veinte filas gastaría la línea en repetir el caso normal y los rotativos —los
-// únicos a los que hay que marcarles el descanso a mano— dejarían de saltar a la vista.
+// EL DOMINGO CALLA, que es lo que ya se supone de todo el mundo. Escribirlo en las veinte filas
+// gastaría la línea en repetir el caso normal, y los que no tienen horario —los únicos a los que hay
+// que marcarles el descanso a mano— dejarían de saltar a la vista.
 function cuandoDescansa(descanso: ParaLaLinea['descanso']): string {
   if (!descanso) return '';
-  switch (descanso.tipo) {
-    case 'ROTATIVO':
-      // El que importa: pintarle turnos NO le mueve el descanso, hay que marcárselo.
-      return 'descanso rotativo';
-    case 'FIJO':
-      // Sin día no se nombra ninguno. `estadoDescansoDe` ya cae a PRESUMIDO en ese caso, así que
-      // esto no debería llegar; si llega, inventarle un día sería peor que callar.
+  switch (descanso.de) {
+    case 'PROGRAMACION':
+      // El que importa: no tiene día fijo, así que pintarle turnos no le pone ningún descanso. Hay que
+      // marcárselo con el botón, semana por semana.
+      return 'descanso según programación';
+    case 'HORARIO':
+      // Sin día no se nombra ninguno. `diaDeDescansoDelHorario` siempre devuelve uno, así que esto no
+      // debería llegar; si llega, inventarle un día sería peor que callar.
       return !descanso.dia || descanso.dia === DOMINGO ? '' : `descansa ${nombreDelDia(descanso.dia).toLowerCase()}`;
-    case 'PRESUMIDO':
-      return '';
   }
 }
 
