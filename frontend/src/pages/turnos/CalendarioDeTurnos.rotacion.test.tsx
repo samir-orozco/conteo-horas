@@ -220,24 +220,56 @@ describe('el veredicto del mes', () => {
     expect(within(caja).getByText(/el descanso se corre tres días cada semana/i)).toBeInTheDocument();
   });
 
-  it('correr el arranque del ciclo cambia QUÉ DÍAS trabaja', async () => {
-    // AFIRMA EL SIGNIFICADO Y NO EL TEXTO SUELTO. La primera versión comparaba `textContent` de la
-    // ventana entera antes y después, y pasaba de rebote: la tira mostraba una «T» o una «D» por día y
-    // esas letras cambiaban. Al agrandar la tira, esas letras se fueron y la prueba cayó —con razón,
-    // porque entonces correr el ciclo solo cambiaba colores y no había nada que una persona con
-    // problemas de color pudiera notar.
-    //
-    // Ahora cada caja lleva su nombre accesible («28 de septiembre: trabaja»), así que se puede
-    // comprobar lo que de verdad importa: que el reparto de días CAMBIA.
+  // ────────── TOCAR EL DÍA, EN VEZ DE CORRER CON FLECHAS (29 de septiembre de 2026) ──────────
+  //
+  // Pedido del dueño: «puedes poner la función de las flechas directamente en las cards, al dar clic».
+  // Las dos flechas movían el ciclo de uno en uno: para que empezara el viernes en una tira de siete
+  // había que pulsar cuatro veces y mirar la tira después de cada una.
+  //
+  // Esta prueba ya existía como «correr el arranque del ciclo» y se pone roja al quitar las flechas,
+  // por la razón correcta. Se le cambia el gesto y se le agrega lo que antes no se podía afirmar: que
+  // el día que se TOCA es el que arranca.
+  const trabajanEn = (caja: HTMLElement) =>
+    within(caja).getAllByRole('button', { name: /Ahora trabaja$/ }).map(b => b.getAttribute('aria-label'));
+
+  it('tocar un día cambia QUÉ DÍAS trabaja', async () => {
+    // AFIRMA EL SIGNIFICADO Y NO EL TEXTO SUELTO. Una versión anterior comparaba el `textContent` de
+    // la ventana entera, y pasaba de rebote porque la tira mostraba una «T» o una «D» por día. Al
+    // agrandar las cajas esas letras se fueron y la prueba cayó, con razón: entonces el gesto solo
+    // cambiaba colores y no había nada que una persona con problemas de color pudiera notar.
     const usuario = userEvent.setup();
     const caja = await abrir(usuario);
-    const trabajanAntes = within(caja).getAllByLabelText(/: trabaja$/).map(e => e.getAttribute('aria-label'));
-    expect(trabajanAntes.length).toBeGreaterThan(0);
+    const antes = trabajanEn(caja);
+    expect(antes.length).toBeGreaterThan(0);
 
-    await usuario.click(within(caja).getByRole('button', { name: /correr un día adelante/i }));
+    // El cuarto día de la tira: cualquiera que no sea el que ya arranca.
+    const tarjetas = within(caja).getAllByRole('button', { name: /^Arrancar el ciclo el /});
+    await usuario.click(tarjetas[3]);
 
-    const trabajanDespues = within(caja).getAllByLabelText(/: trabaja$/).map(e => e.getAttribute('aria-label'));
-    expect(trabajanDespues).not.toEqual(trabajanAntes);
+    expect(trabajanEn(caja)).not.toEqual(antes);
+  });
+
+  it('Y EL DÍA QUE SE TOCA ES EL QUE ARRANCA: pasa a trabajar', async () => {
+    // Lo que las flechas no dejaban afirmar. Con ellas solo se podía comprobar que algo cambiaba; el
+    // clic promete un día concreto, así que se comprueba ESE.
+    const usuario = userEvent.setup();
+    const caja = await abrir(usuario);
+    const tarjetas = within(caja).getAllByRole('button', { name: /^Arrancar el ciclo el /});
+    const suNombre = tarjetas[3].getAttribute('aria-label') ?? '';
+    const elDia = suNombre.replace(/^Arrancar el ciclo el /, '').replace(/\. Ahora .*$/, '');
+
+    await usuario.click(tarjetas[3]);
+
+    expect(within(caja).getByRole('button', { name: new RegExp(`el ${elDia}\\. Ahora trabaja$`) }))
+      .toBeInTheDocument();
+  });
+
+  it('ya no hay flechas: su trabajo lo hace el clic', async () => {
+    // Dejar las dos cosas serían dos caminos para lo mismo, y las flechas se llevaban el ancho de los
+    // dos extremos, que es de donde venía lo «recogido» que vio el dueño.
+    const usuario = userEvent.setup();
+    const caja = await abrir(usuario);
+    expect(within(caja).queryByRole('button', { name: /correr un día/i })).not.toBeInTheDocument();
   });
 });
 

@@ -39,7 +39,9 @@ import {
 } from './previaDeBloque';
 // El motor de rotaciones y la proyección del mes: también puros, probados y mutados. Qué le toca a
 // cada día del ciclo y qué semanas quedarían sin descanso NO se deciden aquí.
-import { ROTACIONES, accionDelDia, semanasSinDescanso, type PatronDeRotacion } from './rotacion';
+import {
+  ROTACIONES, accionDelDia, semanasSinDescanso, desfaseParaArrancarEn, type PatronDeRotacion,
+} from './rotacion';
 import { proyeccionDelMes, proyeccionDelBloque, minutosProyectados } from './proyeccionDeRotacion';
 // Qué se le escribe a cada día con lo que está pendiente: una acción igual para todas las celdas, o
 // una rotación que reparte turnos y descansos por el ciclo. Puro, probado y mutado aparte.
@@ -1327,7 +1329,7 @@ function TarjetaDeBloque({
 // `proyeccionDelMes` y `semanasSinDescanso`, que son puras y están probadas y mutadas.
 function VentanaDeRotacion({
   nombre, catalogo, rot, dias, marcadas, hoy, primerDia, mes, semanasMalas, esperandoElMes,
-  onPatron, onTurno, onCorrer, onCancelar, onVerPrevia,
+  onPatron, onTurno, onArrancarEn, onCancelar, onVerPrevia,
 }: {
   nombre: string;
   catalogo: TurnoDelCatalogo[];
@@ -1341,7 +1343,10 @@ function VentanaDeRotacion({
   esperandoElMes: boolean;
   onPatron: (patron: PatronDeRotacion) => void;
   onTurno: (plantillaId: string) => void;
-  onCorrer: (cuanto: number) => void;
+  // DE «CORRER UN DÍA» A «ARRANCAR AQUÍ» (29 de septiembre de 2026, pedido del dueño). Antes eran dos
+  // flechas que movían el ciclo de uno en uno: para que empezara el viernes en una tira de siete había
+  // que pulsar cuatro veces y mirar la tira después de cada una. Ahora se toca el día.
+  onArrancarEn: (fecha: string) => void;
   onCancelar: () => void;
   onVerPrevia: () => void;
 }) {
@@ -1410,45 +1415,42 @@ function VentanaDeRotacion({
 
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">Dónde arranca el ciclo</span>
-            <div className="mt-2 flex items-center gap-1.5">
-              <button type="button" onClick={() => onCorrer(-1)} aria-label="Correr un día atrás"
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gray-100 text-ink hover:bg-gray-200">
-                <ChevronLeft size={14} />
-              </button>
-              {/* LA TIRA MUESTRA LO QUE DE VERDAD SE VA A ESCRIBIR, no el patrón en abstracto: un día
-                  que no está marcado, o que ya pasó, conserva lo suyo y se ve apagado. Si pintara el
-                  ciclo completo, prometería una rotación que la escritura no va a cumplir. */}
-              <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
-                {dias.map(fecha => {
-                  const entra = marcadas.has(fecha) && sePuedePintar(fecha, hoy);
-                  const trabaja = accionDelDia(rot.patron, rot.desfase, diasEntre(primerDia, fecha)) === 'TURNO';
-                  return (
-                    // CAJAS LEGIBLES, como en la maqueta: la inicial arriba y el número grande
-                    // debajo. Antes eran tres renglones de diez píxeles —inicial, número y una T o una
-                    // D— y había que acercarse a la pantalla para leer en qué día arranca el ciclo,
-                    // que es la única pregunta que esta tira contesta.
-                    // CADA CAJA DICE SI ESE DÍA TRABAJA O DESCANSA, y no solo con el color.
-                    //
-                    // La maqueta lo deja al color, y copiarlo tal cual sería copiar un defecto: correr
-                    // el arranque del ciclo es un botón cuyo ÚNICO efecto sería un cambio de tono, así
-                    // que quien no distinga bien los colores no vería que pasó nada. Con el nombre
-                    // accesible, además, una prueba puede afirmar el SIGNIFICADO y no un texto suelto.
-                    <div key={fecha}
-                      aria-label={`${rotuloCorto(fecha)}: ${
-                        !entra ? 'no entra en el envío' : trabaja ? 'trabaja' : 'descansa'}`}
-                      className={`w-10 shrink-0 rounded-lg px-1 py-1.5 text-center leading-tight ${
-                        !entra ? 'bg-gray-50 text-gray-300'
-                          : trabaja ? 'bg-primary-light text-ink' : 'bg-gray-200 text-muted'}`}>
-                      <div className="text-[11px] font-bold">{inicialDeDia(fecha)}</div>
-                      <div className="text-sm font-extrabold tabular-nums">{Number(fecha.slice(8, 10))}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              <button type="button" onClick={() => onCorrer(1)} aria-label="Correr un día adelante"
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gray-100 text-ink hover:bg-gray-200">
-                <ChevronRight size={14} />
-              </button>
+            {/* LAS TARJETAS OCUPAN EL ANCHO Y SE TOCAN (29 de septiembre de 2026, pedido del dueño:
+                «ojalá fuera de todo el ancho, para que no se vea como recogido»).
+
+                SE FUERON LAS DOS FLECHAS. Su trabajo lo hace el clic en la tarjeta, que además es más
+                directo: la flecha corre uno y hay que volver a mirar; el clic dice cuál. Dejar las dos
+                cosas sería dos caminos para lo mismo, y las flechas se llevaban el ancho de los dos
+                extremos, que es de donde venía lo «recogido».
+
+                `flex-1` CON UN MÍNIMO: en una semana son siete y llenan; en un mes son cuarenta y dos
+                y el mínimo las deja legibles con desplazamiento, que es lo mismo que hace la rejilla. */}
+            <div className="mt-2 flex gap-1 overflow-x-auto">
+              {dias.map(fecha => {
+                const entra = marcadas.has(fecha) && sePuedePintar(fecha, hoy);
+                const distancia = diasEntre(primerDia, fecha);
+                const trabaja = accionDelDia(rot.patron, rot.desfase, distancia) === 'TURNO';
+                // DÓNDE ARRANCA EL CICLO: la posición 0 es el primer día de trabajo. Se marca con un
+                // borde y no con otro color, porque los dos colores que hay ya significan otra cosa
+                // —trabaja o descansa— y un tercero los volvería a todos difíciles de leer.
+                const arranca = (((distancia + rot.desfase) % ROTACIONES[rot.patron].ciclo)
+                  + ROTACIONES[rot.patron].ciclo) % ROTACIONES[rot.patron].ciclo === 0;
+                return (
+                  // CADA CAJA DICE SI ESE DÍA TRABAJA O DESCANSA, y no solo con el color: quien no
+                  // distinga bien los colores no vería que el clic hizo algo. Con el nombre accesible,
+                  // además, una prueba puede afirmar el SIGNIFICADO y no un texto suelto.
+                  <button key={fecha} type="button" onClick={() => onArrancarEn(fecha)}
+                    aria-label={`Arrancar el ciclo el ${rotuloCorto(fecha)}. Ahora ${
+                      !entra ? 'no entra en el envío' : trabaja ? 'trabaja' : 'descansa'}`}
+                    className={`min-w-[38px] flex-1 rounded-lg border-2 px-1 py-1.5 text-center leading-tight transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark ${
+                      arranca ? 'border-ink' : 'border-transparent'} ${
+                      !entra ? 'bg-gray-50 text-gray-300 hover:bg-gray-100'
+                        : trabaja ? 'bg-primary-light text-ink hover:bg-primary' : 'bg-gray-200 text-muted hover:bg-gray-300'}`}>
+                    <div className="text-[11px] font-bold">{inicialDeDia(fecha)}</div>
+                    <div className="text-sm font-extrabold tabular-nums">{Number(fecha.slice(8, 10))}</div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -4253,11 +4255,9 @@ export default function CalendarioDeTurnos() {
           esperandoElMes={mesDeLaRotacion === null}
           onPatron={patron => setRot({ ...rot, patron, desfase: 0 })}
           onTurno={plantillaId => setRot({ ...rot, plantillaId })}
-          onCorrer={cuanto => setRot({
-            ...rot,
-            desfase: ((rot.desfase + cuanto) % ROTACIONES[rot.patron].ciclo + ROTACIONES[rot.patron].ciclo)
-              % ROTACIONES[rot.patron].ciclo,
-          })}
+          // La cuenta vive en `desfaseParaArrancarEn`, que es pura y está mutada: aquí estaba escrita
+          // a mano con su doble `%`, y era la tercera copia de esa normalización en el archivo.
+          onArrancarEn={fecha => setRot({ ...rot, desfase: desfaseParaArrancarEn(primerDiaDelPeriodo, fecha, rot.patron) })}
           onCancelar={cerrarRotacion}
           onVerPrevia={() => {
             setPendiente({

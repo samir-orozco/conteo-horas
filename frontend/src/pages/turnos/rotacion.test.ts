@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { ROTACIONES, accionDelDia, planDeRotacion, semanasSinDescanso } from './rotacion';
-import { diasDeLaSemana, sumarDias } from './semana';
+import {
+  ROTACIONES, accionDelDia, planDeRotacion, semanasSinDescanso, desfaseParaArrancarEn,
+} from './rotacion';
+import { diasDeLaSemana, sumarDias, diasEntre } from './semana';
 
 // EL MOTOR DE ROTACIONES (28 de septiembre de 2026).
 //
@@ -150,5 +152,56 @@ describe('las semanas que se quedarían sin descanso', () => {
         expect(`${patron}+${desfase}: ${semanasSinDescanso(mapa, MES).length}`).toBe(`${patron}+${desfase}: 0`);
       }
     }
+  });
+});
+
+// ────────── TOCAR UN DÍA PARA QUE EL CICLO ARRANQUE AHÍ (29 de septiembre de 2026) ──────────
+//
+// Pedido del dueño: «puedes poner la función de las flechas directamente en las cards, al dar clic».
+// Hasta hoy el arranque del ciclo se corría con dos flechas, de uno en uno: para que empezara el
+// viernes en una tira de siete había que pulsar cuatro veces y mirar la tira después de cada una.
+// Tocando el día se dice de una y sin contar.
+//
+// LO QUE SE CALCULA ES EL DESFASE, que es lo que la rotación guarda. `accionDelDia` resuelve la
+// posición del ciclo como `(díasDesdeElInicio + desfase) % ciclo`, así que para que un día caiga en la
+// posición 0 —el primero que trabaja— el desfase tiene que ser el complemento de su distancia al
+// primer día del período.
+//
+// EL DOBLE `%` NO ES UN ADORNO, y es la misma razón que ya está escrita en `accionDelDia`: en
+// JavaScript `-3 % 7` es `-3`, no `4`. Sin normalizar, tocar cualquier día que no sea el primero
+// guardaría un desfase negativo, y aunque `accionDelDia` lo vuelva a normalizar por su cuenta, lo que
+// viaja al servidor y lo que se lee después sería un número que nadie eligió.
+
+describe('el desfase que hace arrancar el ciclo en un día', () => {
+  it('tocar el PRIMER día deja el desfase en cero', () => {
+    expect(desfaseParaArrancarEn('2026-09-28', '2026-09-28', '6x1')).toBe(0);
+  });
+
+  it('tocar el segundo lo corre para que ESE sea la posición cero', () => {
+    expect(desfaseParaArrancarEn('2026-09-28', '2026-09-29', '6x1')).toBe(6);
+  });
+
+  it('y el resultado CUMPLE lo que promete: ese día es el primero que trabaja', () => {
+    // La prueba que amarra esto con `accionDelDia`, que es quien lo usa de verdad. Sin ella, el
+    // número podría ser plausible y estar corrido uno.
+    for (const patron of ['6x1', '5x2', '4x2', '2x2'] as const) {
+      for (const dia of ['2026-09-28', '2026-09-30', '2026-10-03']) {
+        const desfase = desfaseParaArrancarEn('2026-09-28', dia, patron);
+        expect(accionDelDia(patron, desfase, diasEntre('2026-09-28', dia)), `${patron} · ${dia}`).toBe('TURNO');
+      }
+    }
+  });
+
+  it('NUNCA DEVUELVE UN NEGATIVO, aunque el día toque antes del inicio', () => {
+    const d = desfaseParaArrancarEn('2026-09-28', '2026-09-25', '6x1');
+    expect(d).toBeGreaterThanOrEqual(0);
+    expect(d).toBeLessThan(7);
+  });
+
+  it('se queda DENTRO del ciclo, que es más corto que la semana en 4x2 y 2x2', () => {
+    // `4x2` tiene ciclo de 6 y `2x2` de 4: un desfase de 6 en un ciclo de 4 es el mismo que 2, y
+    // guardarlo sin reducir dejaría dos números distintos significando lo mismo.
+    expect(desfaseParaArrancarEn('2026-09-28', '2026-10-04', '2x2')).toBeLessThan(4);
+    expect(desfaseParaArrancarEn('2026-09-28', '2026-10-04', '4x2')).toBeLessThan(6);
   });
 });

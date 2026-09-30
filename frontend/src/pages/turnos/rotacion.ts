@@ -52,6 +52,29 @@ export function accionDelDia(
   return posicion < trabaja ? 'TURNO' : 'DESCANSO';
 }
 
+// EL DESFASE QUE HACE ARRANCAR EL CICLO EN UN DÍA (29 de septiembre de 2026, pedido del dueño:
+// «puedes poner la función de las flechas directamente en las cards, al dar clic»).
+//
+// Hasta hoy el arranque se corría con dos flechas, de uno en uno: para que empezara el viernes en una
+// tira de siete había que pulsar cuatro veces y mirar la tira después de cada una. Tocando el día se
+// dice de una y sin contar.
+//
+// `accionDelDia` resuelve la posición como `(díasDesdeElInicio + desfase) % ciclo`, así que para que
+// un día caiga en la posición 0 —el primero que trabaja— el desfase es el complemento de su distancia.
+//
+// EL DOBLE `%` ES LA MISMA RAZÓN QUE ALLÍ: en JavaScript `-3 % 7` es `-3`, no `4`. Sin normalizar,
+// tocar cualquier día que no sea el primero guardaría un negativo, y aunque `accionDelDia` lo vuelva a
+// normalizar por su cuenta, lo que viaja al servidor y lo que se lee después sería un número que nadie
+// eligió.
+export function desfaseParaArrancarEn(
+  primerDia: string,
+  fecha: string,
+  patron: PatronDeRotacion,
+): number {
+  const { ciclo } = ROTACIONES[patron];
+  return (((-diasEntre(primerDia, fecha)) % ciclo) + ciclo) % ciclo;
+}
+
 // El plan completo: qué le toca a cada fecha de la lista.
 //
 // LA POSICIÓN SE CUENTA EN DÍAS DESDE LA PRIMERA FECHA, no por el índice del arreglo. La diferencia
