@@ -86,23 +86,60 @@ const esperarLaRejilla = () => screen.findAllByRole('button', { name: /Julián T
 
 beforeEach(() => { put.mockReset(); del.mockReset(); });
 
+// ────────── DE UNA PREGUNTA A SIETE TARJETAS (29 de septiembre de 2026, pedido del dueño) ──────────
+//
+// Esto era una píldora con una sola pregunta: «¿Descansa el jueves?». Sí o nada. Si la propuesta se
+// equivocaba, o si no había propuesta porque sobraban varios días libres, desde aquí no se podía
+// hacer nada: había que ir a la celda y abrir su panel.
+//
+// Ahora se ofrecen los SIETE días y la propuesta es la que viene resaltada. Estas tres pruebas
+// cambiaron de gesto por eso, no porque estuvieran mal: buscaban un botón llamado «jueves» y ahora
+// cada tarjeta se llama por su fecha con palabras, que es lo que oye un lector de pantalla.
+const tarjetaDel = (fecha: string) =>
+  screen.findByRole('button', { name: new RegExp(`Marcar el ${Number(fecha.slice(8, 10))} de .* como descanso`) });
+
 describe('cuando se puede proponer', () => {
-  it('ofrece el día que sobró, nombrándolo', async () => {
+  it('OFRECE LOS SIETE DÍAS, no solo el que sobró', async () => {
     montar(PROPUESTA);
-    expect(await screen.findByRole('button', { name: /jueves/i })).toBeInTheDocument();
+    await esperarLaRejilla();
+    const todas = screen.getAllByRole('button', { name: /como descanso de la semana/ });
+    expect(todas).toHaveLength(DIAS.length);
   });
 
-  it('confirmar manda la ACCIÓN de descanso, y ningún turno', async () => {
+  it('y el propuesto es el único que se destaca, sin quedar preseleccionado', async () => {
+    // Resaltado NO es elegido: marcar el descanso mueve un recargo, así que sigue haciendo falta un
+    // clic. Se comprueba por lo que dice la fila, no por una clase: mientras nadie elija, el aviso
+    // sigue diciendo que el domingo se está tomando.
+    montar(PROPUESTA);
+    await esperarLaRejilla();
+    expect(screen.getByText(/Sin marcar, descansa el domingo/i)).toBeInTheDocument();
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it('elegir manda la ACCIÓN de descanso, y ningún turno', async () => {
     // Lo que de verdad importa: que no viaje `plantillaId`. Cuando sí viajaba, era el de una
     // plantilla marcada como descanso, y elegir mal —pintar «Mañana» ahí— convertía la
     // confirmación del descanso en un turno de trabajo. Ese error ya no se puede cometer.
     const usuario = userEvent.setup();
     put.mockResolvedValue({ data: { ok: true } });
     montar(PROPUESTA);
-    await usuario.click(await screen.findByRole('button', { name: /jueves/i }));
+    await usuario.click(await tarjetaDel(JUEVES));
 
     expect(put).toHaveBeenCalledWith('/turnos/dia', {
       colaboradorId: 'c1', fecha: JUEVES, descanso: true,
+    });
+  });
+
+  it('SE PUEDE ELEGIR OTRO distinto del propuesto, que es para lo que están las tarjetas', async () => {
+    // El caso que la píldora no sabía hacer: la propuesta dice jueves y el acuerdo real es el
+    // viernes. Antes había que ir a la celda de ese día y abrir su panel.
+    const usuario = userEvent.setup();
+    put.mockResolvedValue({ data: { ok: true } });
+    montar(PROPUESTA);
+    await usuario.click(await tarjetaDel(DIAS[4]));
+
+    expect(put).toHaveBeenCalledWith('/turnos/dia', {
+      colaboradorId: 'c1', fecha: DIAS[4], descanso: true,
     });
   });
 
@@ -114,11 +151,25 @@ describe('cuando se puede proponer', () => {
     const usuario = userEvent.setup();
     put.mockResolvedValue({ data: { ok: true } });
     montar(PROPUESTA, []);
-    await usuario.click(await screen.findByRole('button', { name: /jueves/i }));
+    await usuario.click(await tarjetaDel(JUEVES));
 
     expect(put).toHaveBeenCalledWith('/turnos/dia', {
       colaboradorId: 'c1', fecha: JUEVES, descanso: true,
     });
+  });
+
+  it('UN DÍA QUE YA PASÓ NO SE PUEDE ELEGIR', async () => {
+    // La misma regla que la rejilla, y aquí importa igual: marcar el descanso de un día ido
+    // reescribiría lo que ese día exigía. El servidor lo rechaza, así que ofrecerlo sería ofrecer
+    // una escritura que no va a ocurrir.
+    //
+    // Cuántos hay depende del día en que se corra la suite; lo que se afirma es que son EXACTAMENTE
+    // los que la regla dice, y que ninguno futuro sale apagado.
+    montar(PROPUESTA);
+    await esperarLaRejilla();
+    const apagadas = screen.getAllByRole('button', { name: /como descanso de la semana/ })
+      .filter(b => b.hasAttribute('disabled'));
+    expect(apagadas).toHaveLength(DIAS.filter(f => f < HOY).length);
   });
 });
 
@@ -131,7 +182,12 @@ describe('cuando no se puede proponer', () => {
   it('y no ofrece confirmar nada', async () => {
     montar({ estado: 'SIN_DESCANSO' });
     await screen.findByText(/se está tomando el domingo/i);
-    expect(screen.queryByRole('button', { name: /confirmar|jueves/i })).not.toBeInTheDocument();
+    // SIGUE OFRECIENDO LAS TARJETAS, y eso cambió a propósito el 29 de septiembre: antes aquí no
+    // había nada que tocar, y era justo el caso en que más falta hacía —sobran varios días libres y
+    // el sistema no puede deducir cuál—. Lo que no hay es ninguna resaltada: inventarse una sería
+    // hacer la deducción que el backend no pudo hacer.
+    expect(screen.getAllByRole('button', { name: /como descanso de la semana/ })).toHaveLength(DIAS.length);
+    expect(screen.queryByText(/¿Es el/i)).not.toBeInTheDocument();
   });
 
   it('dos descansos pintados dicen algo DISTINTO de «sin descanso»', async () => {

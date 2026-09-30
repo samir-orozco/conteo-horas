@@ -23,6 +23,7 @@ import { cargoYSede } from './cargoYSede';
 import { colorDeAvatar } from '../../lib/colorDeAvatar';
 import { progresoDelTope } from './progresoDelTope';
 import { fondoDeLaColumna } from './fondoDeLaColumna';
+import { tarjetasDeDescanso, type EstadoDeLaTarjeta } from './tarjetasDeDescanso';
 import { avisoDeDescansos } from './avisoDeDescansos';
 // A quién se ve con los filtros de arriba. Puro, probado y mutado: de esta lista sale qué se puede
 // seleccionar, y por lo tanto a quién se le escribe al aplicar un bloque.
@@ -874,9 +875,46 @@ function PanelDeJornada({ ancla, titulo, subtitulo, dia, catalogo, ocupado, erro
 // Los cuatro estados se pintan DISTINTOS a propósito. `SIN_DESCANSO` y `AMBIGUA` caen las dos al
 // domingo, pero una es una omisión y la otra un error ya cometido: decirle «no hay descanso» a
 // quien planificó dos lo mandaría a buscar lo que no falta.
-function PropuestaDeSemana({ propuesta, onConfirmar, ocupado }: {
+// CÓMO SE PINTA CADA TARJETA. Un mapa y no ternarios anidados, por lo mismo que el resto de este
+// archivo: son cuatro valores cerrados hoy y la quinta rama ya se ve venir.
+//
+// `IDO` NO ES UN BOTÓN, es un hueco apagado: un botón que se puede pulsar y no hace nada es peor que
+// uno que no invita. (El encabezado del día tomó el camino contrario esta misma tarde, y a propósito:
+// allí el clic ahora EXPLICA por qué no se puede, y aquí, con las otras seis tarjetas al lado, la
+// explicación ya está a la vista.)
+const TARJETA: Record<EstadoDeLaTarjeta, string> = {
+  PROPUESTO: 'border-primary-dark bg-primary-light text-ink font-extrabold hover:bg-primary',
+  ELEGIBLE: 'border-gray-200 bg-white text-muted hover:border-gray-400 hover:text-ink',
+  CON_TURNO: 'border-gray-200 bg-gray-100 text-gray-400 hover:border-gray-400 hover:text-ink',
+  IDO: 'border-transparent bg-gray-50 text-gray-300 cursor-default',
+};
+
+// QUÉ SE LE DICE A QUIEN PLANIFICA UNA SEMANA ROTATIVA (22 de septiembre de 2026, con tarjetas desde
+// el 29).
+//
+// Decidido con el dueño: un día en blanco NO se asume como descanso, porque el olvido y la decisión
+// producen el mismo dato y asumir dejaría de pagar un recargo por deducción propia. Pero pedir un
+// clic en cada semana de cada persona es fricción real, así que el sistema PROPONE y alguien elige.
+//
+// SE OFRECEN LOS SIETE DÍAS, no solo el propuesto (pedido del dueño: «proponer un día de descanso y
+// seleccionarlo, como las cards con los números y el día»). Antes esto era una píldora con una sola
+// pregunta —«¿Descansa el jueves?»— y si la propuesta se equivocaba, o si no había propuesta porque
+// sobraban varios días libres, desde aquí no se podía hacer nada: había que ir a la celda y abrir su
+// panel. La propuesta pasa de ser la única respuesta a ser la que viene resaltada.
+//
+// EL CASO AMBIGUO SIGUE APARTE. Dos descansos ya pintados no es una omisión, es un error ya cometido,
+// y ofrecerle tarjetas para «elegir» uno más no lo arregla: hay que quitar uno.
+//
+// CUÁL ESTÁ RESALTADA Y CUÁL NO SE PUEDE TOCAR lo decide `tarjetasDeDescanso`, que es pura y está
+// probada y mutada. Aquí solo se dibuja.
+function PropuestaDeSemana({ propuesta, dias, trabajado, hoy, onElegir, ocupado }: {
   propuesta: PropuestaDeDescanso | null;
-  onConfirmar: (fecha: string) => void;
+  // Los siete días de la semana que se está viendo, en orden.
+  dias: readonly string[];
+  // Qué días de esa persona ya exigen trabajo, sea por turno pintado o por su horario.
+  trabajado: Readonly<Record<string, boolean>>;
+  hoy: string;
+  onElegir: (fecha: string) => void;
   ocupado: boolean;
 }) {
   // Sin propuesta, no rotativa, o ya resuelta: no hay nada que decir. Una semana resuelta no lleva
@@ -896,30 +934,40 @@ function PropuestaDeSemana({ propuesta, onConfirmar, ocupado }: {
     );
   }
 
-  if (propuesta.estado === 'SIN_DESCANSO') {
-    return (
-      <span className="text-[11px] text-amber-800">Sin descanso asignado: se está tomando el domingo</span>
-    );
-  }
+  // `propuesta.fecha` es `null` en el caso SIN_DESCANSO: sobran varios días y el backend no dedujo
+  // ninguno. Las tarjetas salen igual, sin ninguna resaltada, que es justo para lo que sirven.
+  // SIN_DESCANSO no lleva fecha en el tipo, y eso es correcto: no dedujo ninguna. Se estrecha con el
+  // `estado` y no con un `?.` optimista, que habría dejado pasar el día que aparezca un quinto estado
+  // sin fecha.
+  const propuesto = propuesta.estado === 'PROPUESTA' ? propuesta.fecha : null;
+  const tarjetas = tarjetasDeDescanso(dias, trabajado, propuesto, hoy);
+  if (tarjetas.every(t => t.estado === 'IDO')) return null;
 
-  // Confirmar PINTA el turno de descanso del catálogo. Sin ese turno no hay nada que pintar, así
-  // que se dice en vez de ofrecer un botón que el servidor rechazaría con un error que quien mira
-  // no podría explicar.
-  // AQUÍ SE PEDÍA UN TURNO DE DESCANSO DEL CATÁLOGO, y si no existía este botón no aparecía nunca:
-  // decía «falta un turno de descanso en el catálogo». Medido contra la base antes de cambiarlo, de
-  // 10 empresas NINGUNA tenía uno, así que esta función estaba fuera del alcance de todo el mundo.
-  //
-  // Desde el 23 de septiembre de 2026 marcar un descanso es una acción sobre el día y no necesita
-  // catálogo, así que lo único que puede faltar ya es la fecha.
-  if (!propuesta.fecha) return null;
-
-  const fecha = propuesta.fecha;
   return (
-    <button type="button" disabled={ocupado}
-      onClick={() => onConfirmar(fecha)}
-      className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-60">
-      ¿Descansa el {nombreDelDia(propuesta.dia).toLowerCase()}?
-    </button>
+    <div className="mt-1">
+      {/* SE DICE QUE EL DOMINGO SE ESTÁ TOMANDO MIENTRAS NADIE ELIJA, y no se calla: sin un día
+          marcado el motor cae al domingo, y si esa persona trabaja el domingo eso paga recargo. */}
+      <p className="text-[11px] leading-snug text-amber-800">
+        {propuesta.estado === 'PROPUESTA'
+          ? <>Sin marcar, descansa el domingo. ¿Es el <b>{nombreDelDia(propuesta.dia).toLowerCase()}</b>?</>
+          : 'Sin descanso marcado: se está tomando el domingo.'}
+      </p>
+      <div className="mt-1.5 flex justify-center gap-1">
+        {tarjetas.map(t => (
+          <button key={t.fecha} type="button"
+            disabled={ocupado || t.estado === 'IDO'}
+            onClick={() => onElegir(t.fecha)}
+            // EL NOMBRE ACCESIBLE DICE EL DÍA CON PALABRAS y lo que hace el clic. En pantalla la
+            // tarjeta lleva una letra y un número, que a un lector de pantalla no le dicen nada.
+            aria-label={`Marcar el ${rotuloCorto(t.fecha)} como descanso de la semana`}
+            title={t.estado === 'CON_TURNO' ? 'Tiene un turno: marcarlo como descanso lo reemplaza' : undefined}
+            className={`grid h-[34px] w-[30px] shrink-0 place-items-center rounded-lg border text-[11px] leading-none transition-colors disabled:opacity-60 ${TARJETA[t.estado]}`}>
+            <span className="block text-[9px] font-semibold uppercase opacity-70">{inicialDeDia(t.fecha)}</span>
+            <span className="block tabular-nums">{Number(t.fecha.slice(8, 10))}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -4022,8 +4070,11 @@ export default function CalendarioDeTurnos() {
                             quedó la semana», que es la pregunta que la propuesta viene a cerrar. */}
                         <PropuestaDeSemana
                           propuesta={fila.propuesta}
+                          dias={dias}
+                          trabajado={mapasDe(diasDe(fila.dias)).trabajado}
+                          hoy={hoy}
                           ocupado={guardando}
-                          onConfirmar={fecha => pintarEn(fila.id, fecha, { descanso: true })} />
+                          onElegir={fecha => pintarEn(fila.id, fecha, { descanso: true })} />
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         {fila.descansoHabitual.trabajados > 0 ? (
