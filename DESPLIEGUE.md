@@ -115,6 +115,87 @@ RewriteCond %{REQUEST_URI} !^/api/
 RewriteRule . /index.html [L]
 ```
 
+## 4.1 ⚠️ Armar un artefacto: las tres formas de subirlo incompleto
+
+**Las tres pasaron la misma noche, la del 30 de septiembre al 1 de octubre de 2026,
+y dos de ellas dos veces.** Ninguna da error: el comando informa éxito y el
+artefacto queda roto.
+
+### `git add` sin `-f` se salta los archivos NUEVOS
+
+`.gitignore` ignora `frontend/dist` y `deploy-backend/dist`, así que en una rama de
+artefacto `git add -A <carpeta>` solo toca lo que YA estaba rastreado. Los archivos
+nuevos —justo los que llevan el hash nuevo, o el módulo que se acaba de escribir— se
+quedan fuera. Git lo avisa («The following paths are ignored by one of your
+.gitignore files») **pero el commit se hace igual**.
+
+Costó dos artefactos esa noche: el frontend quedó con un `index.html` apuntando a un
+bundle que no estaba dentro —copiarlo habría dejado el sitio en blanco—, y al backend
+le faltó `dist/utils/descansoDelHorario.js`, que el `index.js` importa, así que
+habría reventado al arrancar. El segundo ya estaba copiado en el servidor cuando se
+cazó; lo salvó que el restart va después.
+
+**Siempre `git add -f -A <carpeta>` en una rama de artefacto.**
+
+### Y se comprueba CONTANDO, no mirando
+
+Antes de empujar, el artefacto tiene que tener los mismos archivos que lo compilado:
+
+```bash
+git ls-tree -r --name-only origin/backend-build | grep "^deploy-backend/dist/" \
+  | sed 's|deploy-backend/dist/||' | sort > /tmp/en-origin.txt
+(cd <worktree>/backend/dist && find . -type f | sed 's|^\./||' | sort) > /tmp/compilado.txt
+comm -3 /tmp/en-origin.txt /tmp/compilado.txt     # tiene que salir vacío
+```
+
+Y para el frontend, que el archivo que pide el `index.html` esté DENTRO:
+
+```bash
+B=$(git show origin/frontend-build:frontend/dist/index.html | grep -o 'assets/index-[A-Za-z0-9_-]*\.js')
+git ls-tree -r --name-only origin/frontend-build | grep -qx "frontend/dist/$B" && echo ok || echo ROTO
+```
+
+### `rsync` NO existe en el servidor
+
+`bash: rsync: command not found`. En la máquina local sí está y es lo que se usa para
+armar los artefactos; en Banahosting no. Para copiar al docroot, `tar`, que sobrescribe
+siempre y está en cualquier parte:
+
+```bash
+cd ~/horapro-repo/frontend/dist && tar cf - . | (cd ~/horapro.co && tar xf -)
+```
+
+### Una guarda `[ cond ] && hacer || echo PARA` MIENTE
+
+El `||` se dispara si falla **cualquiera** de los dos, y el mensaje siempre acusa al
+primero. Cuando `rsync` no existía, imprimió «PARA: el repo no esta en 387293f»
+siendo que el repo sí estaba: lo que faltaba era el programa. Se separan:
+
+```bash
+test "$(git rev-parse --short HEAD)" = "<hash>" || echo "PARA: el repo NO esta en <hash>"
+```
+```bash
+cd <origen> && tar cf - . | (cd <destino> && tar xf -) && echo "copiado sin error"
+```
+
+## 4.2 ⚠️ Medir producción desde fuera no sirve: Imunify360 responde 200
+
+Un `curl` a `https://horapro.co/api/...` desde una IP doméstica puede devolver **200
+con HTML**: es Imunify360, el anti-robots del hosting, sirviendo su página de espera
+con un `setTimeout(reload, 5000)`. Los códigos de estado se leen perfectos y ninguno
+llegó a la API.
+
+Pasó el 30 de septiembre de 2026 midiendo un despliegue: cinco rutas dieron 200,
+incluido un login con credenciales falsas, que no puede dar 200 jamás. **Esa fue la
+pista.** Se descarta mirando el cuerpo, no el código:
+
+```bash
+curl -s -o /dev/null -w "%{content_type}\n" https://horapro.co/api/health   # application/json, no text/html
+```
+
+Las comprobaciones válidas se corren **desde el servidor**, donde no hay Imunify en
+medio. El navegador normal tampoco lo ve.
+
 ## 5. Correo (recuperación de contraseña)
 
 1. cPanel → **Email Accounts** → crea `no-responder@krumlab.com` con contraseña fuerte

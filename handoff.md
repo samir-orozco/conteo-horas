@@ -28,35 +28,55 @@ Tres reglas que gobiernan esto y no se tocan sin pensarlo:
 
 ## Current State
 
-**Actualizado el 30 de septiembre de 2026, con todo medido después de un `git
-fetch` y no leído de memoria.** Lo que decía antes llevaba 64 commits siendo
-falso, que es el mismo defecto que este archivo ya se había denunciado a sí mismo
-dos veces. Ver *Por qué este archivo se desactualiza*, al final.
+**DESPLEGADO el 1 de octubre de 2026, de madrugada.** Los 71 commits que llevaban
+desde el 17 de septiembre están en producción y verificados. Medido, no recordado.
 
-`develop` va **69 commits por delante de `master`** y su punta es `a3176a2`.
-`origin/develop` está en `6df5e43`: faltan por subir los tres commits de hoy.
+| | |
+|---|---|
+| fuente desplegada | `b4612f7` (`develop`, = `origin`) |
+| `prisma-build` | `ee46890` |
+| `backend-build` | `e21aa48` |
+| `frontend-build` | `387293f` |
+| bundle público | `index-CVCRNYdX.js` |
 
 | | backend | frontend |
 |---|---|---|
-| pruebas | **83 archivos / 1490** (+1 fallo esperado) | **149 archivos / 1735** |
+| pruebas | **84 archivos / 1494** | **150 / 1746** |
 | tipos | `tsc --noEmit` limpio | `tsc -b` limpio |
 | lint | 173 avisos, 0 errores — su tope | 65 errores / 6 avisos, la línea base |
 
-El árbol **no** está limpio: `.claude/launch.json` se queda fuera a propósito.
+`master` sigue en `1bc2620` y **hay que alinearla**: es lo que hace que «volver
+atrás» signifique algo.
 
-### Las ramas, medidas el 30 de septiembre
+### Lo que se verificó, y cómo
 
 ```
-master           1bc2620  =  origin          ← lo que hay en producción
-develop          a3176a2  ≠  origin 6df5e43  ← faltan 3 commits por subir
-backend-build    942435e  =  origin
-frontend-build   4bb51c2  =  origin
-prisma-build     8842cac  ≠  origin f743ab4  ← el ref local está atrasado
+turnos/calendario → 401   la ruta NO existía antes: un 401 prueba el backend nuevo
+worker/estado     → 401   el kiosco vive (es lo que se cayó el 10 de septiembre)
+login con correo falso → 401   consultó la base sin pelearse con el esquema
+landing           → anuncia turnos SOLO en el plan Empresarial, una mención
 ```
 
-Ojo con `prisma-build`: el local va detrás de `origin`. Un `git show
-prisma-build:<archivo>` lee el artefacto VIEJO. Se alinea antes de inspeccionarlo
-(§12.7).
+Las tres primeras **desde el servidor**. Desde fuera no valen: Imunify360 devuelve
+200 con HTML (ver `DESPLIEGUE.md` 4.2).
+
+### Los ocho SQL, todos aplicados
+
+`plantillas_turno`, `dias_esperados.plantillaId` (en tres pasos), `esDescanso`,
+`descansoPintado`, `descansos_trabajados` + `_cambios`, `eventos_sistema`,
+`colaboradores.numeroContrato`, y el renombre de `tipos_hora`. Antes de empezar, las
+ocho comprobaciones decían FALTA; después, cada una con su verificación.
+
+`esDescanso` quedó **nullable con default NULL**, que era el punto delicado: con
+`NOT NULL DEFAULT 0` habría afirmado sobre 27.611 filas que ninguno de esos domingos
+era descanso, quitándoles el recargo en silencio.
+
+### Lo que salió mal, y está documentado
+
+Cuatro cosas, todas en `DESPLIEGUE.md` 4.1 y 4.2: `git add` sin `-f` subió DOS
+artefactos incompletos; no hay `rsync` en el servidor; una guarda
+`[ cond ] && x || echo PARA` acusó al repo cuando el que faltaba era el programa; y
+medir desde fuera dio cinco 200 falsos.
 
 ### Producción
 
@@ -66,50 +86,10 @@ api                       → {"status":"ok"}
 PUT /registros/jornada/x  → 401                   ✓ el lote de jornadas está arriba
 ```
 
-### Lo pendiente de desplegar — 30 de septiembre de 2026
+### Lo pendiente de desplegar
 
-**Son 71 commits**, desde `7c427e3` (el auxilio de transporte, 17 de septiembre,
-que es lo que corre hoy) hasta `a3176a2`. Ya no es «un despliegue de solo
-backend»: es el módulo de turnos entero, el registro del sistema, el modelo nuevo
-del día de descanso y el renombre del concepto dominical.
-
-**Dos SQL, en este orden, ANTES de tocar ningún artefacto:**
-
-1. `sql/dia-esperado-descanso.sql` — crea `dias_esperados.esDescanso`. Comprobado
-   contra `information_schema` el 30 de septiembre: **no existe en producción**.
-   Sin esto el backend nuevo revienta, porque la ruta de liquidación la pide por
-   nombre.
-2. `sql/nombre-descanso-obligatorio.sql` — renombra el concepto en `tipos_hora`.
-   Probado en local con el texto exacto del archivo: 16 filas, cero con el nombre
-   viejo después, recargos intactos.
-
-**Cuatro ramas y no tres**, porque el diff toca `schema.prisma`. Lo decide el
-comando, no la memoria (§11):
-
-```
-git diff --name-only 7c427e3..HEAD | grep -q 'schema.prisma' \
-  && echo "OBLIGATORIO actualizar prisma-build" || echo "prisma-build no se toca"
-```
-
-Orden: **SQL → `prisma-build` → `backend-build` → `frontend-build`.**
-`prisma-build` va antes que el backend; al revés hay una ventana con el código
-nuevo contra el cliente viejo, que es lo que tumbó el kiosco el 10 de septiembre.
-
-**Lo que cambia para el kiosco:** un solo cambio, en `backend/src/routes/worker.ts`
-— una cédula que no existe queda registrada en el registro del sistema. Entró con
-`3b5eeb4`.
-
-**Lo que cambia para la nómina, y hay que saberlo antes de subir:**
-
-- El día de descanso pasa a salir de las FRANJAS del horario. Medido contra
-  producción: **8 personas activas** tienen un horario cuyo día libre no es el
-  domingo (WE HOSPITALITY con COCINA 1 los lunes y BUFFET los martes, Beaujon,
-  Nature Smith). A esas les cambia qué día lleva recargo.
-- **105 personas activas no tienen horario**, en 14 empresas. Con la regla
-  vigente, una semana suya sin programar **no tiene día de descanso obligatorio**.
-  De ellas, 25 han trabajado 28 domingos: unos **2,7 millones** de recargo que
-  dejan de pagarse. Es una decisión del dueño, reafirmada dos veces con el número
-  delante, y el argumento en contra está escrito en `descansoDelHorario.ts`.
+**Nada.** Todo lo que había pendiente se desplegó el 1 de octubre de 2026. Lo que
+entre de aquí en adelante se anota aquí, con su SQL si lo lleva.
 
 ### Repositorio
 
