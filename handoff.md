@@ -71,6 +71,17 @@ ocho comprobaciones decían FALTA; después, cada una con su verificación.
 `NOT NULL DEFAULT 0` habría afirmado sobre 27.611 filas que ninguno de esos domingos
 era descanso, quitándoles el recargo en silencio.
 
+### El 500 de la pantalla de turnos, una hora después
+
+Se dio el despliegue por bueno y la pantalla devolvió 500: a `plantillas_turno` le
+faltaban tres columnas que el `CREATE TABLE` del repo no tenía. Se arregló con un
+`ALTER` (la tabla estaba vacía) y quedó cerrado con un guion que compara el esquema
+entero contra la base, `prisma/sql-contra-esquema.ts`. Corrido contra producción
+después: **cero filas, las 371 columnas están**.
+
+El `401` de la verificación no lo cazó porque no llegaba al manejador. Ver
+`DESPLIEGUE.md` 4.1.1.
+
 ### Lo que salió mal, y está documentado
 
 Cuatro cosas, todas en `DESPLIEGUE.md` 4.1 y 4.2: `git add` sin `-f` subió DOS

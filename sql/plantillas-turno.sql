@@ -55,6 +55,16 @@ CREATE TABLE IF NOT EXISTS `ewyfwxbg_horapro`.`plantillas_turno` (
   `almuerzoInicio` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `almuerzoFin` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `descansos` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  -- LAS TRES DE LA POLITICA PROPIA DEL TURNO, agregadas al modelo el 23 de septiembre de 2026 y a
+  -- este archivo el 1 de octubre, DESPUES de que su ausencia tumbara la pantalla de turnos en
+  -- produccion con un 500. El archivo se escribio el 21 y nadie lo actualizo al cambiar el modelo.
+  --
+  -- ANULABLES Y SIN DEFAULT, que no es un descuido: NULL significa «usa la politica del horario» y
+  -- 0 significaria «tolerancia cero». Con NOT NULL DEFAULT 0, todo turno nuevo contaria la tardanza
+  -- desde el primer minuto.
+  `toleranciaMin` int DEFAULT NULL,
+  `toleranciaSalidaMin` int DEFAULT NULL,
+  `ajustaEntrada` tinyint(1) DEFAULT NULL,
   `sedeId` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `activa` tinyint(1) NOT NULL DEFAULT '1',
   `creadoEn` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -89,3 +99,19 @@ CREATE TABLE IF NOT EXISTS `ewyfwxbg_horapro`.`plantillas_turno` (
 -- ============================================================================
 -- Sin riesgo mientras nadie haya creado plantillas; con plantillas creadas, se pierden.
 -- DROP TABLE `ewyfwxbg_horapro`.`plantillas_turno`;
+
+-- ============================================================================
+-- SI LA TABLA YA EXISTE SIN ESAS TRES (el caso de produccion el 1/10/2026)
+-- ============================================================================
+-- ALTER TABLE `ewyfwxbg_horapro`.`plantillas_turno`
+--   ADD COLUMN `toleranciaMin` int DEFAULT NULL,
+--   ADD COLUMN `toleranciaSalidaMin` int DEFAULT NULL,
+--   ADD COLUMN `ajustaEntrada` tinyint(1) DEFAULT NULL;
+
+-- ============================================================================
+-- Y LA COMPROBACION QUE HABRIA EVITADO ESTO
+-- ============================================================================
+-- No es «existe la tabla», es «tiene todas sus columnas», y son 33 tablas:
+--   npx ts-node prisma/sql-contra-esquema.ts > /tmp/comprobar.sql
+-- Ese guion genera un SELECT que compara las 371 columnas del esquema contra la
+-- base. Si no devuelve filas, la base esta al dia.

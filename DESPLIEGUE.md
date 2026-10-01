@@ -178,6 +178,43 @@ test "$(git rev-parse --short HEAD)" = "<hash>" || echo "PARA: el repo NO esta e
 cd <origen> && tar cf - . | (cd <destino> && tar xf -) && echo "copiado sin error"
 ```
 
+## 4.1.1 ⚠️ La pregunta no es «¿existe la tabla?», es «¿tiene todas sus columnas?»
+
+**Tumbó la pantalla de turnos en producción el 1 de octubre de 2026**, una hora después
+de dar el despliegue por bueno.
+
+Se comprobaron las ocho tablas y columnas pendientes, una por una, y las ocho dieron
+bien. La pantalla devolvió 500 igual: a `plantillas_turno` le faltaban TRES columnas
+—`toleranciaMin`, `toleranciaSalidaMin`, `ajustaEntrada`—. El `CREATE TABLE` de
+`sql/plantillas-turno.sql` se escribió el 21 de septiembre, las columnas entraron en el
+modelo el 23, y nadie actualizó el archivo. Prisma nombra TODAS las columnas al
+consultar, así que una que falte revienta la ruta entera.
+
+**Y el 401 de la verificación no lo cazó**, porque solo probaba que la ruta existía y
+que pedía sesión: nunca llegó al manejador. Una comprobación sin token no ejercita el
+código nuevo.
+
+### Lo que se corre ANTES de dar un despliegue por bueno
+
+No las comprobaciones una por una —son 33 tablas y 371 columnas, no se hace a ojo—,
+sino esta, que compara el esquema ENTERO contra la base:
+
+```bash
+npx ts-node prisma/sql-contra-esquema.ts > /tmp/comprobar.sql
+```
+
+Genera un `SELECT` para pegar en phpMyAdmin. **Si no devuelve filas, la base está al
+día.** Si devuelve algo, cada fila dice si falta la tabla o solo la columna.
+
+No se conecta a nada: lee `schema.prisma` y escribe SQL. Y no compara contra los
+archivos de `sql/`, que son el historial de lo aplicado y no el estado — eso fue lo
+primero que se intentó y es justo lo que estaba desactualizado.
+
+### Y después del restart, una ruta CON sesión
+
+Un `401` prueba que la ruta existe. Para probar que el manejador corre hace falta
+entrar a la pantalla, o pedir la ruta con un token real.
+
 ## 4.2 ⚠️ Medir producción desde fuera no sirve: Imunify360 responde 200
 
 Un `curl` a `https://horapro.co/api/...` desde una IP doméstica puede devolver **200
