@@ -82,6 +82,39 @@ describe('SIN HORARIO y sin semana programada: el domingo cobra, por presunción
     expect(minutosDe(r, 'HDD')).toBe(0);
   });
 
+  it('un turno NOCTURNO que entra al domingo: solo la parte del domingo cobra', () => {
+    // LA FORMA REAL DE QUIEN NOS IMPORTA. Las dos empresas con más gente afectada el 1 de octubre
+    // de 2026 son una clínica veterinaria de urgencias y un restaurante: turnos largos y nocturnos
+    // que cruzan la medianoche. Todo lo demás de este archivo prueba jornadas de 08:00 a 16:00, que
+    // es justo la forma que ellas NO tienen.
+    //
+    // Sábado 20:00 a domingo 06:00: las horas del sábado son ordinarias y solo las del domingo
+    // llevan el recargo. El motor decide minuto a minuto, así que esto comprueba que el descanso se
+    // aplica por el día de CADA minuto y no por el día de la fecha de la fila.
+    const SABADO_12 = enBogota(12, 0);
+    const r = liquidarRegistros(
+      [{ id: 'n', fecha: SABADO_12, entrada: enBogota(12, 20), salida: enBogota(13, 6) }],
+      null, construirExtraConfig('SEMANAL', null, []), [], TIPOS, JORNADAS, 1_500_000, 210, false,
+      [diaDe(SABADO_12)], { de: 'PROGRAMACION' },
+    );
+    expect(minutosDe(r, 'HND')).toBe(360);   // 00:00 a 06:00 del domingo, descanso nocturno
+    expect(minutosDe(r, 'HON')).toBe(180);   // 21:00 a 24:00 del sábado, ordinaria nocturna
+    expect(minutosDe(r, 'HOD')).toBe(60);    // 20:00 a 21:00 del sábado, ordinaria diurna
+  });
+
+  it('y uno que SALE del domingo: solo la parte del domingo cobra', () => {
+    // El espejo del anterior. Domingo 20:00 a lunes 06:00: las seis horas del lunes son ordinarias
+    // aunque la fila lleve fecha de domingo.
+    const r = liquidarRegistros(
+      [{ id: 'n2', fecha: DOMINGO_13, entrada: enBogota(13, 20), salida: enBogota(14, 6) }],
+      null, construirExtraConfig('SEMANAL', null, []), [], TIPOS, JORNADAS, 1_500_000, 210, false,
+      [diaDe(DOMINGO_13)], { de: 'PROGRAMACION' },
+    );
+    expect(minutosDe(r, 'HDD')).toBe(60);    // 20:00 a 21:00 del domingo
+    expect(minutosDe(r, 'HND')).toBe(180);   // 21:00 a 24:00 del domingo
+    expect(minutosDe(r, 'HON')).toBe(360);   // 00:00 a 06:00 del lunes, ordinaria
+  });
+
   it('pero si la semana SÍ se programó, la programación manda y el domingo deja de cobrar', () => {
     // La regla del dueño intacta: lo pintado decide CUÁL día es el descanso, y puede sacarlo del
     // domingo. Llega congelado en la fila, que es por donde viaja la programación hasta el motor.
