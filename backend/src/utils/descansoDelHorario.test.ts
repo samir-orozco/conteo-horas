@@ -18,14 +18,16 @@ import {
 //
 //   con horario · las franjas dejan UN día libre    ese es el descanso
 //   con horario · dejan varios, o ninguno           el DOMINGO, que es lo que la ley presume
-//   sin horario                                     no hay día fijo: lo dice la programación, y
-//                                                   hasta que no se programe NO HAY descanso
+//   sin horario · la semana está programada         el día que diga la programación
+//   sin horario · nadie ha programado nada          el DOMINGO, la misma presunción
 //
-// EL ÚLTIMO RENGLÓN ES UNA DECISIÓN DEL DUEÑO Y TIENE UN PRECIO, que se dijo antes de tomarla: una
-// semana sin programar deja a esa persona sin descanso obligatorio, y su domingo trabajado no paga
-// recargo. El código hacía lo contrario a propósito —«un turno pintado puede AGREGAR un recargo, nunca
-// quitarlo»— y esto lo cambia. Queda escrito aquí para que el día que alguien lo discuta, se sepa que
-// se eligió y no que se olvidó.
+// LOS DOS ÚLTIMOS RENGLONES ERAN UNO SOLO Y DECÍA «NO HAY DESCANSO». Así se desplegó el 1 de octubre
+// de 2026 y así estuvo unas horas en producción, hasta que se midió: 37 personas perdieron el recargo
+// de su domingo en septiembre, un mes ya cerrado, por unos 3,34 millones.
+//
+// La frase del dueño responde CUÁL día es el descanso, no SI hay uno. Mientras nadie programe la
+// semana no hay nada que deducir y manda el art. 172 del CST, que la reforma de 2025 no tocó. En
+// cuanto se pinta la semana, la programación decide y puede llevarse el descanso al miércoles.
 
 const SEMANA = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 const menos = (...libres: string[]) => SEMANA.filter(d => !libres.includes(d));
@@ -77,9 +79,18 @@ describe('si una fecha es el descanso obligatorio', () => {
     expect(esDescansoObligatorioDe('MARTES', conHorario('DOMINGO'), 'MARTES')).toBe(false);
   });
 
-  it('SIN horario y SIN programar: NO hay descanso ese día, ninguno', () => {
-    // La decisión del dueño, literal. Ningún día de la semana es el descanso obligatorio.
-    for (const dia of SEMANA) {
+  it('SIN horario y SIN programar: el descanso es el DOMINGO, por presunción legal', () => {
+    // CORREGIDO EL 1 DE OCTUBRE DE 2026, con el daño ya en producción. Antes esto devolvía `false`
+    // para los siete días, o sea NINGÚN descanso: alguien sin horario podía trabajar la semana
+    // entera sin disparar un solo recargo. Medido en producción el día del despliegue: 37 personas
+    // en septiembre perdieron el recargo de su domingo, unos 3,34 millones, sobre un mes YA CERRADO.
+    //
+    // La regla del dueño («solo cuando se programa se pone el día de descanso») responde CUÁL día
+    // es, no SI hay uno. Mientras nadie programe la semana manda el art. 172 del CST, que la reforma
+    // de 2025 no tocó: descanso dominical remunerado. En cuanto se pinta la semana, la programación
+    // decide y puede llevárselo al miércoles.
+    expect(esDescansoObligatorioDe('DOMINGO', sinHorario, null)).toBe(true);
+    for (const dia of SEMANA.filter(d => d !== 'DOMINGO')) {
       expect(esDescansoObligatorioDe(dia, sinHorario, null), dia).toBe(false);
     }
   });
@@ -94,8 +105,11 @@ describe('si una fecha es el descanso obligatorio', () => {
     expect(esDescansoObligatorioDe('DIA_RARO', sinHorario, 'DIA_RARO')).toBe(false);
   });
 
-  it('y una programación con un día inválido no asigna nada', () => {
+  it('y una programación con un día inválido cae a la presunción, no al vacío', () => {
+    // Un valor que no es un día no puede DEJAR SIN descanso a nadie: es dato corrupto, no una
+    // decisión de que esa semana no hay descanso.
     expect(esDescansoObligatorioDe('LUNES', sinHorario, 'DIA_RARO')).toBe(false);
+    expect(esDescansoObligatorioDe('DOMINGO', sinHorario, 'DIA_RARO')).toBe(true);
   });
 });
 

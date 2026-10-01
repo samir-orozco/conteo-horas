@@ -48,12 +48,15 @@ describe('descansoDelDia: donde hay dato congelado manda el dato', () => {
     expect(descansoDelDia(null, 'DOMINGO', LIBRA_MIERCOLES)).toBe(false);
   });
 
-  it('SIN HORARIO Y SIN PROGRAMAR, la celda no es descanso: tampoco el domingo', () => {
-    // CAMBIO DE COMPORTAMIENTO del 30 de septiembre de 2026, decidido por el dueño: «alguien sin
-    // horario no tiene día de descanso fijo, solo cuando se programa se pone el día de descanso».
-    // Antes esto caía al domingo. `descansoDelDia` resuelve UNA celda y no sabe de la semana, así que
-    // le llega `null` como día programado: sin horario y sin programar, no hay descanso.
-    expect(descansoDelDia(null, 'DOMINGO', SIN_HORARIO)).toBe(false);
+  it('SIN HORARIO Y SIN PROGRAMAR, la celda del domingo SÍ es descanso', () => {
+    // CORREGIDO EL 1 DE OCTUBRE DE 2026. Entre el 30/09 y el 01/10 esto devolvió `false` también
+    // para el domingo, y así se desplegó: la celda del domingo se pintaba como un día cualquiera
+    // para las 105 personas sin horario que hay en producción.
+    //
+    // `descansoDelDia` resuelve UNA celda y no sabe de la semana, así que le llega `null` como día
+    // programado. Ese `null` significa «nadie ha programado todavía», no «esta semana no hay
+    // descanso», y mientras nadie programe manda la presunción legal.
+    expect(descansoDelDia(null, 'DOMINGO', SIN_HORARIO)).toBe(true);
     expect(descansoDelDia(null, 'MARTES', SIN_HORARIO)).toBe(false);
   });
 });

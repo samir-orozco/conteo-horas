@@ -83,16 +83,18 @@ describe('reescrituraDeSemana', () => {
     expect(cambios.map(clave).sort()).toEqual(['2026-09-23=true', '2026-09-27=false']);
   });
 
-  it('SIN HORARIO Y SIN PROGRAMAR, esa semana no tiene descanso: ni el domingo', () => {
-    // CAMBIO DE COMPORTAMIENTO del 30 de septiembre de 2026, y es una decisión del dueño con su
-    // precio dicho antes de tomarla: «alguien sin horario no tiene día de descanso fijo, solo cuando
-    // se programa se pone el día de descanso». Antes esto caía al DOMINGO, con el argumento de que
-    // un turno pintado puede agregar un recargo y nunca quitarlo. Ahora no: una semana sin programar
-    // no tiene descanso obligatorio, así que su domingo trabajado no paga el 90%.
+  it('SIN HORARIO, al DESPROGRAMAR la semana el descanso vuelve al domingo', () => {
+    // CORREGIDO EL 1 DE OCTUBRE DE 2026. El 30/09 esta prueba decía que al quitar la programación la
+    // semana se quedaba SIN descanso, ni el domingo, y así se desplegó. Medido en producción ese
+    // mismo día: 37 personas perdieron el recargo de su domingo en septiembre, un mes ya cerrado.
+    //
+    // Quitar la marca del miércoles dice «ya no descansa el miércoles», no «ya no descansa». Sin
+    // nada programado se vuelve a la presunción legal, así que la reescritura tiene que hacer DOS
+    // cosas: apagar el miércoles y encender el domingo.
     const conMiercoles = comoEstaba.map(d =>
       ({ ...d, esDescanso: d.diaSemana === 'MIERCOLES' }));
     const cambios = reescrituraDeSemana(conMiercoles, SIN_HORARIO, null, LUNES);
-    expect(cambios.map(clave)).toEqual(['2026-09-23=false']);
+    expect(cambios.map(clave).sort()).toEqual(['2026-09-23=false', '2026-09-27=true']);
   });
 
   it('CON HORARIO manda el horario, y la programación NO lo mueve', () => {

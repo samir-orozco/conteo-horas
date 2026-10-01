@@ -7,6 +7,9 @@ import { diaValido } from './diasDeLaSemana';
 // fijo. Cuando no tiene horario definido, el día de descanso se da en la programación. Si no tiene
 // horario, no tiene día fijo asignado de descanso».
 //
+// «NO TIENE DÍA FIJO» NO ES «NO TIENE DÍA». Leerlo como lo segundo costó 3,34 millones en septiembre
+// de 2026; está contado entero sobre `esDescansoObligatorioDe`, más abajo.
+//
 // SUSTITUYE A LA DECLARACIÓN POR PERSONA. Hasta hoy esto salía de tres columnas del colaborador que
 // un modal llenaba una sola vez. Esas columnas NUNCA LLEGARON A PRODUCCIÓN —medido contra la base
 // real: de las nueve del módulo de turnos solo existen dos— así que no hay nada que migrar.
@@ -52,29 +55,33 @@ const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DO
 // través del horario fijo». Si hay horario ya está dicho, y marcar otro día en la rejilla no puede
 // contradecirlo.
 //
-// SIN HORARIO Y SIN PROGRAMAR NO HAY DESCANSO. Es una decisión del dueño, CONFIRMADA el 30 de
-// septiembre de 2026 con el número delante: se le mostraron las dos opciones y lo que costaba cada
-// una, medido contra la base con la comprobación diferencial del §5.3.
+// SIN HORARIO Y SIN PROGRAMAR, EL DESCANSO ES EL DOMINGO. Esto se decidió al revés el 30 de
+// septiembre de 2026 («sin horario y sin programar no hay descanso, ninguno»), se desplegó el 1 de
+// octubre, y se CORRIGIÓ ese mismo día con el daño ya hecho. Las dos cosas quedan escritas porque la
+// segunda no se entiende sin la primera.
 //
-// Lo que cuesta: esa semana esa persona no tiene descanso obligatorio, así que su domingo trabajado se
-// paga como día ordinario, sin el recargo del 90%. En la base de desarrollo movió a UNA persona —la
-// única sin horario que ha marcado domingos—, cuyo agosto pasó de 251.000 a 121.000: dos domingos
-// perdieron el recargo y una hora cruzó el tope de las 42 y se volvió extra.
+// QUÉ PASÓ. La regla del dueño, con sus palabras, es «solo cuando se programa se pone el día de
+// descanso». Eso responde CUÁL día es el descanso, y se implementó como si respondiera SI HAY UNO:
+// a quien no tenía horario ni semana pintada, el motor dejó de verle descanso ningún día. Su domingo
+// trabajado pasó de `HDD` a `HOD` y el recargo no se mudó de día, desapareció. Alguien podía trabajar
+// los siete días sin disparar un solo recargo.
 //
-// MEDIDO DESPUÉS CONTRA PRODUCCIÓN, y el número de verdad es otro: 105 personas activas sin horario en
-// 14 empresas, de las cuales 25 han trabajado 28 domingos. El recargo en juego son unos 2,7 millones.
-// Se le puso ese número delante y REAFIRMÓ la decisión el 30 de septiembre de 2026.
+// QUÉ COSTÓ, medido en producción el 1 de octubre con la columna `dias_esperados.horarioId`, que es
+// la que dice qué horario tenía esa persona ESE día (y no el que tiene hoy, que fue el primer
+// recuento y estaba mal): 37 personas en septiembre, unos 3,34 millones de recargo, sobre un mes ya
+// cerrado. Concentrado en dos empresas que trabajan todos los días: una clínica veterinaria de
+// urgencias y un restaurante.
 //
-// Y EL ARGUMENTO EN CONTRA, escrito para que quien lo discuta no tenga que volver a buscarlo: el art.
-// 172 del CST no lo tocó la reforma de 2025 y sigue diciendo que el empleador está obligado a dar
-// descanso dominical remunerado. O sea que la lectura alternativa —a falta de horario y de
-// programación, el descanso es el DOMINGO— tiene respaldo legal, y hoy en producción esas 105 personas
-// no tienen cómo conseguir que les marquen un día, porque el módulo de turnos no está desplegado.
-// Cambiarlo es una línea de esta función: devolver `DOMINGO` cuando `descansoProgramado` no es válido.
+// POR QUÉ EL DOMINGO. El art. 172 del CST no lo tocó la Ley 2466 de 2025 y sigue obligando al
+// descanso dominical remunerado. Mientras nadie programe la semana no hay nada que deducir, así que
+// manda la presunción legal. En cuanto se pinta, la programación decide y puede llevarse el descanso
+// al miércoles: la regla del dueño queda intacta donde de verdad aplica.
 //
-// El código hacía lo contrario a propósito —«un turno pintado puede AGREGAR un recargo, nunca
-// quitarlo»— y esto lo cambia. Queda escrito para que el día que alguien lo discuta se sepa que se
-// eligió con el precio a la vista, no que se olvidó.
+// LO QUE SE APRENDIÓ, que es lo que esto tiene que impedir la próxima vez: la decisión («cuál día»)
+// tenía prueba unitaria desde el primer día, y el CABLE que la lleva al dinero no tenía ninguna.
+// `routes/reportes.ts` pasa `fuenteDelDescansoDe(colaborador.horario)`, y nadie había liquidado un
+// domingo con ese valor de punta a punta. Ahora sí: `liquidarRegistros.descanso.test.ts`.
+//
 export function esDescansoObligatorioDe(
   diaDeLaFecha: string,
   fuente: FuenteDelDescanso,
@@ -85,7 +92,10 @@ export function esDescansoObligatorioDe(
   if (hoy === null) return false;
 
   if (fuente.de === 'HORARIO') return hoy === diaDeDescansoDelHorario(fuente.diasQueTrabaja);
-  return hoy === diaValido(descansoProgramado);
+  // `?? DOMINGO` y no `=== diaValido(...)`: sin programación válida manda la presunción legal, no el
+  // vacío. Un `null` aquí es «nadie ha dicho nada todavía», que es exactamente el caso que el art.
+  // 172 resuelve, y un día corrupto tampoco es una decisión de que esa semana no hay descanso.
+  return hoy === (diaValido(descansoProgramado) ?? DOMINGO);
 }
 
 // DE UN COLABORADOR A SU FUENTE DE DESCANSO. La costura entre la base y la regla de arriba.

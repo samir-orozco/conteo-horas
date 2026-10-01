@@ -56,6 +56,41 @@ const liquidar = (
 const minutosDe = (r: ReturnType<typeof liquidar>, codigo: string) =>
   Math.round((r.liquidacion.find(l => l.codigo === codigo)?.horas ?? 0) * 60);
 
+describe('SIN HORARIO y sin semana programada: el domingo cobra, por presunción legal', () => {
+  // ESTE ES EL CAMINO QUE SE ROMPIÓ EN PRODUCCIÓN EL 1 DE OCTUBRE DE 2026, y el que no tenía prueba.
+  //
+  // La unitaria de `esDescansoObligatorioDe` prueba la DECISIÓN; esta prueba el CABLE, que es por
+  // donde se fue el dinero: `routes/reportes.ts` pasa `fuenteDelDescansoDe(colaborador.horario)`, y
+  // para alguien sin horario eso es `{de:'PROGRAMACION'}`. Con ese valor y sin fila congelada, el
+  // motor dejó de ver descanso NINGÚN día: el domingo pasó de HDD a HOD y el recargo desapareció,
+  // sin mudarse a otro día. Medido en producción: 37 personas en septiembre, ~3,34 millones, sobre
+  // un mes ya cerrado.
+  //
+  // `{de:'PROGRAMACION'}` significa «no tiene horario», no «no tiene descanso».
+
+  const SIN_HORARIO: FuenteDelDescanso = { de: 'PROGRAMACION' };
+
+  it('el domingo trabajado paga dominical', () => {
+    const r = liquidar(DOMINGO_13, 13, [diaDe(DOMINGO_13)], SIN_HORARIO);
+    expect(minutosDe(r, 'HDD')).toBe(480);
+    expect(minutosDe(r, 'HOD')).toBe(0);
+  });
+
+  it('y un miércoles cualquiera sigue siendo ordinario', () => {
+    const r = liquidar(MIERCOLES_9, 9, [diaDe(MIERCOLES_9)], SIN_HORARIO);
+    expect(minutosDe(r, 'HOD')).toBe(480);
+    expect(minutosDe(r, 'HDD')).toBe(0);
+  });
+
+  it('pero si la semana SÍ se programó, la programación manda y el domingo deja de cobrar', () => {
+    // La regla del dueño intacta: lo pintado decide CUÁL día es el descanso, y puede sacarlo del
+    // domingo. Llega congelado en la fila, que es por donde viaja la programación hasta el motor.
+    const r = liquidar(DOMINGO_13, 13, [diaDe(DOMINGO_13, false)], SIN_HORARIO);
+    expect(minutosDe(r, 'HOD')).toBe(480);
+    expect(minutosDe(r, 'HDD')).toBe(0);
+  });
+});
+
 describe('sin fuente: la liquidación no se mueve', () => {
   it('un domingo trabajado sigue siendo dominical', () => {
     // La red de seguridad del cambio entero: quien no pasa el parámetro sigue liquidando contra la
