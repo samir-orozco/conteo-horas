@@ -22,6 +22,8 @@ import sedeRoutes from '../src/routes/sedes';
 import adminRoutes from '../src/routes/admin';
 import horarioRoutes from '../src/routes/horarios';
 import registroFacialRoutes from '../src/routes/registroFacial';
+import turnoRoutes from '../src/routes/turnos';
+import plantillaTurnoRoutes from '../src/routes/plantillasTurno';
 
 type Sesion = { id: string; rol: string; nombre?: string; empresaId?: string | null };
 
@@ -75,6 +77,11 @@ export async function montarApp() {
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(horarioRoutes, { prefix: '/api/horarios' });
   await app.register(registroFacialRoutes, { prefix: '/api/registro-facial' });
+  // Las de turnos entran el 30 de septiembre de 2026, para poder comprobar a mano que su guarda de
+  // plan responde 403 y no 404. Sin ellas registradas, un guion que las pidiera medía el 404 de una
+  // ruta inexistente creyendo que medía la guarda, que es el §12.2 con otro disfraz.
+  await app.register(turnoRoutes, { prefix: '/api/turnos' });
+  await app.register(plantillaTurnoRoutes, { prefix: '/api/plantillas-turno' });
   await app.ready();
 
   const tokenAdmin = (empresaId: string) =>

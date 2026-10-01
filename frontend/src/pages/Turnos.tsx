@@ -1,6 +1,8 @@
 import { useSearchParams } from 'react-router-dom';
 import CatalogoDeTurnos from './turnos/CatalogoDeTurnos';
 import CalendarioDeTurnos from './turnos/CalendarioDeTurnos';
+import FuncionBloqueada from '../components/FuncionBloqueada';
+import { useMiPlan } from '../lib/plan';
 
 // TURNOS: dónde se ve y se arma lo que cada persona trabaja cada día (20 de septiembre de 2026).
 //
@@ -23,6 +25,19 @@ type TabId = typeof TABS[number]['id'];
 export default function Turnos() {
   const [params, setParams] = useSearchParams();
   const tab: TabId = (TABS.some(t => t.id === params.get('tab')) ? params.get('tab') : 'calendario') as TabId;
+
+  // ESTE MÓDULO ES DEL PLAN EMPRESARIAL (30 de septiembre de 2026, decisión del dueño), y el super
+  // admin puede prendérselo o apagárselo a un cliente suelto desde su ficha.
+  //
+  // EL ÍTEM SIGUE EN EL MENÚ para quien no lo tiene, y es aquí donde se le ofrece subir. Es el patrón
+  // de Reportes, Sedes y Conexiones, y la razón es de venta: a lo que no se ve nadie le pide acceso.
+  //
+  // CON EL PLAN TODAVÍA EN `null` NO SE BLOQUEA. `useMiPlan` arranca vacío y resuelve después, así que
+  // bloquear con `null` le enseñaría el candado durante un instante, en cada entrada, a un cliente que
+  // sí lo tiene pagado. El servidor es el que de verdad guarda la puerta: las nueve rutas responden
+  // 403 por su `preHandler`, así que esto es la cortesía de explicarlo, no la cerradura.
+  const { plan } = useMiPlan();
+  const sinPlan = !!plan && !plan.features.turnos;
 
   return (
     <div className="w-full">
@@ -49,8 +64,20 @@ export default function Turnos() {
         </div>
       </div>
 
-      {tab === 'calendario' && <CalendarioDeTurnos />}
-      {tab === 'catalogo' && <CatalogoDeTurnos />}
+      {sinPlan ? (
+        <div className="px-6 md:px-8 pt-6">
+          <FuncionBloqueada
+            titulo="Turnos y programación"
+            descripcion="Arma tu catálogo de turnos y programa a todo tu equipo en un calendario de día, semana o mes, con los avisos de horas y de descansos antes de escribir nada."
+            plan="Empresarial"
+          />
+        </div>
+      ) : (
+        <>
+          {tab === 'calendario' && <CalendarioDeTurnos />}
+          {tab === 'catalogo' && <CatalogoDeTurnos />}
+        </>
+      )}
     </div>
   );
 }

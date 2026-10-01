@@ -77,7 +77,10 @@ const PLANES_LANDING = [
   {
     id: 'EMPRESARIAL', nombre: 'Empresarial', mensual: 299900, anual: 2999000, limite: 150, destacado: false,
     para: 'Para operaciones grandes',
-    incluye: ['Hasta 150 colaboradores', 'Todo lo de Profesional', 'Integración Siigo (próximamente)', 'Soporte prioritario'],
+    // «Turnos y programación» va PRIMERO de los suyos, y no al final (30 de septiembre de 2026): es lo
+    // que de verdad distingue a este plan del Profesional, mientras que Siigo todavía dice
+    // «próximamente» y el soporte no se ve hasta que hace falta.
+    incluye: ['Hasta 150 colaboradores', 'Todo lo de Profesional', 'Turnos y programación por calendario', 'Varias sedes', 'Integración Siigo (próximamente)', 'Soporte prioritario'],
   },
 ];
 const WPP_LANDING = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');

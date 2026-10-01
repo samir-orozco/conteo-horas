@@ -140,3 +140,26 @@ describe('Landing · menú del celular', () => {
     expect(document.body.style.overflow).toBe('');
   });
 });
+
+// ────────── LO QUE LA LANDING PROMETE DE CADA PLAN (30 de septiembre de 2026) ──────────
+//
+// ESTA LISTA ES UNA SEGUNDA VERDAD, y conviene saberlo antes de tocarla: los planes de verdad viven
+// en `backend/src/utils/planes.ts`, y la landing lleva su propia copia a mano —precios, límites y lo
+// que incluye cada uno— porque es pública y no pide sesión. Son dos sitios que dicen lo mismo, que es
+// justo lo que advierte el §9.3.
+//
+// NO SE RESUELVE AQUÍ, pero sí se ata lo que se acaba de prometer: si algún día el módulo de turnos
+// deja de ser del plan Empresarial y nadie se acuerda de esta lista, la página pública seguiría
+// vendiéndolo. Esta prueba se pone roja ese día.
+describe('los planes de la página pública', () => {
+  it('el plan Empresarial anuncia el módulo de turnos', () => {
+    render(<MemoryRouter><Landing /></MemoryRouter>);
+    expect(screen.getByText(/Turnos y programación por calendario/i)).toBeInTheDocument();
+  });
+
+  it('y los de abajo NO lo anuncian: es lo que distingue al Empresarial', () => {
+    render(<MemoryRouter><Landing /></MemoryRouter>);
+    // Una sola mención en toda la página de precios. Si apareciera en dos, es que se coló en otro plan.
+    expect(screen.getAllByText(/Turnos y programación por calendario/i)).toHaveLength(1);
+  });
+});

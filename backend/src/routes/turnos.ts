@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../prisma';
+import { exigeFuncion } from '../utils/capacidades';
 import { rangoReporte, claveDiaBogota, medianocheBogota } from '../utils/fechas';
 // La ESCRITURA no vive en esta ruta: `materializarDias` es el único módulo que escribe en
 // `dias_esperados`, y abrir un segundo camino sobre la tabla que alimenta la liquidación
@@ -52,7 +53,11 @@ const DIAS_MAXIMOS = 62;
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
 
 export default async function turnoRoutes(app: FastifyInstance) {
-  const auth = { preHandler: [app.requireEmpresa] };
+  // LAS DOS GUARDAS JUNTAS, y la segunda cubre TODAS las rutas de este archivo de una vez: el módulo
+  // de turnos es del plan Empresarial (30 de septiembre de 2026, decisión del dueño), y el super admin
+  // puede prendérselo o apagárselo a un cliente suelto desde su ficha. El porqué de que viva aquí y no
+  // dentro de cada manejador está en `utils/capacidades.ts`.
+  const auth = { preHandler: [app.requireEmpresa, exigeFuncion('turnos')] };
 
   app.get('/calendario', auth, async (request, reply) => {
     const empresaId = request.empresaId!;
