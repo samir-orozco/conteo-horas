@@ -15,11 +15,9 @@ exports.COLABORADOR_SIN_FOTOS = {
     telefono: true, fechaNacimiento: true, salarioMensual: true, auxilioTransporte: true, rostroEnroladoEn: true, rostroRechazadoEn: true, horarioId: true,
     modalidad: true, puedeCerrarEnOtraSede: true, activo: true, fechaRetiro: true, motivoRetiro: true,
     retiroProgramado: true, creadoEn: true, actualizadoEn: true,
-    // El día de descanso obligatorio (20 de septiembre de 2026). Viajan a propósito y no por inercia:
-    // `reportes.ts` usa esta misma lista para la liquidación, y sin estas tres el motor no puede ver
-    // la declaración de la persona y no podría decidir si su domingo lleva recargo. La ficha además
-    // las necesita para declararlas. No son datos sensibles: no hay razón para dejarlas fuera.
-    descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
+    // LAS TRES DEL DESCANSO SE FUERON el 30 de septiembre de 2026: el día de descanso ya no se declara
+    // por persona, lo dicen las franjas de su horario (`utils/descansoDelHorario.ts`). `reportes.ts`
+    // usa esta misma lista y ahora lee el horario, que ya venía en la misma consulta.
 };
 // Lo que devuelven la ficha y las rutas que crean, editan, retiran o reingresan a una persona: las
 // fotos sí, porque la ficha las pinta, pero no el descriptor facial, que viajaba al navegador sin que

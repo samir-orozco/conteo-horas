@@ -17,7 +17,7 @@ const columnasDeColaborador_1 = require("../utils/columnasDeColaborador");
 // La guarda legal: convierte las tres columnas crudas en el estado que el motor entiende, y por el
 // camino descarta cualquier día declarado SIN acuerdo escrito. Se resuelve aquí, una vez por
 // persona, y nunca dentro del motor: así no hay ninguna rama que pueda saltársela.
-const descansoObligatorio_1 = require("../utils/descansoObligatorio");
+const descansoDelHorario_1 = require("../utils/descansoDelHorario");
 // Lo que devuelven los dos resúmenes que se filtran por sede. El filtro decide
 // QUIÉN aparece; el resumen se arma siempre con todas las filas, así que no cambia
 // según la sede que se mire. Las reglas viven en utils/sedesDeReporte.ts: esto
@@ -144,7 +144,7 @@ async function reporteRoutes(app) {
         // lo que impide que cambiar un horario reescriba la clasificación de extras
         // de un período ya liquidado.
         const extraConfig = (0, tardanzas_1.construirExtraConfig)(modoExtra, horario, diasEsperados);
-        const r = (0, liquidarRegistros_1.liquidarRegistros)(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados, (0, descansoObligatorio_1.estadoDescansoDe)(colaborador));
+        const r = (0, liquidarRegistros_1.liquidarRegistros)(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados, (0, descansoDelHorario_1.fuenteDelDescansoDe)(colaborador.horario));
         // Saldo de tiempo no remunerado: lo que el horario exigía contra lo que
         // realmente trabajó. Va en su propio campo y NUNCA dentro de `liquidacion`,
         // porque ese array alimenta totalRecargos/totalAdicional y una fila
@@ -192,9 +192,8 @@ async function reporteRoutes(app) {
                 where: { empresaId, activo: true },
                 select: {
                     id: true, nombre: true, apellido: true, salarioMensual: true, modalidad: true,
-                    // Las tres del descanso: sin ellas el motor no puede saber qué día descansa esta persona
-                    // y este resumen daría cifras distintas de /liquidacion para la misma gente.
-                    descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
+                    // El horario con sus franjas: de ahí sale qué día descansa esta persona, y sin eso este
+                    // resumen daría cifras distintas de /liquidacion para la misma gente.
                     horario: { include: { franjas: true } },
                 },
                 orderBy: { nombre: 'asc' },
@@ -261,7 +260,7 @@ async function reporteRoutes(app) {
             const registros = porColaborador.get(col.id) ?? [];
             const dias = (0, diasEsperados_1.combinarDiasEsperados)(desdeF, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
             const extraConfig = (0, tardanzas_1.construirExtraConfig)(modoExtra, horario, dias);
-            const r = (0, liquidarRegistros_1.liquidarRegistros)(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, (0, descansoObligatorio_1.estadoDescansoDe)(col));
+            const r = (0, liquidarRegistros_1.liquidarRegistros)(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, (0, descansoDelHorario_1.fuenteDelDescansoDe)(col.horario));
             return {
                 colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
                 totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
@@ -421,10 +420,10 @@ async function reporteRoutes(app) {
                 where: { empresaId, activo: true },
                 select: {
                     id: true, nombre: true, apellido: true, cedula: true, numeroContrato: true, cargo: true,
+                    // Las franjas del horario dicen qué día descansa, por lo mismo que en los otros dos
+                    // reportes: este es el archivo que se sube al ERP, así que es el que no puede discrepar de
+                    // la liquidación.
                     salarioMensual: true, auxilioTransporte: true, modalidad: true, horario: { include: { franjas: true } },
-                    // Las tres del descanso, por lo mismo que en los otros dos reportes: este es el archivo
-                    // que se sube al ERP, así que es el que no puede discrepar de la liquidación.
-                    descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
                 },
                 orderBy: { nombre: 'asc' },
             }),
@@ -490,7 +489,7 @@ async function reporteRoutes(app) {
                 id: reg.id, fecha: reg.fecha, entrada: reg.entrada, salida: reg.salida,
                 salidaAlmuerzo: reg.salidaAlmuerzo, salidaDescanso: reg.salidaDescanso, descansoVentana: reg.descansoVentana,
             }));
-            const r = (0, liquidarRegistros_1.liquidarRegistros)(suyos, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, (0, descansoObligatorio_1.estadoDescansoDe)(col));
+            const r = (0, liquidarRegistros_1.liquidarRegistros)(suyos, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, (0, descansoDelHorario_1.fuenteDelDescansoDe)(col.horario));
             return {
                 colaboradorId: col.id, cedula: col.cedula, numeroContrato: col.numeroContrato, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,
                 salarioMensual: col.salarioMensual,

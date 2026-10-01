@@ -6,7 +6,7 @@ const date_fns_1 = require("date-fns");
 const prisma_1 = require("../prisma");
 const horasColombiana_1 = require("../utils/horasColombiana");
 // La guarda legal, igual que en reportes.ts: un día declarado SIN acuerdo escrito no vale.
-const descansoObligatorio_1 = require("../utils/descansoObligatorio");
+const descansoDelHorario_1 = require("../utils/descansoDelHorario");
 const vigencias_1 = require("../utils/vigencias");
 const tardanzas_1 = require("../utils/tardanzas");
 const liquidarRegistros_1 = require("../utils/liquidarRegistros");
@@ -45,9 +45,6 @@ async function dashboardRoutes(app) {
                 where: { empresaId, activo: true },
                 select: {
                     id: true, nombre: true, apellido: true, cargo: true, fechaNacimiento: true,
-                    // Las tres del descanso: sin ellas el panel no puede saber qué día descansa cada quien y
-                    // sus horas de la semana discreparían de las del reporte para la misma gente.
-                    descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
                     horario: { select: { id: true, activo: true, nombre: true, toleranciaMin: true, almuerzoMin: true,
                             franjas: { select: { dias: true, horaEntrada: true, horaSalida: true, tieneAlmuerzo: true } } } },
                 },
@@ -274,9 +271,11 @@ async function dashboardRoutes(app) {
         // para la MISMA gente, así que si uno respeta el día de descanso pactado y el otro no, muestran
         // dos cifras distintas de lo mismo. Eso es peor que no mostrarlo.
         //
-        // Donde hay fila congelada manda la fila; donde no la hay, el estado declarado hoy. Un `null`
-        // NO entra al mapa: es la ausencia del dato, no un `false`.
-        const descansoPorCol = new Map(colaboradores.map(c => [c.id, { porFecha: {}, estado: (0, descansoObligatorio_1.estadoDescansoDe)(c) }]));
+        // Donde hay fila congelada manda la fila; donde no la hay, el horario de esa persona (o la
+        // programación, si no tiene horario). Un `null` NO entra al mapa: es la ausencia del dato, no un
+        // `false`. Las franjas ya venían en la consulta para calcular las horas de la semana, así que
+        // esto no agrega ni una columna: el 30 de septiembre de 2026 QUITÓ las tres del descanso.
+        const descansoPorCol = new Map(colaboradores.map(c => [c.id, { porFecha: {}, fuente: (0, descansoDelHorario_1.fuenteDelDescansoDe)(c.horario) }]));
         for (const d of diasCongelados) {
             if (typeof d.esDescanso !== 'boolean')
                 continue;

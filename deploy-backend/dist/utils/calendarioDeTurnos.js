@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.descansoDelDia = descansoDelDia;
 exports.estadoDelDia = estadoDelDia;
-const descansoObligatorio_1 = require("./descansoObligatorio");
+const descansoDelHorario_1 = require("./descansoDelHorario");
 // LO QUE EL CALENDARIO DE TURNOS PINTA EN CADA CELDA (20 de septiembre de 2026).
 //
 // Dos decisiones puras, separadas de la ruta a propósito (CLAUDE.md §8.2): la ruta es plomería
@@ -22,12 +22,13 @@ const descansoObligatorio_1 = require("./descansoObligatorio");
 //
 // Tratar `false` como si fuera `null` sería el defecto: un domingo congelado como día ordinario
 // volvería a leerse como descanso y el día cambiaría de sentido cada vez que se relee.
-function descansoDelDia(congelado, diaSemana, estado) {
+function descansoDelDia(congelado, diaSemana, fuente) {
     if (typeof congelado === 'boolean')
         return congelado;
-    // Sin planificador todavía, el día planificado va en `null`: un ROTATIVO cae al domingo, que es
-    // la dirección segura. Cuando el planificador llegue, ese tercer argumento es su gancho.
-    return (0, descansoObligatorio_1.esDescansoObligatorio)(diaSemana, estado, null);
+    // El día programado va en `null`: esta función resuelve una celda suelta y «cuál de los siete
+    // lleva el descanso» es una pregunta de la SEMANA. Quien tiene horario se resuelve igual con sus
+    // franjas; quien no lo tiene se queda sin descanso en esa celda hasta que se programe.
+    return (0, descansoDelHorario_1.esDescansoObligatorioDe)(diaSemana, fuente, null);
 }
 // `DESCANSO` y `SIN_TURNO` se separan a propósito, y no es cosmético: alguien de lunes a viernes
 // tiene DOS días sin trabajar y solo uno es su descanso obligatorio. Pintarlos iguales afirmaría

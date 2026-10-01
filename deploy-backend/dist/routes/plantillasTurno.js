@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = plantillaTurnoRoutes;
 const prisma_1 = require("../prisma");
+const capacidades_1 = require("../utils/capacidades");
 const cuerpoDePlantilla_1 = require("../utils/cuerpoDePlantilla");
 const ventanasDeHorario_1 = require("../utils/ventanasDeHorario");
 // EL CATÁLOGO DE TURNOS DE LA EMPRESA (19 de septiembre de 2026, turnos rotativos paso 1).
@@ -17,7 +18,11 @@ const ventanasDeHorario_1 = require("../utils/ventanasDeHorario");
 // Las plantillas viajan con sus descansos como ARREGLO (`franjaParaResponder`), nunca con el
 // texto que se guarda, igual que las franjas del horario.
 async function plantillaTurnoRoutes(app) {
-    const auth = { preHandler: [app.requireEmpresa] };
+    // LAS DOS GUARDAS JUNTAS, y la segunda cubre TODAS las rutas de este archivo de una vez: el módulo
+    // de turnos es del plan Empresarial (30 de septiembre de 2026, decisión del dueño), y el super admin
+    // puede prendérselo o apagárselo a un cliente suelto desde su ficha. El porqué de que viva aquí y no
+    // dentro de cada manejador está en `utils/capacidades.ts`.
+    const auth = { preHandler: [app.requireEmpresa, (0, capacidades_1.exigeFuncion)('turnos')] };
     // Los turnos de trabajo primero y los descansos al final: en una lista que se usa para
     // elegir, el día libre es la excepción y no compite con los turnos.
     app.get('/', auth, async (request) => {

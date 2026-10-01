@@ -67,10 +67,10 @@ function liquidarRegistros(registros, horario, extraConfig, festivosDates, tipos
 // Días materializados del rango: de ahí sale la hora de salida programada para
 // la tolerancia. Si no llegan, la tolerancia sencillamente no se aplica.
 diasEsperados = [], 
-// Lo que la persona tiene declarado HOY, con la guarda legal ya aplicada (`estadoDescansoDe`).
-// Es el respaldo para las fechas sin fila congelada. Ausente = PRESUMIDO, o sea el domingo, que
-// es lo que el sistema calculó siempre: por eso los llamadores que no lo pasen no ven cambio.
-estadoDescanso) {
+// DE DÓNDE SALE EL DESCANSO DE ESA PERSONA: su horario si tiene, la programación si no. Es el
+// respaldo para las fechas sin fila congelada. Ausente = presunción legal, o sea el domingo, que es
+// lo que el sistema calculó siempre: por eso los llamadores que no lo pasen no ven cambio.
+fuenteDelDescanso) {
     const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
     // EL CABLE ENTRE EL DÍA CONGELADO Y EL MOTOR DE HORAS (20 de septiembre de 2026).
     //
@@ -89,7 +89,7 @@ estadoDescanso) {
         if (typeof d.esDescanso === 'boolean')
             porFecha[(0, horasColombiana_1.claveDeDescanso)(d.fecha)] = d.esDescanso;
     }
-    const descansoConfig = { porFecha, estado: estadoDescanso };
+    const descansoConfig = { porFecha, fuente: fuenteDelDescanso };
     // Las pausas se miden por DÍA, el de la FECHA de la jornada: el regreso de la madrugada
     // de un nocturno es del mismo día que su salida, y contado por el día de su entrada su
     // pausa quedaba sin regreso (12 de septiembre de 2026). Cuánto cuesta cada pausa lo

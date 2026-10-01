@@ -21,6 +21,7 @@ const diasEsperados_1 = require("./diasEsperados");
 const fechas_1 = require("./fechas");
 const diasDeLaSemana_1 = require("./diasDeLaSemana");
 const descansoObligatorio_1 = require("./descansoObligatorio");
+const descansoDelHorario_1 = require("./descansoDelHorario");
 const pintarDia_1 = require("./pintarDia");
 // Escribe en la tabla `DiaEsperado` lo que el horario de cada colaborador exige
 // cada día. Es la memoria del sistema: sin ella, editar un horario reescribe el
@@ -40,14 +41,11 @@ function medianocheBogotaDe(d) {
 async function materializarColaborador(colaboradorId, desde, finExclusivo, opciones = {}) {
     // Solo el horario y su id, que es lo que se escribe en cada día. Sin `select` venían todas las
     // columnas de la persona, también sus fotos y su descriptor facial, en cada materialización
-    // (13 de septiembre de 2026). Las tres de `descanso*` se suman el 20 de septiembre de 2026: son
-    // tres campos cortos, y sin ellos no se puede congelar qué día descansaba.
+    // (13 de septiembre de 2026). Las franjas ya venían: de ellas sale también qué día descansaba, que
+    // el 30 de septiembre de 2026 dejó de salir de tres columnas de la persona.
     const colaborador = await prisma_1.prisma.colaborador.findUnique({
         where: { id: colaboradorId },
-        select: {
-            horarioId: true, horario: { include: { franjas: true } },
-            descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
-        },
+        select: { horarioId: true, horario: { include: { franjas: true } } },
     });
     if (!colaborador)
         return 0;
@@ -55,9 +53,10 @@ async function materializarColaborador(colaboradorId, desde, finExclusivo, opcio
     const calculados = (0, diasEsperados_1.calcularDiasEsperados)(desde, finExclusivo, horario);
     if (calculados.length === 0)
         return 0;
-    // La declaración de esta persona, ya con la guarda legal aplicada: un día declarado sin acuerdo
-    // escrito vale como PRESUMIDO, o sea domingo.
-    const estado = (0, descansoObligatorio_1.estadoDescansoDe)(colaborador);
+    // DE DÓNDE SALE SU DESCANSO (30 de septiembre de 2026, regla del dueño): de las FRANJAS de su
+    // horario, o de la programación si no tiene horario. Antes salía de tres columnas del colaborador
+    // que un modal llenaba una vez; esas columnas nunca llegaron a producción y dejan de existir.
+    const fuente = (0, descansoDelHorario_1.fuenteDelDescansoDe)(horario);
     // Lo que ya existe en ese rango, para no pisarlo si no toca.
     const existentes = await prisma_1.prisma.diaEsperado.findMany({
         where: { colaboradorId, fecha: { gte: desde, lt: finExclusivo } },
@@ -87,7 +86,9 @@ async function materializarColaborador(colaboradorId, desde, finExclusivo, opcio
     // filtra por la columna en vez de traer la relación para mirarla después.
     const planPorSemana = (0, descansoObligatorio_1.descansosPlanificadosPorSemana)(pintados.map(p => ({
         fecha: p.fecha,
-        esDescansoDeTurno: true,
+        // `true` fijo y no una columna: la consulta de arriba YA filtró por `descansoPintado: true`,
+        // así que cada fila que llega aquí es, por construcción, un día marcado como descanso.
+        descansoMarcado: true,
     })));
     // Una semana sin plan o ambigua no está en el mapa, y entonces va `null`: cae al domingo, que es
     // la dirección segura.
@@ -113,7 +114,7 @@ async function materializarColaborador(colaboradorId, desde, finExclusivo, opcio
                 // `esDescanso` SÍ se actualiza, al revés que `origen`: son cosas distintas. `origen` es la
                 // marca que protege un día ajustado a mano; esto es un dato derivado que debe seguir al
                 // horario cuando el horario cambia hacia adelante. Los días pasados no llegan aquí.
-                esDescanso: (0, descansoObligatorio_1.esDescansoObligatorio)((0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), estado, planDe(d.fecha)),
+                esDescanso: (0, descansoDelHorario_1.esDescansoObligatorioDe)((0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), fuente, planDe(d.fecha)),
                 // `origen` NO se toca al actualizar: es el único marcador que puede
                 // proteger un día ajustado a mano, y reescribirlo a AUTO lo borraría.
                 horarioId: colaborador.horarioId,
@@ -127,7 +128,7 @@ async function materializarColaborador(colaboradorId, desde, finExclusivo, opcio
                 descansos: d.descansos,
                 // Sin planificador todavía, el día planificado va en `null`: un ROTATIVO cae al domingo,
                 // que es la dirección segura. Ese `null` es el gancho donde el planificador se conecta.
-                esDescanso: (0, descansoObligatorio_1.esDescansoObligatorio)((0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), estado, planDe(d.fecha)),
+                esDescanso: (0, descansoDelHorario_1.esDescansoObligatorioDe)((0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), fuente, planDe(d.fecha)),
                 horarioId: colaborador.horarioId, origen: 'AUTO',
             },
         });
@@ -135,11 +136,16 @@ async function materializarColaborador(colaboradorId, desde, finExclusivo, opcio
     }
     return escritos;
 }
-// Las columnas que el pintado necesita de la persona, y ninguna más.
+// Las columnas que el pintado necesita de la persona, y ninguna más. Las FRANJAS entran el 30 de
+// septiembre de 2026: de ellas sale su día de descanso, que antes salía de tres columnas suyas.
 const PARA_PINTAR = {
     horarioId: true,
-    horario: { select: { toleranciaMin: true, almuerzoMin: true, toleranciaSalidaMin: true, ajustaEntrada: true } },
-    descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
+    horario: {
+        select: {
+            toleranciaMin: true, almuerzoMin: true, toleranciaSalidaMin: true, ajustaEntrada: true,
+            franjas: { select: { dias: true } },
+        },
+    },
 };
 // Comprueba las dos guardas de arriba. Devuelve el motivo si el día no se puede tocar.
 async function diaTocable(colaboradorId, fecha, ahora) {
@@ -176,13 +182,13 @@ async function diaTocable(colaboradorId, fecha, ahora) {
 // cuando hay cero o más de uno, que hace caer al domingo), y `reescrituraDeSemana` dice qué filas
 // hay que tocar (nunca una del pasado) y con qué valor.
 //
-// La declaración se busca aquí dentro y no se recibe: los dos que llaman a esto ya hicieron su
-// propia consulta, y pasarla como parámetro obligaba a que las dos trajeran las mismas tres
-// columnas. Una consulta corta de tres campos cortos es más barata que esa coordinación.
+// El horario se busca aquí dentro y no se recibe: los dos que llaman a esto ya hicieron su propia
+// consulta, y pasarlo como parámetro obligaba a que las dos trajeran las mismas franjas. Una consulta
+// corta es más barata que esa coordinación.
 async function reescribirSemanaDe(colaboradorId, fecha, ahora) {
     const col = await prisma_1.prisma.colaborador.findUnique({
         where: { id: colaboradorId },
-        select: { descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true },
+        select: { horario: { select: { franjas: { select: { dias: true } } } } },
     });
     if (!col)
         return;
@@ -199,7 +205,7 @@ async function reescribirSemanaDe(colaboradorId, fecha, ahora) {
         esDescanso: d.descansoPintado,
     })));
     const { inicioDia } = (0, fechas_1.rangoDiaBogota)(ahora);
-    const cambios = (0, descansoObligatorio_1.reescrituraDeSemana)(semana.map(d => ({ fecha: d.fecha, diaSemana: (0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), esDescanso: d.esDescanso })), (0, descansoObligatorio_1.estadoDescansoDe)(col), planificado, inicioDia);
+    const cambios = (0, descansoObligatorio_1.reescrituraDeSemana)(semana.map(d => ({ fecha: d.fecha, diaSemana: (0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), esDescanso: d.esDescanso })), (0, descansoDelHorario_1.fuenteDelDescansoDe)(col.horario), planificado, inicioDia);
     for (const c of cambios) {
         await prisma_1.prisma.diaEsperado.updateMany({
             where: { colaboradorId, fecha: c.fecha },
@@ -222,13 +228,13 @@ async function pintarDiaDeColaborador(colaboradorId, fecha, plantilla, ahora = n
     const campos = (0, pintarDia_1.diaDesdePlantilla)(plantilla, colaborador.horario);
     if (!campos)
         return { ok: false, motivo: 'Ese turno no tiene horas válidas para pintar un día.' };
-    const estado = (0, descansoObligatorio_1.estadoDescansoDe)(colaborador);
+    const fuente = (0, descansoDelHorario_1.fuenteDelDescansoDe)(colaborador.horario);
     // `null` como día planificado, IGUAL que en la materialización automática. Que el descanso
     // pintado mande para un ROTATIVO es una pregunta de la SEMANA («cuál de estos siete lleva el
     // turno de descanso»), no de este día suelto, y se resuelve aparte. Mientras tanto un ROTATIVO
     // cae al domingo, que es la dirección segura: un turno pintado puede agregar un recargo, nunca
     // quitarlo.
-    const esDescansoDelDia = (0, descansoObligatorio_1.esDescansoObligatorio)((0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(fecha), estado, null);
+    const esDescansoDelDia = (0, descansoDelHorario_1.esDescansoObligatorioDe)((0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(fecha), fuente, null);
     await prisma_1.prisma.diaEsperado.upsert({
         where: { colaboradorId_fecha: { colaboradorId, fecha } },
         update: {
@@ -276,8 +282,8 @@ async function marcarDescansoDeColaborador(colaboradorId, fecha, ahora = new Dat
     // igual porque el tipo lo permite, y tragarse un `null` aquí escribiría un día vacío.
     if (!campos)
         return { ok: false, motivo: 'No se pudo preparar el día de descanso.' };
-    const estado = (0, descansoObligatorio_1.estadoDescansoDe)(colaborador);
-    const esDescansoDelDia = (0, descansoObligatorio_1.esDescansoObligatorio)((0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(fecha), estado, null);
+    const fuente = (0, descansoDelHorario_1.fuenteDelDescansoDe)(colaborador.horario);
+    const esDescansoDelDia = (0, descansoDelHorario_1.esDescansoObligatorioDe)((0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(fecha), fuente, null);
     await prisma_1.prisma.diaEsperado.upsert({
         where: { colaboradorId_fecha: { colaboradorId, fecha } },
         update: {

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = turnoRoutes;
 const prisma_1 = require("../prisma");
+const capacidades_1 = require("../utils/capacidades");
 const fechas_1 = require("../utils/fechas");
 // La ESCRITURA no vive en esta ruta: `materializarDias` es el único módulo que escribe en
 // `dias_esperados`, y abrir un segundo camino sobre la tabla que alimenta la liquidación
@@ -15,6 +16,7 @@ const descansos_1 = require("../utils/descansos");
 // casos y se usa aquí solo para responder, nunca para escribir.
 const pintarDia_1 = require("../utils/pintarDia");
 const descansoObligatorio_1 = require("../utils/descansoObligatorio");
+const descansoDelHorario_1 = require("../utils/descansoDelHorario");
 const diasDeLaSemana_1 = require("../utils/diasDeLaSemana");
 const calendarioDeTurnos_1 = require("../utils/calendarioDeTurnos");
 const vigencias_1 = require("../utils/vigencias");
@@ -46,7 +48,11 @@ const descansoCompensatorio_1 = require("../utils/descansoCompensatorio");
 const DIAS_MAXIMOS = 62;
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
 async function turnoRoutes(app) {
-    const auth = { preHandler: [app.requireEmpresa] };
+    // LAS DOS GUARDAS JUNTAS, y la segunda cubre TODAS las rutas de este archivo de una vez: el módulo
+    // de turnos es del plan Empresarial (30 de septiembre de 2026, decisión del dueño), y el super admin
+    // puede prendérselo o apagárselo a un cliente suelto desde su ficha. El porqué de que viva aquí y no
+    // dentro de cada manejador está en `utils/capacidades.ts`.
+    const auth = { preHandler: [app.requireEmpresa, (0, capacidades_1.exigeFuncion)('turnos')] };
     app.get('/calendario', auth, async (request, reply) => {
         const empresaId = request.empresaId;
         const { desde, hasta } = request.query;
@@ -81,9 +87,6 @@ async function turnoRoutes(app) {
                 where: { empresaId, activo: true },
                 select: {
                     id: true, nombre: true, apellido: true, cargo: true,
-                    // Sin estas tres no se puede saber qué día descansa nadie, y la guarda legal de
-                    // `estadoDescansoDe` no tendría con qué decidir.
-                    descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
                     // LAS SEDES DE CADA PERSONA, para el filtro de la pantalla (28 de septiembre de 2026).
                     //
                     // EN PLURAL, y no es un detalle de forma: `ColaboradorSede` es una tabla puente, así que una
@@ -240,14 +243,13 @@ async function turnoRoutes(app) {
         }
         const contadorPorPersona = new Map();
         for (const p of personas) {
-            const declarado = (0, descansoObligatorio_1.estadoDescansoDe)(p);
+            const fuente = (0, descansoDelHorario_1.fuenteDelDescansoDe)(p.horario);
             const suyos = diasMesPorPersona.get(p.id) ?? [];
             contadorPorPersona.set(p.id, (0, descansoHabitual_1.descansosTrabajadosPorMes)(suyos.map(d => ({
                 fecha: d.fecha,
-                // Donde la fila no lo calculó (null), se cae a la declaración con la MISMA función que usa
-                // el motor. Así el contador y la liquidación no pueden discrepar sobre qué día era su
-                // descanso.
-                esDescanso: (0, calendarioDeTurnos_1.descansoDelDia)(d.esDescanso, (0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), declarado),
+                // Donde la fila no lo calculó (null), se cae al horario con la MISMA función que usa el
+                // motor. Así el contador y la liquidación no pueden discrepar sobre qué día era su descanso.
+                esDescanso: (0, calendarioDeTurnos_1.descansoDelDia)(d.esDescanso, (0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), fuente),
                 trabajado: conMarca.has(`${p.id}|${(0, fechas_1.claveDiaBogota)(d.fecha)}`),
             }))));
         }
@@ -264,12 +266,12 @@ async function turnoRoutes(app) {
             // combinar se perderían. Se unen con la MISMA doctrina, no con una segunda versión de qué
             // días trabaja la persona: eso ya lo decidió `combinarDiasEsperados` arriba.
             const extras = new Map(mias.map(f => [(0, fechas_1.claveDiaBogota)(f.fecha), f]));
-            // La guarda legal: un día declarado sin acuerdo escrito vale como PRESUMIDO, o sea domingo.
-            const estado = (0, descansoObligatorio_1.estadoDescansoDe)(persona);
+            // DE DÓNDE SALE SU DESCANSO: de las franjas de su horario, o de la programación si no tiene.
+            const fuente = (0, descansoDelHorario_1.fuenteDelDescansoDe)(horario);
             const dias = combinados.map(d => {
                 const clave = (0, fechas_1.claveDiaBogota)(d.fecha);
                 const extra = extras.get(clave);
-                const esDescanso = (0, calendarioDeTurnos_1.descansoDelDia)(extra?.esDescanso, (0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), estado);
+                const esDescanso = (0, calendarioDeTurnos_1.descansoDelDia)(extra?.esDescanso, (0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), fuente);
                 // Se calcula UNA vez y se usa para dos cosas: lo que la celda pinta, y si ese día necesita
                 // una decisión. Calcularlo dos veces permitiría que alguien cambiara una y dejara la otra.
                 const estadoDia = (0, calendarioDeTurnos_1.estadoDelDia)({
@@ -291,11 +293,9 @@ async function turnoRoutes(app) {
                     // como descanso también sale `DESCANSO` sin ser el obligatorio, así que deducirlo daría un
                     // aviso falso justo en el caso que cuesta dinero.
                     //
-                    // Y NO SE PUEDE DEDUCIR EN LA PANTALLA de `descanso.tipo`: la regla lleva dentro la guarda
-                    // del acuerdo escrito (sin papel, cualquier día declarado vale como domingo), y una segunda
-                    // copia es como se separan. Ya pasó en la maqueta de esto mismo: su copia se quedó leyendo
-                    // el tipo en crudo y le decía «pactado por escrito» a alguien a quien el motor trata como
-                    // presumido.
+                    // Y NO SE PUEDE DEDUCIR EN LA PANTALLA a partir del horario: la regla decide entre las
+                    // franjas y la programación, y una segunda copia es como se separan. Ya pasó en la maqueta
+                    // de esto mismo: su copia leía el dato en crudo y decía una cosa distinta de la del motor.
                     esDescansoObligatorio: esDescanso,
                     horaEntrada: d.horaEntrada,
                     horaSalida: d.horaSalida,
@@ -325,6 +325,19 @@ async function turnoRoutes(app) {
                     // AUTO = salió del horario · MANUAL = lo ajustó el admin. Null = ese día no tiene fila
                     // todavía y lo está resolviendo el horario vigente.
                     origen: extra?.origen ?? null,
+                    // SI ALGUIEN MARCÓ ESTE DÍA COMO DESCANSO CON EL BOTÓN (29 de septiembre de 2026).
+                    //
+                    // Es la columna de la que sale CUÁL de los siete días lleva el descanso de una semana
+                    // rotativa (`descansoDeLaSemana`, dentro de `reescribirSemanaDe`). Viaja porque la
+                    // programación en bloque tiene que poder avisar, ANTES de escribir, «a esta persona le va a
+                    // quedar el domingo cobrado como descanso trabajado porque no le marcaste ninguno».
+                    //
+                    // NO SE PUEDE DEDUCIR EN LA PANTALLA, y es la tercera vez que este archivo lo dice: un día
+                    // marcado a mano y el domingo presumido llegan los dos como `DESCANSO`, y `origen: MANUAL`
+                    // lo lleva también un día al que le pintaron un turno. Deducirlo sería la copia que ya se
+                    // separó una vez: `propuestaDeDescanso` estuvo seis días leyendo `plantilla.esDescanso`
+                    // mientras el motor leía esta columna, diciéndole a la pantalla lo contrario que la nómina.
+                    descansoPintado: extra?.descansoPintado === true,
                     // Viaja por `extras` y NO por `combinarDiasEsperados`, igual que `esDescanso` y `origen`:
                     // `DiaEsperadoCalculado` no lo lleva, así que al combinar se perdería.
                     //
@@ -368,9 +381,17 @@ async function turnoRoutes(app) {
                         // en blanco en un hueco proponible. No es lo mismo que `programado`: el horario
                         // programa los siete y aun así ninguno está pintado.
                         pintado: !!e?.plantilla,
-                        esDescansoDeTurno: e?.plantilla?.esDescanso === true,
+                        // LA COLUMNA DEL DÍA, NO LA PLANTILLA (29 de septiembre de 2026). Aquí decía
+                        // `e?.plantilla?.esDescanso === true`, que es el modelo anterior al 23 de septiembre,
+                        // cuando el descanso era un turno del catálogo. `reescribirSemanaDe` se migró aquel
+                        // día a `descansoPintado` y esta línea se quedó, así que las dos mitades del mismo
+                        // producto leían columnas distintas: el motor liquidaba el martes y la pantalla decía
+                        // «esta semana no tiene ningún día de descanso». Quien le hacía caso y marcaba
+                        // también el domingo dejaba la semana con dos marcas, y el descanso se caía al
+                        // domingo. O sea que obedecer el aviso movía el descanso que el aviso echaba en falta.
+                        descansoMarcado: e?.descansoPintado === true,
                     };
-                }), estado)
+                }), fuente)
                 : null;
             // LA FECHA LA RESUELVE LA RUTA, no la pantalla. La función pura habla en nombres de día
             // (`JUEVES`), que es lo correcto a su nivel y coherente con el resto del módulo. Pero para
@@ -395,9 +416,15 @@ async function turnoRoutes(app) {
                 // Las sedes a las que está asignada. Van con id y nombre: el id es con lo que filtra la
                 // pantalla, el nombre es lo que lee una persona.
                 sedes: persona.sedes.map(s => ({ id: s.sedeId, nombre: s.sede.nombre })),
-                // El estado ya resuelto, no las tres columnas crudas: la pantalla no puede volver a
-                // decidir si el acuerdo escrito alcanza, porque esa decisión es la que protege el recargo.
-                descanso: { tipo: estado.tipo, dia: estado.tipo === 'FIJO' ? estado.dia : null },
+                // DE DÓNDE SALE SU DESCANSO, ya resuelto (30 de septiembre de 2026): con horario, el día que
+                // dicen sus franjas; sin horario, no hay día fijo y lo pone la programación de cada semana.
+                //
+                // RESUELTO AQUÍ Y NO EN LA PANTALLA: «si sobra uno ese, si sobran varios el domingo» es una
+                // regla que decide el recargo dominical, y una segunda copia en el frontend es como se separan
+                // (§9.3). La pantalla solo lee el resultado.
+                descanso: fuente.de === 'HORARIO'
+                    ? { de: 'HORARIO', dia: (0, descansoDelHorario_1.diaDeDescansoDelHorario)(fuente.diasQueTrabaja) }
+                    : { de: 'PROGRAMACION', dia: null },
                 propuesta,
                 minutosEsperados: dias.reduce((a, d) => a + d.minutosEsperados, 0),
                 // CUÁNTOS MINUTOS LE EXIGIRÍA A ESTA PERSONA CADA TURNO DEL CATÁLOGO (28 de septiembre de 2026).
@@ -559,16 +586,18 @@ async function turnoRoutes(app) {
             }),
         ]);
         const conMarca = new Set(marcas.map(r => (0, fechas_1.claveDiaBogota)(r.fecha)));
-        const estado = (0, descansoObligatorio_1.estadoDescansoDe)(persona);
+        const fuente = (0, descansoDelHorario_1.fuenteDelDescansoDe)(persona.horario);
         const porMes = (0, descansoHabitual_1.descansosTrabajadosPorMes)(dias.map(d => ({
             fecha: d.fecha,
-            esDescanso: (0, calendarioDeTurnos_1.descansoDelDia)(d.esDescanso, (0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), estado),
+            esDescanso: (0, calendarioDeTurnos_1.descansoDelDia)(d.esDescanso, (0, diasDeLaSemana_1.diaSemanaDeFechaBogota)(d.fecha), fuente),
             trabajado: conMarca.has((0, fechas_1.claveDiaBogota)(d.fecha)),
         })));
         return (0, descansoHabitual_1.clasificarDescansos)(porMes[(0, fechas_1.claveDiaBogota)(fecha).slice(0, 7)] ?? 0);
     }
+    // Las franjas del horario, que es de donde sale su día de descanso. Nada más: el modal no pinta
+    // ningún otro dato de la persona.
     const PARA_DECIDIR = {
-        id: true, descansoTipo: true, descansoDia: true, descansoAcuerdoEn: true,
+        id: true, horario: { select: { franjas: { select: { dias: true } } } },
     };
     // Lo que el modal necesita para abrirse: lo decidido (o que no hay nada), la clase del mes, qué
     // opciones caben, si hay que revisar algo, y el rastro.

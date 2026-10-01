@@ -16,6 +16,12 @@ exports.FEATURES = [
     { key: 'multiDispositivo', label: 'Varios dispositivos de kiosco' },
     { key: 'multiHorario', label: 'Varios horarios' },
     { key: 'multiSede', label: 'Varias sedes' },
+    // EL MÓDULO DE TURNOS (30 de septiembre de 2026, decisión del dueño antes de desplegarlo): el
+    // catálogo, el calendario de día/semana/mes y la programación en bloque. Solo Empresarial.
+    //
+    // No lleva `proximamente`, al revés que Siigo: existe y se despliega hoy. Esa marca deja la casilla
+    // apagada y sin poder tocarla, que es justo lo contrario de lo que se pidió aquí.
+    { key: 'turnos', label: 'Turnos y programación' },
     // Siigo todavía no existe (decisión del dueño del 15 de septiembre de 2026): las pantallas del super
     // admin la muestran como «Próximamente» y sin casilla que marcar.
     { key: 'siigo', label: 'Integración Siigo', proximamente: true },
@@ -40,7 +46,7 @@ exports.PLANES = {
     EMPRESARIAL: {
         id: 'EMPRESARIAL', nombre: 'Empresarial', limite: 150,
         precioMensual: 299900, precioAnual: 2999000,
-        features: F(['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo', 'multiSede']),
+        features: F(['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo', 'multiSede', 'turnos']),
     },
 };
 const esPlan = (v) => v === 'ESENCIAL' || v === 'PROFESIONAL' || v === 'EMPRESARIAL';

@@ -11,7 +11,7 @@ const date_fns_1 = require("date-fns");
 const date_fns_tz_1 = require("date-fns-tz");
 // Con alias para no tocar ni una línea del cálculo: este paso solo quita la copia de la lista.
 const diasDeLaSemana_1 = require("./diasDeLaSemana");
-const descansoObligatorio_1 = require("./descansoObligatorio");
+const descansoDelHorario_1 = require("./descansoDelHorario");
 const TZ = 'America/Bogota';
 function esDiurna(hora, horaInicio, horaFin) {
     // Ej: horaInicio=6, horaFin=21 → diurna si 6 <= hora < 21
@@ -60,7 +60,10 @@ function claveDeFechaBogota(zc) {
 function claveDeDescanso(fecha) {
     return claveDeFechaBogota((0, date_fns_tz_1.toZonedTime)(fecha, TZ));
 }
-const PRESUMIDO = { tipo: 'PRESUMIDO' };
+// EL RESPALDO CUANDO NADIE PASA UNA FUENTE: un horario que no cubre ningún día. Sobran los siete, no
+// hay ninguno que se pueda señalar, y manda la presunción legal. Es el domingo, o sea el
+// comportamiento de siempre, escrito como lo que es en vez de como un caso aparte.
+const POR_PRESUNCION = { de: 'HORARIO', diasQueTrabaja: [] };
 function esDescansoDeLaFecha(zc, diaSemana, cfg) {
     // `hasOwnProperty` y no `??`, por lo mismo que las franjas de abajo: un día congelado como
     // `false` dice a propósito «ese día NO era su descanso», y con `??` se caería al respaldo justo
@@ -70,9 +73,9 @@ function esDescansoDeLaFecha(zc, diaSemana, cfg) {
         if (Object.prototype.hasOwnProperty.call(cfg.porFecha, clave))
             return cfg.porFecha[clave];
     }
-    // Sin fila congelada no hay semana planificada que consultar, así que un ROTATIVO cae al domingo.
-    // Es la dirección segura: un turno puede agregar un recargo, nunca quitarlo.
-    return (0, descansoObligatorio_1.esDescansoObligatorio)(diaSemana, cfg.estado ?? PRESUMIDO, null);
+    // Sin fila congelada no hay semana programada que consultar, así que se pasa `null`: quien tiene
+    // horario se resuelve con sus franjas igual, y quien no lo tiene se queda sin descanso ese día.
+    return (0, descansoDelHorario_1.esDescansoObligatorioDe)(diaSemana, cfg.fuente ?? POR_PRESUNCION, null);
 }
 function esExtraPorModo(extra, zc, hora, superoTope) {
     if (extra.modo !== 'HORARIO' || (!extra.franjaPorFecha && !extra.franjaPorDia))
