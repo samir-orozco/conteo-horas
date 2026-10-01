@@ -4293,7 +4293,6 @@ export namespace Prisma {
     exentaPago: boolean | null
     activa: boolean | null
     auxilioRevisadoEn: Date | null
-    descansoRevisadoEn: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
     afiliadoId: string | null
@@ -4311,7 +4310,6 @@ export namespace Prisma {
     exentaPago: boolean | null
     activa: boolean | null
     auxilioRevisadoEn: Date | null
-    descansoRevisadoEn: Date | null
     creadoEn: Date | null
     actualizadoEn: Date | null
     afiliadoId: string | null
@@ -4329,7 +4327,6 @@ export namespace Prisma {
     exentaPago: number
     activa: number
     auxilioRevisadoEn: number
-    descansoRevisadoEn: number
     creadoEn: number
     actualizadoEn: number
     afiliadoId: number
@@ -4349,7 +4346,6 @@ export namespace Prisma {
     exentaPago?: true
     activa?: true
     auxilioRevisadoEn?: true
-    descansoRevisadoEn?: true
     creadoEn?: true
     actualizadoEn?: true
     afiliadoId?: true
@@ -4367,7 +4363,6 @@ export namespace Prisma {
     exentaPago?: true
     activa?: true
     auxilioRevisadoEn?: true
-    descansoRevisadoEn?: true
     creadoEn?: true
     actualizadoEn?: true
     afiliadoId?: true
@@ -4385,7 +4380,6 @@ export namespace Prisma {
     exentaPago?: true
     activa?: true
     auxilioRevisadoEn?: true
-    descansoRevisadoEn?: true
     creadoEn?: true
     actualizadoEn?: true
     afiliadoId?: true
@@ -4476,7 +4470,6 @@ export namespace Prisma {
     exentaPago: boolean
     activa: boolean
     auxilioRevisadoEn: Date | null
-    descansoRevisadoEn: Date | null
     creadoEn: Date
     actualizadoEn: Date
     afiliadoId: string | null
@@ -4511,7 +4504,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: boolean
-    descansoRevisadoEn?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
     afiliadoId?: boolean
@@ -4543,7 +4535,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: boolean
-    descansoRevisadoEn?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
     afiliadoId?: boolean
@@ -4593,7 +4584,6 @@ export namespace Prisma {
       exentaPago: boolean
       activa: boolean
       auxilioRevisadoEn: Date | null
-      descansoRevisadoEn: Date | null
       creadoEn: Date
       actualizadoEn: Date
       afiliadoId: string | null
@@ -4989,7 +4979,6 @@ export namespace Prisma {
     readonly exentaPago: FieldRef<"Empresa", 'Boolean'>
     readonly activa: FieldRef<"Empresa", 'Boolean'>
     readonly auxilioRevisadoEn: FieldRef<"Empresa", 'DateTime'>
-    readonly descansoRevisadoEn: FieldRef<"Empresa", 'DateTime'>
     readonly creadoEn: FieldRef<"Empresa", 'DateTime'>
     readonly actualizadoEn: FieldRef<"Empresa", 'DateTime'>
     readonly afiliadoId: FieldRef<"Empresa", 'String'>
@@ -15137,9 +15126,6 @@ export namespace Prisma {
     rostroRechazadoEn: Date | null
     foto: string | null
     fotoMini: string | null
-    descansoTipo: string | null
-    descansoDia: string | null
-    descansoAcuerdoEn: Date | null
     horarioId: string | null
     modalidad: $Enums.ModalidadTrabajo | null
     puedeCerrarEnOtraSede: boolean | null
@@ -15168,9 +15154,6 @@ export namespace Prisma {
     rostroRechazadoEn: Date | null
     foto: string | null
     fotoMini: string | null
-    descansoTipo: string | null
-    descansoDia: string | null
-    descansoAcuerdoEn: Date | null
     horarioId: string | null
     modalidad: $Enums.ModalidadTrabajo | null
     puedeCerrarEnOtraSede: boolean | null
@@ -15200,9 +15183,6 @@ export namespace Prisma {
     rostroRechazadoEn: number
     foto: number
     fotoMini: number
-    descansoTipo: number
-    descansoDia: number
-    descansoAcuerdoEn: number
     horarioId: number
     modalidad: number
     puedeCerrarEnOtraSede: number
@@ -15243,9 +15223,6 @@ export namespace Prisma {
     rostroRechazadoEn?: true
     foto?: true
     fotoMini?: true
-    descansoTipo?: true
-    descansoDia?: true
-    descansoAcuerdoEn?: true
     horarioId?: true
     modalidad?: true
     puedeCerrarEnOtraSede?: true
@@ -15274,9 +15251,6 @@ export namespace Prisma {
     rostroRechazadoEn?: true
     foto?: true
     fotoMini?: true
-    descansoTipo?: true
-    descansoDia?: true
-    descansoAcuerdoEn?: true
     horarioId?: true
     modalidad?: true
     puedeCerrarEnOtraSede?: true
@@ -15306,9 +15280,6 @@ export namespace Prisma {
     rostroRechazadoEn?: true
     foto?: true
     fotoMini?: true
-    descansoTipo?: true
-    descansoDia?: true
-    descansoAcuerdoEn?: true
     horarioId?: true
     modalidad?: true
     puedeCerrarEnOtraSede?: true
@@ -15425,9 +15396,6 @@ export namespace Prisma {
     rostroRechazadoEn: Date | null
     foto: string | null
     fotoMini: string | null
-    descansoTipo: string
-    descansoDia: string | null
-    descansoAcuerdoEn: Date | null
     horarioId: string | null
     modalidad: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede: boolean
@@ -15476,9 +15444,6 @@ export namespace Prisma {
     rostroRechazadoEn?: boolean
     foto?: boolean
     fotoMini?: boolean
-    descansoTipo?: boolean
-    descansoDia?: boolean
-    descansoAcuerdoEn?: boolean
     horarioId?: boolean
     modalidad?: boolean
     puedeCerrarEnOtraSede?: boolean
@@ -15521,9 +15486,6 @@ export namespace Prisma {
     rostroRechazadoEn?: boolean
     foto?: boolean
     fotoMini?: boolean
-    descansoTipo?: boolean
-    descansoDia?: boolean
-    descansoAcuerdoEn?: boolean
     horarioId?: boolean
     modalidad?: boolean
     puedeCerrarEnOtraSede?: boolean
@@ -15583,9 +15545,6 @@ export namespace Prisma {
       rostroRechazadoEn: Date | null
       foto: string | null
       fotoMini: string | null
-      descansoTipo: string
-      descansoDia: string | null
-      descansoAcuerdoEn: Date | null
       horarioId: string | null
       modalidad: $Enums.ModalidadTrabajo
       puedeCerrarEnOtraSede: boolean
@@ -15992,9 +15951,6 @@ export namespace Prisma {
     readonly rostroRechazadoEn: FieldRef<"Colaborador", 'DateTime'>
     readonly foto: FieldRef<"Colaborador", 'String'>
     readonly fotoMini: FieldRef<"Colaborador", 'String'>
-    readonly descansoTipo: FieldRef<"Colaborador", 'String'>
-    readonly descansoDia: FieldRef<"Colaborador", 'String'>
-    readonly descansoAcuerdoEn: FieldRef<"Colaborador", 'DateTime'>
     readonly horarioId: FieldRef<"Colaborador", 'String'>
     readonly modalidad: FieldRef<"Colaborador", 'ModalidadTrabajo'>
     readonly puedeCerrarEnOtraSede: FieldRef<"Colaborador", 'Boolean'>
@@ -37121,7 +37077,6 @@ export namespace Prisma {
     exentaPago: 'exentaPago',
     activa: 'activa',
     auxilioRevisadoEn: 'auxilioRevisadoEn',
-    descansoRevisadoEn: 'descansoRevisadoEn',
     creadoEn: 'creadoEn',
     actualizadoEn: 'actualizadoEn',
     afiliadoId: 'afiliadoId',
@@ -37306,9 +37261,6 @@ export namespace Prisma {
     rostroRechazadoEn: 'rostroRechazadoEn',
     foto: 'foto',
     fotoMini: 'fotoMini',
-    descansoTipo: 'descansoTipo',
-    descansoDia: 'descansoDia',
-    descansoAcuerdoEn: 'descansoAcuerdoEn',
     horarioId: 'horarioId',
     modalidad: 'modalidad',
     puedeCerrarEnOtraSede: 'puedeCerrarEnOtraSede',
@@ -37927,7 +37879,6 @@ export namespace Prisma {
     exentaPago?: BoolFilter<"Empresa"> | boolean
     activa?: BoolFilter<"Empresa"> | boolean
     auxilioRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
-    descansoRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableFilter<"Empresa"> | string | null
@@ -37957,7 +37908,6 @@ export namespace Prisma {
     exentaPago?: SortOrder
     activa?: SortOrder
     auxilioRevisadoEn?: SortOrderInput | SortOrder
-    descansoRevisadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrderInput | SortOrder
@@ -37990,7 +37940,6 @@ export namespace Prisma {
     exentaPago?: BoolFilter<"Empresa"> | boolean
     activa?: BoolFilter<"Empresa"> | boolean
     auxilioRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
-    descansoRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableFilter<"Empresa"> | string | null
@@ -38020,7 +37969,6 @@ export namespace Prisma {
     exentaPago?: SortOrder
     activa?: SortOrder
     auxilioRevisadoEn?: SortOrderInput | SortOrder
-    descansoRevisadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrderInput | SortOrder
@@ -38044,7 +37992,6 @@ export namespace Prisma {
     exentaPago?: BoolWithAggregatesFilter<"Empresa"> | boolean
     activa?: BoolWithAggregatesFilter<"Empresa"> | boolean
     auxilioRevisadoEn?: DateTimeNullableWithAggregatesFilter<"Empresa"> | Date | string | null
-    descansoRevisadoEn?: DateTimeNullableWithAggregatesFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableWithAggregatesFilter<"Empresa"> | string | null
@@ -38876,9 +38823,6 @@ export namespace Prisma {
     rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
-    descansoTipo?: StringFilter<"Colaborador"> | string
-    descansoDia?: StringNullableFilter<"Colaborador"> | string | null
-    descansoAcuerdoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoFilter<"Colaborador"> | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFilter<"Colaborador"> | boolean
@@ -38919,9 +38863,6 @@ export namespace Prisma {
     rostroRechazadoEn?: SortOrderInput | SortOrder
     foto?: SortOrderInput | SortOrder
     fotoMini?: SortOrderInput | SortOrder
-    descansoTipo?: SortOrder
-    descansoDia?: SortOrderInput | SortOrder
-    descansoAcuerdoEn?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     modalidad?: SortOrder
     puedeCerrarEnOtraSede?: SortOrder
@@ -38966,9 +38907,6 @@ export namespace Prisma {
     rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
-    descansoTipo?: StringFilter<"Colaborador"> | string
-    descansoDia?: StringNullableFilter<"Colaborador"> | string | null
-    descansoAcuerdoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoFilter<"Colaborador"> | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFilter<"Colaborador"> | boolean
@@ -39009,9 +38947,6 @@ export namespace Prisma {
     rostroRechazadoEn?: SortOrderInput | SortOrder
     foto?: SortOrderInput | SortOrder
     fotoMini?: SortOrderInput | SortOrder
-    descansoTipo?: SortOrder
-    descansoDia?: SortOrderInput | SortOrder
-    descansoAcuerdoEn?: SortOrderInput | SortOrder
     horarioId?: SortOrderInput | SortOrder
     modalidad?: SortOrder
     puedeCerrarEnOtraSede?: SortOrder
@@ -39049,9 +38984,6 @@ export namespace Prisma {
     rostroRechazadoEn?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
-    descansoTipo?: StringWithAggregatesFilter<"Colaborador"> | string
-    descansoDia?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
-    descansoAcuerdoEn?: DateTimeNullableWithAggregatesFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableWithAggregatesFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoWithAggregatesFilter<"Colaborador"> | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolWithAggregatesFilter<"Colaborador"> | boolean
@@ -40953,7 +40885,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -40982,7 +40913,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -41011,7 +40941,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -41040,7 +40969,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41069,7 +40997,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -41087,7 +41014,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -41104,7 +41030,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42024,9 +41949,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -42066,9 +41988,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -42106,9 +42025,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -42148,9 +42064,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -42189,9 +42102,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -42220,9 +42130,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -42251,9 +42158,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -44552,7 +44456,6 @@ export namespace Prisma {
     exentaPago?: SortOrder
     activa?: SortOrder
     auxilioRevisadoEn?: SortOrder
-    descansoRevisadoEn?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrder
@@ -44570,7 +44473,6 @@ export namespace Prisma {
     exentaPago?: SortOrder
     activa?: SortOrder
     auxilioRevisadoEn?: SortOrder
-    descansoRevisadoEn?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrder
@@ -44588,7 +44490,6 @@ export namespace Prisma {
     exentaPago?: SortOrder
     activa?: SortOrder
     auxilioRevisadoEn?: SortOrder
-    descansoRevisadoEn?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
     afiliadoId?: SortOrder
@@ -45560,9 +45461,6 @@ export namespace Prisma {
     rostroRechazadoEn?: SortOrder
     foto?: SortOrder
     fotoMini?: SortOrder
-    descansoTipo?: SortOrder
-    descansoDia?: SortOrder
-    descansoAcuerdoEn?: SortOrder
     horarioId?: SortOrder
     modalidad?: SortOrder
     puedeCerrarEnOtraSede?: SortOrder
@@ -45596,9 +45494,6 @@ export namespace Prisma {
     rostroRechazadoEn?: SortOrder
     foto?: SortOrder
     fotoMini?: SortOrder
-    descansoTipo?: SortOrder
-    descansoDia?: SortOrder
-    descansoAcuerdoEn?: SortOrder
     horarioId?: SortOrder
     modalidad?: SortOrder
     puedeCerrarEnOtraSede?: SortOrder
@@ -45627,9 +45522,6 @@ export namespace Prisma {
     rostroRechazadoEn?: SortOrder
     foto?: SortOrder
     fotoMini?: SortOrder
-    descansoTipo?: SortOrder
-    descansoDia?: SortOrder
-    descansoAcuerdoEn?: SortOrder
     horarioId?: SortOrder
     modalidad?: SortOrder
     puedeCerrarEnOtraSede?: SortOrder
@@ -49937,9 +49829,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -49977,9 +49866,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -50447,9 +50333,6 @@ export namespace Prisma {
     rostroRechazadoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     foto?: StringNullableFilter<"Colaborador"> | string | null
     fotoMini?: StringNullableFilter<"Colaborador"> | string | null
-    descansoTipo?: StringFilter<"Colaborador"> | string
-    descansoDia?: StringNullableFilter<"Colaborador"> | string | null
-    descansoAcuerdoEn?: DateTimeNullableFilter<"Colaborador"> | Date | string | null
     horarioId?: StringNullableFilter<"Colaborador"> | string | null
     modalidad?: EnumModalidadTrabajoFilter<"Colaborador"> | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFilter<"Colaborador"> | boolean
@@ -50825,7 +50708,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -50853,7 +50735,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -50939,7 +50820,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -50967,7 +50847,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -51190,7 +51069,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -51218,7 +51096,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -51290,9 +51167,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -51331,9 +51205,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -51384,7 +51255,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -51412,7 +51282,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -51559,7 +51428,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -51587,7 +51455,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -51724,7 +51591,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -51752,7 +51618,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -51866,7 +51731,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -51894,7 +51758,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -51938,7 +51801,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -51966,7 +51828,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -51994,7 +51855,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -52022,7 +51882,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -52465,7 +52324,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -52493,7 +52351,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -52847,7 +52704,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -52875,7 +52731,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -53119,7 +52974,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -53147,7 +53001,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -53246,9 +53099,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -53287,9 +53137,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -53379,9 +53226,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -53420,9 +53264,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -53502,9 +53343,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -53543,9 +53381,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -53645,9 +53480,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -53686,9 +53518,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -53778,9 +53607,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -53819,9 +53645,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -54020,9 +53843,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -54061,9 +53881,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -54232,9 +54049,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -54273,9 +54087,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -54387,9 +54198,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -54428,9 +54236,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -54525,7 +54330,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -54553,7 +54357,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -54597,7 +54400,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -54625,7 +54427,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -54653,7 +54454,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -54681,7 +54481,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -54725,7 +54524,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -54753,7 +54551,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -54781,7 +54578,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -54809,7 +54605,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -54853,7 +54648,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -54881,7 +54675,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -54909,7 +54702,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -54937,7 +54729,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -55028,7 +54819,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -55056,7 +54846,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55179,7 +54968,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -55207,7 +54995,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -55344,7 +55131,6 @@ export namespace Prisma {
     exentaPago?: BoolFilter<"Empresa"> | boolean
     activa?: BoolFilter<"Empresa"> | boolean
     auxilioRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
-    descansoRevisadoEn?: DateTimeNullableFilter<"Empresa"> | Date | string | null
     creadoEn?: DateTimeFilter<"Empresa"> | Date | string
     actualizadoEn?: DateTimeFilter<"Empresa"> | Date | string
     afiliadoId?: StringNullableFilter<"Empresa"> | string | null
@@ -55456,7 +55242,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -55484,7 +55269,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     afiliadoId?: string | null
@@ -55618,7 +55402,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -55646,7 +55429,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55948,9 +55730,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -55989,9 +55768,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -56074,9 +55850,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -56115,9 +55888,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -56260,9 +56030,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -56301,9 +56068,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -56356,9 +56120,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -56397,9 +56158,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -56436,9 +56194,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -56477,9 +56232,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -56532,9 +56284,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -56573,9 +56322,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -56612,9 +56358,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -56653,9 +56396,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -56708,9 +56448,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -56749,9 +56486,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -56788,9 +56522,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -56829,9 +56560,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -56914,9 +56642,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -56955,9 +56680,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -57124,9 +56846,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     horarioId?: string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
@@ -57291,9 +57010,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -57331,9 +57047,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -57371,9 +57084,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     horarioId?: NullableStringFieldUpdateOperationsInput | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
@@ -57754,9 +57464,6 @@ export namespace Prisma {
     rostroRechazadoEn?: Date | string | null
     foto?: string | null
     fotoMini?: string | null
-    descansoTipo?: string
-    descansoDia?: string | null
-    descansoAcuerdoEn?: Date | string | null
     modalidad?: $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: boolean
     activo?: boolean
@@ -57817,9 +57524,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -57858,9 +57562,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -57898,9 +57599,6 @@ export namespace Prisma {
     rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     foto?: NullableStringFieldUpdateOperationsInput | string | null
     fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoTipo?: StringFieldUpdateOperationsInput | string
-    descansoDia?: NullableStringFieldUpdateOperationsInput | string | null
-    descansoAcuerdoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
     puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
     activo?: BoolFieldUpdateOperationsInput | boolean
@@ -58987,7 +58685,6 @@ export namespace Prisma {
     exentaPago?: boolean
     activa?: boolean
     auxilioRevisadoEn?: Date | string | null
-    descansoRevisadoEn?: Date | string | null
     creadoEn?: Date | string
     actualizadoEn?: Date | string
     atribuidoEn?: Date | string | null
@@ -59074,7 +58771,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -59102,7 +58798,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -59130,7 +58825,6 @@ export namespace Prisma {
     exentaPago?: BoolFieldUpdateOperationsInput | boolean
     activa?: BoolFieldUpdateOperationsInput | boolean
     auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    descansoRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
