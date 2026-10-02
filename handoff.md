@@ -611,9 +611,11 @@ anterior de la misma persona van al log `login-rostro`.
    nuevo lo compara con los demás registros de la empresa. **Resuelto:** el dueño
    aprobó el texto el 2 de octubre y quedó como versión 1.2 (puntos 4 y 5.1). Con
    la cédula NO viaja la foto (bastaría el enlace del kiosco y una lista de cédulas
-   para cosechar caras). Queda abierto: el log del servidor guarda, por persona, qué
-   tan parecida dio su cara, y el punto 3.4 solo cubre registros técnicos para
-   diagnóstico y seguridad; se le propuso al dueño una frase para el 5.1.
+   para cosechar caras). El 5.1 dice además que el servidor registra qué tan
+   parecido dio cada rostro, sin la imagen ni el descriptor (aprobado el mismo día).
+   Lo que sigue impreciso, y ya lo estaba: la fila «Registros técnicos del servidor»
+   de la tabla de conservación dice que los conserva el proveedor de hosting, pero el
+   log de la app (`LOG_FILE`) es nuestro y no tiene borrado automático.
 4. **Leer el modo de solo medición** después de unas semanas: `grep
    '"evento":"login-rostro"'` en el log de producción. Con `distanciaALaAnterior`
    y `segunda` medidas, decidir si (a) una cara lejana de la captura anterior

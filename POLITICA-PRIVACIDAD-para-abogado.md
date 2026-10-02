@@ -76,6 +76,8 @@ Cada vez que alguien marca entrada o salida en el kiosco se guarda además **una
 
 Al marcar con el rostro, la pantalla muestra el nombre y la foto de perfil de la persona reconocida junto a la foto del momento, para que confirme que es ella. Si el kiosco se equivoca, quien está al frente ve el nombre y la foto de la persona con quien lo confundió, y puede indicar que no es ella. Al registrar un rostro, el sistema lo compara con los ya registrados en la empresa para detectar tomas de otra persona o un parecido muy alto, y en ese caso avisa al administrador.
 
+Para medir y mejorar la exactitud del reconocimiento, el servidor registra qué tan parecido dio cada rostro a su registro, sin la imagen ni el descriptor, junto con el resto de sus registros técnicos.
+
 **Sobre la autorización.** Autorizar el tratamiento de un dato sensible es facultativo: ninguna persona está obligada a hacerlo, y ninguna actividad puede condicionarse a entregarlo.
 
 **La autorización del trabajador la obtiene la empresa empleadora**, que es el responsable de ese dato y quien mantiene la relación laboral. HoraPro actúa como encargado y, por cuenta de la empresa, guarda una constancia de cada decisión que se toma en el sistema: la fecha y la hora, el texto exacto que se mostró, si la tomó el trabajador desde su enlace o el administrador desde la ficha, la declaración de mayoría de edad cuando la hay y qué usuario la registró. Antes de permitir el registro facial desde la ficha, el panel le recuerda al administrador que debe contar con la autorización del titular.

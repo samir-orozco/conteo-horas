@@ -56,7 +56,9 @@
 // lado de la foto del momento, así que la foto de perfil deja de verla solo el administrador: la
 // ve también quien está frente al kiosco, incluida la persona con la que el kiosco confunda a
 // alguien. Por eso cambian el punto 4 («Quién ve estos datos») y el 5.1. El texto lo aprobó el
-// dueño el 2 de octubre de 2026 tal como está. Sin aviso previo de 15 días, igual que la 1.1: no
+// dueño el 2 de octubre de 2026 tal como está, y ese mismo día, antes de publicarla, la frase del
+// 5.1 sobre lo que el servidor registra de cada cotejo (los logs `login-rostro` y
+// `revision-rostro`: distancias e ids, nunca la imagen ni el descriptor). Sin aviso previo de 15 días, igual que la 1.1: no
 // cambian el responsable ni la finalidad. Sale en el MISMO despliegue del frontend que el cambio
 // del kiosco: antes describiría algo que el producto todavía no hace.
 
@@ -158,6 +160,7 @@ export const PRIVACIDAD = {
 <p>El cálculo se hace en el propio navegador y con modelos servidos desde nuestro dominio. Ese dato no se envía a ningún proveedor externo de reconocimiento facial.</p>
 <p>Cada vez que alguien marca entrada o salida en el kiosco se guarda además <b>una fotografía del rostro</b> como evidencia de la marcación.</p>
 <p>Al marcar con el rostro, la pantalla muestra el nombre y la foto de perfil de la persona reconocida junto a la foto del momento, para que confirme que es ella. Si el kiosco se equivoca, quien está al frente ve el nombre y la foto de la persona con quien lo confundió, y puede indicar que no es ella. Al registrar un rostro, el sistema lo compara con los ya registrados en la empresa para detectar tomas de otra persona o un parecido muy alto, y en ese caso avisa al administrador.</p>
+<p>Para medir y mejorar la exactitud del reconocimiento, el servidor registra qué tan parecido dio cada rostro a su registro, sin la imagen ni el descriptor, junto con el resto de sus registros técnicos.</p>
 <p><b>Sobre la autorización.</b> Autorizar el tratamiento de un dato sensible es facultativo: ninguna persona está obligada a hacerlo, y ninguna actividad puede condicionarse a entregarlo.</p>
 <p><b>La autorización del trabajador la obtiene la empresa empleadora</b>, que es el responsable de ese dato y quien mantiene la relación laboral. HoraPro actúa como encargado y, por cuenta de la empresa, guarda una constancia de cada decisión que se toma en el sistema: la fecha y la hora, el texto exacto que se mostró, si la tomó el trabajador desde su enlace o el administrador desde la ficha, la declaración de mayoría de edad cuando la hay y qué usuario la registró. Antes de permitir el registro facial desde la ficha, el panel le recuerda al administrador que debe contar con la autorización del titular.</p>
 <p>Si usted quiere saber qué autorizó, o revocarla, la puerta es su empleador. Si su empleador le envía un enlace de registro, desde ese enlace también puede retirar su autorización. En el punto 12 le explicamos cómo proceder si no obtiene respuesta.</p>
