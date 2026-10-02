@@ -140,12 +140,12 @@ de hace diez minutos puede ya no ser la cabeza.
 
 **La confirmación de identidad del kiosco (2 de octubre de 2026).** Sin SQL y sin
 cambio de esquema: `prisma-build` no se toca. Van `backend-build` y `frontend-build`.
-**Antes de desplegar** (ver «Confirmación de identidad en el kiosco» en Pendiente de
-fondo): fijar `MAX_ENTRE_TOMAS` con `sql/tomas-contra-el-frente.sql` corrida en
-producción. La política de privacidad 1.2, que cubre lo que el kiosco muestra, ya está
-aprobada y commiteada, y sale en el MISMO `frontend-build`: si el despliegue no es el
-2 de octubre de 2026, cambiar `fechaVigencia` en `frontend/blog/legal/privacidad.mjs`
-al día del despliegue y regenerar el documento del abogado antes de compilar.
+**Listo para desplegar.** `MAX_ENTRE_TOMAS` quedó medido el 2 de octubre en
+producción (86 personas de Grupo MSM, máxima honesta 0,537, se deja en 0,6). La
+política de privacidad 1.2, que cubre lo que el kiosco muestra, ya está aprobada y
+commiteada, y sale en el MISMO `frontend-build`: si el despliegue no es el 2 de
+octubre de 2026, cambiar `fechaVigencia` en `frontend/blog/legal/privacidad.mjs` al
+día del despliegue y regenerar el documento del abogado antes de compilar.
 
 ### Archivos sueltos en la raíz (no versionados, no míos)
 
@@ -595,8 +595,11 @@ anterior de la misma persona van al log `login-rostro`.
    campana admite tipos nuevos y enlaza a `registro`). Hoy, en su lugar, la
    pantalla dice «Si no marcaste a esa hora, no registres nada y avísale a tu
    administrador» y ofrece «Salir sin marcar».
-2. **Antes de desplegar: medir las tomas de una misma persona en producción** y
-   fijar `MAX_ENTRE_TOMAS` con `sql/tomas-contra-el-frente.sql`. La regla mide cada
+2. **Resuelto el 2 de octubre: `MAX_ENTRE_TOMAS` medido en producción.** De 86
+   personas de Grupo MSM la toma más alejada del frente dio 0,537 (luego 0,519);
+   ninguna atípica, así que no hay registros con la cara de otra persona, y el de
+   Lina da 0,289. Se dejó en 0,6. Lo que sigue es el detalle de cómo se midió:
+   `sql/tomas-contra-el-frente.sql`. La regla mide cada
    toma contra la de FRENTE, no todas contra todas: en local, la misma persona dio
    0,513 todas contra todas (un giro contra el giro opuesto) y 0,419 contra el
    frente. La consulta da al tercer decimal lo mismo que el código. El corte va por
