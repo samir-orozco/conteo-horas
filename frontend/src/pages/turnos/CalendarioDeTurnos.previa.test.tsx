@@ -3,6 +3,7 @@ import { render, screen, within, fireEvent, waitFor } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import CalendarioDeTurnos from './CalendarioDeTurnos';
 import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias } from './semana';
+import { fijarElRelojEnUnMiercoles } from '../../pruebas/reloj';
 
 // LO QUE SE DICE ANTES DE ESCRIBIR (28 de septiembre de 2026).
 //
@@ -30,6 +31,9 @@ vi.mock('../../lib/api', () => ({
   },
 }));
 
+// La semana de estas pruebas tiene días pasados y días por venir: con el reloj de verdad, de viernes
+// a lunes se rompían solas (src/pruebas/reloj.ts).
+fijarElRelojEnUnMiercoles();
 const HOY = hoyEnBogota();
 const LUNES = lunesDeLaSemana(HOY);
 const DIAS = diasDeLaSemana(LUNES);

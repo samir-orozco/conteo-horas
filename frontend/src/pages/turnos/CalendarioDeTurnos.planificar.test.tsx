@@ -83,7 +83,7 @@ const montar = (filas: unknown[] = [FILA]) => {
 };
 
 const celdaDelDomingo = () =>
-  screen.findByRole('button', { name: new RegExp(`Julián Torres.*día ${numeroDe(DOMINGO)}`) });
+  screen.findByRole('button', { name: new RegExp(`Julián Torres.*día ${numeroDe(DOMINGO)}\\b`) });
 
 beforeEach(() => { put.mockReset(); del.mockReset(); });
 
@@ -189,7 +189,7 @@ describe('un día sin turno asignado no puede aparentar que lo tiene', () => {
   // que decir esas dos cosas a la vez, y en gris, que es como se lee «esto está pendiente».
 
   const celdaDe = async (numero: number) =>
-    screen.findByRole('button', { name: new RegExp(`Julián Torres.*día ${numero}`) });
+    screen.findByRole('button', { name: new RegExp(`Julián Torres.*día ${numero}\\b`) });
 
   it('dice que está sin asignar y NO se inventa un nombre de turno', async () => {
     montar();
@@ -231,7 +231,7 @@ describe('un día que el horario programa SÍ está asignado', () => {
   // «Sin asignar» queda solo para el día que de verdad no tiene ni turno ni horario.
 
   const celdaDe = async (numero: number) =>
-    screen.findByRole('button', { name: new RegExp(`Julián Torres.*día ${numero}`) });
+    screen.findByRole('button', { name: new RegExp(`Julián Torres.*día ${numero}\\b`) });
 
   it('muestra el nombre del horario, no «sin asignar»', async () => {
     montar([{ ...FILA, dias: FILA.dias.map(d => ({ ...d, horarioNombre: 'Jornada demo' })) }]);

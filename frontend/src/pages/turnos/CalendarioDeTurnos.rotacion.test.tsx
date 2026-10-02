@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CalendarioDeTurnos from './CalendarioDeTurnos';
 import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias, diasEntre, sePuedePintar } from './semana';
+import { fijarElRelojEnUnMiercoles } from '../../pruebas/reloj';
 
 // LA VENTANA DE ROTACIÓN (28 de septiembre de 2026).
 //
@@ -31,6 +32,9 @@ vi.mock('../../lib/api', () => ({
   },
 }));
 
+// La semana de estas pruebas tiene días pasados y días por venir: con el reloj de verdad, de viernes
+// a lunes se rompían solas (src/pruebas/reloj.ts).
+fijarElRelojEnUnMiercoles();
 const HOY = hoyEnBogota();
 const LUNES = lunesDeLaSemana(HOY);
 const DIAS = diasDeLaSemana(LUNES);

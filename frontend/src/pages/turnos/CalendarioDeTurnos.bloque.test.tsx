@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import CalendarioDeTurnos from './CalendarioDeTurnos';
 import { vistaDelCalendario } from './vistaDelCalendario';
 import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana, sumarDias, sePuedePintar } from './semana';
+import { fijarElRelojEnUnMiercoles } from '../../pruebas/reloj';
 
 // LA PROGRAMACIÓN EN BLOQUE (28 de septiembre de 2026).
 //
@@ -34,6 +35,9 @@ vi.mock('../../lib/api', () => ({
 
 // Las fechas se derivan con los MISMOS ayudantes que usa la pantalla, así que la prueba no puede
 // desalinearse del componente al pasar el tiempo.
+// La semana de estas pruebas tiene días pasados y días por venir: con el reloj de verdad, de viernes
+// a lunes se rompían solas (src/pruebas/reloj.ts).
+fijarElRelojEnUnMiercoles();
 const HOY = hoyEnBogota();
 const LUNES = lunesDeLaSemana(HOY);
 const DIAS = diasDeLaSemana(LUNES);

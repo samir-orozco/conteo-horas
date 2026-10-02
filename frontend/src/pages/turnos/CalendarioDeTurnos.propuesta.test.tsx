@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CalendarioDeTurnos from './CalendarioDeTurnos';
 import { hoyEnBogota, lunesDeLaSemana, diasDeLaSemana } from './semana';
+import { fijarElRelojEnUnMiercoles } from '../../pruebas/reloj';
 
 // LA SEMANA DE QUIEN NO TIENE HORARIO SE PROPONE, NO SE ASUME (22 de septiembre de 2026).
 //
@@ -30,6 +31,9 @@ vi.mock('../../lib/api', () => ({
   },
 }));
 
+// La semana de estas pruebas tiene días pasados y días por venir: con el reloj de verdad, de viernes
+// a lunes se rompían solas (src/pruebas/reloj.ts).
+fijarElRelojEnUnMiercoles();
 const HOY = hoyEnBogota();
 const LUNES = lunesDeLaSemana(HOY);
 const DIAS = diasDeLaSemana(LUNES);
@@ -167,8 +171,8 @@ describe('cuando se puede proponer', () => {
     // reescribiría lo que ese día exigía. El servidor lo rechaza, así que ofrecerlo sería ofrecer
     // una escritura que no va a ocurrir.
     //
-    // Cuántos hay depende del día en que se corra la suite; lo que se afirma es que son EXACTAMENTE
-    // los que la regla dice, y que ninguno futuro sale apagado.
+    // Con el reloj fijo en un miércoles (src/pruebas/reloj.ts) son dos, el lunes y el martes. Lo que
+    // se afirma es que son EXACTAMENTE los que la regla dice, y que ninguno futuro sale apagado.
     montar(PROPUESTA);
     await esperarLaRejilla();
     const apagadas = screen.getAllByRole('button', { name: /como descanso de la semana/ })

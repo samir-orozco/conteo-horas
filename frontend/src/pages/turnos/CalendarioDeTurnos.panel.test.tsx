@@ -86,7 +86,7 @@ const montar = (filas: unknown[] = [FILA]) => {
 };
 
 const celdaDelDomingo = () =>
-  screen.findByRole('button', { name: new RegExp(`Julián Torres.*día ${numeroDe(DOMINGO)}`) });
+  screen.findByRole('button', { name: new RegExp(`Julián Torres.*día ${numeroDe(DOMINGO)}\\b`) });
 
 const abrirPanel = async () => {
   const usuario = userEvent.setup();
