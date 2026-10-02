@@ -639,6 +639,40 @@ anterior de la misma persona van al log `login-rostro`.
    eventos de puntero en el navegador del escritorio y en jsdom) y que
    `autoComplete="off"` apague de verdad las sugerencias de cédula.
 
+### El ingreso facial, con ideas de dos apps de verificación (2 de octubre de 2026)
+
+El dueño mandó dos videos de referencia: la verificación con selfie de Google en el
+computador y una app de celular. De cinco ideas pidió empezar por tres, que quedaron hechas
+en `CamaraRostro.tsx` (sobre el componente real, sin maqueta):
+
+1. **«Verificando…» hasta que responda el servidor.** Antes salía «¡Rostro verificado!» con
+   un chulo verde ANTES de preguntarle. Ahora la foto tomada queda de fondo, desenfocada, y
+   la cara se entrega de una vez (sin los 400 ms de la animación).
+2. **La regla del giro** (`MedidorDeGiro.tsx`, `lecturaDelGiro` en `reto.ts`): marcas junto
+   al óvalo que se encienden a medida que se gira, en ámbar si se pasa, y el texto dice si
+   falta, si sobra o si va al otro lado. Sale de los MISMOS límites que `poseCumple`, y una
+   prueba lo comprueba en todo el recorrido.
+3. **Cuenta 3, 2, 1** en la esquina en vez de la barrita del borde. `MS_QUIETO_LOGIN` pasó de
+   1 s a 1,5 s para que cada número dure medio segundo. El registro guiado sigue con la barra.
+
+Pendientes de esa lista, en el orden en que se hablaron:
+
+4. En el registro del rostro (ficha y enlace), una tarjeta de consejos antes de la cámara,
+   con «que no haya nadie más frente a la cámara».
+5. «Mira al frente» en rojo cuando la cara está muy de lado o tomada desde abajo. **El dueño
+   pidió que, como en la de Google, la imagen haga zoom sobre la cara en ese momento.** Hoy
+   no se mide qué tan de abajo está la cara (el cabeceo): es lo nuevo que hay que medir.
+
+**Cómo se probó con una cara de verdad, porque el panel del navegador no tiene cámara:** un
+recorte del video del dueño convertido a MJPEG y Chrome sin ventana con
+`--use-fake-device-for-media-stream --use-file-for-fake-video-capture=<archivo.mjpeg>
+--use-fake-ui-for-media-stream --headless=new --remote-debugging-port=<puerto>`, manejado
+desde Node 25 con su `WebSocket` nativo por el protocolo de DevTools (Page.navigate,
+Runtime.evaluate, Page.captureScreenshot). El detector de caras real corrió sobre esos
+cuadros: la regla subió, dijo «Hacia el otro lado», «¡Así!», pidió volver al frente, contó
+3-2-1 y entró. «Verificando…» no alcanzó a verse porque el servidor local responde en menos
+de 150 ms; en producción sí se verá. Falta probarlo en la tableta.
+
 ### Antes de tocar lo biométrico: lo que hay que arreglar primero
 
 **Anotado el 6 de septiembre de 2026, a peticion del dueno.** El trabajo de

@@ -28,7 +28,7 @@
 // El arreglo proyecta sobre la línea de los ojos, que es invariante a esa
 // inclinación. Para una cara derecha las dos fórmulas dan lo mismo.
 import { describe, it, expect } from 'vitest';
-import { desviacionYaw, poseCumple } from './rostroCliente';
+import { desviacionYaw, poseCumple, numeroDeLaCuenta, MS_QUIETO_LOGIN } from './rostroCliente';
 
 // Las tres proporciones que usa `desviacionYaw`, en milímetros de una cara
 // promedio: esquinas externas de los ojos separadas 63 mm, y la punta de la
@@ -149,5 +149,31 @@ describe('lo que el arreglo cambia para las personas', () => {
       expect(poseCumple('derecha', dev)).toBe(false);
       expect(poseCumple('izquierda', dev)).toBe(false);
     }
+  });
+});
+
+// LA CUENTA REGRESIVA DEL «QUÉDATE QUIETO» (2 de octubre de 2026). Antes era una
+// barra de pocos píxeles al borde de la imagen que casi nadie veía; ahora un 3, 2, 1
+// grande dice cuánto falta para la foto.
+describe('el número de la cuenta regresiva', () => {
+  it('arranca en 3 y termina en 1', () => {
+    expect(numeroDeLaCuenta(0)).toBe(3);
+    expect(numeroDeLaCuenta(0.34)).toBe(2);
+    expect(numeroDeLaCuenta(0.67)).toBe(1);
+    expect(numeroDeLaCuenta(1)).toBe(1);
+  });
+
+  it('cada número dura lo mismo: un tercio', () => {
+    expect(numeroDeLaCuenta(0.3333)).toBe(3);
+    expect(numeroDeLaCuenta(0.6666)).toBe(2);
+  });
+
+  it('con un avance fuera de rango no muestra ni 0 ni 4', () => {
+    expect(numeroDeLaCuenta(-0.2)).toBe(3);
+    expect(numeroDeLaCuenta(1.5)).toBe(1);
+  });
+
+  it('en el ingreso son 1,5 segundos: medio segundo por número', () => {
+    expect(MS_QUIETO_LOGIN).toBe(1500);
   });
 });

@@ -1,4 +1,4 @@
-import type { TipoPose } from './rostroCliente';
+import { SIGNO_DERECHA, UMBRAL_GIRO_MIN, UMBRAL_GIRO_MAX, type TipoPose } from './rostroCliente';
 
 // EL RETO DE GIRO DEL INGRESO FACIAL.
 //
@@ -60,4 +60,52 @@ export function poseDelReto(fase: FaseDelReto, lado: TipoPose): TipoPose {
 export function flechaDelReto(lado: TipoPose): 'izq' | 'der' {
   const contrario = LADO_PANTALLA_DERECHA === 'izq' ? 'der' : 'izq';
   return lado === 'derecha' ? LADO_PANTALLA_DERECHA : contrario;
+}
+
+// CUÁNTO FALTA PARA EL GIRO (2 de octubre de 2026, pedido del dueño a partir de una
+// app de verificación que vio ese día).
+//
+// La flecha decía hacia dónde, pero no cuánto: quien giraba poco se quedaba
+// esperando sin saber por qué, y quien giraba de más se pasaba del tope y el reto
+// tampoco avanzaba. Esto alimenta una regla de marcas al lado del óvalo que se
+// llena a medida que se gira, y el texto que dice si falta, si sobra o si va al
+// otro lado.
+//
+// Sale de los MISMOS límites que `poseCumple` (rostroCliente.ts): LISTO es
+// exactamente «la detección lo da por cumplido». Una prueba lo comprueba en todo
+// el recorrido, porque una regla llena con el reto sin avanzar sería otra flecha
+// que se contradice con la detección.
+export const MARCAS_DEL_MEDIDOR = 12;
+
+export type EstadoDelGiro = 'FALTA' | 'LISTO' | 'DE_MAS' | 'AL_REVES';
+export type LecturaDelGiro = { estado: EstadoDelGiro; avance: number; encendidas: number };
+
+export function lecturaDelGiro(lado: TipoPose, yaw: number): LecturaDelGiro {
+  // El giro medido en la dirección pedida: positivo si va hacia donde toca.
+  const hacia = yaw * (lado === 'derecha' ? SIGNO_DERECHA : -SIGNO_DERECHA);
+  const lectura = (estado: EstadoDelGiro, avance: number): LecturaDelGiro =>
+    ({ estado, avance, encendidas: Math.round(avance * MARCAS_DEL_MEDIDOR) });
+  // «Al revés» solo cuando gira hacia el otro lado tanto como un giro de verdad:
+  // un temblor alrededor del frente no merece que se le corrija.
+  if (hacia < -UMBRAL_GIRO_MIN) return lectura('AL_REVES', 0);
+  if (hacia >= UMBRAL_GIRO_MAX) return lectura('DE_MAS', 1);
+  if (hacia > UMBRAL_GIRO_MIN) return lectura('LISTO', 1);
+  return lectura('FALTA', Math.max(0, hacia) / UMBRAL_GIRO_MIN);
+}
+
+// QUÉ DICE LA PANTALLA EN CADA MOMENTO DEL RETO: una cosa a la vez y en grande. Pedir
+// dos a la vez es lo que hizo fracasar el intento del parpadeo. Un caso por estado y
+// un `default` que no compila si llega uno nuevo sin su texto (CLAUDE.md §9.4).
+export function textoDelReto(fase: FaseDelReto, giro: EstadoDelGiro): { titulo: string; detalle: string } {
+  if (fase === 'VOLVER') return { titulo: 'Ahora vuelva a mirar al frente', detalle: 'Ya casi, no se mueva' };
+  switch (giro) {
+    case 'FALTA': return { titulo: 'Gire la cabeza hacia la flecha', detalle: 'Un giro suave, sin exagerar' };
+    case 'LISTO': return { titulo: '¡Así! No se mueva', detalle: 'Ya casi' };
+    case 'DE_MAS': return { titulo: 'Un poco menos', detalle: 'Devuelva un poco la cabeza' };
+    case 'AL_REVES': return { titulo: 'Hacia el otro lado', detalle: 'Siga la flecha' };
+    default: {
+      const nuevo: never = giro;
+      return nuevo;
+    }
+  }
 }

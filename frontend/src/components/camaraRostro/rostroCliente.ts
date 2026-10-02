@@ -4,7 +4,9 @@ import * as faceapi from 'face-api.js';
 // CamaraRostro.tsx para poder ajustar/probar umbrales sin montar el componente.
 
 export type Modo = 'login' | 'enrolar';
-export type Estado = 'cargando' | 'calibrando' | 'guiando' | 'preview' | 'exito' | 'error';
+// 'verificando': el ingreso ya tomó la cara y espera la respuesta del servidor. Antes
+// había un 'exito' que decía «¡Rostro verificado!» antes de preguntarle: se fue.
+export type Estado = 'cargando' | 'calibrando' | 'guiando' | 'preview' | 'verificando' | 'error';
 export type TipoPose = 'frontal' | 'derecha' | 'izquierda';
 export type PasoEnrolar = { id: string; etiqueta: string; texto: string; tipo: TipoPose };
 export type Encuadre = 'CENTRA' | 'ACERCATE' | 'ALEJATE' | 'OK';
@@ -19,7 +21,10 @@ export const opcionesCaptura = () => new faceapi.TinyFaceDetectorOptions({ input
 
 // Tiempo que la persona debe quedarse quieta antes de tomar la muestra.
 export const MS_QUIETO_ENROLAR = 2000;
-export const MS_QUIETO_LOGIN = 1000;
+// En el ingreso, 1,5 s desde el 2 de octubre de 2026 (antes 1 s): es lo que dura la
+// cuenta 3, 2, 1 a medio segundo por número. Con un segundo, cada número duraba un
+// tercio y no alcanzaba a leerse. De paso entran más cuadros al promedio.
+export const MS_QUIETO_LOGIN = 1500;
 // Mínimo de cuadros nítidos a promediar por muestra.
 export const MIN_MUESTRAS_POSE = 3;
 // Piso de tiempo entre detecciones cuando NO se está capturando (evita calentar la tablet).
@@ -236,10 +241,25 @@ export function crearEstabilizadorEncuadre(muestras = MUESTRAS_SUAVIZADO) {
   };
 }
 
+// Los límites del giro, en un solo sitio: la detección (`poseCumple`) y la regla
+// que se llena en pantalla (`lecturaDelGiro`, reto.ts) los leen de aquí, para que la
+// pantalla no pueda decir «listo» cuando la detección no lo da por cumplido.
+export const UMBRAL_FRENTE = 0.1;
+export const UMBRAL_GIRO_MIN = 0.13;
+export const UMBRAL_GIRO_MAX = 0.42;
+
 // ¿La pose actual (según el yaw) cumple lo que pide el paso?
 export function poseCumple(tipo: TipoPose, dev: number): boolean {
-  if (tipo === 'frontal') return Math.abs(dev) < 0.1;
-  const magnitud = Math.abs(dev) > 0.13 && Math.abs(dev) < 0.42;
+  if (tipo === 'frontal') return Math.abs(dev) < UMBRAL_FRENTE;
+  const magnitud = Math.abs(dev) > UMBRAL_GIRO_MIN && Math.abs(dev) < UMBRAL_GIRO_MAX;
   if (tipo === 'derecha') return magnitud && Math.sign(dev) === SIGNO_DERECHA;
   return magnitud && Math.sign(dev) === -SIGNO_DERECHA;
+}
+
+// QUÉ NÚMERO MUESTRA LA CUENTA REGRESIVA (2 de octubre de 2026). `progreso` es el
+// avance del «quédate quieto», de 0 a 1: 3 en el primer tercio, 2 en el segundo y
+// 1 en el último. Nunca 0 ni 4, aunque el avance se salga del rango.
+export function numeroDeLaCuenta(progreso: number, desde = 3): number {
+  const restante = Math.ceil((1 - progreso) * desde);
+  return Math.min(desde, Math.max(1, restante));
 }

@@ -7,10 +7,14 @@ import {
   SEG_FALLBACK_CEDULA, opcionesDeteccion, opcionesCaptura, MS_QUIETO_ENROLAR, MS_QUIETO_LOGIN,
   MIN_MUESTRAS_POSE, MS_MIN_CUADRO, desviacionYaw, promediarDescriptores, capturarFoto,
   MSG_ENCUADRE, poseCumple, RESTRICCIONES_VIDEO, fijarZoomMinimo,
-  esperarVideoEstable, crearEstabilizadorEncuadre,
+  esperarVideoEstable, crearEstabilizadorEncuadre, numeroDeLaCuenta,
   type Modo, type Estado, type TipoPose,
 } from './camaraRostro/rostroCliente';
-import { sortearLado, poseDelReto, flechaDelReto, MS_QUIETO_GIRO, type FaseDelReto } from './camaraRostro/reto';
+import {
+  sortearLado, poseDelReto, flechaDelReto, MS_QUIETO_GIRO, lecturaDelGiro, textoDelReto,
+  type FaseDelReto, type LecturaDelGiro,
+} from './camaraRostro/reto';
+import MedidorDeGiro from './camaraRostro/MedidorDeGiro';
 import { pasosDeEnrolamiento, mensajeBajoLaTarjeta, type PasoGuiado } from './camaraRostro/pasosEnrolar';
 import TarjetaDePaso from './camaraRostro/TarjetaDePaso';
 
@@ -37,6 +41,9 @@ type Props = {
   exigeReto?: boolean;
 };
 
+// La regla vacía: nada girado todavía.
+const GIRO_SIN_EMPEZAR: LecturaDelGiro = { estado: 'FALTA', avance: 0, encendidas: 0 };
+
 export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapturado, onError, errorExterno, permiteFallbackCedula = false, onUsarCedula, exigeReto = false }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [mostrarFallback, setMostrarFallback] = useState(false);
@@ -52,6 +59,10 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
   const [ladoReto, setLadoReto] = useState<TipoPose>(() => sortearLado(Math.random()));
   const [faseReto, setFaseReto] = useState<FaseDelReto>('GIRAR');
   const [retoOk, setRetoOk] = useState(false);
+  // Cuánto va del giro, para la regla que se llena junto al óvalo (2 de octubre de 2026).
+  const [lecturaGiro, setLecturaGiro] = useState<LecturaDelGiro>(GIRO_SIN_EMPEZAR);
+  // La foto que se acaba de tomar, de fondo mientras el servidor verifica.
+  const [fotoVerificando, setFotoVerificando] = useState<string | null>(null);
   // El bucle lee el reto POR REFERENCIA, no por la clausura del efecto.
   //
   // `exigeReto` llega del servidor DESPUÉS de montar: la pantalla de login se
@@ -94,6 +105,9 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     let retoCumplido = false;
     let holdReto: number | null = null;
     const faseDelRetoRef = { current: 'GIRAR' as FaseDelReto };
+    // La última lectura del giro que se pintó: solo se avisa a React cuando cambia la
+    // regla o el texto, no en cada cuadro.
+    let ultimaLectura: LecturaDelGiro = GIRO_SIN_EMPEZAR;
 
     // Estado del flujo (fuera de React para no re-renderizar por cuadro)
     const descriptoresPorPose: number[][] = [];
@@ -220,6 +234,13 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
             // esto, porque el descriptor lo calcula el navegador.
             if (retoRef.current.activo && !retoCumplido) {
               const pedida = poseDelReto(faseDelRetoRef.current, retoRef.current.lado);
+              if (faseDelRetoRef.current === 'GIRAR') {
+                const lectura = lecturaDelGiro(retoRef.current.lado, yaw);
+                if (lectura.encendidas !== ultimaLectura.encendidas || lectura.estado !== ultimaLectura.estado) {
+                  ultimaLectura = lectura;
+                  setLecturaGiro(lectura);
+                }
+              }
               if (!poseCumple(pedida, yaw)) {
                 resetHold();
                 programarSiguiente();
@@ -299,15 +320,20 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
                   return;
                 }
               } else {
-                // Login: una sola muestra promediada → listo
+                // Login: una sola muestra promediada, y a preguntarle al servidor.
+                //
+                // «VERIFICANDO…» Y NO «¡ROSTRO VERIFICADO!» (2 de octubre de 2026). Antes
+                // salía un chulo verde con ese texto ANTES de preguntarle al servidor, y si
+                // el servidor rechazaba la cara la pantalla se contradecía. Ahora la foto que
+                // se tomó queda de fondo, desenfocada, con «Verificando…» hasta que el
+                // servidor responda: si acepta, el kiosco cambia de pantalla; si no, llega
+                // `errorExterno`. Y se entrega de una vez, sin los 400 ms de la animación.
                 terminado = true;
-                setEstado('exito');
-                setMensaje('¡Rostro verificado!');
-                setTimeout(() => {
-                  if (!activo) return;
-                  detenerCamara();
-                  onCapturado([muestra], foto);
-                }, 400);
+                detenerCamara();
+                setFotoVerificando(foto);
+                setEstado('verificando');
+                setMensaje('Verificando…');
+                onCapturado([muestra], foto);
                 return;
               }
             }
@@ -366,11 +392,20 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
     setLadoReto(sortearLado(Math.random()));
     setFaseReto('GIRAR');
     setRetoOk(false);
+    setLecturaGiro(GIRO_SIN_EMPEZAR);
+    setFotoVerificando(null);
     setIntento(i => i + 1);
   };
 
   const hayError = estado === 'error' || !!errorExterno;
-  const colorOvalo = hayError ? '#f87171' : estado === 'exito' ? '#4ade80' : encuadreOk ? '#4ade80' : '#FFD85E';
+  const verificando = estado === 'verificando' && !errorExterno;
+  const colorOvalo = hayError ? '#f87171' : encuadreOk ? '#4ade80' : '#FFD85E';
+  // La regla del giro solo mientras se gira: al volver al frente ya no dice nada útil.
+  const mostrarMedidor = retoActivo && !retoOk && faseReto === 'GIRAR' && estado === 'guiando' && encuadreOk;
+  const textoReto = textoDelReto(faseReto, lecturaGiro.estado);
+  // Mientras se ve el aviso del reto, ese ES el mensaje: el de abajo se queda en el último
+  // que puso el ciclo («Ubica tu rostro dentro del óvalo») y diría otra cosa a la vez.
+  const avisoDelReto = retoActivo && !retoOk && estado === 'guiando' && encuadreOk && !hayError;
 
   // ===== Preview de enrolamiento: aceptar o repetir =====
   if (estado === 'preview') {
@@ -404,8 +439,23 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
           </div>
         )}
 
+        {/* La foto que se tomó, desenfocada, mientras el servidor verifica, y también si
+            después la rechaza: con la cámara ya apagada, el fondo sería negro. */}
+        {fotoVerificando && (estado === 'verificando' || hayError) && (
+          <img src={fotoVerificando} alt="La foto que se está verificando"
+            className="absolute inset-0 w-full h-full object-cover [transform:scaleX(-1)] scale-110 blur-md" />
+        )}
+        {verificando && (
+          <div role="status" className="absolute inset-0 flex items-center justify-center">
+            <span className="flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-semibold text-white">
+              <span aria-hidden="true" className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              Verificando…
+            </span>
+          </div>
+        )}
+
         {/* Óvalo guía: oscurece alrededor y marca dónde debe ir el rostro */}
-        {(estado === 'guiando' || estado === 'exito' || hayError) && (
+        {(estado === 'guiando' || hayError) && (
           <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 75" preserveAspectRatio="none" aria-hidden="true">
             <path
               d="M0 0 H100 V75 H0 Z M50 37.5 m-23 0 a23 30 0 1 0 46 0 a23 30 0 1 0 -46 0"
@@ -414,6 +464,14 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
             />
             <ellipse cx="50" cy="37.5" rx="23" ry="30" fill="none" stroke={colorOvalo} strokeWidth="1.4"
               strokeDasharray={estado === 'guiando' && !encuadreOk ? '4 2.5' : undefined} />
+          </svg>
+        )}
+        {/* La regla del giro va en su propio SVG, con las mismas coordenadas del óvalo: el
+            de arriba está oculto para los lectores de pantalla y esta sí tiene que decir
+            cuánto va. */}
+        {mostrarMedidor && (
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 75" preserveAspectRatio="none">
+            <MedidorDeGiro lectura={lecturaGiro} lado={flechaDelReto(ladoReto)} />
           </svg>
         )}
 
@@ -466,21 +524,20 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
           </div>
         )}
 
-        {/* Barra de progreso del "quédate quieto" (robusta, sin pathLength) */}
-        {progreso > 0 && estado === 'guiando' && (
-          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
-            <div className="h-full bg-green-400 transition-[width] duration-100 ease-linear" style={{ width: `${Math.round(progreso * 100)}%` }} />
+        {/* EL «QUÉDATE QUIETO». En el ingreso, un 3, 2, 1 grande en la esquina (2 de
+            octubre de 2026): antes era esta misma barra de pocos píxeles al borde, que casi
+            nadie veía. El registro guiado sigue con la barra, porque allí manda la tarjeta
+            del paso. */}
+        {progreso > 0 && estado === 'guiando' && modo === 'login' && (
+          <div aria-live="polite" className="absolute bottom-2 right-4 pointer-events-none">
+            <span key={numeroDeLaCuenta(progreso)} className="hp-pop block text-6xl font-extrabold tabular-nums text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.55)]">
+              {numeroDeLaCuenta(progreso)}
+            </span>
           </div>
         )}
-
-        {estado === 'exito' && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative w-20 h-20">
-              <div className="hp-ripple absolute inset-0 rounded-full bg-green-400/50" />
-              <div className="hp-pop relative w-20 h-20 rounded-full bg-white flex items-center justify-center">
-                <Check size={36} className="text-green-600" strokeWidth={3} />
-              </div>
-            </div>
+        {progreso > 0 && estado === 'guiando' && modo === 'enrolar' && (
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
+            <div className="h-full bg-green-400 transition-[width] duration-100 ease-linear" style={{ width: `${Math.round(progreso * 100)}%` }} />
           </div>
         )}
         {hayError && (
@@ -494,16 +551,10 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
 
       {/* La instrucción del reto, en grande y de una sola cosa a la vez. Pedir dos
           cosas a la vez es lo que hizo fracasar el intento del parpadeo. */}
-      {retoActivo && !retoOk && estado === 'guiando' && encuadreOk && !hayError && (
+      {avisoDelReto && (
         <div className="w-full max-w-md rounded-xl bg-primary/20 px-4 py-3 text-center">
-          <p className="text-base font-bold text-ink">
-            {faseReto === 'GIRAR' ? 'Gire la cabeza hacia la flecha' : 'Ahora vuelva a mirar al frente'}
-          </p>
-          <p className="text-xs text-muted mt-0.5">
-            {faseReto === 'GIRAR'
-              ? 'Un giro suave, sin exagerar'
-              : 'Ya casi, no se mueva'}
-          </p>
+          <p className="text-base font-bold text-ink">{textoReto.titulo}</p>
+          <p className="text-xs text-muted mt-0.5">{textoReto.detalle}</p>
         </div>
       )}
 
@@ -530,10 +581,14 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
         </div>
       )}
 
-      <p className={`text-sm font-medium text-center ${hayError ? 'text-red-500' : estado === 'exito' ? 'text-green-600' : 'text-muted'}`}>
-        {estado === 'error' && <AlertTriangle size={14} className="inline mr-1 -mt-0.5" />}
-        {errorExterno ?? (modo === 'enrolar' ? mensajeBajoLaTarjeta(mensaje, pasos[pasoActual]?.texto) : mensaje)}
-      </p>
+      {/* Mientras verifica no se repite «Verificando…» aquí abajo: ya lo dice la imagen. Y
+          mientras está el aviso del reto, el aviso es el mensaje. */}
+      {!verificando && !avisoDelReto && (
+        <p className={`text-sm font-medium text-center ${hayError ? 'text-red-500' : 'text-muted'}`}>
+          {estado === 'error' && <AlertTriangle size={14} className="inline mr-1 -mt-0.5" />}
+          {errorExterno ?? (modo === 'enrolar' ? mensajeBajoLaTarjeta(mensaje, pasos[pasoActual]?.texto) : mensaje)}
+        </p>
+      )}
 
       {/* AVISO DE QUE LA FOTO QUEDA GUARDADA.
           No es decoración legal: es la única defensa que sirve contra un fraude
