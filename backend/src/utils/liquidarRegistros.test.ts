@@ -230,3 +230,20 @@ describe('cobroDePausas', () => {
     expect(tocada).toBe(false);
   });
 });
+
+// El total trabajado del reporte necesita los minutos extra, que hasta ahora solo viajaban dentro de
+// `liquidacion` redondeados a horas con dos decimales (1 de octubre de 2026).
+describe('liquidarRegistros: minutos extra', () => {
+  it('devuelve los minutos extra crudos, aparte de las ordinarias', () => {
+    // Mismo día 07:00–16:00 pero con modo HORARIO y la franja terminando a las 15:00: la última hora es extra.
+    const horario = { activo: true, franjas: [{ dias: ['LUNES'], horaEntrada: '07:00', horaSalida: '15:00', tieneAlmuerzo: false }] } as unknown as HorarioConFranjas;
+    const dia: DiaEsperadoCalculado = { ...DIA, horaSalida: '15:00', almuerzoMin: 0, almuerzoInicio: null, almuerzoFin: null, descansos: null, minutosEsperados: 480 };
+    const r = liquidarRegistros([fila('x', [7, 0], [16, 0])], horario, construirExtraConfig('HORARIO', horario, [dia]), [], TIPOS, JORNADAS, 1_500_000, 210, false, [dia]);
+    expect(r.minutosExtra).toBe(60);
+    expect(r.minutosOrdinarios).toBe(480);
+  });
+
+  it('sin extras es cero', () => {
+    expect(liquidar([fila('x', [7, 0], [16, 0])], [DIA]).minutosExtra).toBe(0);
+  });
+});

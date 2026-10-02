@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  calcularHorasEsperadas, armarSaldo, duracionFranjaMin,
+  calcularHorasEsperadas, armarSaldo, cruzarExtrasConSaldo, duracionFranjaMin,
   esPermisoRemunerado, parsearPoliticaPermisos, normalizarPoliticaPermisos,
   PERMISOS_CONFIGURABLES,
 } from './saldoTiempo';
@@ -383,6 +383,73 @@ describe('armarSaldo', () => {
     expect(s.minutosSaldo).toBe(0);
     expect(s.montoSaldo).toBe(0);
     expect(s.sinHorario).toBe(true);
+  });
+});
+
+// EL TOTAL TRABAJADO Y EL CRUCE DE LAS EXTRAS CON EL FALTANTE (1 de octubre de 2026).
+//
+// El caso que lo motivó es el reporte de septiembre de Ana Sofía: «Trabajó 169h11» eran solo las
+// ordinarias; con las extras trabajó 176h46. Y quedaba debiendo 13h19 mientras se le pagaban 7h35
+// de extras a su recargo. Cruzarlas es una decisión de política que NO se toma aquí: este cálculo
+// solo dice cuánto cambiaría el pago, y el reporte lo muestra aparte.
+describe('armarSaldo: total trabajado', () => {
+  const base = { minutosEsperados: 480, minutosPermisoRemunerado: 0, minutosPermisoNoRemunerado: 0 };
+
+  it('el total trabajado suma las extras a las ordinarias; el saldo sigue midiéndose solo con las ordinarias', () => {
+    const s = armarSaldo(base, 420, 10000, false, { minutos: 90, monto: 20000 });
+    expect(s.minutosExtra).toBe(90);
+    expect(s.minutosTotalTrabajados).toBe(510);
+    expect(s.minutosSaldo).toBe(60); // sin tocar: es lo que hoy se descuenta
+    expect(s.montoSaldo).toBe(10000);
+  });
+
+  it('sin extras, el total es lo ordinario y no hay cruce que mostrar', () => {
+    const s = armarSaldo(base, 420, 10000, false);
+    expect(s.minutosExtra).toBe(0);
+    expect(s.minutosTotalTrabajados).toBe(420);
+    expect(s.cruce).toBeNull();
+  });
+
+  it('sin horario no hay cruce', () => {
+    expect(armarSaldo(base, 0, 10000, true, { minutos: 90, monto: 20000 }).cruce).toBeNull();
+  });
+
+  it('el cruce viaja dentro del saldo cuando hay faltante y hay extras', () => {
+    const s = armarSaldo(base, 420, 10000, false, { minutos: 30, monto: 7000 });
+    expect(s.cruce).toEqual({ minutosAbsorbidos: 30, minutosSaldo: 30, montoSaldo: 5000, extraPagado: 0, diferenciaDePago: -2000 });
+  });
+});
+
+describe('cruzarExtrasConSaldo', () => {
+  const valorHora = 12000; // 200 por minuto
+
+  it('las extras absorben el faltante y lo que sobra de faltante se sigue descontando', () => {
+    // Ana Sofía, a mano: debe 799 min, extras 455 min. Se absorben los 455 y quedan 344 por descontar.
+    const c = cruzarExtrasConSaldo(799, { minutos: 455, monto: 110_357 }, 10_718.6)!;
+    expect(c.minutosAbsorbidos).toBe(455);
+    expect(c.minutosSaldo).toBe(344);
+    expect(c.extraPagado).toBe(0);
+    // A 178,6433 por minuto: el descuento actual es 799 min = 142.736 y con cruce 344 min = 61.453.
+    // Se deja de pagar 110.357 de extras. Diferencia = −61.453 − (−142.736 + 110.357) = −29.074.
+    expect(c.montoSaldo).toBeCloseTo(61_453.3, 0);
+    expect(c.diferenciaDePago).toBeCloseTo(-29_074.3, 0);
+  });
+
+  it('si las extras superan el faltante, sobran extras y se pagan en proporción', () => {
+    // Debe 100 min; extras 400 min que valen 100.000. Se absorbe un cuarto: quedan 300 min = 75.000.
+    const c = cruzarExtrasConSaldo(100, { minutos: 400, monto: 100_000 }, valorHora)!;
+    expect(c.minutosAbsorbidos).toBe(100);
+    expect(c.minutosSaldo).toBe(0);
+    expect(c.montoSaldo).toBe(0);
+    expect(c.extraPagado).toBe(75_000);
+    // Hoy: −20.000 de descuento y +100.000 de extras = +80.000. Con cruce: +75.000. Diferencia −5.000.
+    expect(c.diferenciaDePago).toBe(-5_000);
+  });
+
+  it('sin faltante o sin extras no hay nada que cruzar', () => {
+    expect(cruzarExtrasConSaldo(0, { minutos: 60, monto: 5000 }, valorHora)).toBeNull();
+    expect(cruzarExtrasConSaldo(-30, { minutos: 60, monto: 5000 }, valorHora)).toBeNull();
+    expect(cruzarExtrasConSaldo(60, { minutos: 0, monto: 0 }, valorHora)).toBeNull();
   });
 });
 

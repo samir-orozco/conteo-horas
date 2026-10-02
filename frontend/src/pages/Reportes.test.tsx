@@ -144,3 +144,87 @@ describe('la cabecera del reporte por persona', () => {
     expect(texto).not.toContain('con marcación');
   });
 });
+
+// EL TOTAL TRABAJADO Y EL EFECTO DE CRUZAR LAS EXTRAS (1 de octubre de 2026).
+//
+// El reporte de septiembre de Ana Sofía decía «Trabajó 169h11»: eran solo las ordinarias. Con las
+// 7h35 de extras trabajó 176h46, y «Queda debiendo 13h19» se leía como si hubiera estado ausente
+// todo ese tiempo. La política de cruzar las extras con el faltante NO está decidida (afecta
+// nómina real y falta el abogado), así que la pantalla solo muestra cuánto cambiaría el pago, sin
+// tocar lo que hoy se descuenta ni el total a pagar.
+describe('el total trabajado y el cruce de las extras en el reporte por persona', () => {
+  const ANA = { id: 'c-ana', nombre: 'Ana Sofía', apellido: 'Giraldo' };
+  // Los números del reporte real, a mano: 182h30 esperadas, 169h11 ordinarias + 7h35 extra.
+  const saldoDeAna = {
+    sinHorario: false, minutosEsperados: 10950, minutosPermisoRemunerado: 0, minutosPermisoNoRemunerado: 465,
+    minutosTrabajados: 10151, minutosSaldo: 799, valorHora: 10718.6, montoSaldo: 142_736,
+    minutosExtra: 455, minutosTotalTrabajados: 10606,
+    cruce: { minutosAbsorbidos: 455, minutosSaldo: 344, montoSaldo: 61_453.3, extraPagado: 0, diferenciaDePago: -29_074.3 },
+  };
+  const reporteDeAna = (saldo: Record<string, unknown>) => ({
+    ...reporteDe(ANA, 25, 27), salarioBase: 2_250_905, totalExtra: 110_357, totalAdicional: 110_357, saldo,
+  });
+  const textos = () => screen.getAllByText(/./).map(e => (e.textContent ?? '').replace(/\s+/g, ' ').trim());
+  const calcularAna = async (r: ReturnType<typeof reporteDeAna>) => {
+    const usuario = userEvent.setup();
+    get.mockImplementation((url: string) => {
+      if (url === '/colaboradores') return Promise.resolve({ data: [ANA] });
+      if (url === '/reportes/liquidacion') return Promise.resolve({ data: r });
+      if (url === '/reportes/tardanzas') return Promise.resolve({ data: { sinHorario: true, detalle: [], totalMinutos: 0 } });
+      if (url === '/permisos' || url === '/registros') return Promise.resolve({ data: [] });
+      return Promise.reject(new Error('url inesperada: ' + url));
+    });
+    render(<MemoryRouter><Reportes /></MemoryRouter>);
+    await usuario.click(await screen.findByRole('button', { name: /Seleccionar colaborador/ }));
+    await usuario.click(await screen.findByRole('button', { name: 'Ana Sofía Giraldo' }));
+    await usuario.click(screen.getByRole('button', { name: 'Calcular' }));
+    await screen.findByRole('heading', { name: 'Ana Sofía Giraldo' });
+    return usuario;
+  };
+
+  it('«Trabajó» muestra el total, con las extras, y dice de qué se compone', async () => {
+    await calcularAna(reporteDeAna(saldoDeAna));
+    expect(textos()).toContain('176h 46min');
+    expect(textos()).toContain('169h 11min ordinarias + 7h 35min extra');
+    // «Queda debiendo» sigue siendo lo que hoy se descuenta: no cambia.
+    expect(textos()).toContain('13h 19min');
+  });
+
+  it('sin extras no se agrega la explicación', async () => {
+    const sinExtras = { ...saldoDeAna, minutosExtra: 0, minutosTotalTrabajados: 10151, cruce: null };
+    await calcularAna(reporteDeAna(sinExtras));
+    expect(textos()).toContain('169h 11min');
+    expect(textos().some(t => t.includes('ordinarias +'))).toBe(false);
+  });
+
+  it('muestra qué pasaría si se cruzaran, y aclara que no es lo que se liquida', async () => {
+    await calcularAna(reporteDeAna(saldoDeAna));
+    expect(screen.getByText(/si las extras se cruzaran con el faltante/i)).toBeInTheDocument();
+    // Quedaría debiendo 344 min = 5h44, el total con cruce y la diferencia contra el de hoy.
+    expect(textos().some(t => t.includes('5h 44min'))).toBe(true);
+    expect(textos()).toContain('$ 2.189.452');
+    expect(textos().some(t => /29\.074/.test(t))).toBe(true);
+    expect(screen.getByText(/no es lo que se liquida/i)).toBeInTheDocument();
+  });
+
+  it('el total a pagar de hoy NO cambia por el cruce: 2.250.905 + 110.357 − 142.736', async () => {
+    await calcularAna(reporteDeAna(saldoDeAna));
+    expect(textos()).toContain('$ 2.218.526');
+  });
+
+  it('sin cruce posible no se muestra el panel', async () => {
+    await calcularAna(reporteDeAna({ ...saldoDeAna, cruce: null }));
+    expect(screen.queryByText(/si las extras se cruzaran con el faltante/i)).not.toBeInTheDocument();
+  });
+
+  it('el Excel lleva el total trabajado y el cruce como líneas informativas, fuera del total', async () => {
+    const usuario = await calcularAna(reporteDeAna(saldoDeAna));
+    await usuario.click(screen.getByRole('button', { name: /Descargar Excel/i }));
+    const hojas = exportar.mock.calls.at(-1)![1] as { nombre: string; filas: (string | number)[][] }[];
+    const filas = hojas.find(h => h.nombre === 'Liquidación')!.filas;
+    const fila = (e: string) => filas.find(f => String(f[1]).includes(e));
+    expect(fila('TOTAL A PAGAR')?.[5]).toBe(2_218_526);
+    expect(fila('Informativo: total trabajado')?.[1]).toContain('176h 46min');
+    expect(fila('Informativo: si las extras se cruzaran')?.[5]).toBe(2_189_452);
+  });
+});

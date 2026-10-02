@@ -22,6 +22,12 @@ type SaldoTiempo = {
   sinHorario: boolean; minutosEsperados: number; minutosPermisoRemunerado: number;
   minutosPermisoNoRemunerado: number; minutosTrabajados: number; minutosSaldo: number;
   valorHora: number; montoSaldo: number;
+  // Total trabajado (ordinarias + extra) y qué pasaría si las extras se cruzaran con el faltante.
+  // Opcionales: un servidor anterior no los manda y la pantalla se calla en vez de inventarlos.
+  minutosExtra?: number; minutosTotalTrabajados?: number;
+  cruce?: {
+    minutosAbsorbidos: number; minutosSaldo: number; montoSaldo: number; extraPagado: number; diferenciaDePago: number;
+  } | null;
 };
 type Reporte = {
   colaborador: Colaborador; desde: string; hasta: string; liquidacion: LineaLiquidacion[];
@@ -135,6 +141,11 @@ export default function Reportes() {
   // propósito: si fuera una línea más de ese array, se colaría en los totales
   // de recargos y de horas, que se calculan recorriéndolo.
   const descuentoSaldo = reporte?.saldo && !reporte.saldo.sinHorario ? reporte.saldo.montoSaldo : 0;
+  // Informativo: el total que saldría si las extras se cruzaran con el faltante. NO es lo que se
+  // liquida; la política no está decidida (1 de octubre de 2026).
+  const cruce = reporte?.saldo && !reporte.saldo.sinHorario ? reporte.saldo.cruce : null;
+  const totalDeHoy = reporte ? reporte.salarioBase + reporte.totalAdicional - descuentoSaldo : 0;
+  const totalConCruce = cruce ? totalDeHoy + cruce.diferenciaDePago : 0;
 
   const exportarExcel = () => {
     if (!reporte) return;
@@ -152,6 +163,13 @@ export default function Reportes() {
       liqFilas.push(['', `Saldo pendiente (${fmtMin(reporte.saldo!.minutosSaldo)} sin reponer)`, '', '', '', -Math.round(descuentoSaldo)]);
     }
     liqFilas.push(['', 'TOTAL A PAGAR', '', '', '', Math.round(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)]);
+    // Informativas y fuera del total: lo trabajado en conjunto y el efecto de cruzar las extras.
+    if (reporte.saldo && !reporte.saldo.sinHorario && reporte.saldo.minutosTotalTrabajados !== undefined && (reporte.saldo.minutosExtra ?? 0) > 0) {
+      liqFilas.push(['', `Informativo: total trabajado ${fmtMin(reporte.saldo.minutosTotalTrabajados)} (${fmtMin(reporte.saldo.minutosTrabajados)} ordinarias + ${fmtMin(reporte.saldo.minutosExtra!)} extra)`, '', '', '', '']);
+    }
+    if (cruce) {
+      liqFilas.push(['', `Informativo: si las extras se cruzaran con el faltante, total a pagar (no es lo que se liquida)`, '', '', '', Math.round(totalConCruce)]);
+    }
     // Debajo del total y fuera de él: el auxilio no es salario, y ese total suma el salario del mes
     // completo a cualquier rango (defecto conocido, pendiente del módulo de período de pago).
     if (reporte.auxilioTransporte && reporte.auxilioTransporte > 0) {
@@ -254,7 +272,12 @@ export default function Reportes() {
               </div>
               <div className="bg-gray-50 border border-gray-200/70 rounded-xl px-4 py-3">
                 <p className="text-xs text-muted">Trabajó</p>
-                <p className="text-xl font-bold text-ink mt-1">{fmtMin(reporte.saldo.minutosTrabajados)}</p>
+                <p className="text-xl font-bold text-ink mt-1">{fmtMin(reporte.saldo.minutosTotalTrabajados ?? reporte.saldo.minutosTrabajados)}</p>
+                {(reporte.saldo.minutosExtra ?? 0) > 0 && (
+                  <p className="text-xs text-muted mt-1">
+                    {fmtMin(reporte.saldo.minutosTrabajados)} ordinarias + {fmtMin(reporte.saldo.minutosExtra!)} extra
+                  </p>
+                )}
               </div>
               {reporte.saldo.minutosSaldo > 0 ? (
                 <div className="bg-red-50 border border-red-200/70 rounded-xl px-4 py-3">
@@ -402,6 +425,25 @@ export default function Reportes() {
               <span className="font-bold text-ink">Total a pagar</span>
               <span className="font-bold text-ink text-lg">{fmt(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)}</span>
             </div>
+            {/* Qué pasaría si las extras se cruzaran con el faltante. Informativo y aparte: no toca el
+                total de arriba, porque la política no está decidida. */}
+            {cruce && (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-xs space-y-1">
+                <p className="font-semibold text-amber-900">Si las extras se cruzaran con el faltante</p>
+                <p className="text-amber-900/80">
+                  {fmtMin(cruce.minutosAbsorbidos)} de extras cubrirían parte de lo que debe: quedaría debiendo {fmtMin(cruce.minutosSaldo)}
+                  {cruce.extraPagado > 0 ? ` y se seguirían pagando ${fmt(cruce.extraPagado)} de extras` : ' y no se pagarían recargos'}.
+                </p>
+                <div className="flex justify-between text-amber-900">
+                  <span>Total a pagar con el cruce</span><span className="font-semibold">{fmt(totalConCruce)}</span>
+                </div>
+                <div className="flex justify-between text-amber-900/80">
+                  <span>Diferencia con el total de hoy</span>
+                  <span>{cruce.diferenciaDePago < 0 ? '−' : '+'}{fmt(Math.abs(cruce.diferenciaDePago))}</span>
+                </div>
+                <p className="text-amber-900/70">Es solo informativo, no es lo que se liquida: cruzarlas es una decisión de política de la empresa.</p>
+              </div>
+            )}
             {/* DEBAJO del total y fuera de él, a propósito. El auxilio no es salario: no entra en la
                 base de las horas extra ni de los recargos. Y ponerlo encima invitaría a sumarlo a un
                 total que no lo incluye. */}

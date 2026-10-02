@@ -174,7 +174,10 @@ export default async function reporteRoutes(app: FastifyInstance) {
       desdeF, finExclusivo, diasEsperados, festivosDates, permisosRango, politica,
       (fecha) => jornadaVigente(fecha, jornadas),
     );
-    const saldo = armarSaldo(esperadas, r.minutosOrdinarios, calcularValorHora(colaborador.salarioMensual, horasMes), sinHorario);
+    const saldo = armarSaldo(esperadas, r.minutosOrdinarios, calcularValorHora(colaborador.salarioMensual, horasMes), sinHorario,
+      // Las extras de este período: con ellas se muestra el total trabajado y el efecto de cruzarlas
+      // con el faltante. No cambian lo que se descuenta.
+      { minutos: r.minutosExtra, monto: r.totalExtra });
 
     return {
       colaborador, desde, hasta, liquidacion: r.liquidacion,

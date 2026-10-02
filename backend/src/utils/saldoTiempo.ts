@@ -176,7 +176,48 @@ export type SaldoTiempo = {
   minutosSaldo: number; // >0 debe tiempo, <0 trabajó de más (ya compensado)
   valorHora: number;
   montoSaldo: number; // >0 es lo que se descuenta; 0 si no debe nada
+  // Lo que trabajó de más (horas extra) y el total de lo trabajado. `minutosTrabajados` sigue siendo
+  // solo lo ordinario porque con eso se mide el saldo; los dos de aquí son para mostrar (1 de octubre
+  // de 2026: «Trabajó 169h11» eran solo las ordinarias y la persona había trabajado 176h46).
+  minutosExtra: number;
+  minutosTotalTrabajados: number;
+  // Cuánto cambiaría el pago si las extras se cruzaran con el faltante. Es INFORMATIVO: no cambia
+  // `montoSaldo` ni nada de lo que hoy se liquida. null si no hay faltante, extras u horario.
+  cruce: CruceDeExtras | null;
 };
+
+export type CruceDeExtras = {
+  minutosAbsorbidos: number; // extras que se descuentan del faltante
+  minutosSaldo: number; // faltante que queda tras el cruce
+  montoSaldo: number; // lo que se descontaría con ese faltante
+  extraPagado: number; // extras que seguirían pagándose con recargo
+  diferenciaDePago: number; // pago con cruce menos pago de hoy; negativo = la persona recibe menos
+};
+
+// Cruza las extras con el faltante: cada minuto extra absorbe un minuto de faltante, y lo que sobre de
+// extras se sigue pagando, en proporción a lo que no se absorbió (las extras tienen recargos distintos
+// y no se sabe a cuál se le aplica el cruce, así que se reparte parejo). La política no se decide aquí.
+export function cruzarExtrasConSaldo(
+  minutosSaldo: number,
+  extras: { minutos: number; monto: number },
+  valorHora: number,
+): CruceDeExtras | null {
+  if (minutosSaldo <= 0 || extras.minutos <= 0) return null;
+  const absorbidos = Math.min(extras.minutos, minutosSaldo);
+  const saldoCruzado = minutosSaldo - absorbidos;
+  const montoSaldo = (saldoCruzado / 60) * valorHora;
+  const extraPagado = extras.monto * (1 - absorbidos / extras.minutos);
+  const hoy = -(minutosSaldo / 60) * valorHora + extras.monto;
+  const conCruce = -montoSaldo + extraPagado;
+  const dos = (n: number) => parseFloat(n.toFixed(2));
+  return {
+    minutosAbsorbidos: absorbidos,
+    minutosSaldo: saldoCruzado,
+    montoSaldo: dos(montoSaldo),
+    extraPagado: dos(extraPagado),
+    diferenciaDePago: dos(conCruce - hoy),
+  };
+}
 
 // Suma lo que se le exigía al colaborador en el rango, leyendo los días ya
 // MATERIALIZADOS (`DiaEsperado`) en vez del horario vigente.
@@ -279,6 +320,7 @@ export function armarSaldo(
   minutosTrabajados: number,
   valorHora: number,
   sinHorario: boolean,
+  extras: { minutos: number; monto: number } = { minutos: 0, monto: 0 },
 ): SaldoTiempo {
   const minutosSaldo = sinHorario ? 0 : esperadas.minutosEsperados - minutosTrabajados;
   // Solo el saldo EN CONTRA se cobra. Trabajar de más no genera pago extra por
@@ -293,5 +335,8 @@ export function armarSaldo(
     minutosSaldo,
     valorHora: parseFloat(valorHora.toFixed(2)),
     montoSaldo: parseFloat(montoSaldo.toFixed(2)),
+    minutosExtra: extras.minutos,
+    minutosTotalTrabajados: minutosTrabajados + extras.minutos,
+    cruce: sinHorario ? null : cruzarExtrasConSaldo(minutosSaldo, extras, valorHora),
   };
 }
