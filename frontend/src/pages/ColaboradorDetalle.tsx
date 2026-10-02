@@ -130,6 +130,10 @@ export default function ColaboradorDetalle() {
   const [modalCamara, setModalCamara] = useState(false);
   const [guardandoRostro, setGuardandoRostro] = useState(false);
   const [errorRostro, setErrorRostro] = useState('');
+  // El servidor dijo que el rostro se parece al de otra persona (2 de octubre de
+  // 2026). Las tomas se guardan aquí para mandarlas otra vez si el administrador
+  // decide registrarlo igual: volver a escanear no tendría por qué dar otra cosa.
+  const [parecidoPendiente, setParecidoPendiente] = useState<{ nombres: string[]; descriptores: number[][]; foto: string } | null>(null);
   const [confirmarEliminarRostro, setConfirmarEliminarRostro] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -269,7 +273,7 @@ export default function ColaboradorDetalle() {
   // La primera toma del escaneo viaja como foto de perfil. El servidor solo la
   // usa si la ficha no tiene una todavía, así que volver a enrolar no le pisa
   // la foto a quien ya eligió otra.
-  const capturarRostro = async (descriptores: number[][], foto: string) => {
+  const capturarRostro = async (descriptores: number[][], foto: string, confirmarParecido = false) => {
     setGuardandoRostro(true);
     setErrorRostro('');
     try {
@@ -277,13 +281,20 @@ export default function ColaboradorDetalle() {
       // imagen y un canvas, y el servidor tendría que traerse una librería
       // entera para hacer lo mismo.
       const fotoMini = await miniaturaDe(foto).catch(() => null);
-      await api.post(`/colaboradores/${id}/rostro`, { descriptores, foto, fotoMini });
+      await api.post(`/colaboradores/${id}/rostro`, {
+        descriptores, foto, fotoMini, ...(confirmarParecido ? { confirmarParecido: true } : {}),
+      });
       setModalCamara(false);
       setConsentimientoRostro(false);
       setToast('Rostro registrado con éxito');
       cargar();
     } catch (err: any) {
-      setErrorRostro(err.response?.data?.error ?? 'No pudimos guardar el registro facial');
+      const datos = err.response?.data;
+      if (datos?.codigo === 'ROSTRO_PARECIDO' && Array.isArray(datos.parecidos)) {
+        setParecidoPendiente({ nombres: datos.parecidos.map((p: { nombre: string }) => p.nombre), descriptores, foto });
+      } else {
+        setErrorRostro(datos?.error ?? 'No pudimos guardar el registro facial');
+      }
     } finally {
       setGuardandoRostro(false);
     }
@@ -677,6 +688,26 @@ export default function ColaboradorDetalle() {
         </div>
       )}
 
+      {/* EL ROSTRO SE PARECE AL DE OTRA PERSONA (2 de octubre de 2026). Si en
+          alguna toma quedó otra cara, el kiosco las va a confundir: esa persona
+          marcaría como esta. Entre familiares es normal, así que decide quien
+          registra, viendo el nombre. */}
+      <ConfirmDialog
+        abierto={parecidoPendiente !== null}
+        titulo={`Este rostro se parece mucho al de ${parecidoPendiente?.nombres.join(' y ') ?? ''}`}
+        subtitulo="Entre familiares puede pasar. Si en alguna toma quedó otra persona, cancela y repite el registro: si no, el kiosco las va a confundir."
+        textoContinuar="Registrar de todos modos"
+        onContinuar={() => {
+          const p = parecidoPendiente;
+          setParecidoPendiente(null);
+          if (p) capturarRostro(p.descriptores, p.foto, true);
+        }}
+        onCancelar={() => {
+          setParecidoPendiente(null);
+          setErrorRostro('No se guardó. Repite el registro con solo esta persona frente a la cámara.');
+        }}
+      />
+
       {/* Modal cámara: enrolar/actualizar rostro */}
       {modalCamara && (
         <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => !guardandoRostro && setModalCamara(false)}>
@@ -685,7 +716,7 @@ export default function ColaboradorDetalle() {
               <h3 className="font-bold text-lg text-ink flex items-center gap-2"><ShieldCheck size={18} /> Registrar rostro</h3>
               <button onClick={() => setModalCamara(false)}><X size={20} className="text-gray-400" /></button>
             </div>
-            <CamaraRostro modo="enrolar" pasoGafas={usaGafas} onCapturado={capturarRostro} />
+            <CamaraRostro modo="enrolar" pasoGafas={usaGafas} onCapturado={(d, f) => capturarRostro(d, f)} />
             {errorRostro && <p className="text-red-600 text-sm text-center mt-3">{errorRostro}</p>}
             {guardandoRostro && <p className="text-muted text-sm text-center mt-3">Guardando...</p>}
           </div>

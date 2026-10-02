@@ -1,15 +1,27 @@
 import { AlertTriangle, LogIn } from 'lucide-react';
 import { horaBog } from '../helpers';
+import { MS_CONFIRMAR_REFORZADA } from '../confirmacion';
+import BotonSostenido from './BotonSostenido';
 
 type Props = {
   turno: { entrada: string; salida: string };
+  // El nombre de pila de la persona reconocida: el aviso dice a nombre de quién está.
+  nombre: string;
   onConfirmar: () => void;
   onCancelar: () => void;
+  onNoSoy: () => void;
 };
 
 // Confirmación antes de abrir un turno nuevo cuando el día ya tiene uno completo.
 // Evita la entrada duplicada de quien cree que su salida no quedó registrada.
-export default function ConfirmarNuevaEntrada({ turno, onConfirmar, onCancelar }: Props) {
+//
+// Y desde el 2 de octubre de 2026, también la de quien NO hizo esas marcas. El 1 de
+// octubre Lina pasó por aquí a las 08:56 —«entrada 08:49 y salida 08:52»— y
+// oprimió «Sí, registrar otra entrada», cuando la entrada de las 08:49 era de otra
+// persona. El aviso no decía a nombre de quién. Ahora lo dice, la nueva entrada
+// se sostiene 3 segundos (es la confirmación reforzada: algo ya no cuadra) y hay
+// «No soy».
+export default function ConfirmarNuevaEntrada({ turno, nombre, onConfirmar, onCancelar, onNoSoy }: Props) {
   return (
     <div className="fixed inset-0 !mt-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onCancelar}>
       <div
@@ -19,7 +31,7 @@ export default function ConfirmarNuevaEntrada({ turno, onConfirmar, onCancelar }
         <div className="bg-amber-400/90 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
           <AlertTriangle size={28} className="text-ink" />
         </div>
-        <h2 className="text-xl font-bold text-white">Ya registraste tu jornada de hoy</h2>
+        <h2 className="text-xl font-bold text-white">{nombre}, ya registraste tu jornada de hoy</h2>
         <p className="text-sm text-white/60 mt-3 leading-relaxed">
           Hoy marcaste <b className="text-white/90">entrada {horaBog(turno.entrada, 'HH:mm')}</b> y{' '}
           <b className="text-white/90">salida {horaBog(turno.salida, 'HH:mm')}</b>.
@@ -35,11 +47,18 @@ export default function ConfirmarNuevaEntrada({ turno, onConfirmar, onCancelar }
         >
           Cancelar
         </button>
-        <button
-          onClick={onConfirmar}
-          className="w-full mt-2 flex items-center justify-center gap-2 text-white/60 hover:text-white text-sm font-semibold py-2.5"
+        <BotonSostenido
+          ms={MS_CONFIRMAR_REFORZADA}
+          onConfirmar={onConfirmar}
+          className="w-full mt-2 rounded-xl border border-white/15 text-white/70 hover:text-white text-sm font-semibold py-2.5"
         >
-          <LogIn size={16} /> Sí, registrar otra entrada
+          <LogIn size={16} /> Soy {nombre} · registrar otra entrada
+        </BotonSostenido>
+        <button
+          onClick={onNoSoy}
+          className="w-full mt-2 text-white/60 hover:text-white text-sm font-semibold py-2.5"
+        >
+          No soy {nombre}
         </button>
       </div>
     </div>

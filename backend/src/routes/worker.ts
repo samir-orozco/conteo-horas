@@ -3,7 +3,7 @@ import { Prisma, ModalidadTrabajo } from '@prisma/client';
 import crypto from 'crypto';
 import { prisma } from '../prisma';
 import { registrarAcceso } from '../utils/registrarEvento';
-import { esDescriptorValido, identificarRostro } from '../utils/rostro';
+import { esDescriptorValido, identificarRostro, esParecidoDudoso, continuidadConLaAnterior, type CapturaAnterior } from '../utils/rostro';
 import { camposDeAutenticacion } from '../utils/metodoMarcacion';
 import { enviarTelegram } from '../utils/telegram';
 import { notificar } from '../utils/notificaciones';
@@ -57,6 +57,27 @@ async function enroladosDeEmpresa(empresaId: string): Promise<Enrolado[]> {
   });
   cacheRostros.set(empresaId, { ts: Date.now(), enrolados });
   return enrolados;
+}
+
+// La última captura ACEPTADA de cada persona, para medir la siguiente contra ella
+// (2 de octubre de 2026). Solo alimenta el log: el 1 de octubre «Lina» entró a las
+// 08:49 con una cara y a las 08:52 con otra, y contra el registro las dos pasaban.
+// Vive en memoria a propósito: un reinicio la olvida, y para medir eso basta. Una
+// entrada por persona, así que no crece más que la planta de las empresas.
+const ultimaCaptura = new Map<string, CapturaAnterior>();
+function recordarCaptura(colaboradorId: string, descriptor: number[], ahora: number) {
+  for (const [id, c] of ultimaCaptura) if (ahora - c.en > VENTANA_TURNO_MS) ultimaCaptura.delete(id);
+  ultimaCaptura.set(colaboradorId, { descriptor, en: ahora });
+}
+
+// La miniatura de la ficha, para que el kiosco la ponga al lado de la foto del
+// momento al pedir la confirmación. Es la que ya usa la lista de colaboradores
+// (tope de 60.000 caracteres, utils/fotoPerfil.ts): la foto grande puede pesar
+// diez veces más y no hace falta en un círculo. Sin miniatura, el kiosco pinta
+// las iniciales.
+async function fotoDeReferencia(colaboradorId: string): Promise<string | null> {
+  const c = await prisma.colaborador.findUnique({ where: { id: colaboradorId }, select: { fotoMini: true } });
+  return c?.fotoMini ?? null;
 }
 
 // ¿A ESTA persona se le va a validar la ubicación al marcar?
@@ -358,6 +379,13 @@ export default async function workerRoutes(app: FastifyInstance) {
       colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo, modalidad: col.modalidad },
       sedes: sedesDelCol.map(s => s.sede),
       validaUbicacion: await seLeValidaLaUbicacion(col.id, col.empresaId, col.modalidad),
+      // Con la cédula NO viaja la cara (2 de octubre de 2026): bastaría el enlace del
+      // kiosco y una lista de cédulas para cosechar la foto de cada empleado. Con el
+      // rostro no pasa, porque hay que presentar una cara que coincida. El kiosco
+      // pinta las iniciales.
+      fotoReferencia: null,
+      // Con la cédula no hubo rostro que comparar.
+      parecidoDudoso: false,
     };
   });
 
@@ -387,10 +415,25 @@ export default async function workerRoutes(app: FastifyInstance) {
     // Se registra SIEMPRE, acepte o no. El margen es el dato que hoy no existe y
     // que hace falta para fijar `MARGEN_AMBIGUO` con la distribución real en vez
     // de con un juicio. Sin esto, afinar el umbral seguiría siendo adivinar.
+    //
+    // Desde el 2 de octubre de 2026 lleva además, solo para medir:
+    //   - a quién se aceptó, para poder casar cada línea con su persona;
+    //   - `segunda`, la persona más cercana después de la elegida aunque esté por
+    //     encima del umbral (con un margen de 0,5 no se sabe si había alguien a 0,51);
+    //   - la distancia contra la última captura aceptada de esa persona y los
+    //     minutos que las separan. Ninguno decide nada todavía.
+    const ahora = Date.now();
+    const continuidad = veredicto.tipo === 'ACEPTADA'
+      ? continuidadConLaAnterior(ultimaCaptura.get(veredicto.colaborador.id), descriptor, ahora, VENTANA_TURNO_MS)
+      : null;
     app.log.info({
       evento: 'login-rostro', empresaId: empresa.id, veredicto: veredicto.tipo,
       distancia: veredicto.tipo === 'SIN_COINCIDENCIA' ? null : veredicto.distancia,
       margen: veredicto.tipo === 'SIN_COINCIDENCIA' ? null : veredicto.margen,
+      segunda: veredicto.tipo === 'SIN_COINCIDENCIA' ? null : veredicto.segunda,
+      colaboradorId: veredicto.tipo === 'ACEPTADA' ? veredicto.colaborador.id : null,
+      distanciaALaAnterior: continuidad?.distancia ?? null,
+      minutosDesdeLaAnterior: continuidad?.minutos ?? null,
     }, 'reconocimiento facial');
 
     if (veredicto.tipo === 'SIN_COINCIDENCIA') {
@@ -408,6 +451,7 @@ export default async function workerRoutes(app: FastifyInstance) {
     }
 
     const col = veredicto.colaborador;
+    recordarCaptura(col.id, descriptor, ahora);
     // La distancia del match la calculaba `mejorCoincidencia` y se tiraba. Ahora
     // viaja en el token y queda en la marcación: una distancia repetida al
     // milímetro entre marcaciones es la huella de un descriptor copiado y
@@ -428,7 +472,31 @@ export default async function workerRoutes(app: FastifyInstance) {
       colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo, modalidad: col.modalidad },
       sedes: sedesDelCol.map(s => s.sede),
       validaUbicacion: await seLeValidaLaUbicacion(col.id, col.empresaId, col.modalidad),
+      fotoReferencia: await fotoDeReferencia(col.id),
+      // El kiosco pide la confirmación reforzada (3 s y un aviso). No es un
+      // rechazo: la distancia sola no separa a una impostora de alguien honesto.
+      parecidoDudoso: esParecidoDudoso(veredicto.distancia),
     };
+  });
+
+  // «NO SOY X» (2 de octubre de 2026). La persona que el kiosco reconoció dice que
+  // no es ella. No marca ni cambia nada: deja la huella en el log, con la
+  // distancia y el método de la sesión, porque una identificación falsa CONFESADA
+  // es el mejor dato que hay para calibrar los números del cotejo. El kiosco
+  // descarta la sesión por su cuenta.
+  app.post('/no-soy', { preHandler: [app.authenticate] }, async (request, reply) => {
+    // Sin `any` a propósito: el tope de avisos del linter es una puerta (CLAUDE.md §10).
+    const payload = request.user as { id: string; rol: string; empresaId: string; metodo?: unknown; distancia?: unknown };
+    if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
+    // La captura anterior NO se borra: no hay forma de saber que la guardada sea la
+    // de esta sesión, y la siguiente marca de verdad medida contra ella es justo el
+    // par que se quiere estudiar. Se casa con esta línea por colaboradorId y hora.
+    app.log.info({
+      evento: 'no-soy-yo', empresaId: payload.empresaId, colaboradorId: payload.id,
+      metodo: typeof payload.metodo === 'string' ? payload.metodo : null,
+      distancia: typeof payload.distancia === 'number' ? payload.distancia : null,
+    }, 'la persona reconocida dijo que no era ella');
+    return { ok: true };
   });
 
   // Estado del día: retorna si hay entrada abierta (sin salida). Select mínimo: no

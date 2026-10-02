@@ -138,7 +138,13 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Nada.** Lo que entre de aquí en adelante se anota aquí, con su SQL si lo lleva.
+**La confirmación de identidad del kiosco (2 de octubre de 2026).** Sin SQL y sin
+cambio de esquema: `prisma-build` no se toca. Van `backend-build` y `frontend-build`.
+**Antes de desplegar, dos cosas** (ver «Confirmación de identidad en el kiosco» en
+Pendiente de fondo): fijar `MAX_ENTRE_TOMAS` con `sql/tomas-contra-el-frente.sql`
+corrida en producción, y que el dueño apruebe el texto nuevo de la política de
+privacidad, que hoy dice que la foto de perfil solo la ven administradores y
+supervisores.
 
 ### Archivos sueltos en la raíz (no versionados, no míos)
 
@@ -551,6 +557,78 @@ diga por dónde va en vez de quedarse en blanco.
 cuánto tarda hoy un reporte de un mes sobre la empresa más grande de producción, y
 cuántas filas por segundo aguanta el servidor escribiendo días esperados. El
 número 40 que usa la maqueta es una suposición, no una medición.
+
+### Confirmación de identidad en el kiosco: lo que quedó para después
+
+**Origen, 1 de octubre de 2026, Grupo MSM, sede LA DOCE.** Una persona —casi seguro
+sin rostro registrado: ese día había 7 activos sin rostro— marcó como Lina
+Fernanda Mazabuel a las 08:49 con distancia **0,464**. A las 08:52 llegó Lina, el
+kiosco la reconoció bien (0,266), le ofreció «Registrar Salida» y lo oprimió; a las
+08:56 pasó «Ya registraste tu jornada» y confirmó otra entrada. La distribución de
+MSM desde el 10/09 (888 marcas): a partir de 0,44 queda el 4 %, y la legítima más
+alta de esa mañana dio 0,460. **La distancia sola no separa a la impostora de la
+gente honesta**: por eso lo nuevo pide atención y no rechaza.
+
+**Lo que se hizo** (commit de este día): botón que se sostiene con el nombre
+dentro (1,5 s; 3 s reforzada si la salida es a menos de 15 min de la entrada o si
+la distancia es ≥ 0,44), foto de la ficha al lado de la de ahora (solo cuando se
+entró con el rostro), «No soy X» visible que pasa a la cédula, «Salir sin marcar»
+siempre a mano (para que nadie diga «No soy» solo para irse), cierre de sesión a
+los 30 s sin tocar —que limpia también la pantalla del motivo y la del regreso
+olvidado, que si no le quedaban a la siguiente persona—, cédula sin
+autocompletar, revisión del rostro nuevo (tomas coherentes contra el frente,
+parecido a otra persona) y avisos en el modal de fotos del panel. En el servidor, en modo de
+SOLO MEDICIÓN: la segunda persona más cercana y la distancia contra la captura
+anterior de la misma persona van al log `login-rostro`.
+
+**Pendiente, en orden:**
+
+1. **«No fui yo» — lo dejó el dueño para después, a propósito.** Diseño aprobado
+   en la conversación: aparece en la pantalla reforzada cuando la persona
+   encuentra una marca suya de hace pocos minutos («Tu entrada figura a las 08:49,
+   hace 3 minutos»). Si la toca: **no se marca nada**, su turno sigue abierto, el
+   kiosco le dice «Le avisamos a tu empresa», y a la campana del administrador
+   llega «Lina dice que no marcó la entrada de las 08:49» con enlace a ese día. El
+   administrador corrige a mano. **No borra ni mueve marcas por su cuenta**: un
+   toque en el kiosco no debe cambiar horas de nómina. No necesita esquema (la
+   campana admite tipos nuevos y enlaza a `registro`). Hoy, en su lugar, la
+   pantalla dice «Si no marcaste a esa hora, no registres nada y avísale a tu
+   administrador» y ofrece «Salir sin marcar».
+2. **Antes de desplegar: medir las tomas de una misma persona en producción** y
+   fijar `MAX_ENTRE_TOMAS` con `sql/tomas-contra-el-frente.sql`. La regla mide cada
+   toma contra la de FRENTE, no todas contra todas: en local, la misma persona dio
+   0,513 todas contra todas (un giro contra el giro opuesto) y 0,419 contra el
+   frente. La consulta da al tercer decimal lo mismo que el código. El corte va por
+   encima del máximo honesto; una fila muy por encima del resto es un registro con
+   la cara de otra persona. `UMBRAL_PARECIDO_AL_REGISTRAR` (0,45) solo avisa, así
+   que puede esperar. Las dos revisiones dejan su huella en el log
+   (`"evento":"revision-rostro"`, con distancias e ids, sin nombres).
+3. **Antes de desplegar: la política de privacidad.** El punto 4 dice «Quién ve
+   estos datos: los usuarios de la propia empresa con rol de administrador o de
+   supervisor», y ahora el kiosco le muestra la foto de perfil a quien reconoce,
+   incluida la persona con la que confunda a alguien. Y la revisión del rostro
+   nuevo lo compara con los demás registros de la empresa. Texto propuesto al
+   dueño el 2 de octubre; sube la versión a 1.2. Con la cédula NO viaja la foto
+   (bastaría el enlace del kiosco y una lista de cédulas para cosechar caras).
+4. **Leer el modo de solo medición** después de unas semanas: `grep
+   '"evento":"login-rostro"'` en el log de producción. Con `distanciaALaAnterior`
+   y `segunda` medidas, decidir si (a) una cara lejana de la captura anterior
+   dispara la reforzada, y (b) el margen se mide contra la segunda persona aunque
+   esté por encima del umbral. Las líneas `no-soy-yo` son identificaciones falsas
+   confesadas: el mejor dato para calibrar.
+5. **Empresas solo con rostro:** «No soy X» vuelve a la cámara, que reconocerá a
+   la misma persona otra vez. Falta excluirla en el reintento, con un umbral más
+   estricto para que el segundo candidato no gane por descarte.
+6. **Operación, sin código:** registrar el rostro de los 7 activos sin rostro de
+   MSM; volver a registrar a quien sale alto una y otra vez (en la lista de
+   distancias ≥ 0,46: Jhoes Contreras ×4, Gustavo Corrales ×3, Yesika Moncada y
+   Carlos Fernando Silva ×2); corregir el día de Lina del 1/10 (un solo turno
+   08:52 → 18:34) y la entrada que le falta a quien marcó a las 08:49; revisar a
+   ojo las 23 fotos con distancia ≥ 0,46 (la salida de Lina del 23/09 a 0,497 es
+   la primera).
+7. **No verificado en una tableta Android real:** el botón sostenido (se probó con
+   eventos de puntero en el navegador del escritorio y en jsdom) y que
+   `autoComplete="off"` apague de verdad las sugerencias de cédula.
 
 ### Antes de tocar lo biométrico: lo que hay que arreglar primero
 

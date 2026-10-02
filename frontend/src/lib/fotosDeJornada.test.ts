@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agruparPorJornada, sedesDelTurno, partesDeLaJornada } from './fotosDeJornada';
+import { agruparPorJornada, sedesDelTurno, partesDeLaJornada, avisosDelTurno } from './fotosDeJornada';
 import type { FotoDeJornada } from '../constants/momentos';
 
 const f = (p: Partial<FotoDeJornada>): FotoDeJornada => ({
@@ -135,5 +135,71 @@ describe('partesDeLaJornada', () => {
   it('sin pausas solo está la entrada y la salida, y sin fotos no hay partes', () => {
     expect(clave(partesDeLaJornada([f({ registroId: 'e' })]))).toEqual(['ENTRADA_Y_SALIDA: e/-']);
     expect(partesDeLaJornada([])).toEqual([]);
+  });
+});
+
+// LO QUE NO CUADRA EN UN DÍA, DICHO DONDE SE MIRAN LAS FOTOS (2 de octubre de 2026).
+//
+// El 1 de octubre el modal mostraba la cara de una persona en la entrada y la de
+// otra en la salida, tres minutos después, y nada lo señalaba. Un turno de tres
+// minutos y volver a entrar a los cuatro son la huella de dos personas tomadas
+// por una; las pausas no cuentan, porque volver de un descanso a los diez minutos
+// es lo normal.
+describe('avisosDelTurno', () => {
+  const entrada = (hora: string, p: Partial<FotoDeJornada> = {}) => f({ momento: 'ENTRADA', hora, ...p });
+  const salida = (hora: string, p: Partial<FotoDeJornada> = {}) => f({ momento: 'SALIDA', hora, ...p });
+
+  it('EL CASO DEL 1 DE OCTUBRE: un turno de 3 minutos', () => {
+    expect(avisosDelTurno([entrada('2026-10-01T13:49:21Z'), salida('2026-10-01T13:52:39Z')], null))
+      .toEqual(['Turno de 3 minutos']);
+  });
+
+  it('y volver a entrar a los 4 minutos de esa salida', () => {
+    const anterior = [entrada('2026-10-01T13:49:21Z'), salida('2026-10-01T13:52:39Z')];
+    expect(avisosDelTurno([entrada('2026-10-01T13:56:53Z'), salida('2026-10-01T23:34:45Z')], anterior))
+      .toEqual(['Volvió a entrar a los 4 minutos']);
+  });
+
+  it('un turno normal no dice nada', () => {
+    expect(avisosDelTurno([entrada('2026-10-01T13:00:00Z'), salida('2026-10-01T22:00:00Z')], null)).toEqual([]);
+  });
+
+  it('a los 15 minutos ya no es corto', () => {
+    expect(avisosDelTurno([entrada('2026-10-01T13:00:00Z'), salida('2026-10-01T13:15:00Z')], null)).toEqual([]);
+  });
+
+  it('una salida que puso el sistema no es una marca de nadie', () => {
+    expect(avisosDelTurno([entrada('2026-10-01T13:00:00Z'), salida('2026-10-01T13:05:00Z', { estimada: true })], null)).toEqual([]);
+  });
+
+  it('salir a una pausa a los pocos minutos no es un turno corto: el turno es la entrada contra su SALIDA', () => {
+    const grupo = [
+      entrada('2026-10-01T13:00:00Z'),
+      f({ momento: 'SALIDA_DESCANSO', hora: '2026-10-01T13:05:00Z' }),
+      f({ momento: 'REGRESO_DESCANSO', hora: '2026-10-01T13:15:00Z' }),
+      salida('2026-10-01T22:00:00Z'),
+    ];
+    expect(avisosDelTurno(grupo, null)).toEqual([]);
+  });
+
+  it('un turno sin salida todavía no es corto', () => {
+    expect(avisosDelTurno([entrada('2026-10-01T13:00:00Z')], null)).toEqual([]);
+  });
+
+  it('con menos de un minuto lo dice así, y no «0 minutos»', () => {
+    const anterior = [entrada('2026-10-01T13:00:00Z'), salida('2026-10-01T13:00:30Z')];
+    expect(avisosDelTurno(anterior, null)).toEqual(['Turno de menos de un minuto']);
+    expect(avisosDelTurno([entrada('2026-10-01T13:00:50Z')], anterior)).toEqual(['Volvió a entrar en menos de un minuto']);
+  });
+
+  it('un minuto, en singular', () => {
+    const anterior = [entrada('2026-10-01T13:00:00Z'), salida('2026-10-01T13:01:10Z')];
+    expect(avisosDelTurno(anterior, null)).toEqual(['Turno de 1 minuto']);
+    expect(avisosDelTurno([entrada('2026-10-01T13:02:20Z')], anterior)).toEqual(['Volvió a entrar al minuto']);
+  });
+
+  it('volver a entrar mucho después es otro turno, sin aviso', () => {
+    const anterior = [entrada('2026-10-01T13:00:00Z'), salida('2026-10-01T17:00:00Z')];
+    expect(avisosDelTurno([entrada('2026-10-01T19:00:00Z')], anterior)).toEqual([]);
   });
 });

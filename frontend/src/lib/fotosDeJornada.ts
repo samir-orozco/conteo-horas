@@ -1,4 +1,5 @@
 import type { FotoDeJornada, Momento } from '../constants/momentos';
+import { MIN_MARCA_RECIENTE, minutosEntre } from './marcaReciente';
 
 // La lógica de cómo se ordenan las fotos de un día en la pantalla, fuera del
 // componente para poder probarla sin montar nada.
@@ -76,4 +77,36 @@ export function partesDeLaJornada(grupo: FotoDeJornada[]): { parte: ParteDeLaJor
   return ORDEN_DE_LAS_PARTES
     .filter(parte => filas.get(parte)!.length > 0)
     .map(parte => ({ parte, filas: filas.get(parte)! }));
+}
+
+// LO QUE NO CUADRA EN UN TURNO, para decirlo junto a sus fotos (2 de octubre de 2026).
+//
+// Un turno de pocos minutos y volver a entrar a los pocos minutos de salir son la
+// huella de dos personas tomadas por una. El 1 de octubre fueron 3 y 4 minutos, y
+// el modal ponía las dos caras lado a lado sin señalar nada.
+//
+// El turno se mide de su ENTRADA a su SALIDA: salir a un descanso a los cinco
+// minutos no lo vuelve corto. Y una hora que puso el sistema no es una marca de
+// nadie, así que no cuenta. `anterior` es el turno de antes en el mismo día: entre
+// turnos solo hay salidas de verdad, porque volver de una pausa es el mismo turno.
+export function avisosDelTurno(grupo: FotoDeJornada[], anterior: FotoDeJornada[] | null): string[] {
+  const avisos: string[] = [];
+  const entrada = grupo.find(f => f.momento === 'ENTRADA' && f.hora && !f.estimada);
+  const salida = [...grupo].reverse().find(f => f.momento === 'SALIDA' && f.hora && !f.estimada);
+  if (entrada?.hora && salida?.hora) {
+    const minutos = minutosEntre(entrada.hora, salida.hora);
+    if (minutos >= 0 && minutos < MIN_MARCA_RECIENTE) {
+      avisos.push(minutos < 1 ? 'Turno de menos de un minuto' : minutos === 1 ? 'Turno de 1 minuto' : `Turno de ${minutos} minutos`);
+    }
+  }
+  const salidaAnterior = anterior && [...anterior].reverse().find(f => f.momento === 'SALIDA' && f.hora && !f.estimada);
+  if (salidaAnterior?.hora && entrada?.hora) {
+    const minutos = minutosEntre(salidaAnterior.hora, entrada.hora);
+    if (minutos >= 0 && minutos < MIN_MARCA_RECIENTE) {
+      avisos.push(minutos < 1 ? 'Volvió a entrar en menos de un minuto'
+        : minutos === 1 ? 'Volvió a entrar al minuto'
+        : `Volvió a entrar a los ${minutos} minutos`);
+    }
+  }
+  return avisos;
 }

@@ -14,6 +14,10 @@ export function useSesionKiosco(marcadorToken: string | undefined) {
   // configuración de la empresa no alcanza para saberlo.
   const [validaUbicacion, setValidaUbicacion] = useState<boolean | null>(null);
   const [estado, setEstado] = useState<Estado | null>(null);
+  // Para la confirmación (2 de octubre de 2026): la miniatura de la ficha y si la
+  // cara se pareció poco a su registro. Los dos los dice el login.
+  const [fotoReferencia, setFotoReferencia] = useState<string | null>(null);
+  const [parecidoDudoso, setParecidoDudoso] = useState(false);
 
   const cargarEstado = async (t: string) => { setEstado(await getEstado(t)); };
 
@@ -24,6 +28,8 @@ export function useSesionKiosco(marcadorToken: string | undefined) {
     setColaborador(r.colaborador);
     setSedes(r.sedes ?? []);
     setValidaUbicacion(r.validaUbicacion ?? null);
+    setFotoReferencia(r.fotoReferencia ?? null);
+    setParecidoDudoso(r.parecidoDudoso === true);
   };
 
   const ingresarRostro = async (descriptor: number[], deviceToken?: string) => {
@@ -33,6 +39,8 @@ export function useSesionKiosco(marcadorToken: string | undefined) {
     setColaborador(r.colaborador);
     setSedes(r.sedes ?? []);
     setValidaUbicacion(r.validaUbicacion ?? null);
+    setFotoReferencia(r.fotoReferencia ?? null);
+    setParecidoDudoso(r.parecidoDudoso === true);
   };
 
   // Se limpia TODO lo de la persona que se va, incluidas las sedes y el dato de
@@ -41,7 +49,8 @@ export function useSesionKiosco(marcadorToken: string | undefined) {
   const limpiarSesion = () => {
     setToken(null); setColaborador(null); setEstado(null);
     setSedes([]); setValidaUbicacion(null);
+    setFotoReferencia(null); setParecidoDudoso(false);
   };
 
-  return { token, colaborador, sedes, validaUbicacion, estado, ingresar, ingresarRostro, cargarEstado, limpiarSesion };
+  return { token, colaborador, sedes, validaUbicacion, estado, fotoReferencia, parecidoDudoso, ingresar, ingresarRostro, cargarEstado, limpiarSesion };
 }

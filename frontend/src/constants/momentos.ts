@@ -56,4 +56,8 @@ export type FotoDeJornada = {
   // ubicación (decisión del dueño del 12 de septiembre de 2026). Solo para mostrarla, con su
   // nombre (sin «por defecto» desde el 13): no dice dónde se tomó la foto. En las salidas no viene.
   sedeAtribuida?: { id: string; nombre: string; activa?: boolean; porDefecto?: boolean } | null;
+  // La cara se pareció poco a su registro (2 de octubre de 2026). Lo decide el
+  // servidor con el mismo corte que pide la confirmación reforzada en el kiosco.
+  // Opcional: un backend anterior no lo manda, y entonces no se avisa nada.
+  parecidoDudoso?: boolean;
 };

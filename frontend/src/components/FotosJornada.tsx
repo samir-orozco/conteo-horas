@@ -5,7 +5,7 @@ import { Camera, Coffee, ImageOff, Info, LogIn, MapPin, UtensilsCrossed, type Lu
 import api from '../lib/api';
 import { fotosExpiradas, MESES_RETENCION_FOTOS } from '../lib/retencionFotos';
 import { MOMENTO_LABEL, MOMENTO_TONO, type FotoDeJornada } from '../constants/momentos';
-import { agruparPorJornada, sedesDelTurno, partesDeLaJornada, type ParteDeLaJornada } from '../lib/fotosDeJornada';
+import { agruparPorJornada, sedesDelTurno, partesDeLaJornada, avisosDelTurno, type ParteDeLaJornada } from '../lib/fotosDeJornada';
 
 const TZ = 'America/Bogota';
 const hhmm = (s: string | null) => s ? format(toZonedTime(new Date(s), TZ), 'HH:mm') : null;
@@ -94,9 +94,17 @@ export default function FotosJornada({ registroId }: { registroId: string }) {
             const horas = inicio ? ` · ${inicio}${fin ? ` a ${fin}` : ''}` : fin ? ` · sin entrada, salida ${fin}` : '';
             const titulo = `Turno ${gi + 1}${horas}`;
             const { distintas } = sedesDelTurno(grupo);
-            const cabecera = (conTitulos || distintas) && (
-              <div className="flex items-center gap-2 mb-2">
+            // Lo que no cuadra en este turno (2 de octubre de 2026): un turno de
+            // minutos, o volver a entrar a los pocos minutos de salir.
+            const avisos = avisosDelTurno(grupo, gi > 0 ? grupos[gi - 1] : null);
+            const cabecera = (conTitulos || distintas || avisos.length > 0) && (
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                 {conTitulos && <p className="text-xs font-bold text-ink whitespace-nowrap">{titulo}</p>}
+                {avisos.map(aviso => (
+                  <span key={aviso} className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 whitespace-nowrap">
+                    {aviso}
+                  </span>
+                ))}
                 {/* Es justo lo que se quiere encontrar de un vistazo, así que
                     se dice aunque las dos fotos ya lleven su sede encima. */}
                 {distintas && (
@@ -193,6 +201,14 @@ function TarjetaFoto({ f, expiradas }: { f: FotoDeJornada; expiradas: boolean })
           <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
             <MapPin size={10} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{etiqueta}</span>
+          </span>
+        )}
+        {/* La cara se pareció poco a su registro (2 de octubre de 2026): es la marca
+            que conviene comparar con la foto de la ficha. Abajo, para no tapar la
+            sede. */}
+        {f.parecidoDudoso && f.foto && (
+          <span className="absolute left-2 bottom-2 inline-flex items-center rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-ink">
+            Parecido dudoso
           </span>
         )}
       </div>

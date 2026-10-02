@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogIn, LogOut, MapPin, Check, UtensilsCrossed, Coffee, type LucideIcon } from 'lucide-react';
+import { LogIn, LogOut, MapPin, Check, UtensilsCrossed, Coffee, AlertTriangle, type LucideIcon } from 'lucide-react';
 import { es } from 'date-fns/locale';
 import { formatInTimeZone } from 'date-fns-tz';
 import type { DecisionUbicacion } from '../decisionUbicacion';
@@ -7,6 +7,8 @@ import { horaBog } from '../helpers';
 import { TZ, type Colaborador, type Estado, type Pausa, type Sede } from '../tipos';
 import ConfirmarNuevaEntrada from './ConfirmarNuevaEntrada';
 import ElegirTipoDeSalida from './ElegirTipoDeSalida';
+import BotonSostenido from './BotonSostenido';
+import { confirmacionDeLaMarca, textoDelAviso } from '../confirmacion';
 
 type OpcionesDePausa = { almuerzo?: boolean; descanso?: boolean };
 
@@ -26,6 +28,16 @@ type Props = {
   // mano, así que la regla vivía repartida entre aquí y Marcador.tsx.
   decisionUbic: DecisionUbicacion;
   salir: () => void;
+  // «No soy X»: la persona reconocida dice que no es ella. Lo que pasa después lo
+  // decide Marcador (pasa a la cédula si la empresa la permite).
+  onNoSoy: () => void;
+  // La miniatura de la ficha y la foto que se acaba de tomar, lado a lado. La de la
+  // ficha es la que delata el error: la de ahora solo le muestra a cada quien su
+  // propia cara. Cualquiera de las dos puede faltar.
+  fotoReferencia?: string | null;
+  fotoAhora?: string | null;
+  // La cara se pareció poco a su registro: confirmación reforzada.
+  parecidoDudoso?: boolean;
 };
 
 // Todo lo que cambia según la pausa, junto: la opción que se manda, los textos,
@@ -46,7 +58,10 @@ const PAUSA: Record<Pausa, {
 };
 
 // Pantalla principal: reloj + estado del día + botón grande de entrada/salida.
-export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado, marcar, marcando, decisionUbic, salir, onRegresoOlvidado }: Props) {
+export default function PantallaMarcar({
+  colaborador, sedes = [], ahora, estado, marcar, marcando, decisionUbic, salir, onRegresoOlvidado,
+  onNoSoy, fotoReferencia = null, fotoAhora = null, parecidoDudoso = false,
+}: Props) {
   const dentroAhora = estado?.dentroAhora ?? false;
   const entradaHace = estado?.entradaAbierta?.entrada ? horaBog(estado.entradaAbierta.entrada, 'HH:mm') : null;
   const cerradoHoy = estado?.turnoCerradoHoy ?? null;
@@ -71,6 +86,17 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
     : descanso?.ahora ? 'DESCANSO'
     : null;
   const boton = pausaAhora ? PAUSA[pausaAhora] : null;
+  // Cuánto hay que sostener el botón y qué se avisa (confirmacion.ts).
+  const confirmacion = confirmacionDeLaMarca({ estado, ahora, parecidoDudoso });
+  const reforzada = confirmacion.nivel === 'REFORZADA';
+  const nombreCompleto = `${colaborador.nombre} ${colaborador.apellido}`;
+  const aviso = confirmacion.nivel === 'REFORZADA'
+    ? textoDelAviso(confirmacion, { nombre: colaborador.nombre, nombreCompleto, hayFotoDeFicha: !!fotoReferencia })
+    : null;
+  const accion = boton ? boton.salir
+    : dentroAhora ? 'Registrar salida'
+    : enCurso ? enCurso.volver
+    : 'Registrar entrada';
 
   const alPresionar = () => {
     if (boton) { marcar(boton.opcion); return; }
@@ -90,12 +116,32 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
     <div className="min-h-screen bg-ink flex items-center justify-center p-4">
       <div className="hp-pop w-full max-w-sm rounded-[28px] border border-white/10 bg-white/[0.06] backdrop-blur-2xl shadow-2xl p-8 text-center">
         <div className="mb-6">
-          <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl font-bold text-ink">
-              {colaborador.nombre[0]}{colaborador.apellido[0]}
-            </span>
+          {/* LAS DOS CARAS, LADO A LADO (2 de octubre de 2026). La de la ficha es la
+              que importa: a quien no es esta persona le muestra la cara de otra.
+              La de ahora va espejada, como se vio en la cámara. */}
+          <div className="flex items-start justify-center gap-4 mb-3">
+            <figure className="flex flex-col items-center gap-1">
+              {fotoReferencia ? (
+                <img src={fotoReferencia} alt={`Foto de la ficha de ${nombreCompleto}`}
+                  className="w-24 h-24 rounded-full object-cover border-2 border-white/20" />
+              ) : (
+                <div className="bg-primary rounded-full w-24 h-24 flex items-center justify-center">
+                  <span className="text-3xl font-bold text-ink">
+                    {colaborador.nombre[0]}{colaborador.apellido[0]}
+                  </span>
+                </div>
+              )}
+              {fotoReferencia && fotoAhora && <figcaption className="text-[10px] text-white/40">En tu ficha</figcaption>}
+            </figure>
+            {fotoAhora && (
+              <figure className="flex flex-col items-center gap-1">
+                <img src={fotoAhora} alt="Tu foto de ahora"
+                  className="w-24 h-24 rounded-full object-cover border-2 border-white/20 [transform:scaleX(-1)]" />
+                <figcaption className="text-[10px] text-white/40">Ahora</figcaption>
+              </figure>
+            )}
           </div>
-          <h2 className="text-xl font-bold text-white">{colaborador.nombre} {colaborador.apellido}</h2>
+          <h2 className="text-xl font-bold text-white">Hola, {nombreCompleto}</h2>
           {colaborador.cargo && <p className="text-sm text-white/50">{colaborador.cargo}</p>}
           {sedes.length > 0 && (
             <p className="text-xs text-white/60 mt-2 flex items-center justify-center gap-1.5 flex-wrap">
@@ -136,10 +182,29 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
           )}
         </div>
 
-        <button
-          onClick={alPresionar}
+        {/* LO QUE NO CUADRA, dicho antes del botón (2 de octubre de 2026). Solo
+            aparece cuando algo no cuadra: si saliera siempre, a la semana nadie lo
+            leería. El de la hora es el que habría frenado a Lina el 1 de octubre;
+            el del parecido no dice a quién más se parece la cara. */}
+        {aviso && (
+          <div role="alert" className="mb-4 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-left">
+            <p className="flex items-start gap-2 text-sm font-semibold text-amber-200">
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
+              {aviso.titulo}
+            </p>
+            <p className="mt-1 pl-6 text-xs text-amber-100/70">{aviso.detalle}</p>
+          </div>
+        )}
+
+        {/* EL BOTÓN SE SOSTIENE Y LLEVA EL NOMBRE (2 de octubre de 2026). Un toque
+            ya no marca: el 1 de octubre dos personas oprimieron el de otra sin
+            mirar el nombre, que iba arriba. */}
+        <BotonSostenido
+          ms={confirmacion.ms}
+          onConfirmar={alPresionar}
           disabled={marcando || !estado}
-          className={`w-full font-bold py-5 rounded-2xl text-xl text-white transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-3 shadow-lg
+          className={`w-full font-bold py-4 rounded-2xl text-lg text-white transition-colors disabled:opacity-60 shadow-lg
+            ${reforzada ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-ink' : ''}
             ${boton
               ? boton.boton
               : dentroAhora
@@ -147,26 +212,23 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
               : 'bg-green-600 hover:bg-green-500 shadow-green-900/30'
             }`}
         >
-          {boton ? <boton.Icono size={28} /> : dentroAhora ? <LogOut size={28} /> : <LogIn size={28} />}
-          {marcando
-            ? decisionUbic.textoBoton
-            : boton ? boton.salir
-            : dentroAhora ? 'Registrar Salida'
-            : enCurso ? enCurso.volver
-            : 'Registrar Entrada'}
-        </button>
+          {boton ? <boton.Icono size={26} /> : dentroAhora ? <LogOut size={26} /> : <LogIn size={26} />}
+          {marcando ? decisionUbic.textoBoton : `Soy ${colaborador.nombre} · ${accion}`}
+        </BotonSostenido>
 
         {/* Terminar la jornada durante una pausa es raro pero pasa —quien se va
             enfermo, o a quien le cambiaron el turno—. Va discreto y sin perderse:
             si esta salida se guardara como pausa, la vuelta de mañana abriría un
-            turno nuevo y el día contaría dos jornadas. */}
+            turno nuevo y el día contaría dos jornadas. También se sostiene: si no,
+            sería el atajo para marcar con un toque. */}
         {boton && !marcando && (
-          <button
-            onClick={() => marcar()}
-            className="mt-3 w-full text-sm font-semibold text-white/50 hover:text-white/90 py-2 transition-colors"
+          <BotonSostenido
+            ms={confirmacion.ms}
+            onConfirmar={() => marcar()}
+            className="mt-3 w-full text-sm font-semibold text-white/60 hover:text-white/90 py-2 rounded-xl border border-white/10 transition-colors"
           >
             Termino mi jornada
-          </button>
+          </BotonSostenido>
         )}
 
         {/* Lo que se le dice de su ubicación, que ya no es lo mismo para todos.
@@ -190,16 +252,32 @@ export default function PantallaMarcar({ colaborador, sedes = [], ahora, estado,
           </p>
         )}
 
-        <button onClick={salir} className="mt-4 text-xs text-white/30 hover:text-white/60 underline">
-          No soy yo, cambiar usuario
+        {/* «NO SOY X» SE VE (2 de octubre de 2026). Antes era «No soy yo» en letra
+            de 12 px casi transparente, que nadie encontraba. */}
+        {/* Mientras se marca no se puede decir «no soy»: la marca ya va en camino
+            y el aviso la contradiría. */}
+        <button onClick={onNoSoy} disabled={marcando}
+          className="mt-4 w-full rounded-xl border border-white/20 py-3 text-sm font-semibold text-white/80 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-40">
+          No soy {colaborador.nombre}
+        </button>
+
+        {/* Irse sin marcar, SIEMPRE. Sin esto, quien solo venía a mirar su entrada
+            tocaba «No soy» para irse, y el servidor anotaba una identificación falsa
+            que no ocurrió. Y es la salida de quien sí es esta persona pero no
+            reconoce la entrada que ve en pantalla. */}
+        <button onClick={salir} disabled={marcando}
+          className="mt-2 text-xs font-semibold text-white/50 hover:text-white/80 py-2 disabled:opacity-40">
+          Salir sin marcar
         </button>
       </div>
 
       {confirmando && cerradoHoy && (
         <ConfirmarNuevaEntrada
           turno={cerradoHoy}
+          nombre={colaborador.nombre}
           onConfirmar={() => { setConfirmando(false); marcar(); }}
           onCancelar={() => setConfirmando(false)}
+          onNoSoy={() => { setConfirmando(false); onNoSoy(); }}
         />
       )}
 

@@ -78,6 +78,14 @@ export default function PantallaLogin(p: Props) {
               <input
                 type="text"
                 inputMode="numeric"
+                // Sin sugerencias (2 de octubre de 2026): en una tableta compartida
+                // el navegador ofrecía las cédulas escritas antes, y tocar la
+                // equivocada abría la sesión de otra persona con la foto de quien
+                // estaba al frente.
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                name="cedula-kiosco"
                 autoFocus
                 value={p.cedula}
                 onChange={e => p.onCedulaChange(e.target.value.replace(/\D/g, ''))}

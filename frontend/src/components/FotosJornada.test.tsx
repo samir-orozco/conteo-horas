@@ -192,3 +192,49 @@ describe('las fotos de verificación facial del día', () => {
     expect(within(screen.getByRole('group', { name: 'Entrada y salida' })).getByText('Sin salida')).toBeTruthy();
   });
 });
+
+// LO QUE NO CUADRA, JUNTO A LAS FOTOS (2 de octubre de 2026). El 1 de octubre el
+// modal ponía la cara de una persona en la entrada de las 08:49 y la de otra en
+// la salida de las 08:52, y nada lo señalaba.
+describe('los avisos de lo que no cuadra', () => {
+  it('EL CASO DEL 1 DE OCTUBRE: turno de 3 minutos y vuelta a entrar a los 4', async () => {
+    responder([
+      foto({ registroId: 'a', momento: 'ENTRADA', hora: bog(8, 49), jornada: 0 }),
+      foto({ registroId: 'a', momento: 'SALIDA', hora: bog(8, 52), jornada: 0 }),
+      foto({ registroId: 'b', momento: 'ENTRADA', hora: bog(8, 56), jornada: 1 }),
+    ]);
+    render(<FotosJornada registroId="a" />);
+    const t1 = await screen.findByRole('region', { name: 'Turno 1 · 08:49 a 08:52' });
+    expect(within(t1).getByText('Turno de 3 minutos')).toBeInTheDocument();
+    const t2 = screen.getByRole('region', { name: 'Turno 2 · 08:56' });
+    expect(within(t2).getByText('Volvió a entrar a los 4 minutos')).toBeInTheDocument();
+  });
+
+  it('aunque haya un solo turno, uno de minutos se señala', async () => {
+    responder([
+      foto({ momento: 'ENTRADA', hora: bog(8, 49), jornada: 0 }),
+      foto({ momento: 'SALIDA', hora: bog(8, 52), jornada: 0 }),
+    ]);
+    render(<FotosJornada registroId="a" />);
+    expect(await screen.findByText('Turno de 3 minutos')).toBeInTheDocument();
+  });
+
+  it('la foto cuya cara se pareció poco a su registro lo dice', async () => {
+    responder([
+      foto({ momento: 'ENTRADA', hora: bog(8, 49), jornada: 0, parecidoDudoso: true }),
+      foto({ momento: 'SALIDA', hora: bog(17, 0), jornada: 0, parecidoDudoso: false }),
+    ]);
+    render(<FotosJornada registroId="a" />);
+    expect(await screen.findAllByText('Parecido dudoso')).toHaveLength(1);
+  });
+
+  it('un día normal no dice nada de esto', async () => {
+    responder([
+      foto({ momento: 'ENTRADA', hora: bog(8, 0), jornada: 0 }),
+      foto({ momento: 'SALIDA', hora: bog(17, 0), jornada: 0 }),
+    ]);
+    render(<FotosJornada registroId="a" />);
+    await screen.findAllByRole('img');
+    expect(screen.queryByText(/turno de|volvió a entrar|parecido dudoso/i)).not.toBeInTheDocument();
+  });
+});

@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import PantallaMarcar from './PantallaMarcar';
 import { decidirUbicacion } from '../decisionUbicacion';
+import { MS_CONFIRMAR, MS_CONFIRMAR_REFORZADA } from '../confirmacion';
 import type { Estado } from '../tipos';
 import type { Modalidad } from '../../../features/colaboradores/modalidad';
 
@@ -13,6 +14,14 @@ import type { Modalidad } from '../../../features/colaboradores/modalidad';
 
 const colaborador = { id: 'c1', nombre: 'Ana', apellido: 'Giraldo', cargo: 'Cajera', modalidad: 'PRESENCIAL' as Modalidad };
 
+// Un toque ya no marca: hay que sostener el botón (2 de octubre de 2026). Las
+// pruebas que oprimen el botón grande corren con el reloj falso.
+const sostener = (boton: HTMLElement, ms = MS_CONFIRMAR) => {
+  fireEvent.pointerDown(boton, { pointerId: 1, button: 0 });
+  act(() => { vi.advanceTimersByTime(ms); });
+  fireEvent.pointerUp(boton, { pointerId: 1 });
+};
+
 const montar = (modalidad: Modalidad, permiso: 'concedido' | 'negado') => render(
   <PantallaMarcar
     colaborador={{ ...colaborador, modalidad }}
@@ -23,6 +32,7 @@ const montar = (modalidad: Modalidad, permiso: 'concedido' | 'negado') => render
     marcando={false}
     decisionUbic={decidirUbicacion({ modalidad, validaUbicacion: true, permiso })}
     salir={vi.fn()}
+    onNoSoy={vi.fn()}
   />,
 );
 
@@ -60,6 +70,8 @@ describe('PantallaMarcar · lo que dice de la ubicación', () => {
 // otra no. Si el kiosco manda la marca de una como la de la otra, el error no se
 // ve en la pantalla: sale en la nómina.
 describe('PantallaMarcar · las pausas', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
   // Turno abierto desde las 8:00 y ninguna pausa marcada todavía.
   const dentro: Estado = {
     dentroAhora: true, entradaAbierta: { entrada: '2026-09-01T13:00:00.000Z' }, turnoCerradoHoy: null,
@@ -82,6 +94,7 @@ describe('PantallaMarcar · las pausas', () => {
         marcar={marcar} onRegresoOlvidado={onRegresoOlvidado} marcando={false}
         decisionUbic={decidirUbicacion({ modalidad: 'REMOTO', validaUbicacion: false, permiso: 'concedido' })}
         salir={vi.fn()}
+        onNoSoy={vi.fn()}
       />,
     );
     return { marcar, onRegresoOlvidado };
@@ -89,14 +102,26 @@ describe('PantallaMarcar · las pausas', () => {
 
   it('dentro de la ventana del descanso, el botón grande sale al descanso', () => {
     const { marcar } = montarCon({ ...dentro, descanso: { inicio: '09:00', fin: '09:15', ahora: true } });
-    fireEvent.click(screen.getByRole('button', { name: /salgo a mi descanso/i }));
+    sostener(screen.getByRole('button', { name: /salgo a mi descanso/i }));
     expect(marcar).toHaveBeenCalledWith({ descanso: true });
   });
 
   it('dentro de la ventana del almuerzo, el botón grande sale a almorzar', () => {
     const { marcar } = montarCon({ ...dentro, almuerzo: { inicio: '12:00', fin: '13:00', ahora: true } });
-    fireEvent.click(screen.getByRole('button', { name: /salgo a almorzar/i }));
+    sostener(screen.getByRole('button', { name: /salgo a almorzar/i }));
     expect(marcar).toHaveBeenCalledWith({ almuerzo: true });
+  });
+
+  it('«Termino mi jornada» también se sostiene: un toque no marca', () => {
+    const { marcar } = montarCon({ ...dentro, almuerzo: { inicio: '12:00', fin: '13:00', ahora: true } });
+    const boton = screen.getByRole('button', { name: /termino mi jornada/i });
+    fireEvent.pointerDown(boton, { pointerId: 1, button: 0 });
+    fireEvent.pointerUp(boton, { pointerId: 1 });
+    fireEvent.click(boton);
+    act(() => { vi.advanceTimersByTime(5000); });
+    expect(marcar).not.toHaveBeenCalled();
+    sostener(boton);
+    expect(marcar).toHaveBeenCalledWith();
   });
 
   it('fuera de las ventanas y con las dos pausas pendientes, pregunta cuál salida es', () => {
@@ -105,7 +130,7 @@ describe('PantallaMarcar · las pausas', () => {
       almuerzo: { inicio: '12:00', fin: '13:00', ahora: false },
       descanso: { inicio: '09:00', fin: '09:15', ahora: false },
     });
-    fireEvent.click(screen.getByRole('button', { name: /registrar salida/i }));
+    sostener(screen.getByRole('button', { name: /registrar salida/i }));
     expect(screen.getByRole('button', { name: /salgo a almorzar/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /salgo a mi descanso/i }));
     expect(marcar).toHaveBeenCalledWith({ descanso: true });
@@ -114,13 +139,13 @@ describe('PantallaMarcar · las pausas', () => {
   it('en su descanso, el botón es volver del descanso y no pregunta por un turno nuevo', () => {
     const { marcar } = montarCon({ ...fuera, enDescanso: true, salidaDescanso: '2026-09-01T14:00:00.000Z' });
     expect(screen.getByText(/en descanso desde las/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /volví de mi descanso/i }));
+    sostener(screen.getByRole('button', { name: /volví de mi descanso/i }));
     expect(marcar).toHaveBeenCalledWith();
   });
 
   it('en su almuerzo, el botón es volver de almorzar', () => {
     const { marcar } = montarCon({ ...fuera, enAlmuerzo: true, salidaAlmuerzo: '2026-09-01T17:00:00.000Z' });
-    fireEvent.click(screen.getByRole('button', { name: /volví de almorzar/i }));
+    sostener(screen.getByRole('button', { name: /volví de almorzar/i }));
     expect(marcar).toHaveBeenCalledWith();
   });
 
@@ -128,7 +153,7 @@ describe('PantallaMarcar · las pausas', () => {
     const { marcar, onRegresoOlvidado } = montarCon({
       ...fuera, enDescanso: true, salidaDescanso: '2026-09-01T14:00:00.000Z', regresoSugerido: '2026-09-01T14:15:00.000Z',
     });
-    fireEvent.click(screen.getByRole('button', { name: /volví de mi descanso/i }));
+    sostener(screen.getByRole('button', { name: /volví de mi descanso/i }));
     expect(onRegresoOlvidado).toHaveBeenCalled();
     expect(marcar).not.toHaveBeenCalled();
   });
@@ -142,7 +167,159 @@ describe('PantallaMarcar · las pausas', () => {
       almuerzo: null, enAlmuerzo: false, salidaAlmuerzo: null, regresoSugerido: null,
     };
     const { marcar } = montarCon(sinDescanso);
-    fireEvent.click(screen.getByRole('button', { name: /registrar salida/i }));
+    sostener(screen.getByRole('button', { name: /registrar salida/i }));
     expect(marcar).toHaveBeenCalledWith();
+  });
+});
+
+// CONFIRMAR QUIÉN ES ANTES DE MARCAR (2 de octubre de 2026).
+//
+// El 1 de octubre una persona sin rostro registrado marcó como Lina a las 08:49, y
+// a las 08:52 Lina, reconocida bien, oprimió «Registrar Salida» sobre esa entrada.
+// Las dos tenían el nombre en pantalla y ninguna lo miró.
+describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const fuera: Estado = {
+    dentroAhora: false, entradaAbierta: null, turnoCerradoHoy: null,
+    almuerzo: null, enAlmuerzo: false, salidaAlmuerzo: null, regresoSugerido: null,
+  };
+  const FICHA = 'data:image/jpeg;base64,ficha';
+  const AHORA = 'data:image/jpeg;base64,ahora';
+
+  const montarConfirmando = (estado: Estado, opciones: { ahora?: string; fotoReferencia?: string | null; parecidoDudoso?: boolean } = {}) => {
+    const marcar = vi.fn();
+    const salir = vi.fn();
+    const onNoSoy = vi.fn();
+    render(
+      <PantallaMarcar
+        colaborador={colaborador} ahora={new Date(opciones.ahora ?? '2026-10-01T13:49:00Z')} estado={estado}
+        marcar={marcar} onRegresoOlvidado={vi.fn()} marcando={false}
+        decisionUbic={decidirUbicacion({ modalidad: 'REMOTO', validaUbicacion: false, permiso: 'concedido' })}
+        salir={salir} onNoSoy={onNoSoy}
+        fotoReferencia={opciones.fotoReferencia === undefined ? FICHA : opciones.fotoReferencia}
+        fotoAhora={AHORA}
+        parecidoDudoso={opciones.parecidoDudoso ?? false}
+      />,
+    );
+    return { marcar, salir, onNoSoy };
+  };
+
+  it('saluda con el nombre completo y el botón dice a nombre de quién se marca', () => {
+    montarConfirmando(fuera);
+    expect(screen.getByText('Hola, Ana Giraldo')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /soy ana · registrar entrada/i })).toBeInTheDocument();
+  });
+
+  it('un toque, como el del 1 de octubre, no marca', () => {
+    const { marcar } = montarConfirmando(fuera);
+    const boton = screen.getByRole('button', { name: /soy ana · registrar entrada/i });
+    fireEvent.pointerDown(boton, { pointerId: 1, button: 0 });
+    fireEvent.pointerUp(boton, { pointerId: 1 });
+    fireEvent.click(boton);
+    act(() => { vi.advanceTimersByTime(5000); });
+    expect(marcar).not.toHaveBeenCalled();
+  });
+
+  it('sostenido un segundo y medio, marca', () => {
+    const { marcar } = montarConfirmando(fuera);
+    sostener(screen.getByRole('button', { name: /soy ana · registrar entrada/i }));
+    expect(marcar).toHaveBeenCalledWith();
+  });
+
+  it('pone la foto de la ficha al lado de la de ahora', () => {
+    montarConfirmando(fuera);
+    expect(screen.getByAltText(/foto de la ficha de ana giraldo/i)).toHaveAttribute('src', FICHA);
+    expect(screen.getByAltText(/tu foto de ahora/i)).toHaveAttribute('src', AHORA);
+  });
+
+  it('sin foto en la ficha, quedan las iniciales', () => {
+    montarConfirmando(fuera, { fotoReferencia: null });
+    expect(screen.queryByAltText(/foto de la ficha/i)).not.toBeInTheDocument();
+    expect(screen.getByText('AG')).toBeInTheDocument();
+  });
+
+  it('«No soy Ana» se ve como un botón y avisa', () => {
+    const { onNoSoy, marcar } = montarConfirmando(fuera);
+    fireEvent.click(screen.getByRole('button', { name: /no soy ana/i }));
+    expect(onNoSoy).toHaveBeenCalled();
+    expect(marcar).not.toHaveBeenCalled();
+  });
+
+  it('EL CASO DEL 1 DE OCTUBRE: salir a los 3 minutos de la entrada lo dice con la hora y pide 3 segundos', () => {
+    const dentro: Estado = { ...fuera, dentroAhora: true, entradaAbierta: { entrada: '2026-10-01T13:49:21Z' } };
+    const { marcar } = montarConfirmando(dentro, { ahora: '2026-10-01T13:52:39Z' });
+    expect(screen.getByText(/tu entrada figura a las 08:49, hace 3 minutos/i)).toBeInTheDocument();
+    const boton = screen.getByRole('button', { name: /soy ana · registrar salida/i });
+    sostener(boton, MS_CONFIRMAR);
+    expect(marcar).not.toHaveBeenCalled();
+    sostener(boton, MS_CONFIRMAR_REFORZADA);
+    expect(marcar).toHaveBeenCalledTimes(1);
+  });
+
+  it('ahí mismo se puede salir sin marcar', () => {
+    const dentro: Estado = { ...fuera, dentroAhora: true, entradaAbierta: { entrada: '2026-10-01T13:49:21Z' } };
+    const { salir, marcar } = montarConfirmando(dentro, { ahora: '2026-10-01T13:52:39Z' });
+    fireEvent.click(screen.getByRole('button', { name: /salir sin marcar/i }));
+    expect(salir).toHaveBeenCalled();
+    expect(marcar).not.toHaveBeenCalled();
+  });
+
+  it('el parecido dudoso pide mirar las fotos y sostener 3 segundos', () => {
+    const { marcar } = montarConfirmando(fuera, { parecidoDudoso: true });
+    expect(screen.getByText(/mira bien las fotos/i)).toBeInTheDocument();
+    const boton = screen.getByRole('button', { name: /soy ana · registrar entrada/i });
+    sostener(boton, MS_CONFIRMAR);
+    expect(marcar).not.toHaveBeenCalled();
+    sostener(boton, MS_CONFIRMAR_REFORZADA);
+    expect(marcar).toHaveBeenCalledTimes(1);
+  });
+
+  // Antes de esto, «No soy Ana» era la única forma de irse sin marcar, y quien solo
+  // venía a mirar su entrada lo tocaba: el servidor anotaba una identificación
+  // falsa que no ocurrió, y la cédula quedaba esperando con su foto.
+  it('en una marca normal también se puede salir sin marcar, sin decir que no es ella', () => {
+    const { salir, onNoSoy, marcar } = montarConfirmando(fuera);
+    fireEvent.click(screen.getByRole('button', { name: /salir sin marcar/i }));
+    expect(salir).toHaveBeenCalled();
+    expect(onNoSoy).not.toHaveBeenCalled();
+    expect(marcar).not.toHaveBeenCalled();
+  });
+
+  it('mientras marca, «No soy» y «Salir sin marcar» no se pueden tocar', () => {
+    render(
+      <PantallaMarcar
+        colaborador={colaborador} ahora={new Date('2026-10-01T13:49:00Z')} estado={fuera}
+        marcar={vi.fn()} onRegresoOlvidado={vi.fn()} marcando
+        decisionUbic={decidirUbicacion({ modalidad: 'REMOTO', validaUbicacion: false, permiso: 'concedido' })}
+        salir={vi.fn()} onNoSoy={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /no soy ana/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /salir sin marcar/i })).toBeDisabled();
+  });
+
+  it('sin foto en la ficha no rotula las iniciales como foto, ni pide mirar «las fotos»', () => {
+    montarConfirmando(fuera, { fotoReferencia: null, parecidoDudoso: true });
+    expect(screen.queryByText('En tu ficha')).not.toBeInTheDocument();
+    expect(screen.queryByText(/mira bien las fotos/i)).not.toBeInTheDocument();
+    expect(screen.getByText('¿Eres Ana Giraldo?')).toBeInTheDocument();
+  });
+
+  it('desde «Ya registraste tu jornada», su «No soy Ana» avisa', () => {
+    const cerrado: Estado = { ...fuera, turnoCerradoHoy: { entrada: '2026-10-01T13:49:21Z', salida: '2026-10-01T13:52:39Z' } };
+    const { onNoSoy, marcar } = montarConfirmando(cerrado, { ahora: '2026-10-01T13:56:53Z' });
+    sostener(screen.getByRole('button', { name: /soy ana · registrar entrada/i }));
+    const aviso = screen.getByText('Ana, ya registraste tu jornada de hoy').parentElement!;
+    fireEvent.click(within(aviso).getByRole('button', { name: /no soy ana/i }));
+    expect(onNoSoy).toHaveBeenCalledTimes(1);
+    expect(marcar).not.toHaveBeenCalled();
+  });
+
+  it('una marca normal no muestra ningún aviso', () => {
+    montarConfirmando(fuera);
+    expect(screen.queryByText(/mira bien las fotos/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tu entrada figura/i)).not.toBeInTheDocument();
   });
 });

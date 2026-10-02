@@ -8,7 +8,11 @@ export const apiKiosco = axios.create({ baseURL: import.meta.env.VITE_API_URL ||
 const authHeader = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } });
 
 type InfoKiosco = { empresa: string; requiereDispositivo: boolean; permiteCedula: boolean; exigeUbicacion: boolean; exigeReto?: boolean };
-type SesionResp = { token: string; colaborador: Colaborador; sedes?: Sede[]; validaUbicacion?: boolean };
+// `fotoReferencia` y `parecidoDudoso` (2 de octubre de 2026): la miniatura de la
+// ficha para ponerla junto a la foto del momento, y si la cara se pareció poco a su
+// registro. Opcionales: un servidor anterior no los manda, y entonces el kiosco
+// pinta las iniciales y pide la confirmación normal.
+type SesionResp = { token: string; colaborador: Colaborador; sedes?: Sede[]; validaUbicacion?: boolean; fotoReferencia?: string | null; parecidoDudoso?: boolean };
 type MarcaResp = { accion: 'ENTRADA' | 'SALIDA'; hora: string; salidaTemprana?: boolean; salidaAlmuerzo?: boolean; salidaDescanso?: boolean; regresoEstimado?: boolean };
 export type OpcionesMarca = { almuerzo?: boolean; descanso?: boolean; regresoA?: string; novedadTipo?: string; novedadDescripcion?: string };
 
@@ -40,3 +44,7 @@ export const marcar = (token: string, body: {
 
 export const enviarNovedad = (token: string, body: { tipo: string; descripcion: string }) =>
   apiKiosco.post('/worker/novedad', body, authHeader(token));
+
+// «No soy X»: deja la huella en el registro del servidor. No marca nada.
+export const avisarNoSoy = (token: string) =>
+  apiKiosco.post('/worker/no-soy', {}, authHeader(token));

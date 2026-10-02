@@ -7,6 +7,7 @@ import { minutosDe } from '../utils/tardanzas';
 import { combinarDiasEsperados } from '../utils/diasEsperados';
 import { asegurarDiaSinFallar, regenerarDiasDeColaborador } from '../utils/materializarDias';
 import { rangoDiaBogota } from '../utils/fechas';
+import { esParecidoDudoso } from '../utils/rostro';
 import { REGISTRO_SIN_FOTOS } from '../utils/columnasDeRegistro';
 import { lugaresDeEntrada, type FilaConLugar } from '../utils/sedePrincipal';
 import { sedesPorDefecto } from '../utils/sedesDeEmpresa';
@@ -727,12 +728,14 @@ export default async function registroRoutes(app: FastifyInstance) {
       select: {
         id: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true,
         entradaEstimada: true, salidaEstimada: true, fotoEntrada: true, fotoSalida: true,
+        distanciaEntrada: true, distanciaSalida: true,
         sede: { select: { id: true, nombre: true } },
         sedeSalida: { select: { id: true, nombre: true } },
       },
     });
 
     const momentos = momentosDelDia(delDia);
+    const dudosa = (d: number | null) => d !== null && esParecidoDudoso(d);
     // A qué turno pertenece cada foto, para que la pantalla ponga un título por
     // turno. Sale de la misma agrupación que `momentos`: no pueden discrepar.
     const turnos = jornadaDeCadaMarcacion(delDia);
@@ -745,6 +748,10 @@ export default async function registroRoutes(app: FastifyInstance) {
     const fotos: {
       registroId: string; momento: string; hora: Date | null; foto: string | null; estimada: boolean;
       jornada: number; sede: { id: string; nombre: string } | null; sedeAtribuida: SedeAtribuida | null;
+      // La cara se pareció poco a su registro (2 de octubre de 2026). Lo decide el
+      // mismo corte que pide la confirmación reforzada en el kiosco, para que el
+      // panel y el kiosco no discrepen: viaja el veredicto, no el número.
+      parecidoDudoso: boolean;
     }[] = [];
     for (const m of delDia) {
       const papel = momentos.get(m.id);
@@ -754,12 +761,12 @@ export default async function registroRoutes(app: FastifyInstance) {
       // cédula o que alguien la cargó a mano, y quien está auditando el día
       // necesita verlo. Las marcas sin hora no tienen momento y no aparecen.
       if (papel?.entrada) {
-        fotos.push({ registroId: m.id, momento: papel.entrada, hora: m.entrada, foto: m.fotoEntrada, estimada: m.entradaEstimada, jornada, sede: m.sede ?? null, sedeAtribuida: sedeAtribuidaDe(m.id) });
+        fotos.push({ registroId: m.id, momento: papel.entrada, hora: m.entrada, foto: m.fotoEntrada, estimada: m.entradaEstimada, jornada, sede: m.sede ?? null, sedeAtribuida: sedeAtribuidaDe(m.id), parecidoDudoso: dudosa(m.distanciaEntrada) });
       }
       if (papel?.salida) {
         // La sede de la SALIDA es la suya. Null si no se sabe: nunca la de la
         // entrada, que afirmaría un lugar que nadie registró.
-        fotos.push({ registroId: m.id, momento: papel.salida, hora: m.salida, foto: m.fotoSalida, estimada: m.salidaEstimada, jornada, sede: m.sedeSalida ?? null, sedeAtribuida: null });
+        fotos.push({ registroId: m.id, momento: papel.salida, hora: m.salida, foto: m.fotoSalida, estimada: m.salidaEstimada, jornada, sede: m.sedeSalida ?? null, sedeAtribuida: null, parecidoDudoso: dudosa(m.distanciaSalida) });
       }
     }
     // En orden cronológico: es como ocurrió el día y como se va a leer.

@@ -18,6 +18,7 @@ import { COLABORADOR_SIN_FOTOS, COLABORADOR_SIN_DESCRIPTOR } from '../utils/colu
 import { textoMuyLargo } from '../utils/largoDeColumna';
 import { crearTokenDeEnlace, DURACION_ENLACE_MS, MAX_INTENTOS_CEDULA, TEXTO_AUTORIZACION_ADMINISTRADOR } from '../utils/registroFacial';
 import { permiteCedula } from '../utils/kioscoConfig';
+import { revisarRostroNuevo } from '../utils/revisarRostroNuevo';
 
 export default async function colaboradorRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -687,8 +688,8 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
   // perderla porque alguien vuelva a enrolar el rostro.
   app.post('/:id/rostro', auth, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { descriptores, foto, fotoMini } = request.body as {
-      descriptores: unknown; foto?: unknown; fotoMini?: unknown;
+    const { descriptores, foto, fotoMini, confirmarParecido } = request.body as {
+      descriptores: unknown; foto?: unknown; fotoMini?: unknown; confirmarParecido?: unknown;
     };
     // La foto actual sí hace falta: la primera toma del escaneo solo se guarda si todavía no hay una.
     const existente = await prisma.colaborador.findFirst({
@@ -697,6 +698,32 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
     if (!existente) return reply.status(404).send({ error: 'No encontrado' });
     if (!esListaDescriptoresValida(descriptores)) {
       return reply.status(400).send({ error: 'Muestras faciales inválidas' });
+    }
+    // LA REVISIÓN DEL ROSTRO NUEVO (2 de octubre de 2026). Una toma con la cara de
+    // otra persona hacía que esa persona marcara como esta para siempre.
+    const revision = await revisarRostroNuevo(request.empresaId!, id, descriptores);
+    // Queda la huella de cada revisión, con distancias e ids y sin nombres: es lo
+    // que permite fijar con datos los dos números provisionales.
+    request.log.info({
+      evento: 'revision-rostro', origen: 'FICHA', empresaId: request.empresaId, colaboradorId: id,
+      maxima: revision.maxima, parecidos: revision.parecidos.map(p => ({ id: p.id, distancia: p.distancia })),
+      confirmado: confirmarParecido === true,
+    }, 'revisión de rostro nuevo');
+    if (!revision.coherentes) {
+      return reply.status(400).send({
+        error: 'Las tomas no parecen de una misma persona. Repite el registro con una sola persona frente a la cámara.',
+        codigo: 'TOMAS_INCOHERENTES',
+      });
+    }
+    // Se parece a otra ficha: el administrador lo ve con nombre y decide. No se
+    // bloquea, porque entre familiares es normal. Aquí sí se puede decir el
+    // nombre: quien registra desde la ficha ya ve a toda la empresa.
+    if (revision.parecidos.length > 0 && confirmarParecido !== true) {
+      return reply.status(409).send({
+        error: 'Este rostro se parece mucho al de otra persona de la empresa.',
+        codigo: 'ROSTRO_PARECIDO',
+        parecidos: revision.parecidos.slice(0, 3).map(p => ({ id: p.id, nombre: p.nombre })),
+      });
     }
     const primeraFoto = fotoParaEnrolar(existente.foto, foto);
     const primeraMini = primeraFoto && miniValida(fotoMini) ? fotoMini : null;

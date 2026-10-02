@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { infoKiosco, marcar as apiMarcar, type OpcionesMarca } from './marcador/api';
+import { infoKiosco, marcar as apiMarcar, avisarNoSoy, type OpcionesMarca } from './marcador/api';
+import { useCierrePorInactividad, MS_INACTIVIDAD_KIOSCO } from './marcador/useCierrePorInactividad';
 import { useSesionKiosco } from './marcador/useSesionKiosco';
 import { useGeolocalizacion } from './marcador/useGeolocalizacion';
 import { useVinculoDispositivo } from './marcador/useVinculoDispositivo';
@@ -56,6 +57,10 @@ export default function Marcador() {
   const [novedadTipo, setNovedadTipo] = useState('MEDICO');
   const [novedadDesc, setNovedadDesc] = useState('');
   const [enviandoNovedad, setEnviandoNovedad] = useState(false);
+  // Volvió de una pausa —almuerzo o descanso— pero se le pasó la hora: antes de
+  // abrir el turno se le pregunta a qué hora regresó. Si no, marcar a las 17:00
+  // el regreso de un almuerzo de las 12:00 le borraría la tarde entera.
+  const [preguntandoRegreso, setPreguntandoRegreso] = useState(false);
 
   const sesion = useSesionKiosco(marcadorToken);
   const geo = useGeolocalizacion();
@@ -75,25 +80,67 @@ export default function Marcador() {
 
   const nombreColab = sesion.colaborador ? `${sesion.colaborador.nombre} ${sesion.colaborador.apellido}` : '';
 
-  // salir(): libera la sesión y deja el kiosco listo para el siguiente colaborador
-  const salir = () => {
+  // salir(): libera la sesión y deja el kiosco listo para el siguiente colaborador.
+  //
+  // `mismaPersona`: la que se va es la misma que se queda («No soy X» pasa a la
+  // cédula con la misma persona al frente). Entonces no se le vuelve a preguntar
+  // por la ubicación que ya dio o que ya decidió no dar.
+  const salir = ({ mismaPersona = false }: { mismaPersona?: boolean } = {}) => {
     sesion.limpiarSesion();
-    geo.limpiar();
-    setOmitioUbicacion(false);
+    if (!mismaPersona) {
+      geo.limpiar();
+      setOmitioUbicacion(false);
+    }
     setCedula('');
     setErrorLogin('');
     setModoRostro(true); // vuelve a la cámara, aunque quien marcó haya entrado con la cédula
     setFotoRostro(null);
     setCapturaKey(k => k + 1);
+    // LO QUE VIVE AQUÍ Y NO EN LA PANTALLA DE LA PERSONA (2 de octubre de 2026). La
+    // pantalla del motivo y la del regreso olvidado cuelgan del Marcador, que no se
+    // desmonta. Antes daba igual porque salir() solo corría tras una marca; con el
+    // cierre por inactividad corre con cualquiera abierta, y la siguiente persona
+    // caía en la de la anterior, con su texto y un botón de un toque.
+    setPideMotivo(null);
+    setPreguntandoRegreso(false);
+    setNovedadTipo('MEDICO');
+    setNovedadDesc('');
   };
 
-  const { flash, cerrandoFlash, mostrarFlashOk, mostrarFlashError } = useFlashResultado(salir);
+  const { flash, cerrandoFlash, mostrarFlashOk, mostrarFlashError } = useFlashResultado(() => salir());
+
+  // «NO SOY X» (2 de octubre de 2026). Queda la huella en el servidor y se descarta
+  // la sesión. Si la empresa permite la cédula, sigue por ahí CON la foto que se
+  // acaba de tomar, que es de quien está frente al kiosco: volver a la cámara la
+  // reconocería otra vez como la misma persona.
+  const noSoy = () => {
+    const token = sesion.token;
+    const foto = fotoRostro;
+    if (token) avisarNoSoy(token).catch(() => { /* la huella es para medir; no detiene a nadie */ });
+    salir({ mismaPersona: true });
+    if (permiteCedula) {
+      setModoRostro(false);
+      setFotoRostro(foto);
+    } else {
+      setErrorLogin('Si el kiosco no te reconoce bien, avísale a tu administrador.');
+    }
+  };
 
   const fallar = (msg: string) => {
     setErrorLogin(msg);
     setShake(true);
     setTimeout(() => setShake(false), 550);
   };
+
+  // NADIE QUEDA CON LA PANTALLA DE OTRO (2 de octubre de 2026). Con una sesión
+  // abierta, o en la pantalla de la cédula (que puede guardar la foto de alguien
+  // que se fue sin escribirla), treinta segundos sin tocar nada vuelven a la
+  // cámara. Mientras se marca o se envía, no corre.
+  useCierrePorInactividad(
+    !flash && !marcando && !loading && (!!sesion.token || !modoRostro),
+    MS_INACTIVIDAD_KIOSCO,
+    () => salir(),
+  );
 
   // Reloj en vivo
   useEffect(() => {
@@ -157,11 +204,6 @@ export default function Marcador() {
       }
     }
   };
-
-  // Volvió de una pausa —almuerzo o descanso— pero se le pasó la hora: antes de
-  // abrir el turno se le pregunta a qué hora regresó. Si no, marcar a las 17:00
-  // el regreso de un almuerzo de las 12:00 le borraría la tarde entera.
-  const [preguntandoRegreso, setPreguntandoRegreso] = useState(false);
 
   const marcar = async (opciones?: OpcionesMarca) => {
     if (!sesion.token || marcando) return;
@@ -317,7 +359,10 @@ export default function Marcador() {
       colaborador={sesion.colaborador} sedes={sesion.sedes} ahora={ahora} estado={sesion.estado}
       marcar={marcar} marcando={marcando}
       onRegresoOlvidado={() => setPreguntandoRegreso(true)}
-      decisionUbic={decisionUbic} salir={salir}
+      decisionUbic={decisionUbic} salir={() => salir()}
+      onNoSoy={noSoy}
+      fotoReferencia={sesion.fotoReferencia} fotoAhora={fotoRostro}
+      parecidoDudoso={sesion.parecidoDudoso}
     />
   );
 }

@@ -10,7 +10,10 @@ export type TipoNotif =
   | 'CONTRATO_PREAVISO'
   | 'CONTRATO_PREAVISO_VENCIDO'
   | 'CONTRATO_A_INDEFINIDO'
-  | 'CONTRATO_ETAPA_APRENDIZ';
+  | 'CONTRATO_ETAPA_APRENDIZ'
+  // Alguien registró su rostro por el enlace y se parece mucho a la ficha de otra
+  // persona de la empresa (2 de octubre de 2026).
+  | 'ROSTRO_PARECIDO';
 
 type NuevaNotif = {
   tipo: TipoNotif;
