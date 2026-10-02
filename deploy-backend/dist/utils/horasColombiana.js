@@ -74,7 +74,9 @@ function esDescansoDeLaFecha(zc, diaSemana, cfg) {
             return cfg.porFecha[clave];
     }
     // Sin fila congelada no hay semana programada que consultar, así que se pasa `null`: quien tiene
-    // horario se resuelve con sus franjas igual, y quien no lo tiene se queda sin descanso ese día.
+    // horario se resuelve con sus franjas igual, y quien no lo tiene cae a la presunción legal, que es
+    // el DOMINGO. Ese `null` significa «nadie ha programado todavía», no «esta semana no hay
+    // descanso»: confundir las dos cosas es lo que costó 3,34 millones el 1 de octubre de 2026.
     return (0, descansoDelHorario_1.esDescansoObligatorioDe)(diaSemana, cfg.fuente ?? POR_PRESUNCION, null);
 }
 function esExtraPorModo(extra, zc, hora, superoTope) {

@@ -152,7 +152,10 @@ async function reporteRoutes(app) {
         const politica = (0, saldoTiempo_1.parsearPoliticaPermisos)(cfgPermisos?.valor);
         const sinHorario = !horario || !horario.activo;
         const esperadas = (0, saldoTiempo_1.calcularHorasEsperadas)(desdeF, finExclusivo, diasEsperados, festivosDates, permisosRango, politica, (fecha) => (0, vigencias_1.jornadaVigente)(fecha, jornadas));
-        const saldo = (0, saldoTiempo_1.armarSaldo)(esperadas, r.minutosOrdinarios, (0, horasColombiana_1.calcularValorHora)(colaborador.salarioMensual, horasMes), sinHorario);
+        const saldo = (0, saldoTiempo_1.armarSaldo)(esperadas, r.minutosOrdinarios, (0, horasColombiana_1.calcularValorHora)(colaborador.salarioMensual, horasMes), sinHorario, 
+        // Las extras de este período: con ellas se muestra el total trabajado y el efecto de cruzarlas
+        // con el faltante. No cambian lo que se descuenta.
+        { minutos: r.minutosExtra, monto: r.totalExtra });
         return {
             colaborador, desde, hasta, liquidacion: r.liquidacion,
             salarioBase: colaborador.salarioMensual,
