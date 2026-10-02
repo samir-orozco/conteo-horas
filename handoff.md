@@ -28,138 +28,136 @@ Tres reglas que gobiernan esto y no se tocan sin pensarlo:
 
 ## Current State
 
-**DESPLEGADO el 1 de octubre de 2026, de madrugada.** Los 71 commits que llevaban
-desde el 17 de septiembre están en producción y verificados. Medido, no recordado.
+**Medido el 1 de octubre de 2026 al cerrar el día, con `git fetch` delante. No escrito
+de memoria.** Hubo DOS despliegues ese día: el de madrugada (los 71 commits que
+llevaban desde el 17 de septiembre) y el de la noche, que corrigió un defecto del
+primero.
 
-| | |
-|---|---|
-| fuente desplegada | `b4612f7` (`develop`, = `origin`) |
-| `prisma-build` | `ee46890` |
-| `backend-build` | `e21aa48` |
-| `frontend-build` | `387293f` |
-| bundle público | `index-CVCRNYdX.js` |
+| rama | hash | de qué fuente |
+|---|---|---|
+| `master` | `64cb610` | **al día con `develop`** |
+| `develop` | `64cb610` | — |
+| `backend-build` | `4eb4ae2` | de `64cb610` |
+| `frontend-build` | `33947d7` | de `64cb610` |
+| `prisma-build` | `ee46890` | sin tocar desde la madrugada |
+| bundle público | `index-0Ip7Jej_.js` | |
+
+Commits de `develop` sin desplegar: **0**.
 
 | | backend | frontend |
 |---|---|---|
-| pruebas | **84 archivos / 1494** | **150 / 1746** |
+| pruebas | **84 archivos / 1508** (+1 fallo esperado) | **150 / 1752** |
 | tipos | `tsc --noEmit` limpio | `tsc -b` limpio |
 | lint | 173 avisos, 0 errores — su tope | 65 errores / 6 avisos, la línea base |
 
-`master` sigue en `1bc2620` y **hay que alinearla**: es lo que hace que «volver
-atrás» signifique algo.
+### LO MÁS IMPORTANTE DE ESTE DÍA: el recargo dominical se rompió y se arregló
 
-### Lo que se verificó, y cómo
+Hay que leer esto antes de tocar nada del motor de horas.
+
+El despliegue de la madrugada llevaba una regla nueva para el día de descanso, y
+estaba mal leída. La regla del dueño es «solo cuando se programa se pone el día de
+descanso», que responde **cuál** día es el descanso. Se implementó como si
+respondiera **si hay** uno: a quien no tiene horario ni semana pintada, el motor
+dejó de verle descanso ningún día. Su domingo trabajado pasó de `HDD` a `HOD` y el
+recargo del 90% **no se mudó de día, desapareció**. Esa persona podía trabajar los
+siete días sin disparar un solo recargo.
+
+Medido en producción: **37 personas en septiembre, unos 3,34 millones**, sobre un
+mes YA CERRADO. Concentrado en EMERGENCIAS VETERINARIAS y POSTRE DE PESCADO, que
+trabajan todos los días.
+
+Arreglado el mismo día en `df4f0c4`, una línea en `esDescansoObligatorioDe`:
+`hoy === (diaValido(descansoProgramado) ?? DOMINGO)`. Sin programación válida manda
+la presunción legal (art. 172 del CST, que la Ley 2466 de 2025 no tocó). En cuanto
+se pinta la semana, la programación decide y puede llevarse el descanso al
+miércoles: la regla del dueño queda intacta donde de verdad aplica.
+
+**Por qué no lo cazó la suite:** la decisión tenía prueba unitaria desde el primer
+día; el CABLE que la lleva al dinero no tenía ninguna. Nadie había liquidado un
+domingo con `fuente = PROGRAMACION` de punta a punta, que es justo lo que pasa
+`routes/reportes.ts` para alguien sin horario. Ahora sí, en
+`liquidarRegistros.descanso.test.ts`, junto con dos turnos nocturnos que cruzan el
+domingo (la forma real de esas dos empresas, que tampoco estaba probada).
+
+**Y hubo un segundo frente, que no caza ninguna prueba:** el panel de la semana del
+calendario de turnos seguía diciendo «esta semana queda sin descanso» mientras la
+nómina pagaba el domingo. La pantalla afirmaba lo contrario del dinero. Corregido en
+`839591b`. Ese texto ya se había desincronizado dos veces en direcciones opuestas:
+**si la regla se mueve, la frase se mueve en el MISMO commit.**
+
+Hay dos SQL de este arreglo y los dos están **aplicados**:
+`sql/domingos-congelados.sql` (devolvió a NULL los domingos futuros que el código
+roto congeló en 0; comprobado por el efecto, de más de cien filas a cero, con los
+310 descansos marcados intactos). Septiembre no necesitó SQL: sus filas estaban en
+NULL porque la columna se creó esa misma madrugada.
+
+### Lo que se verificó del despliegue de la noche, y cómo
 
 ```
-turnos/calendario → 401   la ruta NO existía antes: un 401 prueba el backend nuevo
-worker/estado     → 401   el kiosco vive (es lo que se cayó el 10 de septiembre)
-login con correo falso → 401   consultó la base sin pelearse con el esquema
-landing           → anuncia turnos SOLO en el plan Empresarial, una mención
+grep '?? exports.DOMINGO'    en ~/horapro-co-api/dist → 1   (0 en el artefacto anterior)
+grep 'cruzarExtrasConSaldo'  en ~/horapro-co-api/dist → 3   (0 en el artefacto anterior)
+health                                               → 200
+lsnode de horapro-co-api                             → UNO solo, el nuevo
 ```
 
-Las tres primeras **desde el servidor**. Desde fuera no valen: Imunify360 devuelve
-200 con HTML (ver `DESPLIEGUE.md` 4.2).
+Más, en el navegador y por el dueño: el recargo vuelve a salir en el reporte de
+septiembre, y el panel de turnos dice «esta semana descansa el domingo».
 
-### Los ocho SQL, todos aplicados
+**Este despliegue NO agregaba ninguna ruta, así que el truco del 404→401 no sirve
+para él.** Lo único que distingue «desplegado» de «copiado» aquí es el `grep` dentro
+del `dist` vivo más la pantalla.
+
+### Los diez SQL de la madrugada, todos aplicados
 
 `plantillas_turno`, `dias_esperados.plantillaId` (en tres pasos), `esDescanso`,
 `descansoPintado`, `descansos_trabajados` + `_cambios`, `eventos_sistema`,
-`colaboradores.numeroContrato`, y el renombre de `tipos_hora`. Antes de empezar, las
-ocho comprobaciones decían FALTA; después, cada una con su verificación.
+`colaboradores.numeroContrato`, y el renombre de `tipos_hora`. Más los dos del
+arreglo de la noche. Cerrado con `prisma/sql-contra-esquema.ts`, que compara el
+esquema entero contra la base: **cero faltantes de 371 columnas.**
 
 `esDescanso` quedó **nullable con default NULL**, que era el punto delicado: con
 `NOT NULL DEFAULT 0` habría afirmado sobre 27.611 filas que ninguno de esos domingos
-era descanso, quitándoles el recargo en silencio.
+era descanso.
 
-### El 500 de la pantalla de turnos, una hora después
+### DOS SESIONES ARMANDO ARTEFACTOS A LA VEZ: lo que más cerca estuvo de salir mal
 
-Se dio el despliegue por bueno y la pantalla devolvió 500: a `plantillas_turno` le
-faltaban tres columnas que el `CREATE TABLE` del repo no tenía. Se arregló con un
-`ALTER` (la tabla estaba vacía) y quedó cerrado con un guion que compara el esquema
-entero contra la base, `prisma/sql-contra-esquema.ts`. Corrido contra producción
-después: **cero filas, las 371 columnas están**.
+No fue el código. Ese día hubo dos sesiones trabajando sobre `develop` en la misma
+carpeta, y las dos armaron artefactos de las MISMAS ramas. Salió bien **por suerte de
+orden**: la segunda compiló después del commit de la primera, así que su artefacto
+incluyó los dos cambios.
 
-El `401` de la verificación no lo cazó porque no llegaba al manejador. Ver
-`DESPLIEGUE.md` 4.1.1.
+Lo que se vio en el camino: una suite reportada verde que incluía trabajo ajeno sin
+commitear; un `frontend-build` que quedó superado antes de usarse y cuyos comandos,
+de haberse corrido, **habrían retrocedido producción sin un solo error**. Lo destapó
+mirar el `index.html` del docroot y ver un bundle que no era ninguno de los dos
+esperados.
 
-### Lo que salió mal, y está documentado
-
-Cuatro cosas, todas en `DESPLIEGUE.md` 4.1 y 4.2: `git add` sin `-f` subió DOS
-artefactos incompletos; no hay `rsync` en el servidor; una guarda
-`[ cond ] && x || echo PARA` acusó al repo cuando el que faltaba era el programa; y
-medir desde fuera dio cinco 200 falsos.
-
-### Producción
-
-```
-bundle                    → index-DxSI3sYe.js     ✓ al día
-api                       → {"status":"ok"}
-PUT /registros/jornada/x  → 401                   ✓ el lote de jornadas está arriba
-```
+**La regla: una sola sesión arma artefactos; la otra solo commitea a `develop`.** Y
+antes de dar comandos de servidor, releer `origin/*-build` con `fetch`: el artefacto
+de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Nada.** Todo lo que había pendiente se desplegó el 1 de octubre de 2026. Lo que
-entre de aquí en adelante se anota aquí, con su SQL si lo lleva.
-
-### Repositorio
-
-**Medido el 23 de septiembre de 2026 después de `git fetch origin`.** La tabla
-anterior estaba mal en las CINCO filas, y no por poco: ninguno de los seis hashes
-que listaba existe ya como punta de su rama. Por eso se mide y no se recuerda.
-
-| rama | local | origin | qué es |
-|---|---|---|---|
-| `master` | `1bc2620` | `1bc2620` | al día con origin |
-| `develop` | *(la punta, ver abajo)* | `f0dbe33` | **el módulo de turnos, commiteado y SIN SUBIR** |
-| `backend-build` | `4cb7eee` | `4cb7eee` | compilado el 19/09 (los barridos a hora fija) |
-| `frontend-build` | `9d56f9b` | `9d56f9b` | compilado el 17/09 (auxilio de transporte) |
-| `prisma-build` | `8842cac` | `8842cac` | compilado el 17/09 (cliente con auxilio) |
-
-Los **2 commits** que `develop` le lleva a `master` son el de documentación
-(`f0dbe33`) y el del módulo de turnos, que es la punta.
-
-**Por qué la punta de `develop` NO lleva su hash escrito aquí.** Este archivo va
-DENTRO de ese commit, y un documento no puede citar el hash del commit que lo
-contiene: cambiar el documento cambia el hash. Se escribió una vez, se enmendó el
-commit para corregir esta misma sección, y la cita quedó apuntando a un commit que
-ya no existía. La punta se lee con `git log -1`, que no se desactualiza nunca.
-
-**Los tres artefactos son del 17 y el 19 de septiembre, o sea ANTERIORES a todo el
-módulo de turnos.** Dicho de otro modo: lo que se acaba de commitear no está
-compilado ni desplegado, y cuando toque hacerlo serán **cuatro ramas** porque
-`schema.prisma` cambió (CLAUDE.md §11).
+**Nada.** Lo que entre de aquí en adelante se anota aquí, con su SQL si lo lleva.
 
 ### Archivos sueltos en la raíz (no versionados, no míos)
 
-**Revisado el 23 de septiembre de 2026.** Son cinco, y se dejaron FUERA del commit
-del módulo de turnos a propósito:
-
-- `ARRANQUE-PROYECTO-WEB.md`
-- `PLAYBOOK-BANAHOSTING.md`
-- `PLAYBOOK-BANAHOSTING-PHP.md`
-- `PLAYBOOK-CRM-MENSAJERIA.md` (nuevo desde la última vez que se miró)
-- `.claude/launch.json`, **modificado**, no sin seguimiento
-
-Los cuatro primeros son documentación de Krumlab, no de HoraPro. El dueño decide
-si van a este repo, a otro, o a ninguno.
-
-El `WhatsApp Video 2026-07-17 at 15.22.42.mp4` que este párrafo listaba **ya no
-está** en la raíz: comprobado, no supuesto.
+Siguen los cuatro, comprobado: `ARRANQUE-PROYECTO-WEB.md`, `PLAYBOOK-BANAHOSTING.md`,
+`PLAYBOOK-BANAHOSTING-PHP.md`, `PLAYBOOK-CRM-MENSAJERIA.md`. Son documentación de
+Krumlab, no de HoraPro, y el dueño decide si van a este repo, a otro o a ninguno.
+**No entran en ningún commit**, igual que `.claude/launch.json`, que está modificado
+y se queda fuera.
 
 ---
 
 ## Files in flight
 
-Ninguno del módulo de turnos: **todo commiteado el 23 de septiembre de 2026** en
-la punta de `develop`, 91 archivos y 10.977 líneas nuevas. Quedan fuera solo los
-cinco de *Archivos sueltos*, a propósito.
+**Ninguno.** Todo está commiteado, subido y desplegado al 1 de octubre de 2026.
+Lo único sin commitear en el árbol es `.claude/launch.json`, que se queda fuera a
+propósito, y los cuatro playbooks sueltos de la raíz.
 
-**Ese commit NO está subido.** Vive únicamente en el disco de esta máquina. Si le
-pasa algo a la carpeta, se pierde entero.
-
-La lista de abajo es de un lote ANTERIOR (el de jornadas) y se conserva porque
-sigue describiendo dónde vive esa lógica:
+La lista de abajo NO es trabajo pendiente: es el mapa de dónde vive cada pieza de la
+lógica de jornadas, que sigue valiendo:
 
 - `backend/src/utils/jornada.ts` — `partirDiaEnJornadas`, `agruparEnJornadas`,
   `marcacionQueCierra`, `tramoQueChoca`, `instantesDeJornada`, `minutosVentana`,
@@ -183,6 +181,19 @@ sigue describiendo dónde vive esa lógica:
 - `backend/prisma/sembrar-luciana.ts` — reproduce en local a una colaboradora con
   datos reales de producción, con sus días congelados con el horario ORIGINAL.
   Es el escenario que destapó la fuga de extras y sirve para repetir la prueba.
+- `backend/prisma/diferencial-dominical.ts` — **la foto para la comprobación
+  diferencial del §5.3 de la LIQUIDACIÓN.** Imprime los códigos y los totales de cada
+  persona en cuatro rangos; se corre antes y después de tocar el motor y se comparan
+  con `diff`. **No usar `foto-reportes.ts` para esto:** mira esperadas, permisos y
+  tardanzas, no imprime un solo código de la liquidación, y saldría «sin diferencias»
+  sin probar nada.
+- `backend/prisma/diagnostico-domingo-sin-horario.ts` — solo lectura. Dice qué paga un
+  domingo trabajado según de dónde salga el descanso de esa persona: sin horario y sin
+  programar, sin horario con la semana pintada, y con horario. Las tres respuestas en
+  una pantalla.
+- `backend/prisma/sql-contra-esquema.ts` — genera un SELECT que compara las 371
+  columnas del `schema.prisma` contra la base real. Es lo que cerró el 500 del
+  despliegue de la madrugada.
 
 ---
 
@@ -316,24 +327,70 @@ reportarle al hosting.
 
 ## Next step
 
-**El despliegue de la noche del 30 de septiembre de 2026.** Los 71 commits de
-arriba, con sus dos SQL y sus cuatro ramas. Lo primero, subir `develop` a
-`origin`: van tres commits de hoy sin empujar.
+**No hay nada pendiente de desplegar.** Lo que sigue, por orden de lo que más duele
+si se olvida:
 
-El orden y las comprobaciones están en *Lo pendiente de desplegar* y la mecánica
-en `DESPLIEGUE.md`. Las tres que no se pueden saltar:
+### 1. Avisarle a las empresas afectadas por el recargo dominical (no es técnico)
 
-1. **El SQL va ANTES del código.** `dias_esperados.esDescanso` no existe en
-   producción y el backend nuevo la pide por nombre.
-2. **`prisma-build` va ANTES de `backend-build`.** Se comprueba en el servidor con
-   un número y no con una impresión, ANTES del restart:
-   `grep -c "esDescanso" ~/horapro-co-api/node_modules/.prisma/client/index.d.ts`
-   — cero significa que el cliente es el viejo y que el kiosco se va a caer.
-3. **Los artefactos se compilan desde un árbol limpio**, nunca desde el de
-   trabajo, y se inspeccionan por `origin/<rama>` después de un `fetch`.
+Es lo único con fecha. Durante unas horas del 1 de octubre, el reporte de nómina de
+septiembre mostró los domingos trabajados como horas ordinarias para quien no tiene
+horario asignado. Si alguna empresa descargó el reporte en esas horas y liquidó con
+él, pagó de menos.
 
-Después del despliegue: alinear `master` con lo desplegado, que es lo que hace que
-«volver atrás» signifique algo.
+Las más expuestas: **EMERGENCIAS VETERINARIAS** y **POSTRE DE PESCADO**, que entre
+las dos tienen la mayoría de las 37 personas. También salieron Grupo Fidaga, RED OHM,
+ROSA DE CASTRO y la que aparece con NIT 3044058718.
+
+El número exacto por empresa sale de esta consulta, probada en local, en phpMyAdmin
+de producción:
+
+```sql
+SELECT e.nombre AS empresa,
+       COUNT(DISTINCT c.id) AS personas,
+       COUNT(DISTINCT r.fecha) AS domingos_distintos
+FROM registros r
+JOIN colaboradores c ON c.id = r.colaboradorId
+JOIN empresas e      ON e.id = c.empresaId
+LEFT JOIN dias_esperados d ON d.colaboradorId = c.id AND d.fecha = r.fecha
+WHERE DAYOFWEEK(r.fecha) = 1
+  AND r.entrada IS NOT NULL AND r.salida IS NOT NULL
+  AND r.fecha >= '2026-09-01' AND r.fecha < '2026-10-01'
+  AND (CASE WHEN d.id IS NULL THEN c.horarioId ELSE d.horarioId END) IS NULL
+GROUP BY e.nombre
+ORDER BY personas DESC
+```
+
+**Ojo con `c.horarioId`: se lee HOY, no en septiembre.** Por eso la consulta mira
+`dias_esperados.horarioId`, que dice qué horario tenía esa persona ESE día. Un primer
+recuento hecho con la columna del colaborador dio 24 personas en vez de 37.
+
+El mensaje para mandarles está redactado; si no quedó en ningún lado, se vuelve a
+escribir: qué pasó, a cuántas personas, que ya está corregido, que las marcaciones
+nunca se tocaron, y que vuelvan a descargar el reporte y comparen el total. **Sin
+cifras de dinero**: el número bueno es el que da el reporte.
+
+### 2. Los dos pendientes de fondo del CLAUDE.md, que llevan meses
+
+Son el 4 y el 5 de su lista, y el incidente de hoy es exactamente el argumento a
+favor del primero:
+
+- **Pruebas de integración de las rutas**, con base de datos de prueba. Lo que falló
+  hoy vivía en la costura entre una ruta y una función pura, que es justo donde no
+  llega el ciclo de la sección 2.
+- **Mutación** (Stryker), al final y solo sobre el motor de horas.
+
+Y el §8.5, que bloquea el primero: quedan **18 archivos** importando `prisma` de
+`'../index'` en vez de `'./prisma'`. Hoy es inofensivo; el día que se escriban las
+pruebas de integración, esas 18 levantan el servidor entero al correr `npm test`.
+Arreglarlas ANTES de llegar ahí.
+
+### 3. Lo que NO hay que volver a hacer
+
+- **No armar artefactos desde dos sesiones a la vez.** Ver *Current State*.
+- **No compilar desde el árbol de trabajo** si hay algo modificado que no sea tuyo.
+  Worktree del scratchpad sobre el commit, y se borra en el mismo paso.
+- **No dar por verificado un despliegue porque el comando no se quejó.** Se hace
+  `grep` de una cadena del cambio DENTRO del `dist` o del bundle que está vivo.
 
 ## La política de privacidad está publicada
 
