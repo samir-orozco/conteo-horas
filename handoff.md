@@ -140,11 +140,12 @@ de hace diez minutos puede ya no ser la cabeza.
 
 **La confirmación de identidad del kiosco (2 de octubre de 2026).** Sin SQL y sin
 cambio de esquema: `prisma-build` no se toca. Van `backend-build` y `frontend-build`.
-**Antes de desplegar, dos cosas** (ver «Confirmación de identidad en el kiosco» en
-Pendiente de fondo): fijar `MAX_ENTRE_TOMAS` con `sql/tomas-contra-el-frente.sql`
-corrida en producción, y que el dueño apruebe el texto nuevo de la política de
-privacidad, que hoy dice que la foto de perfil solo la ven administradores y
-supervisores.
+**Antes de desplegar** (ver «Confirmación de identidad en el kiosco» en Pendiente de
+fondo): fijar `MAX_ENTRE_TOMAS` con `sql/tomas-contra-el-frente.sql` corrida en
+producción. La política de privacidad 1.2, que cubre lo que el kiosco muestra, ya está
+aprobada y commiteada, y sale en el MISMO `frontend-build`: si el despliegue no es el
+2 de octubre de 2026, cambiar `fechaVigencia` en `frontend/blog/legal/privacidad.mjs`
+al día del despliegue y regenerar el documento del abogado antes de compilar.
 
 ### Archivos sueltos en la raíz (no versionados, no míos)
 
@@ -607,9 +608,12 @@ anterior de la misma persona van al log `login-rostro`.
    estos datos: los usuarios de la propia empresa con rol de administrador o de
    supervisor», y ahora el kiosco le muestra la foto de perfil a quien reconoce,
    incluida la persona con la que confunda a alguien. Y la revisión del rostro
-   nuevo lo compara con los demás registros de la empresa. Texto propuesto al
-   dueño el 2 de octubre; sube la versión a 1.2. Con la cédula NO viaja la foto
-   (bastaría el enlace del kiosco y una lista de cédulas para cosechar caras).
+   nuevo lo compara con los demás registros de la empresa. **Resuelto:** el dueño
+   aprobó el texto el 2 de octubre y quedó como versión 1.2 (puntos 4 y 5.1). Con
+   la cédula NO viaja la foto (bastaría el enlace del kiosco y una lista de cédulas
+   para cosechar caras). Queda abierto: el log del servidor guarda, por persona, qué
+   tan parecida dio su cara, y el punto 3.4 solo cubre registros técnicos para
+   diagnóstico y seguridad; se le propuso al dueño una frase para el 5.1.
 4. **Leer el modo de solo medición** después de unas semanas: `grep
    '"evento":"login-rostro"'` en el log de producción. Con `distanciaALaAnterior`
    y `segunda` medidas, decidir si (a) una cara lejana de la captura anterior

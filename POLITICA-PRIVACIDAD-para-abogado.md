@@ -1,6 +1,6 @@
 # Política de Tratamiento de Datos Personales
 
-**HoraPro** · Versión 1.1 · Vigencia: 14 de septiembre de 2026
+**HoraPro** · Versión 1.2 · Vigencia: 2 de octubre de 2026
 
 ## 1. Quiénes somos
 
@@ -54,7 +54,7 @@ Son los datos de los trabajadores de nuestros clientes. La empresa empleadora lo
 
 **Ubicación al marcar.** Cuando la empresa activa la geocerca, el dispositivo envía la ubicación en el momento de marcar. **Esa coordenada no se guarda.** Se usa en el instante para decidir si la marca cae dentro del sitio de trabajo y se descarta. De esa decisión solo queda registrada la sede. HoraPro no almacena el recorrido ni la ubicación de ningún trabajador.
 
-**Quién ve estos datos.** Los usuarios de la propia empresa con rol de administrador o de supervisor.
+**Quién ve estos datos.** Los usuarios de la propia empresa con rol de administrador o de supervisor. Además, el kiosco muestra el nombre y la foto de perfil de la persona que reconoce, como se explica en el punto 5.1.
 
 HoraPro, como proveedor, no dispone de ninguna pantalla ni función que le permita ver los nombres, las cédulas, los salarios, las fotos, los datos biométricos ni las novedades de los trabajadores de sus clientes. Nuestro panel interno solo muestra conteos, facturación y comprobantes de pago.
 
@@ -73,6 +73,8 @@ El rostro de un trabajador lo puede registrar el administrador de la empresa des
 El cálculo se hace en el propio navegador y con modelos servidos desde nuestro dominio. Ese dato no se envía a ningún proveedor externo de reconocimiento facial.
 
 Cada vez que alguien marca entrada o salida en el kiosco se guarda además **una fotografía del rostro** como evidencia de la marcación.
+
+Al marcar con el rostro, la pantalla muestra el nombre y la foto de perfil de la persona reconocida junto a la foto del momento, para que confirme que es ella. Si el kiosco se equivoca, quien está al frente ve el nombre y la foto de la persona con quien lo confundió, y puede indicar que no es ella. Al registrar un rostro, el sistema lo compara con los ya registrados en la empresa para detectar tomas de otra persona o un parecido muy alto, y en ese caso avisa al administrador.
 
 **Sobre la autorización.** Autorizar el tratamiento de un dato sensible es facultativo: ninguna persona está obligada a hacerlo, y ninguna actividad puede condicionarse a entregarlo.
 
@@ -297,7 +299,7 @@ La razón de esa regla es que quien tiene los datos debe tener la oportunidad de
 
 **El número de versión.** Cada versión que publiquemos de este documento, sustancial o no el cambio, sube el número que aparece al comienzo de la página, debajo del título. Corregir una redacción, reordenar el texto o cambiar un canal de atención no son cambios sustanciales: suben la versión y se publican aquí, pero no llevan aviso previo. Cambiar quién es el responsable, o los datos con los que se le identifica en el punto 14, sí lo es, y lleva el aviso de los 15 días.
 
-Esta política rige desde el 14 de septiembre de 2026. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.
+Esta política rige desde el 2 de octubre de 2026. Las bases de datos se conservarán mientras HoraPro preste el servicio y mientras sea necesario atender las obligaciones legales, contables y contractuales derivadas de él.
 
 **Registro Nacional de Bases de Datos.** La obligación de inscribir las bases de datos ante la Superintendencia de Industria y Comercio recae sobre sociedades y entidades sin ánimo de lucro que superan el umbral de activos fijado por la norma, y sobre entidades públicas. Las personas naturales están exceptuadas, y por eso HoraPro no está inscrito en ese registro. Esto no lo exime de ninguna de las demás obligaciones de la Ley 1581, que se cumplen en los términos de esta política.
 

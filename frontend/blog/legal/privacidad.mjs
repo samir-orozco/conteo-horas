@@ -50,13 +50,22 @@
 // la autorización. Los cambios se redactaron en POLITICA-PRIVACIDAD-registro-facial-para-abogado.md
 // y el dueño informó ese mismo día que quedaron aprobados como están allí. Sin aviso previo de 15
 // días: no cambian el responsable ni la finalidad, que es lo que el punto 13 llama sustancial.
+//
+// VERSIÓN 1.2, 2 de octubre de 2026: lo que el kiosco muestra al marcar y la revisión del rostro
+// nuevo (commit 79ce047). El kiosco pone el nombre y la foto de perfil de la persona reconocida al
+// lado de la foto del momento, así que la foto de perfil deja de verla solo el administrador: la
+// ve también quien está frente al kiosco, incluida la persona con la que el kiosco confunda a
+// alguien. Por eso cambian el punto 4 («Quién ve estos datos») y el 5.1. El texto lo aprobó el
+// dueño el 2 de octubre de 2026 tal como está. Sin aviso previo de 15 días, igual que la 1.1: no
+// cambian el responsable ni la finalidad. Sale en el MISMO despliegue del frontend que el cambio
+// del kiosco: antes describiría algo que el producto todavía no hace.
 
 export const PRIVACIDAD = {
   ruta: '/legal/privacidad/',
   titulo: 'Política de Tratamiento de Datos Personales | HoraPro',
   h1: 'Política de Tratamiento de Datos Personales',
   descripcion: 'Qué datos personales trata HoraPro, para qué, con quién los comparte, cuánto los conserva y cómo ejercer sus derechos. Ley 1581 de 2012.',
-  version: '1.1',
+  version: '1.2',
 
   // Estas dos se cambian JUNTAS. Separarlas es la forma de que una se quede
   // atrás: la fecha de vigencia solo es honesta si es el día en que el documento
@@ -67,10 +76,11 @@ export const PRIVACIDAD = {
   // interruptor y `legal.test.ts` se pone rojo si las dos se separan.
   //
   // PUBLICADA el 9 de septiembre de 2026, versión 1.0. Versión 1.1 el 14 de
-  // septiembre de 2026, con el registro facial por enlace. Si el despliegue del
+  // septiembre de 2026, con el registro facial por enlace. Versión 1.2 el 2 de
+  // octubre de 2026, con lo que el kiosco muestra al marcar. Si el despliegue del
   // frontend no ocurre ese día, esta fecha se cambia antes de compilar.
   borrador: false,
-  fechaVigencia: '14 de septiembre de 2026',
+  fechaVigencia: '2 de octubre de 2026',
 
   // Lo que faltaba antes de publicar. Vacío porque ya no queda nada: la casilla
   // privacidad@horapro.co existe, la copia semanal quedó configurada y el
@@ -133,7 +143,7 @@ export const PRIVACIDAD = {
 <p><b>Novedades y ausencias:</b> tipo de novedad (incapacidad de EPS o de ARL, licencias, calamidad, cita médica), su descripción y el documento que se adjunte como soporte.</p>
 <p><b>Foto de perfil</b>, <b>datos biométricos</b> y <b>la constancia de lo que se autorizó sobre el rostro</b>, que se explican en el punto 5.</p>
 <p><b>Ubicación al marcar.</b> Cuando la empresa activa la geocerca, el dispositivo envía la ubicación en el momento de marcar. <b>Esa coordenada no se guarda.</b> Se usa en el instante para decidir si la marca cae dentro del sitio de trabajo y se descarta. De esa decisión solo queda registrada la sede. HoraPro no almacena el recorrido ni la ubicación de ningún trabajador.</p>
-<p><b>Quién ve estos datos.</b> Los usuarios de la propia empresa con rol de administrador o de supervisor.</p>
+<p><b>Quién ve estos datos.</b> Los usuarios de la propia empresa con rol de administrador o de supervisor. Además, el kiosco muestra el nombre y la foto de perfil de la persona que reconoce, como se explica en el punto 5.1.</p>
 <p>HoraPro, como proveedor, no dispone de ninguna pantalla ni función que le permita ver los nombres, las cédulas, los salarios, las fotos, los datos biométricos ni las novedades de los trabajadores de sus clientes. Nuestro panel interno solo muestra conteos, facturación y comprobantes de pago.</p>
 <p>Como en cualquier servicio de software, el personal técnico que opera y mantiene la infraestructura cuenta con acceso administrativo a la base de datos. Ese acceso se usa exclusivamente para operar el servicio, hacer copias de seguridad y resolver fallas, y está sujeto a los deberes de confidencialidad de esta política.</p>`,
     },
@@ -147,6 +157,7 @@ export const PRIVACIDAD = {
 <p><b>El enlace de registro.</b> La empresa lo crea desde la ficha del trabajador y se lo envía por sus propios medios: HoraPro no le escribe al trabajador. El enlace dura una hora y sirve una sola vez. Antes de mostrar nada pide la cédula de la persona, y se bloquea si se escribe mal cinco veces. Después muestra el texto de la autorización con dos opciones igual de visibles: autorizar y registrar el rostro, para lo cual hay que declarar ser mayor de edad, o no autorizar. Si la persona ya tenía el rostro registrado, ve desde cuándo, cuántas tomas tiene y su foto de perfil, y puede actualizarlo o retirar su autorización.</p>
 <p>El cálculo se hace en el propio navegador y con modelos servidos desde nuestro dominio. Ese dato no se envía a ningún proveedor externo de reconocimiento facial.</p>
 <p>Cada vez que alguien marca entrada o salida en el kiosco se guarda además <b>una fotografía del rostro</b> como evidencia de la marcación.</p>
+<p>Al marcar con el rostro, la pantalla muestra el nombre y la foto de perfil de la persona reconocida junto a la foto del momento, para que confirme que es ella. Si el kiosco se equivoca, quien está al frente ve el nombre y la foto de la persona con quien lo confundió, y puede indicar que no es ella. Al registrar un rostro, el sistema lo compara con los ya registrados en la empresa para detectar tomas de otra persona o un parecido muy alto, y en ese caso avisa al administrador.</p>
 <p><b>Sobre la autorización.</b> Autorizar el tratamiento de un dato sensible es facultativo: ninguna persona está obligada a hacerlo, y ninguna actividad puede condicionarse a entregarlo.</p>
 <p><b>La autorización del trabajador la obtiene la empresa empleadora</b>, que es el responsable de ese dato y quien mantiene la relación laboral. HoraPro actúa como encargado y, por cuenta de la empresa, guarda una constancia de cada decisión que se toma en el sistema: la fecha y la hora, el texto exacto que se mostró, si la tomó el trabajador desde su enlace o el administrador desde la ficha, la declaración de mayoría de edad cuando la hay y qué usuario la registró. Antes de permitir el registro facial desde la ficha, el panel le recuerda al administrador que debe contar con la autorización del titular.</p>
 <p>Si usted quiere saber qué autorizó, o revocarla, la puerta es su empleador. Si su empleador le envía un enlace de registro, desde ese enlace también puede retirar su autorización. En el punto 12 le explicamos cómo proceder si no obtiene respuesta.</p>
