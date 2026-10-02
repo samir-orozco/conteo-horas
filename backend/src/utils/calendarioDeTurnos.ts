@@ -28,7 +28,12 @@ export function descansoDelDia(
   if (typeof congelado === 'boolean') return congelado;
   // El día programado va en `null`: esta función resuelve una celda suelta y «cuál de los siete
   // lleva el descanso» es una pregunta de la SEMANA. Quien tiene horario se resuelve igual con sus
-  // franjas; quien no lo tiene se queda sin descanso en esa celda hasta que se programe.
+  // franjas; quien no lo tiene cae a la presunción legal, o sea el DOMINGO, hasta que se programe.
+  //
+  // Decía «se queda sin descanso» y era cierto durante las horas del 30 de septiembre al 1 de
+  // octubre de 2026 en que la regla no le daba descanso a nadie sin horario. Se corrigió la regla y
+  // este comentario se quedó: queda anotado porque un comentario que afirma lo contrario del código
+  // en el archivo que decide un recargo es peor que no tener comentario.
   return esDescansoObligatorioDe(diaSemana, fuente, null);
 }
 

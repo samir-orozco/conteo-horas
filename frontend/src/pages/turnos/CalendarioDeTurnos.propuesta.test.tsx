@@ -113,10 +113,10 @@ describe('cuando se puede proponer', () => {
   it('y el propuesto es el único que se destaca, sin quedar preseleccionado', async () => {
     // Resaltado NO es elegido: marcar el descanso mueve un recargo, así que sigue haciendo falta un
     // clic. Se comprueba por lo que dice la fila, no por una clase: mientras nadie elija, el aviso
-    // sigue diciendo que la semana queda sin descanso.
+    // sigue diciendo cuál es el descanso de esa semana.
     montar(PROPUESTA);
     await esperarLaRejilla();
-    expect(screen.getByText(/Sin marcar, esta semana no tiene descanso/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sin marcar, esta semana descansa el domingo/i)).toBeInTheDocument();
     expect(put).not.toHaveBeenCalled();
   });
 
@@ -178,20 +178,28 @@ describe('cuando se puede proponer', () => {
 });
 
 describe('cuando no se puede proponer', () => {
-  it('sin descanso deducible avisa que la semana queda sin descanso', async () => {
+  it('sin descanso deducible avisa que esa semana descansa el DOMINGO', async () => {
+    // CORREGIDO EL 1 DE OCTUBRE DE 2026. Esta frase decía «esta semana queda sin descanso», que era
+    // cierto durante las horas en que el motor no le daba descanso a nadie sin horario. El motor se
+    // arregló y el texto se quedó, así que la pantalla afirmaba lo contrario de lo que pagaba la
+    // nómina: le decía al administrador que esa persona no tenía descanso mientras su domingo
+    // trabajado sí cobraba el recargo.
     montar({ estado: 'SIN_DESCANSO' });
-    expect(await screen.findByText(/esta semana queda sin descanso/i)).toBeInTheDocument();
+    expect(await screen.findByText(/esta semana descansa el domingo/i)).toBeInTheDocument();
   });
 
   it('y no ofrece confirmar nada', async () => {
     montar({ estado: 'SIN_DESCANSO' });
-    await screen.findByText(/esta semana queda sin descanso/i);
+    await screen.findByText(/esta semana descansa el domingo/i);
     // SIGUE OFRECIENDO LAS TARJETAS, y eso cambió a propósito el 29 de septiembre: antes aquí no
     // había nada que tocar, y era justo el caso en que más falta hacía —sobran varios días libres y
     // el sistema no puede deducir cuál—. Lo que no hay es ninguna resaltada: inventarse una sería
     // hacer la deducción que el backend no pudo hacer.
     expect(screen.getAllByRole('button', { name: /como descanso de la semana/ })).toHaveLength(DIAS.length);
     expect(screen.queryByText(/¿Es el/i)).not.toBeInTheDocument();
+    // Y NO dice ya la frase vieja. Va explícito porque las aserciones de AUSENCIA de abajo pasarían
+    // solas con cualquier texto nuevo: comprobar que la vieja se fue es lo que las sostiene (§9.1).
+    expect(screen.queryByText(/queda sin descanso/i)).not.toBeInTheDocument();
   });
 
   it('dos descansos pintados dicen algo DISTINTO de «sin descanso»', async () => {
@@ -202,7 +210,7 @@ describe('cuando no se puede proponer', () => {
     // de existir lo que prueba no prueba nada (CLAUDE.md §9.1).
     montar({ estado: 'AMBIGUA' });
     expect(await screen.findByText(/dos descansos/i)).toBeInTheDocument();
-    expect(screen.queryByText(/esta semana queda sin descanso/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/esta semana descansa el domingo/i)).not.toBeInTheDocument();
   });
 });
 
@@ -211,7 +219,7 @@ describe('cuando no hay nada que decir', () => {
     montar({ estado: 'RESUELTA', dia: 'MIERCOLES', fecha: DIAS[2] });
     await esperarLaRejilla();
     expect(screen.queryByRole('button', { name: /miércoles/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/esta semana queda sin descanso/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/esta semana descansa el domingo/i)).not.toBeInTheDocument();
   });
 
   it('a quien tiene horario no se le propone nada', async () => {
@@ -224,6 +232,6 @@ describe('cuando no hay nada que decir', () => {
     // `null` significa «no se calculó para este rango», que es distinto de «no aplica».
     montar(null);
     await esperarLaRejilla();
-    expect(screen.queryByText(/esta semana queda sin descanso/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/esta semana descansa el domingo/i)).not.toBeInTheDocument();
   });
 });

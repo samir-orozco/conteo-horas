@@ -948,14 +948,22 @@ function PropuestaDeSemana({ propuesta, dias, trabajado, hoy, onElegir, ocupado 
 
   return (
     <div className="mt-1">
-      {/* SE DICE QUE LA SEMANA QUEDA SIN DESCANSO MIENTRAS NADIE ELIJA, y no se calla: sin un día
-          marcado, esta persona no tiene descanso obligatorio esa semana, así que un domingo trabajado se
-          le paga sin el recargo del 90%. Antes del 30 de septiembre de 2026 este texto decía «descansa
-          el domingo», que era cierto con la regla anterior y dejó de serlo con la del dueño. */}
+      {/* SE DICE CUÁL ES EL DESCANSO MIENTRAS NADIE ELIJA, y el día que se dice es el DOMINGO.
+          Mientras nadie marque un día, esta persona descansa el domingo por presunción legal (art.
+          172 del CST), así que su domingo trabajado SÍ cobra el recargo. Marcar un día se lo lleva
+          allá y le quita el recargo al domingo: por eso el aviso sigue pidiendo que se elija.
+
+          ESTE TEXTO YA ESTUVO MAL DOS VECES, en direcciones opuestas, y por la misma causa: se
+          cambió de un lado sin el otro. El 30 de septiembre de 2026 pasó de «descansa el domingo» a
+          «no tiene descanso» para acompañar una lectura de la regla que resultó equivocada; esa
+          lectura se revirtió el 1 de octubre y el texto se quedó atrás, así que durante unas horas
+          la pantalla le decía al administrador que esa persona no tenía descanso mientras la nómina
+          le pagaba el recargo del domingo. Si algún día vuelve a moverse la regla de
+          `esDescansoObligatorioDe`, esta frase se mueve en el MISMO commit. */}
       <p className="text-[11px] leading-snug text-amber-800">
         {propuesta.estado === 'PROPUESTA'
-          ? <>Sin marcar, esta semana no tiene descanso. ¿Es el <b>{nombreDelDia(propuesta.dia).toLowerCase()}</b>?</>
-          : 'Sin descanso marcado: esta semana queda sin descanso.'}
+          ? <>Sin marcar, esta semana descansa el domingo. ¿Es el <b>{nombreDelDia(propuesta.dia).toLowerCase()}</b>?</>
+          : 'Sin descanso marcado: esta semana descansa el domingo.'}
       </p>
       <div className="mt-1.5 flex justify-center gap-1">
         {tarjetas.map(t => (
