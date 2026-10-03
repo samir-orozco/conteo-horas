@@ -6,7 +6,7 @@ import type { Estado } from './tipos';
 //
 // Toda marca se confirma sosteniendo el botón, que lleva el nombre de la persona:
 // un toque ya no basta, porque al nombre de arriba no lo mira nadie. Lo normal es
-// 1 segundo. La reforzada —2 segundos y un aviso en ámbar— es para cuando algo
+// 0,8 segundos. La reforzada —1,6 segundos y un aviso en ámbar— es para cuando algo
 // no cuadra, y es rara a propósito: si saliera siempre, a la semana la gente la
 // sostendría sin leer, igual que hoy oprime sin leer.
 //
@@ -15,12 +15,12 @@ import type { Estado } from './tipos';
 // llegó Lina, el kiosco la reconoció bien y le ofreció «Registrar Salida». A la
 // primera la habría frenado el parecido dudoso; a Lina, la hora.
 //
-// 1 y 2 segundos desde el 3 de octubre de 2026 (antes 1,5 y 3): el dueño los sintió largos
-// al probarlo. Un segundo sigue sin poder hacerse con un toque y deja el nombre bajo el dedo;
-// por debajo de unos 0,7 s se vuelve un toque lento que se hace sin mirar. La reforzada
-// sigue durando el doble, para que se note cuando algo no cuadra.
-export const MS_CONFIRMAR = 1000;
-export const MS_CONFIRMAR_REFORZADA = 2000;
+// 0,8 y 1,6 segundos desde el 3 de octubre de 2026. Empezó en 1,5 y 3, y el dueño, al
+// probarlo, sintió largos esos y después también 1 y 2. Por debajo de unos 0,7 s se vuelve un
+// toque lento que se hace sin mirar, que es lo que este botón existe para evitar: más corto que
+// esto ya no conviene. La reforzada sigue durando el doble, para que se note cuando algo no cuadra.
+export const MS_CONFIRMAR = 800;
+export const MS_CONFIRMAR_REFORZADA = 1600;
 
 export type Confirmacion =
   | { nivel: 'NORMAL'; ms: number }

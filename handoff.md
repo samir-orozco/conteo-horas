@@ -571,8 +571,8 @@ alta de esa mañana dio 0,460. **La distancia sola no separa a la impostora de l
 gente honesta**: por eso lo nuevo pide atención y no rechaza.
 
 **Lo que se hizo** (commit de este día): botón que se sostiene con el nombre
-dentro (1 s; 2 s reforzada —eran 1,5 y 3 hasta el 3 de octubre, el dueño los sintió
-largos— si la salida es a menos de 15 min de la entrada o si
+dentro (0,8 s; 1,6 s reforzada —eran 1,5 y 3, y luego 1 y 2; el 3 de octubre el dueño los
+sintió largos— si la salida es a menos de 15 min de la entrada o si
 la distancia es ≥ 0,44), foto de la ficha al lado de la de ahora (solo cuando se
 entró con el rostro), «No soy X» visible que pasa a la cédula, «Salir sin marcar»
 siempre a mano (para que nadie diga «No soy» solo para irse), cierre de sesión a
