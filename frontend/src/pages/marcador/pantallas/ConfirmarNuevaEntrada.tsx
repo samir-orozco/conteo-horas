@@ -52,7 +52,7 @@ export default function ConfirmarNuevaEntrada({ turno, nombre, onConfirmar, onCa
           onConfirmar={onConfirmar}
           className="w-full mt-2 rounded-xl border border-white/15 text-white/70 hover:text-white text-sm font-semibold py-2.5"
         >
-          <LogIn size={16} /> Soy {nombre} · registrar otra entrada
+          <LogIn size={16} /> Soy {nombre}, registrar otra entrada
         </BotonSostenido>
         <button
           onClick={onNoSoy}

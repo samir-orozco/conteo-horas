@@ -67,8 +67,9 @@ export function textoDelAviso(
         detalle: 'Si no marcaste a esa hora, no registres nada y avísale a tu administrador.',
       };
     case 'PARECIDO_DUDOSO':
+      // La pantalla ya pregunta «¿Eres tú, X?» en grande; el aviso dice qué mirar.
       return {
-        titulo: persona.hayFotoDeFicha ? `Mira bien las fotos: ¿eres ${persona.nombreCompleto}?` : `¿Eres ${persona.nombreCompleto}?`,
+        titulo: persona.hayFotoDeFicha ? 'Mira bien la foto antes de marcar.' : 'Revisa que el nombre sea el tuyo antes de marcar.',
         detalle: `Si no eres tú, toca «No soy ${persona.nombre}».`,
       };
     default: {
@@ -76,4 +77,11 @@ export function textoDelAviso(
       return nuevo;
     }
   }
+}
+
+// LO QUE DICE DEBAJO DEL BOTÓN (diseño del dueño, 3 de octubre de 2026). Redondeado al
+// segundo: «0,8 segundos» es un número que nadie cuenta, y lo que importa es que no es un toque.
+export function textoDelSostenido(ms: number): string {
+  const segundos = Math.max(1, Math.round(ms / 1000));
+  return `Mantén presionado durante ${segundos} ${segundos === 1 ? 'segundo' : 'segundos'}`;
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { confirmacionDeLaMarca, textoDeHace, MS_CONFIRMAR, MS_CONFIRMAR_REFORZADA } from './confirmacion';
+import { confirmacionDeLaMarca, textoDeHace, textoDelSostenido, MS_CONFIRMAR, MS_CONFIRMAR_REFORZADA } from './confirmacion';
 import type { Estado } from './tipos';
 
 // CUÁNTO HAY QUE SOSTENER EL BOTÓN, Y POR QUÉ (2 de octubre de 2026).
@@ -69,4 +69,12 @@ describe('cómo se dice cuánto hace', () => {
   it('menos de un minuto', () => expect(textoDeHace(0)).toBe('hace menos de un minuto'));
   it('un minuto, en singular', () => expect(textoDeHace(1)).toBe('hace 1 minuto'));
   it('varios minutos', () => expect(textoDeHace(3)).toBe('hace 3 minutos'));
+});
+
+// LO QUE DICE DEBAJO DEL BOTÓN. Se redondea al segundo: «0,8 segundos» es un número que nadie
+// cuenta, y lo que importa es que no es un toque.
+describe('cuánto sostener, dicho en palabras', () => {
+  it('el normal dice 1 segundo', () => expect(textoDelSostenido(MS_CONFIRMAR)).toBe('Mantén presionado durante 1 segundo'));
+  it('el reforzado dice 2 segundos', () => expect(textoDelSostenido(MS_CONFIRMAR_REFORZADA)).toBe('Mantén presionado durante 2 segundos'));
+  it('nunca dice 0 segundos', () => expect(textoDelSostenido(300)).toBe('Mantén presionado durante 1 segundo'));
 });

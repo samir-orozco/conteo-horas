@@ -361,7 +361,7 @@ export default function Marcador() {
       onRegresoOlvidado={() => setPreguntandoRegreso(true)}
       decisionUbic={decisionUbic} salir={() => salir()}
       onNoSoy={noSoy}
-      fotoReferencia={sesion.fotoReferencia} fotoAhora={fotoRostro}
+      fotoReferencia={sesion.fotoReferencia}
       parecidoDudoso={sesion.parecidoDudoso}
     />
   );

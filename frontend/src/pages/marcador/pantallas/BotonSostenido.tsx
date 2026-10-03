@@ -10,6 +10,9 @@ type Props = {
   className?: string;
   // Lo que dice el botón. Lleva el nombre de la persona y la acción.
   children: ReactNode;
+  // «Mantén presionado» dentro del botón. La pantalla de marcar lo dice debajo, con
+  // cuánto tiempo, y lo apaga aquí para no decirlo dos veces.
+  indicacion?: boolean;
 };
 
 // EL BOTÓN DE MARCAR QUE HAY QUE SOSTENER (2 de octubre de 2026).
@@ -28,7 +31,7 @@ type Props = {
 //     sigue contando. Lo que cancela es soltar, no rozar el borde.
 //   - El relleno es una transición de CSS: avanza sola sin un render por cuadro.
 //   - Con el teclado también hay que sostener: Enter o espacio mantenidos.
-export default function BotonSostenido({ ms, onConfirmar, disabled = false, className = '', children }: Props) {
+export default function BotonSostenido({ ms, onConfirmar, disabled = false, className = '', children, indicacion = true }: Props) {
   const [sosteniendo, setSosteniendo] = useState(false);
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
   const confirmarRef = useRef(onConfirmar);
@@ -87,9 +90,11 @@ export default function BotonSostenido({ ms, onConfirmar, disabled = false, clas
         style={{ width: sosteniendo ? '100%' : '0%', transition: sosteniendo ? `width ${ms}ms linear` : 'none' }}
       />
       <span className="relative flex flex-col items-center gap-0.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wide opacity-80">
-          {sosteniendo ? 'Sigue presionando…' : 'Mantén presionado'}
-        </span>
+        {indicacion && (
+          <span className="text-[11px] font-semibold uppercase tracking-wide opacity-80">
+            {sosteniendo ? 'Sigue presionando…' : 'Mantén presionado'}
+          </span>
+        )}
         <span className="flex items-center justify-center gap-3">{children}</span>
       </span>
     </button>

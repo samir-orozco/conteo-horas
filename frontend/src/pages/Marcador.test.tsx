@@ -143,7 +143,7 @@ describe('Marcador · con qué abre el kiosco', () => {
 describe('Marcador · cuando la persona reconocida no es la que está', () => {
   it('«No soy Ana» deja la huella, cierra la sesión y sigue por la cédula', async () => {
     h.sesion = sesionDeAna();
-    await abrir('Hola, Ana Giraldo');
+    await abrir('¿Eres tú, Ana?');
     fireEvent.click(screen.getByRole('button', { name: /no soy ana/i }));
     expect(h.avisarNoSoy).toHaveBeenCalledWith('tok-ana');
     expect(h.limpiarSesion).toHaveBeenCalled();
@@ -156,16 +156,16 @@ describe('Marcador · cuando la persona reconocida no es la que está', () => {
     h.alReconocer = sesionDeAna;
     await abrir();
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Cámara del kiosco' })); });
-    expect(await screen.findByAltText('Tu foto de ahora')).toHaveAttribute('src', 'data:image/jpeg;base64,ahora');
+    expect(await screen.findByText('¿Eres tú, Ana?')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /no soy ana/i }));
     expect(await screen.findByText(/foto tomada · ingresa tu cédula/i)).toBeInTheDocument();
   });
 
   it('la foto de la ficha y el parecido dudoso del login llegan a la pantalla', async () => {
     h.sesion = { ...sesionDeAna(), fotoReferencia: 'data:image/jpeg;base64,ficha', parecidoDudoso: true };
-    await abrir('Hola, Ana Giraldo');
+    await abrir('¿Eres tú, Ana?');
     expect(screen.getByAltText(/foto de la ficha de ana giraldo/i)).toHaveAttribute('src', 'data:image/jpeg;base64,ficha');
-    expect(screen.getByText(/mira bien las fotos/i)).toBeInTheDocument();
+    expect(screen.getByText(/mira bien la foto/i)).toBeInTheDocument();
   });
 
   it('a la misma persona no le vuelve a pedir la ubicación que ya decidió no dar', async () => {
@@ -181,7 +181,7 @@ describe('Marcador · cuando la persona reconocida no es la que está', () => {
   it('si la empresa no permite la cédula, vuelve a la cámara y dice qué hacer', async () => {
     h.permiteCedula = false;
     h.sesion = sesionDeAna();
-    await abrir('Hola, Ana Giraldo');
+    await abrir('¿Eres tú, Ana?');
     fireEvent.click(screen.getByRole('button', { name: /no soy ana/i }));
     expect(await screen.findByText('Cámara del kiosco')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /reintentar/i })).toBeInTheDocument();
@@ -191,7 +191,7 @@ describe('Marcador · cuando la persona reconocida no es la que está', () => {
 describe('Marcador · treinta segundos sin tocar nada', () => {
   it('con una sesión abierta, cierra la sesión', async () => {
     h.sesion = sesionDeAna();
-    await abrir('Hola, Ana Giraldo');
+    await abrir('¿Eres tú, Ana?');
     vi.useFakeTimers();
     // La cuenta arrancó con el reloj de verdad: un toque la reinicia con el falso.
     fireEvent.pointerDown(window);
@@ -256,16 +256,16 @@ describe('Marcador · lo que deja abierto quien se va', () => {
   it('el motivo que escribió Ana no le aparece a Bruno', async () => {
     h.marcar.mockImplementation(() => Promise.reject({ response: { status: 409, data: { codigo: 'REQUIERE_MOTIVO_TARDANZA' } } }));
     h.sesion = sesionDeAna();
-    await abrir('Hola, Ana Giraldo');
+    await abrir('¿Eres tú, Ana?');
     vi.useFakeTimers();
-    await sostener(/soy ana · registrar entrada/i);
+    await sostener(/soy ana, registrar entrada/i);
     const campo = screen.getByRole('textbox');
     fireEvent.change(campo, { target: { value: 'cita médica de Ana' } });
     await act(async () => { vi.advanceTimersByTime(30_000); });
     expect(h.limpiarSesion).toHaveBeenCalled();
     h.marcar.mockClear();
     await entraBrunoConCedula();
-    expect(screen.getByText('Hola, Bruno Ríos')).toBeInTheDocument();
+    expect(screen.getByText('¿Eres tú, Bruno?')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('cita médica de Ana')).not.toBeInTheDocument();
     expect(h.marcar).not.toHaveBeenCalled();
   });
@@ -275,9 +275,9 @@ describe('Marcador · lo que deja abierto quien se va', () => {
       ...s.estado, enDescanso: true, salidaDescanso: '2026-10-02T14:00:00Z', regresoSugerido: '2026-10-02T14:15:00Z',
     } });
     h.sesion = enDescanso(sesionDeAna());
-    await abrir('Hola, Ana Giraldo');
+    await abrir('¿Eres tú, Ana?');
     vi.useFakeTimers();
-    await sostener(/soy ana · volví de mi descanso/i);
+    await sostener(/soy ana, volví de mi descanso/i);
     expect(screen.getByText('No marcaste tu regreso')).toBeInTheDocument();
     await act(async () => { vi.advanceTimersByTime(30_000); });
     // Bruno también vuelve de un descanso con la hora pasada: es cuando la pantalla
@@ -287,7 +287,7 @@ describe('Marcador · lo que deja abierto quien se va', () => {
     fireEvent.change(screen.getByPlaceholderText('Número de cédula'), { target: { value: '222' } });
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^continuar$/i })); });
     await act(async () => {});
-    expect(screen.getByText('Hola, Bruno Ríos')).toBeInTheDocument();
+    expect(screen.getByText('¿Eres tú, Bruno?')).toBeInTheDocument();
     expect(screen.queryByText('No marcaste tu regreso')).not.toBeInTheDocument();
   });
 });

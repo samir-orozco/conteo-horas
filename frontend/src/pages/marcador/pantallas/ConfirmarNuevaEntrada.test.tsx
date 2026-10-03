@@ -28,7 +28,7 @@ describe('ConfirmarNuevaEntrada', () => {
 
   it('registrar otra entrada pide el sostenido reforzado, y un toque no basta', () => {
     const { onConfirmar } = montar();
-    const boton = screen.getByRole('button', { name: /soy lina · registrar otra entrada/i });
+    const boton = screen.getByRole('button', { name: /soy lina, registrar otra entrada/i });
     fireEvent.click(boton);
     fireEvent.pointerDown(boton, { pointerId: 1, button: 0 });
     act(() => { vi.advanceTimersByTime(MS_CONFIRMAR_REFORZADA - 100); });
