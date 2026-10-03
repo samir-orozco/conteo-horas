@@ -281,7 +281,7 @@ describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
   it('EL CASO DEL 1 DE OCTUBRE: salir a los 3 minutos de la entrada lo dice con la hora y pide el sostenido reforzado', () => {
     const dentro: Estado = { ...fuera, dentroAhora: true, entradaAbierta: { entrada: '2026-10-01T13:49:21Z' } };
     const { marcar } = montarConfirmando(dentro, { ahora: '2026-10-01T13:52:39Z' });
-    expect(screen.getByText(/tu entrada figura a las 08:49, hace 3 minutos/i)).toBeInTheDocument();
+    expect(screen.getByText(/tu entrada figura a las 8:49 a\. m\., hace 3 minutos/i)).toBeInTheDocument();
     const boton = screen.getByRole('button', { name: /soy ana, registrar salida/i });
     sostener(boton, MS_CONFIRMAR);
     expect(marcar).not.toHaveBeenCalled();
@@ -346,6 +346,29 @@ describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
     fireEvent.click(within(aviso).getByRole('button', { name: /no soy ana/i }));
     expect(onNoSoy).toHaveBeenCalledTimes(1);
     expect(marcar).not.toHaveBeenCalled();
+  });
+
+  // LO QUE YA TIENE A SU NOMBRE HOY (3 de octubre de 2026, diseño del dueño): la lista de sus
+  // marcas del día. Es lo que habría delatado la entrada de las 8:49 que Lina no hizo.
+  it('lista las marcas que ya tiene hoy, con su hora en 12 horas', () => {
+    montarConfirmando({
+      ...fuera, dentroAhora: true, entradaAbierta: { entrada: '2026-10-01T13:49:21Z' },
+      marcasDeHoy: [
+        { momento: 'ENTRADA', hora: '2026-10-01T13:49:21Z' },
+      ],
+    }, { ahora: '2026-10-01T13:52:39Z' });
+    expect(screen.getByRole('heading', { name: 'Otras entradas' })).toBeInTheDocument();
+    expect(screen.getByText('Entrada registrada a las 8:49 a. m.')).toBeInTheDocument();
+  });
+
+  it('sin marcas hoy no muestra la lista', () => {
+    montarConfirmando({ ...fuera, marcasDeHoy: [] });
+    expect(screen.queryByRole('heading', { name: 'Otras entradas' })).not.toBeInTheDocument();
+  });
+
+  it('«No soy Ana» es un botón aunque ya no tenga borde', () => {
+    montarConfirmando(fuera);
+    expect(screen.getByRole('button', { name: /^no soy ana$/i })).toBeInTheDocument();
   });
 
   it('una marca normal no muestra ningún aviso', () => {

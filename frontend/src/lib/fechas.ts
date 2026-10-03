@@ -29,3 +29,13 @@ export const fechaYHora = (iso: string | Date) =>
   new Date(iso).toLocaleString('es-CO', {
     timeZone: TZ, day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit',
   });
+
+// "6:00 p. m." — la hora en 12 horas, como la lee la gente. Los espacios raros que pone el formato
+// (no separables) se cambian por espacios normales: pegados en WhatsApp o en un correo se ven como
+// cuadritos. Lo usan el kiosco y el mensaje del enlace de registro facial (3 de octubre de 2026).
+const HORA_DOCE = new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit', timeZone: TZ });
+export const horaDoce = (iso: string | Date) => sinEspaciosRaros(HORA_DOCE.format(new Date(iso)));
+
+// Los espacios no separables que ponen los navegadores en «p. m.», cambiados por espacios normales.
+// Aparte para poder probarla: en Node el formato ya sale con espacios normales.
+export const sinEspaciosRaros = (s: string) => s.replace(/[\u00a0\u202f]/g, ' ');

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fechaLarga, fechaCorta, mesYAnio, fechaYHora } from './fechas';
+import { fechaLarga, fechaCorta, mesYAnio, fechaYHora, horaDoce, sinEspaciosRaros } from './fechas';
 
 // Estas pruebas solo prueban de verdad cuando corren en una zona horaria que
 // NO es la de Bogotá. En Bogotá pasan con o sin el arreglo, porque la hora
@@ -34,5 +34,27 @@ describe('el formato de fechas para la persona que mira la pantalla', () => {
     const t = fechaYHora('2026-08-24T14:30:00.000Z');
     expect(t).toMatch(/24 de ago/);
     expect(t).toMatch(/9:30/);
+  });
+});
+
+// LA HORA EN 12 HORAS, COMO LA LEE LA GENTE (3 de octubre de 2026). La usan el kiosco y el
+// mensaje del enlace de registro. Los espacios raros que pone el formato se cambian por espacios
+// normales: pegados en WhatsApp o en un correo se ven como cuadritos.
+describe('horaDoce', () => {
+  it('de tarde, con «p. m.»', () => {
+    expect(horaDoce('2026-10-02T23:00:00Z')).toBe('6:00 p. m.');
+  });
+
+  // EN NODE EL FORMATO SALE CON ESPACIOS NORMALES; en los navegadores, con espacios no separables
+  // entre «p.» y «m.». Por eso la limpieza se prueba aparte, con un texto que sí los trae: probada a
+  // través de `horaDoce` pasaba aunque no limpiara nada (comprobado rompiéndola el 3 de octubre).
+  it('los espacios no separables del navegador se vuelven espacios normales', () => {
+    const delNavegador = `6:00${String.fromCharCode(0xa0)}p.${String.fromCharCode(0x202f)}m.`;
+    expect(sinEspaciosRaros(delNavegador)).toBe('6:00 p. m.');
+  });
+  it('de mañana', () => expect(horaDoce('2026-10-02T13:49:00Z')).toBe('8:49 a. m.'));
+  it('mediodía y medianoche son 12', () => {
+    expect(horaDoce('2026-10-02T17:05:00Z')).toBe('12:05 p. m.');
+    expect(horaDoce('2026-10-03T05:30:00Z')).toBe('12:30 a. m.');
   });
 });

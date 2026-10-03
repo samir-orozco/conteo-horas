@@ -17,6 +17,7 @@ import { salidaAntesDeHora, ventanaDeSalidaTemprana, ventanaDeLlegadaTarde, lleg
 import { almuerzoSinRegreso, descansoSinRegreso, descansoSigueEsperandoRegreso } from '../utils/cierreAlmuerzo';
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 import { DIAS_SEMANA } from '../utils/diasDeLaSemana';
+import { marcasDelDia } from '../utils/marcasDelDia';
 
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
 // Un token de kiosco dura 12 horas y sigue siendo válido aunque la persona ya no
@@ -506,7 +507,7 @@ export default async function workerRoutes(app: FastifyInstance) {
     if (payload.rol !== 'WORKER') return { error: 'No autorizado' };
 
     const { inicioDia, finDia } = rangoDiaBogota();
-    const [abierto, cerradoHoy, ultimoCerrado] = await Promise.all([
+    const [abierto, cerradoHoy, ultimoCerrado, delDia] = await Promise.all([
       prisma.registro.findFirst({
         where: {
           colaboradorId: payload.id,
@@ -538,6 +539,16 @@ export default async function workerRoutes(app: FastifyInstance) {
         },
         orderBy: { salida: 'desc' },
         select: { fecha: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
+      }),
+      // Las marcas del día, para que el kiosco le muestre a la persona lo que ya tiene a su
+      // nombre antes de marcar (3 de octubre de 2026). Entra por el índice (colaboradorId,
+      // fecha) y sin fotos.
+      prisma.registro.findMany({
+        where: { colaboradorId: payload.id, fecha: { gte: inicioDia, lt: finDia } },
+        select: {
+          id: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true,
+          descansoVentana: true, entradaEstimada: true, salidaEstimada: true,
+        },
       }),
     ]);
 
@@ -580,6 +591,7 @@ export default async function workerRoutes(app: FastifyInstance) {
     return {
       entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
       dentroAhora: !!abierto,
+      marcasDeHoy: marcasDelDia(delDia),
       turnoCerradoHoy: cerradoHoy ? { entrada: cerradoHoy.entrada, salida: cerradoHoy.salida } : null,
       // Solo se manda cada ventana cuando de verdad se puede usar: el kiosco
       // pregunta exactamente cuando el servidor va a creerle.

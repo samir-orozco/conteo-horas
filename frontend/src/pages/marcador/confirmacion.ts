@@ -1,5 +1,5 @@
 import { MIN_MARCA_RECIENTE, minutosEntre } from '../../lib/marcaReciente';
-import { horaBog } from './helpers';
+import { horaDoce } from '../../lib/fechas';
 import type { Estado } from './tipos';
 
 // CUÁNTO HAY QUE SOSTENER EL BOTÓN DE MARCAR, Y QUÉ SE AVISA (2 de octubre de 2026).
@@ -63,7 +63,7 @@ export function textoDelAviso(
   switch (c.motivo) {
     case 'SALIDA_RECIEN_ENTRADA':
       return {
-        titulo: `Tu entrada figura a las ${horaBog(c.entrada, 'HH:mm')}, ${textoDeHace(c.minutos)}.`,
+        titulo: `Tu entrada figura a las ${horaDoce(c.entrada)}, ${textoDeHace(c.minutos)}.`,
         detalle: 'Si no marcaste a esa hora, no registres nada y avísale a tu administrador.',
       };
     case 'PARECIDO_DUDOSO':

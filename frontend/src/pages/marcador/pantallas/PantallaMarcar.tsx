@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Check, UtensilsCrossed, Coffee, AlertTriangle, type LucideIcon } from 'lucide-react';
+import { MapPin, Check, UtensilsCrossed, Coffee, CircleAlert, type LucideIcon } from 'lucide-react';
 import type { DecisionUbicacion } from '../decisionUbicacion';
 import { horaBog, fechaDelKiosco } from '../helpers';
 import type { Colaborador, Estado, Pausa, Sede } from '../tipos';
@@ -7,6 +7,7 @@ import ConfirmarNuevaEntrada from './ConfirmarNuevaEntrada';
 import ElegirTipoDeSalida from './ElegirTipoDeSalida';
 import BotonSostenido from './BotonSostenido';
 import { confirmacionDeLaMarca, textoDelAviso, textoDelSostenido } from '../confirmacion';
+import { textoDeLaMarca } from '../marcasDeHoy';
 
 type OpcionesDePausa = { almuerzo?: boolean; descanso?: boolean };
 
@@ -61,6 +62,7 @@ export default function PantallaMarcar({
   const dentroAhora = estado?.dentroAhora ?? false;
   const entradaHace = estado?.entradaAbierta?.entrada ? horaBog(estado.entradaAbierta.entrada, 'HH:mm') : null;
   const cerradoHoy = estado?.turnoCerradoHoy ?? null;
+  const marcasDeHoy = estado?.marcasDeHoy;
   const almuerzo = estado?.almuerzo ?? null;
   const descanso = estado?.descanso ?? null;
   const [confirmando, setConfirmando] = useState(false);
@@ -160,8 +162,25 @@ export default function PantallaMarcar({
           <p className="mt-3 text-lg text-white/55">{fechaDelKiosco(ahora)}</p>
         </div>
 
-        {/* Cómo va el día de esta persona. Pequeño, pero sin quitarlo: «Entrada registrada a
-            las 08:35» es lo que delata que alguien ya marcó a su nombre. */}
+        {/* LO QUE YA TIENE A SU NOMBRE HOY (3 de octubre de 2026, diseño del dueño): sus marcas
+            del día, una por línea. Es lo que delata que alguien marcó por ella: el 1 de octubre
+            Lina habría visto una entrada a las 8:49 que no hizo. Sin marcas, no se dice nada. */}
+        {marcasDeHoy && marcasDeHoy.length > 0 && (
+          <section aria-labelledby="otras-entradas" className="mt-5">
+            <h3 id="otras-entradas" className="text-base font-medium text-white">Otras entradas</h3>
+            <ul className="mt-2 space-y-2">
+              {marcasDeHoy.map(m => (
+                <li key={`${m.momento}-${m.hora}`}
+                  className="rounded-full bg-green-500/15 px-4 py-2 text-center text-sm font-semibold text-green-400">
+                  {textoDeLaMarca(m.momento, m.hora)}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Un servidor anterior no manda las marcas: entonces la línea de estado de siempre. */}
+        {!marcasDeHoy && (
         <p className={`mt-4 mx-auto w-fit rounded-full px-3 py-1 text-xs font-medium ${
           enCurso ? enCurso.aviso
             : dentroAhora || cerradoHoy ? 'bg-green-500/10 text-green-400'
@@ -181,18 +200,19 @@ export default function PantallaMarcar({
             'Sin entrada registrada hoy'
           )}
         </p>
+        )}
 
         {/* LO QUE NO CUADRA, dicho antes del botón (2 de octubre de 2026). Solo aparece
             cuando algo no cuadra: si saliera siempre, a la semana nadie lo leería. El de la
             hora es el que habría frenado a Lina el 1 de octubre; el del parecido no dice a
             quién más se parece la cara. */}
         {aviso && (
-          <div role="alert" className="mt-4 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-left">
-            <p className="flex items-start gap-2 text-sm font-semibold text-amber-200">
-              <AlertTriangle size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
-              {aviso.titulo}
+          <div role="alert" className="mt-5 flex items-start gap-2 text-left text-sm text-primary">
+            <CircleAlert size={18} className="shrink-0 mt-0.5" aria-hidden="true" />
+            <p>
+              <b className="font-bold">{aviso.titulo}</b>{' '}
+              <span className="text-primary/85">{aviso.detalle}</span>
             </p>
-            <p className="mt-1 pl-6 text-xs text-amber-100/70">{aviso.detalle}</p>
           </div>
         )}
 
@@ -206,8 +226,10 @@ export default function PantallaMarcar({
           disabled={marcando || !estado}
           indicacion={false}
           className={`mt-5 w-full font-bold py-4 rounded-full text-xl text-white transition-colors disabled:opacity-60 shadow-lg
-            ${reforzada ? 'ring-2 ring-amber-300 ring-offset-2 ring-offset-ink' : ''}
-            ${boton
+            ${reforzada
+              // Cuando algo no cuadra el botón es amarillo, con el aviso del mismo color encima.
+              ? 'bg-primary hover:bg-primary-dark !text-ink shadow-yellow-900/30'
+              : boton
               ? boton.boton
               : dentroAhora
               ? 'bg-orange-500 hover:bg-orange-400 shadow-orange-900/30'
@@ -216,7 +238,7 @@ export default function PantallaMarcar({
         >
           {marcando ? decisionUbic.textoBoton : `Soy ${colaborador.nombre}, ${accion.charAt(0).toLowerCase()}${accion.slice(1)}`}
         </BotonSostenido>
-        <p className={`mt-2 text-center text-sm ${reforzada ? 'text-amber-300' : 'text-[#74c15c]'}`}>
+        <p className={`mt-2 text-center text-sm ${reforzada ? 'text-primary' : 'text-[#74c15c]'}`}>
           {textoDelSostenido(confirmacion.ms)}
         </p>
 
@@ -260,7 +282,7 @@ export default function PantallaMarcar({
             casi transparente, que nadie encontraba. Mientras se marca no se puede tocar: la
             marca ya va en camino y el aviso la contradiría. */}
         <button onClick={onNoSoy} disabled={marcando}
-          className="mt-5 w-full rounded-full border-2 border-white/70 py-3.5 text-lg font-semibold text-white hover:bg-white/5 transition-colors disabled:opacity-40">
+          className="mt-5 w-full rounded-full py-3 text-lg font-semibold text-white hover:bg-white/5 transition-colors disabled:opacity-40">
           No soy {colaborador.nombre}
         </button>
       </div>

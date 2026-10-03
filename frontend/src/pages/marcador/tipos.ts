@@ -1,5 +1,6 @@
 // Tipos compartidos del kiosco público (Marcador).
 import type { Modalidad } from '../../features/colaboradores/modalidad';
+import type { Momento } from '../../constants/momentos';
 export type Sede = { id: string; nombre: string };
 
 export type Colaborador = { id: string; nombre: string; apellido: string; cargo: string | null;
@@ -9,6 +10,10 @@ export type Colaborador = { id: string; nombre: string; apellido: string; cargo:
   modalidad: Modalidad };
 export type Estado = {
   dentroAhora: boolean;
+  // Las marcas que la persona ya tiene hoy, en orden, para mostrárselas antes de marcar (3 de
+  // octubre de 2026). Opcional: un servidor anterior no las manda, y entonces la pantalla cae a la
+  // línea de estado de siempre.
+  marcasDeHoy?: { momento: Momento; hora: string }[];
   entradaAbierta: { entrada: string } | null;
   // Último turno YA COMPLETO de hoy (entrada + salida). Sirve para mostrar el
   // resumen del día y para confirmar antes de abrir un turno nuevo.

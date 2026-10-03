@@ -1,4 +1,4 @@
-import { TZ } from '../../lib/fechas';
+import { horaDoce } from '../../lib/fechas';
 
 // Lo que se ve del registro facial en la ficha y en la tabla de colaboradores, y el mensaje que copia
 // el administrador para mandarle a la persona su enlace de registro (14 de septiembre de 2026).
@@ -19,13 +19,11 @@ export const ETIQUETA_BIOMETRICA: Record<EstadoBiometrico, { texto: string; tono
   SIN_REGISTRO: null,
 };
 
-const HORA = new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit', timeZone: TZ });
-
 // La hora en Bogotá, que es donde la lee la persona, terminada en punto una sola vez: «p. m.» ya trae
-// el suyo, y sin la guarda la frase quedaba con dos. Los espacios raros que pone el formato de hora se
-// cambian por espacios normales: pegados en WhatsApp o en un correo se ven como cuadritos.
+// el suyo, y sin la guarda la frase quedaba con dos. El formato vive en lib/fechas.ts (`horaDoce`),
+// el mismo del kiosco.
 export function horaConPunto(v: string | Date): string {
-  const hora = HORA.format(new Date(v)).replace(/[\u00a0\u202f]/g, ' ');
+  const hora = horaDoce(v);
   return hora.endsWith('.') ? hora : `${hora}.`;
 }
 
