@@ -222,7 +222,7 @@ describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
     expect(marcar).not.toHaveBeenCalled();
   });
 
-  it('sostenido un segundo y medio, marca', () => {
+  it('sostenido el tiempo normal, marca', () => {
     const { marcar } = montarConfirmando(fuera);
     sostener(screen.getByRole('button', { name: /soy ana · registrar entrada/i }));
     expect(marcar).toHaveBeenCalledWith();
@@ -247,7 +247,7 @@ describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
     expect(marcar).not.toHaveBeenCalled();
   });
 
-  it('EL CASO DEL 1 DE OCTUBRE: salir a los 3 minutos de la entrada lo dice con la hora y pide 3 segundos', () => {
+  it('EL CASO DEL 1 DE OCTUBRE: salir a los 3 minutos de la entrada lo dice con la hora y pide el sostenido reforzado', () => {
     const dentro: Estado = { ...fuera, dentroAhora: true, entradaAbierta: { entrada: '2026-10-01T13:49:21Z' } };
     const { marcar } = montarConfirmando(dentro, { ahora: '2026-10-01T13:52:39Z' });
     expect(screen.getByText(/tu entrada figura a las 08:49, hace 3 minutos/i)).toBeInTheDocument();
@@ -266,7 +266,7 @@ describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
     expect(marcar).not.toHaveBeenCalled();
   });
 
-  it('el parecido dudoso pide mirar las fotos y sostener 3 segundos', () => {
+  it('el parecido dudoso pide mirar las fotos y el sostenido reforzado', () => {
     const { marcar } = montarConfirmando(fuera, { parecidoDudoso: true });
     expect(screen.getByText(/mira bien las fotos/i)).toBeInTheDocument();
     const boton = screen.getByRole('button', { name: /soy ana · registrar entrada/i });

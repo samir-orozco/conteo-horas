@@ -21,10 +21,11 @@ const sinNada: Estado = {
 const a = (iso: string) => new Date(iso);
 
 describe('la confirmación de cada marca', () => {
-  it('lo normal es sostener 1,5 segundos', () => {
+  // 1 y 2 segundos desde el 3 de octubre de 2026: el dueño sintió largos los 1,5 y 3 al probarlo.
+  it('lo normal es sostener 1 segundo', () => {
     const c = confirmacionDeLaMarca({ estado: sinNada, ahora: a('2026-10-01T13:49:00Z'), parecidoDudoso: false });
     expect(c).toEqual({ nivel: 'NORMAL', ms: MS_CONFIRMAR });
-    expect(MS_CONFIRMAR).toBe(1500);
+    expect(MS_CONFIRMAR).toBe(1000);
   });
 
   it('EL CASO DEL 1 DE OCTUBRE: salir 3 minutos después de la entrada pide la reforzada y dice la hora', () => {
@@ -35,7 +36,7 @@ describe('la confirmación de cada marca', () => {
       nivel: 'REFORZADA', ms: MS_CONFIRMAR_REFORZADA, motivo: 'SALIDA_RECIEN_ENTRADA',
       entrada: '2026-10-01T13:49:21Z', minutos: 3,
     });
-    expect(MS_CONFIRMAR_REFORZADA).toBe(3000);
+    expect(MS_CONFIRMAR_REFORZADA).toBe(2000);
   });
 
   it('a los 15 minutos de la entrada ya es una salida normal', () => {

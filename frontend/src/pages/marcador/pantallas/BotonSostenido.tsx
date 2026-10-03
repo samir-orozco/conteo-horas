@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 type Props = {
-  // Cuánto hay que sostenerlo. Lo decide `confirmacionDeLaMarca`: 1,5 s lo normal,
-  // 3 s cuando algo no cuadra.
+  // Cuánto hay que sostenerlo. Lo decide `confirmacionDeLaMarca`: 1 s lo normal,
+  // 2 s cuando algo no cuadra.
   ms: number;
   onConfirmar: () => void;
   disabled?: boolean;
@@ -17,7 +17,7 @@ type Props = {
 // El 1 de octubre dos personas oprimieron el botón grande de otra sin mirar el
 // nombre, que iba arriba, lejos del dedo. Ahora el nombre va DENTRO del botón y un
 // toque no basta: hay que sostenerlo mientras se llena. No obliga a leer, pero
-// pone el nombre debajo del dedo durante un segundo y medio.
+// pone el nombre debajo del dedo durante un segundo.
 //
 // Por qué así y no de otra forma:
 //   - Puntero y no `touchstart`: el mismo código sirve con el dedo en la tableta,

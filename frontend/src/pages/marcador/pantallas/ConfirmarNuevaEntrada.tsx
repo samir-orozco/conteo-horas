@@ -19,7 +19,7 @@ type Props = {
 // octubre Lina pasó por aquí a las 08:56 —«entrada 08:49 y salida 08:52»— y
 // oprimió «Sí, registrar otra entrada», cuando la entrada de las 08:49 era de otra
 // persona. El aviso no decía a nombre de quién. Ahora lo dice, la nueva entrada
-// se sostiene 3 segundos (es la confirmación reforzada: algo ya no cuadra) y hay
+// pide el sostenido reforzado (algo ya no cuadra) y hay
 // «No soy».
 export default function ConfirmarNuevaEntrada({ turno, nombre, onConfirmar, onCancelar, onNoSoy }: Props) {
   return (

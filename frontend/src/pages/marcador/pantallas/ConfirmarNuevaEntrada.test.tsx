@@ -8,7 +8,7 @@ import { MS_CONFIRMAR_REFORZADA } from '../confirmacion';
 // El 1 de octubre, a las 08:56, Lina pasó por este aviso —«entrada 08:49 y salida
 // 08:52»— y oprimió «Sí, registrar otra entrada». El aviso no decía a nombre de
 // quién, y la entrada de las 08:49 no era de ella. Ahora lleva el nombre, se
-// sostiene 3 segundos y ofrece «No soy».
+// sostiene el tiempo reforzado y ofrece «No soy».
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -26,7 +26,7 @@ describe('ConfirmarNuevaEntrada', () => {
     expect(screen.getByText('Lina, ya registraste tu jornada de hoy')).toBeInTheDocument();
   });
 
-  it('registrar otra entrada se sostiene 3 segundos, y un toque no basta', () => {
+  it('registrar otra entrada pide el sostenido reforzado, y un toque no basta', () => {
     const { onConfirmar } = montar();
     const boton = screen.getByRole('button', { name: /soy lina · registrar otra entrada/i });
     fireEvent.click(boton);
