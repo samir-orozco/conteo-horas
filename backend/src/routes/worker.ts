@@ -18,6 +18,7 @@ import { almuerzoSinRegreso, descansoSinRegreso, descansoSigueEsperandoRegreso }
 import { asegurarDiaSinFallar } from '../utils/materializarDias';
 import { DIAS_SEMANA } from '../utils/diasDeLaSemana';
 import { marcasDelDia, desdeCuandoSeListan } from '../utils/marcasDelDia';
+import { jornadaYaRegistrada } from '../utils/jornadaYaRegistrada';
 
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
 // Un token de kiosco dura 12 horas y sigue siendo válido aunque la persona ya no
@@ -538,7 +539,7 @@ export default async function workerRoutes(app: FastifyInstance) {
           salida: { not: null, gte: new Date(Date.now() - VENTANA_TURNO_MS) },
         },
         orderBy: { salida: 'desc' },
-        select: { fecha: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
+        select: { fecha: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
       }),
     ]);
 
@@ -548,6 +549,9 @@ export default async function workerRoutes(app: FastifyInstance) {
     // Un descanso sin regreso deja de estar en curso al terminar el turno de su día más la
     // gracia; el almuerzo sigue con las 18 horas (`pausaQueEsperaRegreso`).
     const pausaEnCurso = abierto ? null : await pausaQueEsperaRegreso(payload.id, ultimoCerrado, ahora);
+    // El turno por el que el kiosco pregunta «ya registraste tu jornada» antes de abrir otro: el de
+    // hoy, o uno nocturno que se cerró hoy hace menos de cuatro horas (`jornadaYaRegistrada`).
+    const yaRegistrada = jornadaYaRegistrada({ ahora, cerradoDeHoy: cerradoHoy, ultimoCerrado, pausaEnCurso: !!pausaEnCurso });
 
     // Las marcas del día, para que el kiosco le muestre a la persona lo que ya tiene a su nombre
     // antes de marcar (3 de octubre de 2026). Van después de saber qué jornada está en curso o se
@@ -594,7 +598,7 @@ export default async function workerRoutes(app: FastifyInstance) {
       entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
       dentroAhora: !!abierto,
       marcasDeHoy: marcasDelDia(delDia),
-      turnoCerradoHoy: cerradoHoy ? { entrada: cerradoHoy.entrada, salida: cerradoHoy.salida } : null,
+      turnoCerradoHoy: yaRegistrada ? { entrada: yaRegistrada.entrada, salida: yaRegistrada.salida } : null,
       // Solo se manda cada ventana cuando de verdad se puede usar: el kiosco
       // pregunta exactamente cuando el servidor va a creerle.
       almuerzo: pausas.puedeAlmorzar

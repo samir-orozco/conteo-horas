@@ -306,6 +306,7 @@ export default function PantallaMarcar({
         <ConfirmarNuevaEntrada
           turno={cerradoHoy}
           nombre={colaborador.nombre}
+          ahora={ahora}
           onConfirmar={() => { setConfirmando(false); marcar(); }}
           onCancelar={() => setConfirmando(false)}
           onNoSoy={() => { setConfirmando(false); onNoSoy(); }}

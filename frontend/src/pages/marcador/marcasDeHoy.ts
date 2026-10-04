@@ -30,7 +30,7 @@ export function textoDeLaMarca(momento: Momento, hora: string | Date, ahora: str
 const UN_DIA = 24 * 60 * 60 * 1000;
 const diaEnBogota = (d: string | Date) => Math.floor((new Date(d).getTime() - 5 * 60 * 60 * 1000) / UN_DIA);
 
-function cuandoFue(hora: string | Date, ahora: string | Date): string {
+export function cuandoFue(hora: string | Date, ahora: string | Date): string {
   const diasAtras = diaEnBogota(ahora) - diaEnBogota(hora);
   // Lo de hoy va sin día, y también lo que todavía no le llega a un aparato con el reloj atrasado:
   // el rango de la lista lo decide el reloj del servidor.

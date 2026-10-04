@@ -421,6 +421,19 @@ describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
     expect(screen.getByRole('button', { name: /^soy ana, registrar salida$/i })).toBeInTheDocument();
   });
 
+  // Luis cerró su turno nocturno a las 6:00 a. m. y a las 6:05 intenta abrir otra entrada: el
+  // servidor le manda esa jornada como ya registrada (jornadaYaRegistrada) y el kiosco pregunta.
+  it('tras cerrar un turno nocturno, pregunta antes de abrir otra entrada', () => {
+    const { marcar } = montarConfirmando({
+      ...fuera,
+      turnoCerradoHoy: { entrada: '2026-10-04T00:00:00Z', salida: '2026-10-04T11:00:00Z' },
+      marcasDeHoy: [{ momento: 'ENTRADA', hora: '2026-10-04T00:00:00Z' }, { momento: 'SALIDA', hora: '2026-10-04T11:00:00Z' }],
+    }, { ahora: '2026-10-04T11:05:00Z' });
+    sostener(screen.getByRole('button', { name: /^soy ana, registrar entrada$/i }));
+    expect(screen.getByRole('heading', { name: 'Ana, ya registraste tu jornada' })).toBeInTheDocument();
+    expect(marcar).not.toHaveBeenCalled();
+  });
+
   it('sin marcas hoy no muestra la lista', () => {
     montarConfirmando({ ...fuera, marcasDeHoy: [] });
     expect(screen.queryByRole('heading', { name: 'Marcas de hoy' })).not.toBeInTheDocument();

@@ -16,9 +16,11 @@ afterEach(() => vi.useRealTimers());
 const turno = { entrada: '2026-10-01T13:49:21Z', salida: '2026-10-01T13:52:39Z' };
 const montar = () => {
   const p = { onConfirmar: vi.fn(), onCancelar: vi.fn(), onNoSoy: vi.fn() };
-  render(<ConfirmarNuevaEntrada turno={turno} nombre="Lina" {...p} />);
+  render(<ConfirmarNuevaEntrada turno={turno} nombre="Lina" ahora="2026-10-01T13:56:53Z" {...p} />);
   return p;
 };
+// El texto del aviso va repartido en negritas: se compara el párrafo entero.
+const parrafo = (texto: string) => screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === texto);
 
 describe('ConfirmarNuevaEntrada', () => {
   it('dice a nombre de quién está la jornada', () => {
@@ -35,6 +37,20 @@ describe('ConfirmarNuevaEntrada', () => {
     expect(onConfirmar).not.toHaveBeenCalled();
     act(() => { vi.advanceTimersByTime(100); });
     expect(onConfirmar).toHaveBeenCalledTimes(1);
+  });
+
+  it('de un turno de hoy dice las dos horas de hoy', () => {
+    montar();
+    expect(parrafo('Hoy marcaste entrada 08:49 y salida 08:52.')).toBeInTheDocument();
+  });
+
+  // EL TURNO NOCTURNO (4 de octubre de 2026). Luis entró ayer a las 7:00 p. m., cerró hoy a las
+  // 6:00 a. m. y a las 6:05 intenta abrir otra entrada. «Hoy marcaste entrada 19:00» sería falso.
+  it('de una jornada nocturna dice que la entrada fue ayer, y no la llama «de hoy»', () => {
+    render(<ConfirmarNuevaEntrada turno={{ entrada: '2026-10-04T00:00:00Z', salida: '2026-10-04T11:00:00Z' }}
+      nombre="Luis" ahora="2026-10-04T11:05:00Z" onConfirmar={vi.fn()} onCancelar={vi.fn()} onNoSoy={vi.fn()} />);
+    expect(screen.getByRole('heading', { name: 'Luis, ya registraste tu jornada' })).toBeInTheDocument();
+    expect(parrafo('Marcaste entrada ayer a las 19:00 y salida a las 06:00.')).toBeInTheDocument();
   });
 
   it('ofrece «No soy Lina»', () => {

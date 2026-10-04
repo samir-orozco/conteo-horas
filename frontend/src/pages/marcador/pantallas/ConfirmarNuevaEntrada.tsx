@@ -1,12 +1,15 @@
 import { AlertTriangle, LogIn } from 'lucide-react';
 import { horaBog } from '../helpers';
 import { MS_CONFIRMAR_REFORZADA } from '../confirmacion';
+import { cuandoFue } from '../marcasDeHoy';
 import BotonSostenido from './BotonSostenido';
 
 type Props = {
   turno: { entrada: string; salida: string };
   // El nombre de pila de la persona reconocida: el aviso dice a nombre de quién está.
   nombre: string;
+  // Para saber si la entrada fue ayer: la de un turno nocturno lo es.
+  ahora: string | Date;
   onConfirmar: () => void;
   onCancelar: () => void;
   onNoSoy: () => void;
@@ -21,7 +24,10 @@ type Props = {
 // persona. El aviso no decía a nombre de quién. Ahora lo dice, la nueva entrada
 // pide el sostenido reforzado (algo ya no cuadra) y hay
 // «No soy».
-export default function ConfirmarNuevaEntrada({ turno, nombre, onConfirmar, onCancelar, onNoSoy }: Props) {
+export default function ConfirmarNuevaEntrada({ turno, nombre, ahora, onConfirmar, onCancelar, onNoSoy }: Props) {
+  // '' si la entrada fue hoy; «ayer » si es la de un turno nocturno que cerró esta mañana
+  // (4 de octubre de 2026). «Hoy marcaste entrada 19:00» le habría dicho algo falso a Luis.
+  const diaDeLaEntrada = cuandoFue(turno.entrada, ahora);
   return (
     <div className="fixed inset-0 !mt-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onCancelar}>
       <div
@@ -31,10 +37,19 @@ export default function ConfirmarNuevaEntrada({ turno, nombre, onConfirmar, onCa
         <div className="bg-amber-400/90 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
           <AlertTriangle size={28} className="text-ink" />
         </div>
-        <h2 className="text-xl font-bold text-white">{nombre}, ya registraste tu jornada de hoy</h2>
+        <h2 className="text-xl font-bold text-white">{nombre}, ya registraste tu jornada{diaDeLaEntrada ? '' : ' de hoy'}</h2>
         <p className="text-sm text-white/60 mt-3 leading-relaxed">
-          Hoy marcaste <b className="text-white/90">entrada {horaBog(turno.entrada, 'HH:mm')}</b> y{' '}
-          <b className="text-white/90">salida {horaBog(turno.salida, 'HH:mm')}</b>.
+          {diaDeLaEntrada ? (
+            <>
+              Marcaste <b className="text-white/90">entrada {diaDeLaEntrada}a las {horaBog(turno.entrada, 'HH:mm')}</b> y{' '}
+              <b className="text-white/90">salida a las {horaBog(turno.salida, 'HH:mm')}</b>.
+            </>
+          ) : (
+            <>
+              Hoy marcaste <b className="text-white/90">entrada {horaBog(turno.entrada, 'HH:mm')}</b> y{' '}
+              <b className="text-white/90">salida {horaBog(turno.salida, 'HH:mm')}</b>.
+            </>
+          )}
         </p>
         <p className="text-sm text-white/60 mt-3 leading-relaxed">
           Tu salida <b className="text-white/90">ya quedó guardada</b>. Si continúas se abrirá un
