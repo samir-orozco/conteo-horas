@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import CapturadorErrores from './CapturadorErrores';
 
@@ -50,3 +50,38 @@ describe('CapturadorErrores', () => {
     expect(post).toHaveBeenCalledTimes(1);
   });
 });
+
+// Lo ajeno se reporta pero no tapa la página (ver errorAjeno.ts). La pantalla negra se queda para lo
+// nuestro, que es donde sirve: quien lo sufre puede leerlo y avisar.
+describe('CapturadorErrores · errores ajenos', () => {
+  const lanzar = (mensaje: string, archivo: string) =>
+    window.dispatchEvent(new ErrorEvent('error', { message: mensaje, filename: archivo, lineno: 1, colno: 1 }));
+  const rechazar = (razon: unknown) => {
+    const evento = new Event('unhandledrejection');
+    Object.defineProperty(evento, 'reason', { value: razon });
+    window.dispatchEvent(evento);
+  };
+
+  it('el del navegador interno de Android se reporta pero no tapa la página', () => {
+    render(<CapturadorErrores><p>La página</p></CapturadorErrores>);
+    act(() => lanzar('Uncaught Error: Error invoking postMessage: Java object is gone', ''));
+    expect(screen.queryByText(/se capturó un error/i)).not.toBeInTheDocument();
+    expect(screen.getByText('La página')).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith('/eventos/navegador', expect.objectContaining({ mensaje: expect.stringContaining('Java object is gone') }));
+  });
+
+  it('uno de nuestro código sigue tapando la página', () => {
+    render(<CapturadorErrores><p>La página</p></CapturadorErrores>);
+    act(() => lanzar('TypeError: x is not a function', `${window.location.origin}/assets/index-abc.js`));
+    expect(screen.getByText(/se capturó un error/i)).toBeInTheDocument();
+  });
+
+  it('una promesa rechazada en nuestro código sigue tapando la página', () => {
+    render(<CapturadorErrores><p>La página</p></CapturadorErrores>);
+    const error = new Error('algo');
+    error.stack = `Error: algo\n    at f (${window.location.origin}/assets/index-abc.js:12:34)`;
+    act(() => rechazar(error));
+    expect(screen.getByText(/se capturó un error/i)).toBeInTheDocument();
+  });
+});
+

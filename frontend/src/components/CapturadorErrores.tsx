@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import api from '../lib/api';
+import { esErrorAjeno } from '../lib/errorAjeno';
 
 // Captura TODO error (render de React + errores globales + promesas no manejadas)
 // y lo muestra EN PANTALLA en vez de dejar la página en blanco. Nació temporal,
@@ -37,7 +38,10 @@ export default class CapturadorErrores extends Component<{ children: ReactNode }
     // dentro del reproductor de un video no puede tumbar HoraPro.
     if (!e.filename && (!e.message || e.message === 'Script error.')) return;
     const stack = e.error?.stack ? `\n${e.error.stack}` : '';
-    this.mostrar('global', `${e.message}\n@ ${e.filename}:${e.lineno}:${e.colno}${stack}`);
+    const texto = `${e.message}\n@ ${e.filename}:${e.lineno}:${e.colno}${stack}`;
+    // Lo de otros se reporta, pero no tapa la página (errorAjeno.ts).
+    if (esErrorAjeno({ mensaje: e.message ?? '', archivo: e.filename ?? '' }, window.location.origin)) { this.reportar(texto); return; }
+    this.mostrar('global', texto);
   };
   onRejection = (e: PromiseRejectionEvent) => {
     const r: any = e.reason;
@@ -45,7 +49,9 @@ export default class CapturadorErrores extends Component<{ children: ReactNode }
     // esperados que maneja la app —p. ej. 402 = empresa en mora, que dispara el
     // modal de pago—, no un cuelgue de la página. No los mostramos como error global.
     if (r?.isAxiosError || r?.response || r?.config) return;
-    this.mostrar('global', `Promesa rechazada: ${r?.message ?? String(r)}${r?.stack ? `\n${r.stack}` : ''}`);
+    const texto = `Promesa rechazada: ${r?.message ?? String(r)}${r?.stack ? `\n${r.stack}` : ''}`;
+    if (esErrorAjeno({ mensaje: texto, rastro: r?.stack }, window.location.origin)) { this.reportar(texto); return; }
+    this.mostrar('global', texto);
   };
 
   // El último texto reportado. Sin esto, un error de render que vuelve a montarse manda el mismo
