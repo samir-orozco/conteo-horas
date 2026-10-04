@@ -1,10 +1,14 @@
 // Botón flotante de WhatsApp (esquina inferior derecha) con el número de Krumlab
 // y un mensaje que indica que el contacto viene de HoraPro.
-const NUMERO = '573137397652'; // +57 313 739 7652
+//
+// El número no se escribe aquí: sale de lib/whatsapp.ts, que es el único sitio
+// donde vive. Ver allí por qué la política de privacidad lleva otro.
+import { enlaceWhatsApp } from '../lib/whatsapp';
+
 const MENSAJE = 'Hola 👋 Vengo de la página de HoraPro y quiero más información.';
 
 export default function BotonWhatsApp() {
-  const url = `https://wa.me/${NUMERO}?text=${encodeURIComponent(MENSAJE)}`;
+  const url = enlaceWhatsApp(MENSAJE);
   return (
     <a
       href={url}

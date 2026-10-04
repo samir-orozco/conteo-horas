@@ -19,6 +19,7 @@ import { payloadColaborador } from '../features/colaboradores/payloadColaborador
 import { ETIQUETA_MODALIDAD, TONO_MODALIDAD, normalizarModalidad } from '../features/colaboradores/modalidad';
 import EtiquetaBiometrica from '../features/colaboradores/EtiquetaBiometrica';
 import { useLegales } from '../lib/legales';
+import { enlaceWhatsApp } from '../lib/whatsapp';
 
 type Colaborador = { id: string; nombre: string; apellido: string; cedula: string; cargo?: string; email?: string; telefono?: string; fechaNacimiento?: string | null; salarioMensual: number; auxilioTransporte?: number | null; activo: boolean; retiroProgramado?: string | null; horarioId?: string | null; sedeIds?: string[]; sedeNombres?: string[]; estadoContrato?: string | null; fotoMini?: string | null; modalidad?: string; puedeCerrarEnOtraSede?: boolean; foto?: string | null; rostroEnroladoEn?: string | null; rostroRechazadoEn?: string | null };
 // Los colores del chip de contrato. Se quedan en la pantalla y no en la regla:
@@ -70,7 +71,6 @@ export function resumenFranjas(franjas?: Franja[]): string {
 // pidiendo algo, sin saber de quién ni de qué empresa. Ahora lleva el nombre de
 // quien escribe, la empresa y el plan con su tope, que es lo que se necesita
 // para atenderlo sin tener que preguntar tres cosas primero.
-const WPP_NUMERO = '573137397652';
 function enlaceMasCupo(nombre?: string, empresa?: string | null, nombrePlan?: string, limite?: number | null) {
   const quien = nombre ? `soy ${nombre}` : 'les escribo';
   const deDonde = empresa ? ` de ${empresa}` : '';
@@ -78,7 +78,7 @@ function enlaceMasCupo(nombre?: string, empresa?: string | null, nombrePlan?: st
     ? ` Estoy en el plan ${nombrePlan}, que llega hasta ${limite} colaboradores, y ya lo tengo lleno.`
     : '';
   const texto = `Hola, ${quien}${deDonde}.${cual} Necesito agregar más colaboradores a mi cuenta de HoraPro. ¿Me ayudan?`;
-  return `https://wa.me/${WPP_NUMERO}?text=${encodeURIComponent(texto)}`;
+  return enlaceWhatsApp(texto);
 }
 
 // La sede de una fila de la lista. Fuera del componente, como las celdas de Registros.
