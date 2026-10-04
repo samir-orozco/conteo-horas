@@ -83,7 +83,7 @@ const PLANES_LANDING = [
     incluye: ['Hasta 150 colaboradores', 'Todo lo de Profesional', 'Turnos y programación por calendario', 'Varias sedes', 'Integración Siigo (próximamente)', 'Soporte prioritario'],
   },
 ];
-const WPP_LANDING = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
+const WPP_LANDING = 'https://wa.me/573137397652?text=' + encodeURIComponent('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
 
 // Las ondas de la portada (14 de septiembre de 2026), como la franja del ejemplo de Weav: cierran el
 // amarillo contra la franja de confianza, y la franja contra el blanco, sin un corte recto. Las dos usan
