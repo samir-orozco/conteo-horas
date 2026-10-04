@@ -1,7 +1,8 @@
-import { useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FileBarChart2, Clock3, AlarmClock, ChevronRight, FileSpreadsheet } from 'lucide-react';
+import { posicionDelPanel } from '../lib/panelAnclado';
 
 const OPCIONES = [
   { to: '/app/reportes', label: 'Reporte diario', desc: 'Liquidación día a día de un colaborador.', icon: FileBarChart2 },
@@ -15,6 +16,10 @@ const OPCIONES = [
 export default function ReportesNav({ onNav }: { onNav?: () => void }) {
   const [abierto, setAbierto] = useState(false);
   const [ancla, setAncla] = useState<DOMRect | null>(null);
+  // Lo que mide el panel ya pintado. Hay que medirlo y no estimarlo: depende de
+  // cuántos reportes haya en la lista y de cuánto ocupe la descripción de cada
+  // uno, que se parte en dos renglones en cuanto el texto crece.
+  const [altoPanel, setAltoPanel] = useState(0);
   const btnRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,6 +30,21 @@ export default function ReportesNav({ onNav }: { onNav?: () => void }) {
     setAbierto(true);
   };
 
+  // Se mide en el callback del ref y no en un efecto: el ref corre durante el
+  // commit, antes de pintar, así que el panel nunca se ve un fotograma en el
+  // sitio equivocado, y de paso no hace falta un efecto que llame a setState
+  // (que es lo que React desaconseja y el linter marca).
+  //
+  // `offsetHeight` y NO `getBoundingClientRect().height`: el panel entra con una
+  // animación que va de `scale(0.9)` a `scale(1)`, y como está declarada con
+  // `both`, el fotograma del 0% ya está aplicado cuando corre esto. El rect mide
+  // la caja TRANSFORMADA, así que devolvía el 90% del alto real y el panel
+  // quedaba colocado como si fuera más bajo de lo que es. `offsetHeight` es el
+  // alto de maquetación y las transformaciones no lo tocan.
+  const medirPanel = useCallback((el: HTMLDivElement | null) => {
+    if (el) setAltoPanel(el.offsetHeight);
+  }, []);
+
   const ir = (to: string) => {
     setAbierto(false);
     onNav?.();
@@ -32,10 +52,18 @@ export default function ReportesNav({ onNav }: { onNav?: () => void }) {
   };
 
   const esMovil = typeof window !== 'undefined' && window.innerWidth < 768;
-  const top = ancla ? ancla.top : 80;
+  // El botón de Reportes es de los últimos del menú, así que en una pantalla
+  // baja cae cerca del borde: colgarlo a la altura del botón dejaba el panel
+  // fuera de la ventana y, por ser fixed, sin ningún scroll que lo alcanzara.
+  const colocado = posicionDelPanel({
+    anclaTop: ancla ? ancla.top : 80,
+    anclaRight: ancla ? ancla.right : 256,
+    altoPanel,
+    altoVentana: typeof window !== 'undefined' ? window.innerHeight : 0,
+  });
   const estilo: CSSProperties = esMovil
-    ? { top: 12, left: 12, right: 12 }
-    : { top, left: (ancla ? ancla.right : 256) + 10, width: 320 };
+    ? { top: 12, left: 12, right: 12, maxHeight: '85dvh' }
+    : { ...colocado, width: 320 };
 
   return (
     <>
@@ -57,14 +85,18 @@ export default function ReportesNav({ onNav }: { onNav?: () => void }) {
       {abierto && createPortal(
         <>
           <div className="fixed inset-0 !mt-0 z-[200]" onClick={() => setAbierto(false)} />
+          {/* `flex flex-col` + el scroll en la lista y no en la caja: si el
+              panel no cupiera entero ni subiéndolo, lo que se desplaza es la
+              lista y el título se queda a la vista. */}
           <div
+            ref={medirPanel}
             style={estilo}
-            className="fixed z-[201] bg-white rounded-2xl shadow-2xl border border-gray-200/70 overflow-hidden hp-notif-pop"
+            className="fixed z-[201] bg-white rounded-2xl shadow-2xl border border-gray-200/70 flex flex-col overflow-hidden hp-notif-pop"
           >
-            <div className="px-5 pt-3.5 pb-2.5 border-b border-gray-100">
+            <div className="px-5 pt-3.5 pb-2.5 border-b border-gray-100 shrink-0">
               <h3 className="font-bold text-[15px] text-ink">Reportes</h3>
             </div>
-            <div className="p-2">
+            <div className="p-2 overflow-y-auto">
               {OPCIONES.map(o => (
                 <button key={o.to} onClick={() => ir(o.to)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 text-left transition-colors">

@@ -1,10 +1,11 @@
-import { useState, type CSSProperties } from 'react';
+import { useCallback, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckCheck, AlarmClock, Clock, CalendarOff, Bell, X } from 'lucide-react';
 import { rutaDeNotificacion } from './ruta';
+import { posicionDelPanel } from '../../lib/panelAnclado';
 import type { Notificacion } from './types';
 import type { NotifState } from './useNotificaciones';
 
@@ -21,6 +22,20 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'todas' | 'noleidas'>('todas');
   const { items, noLeidas, marcarLeida, marcarTodas } = notif;
+  // Lo que mide ya pintado. Con pocas notificaciones es un panel bajo que cabe
+  // en cualquier parte; con muchas llega al tope y se desplaza por dentro.
+  const [altoPanel, setAltoPanel] = useState(0);
+
+  // Se mide al montar, en el callback del ref, y con `offsetHeight` y no con el
+  // rect: la nota larga está en ReportesNav.tsx, que es el mismo caso.
+  //
+  // No se vuelve a medir al cambiar de pestaña: el alto ya está topado, así que
+  // una lista más larga se desplaza por dentro y una más corta deja un hueco
+  // abajo. Ninguna de las dos saca nada de la pantalla, que es lo que esto
+  // tiene que garantizar.
+  const medirPanel = useCallback((el: HTMLDivElement | null) => {
+    if (el) setAltoPanel(el.offsetHeight);
+  }, []);
 
   const abrir = (n: Notificacion) => {
     if (!n.leida) marcarLeida(n.id);
@@ -42,10 +57,19 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
   // atrapando al usuario. Ahora se ve la página debajo, se entiende que es un
   // panel encima, y además hay una X.
   const esMovil = typeof window !== 'undefined' && window.innerWidth < 768;
-  const top = ancla ? ancla.top : 80;
+  // La misma regla que el menú de Reportes, y por eso vive en un solo sitio
+  // (lib/panelAnclado.ts). La copia que había aquí limitaba el alto pero no
+  // subía el panel: con el botón cerca del borde de abajo lo dejaba aplastado
+  // en una franja de unos pocos píxeles en vez de moverlo a donde cabe.
+  const colocado = posicionDelPanel({
+    anclaTop: ancla ? ancla.top : 80,
+    anclaRight: ancla ? ancla.right : 256,
+    altoPanel,
+    altoVentana: typeof window !== 'undefined' ? window.innerHeight : 0,
+  });
   const estilo: CSSProperties = esMovil
     ? { top: 64, left: 12, right: 12, maxHeight: '65dvh' }
-    : { top, left: (ancla ? ancla.right : 256) + 10, width: 380, maxHeight: `calc(100dvh - ${top}px - 16px)` };
+    : { ...colocado, width: 380 };
 
   // Portal a document.body: el botón que lo abre vive dentro del <aside> del
   // sidebar, que es `position: sticky` y por eso crea su propio contexto de
@@ -59,6 +83,7 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
       <div className="fixed inset-0 !mt-0 z-[200]" onClick={onClose} />
 
       <div
+        ref={medirPanel}
         style={estilo}
         className="fixed z-[201] bg-white rounded-2xl shadow-2xl border border-gray-200/70 flex flex-col overflow-hidden hp-notif-pop"
       >
