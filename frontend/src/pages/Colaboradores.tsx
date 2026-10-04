@@ -70,7 +70,7 @@ export function resumenFranjas(franjas?: Franja[]): string {
 // pidiendo algo, sin saber de quién ni de qué empresa. Ahora lleva el nombre de
 // quien escribe, la empresa y el plan con su tope, que es lo que se necesita
 // para atenderlo sin tener que preguntar tres cosas primero.
-const WPP_NUMERO = '573166435723';
+const WPP_NUMERO = '573137397652';
 function enlaceMasCupo(nombre?: string, empresa?: string | null, nombrePlan?: string, limite?: number | null) {
   const quien = nombre ? `soy ${nombre}` : 'les escribo';
   const deDonde = empresa ? ` de ${empresa}` : '';
