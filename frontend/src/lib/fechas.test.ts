@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fechaLarga, fechaCorta, mesYAnio, fechaYHora, horaDoce, sinEspaciosRaros } from './fechas';
+import { fechaLarga, fechaCorta, mesYAnio, fechaYHora, horaDoce, sinEspaciosRaros, ultimoDiaCubierto } from './fechas';
 
 // Estas pruebas solo prueban de verdad cuando corren en una zona horaria que
 // NO es la de Bogotá. En Bogotá pasan con o sin el arreglo, porque la hora
@@ -56,5 +56,15 @@ describe('horaDoce', () => {
   it('mediodía y medianoche son 12', () => {
     expect(horaDoce('2026-10-02T17:05:00Z')).toBe('12:05 p. m.');
     expect(horaDoce('2026-10-03T05:30:00Z')).toBe('12:30 a. m.');
+  });
+});
+
+// Un pago «cubre hasta» la medianoche de Bogotá del día 1 del mes siguiente, que es
+// cuando vence. Pintar esa fecha decía «hasta el 1 de noviembre» de un mes pagado
+// hasta el 31 de octubre (3 de octubre de 2026).
+describe('el último día que cubre un pago', () => {
+  it('es el día anterior al vencimiento, no el del vencimiento', () => {
+    expect(ultimoDiaCubierto('2026-11-01T05:00:00.000Z')).toBe('31 de octubre de 2026');
+    expect(ultimoDiaCubierto('2026-03-01T05:00:00.000Z')).toBe('28 de febrero de 2026');
   });
 });

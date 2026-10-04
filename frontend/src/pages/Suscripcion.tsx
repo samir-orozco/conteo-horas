@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CreditCard, CheckCircle, AlertTriangle, Clock, X, Receipt, Check, MessageCircle } from 'lucide-react';
+import { CreditCard, CheckCircle, AlertTriangle, Clock, X, Receipt, Check, MessageCircle, Download } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useMiPlan, invalidarMiPlan } from '../lib/plan';
+import { fechaCorta, fechaLarga, ultimoDiaCubierto } from '../lib/fechas';
+import { descargarReciboPDF, type PagoRecibo } from '../lib/recibo';
 
 type CheckoutData = { url: string; publicKey: string; currency: string; amountInCents: number; reference: string; signature: string };
 
@@ -16,14 +18,13 @@ const WPP_150 = 'https://wa.me/573166435723?text=' + encodeURIComponent('Hola, n
 
 const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
-const fecha = (s: string | Date) => new Date(s).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
 
-type Pago = { id: string; monto: number; colaboradoresFacturados: number; periodoFin: string; metodo: string; creadoEn: string };
+type Pago = Omit<PagoRecibo, 'suscripcion'>;
 type Cobro = {
   tipo: 'MES' | 'ADICIONAL' | 'AL_DIA';
   colaboradoresActivos: number; colaboradoresFacturados: number;
   tarifaMesCompleto: number; monto: number;
-  diasMes: number; diasRestantes: number; cubreHasta: string;
+  diasMes: number; diasRestantes: number; mesCompleto?: boolean; cubreHasta: string;
 };
 type Cuenta = {
   estado: string; diasMora: number; finPrueba: string; pagadoHasta: string | null;
@@ -31,6 +32,7 @@ type Cuenta = {
   cobro: Cobro;
   precios: { precioTramo1: number; limiteTramo1: number; precioTramo2: number };
   pagos: Pago[];
+  empresa: PagoRecibo['suscripcion']['empresa'] | null;
   wompiConfigurado: boolean;
   checkout: { url: string; publicKey: string; currency: string; amountInCents: number; reference: string; signature: string; verificacionDisponible: boolean } | null;
 };
@@ -169,8 +171,8 @@ export default function Suscripcion() {
           <span className={`text-sm font-bold px-3 py-1.5 rounded-full ${ui.clase}`}>{ui.label}</span>
           <p className="text-xs text-muted mt-3">
             {cuenta.pagadoHasta
-              ? `Mes pagado hasta el ${fecha(cuenta.pagadoHasta)}`
-              : `Prueba gratis hasta el ${fecha(cuenta.finPrueba)}`}
+              ? `Mes pagado hasta el ${ultimoDiaCubierto(cuenta.pagadoHasta)}`
+              : `Prueba gratis hasta el ${fechaLarga(cuenta.finPrueba)}`}
             {cuenta.diasMora > 0 && ` · ${cuenta.diasMora} día${cuenta.diasMora === 1 ? '' : 's'} de mora`}
           </p>
         </div>
@@ -240,7 +242,7 @@ export default function Suscripcion() {
           </div>
         ) : (
           <div className="bg-green-50 border border-green-200 rounded-card px-4 py-3 text-sm text-green-800 flex items-center gap-2">
-            <CheckCircle size={16} /> Estás al día: {cobro.colaboradoresFacturados} colaboradores cubiertos hasta el {fecha(cobro.cubreHasta)}.
+            <CheckCircle size={16} /> Estás al día: {cobro.colaboradoresFacturados} colaboradores cubiertos hasta el {ultimoDiaCubierto(cobro.cubreHasta)}.
           </div>
         )
       ) : (
@@ -255,25 +257,35 @@ export default function Suscripcion() {
         <table className="w-full text-sm mt-2">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wide text-muted border-b border-gray-100">
-              <th className="px-5 py-3">Fecha</th>
-              <th className="px-5 py-3 text-right">Monto</th>
-              <th className="px-5 py-3 text-center">Colaboradores</th>
-              <th className="px-5 py-3">Cubre hasta</th>
-              <th className="px-5 py-3">Método</th>
+              <th className="px-3 md:px-5 py-3">Fecha</th>
+              <th className="px-3 md:px-5 py-3 text-right">Monto</th>
+              <th className="hidden md:table-cell px-3 md:px-5 py-3 text-center">Colaboradores</th>
+              <th className="px-3 md:px-5 py-3">Cubre hasta</th>
+              <th className="hidden md:table-cell px-3 md:px-5 py-3">Método</th>
+              <th className="px-3 md:px-5 py-3 text-right">Recibo</th>
             </tr>
           </thead>
           <tbody>
             {cuenta.pagos.map(p => (
               <tr key={p.id} className="border-b border-gray-50">
-                <td className="px-5 py-3 text-muted">{new Date(p.creadoEn).toLocaleDateString('es-CO')}</td>
-                <td className="px-5 py-3 text-right font-medium text-ink">{cop(p.monto)}</td>
-                <td className="px-5 py-3 text-center text-muted">{p.colaboradoresFacturados}</td>
-                <td className="px-5 py-3 text-muted">{new Date(p.periodoFin).toLocaleDateString('es-CO')}</td>
-                <td className="px-5 py-3 text-muted text-xs">{p.metodo === 'LINK_WOMPI' ? 'Wompi' : p.metodo === 'MANUAL' ? 'Manual' : 'Tarjeta'}</td>
+                <td className="px-3 md:px-5 py-3 text-muted">{fechaCorta(p.creadoEn)}</td>
+                <td className="px-3 md:px-5 py-3 text-right font-medium text-ink">{cop(p.monto)}</td>
+                <td className="hidden md:table-cell px-3 md:px-5 py-3 text-center text-muted">{p.colaboradoresFacturados}</td>
+                <td className="px-3 md:px-5 py-3 text-muted">{ultimoDiaCubierto(p.periodoFin, true)}</td>
+                <td className="hidden md:table-cell px-3 md:px-5 py-3 text-muted text-xs">{p.metodo === 'LINK_WOMPI' ? 'Wompi' : p.metodo === 'MANUAL' ? 'Manual' : 'Tarjeta'}</td>
+                <td className="px-3 md:px-5 py-3 text-right">
+                  {cuenta.empresa && (
+                    <button onClick={() => descargarReciboPDF({ ...p, suscripcion: { empresa: cuenta.empresa! } })}
+                      aria-label={`Descargar recibo del ${fechaCorta(p.creadoEn)}`}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary-dark hover:underline">
+                      <Download size={14} /> PDF
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {cuenta.pagos.length === 0 && (
-              <tr><td colSpan={5} className="px-5 py-8 text-center text-muted">Aún no hay pagos registrados</td></tr>
+              <tr><td colSpan={6} className="px-5 py-8 text-center text-muted">Aún no hay pagos registrados</td></tr>
             )}
           </tbody>
         </table>
@@ -316,12 +328,12 @@ export default function Suscripcion() {
                   </>
                 )}
                 <div className="flex justify-between border-t border-gray-200 pt-2">
-                  <span className="text-muted">Días del mes por cubrir</span>
-                  <span className="text-ink font-medium">{cobro.diasRestantes} de {cobro.diasMes}</span>
+                  <span className="text-muted">{cobro.mesCompleto ? 'Mes completo (pago atrasado)' : 'Días del mes por cubrir'}</span>
+                  <span className="text-ink font-medium">{cobro.mesCompleto ? `${cobro.diasMes} de ${cobro.diasMes}` : `${cobro.diasRestantes} de ${cobro.diasMes}`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted">Cubre hasta</span>
-                  <span className="text-ink font-medium">{fecha(cobro.cubreHasta)}</span>
+                  <span className="text-ink font-medium">{ultimoDiaCubierto(cobro.cubreHasta)}</span>
                 </div>
                 <div className="flex justify-between border-t border-gray-200 pt-2">
                   <span className="font-semibold text-ink">Total a pagar hoy</span>

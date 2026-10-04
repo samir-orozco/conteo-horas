@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../prisma';
 import type { JwtPayload } from '../index';
 import {
-  estadoEfectivo, diasDeMora, sincronizarEstado, aplicarPagoAprobado,
+  estadoEfectivo, diasDeMora, sincronizarEstado, aplicarPagoAprobado, pagosDeLaEmpresa,
   obtenerPrecios, calcularCobro, prorrateo,
  aplicarPlanDelPago,
 } from '../utils/suscripcion';
@@ -100,10 +100,7 @@ export default async function suscripcionRoutes(app: FastifyInstance) {
     const empresaId = await empresaDelToken(request, reply);
     if (!empresaId) return;
 
-    const susc = await prisma.suscripcion.findUnique({
-      where: { empresaId },
-      include: { pagos: { orderBy: { creadoEn: 'desc' }, take: 12 } },
-    });
+    const susc = await prisma.suscripcion.findUnique({ where: { empresaId } });
     if (!susc) return reply.status(404).send({ error: 'Sin suscripción' });
     const sync = await sincronizarEstado(prisma, susc);
 
@@ -138,7 +135,9 @@ export default async function suscripcionRoutes(app: FastifyInstance) {
       tarifaMensual: cobro.tarifaMesCompleto,
       cobro,
       precios,
-      pagos: susc.pagos,
+      pagos: await pagosDeLaEmpresa(prisma, susc.id),
+      // Para el recibo en PDF que descarga desde el historial
+      empresa: empresa && { nombre: empresa.nombre, nit: empresa.nit, email: empresa.email, telefono: empresa.telefono },
       wompiConfigurado: wompiConfigurado(),
       checkout,
     };

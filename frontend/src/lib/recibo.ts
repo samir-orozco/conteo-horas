@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { fechaLarga, ultimoDiaCubierto } from './fechas';
 
 const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -23,13 +24,26 @@ export type PagoRecibo = {
   suscripcion: { empresa: { nombre: string; nit: string; email: string; telefono?: string | null } };
 };
 
+// Las filas del detalle. «Nota» y «Registrado por» solo salen si el pago las trae:
+// el super admin las recibe; a la empresa el servidor no se las manda.
+export function filasDelRecibo(pago: PagoRecibo): [string, string][] {
+  const filas: [string, string][] = [
+    ['Concepto', `Suscripción HoraPro · ${pago.colaboradoresFacturados} colaborador${pago.colaboradoresFacturados === 1 ? '' : 'es'}`],
+    ['Período cubierto', `${fechaLarga(pago.periodoInicio)} a ${ultimoDiaCubierto(pago.periodoFin)}`],
+    ['Método de pago', METODO_LABEL[pago.metodo] ?? pago.metodo],
+  ];
+  if (pago.wompiTransaccionId) filas.push(['Transacción Wompi', pago.wompiTransaccionId]);
+  if (pago.nota) filas.push(['Nota', pago.nota]);
+  if (pago.registradoPor) filas.push(['Registrado por', pago.registradoPor]);
+  return filas;
+}
+
 // Recibo de pago (invoice) en PDF con la línea gráfica HoraPro
 export function descargarReciboPDF(pago: PagoRecibo) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const empresa = pago.suscripcion.empresa;
   const numero = `HP-${pago.id.slice(-8).toUpperCase()}`;
-  const fecha = new Date(pago.creadoEn).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
-  const fmtDia = (s: string) => new Date(s).toLocaleDateString('es-CO');
+  const fecha = fechaLarga(pago.creadoEn);
 
   // Encabezado amarillo HoraPro
   doc.setFillColor(255, 216, 94);
@@ -79,16 +93,7 @@ export function descargarReciboPDF(pago: PagoRecibo) {
   doc.setTextColor(48, 48, 48);
   doc.setFontSize(10);
 
-  const filas: [string, string][] = [
-    ['Concepto', `Suscripción HoraPro · ${pago.colaboradoresFacturados} colaborador${pago.colaboradoresFacturados === 1 ? '' : 'es'}`],
-    ['Período cubierto', `${fmtDia(pago.periodoInicio)} a ${fmtDia(pago.periodoFin)}`],
-    ['Método de pago', METODO_LABEL[pago.metodo] ?? pago.metodo],
-  ];
-  if (pago.wompiTransaccionId) filas.push(['Transacción Wompi', pago.wompiTransaccionId]);
-  if (pago.nota) filas.push(['Nota', pago.nota]);
-  if (pago.registradoPor) filas.push(['Registrado por', pago.registradoPor]);
-
-  for (const [k, v] of filas) {
+  for (const [k, v] of filasDelRecibo(pago)) {
     doc.setTextColor(137, 137, 137);
     doc.text(k, 16, y);
     doc.setTextColor(48, 48, 48);

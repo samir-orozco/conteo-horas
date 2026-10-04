@@ -7,6 +7,7 @@ import api from '../../lib/api';
 import Toast from '../../components/Toast';
 import { copiarTexto } from '../../lib/clipboard';
 import { descargarReciboPDF } from '../../lib/recibo';
+import { ultimoDiaCubierto } from '../../lib/fechas';
 import VistaDeAdjunto from '../../components/VistaDeAdjunto';
 import { tipoDeDataUri } from '../../lib/archivos';
 import { funcionesDelPlan, funcionesExtra, cupoExtra, type CatalogoDePlanes } from '../../features/admin/planDeEmpresa';
@@ -316,7 +317,7 @@ export default function AdminEmpresaDetalle() {
                 <tr key={p.id} className="border-b border-gray-50">
                   <td className="px-5 py-3 text-muted">{fecha(p.creadoEn)}</td>
                   <td className="px-5 py-3 text-right font-semibold text-ink">{cop(p.monto)}</td>
-                  <td className="px-5 py-3 text-muted">{fecha(p.periodoFin)}</td>
+                  <td className="px-5 py-3 text-muted">{ultimoDiaCubierto(p.periodoFin, true)}</td>
                   <td className="px-5 py-3">
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{METODO_LABEL[p.metodo] ?? p.metodo}</span>
                   </td>

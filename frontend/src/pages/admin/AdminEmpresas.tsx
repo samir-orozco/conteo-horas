@@ -22,7 +22,7 @@ type EmpresaRow = {
   estadoSuscripcion: string | null; diasMora: number;
   pagadoHasta: string | null; finPrueba: string | null; precioModo: string | null;
 };
-type Cobro = { tipo: string; monto: number; diasRestantes: number; diasMes: number; cubreHasta: string; tarifaMesCompleto: number };
+type Cobro = { tipo: string; monto: number; mesCompleto?: boolean; diasRestantes: number; diasMes: number; cubreHasta: string; tarifaMesCompleto: number };
 
 const ESTADO_CHIP: Record<string, string> = {
   PRUEBA: 'bg-primary/40 text-ink',
@@ -359,7 +359,7 @@ export default function AdminEmpresas() {
               <div className="bg-gray-50 rounded-xl px-4 py-3 mb-4 text-sm space-y-1">
                 <div className="flex justify-between"><span className="text-muted">Mes completo ({pagando.colaboradoresActivos} colab.)</span><span className="text-ink font-medium">{cop(cobro.tarifaMesCompleto)}</span></div>
                 <div className="flex justify-between">
-                  <span className="text-muted">Sugerido hoy ({cobro.diasRestantes} de {cobro.diasMes} días)</span>
+                  <span className="text-muted">{cobro.mesCompleto ? 'Sugerido hoy (mes completo, pago atrasado)' : `Sugerido hoy (${cobro.diasRestantes} de ${cobro.diasMes} días)`}</span>
                   <span className="font-bold text-ink">{cobro.monto > 0 ? cop(cobro.monto) : 'Al día'}</span>
                 </div>
                 <p className="text-[11px] text-muted">Cubre hasta el {new Date(cobro.cubreHasta).toLocaleDateString('es-CO')}</p>

@@ -20,6 +20,15 @@ export const fechaCorta = (iso: string | Date) =>
     timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric',
   });
 
+// El último día que cubre un pago. Los pagos vencen a la medianoche de Bogotá del día 1
+// del mes siguiente (`periodoFin`, `pagadoHasta`, `cubreHasta`), y pintar esa fecha
+// decía «hasta el 1 de noviembre» de un mes pagado hasta el 31 de octubre. Larga por
+// defecto; `corta` para las tablas.
+export const ultimoDiaCubierto = (vence: string | Date, corta = false) => {
+  const dia = new Date(new Date(vence).getTime() - 1);
+  return corta ? fechaCorta(dia) : fechaLarga(dia);
+};
+
 // "agosto de 2026", para decir desde cuándo sin la precisión del día.
 export const mesYAnio = (iso: string | Date) =>
   new Date(iso).toLocaleDateString('es-CO', { timeZone: TZ, month: 'long', year: 'numeric' });

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CreditCard, CheckCircle, LogOut, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
+import { ultimoDiaCubierto } from '../lib/fechas';
 import { useAuth } from '../context/AuthContext';
 
 const cop = (n: number) =>
@@ -11,7 +12,7 @@ const esLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname
 
 type Cuenta = {
   estado: string; diasMora: number; tarifaMensual: number; colaboradoresActivos: number;
-  cobro: { monto: number; diasRestantes: number; diasMes: number; cubreHasta: string; tarifaMesCompleto: number };
+  cobro: { monto: number; mesCompleto?: boolean; diasRestantes: number; diasMes: number; cubreHasta: string; tarifaMesCompleto: number };
   checkout: { url: string; publicKey: string; currency: string; amountInCents: number; reference: string; signature: string } | null;
 };
 
@@ -110,10 +111,10 @@ export default function BloqueoPago() {
                 <span className="text-ink font-medium">{cop(cuenta.cobro.tarifaMesCompleto)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted">Días por cubrir ({cuenta.cobro.diasRestantes} de {cuenta.cobro.diasMes})</span>
+                <span className="text-muted">{cuenta.cobro.mesCompleto ? 'Mes completo (pago atrasado)' : `Días por cubrir (${cuenta.cobro.diasRestantes} de ${cuenta.cobro.diasMes})`}</span>
                 <span className="font-bold text-ink">{cop(cuenta.cobro.monto)}</span>
               </div>
-              <p className="text-[11px] text-muted">Cubre hasta el {new Date(cuenta.cobro.cubreHasta).toLocaleDateString('es-CO', { day: 'numeric', month: 'long' })} — todos los pagos renuevan el día 1.</p>
+              <p className="text-[11px] text-muted">Cubre hasta el {ultimoDiaCubierto(cuenta.cobro.cubreHasta)} — todos los pagos renuevan el día 1.</p>
             </div>
           )}
 

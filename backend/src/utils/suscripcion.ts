@@ -100,7 +100,8 @@ export type Cobro = {
   colaboradoresActivos: number;
   colaboradoresFacturados: number; // ya cubiertos por el pago vigente
   tarifaMesCompleto: number;
-  monto: number; // lo que se debe pagar hoy (prorrateado)
+  monto: number; // lo que se debe pagar hoy (prorrateado, salvo mesCompleto)
+  mesCompleto?: boolean; // MES sin prorrateo: ya pagó antes y se atrasó
   diasMes: number;
   diasRestantes: number;
   cubreHasta: Date;
@@ -127,9 +128,13 @@ export async function calcularCobro(prisma: PrismaClient, empresaId: string, pre
 
   const alDia = Boolean(susc?.pagadoHasta && susc.pagadoHasta > ahora);
   if (!alDia) {
+    // Prorrateo solo en el primer cobro (sale de la prueba a mitad de mes). Quien ya
+    // pagó alguna vez debe el mes completo: atrasarse no puede salir más barato.
+    const yaPago = Boolean(susc?.pagos.some(p => p.estado === 'APROBADO'));
     return {
       tipo: 'MES', colaboradoresActivos: activos, colaboradoresFacturados: 0,
-      tarifaMesCompleto, monto: Math.round(tarifaMesCompleto * factor),
+      tarifaMesCompleto, monto: yaPago ? tarifaMesCompleto : Math.round(tarifaMesCompleto * factor),
+      mesCompleto: yaPago,
       diasMes, diasRestantes, cubreHasta,
     };
   }
@@ -149,6 +154,20 @@ export async function calcularCobro(prisma: PrismaClient, empresaId: string, pre
     tarifaMesCompleto, monto: Math.round(diferencia * factor),
     diasMes, diasRestantes, cubreHasta: susc!.pagadoHasta!,
   };
+}
+
+// Los pagos que ve el admin de la empresa: solo los aprobados, todos, y sin lo que es
+// interno de HoraPro (la foto del comprobante, la nota y quién lo registró). Antes la
+// ruta mandaba la fila entera y los rechazados se listaban como si fueran pagos.
+export function pagosDeLaEmpresa(prisma: PrismaClient, suscripcionId: string) {
+  return prisma.pago.findMany({
+    where: { suscripcionId, estado: 'APROBADO' },
+    orderBy: { creadoEn: 'desc' },
+    select: {
+      id: true, monto: true, colaboradoresFacturados: true, periodoInicio: true, periodoFin: true,
+      metodo: true, wompiTransaccionId: true, creadoEn: true,
+    },
+  });
 }
 
 // Registra un pago aprobado. El período siempre cierra a fin de mes calendario.

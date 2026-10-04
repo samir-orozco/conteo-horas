@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { X, FileDown, Paperclip, Receipt } from 'lucide-react';
 import api from '../../lib/api';
 import { descargarReciboPDF, type PagoRecibo } from '../../lib/recibo';
+import { fechaCorta, ultimoDiaCubierto } from '../../lib/fechas';
 import VistaDeAdjunto from '../../components/VistaDeAdjunto';
 import { tipoDeDataUri } from '../../lib/archivos';
 
@@ -70,7 +71,7 @@ export default function AdminPagos() {
                 <td className="px-5 py-3.5 text-right font-semibold text-ink">{cop(p.monto)}</td>
                 <td className="px-5 py-3.5 text-center text-muted">{p.colaboradoresFacturados}</td>
                 <td className="px-5 py-3.5 text-muted text-xs">
-                  {new Date(p.periodoInicio).toLocaleDateString('es-CO')} → {new Date(p.periodoFin).toLocaleDateString('es-CO')}
+                  {fechaCorta(p.periodoInicio)} → {ultimoDiaCubierto(p.periodoFin, true)}
                 </td>
                 <td className="px-5 py-3.5">
                   <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-700">
@@ -119,7 +120,7 @@ export default function AdminPagos() {
                 <div className="flex justify-between"><span className="text-muted">NIT</span><span className="text-ink font-medium">{detalle.suscripcion.empresa.nit}</span></div>
                 <div className="flex justify-between"><span className="text-muted">Email</span><span className="text-ink font-medium">{detalle.suscripcion.empresa.email}</span></div>
                 <div className="flex justify-between border-t border-gray-200 pt-2"><span className="text-muted">Colaboradores</span><span className="text-ink font-medium">{detalle.colaboradoresFacturados}</span></div>
-                <div className="flex justify-between"><span className="text-muted">Período</span><span className="text-ink font-medium">{new Date(detalle.periodoInicio).toLocaleDateString('es-CO')} → {new Date(detalle.periodoFin).toLocaleDateString('es-CO')}</span></div>
+                <div className="flex justify-between"><span className="text-muted">Período</span><span className="text-ink font-medium">{fechaCorta(detalle.periodoInicio)} → {ultimoDiaCubierto(detalle.periodoFin, true)}</span></div>
                 <div className="flex justify-between"><span className="text-muted">Método</span><span className="text-ink font-medium">{METODO_LABEL[detalle.metodo] ?? detalle.metodo}</span></div>
                 {detalle.wompiTransaccionId && <div className="flex justify-between"><span className="text-muted">Transacción</span><span className="text-ink font-medium text-xs">{detalle.wompiTransaccionId}</span></div>}
                 {detalle.nota && <div className="flex justify-between gap-3"><span className="text-muted shrink-0">Nota</span><span className="text-ink font-medium text-right">{detalle.nota}</span></div>}
