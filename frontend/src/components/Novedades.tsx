@@ -512,9 +512,13 @@ export default function Novedades({ forzado = false, onCerrar }: { forzado?: boo
             ))}
           </div>
 
+          {/* Mide siempre lo que «Continuar», también cuando dice «Listo» (pedido del dueño). Las dos
+              palabras van encimadas en la misma celda y la que sobra es invisible: así el ancho no
+              depende de un número de píxeles que cambie con la letra o el zoom. */}
           <button onClick={() => (ultima ? cerrar() : setI(x => x + 1))}
-            className="shrink-0 px-3 sm:px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark text-ink text-sm font-bold">
-            {ultima ? 'Listo' : 'Continuar'}
+            className="shrink-0 grid text-center px-3 sm:px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark text-ink text-sm font-bold">
+            <span aria-hidden="true" className="invisible col-start-1 row-start-1">Continuar</span>
+            <span className="col-start-1 row-start-1">{ultima ? 'Listo' : 'Continuar'}</span>
           </button>
         </div>
       </div>

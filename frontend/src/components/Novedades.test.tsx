@@ -78,6 +78,15 @@ describe('Novedades', () => {
     expect(activo()).toBe(3);
   });
 
+  // «Listo» mide lo que «Continuar» porque va encimado sobre un «Continuar» invisible. Ese texto
+  // de relleno no puede colarse en lo que oye un lector de pantalla.
+  it('el botón se llama solo «Continuar», y en la última solo «Listo»', async () => {
+    render(<Novedades />);
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeInTheDocument();
+    await avanzar(14);
+    expect(screen.getByRole('button', { name: 'Listo' })).toBeInTheDocument();
+  });
+
   it('quien ya vio el lote de septiembre las vuelve a ver, porque hay novedades nuevas', () => {
     // La llave del lote anterior, escrita tal cual la guardaba el navegador.
     localStorage.setItem(`horapro_novedades_2026-09_${usuario.id}`, '1');
