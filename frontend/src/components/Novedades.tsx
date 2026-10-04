@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import giraIzquierda from '../assets/rostro/gira-izquierda.svg';
 import { debeMostrarNovedades, loteEsIneludible, vistaKey, apagadoKey, guiaKey } from './novedadesVisibles';
+import { puntosVisibles } from './puntosDeNovedades';
 
 // Novedades de la versión: se muestran UNA vez por usuario al entrar.
 //
@@ -496,20 +497,23 @@ export default function Novedades({ forzado = false, onCerrar }: { forzado?: boo
 
         <div className="shrink-0 flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-100">
           <button onClick={() => setI(x => x - 1)} disabled={i === 0}
-            className="shrink-0 px-4 py-2 rounded-xl border border-gray-300 text-sm font-semibold text-ink hover:bg-gray-50 disabled:opacity-0 disabled:pointer-events-none">
+            className="shrink-0 px-3 sm:px-4 py-2 rounded-xl border border-gray-300 text-sm font-semibold text-ink hover:bg-gray-50 disabled:opacity-0 disabled:pointer-events-none">
             Anterior
           </button>
 
-          {/* Los puntos bajan a otra fila antes que empujar los botones: en un celular de 384 px la
-              fila de catorce ya sacaba 49 px a «Continuar» por la derecha y no se podía avanzar. */}
-          <div className="flex min-w-0 flex-wrap items-center justify-center gap-1 sm:gap-1.5">
-            {NOVEDADES.map((_, k) => (
-              <span key={k} className={`rounded-full transition-all ${k === i ? 'w-2 h-2 bg-ink' : 'w-1.5 h-1.5 bg-gray-300'}`} />
+          {/* Cuatro puntos que se corren al avanzar (puntosDeNovedades.ts). Antes eran quince, y en un
+              celular de 384 px sacaban a «Continuar» 61 px por la derecha. En 320 px los cuatro caben
+              en una fila porque los botones se angostan; el `flex-wrap` queda de red por debajo. */}
+          <div role="img" aria-label={`Novedad ${i + 1} de ${NOVEDADES.length}`}
+            className="flex min-w-0 flex-wrap items-center justify-center gap-1 sm:gap-1.5">
+            {puntosVisibles(i, NOVEDADES.length).map(k => (
+              <span key={k} aria-current={k === i ? 'step' : undefined}
+                className={`rounded-full transition-all ${k === i ? 'w-2 h-2 bg-ink' : 'w-1.5 h-1.5 bg-gray-300'}`} />
             ))}
           </div>
 
           <button onClick={() => (ultima ? cerrar() : setI(x => x + 1))}
-            className="shrink-0 px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark text-ink text-sm font-bold">
+            className="shrink-0 px-3 sm:px-4 py-2 rounded-xl bg-primary hover:bg-primary-dark text-ink text-sm font-bold">
             {ultima ? 'Listo' : 'Continuar'}
           </button>
         </div>

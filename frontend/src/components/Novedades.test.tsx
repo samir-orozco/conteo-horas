@@ -61,6 +61,23 @@ describe('Novedades', () => {
     expect(screen.getByRole('button', { name: /listo/i })).toBeInTheDocument();
   });
 
+  // Cuatro puntos y no quince: el cuarto queda en gris —«hay más»— hasta la última
+  // (puntosDeNovedades.ts tiene la regla; aquí, que la ventana la use).
+  it('muestra cuatro puntos, y el cuarto solo se activa en la última novedad', async () => {
+    render(<Novedades />);
+    const fila = () => screen.getByRole('img', { name: /^novedad \d+ de 15$/i });
+    const activo = () => [...fila().children].findIndex(p => p.getAttribute('aria-current') === 'step');
+    expect(fila()).toHaveAccessibleName('Novedad 1 de 15');
+    expect(fila().children).toHaveLength(4);
+    expect(activo()).toBe(0);
+    await avanzar(13);
+    expect(fila()).toHaveAccessibleName('Novedad 14 de 15');
+    expect(fila().children).toHaveLength(4);
+    expect(activo()).toBe(2);
+    await avanzar(1);
+    expect(activo()).toBe(3);
+  });
+
   it('quien ya vio el lote de septiembre las vuelve a ver, porque hay novedades nuevas', () => {
     // La llave del lote anterior, escrita tal cual la guardaba el navegador.
     localStorage.setItem(`horapro_novedades_2026-09_${usuario.id}`, '1');
