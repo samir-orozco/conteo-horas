@@ -177,7 +177,7 @@ export default function PantallaMarcar({
               {marcasEnLista.map(m => (
                 <li key={`${m.momento}-${m.hora}`}
                   className="rounded-full bg-green-500/15 px-4 py-2 text-center text-sm font-semibold text-green-400">
-                  {textoDeLaMarca(m.momento, m.hora)}
+                  {textoDeLaMarca(m.momento, m.hora, ahora)}
                 </li>
               ))}
             </ul>

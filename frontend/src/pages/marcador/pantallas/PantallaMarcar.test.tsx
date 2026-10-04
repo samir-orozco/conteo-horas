@@ -409,6 +409,18 @@ describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
     expect(screen.queryByRole('button', { name: /más|ver menos/i })).not.toBeInTheDocument();
   });
 
+  // Luis entró el viernes a las 7:00 p. m. y llega el sábado a las 6:00 a. m. a marcar su salida. El
+  // servidor le manda su entrada aunque esté guardada en el viernes (desdeCuandoSeListan), y la
+  // pantalla dice que fue ayer.
+  it('en un turno nocturno muestra la entrada de anoche, diciendo que fue ayer', () => {
+    montarConfirmando({
+      ...fuera, dentroAhora: true, entradaAbierta: { entrada: '2026-10-03T00:00:00Z' },
+      marcasDeHoy: [{ momento: 'ENTRADA', hora: '2026-10-03T00:00:00Z' }],
+    }, { ahora: '2026-10-03T11:00:00Z' });
+    expect(screen.getByText('Entrada registrada ayer a las 7:00 p. m.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^soy ana, registrar salida$/i })).toBeInTheDocument();
+  });
+
   it('sin marcas hoy no muestra la lista', () => {
     montarConfirmando({ ...fuera, marcasDeHoy: [] });
     expect(screen.queryByRole('heading', { name: 'Marcas de hoy' })).not.toBeInTheDocument();

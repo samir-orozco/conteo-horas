@@ -11,8 +11,9 @@ export type Colaborador = { id: string; nombre: string; apellido: string; cargo:
 export type Estado = {
   dentroAhora: boolean;
   // Las marcas que la persona ya tiene hoy, en orden, para mostrárselas antes de marcar (3 de
-  // octubre de 2026). Opcional: un servidor anterior no las manda, y entonces la pantalla cae a la
-  // línea de estado de siempre.
+  // octubre de 2026). En un turno nocturno trae también las de ayer de la jornada que sigue en curso
+  // o se cerró hoy, y la pantalla les pone «ayer». Opcional: un servidor anterior no las manda, y
+  // entonces la pantalla cae a la línea de estado de siempre.
   marcasDeHoy?: { momento: Momento; hora: string }[];
   entradaAbierta: { entrada: string } | null;
   // Último turno YA COMPLETO de hoy (entrada + salida). Sirve para mostrar el
