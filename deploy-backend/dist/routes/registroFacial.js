@@ -6,6 +6,8 @@ const prisma_1 = require("../prisma");
 const rostro_1 = require("../utils/rostro");
 const fotoPerfil_1 = require("../utils/fotoPerfil");
 const kioscoConfig_1 = require("../utils/kioscoConfig");
+const revisarRostroNuevo_1 = require("../utils/revisarRostroNuevo");
+const notificaciones_1 = require("../utils/notificaciones");
 const registroFacial_1 = require("../utils/registroFacial");
 // EL REGISTRO FACIAL QUE HACE LA PROPIA PERSONA, DESDE SU ENLACE (14 de septiembre de 2026).
 //
@@ -29,7 +31,7 @@ async function buscarEnlace(token) {
             id: true, venceEn: true, usadoEn: true, anuladoEn: true, intentosCedula: true,
             colaborador: {
                 select: {
-                    id: true, nombre: true, cedula: true, activo: true, empresaId: true, foto: true,
+                    id: true, nombre: true, apellido: true, cedula: true, activo: true, empresaId: true, foto: true,
                     rostroDescriptor: true, rostroEnroladoEn: true, rostroRechazadoEn: true,
                     empresa: { select: { nombre: true, activa: true } },
                 },
@@ -194,6 +196,19 @@ async function registroFacialRoutes(app) {
             return reply.status(400).send({ error: 'No pudimos leer bien tu rostro. Intenta el escaneo otra vez.', codigo: 'ROSTRO_INVALIDO' });
         }
         const descriptores = body.descriptores;
+        // LA REVISIÓN DEL ROSTRO NUEVO (2 de octubre de 2026), la misma de la ficha. Lo
+        // que cambia es la respuesta: aquí quien registra es la propia persona, y no se
+        // le puede decir a quién se parece (le contaría algo de la cara de un
+        // compañero). Las tomas de dos personas se rechazan con el mismo mensaje de un
+        // escaneo malo; el parecido se guarda y se le avisa al administrador.
+        const revision = await (0, revisarRostroNuevo_1.revisarRostroNuevo)(enlace.colaborador.empresaId, enlace.colaborador.id, descriptores);
+        request.log.info({
+            evento: 'revision-rostro', origen: 'ENLACE', empresaId: enlace.colaborador.empresaId, colaboradorId: enlace.colaborador.id,
+            maxima: revision.maxima, parecidos: revision.parecidos.map(p => ({ id: p.id, distancia: p.distancia })),
+        }, 'revisión de rostro nuevo');
+        if (!revision.coherentes) {
+            return reply.status(400).send({ error: 'No pudimos leer bien tu rostro. Repite el escaneo con solo tu cara frente a la cámara.', codigo: 'ROSTRO_INVALIDO' });
+        }
         const primeraFoto = (0, fotoPerfil_1.fotoParaEnrolar)(enlace.colaborador.foto, body.foto);
         const primeraMini = primeraFoto && (0, fotoPerfil_1.miniValida)(body.fotoMini) ? body.fotoMini : null;
         const ahora = new Date();
@@ -217,6 +232,16 @@ async function registroFacialRoutes(app) {
         });
         if (!gastado)
             return responderEstado(reply, 'USADO');
+        const parecida = revision.parecidos[0];
+        if (parecida) {
+            const quien = `${enlace.colaborador.nombre} ${enlace.colaborador.apellido}`;
+            await (0, notificaciones_1.notificar)(enlace.colaborador.empresaId, {
+                tipo: 'ROSTRO_PARECIDO',
+                titulo: `El rostro que registró ${quien} se parece al de ${parecida.nombre}`,
+                cuerpo: 'Revisa las fotos de las dos fichas. Entre familiares es normal; si en el registro quedó la cara de otra persona, el kiosco las va a confundir.',
+                entidad: 'colaborador', entidadId: enlace.colaborador.id,
+            });
+        }
         return { ok: true, registradoEn: ahora, tomas: descriptores.length };
     });
 }

@@ -2,11 +2,16 @@
 // Reconocimiento facial: solo comparamos descriptores matemáticos (128 floats
 // que produce face-api.js en el navegador). La imagen nunca llega al servidor.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MARGEN_AMBIGUO = exports.UMBRAL_COINCIDENCIA = void 0;
+exports.UMBRAL_CONFIRMACION_REFORZADA = exports.MARGEN_AMBIGUO = exports.UMBRAL_COINCIDENCIA = void 0;
+exports.distanciaEuclidiana = distanciaEuclidiana;
 exports.esDescriptorValido = esDescriptorValido;
 exports.esListaDescriptoresValida = esListaDescriptoresValida;
+exports.muestrasDe = muestrasDe;
 exports.cuantasMuestras = cuantasMuestras;
 exports.identificarRostro = identificarRostro;
+exports.mejorDistancia = mejorDistancia;
+exports.esParecidoDudoso = esParecidoDudoso;
+exports.continuidadConLaAnterior = continuidadConLaAnterior;
 // Distancia recomendada por face-api.js para considerar "misma persona".
 // Por debajo de este umbral se acepta la coincidencia.
 exports.UMBRAL_COINCIDENCIA = 0.5;
@@ -71,28 +76,56 @@ function identificarRostro(entrante, candidatos) {
     // La distancia de cada PERSONA es la de su mejor muestra. Alguien enrolado con
     // frente, perfiles y sin gafas tiene varias tomas cercanas entre sí POR DISEÑO:
     // si el margen se midiera entre muestras, enrolar bien haría imposible marcar.
-    const porPersona = [];
+    const todas = [];
     for (const c of candidatos) {
-        let mejor = Infinity;
-        for (const muestra of muestrasDe(c.rostroDescriptor)) {
-            const d = distanciaEuclidiana(entrante, muestra);
-            if (d < mejor)
-                mejor = d;
-        }
-        if (mejor <= exports.UMBRAL_COINCIDENCIA)
-            porPersona.push({ colaborador: c, distancia: mejor });
+        const mejor = mejorDistancia(entrante, muestrasDe(c.rostroDescriptor));
+        if (mejor !== null)
+            todas.push({ colaborador: c, distancia: mejor });
     }
+    todas.sort((a, b) => a.distancia - b.distancia);
+    const porPersona = todas.filter(p => p.distancia <= exports.UMBRAL_COINCIDENCIA);
     if (porPersona.length === 0)
         return { tipo: 'SIN_COINCIDENCIA' };
-    porPersona.sort((a, b) => a.distancia - b.distancia);
     const [primero, segundo] = porPersona;
+    const segunda = todas[1]?.distancia ?? null;
     // Sin segundo candidato no hay con quién confundirse. El margen es infinito, y
     // se acota para que viaje como número y no como Infinity.
     const margen = segundo ? segundo.distancia - primero.distancia : exports.UMBRAL_COINCIDENCIA;
     // Ojo: solo cuentan como segundo los que TAMBIÉN bajaron del umbral. Alguien a
     // 0,60 está descartado, y que esté «cerca» del aceptado no significa nada.
     if (segundo && margen < exports.MARGEN_AMBIGUO) {
-        return { tipo: 'AMBIGUA', distancia: primero.distancia, margen };
+        return { tipo: 'AMBIGUA', distancia: primero.distancia, margen, segunda };
     }
-    return { tipo: 'ACEPTADA', colaborador: primero.colaborador, distancia: primero.distancia, margen };
+    return { tipo: 'ACEPTADA', colaborador: primero.colaborador, distancia: primero.distancia, margen, segunda };
+}
+// La distancia de la mejor muestra, o null si no hay ninguna que comparar. Es LA
+// regla de «cada persona cuenta por su mejor muestra»: el cotejo del kiosco y la
+// revisión del rostro nuevo la usan las dos, para que no puedan discrepar.
+function mejorDistancia(entrante, muestras) {
+    let mejor = null;
+    for (const muestra of muestras) {
+        const d = distanciaEuclidiana(entrante, muestra);
+        if (mejor === null || d < mejor)
+            mejor = d;
+    }
+    return mejor;
+}
+// DESDE DÓNDE EL KIOSCO PIDE LA CONFIRMACIÓN REFORZADA (2 de octubre de 2026).
+//
+// No es un rechazo: la persona sostiene el botón 3 segundos en vez de 1,5 y ve un
+// aviso. Sale de una medición, no de un juicio: en Grupo MSM, entre el 10/09 y el
+// 1/10, 888 marcas con rostro; a partir de 0,44 queda el 4 % (36). La impostora
+// del 1 de octubre dio 0,464 y la marca legítima más alta de esa mañana, 0,460:
+// la distancia sola no las separa, por eso esto pide atención y no rechaza.
+exports.UMBRAL_CONFIRMACION_REFORZADA = 0.44;
+function esParecidoDudoso(distancia) {
+    return distancia >= exports.UMBRAL_CONFIRMACION_REFORZADA;
+}
+function continuidadConLaAnterior(anterior, actual, ahora, ventanaMs) {
+    if (!anterior || ahora - anterior.en > ventanaMs)
+        return null;
+    return {
+        distancia: distanciaEuclidiana(anterior.descriptor, actual),
+        minutos: Math.floor((ahora - anterior.en) / 60000),
+    };
 }

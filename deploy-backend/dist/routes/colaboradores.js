@@ -20,6 +20,7 @@ const columnasDeColaborador_1 = require("../utils/columnasDeColaborador");
 const largoDeColumna_1 = require("../utils/largoDeColumna");
 const registroFacial_1 = require("../utils/registroFacial");
 const kioscoConfig_1 = require("../utils/kioscoConfig");
+const revisarRostroNuevo_1 = require("../utils/revisarRostroNuevo");
 async function colaboradorRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     // Deja constancia de un movimiento de vinculación. Todo lo que mueve el
@@ -295,6 +296,9 @@ async function colaboradorRoutes(app) {
                     empresaId: request.empresaId,
                     nombre: c.nombre, apellido: c.apellido, cedula: c.cedula,
                     cargo: c.cargo, salarioMensual: c.salarioMensual,
+                    // null es «el del decreto»: es el valor que tiene que quedar guardado
+                    // para que en enero el decreto nuevo rija sin tocar ficha por ficha.
+                    auxilioTransporte: c.auxilioTransporte,
                     email: c.email, telefono: c.telefono,
                     fechaNacimiento: c.fechaNacimiento ? new Date(`${c.fechaNacimiento}T12:00:00Z`) : null,
                     horarioId: c.horarioId,
@@ -663,7 +667,7 @@ async function colaboradorRoutes(app) {
     // perderla porque alguien vuelva a enrolar el rostro.
     app.post('/:id/rostro', auth, async (request, reply) => {
         const { id } = request.params;
-        const { descriptores, foto, fotoMini } = request.body;
+        const { descriptores, foto, fotoMini, confirmarParecido } = request.body;
         // La foto actual sí hace falta: la primera toma del escaneo solo se guarda si todavía no hay una.
         const existente = await prisma_1.prisma.colaborador.findFirst({
             where: { id, empresaId: request.empresaId }, select: { id: true, foto: true },
@@ -672,6 +676,32 @@ async function colaboradorRoutes(app) {
             return reply.status(404).send({ error: 'No encontrado' });
         if (!(0, rostro_1.esListaDescriptoresValida)(descriptores)) {
             return reply.status(400).send({ error: 'Muestras faciales inválidas' });
+        }
+        // LA REVISIÓN DEL ROSTRO NUEVO (2 de octubre de 2026). Una toma con la cara de
+        // otra persona hacía que esa persona marcara como esta para siempre.
+        const revision = await (0, revisarRostroNuevo_1.revisarRostroNuevo)(request.empresaId, id, descriptores);
+        // Queda la huella de cada revisión, con distancias e ids y sin nombres: es lo
+        // que permite fijar con datos los dos números provisionales.
+        request.log.info({
+            evento: 'revision-rostro', origen: 'FICHA', empresaId: request.empresaId, colaboradorId: id,
+            maxima: revision.maxima, parecidos: revision.parecidos.map(p => ({ id: p.id, distancia: p.distancia })),
+            confirmado: confirmarParecido === true,
+        }, 'revisión de rostro nuevo');
+        if (!revision.coherentes) {
+            return reply.status(400).send({
+                error: 'Las tomas no parecen de una misma persona. Repite el registro con una sola persona frente a la cámara.',
+                codigo: 'TOMAS_INCOHERENTES',
+            });
+        }
+        // Se parece a otra ficha: el administrador lo ve con nombre y decide. No se
+        // bloquea, porque entre familiares es normal. Aquí sí se puede decir el
+        // nombre: quien registra desde la ficha ya ve a toda la empresa.
+        if (revision.parecidos.length > 0 && confirmarParecido !== true) {
+            return reply.status(409).send({
+                error: 'Este rostro se parece mucho al de otra persona de la empresa.',
+                codigo: 'ROSTRO_PARECIDO',
+                parecidos: revision.parecidos.slice(0, 3).map(p => ({ id: p.id, nombre: p.nombre })),
+            });
         }
         const primeraFoto = (0, fotoPerfil_1.fotoParaEnrolar)(existente.foto, foto);
         const primeraMini = primeraFoto && (0, fotoPerfil_1.miniValida)(fotoMini) ? fotoMini : null;

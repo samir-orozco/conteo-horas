@@ -22,6 +22,8 @@ const tardanzas_1 = require("../utils/tardanzas");
 const cierreAlmuerzo_1 = require("../utils/cierreAlmuerzo");
 const materializarDias_1 = require("../utils/materializarDias");
 const diasDeLaSemana_1 = require("../utils/diasDeLaSemana");
+const marcasDelDia_1 = require("../utils/marcasDelDia");
+const jornadaYaRegistrada_1 = require("../utils/jornadaYaRegistrada");
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
 // Un token de kiosco dura 12 horas y sigue siendo válido aunque la persona ya no
 // exista: pasa cuando el super admin elimina la empresa con una sesión abierta.
@@ -56,6 +58,27 @@ async function enroladosDeEmpresa(empresaId) {
     });
     cacheRostros.set(empresaId, { ts: Date.now(), enrolados });
     return enrolados;
+}
+// La última captura ACEPTADA de cada persona, para medir la siguiente contra ella
+// (2 de octubre de 2026). Solo alimenta el log: el 1 de octubre «Lina» entró a las
+// 08:49 con una cara y a las 08:52 con otra, y contra el registro las dos pasaban.
+// Vive en memoria a propósito: un reinicio la olvida, y para medir eso basta. Una
+// entrada por persona, así que no crece más que la planta de las empresas.
+const ultimaCaptura = new Map();
+function recordarCaptura(colaboradorId, descriptor, ahora) {
+    for (const [id, c] of ultimaCaptura)
+        if (ahora - c.en > cierreTurnos_1.VENTANA_TURNO_MS)
+            ultimaCaptura.delete(id);
+    ultimaCaptura.set(colaboradorId, { descriptor, en: ahora });
+}
+// La miniatura de la ficha, para que el kiosco la ponga al lado de la foto del
+// momento al pedir la confirmación. Es la que ya usa la lista de colaboradores
+// (tope de 60.000 caracteres, utils/fotoPerfil.ts): la foto grande puede pesar
+// diez veces más y no hace falta en un círculo. Sin miniatura, el kiosco pinta
+// las iniciales.
+async function fotoDeReferencia(colaboradorId) {
+    const c = await prisma_1.prisma.colaborador.findUnique({ where: { id: colaboradorId }, select: { fotoMini: true } });
+    return c?.fotoMini ?? null;
 }
 // ¿A ESTA persona se le va a validar la ubicación al marcar?
 //
@@ -346,6 +369,13 @@ async function workerRoutes(app) {
             colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo, modalidad: col.modalidad },
             sedes: sedesDelCol.map(s => s.sede),
             validaUbicacion: await seLeValidaLaUbicacion(col.id, col.empresaId, col.modalidad),
+            // Con la cédula NO viaja la cara (2 de octubre de 2026): bastaría el enlace del
+            // kiosco y una lista de cédulas para cosechar la foto de cada empleado. Con el
+            // rostro no pasa, porque hay que presentar una cara que coincida. El kiosco
+            // pinta las iniciales.
+            fotoReferencia: null,
+            // Con la cédula no hubo rostro que comparar.
+            parecidoDudoso: false,
         };
     });
     // Login del kiosco con reconocimiento facial: el navegador ya calculó el
@@ -370,10 +400,25 @@ async function workerRoutes(app) {
         // Se registra SIEMPRE, acepte o no. El margen es el dato que hoy no existe y
         // que hace falta para fijar `MARGEN_AMBIGUO` con la distribución real en vez
         // de con un juicio. Sin esto, afinar el umbral seguiría siendo adivinar.
+        //
+        // Desde el 2 de octubre de 2026 lleva además, solo para medir:
+        //   - a quién se aceptó, para poder casar cada línea con su persona;
+        //   - `segunda`, la persona más cercana después de la elegida aunque esté por
+        //     encima del umbral (con un margen de 0,5 no se sabe si había alguien a 0,51);
+        //   - la distancia contra la última captura aceptada de esa persona y los
+        //     minutos que las separan. Ninguno decide nada todavía.
+        const ahora = Date.now();
+        const continuidad = veredicto.tipo === 'ACEPTADA'
+            ? (0, rostro_1.continuidadConLaAnterior)(ultimaCaptura.get(veredicto.colaborador.id), descriptor, ahora, cierreTurnos_1.VENTANA_TURNO_MS)
+            : null;
         app.log.info({
             evento: 'login-rostro', empresaId: empresa.id, veredicto: veredicto.tipo,
             distancia: veredicto.tipo === 'SIN_COINCIDENCIA' ? null : veredicto.distancia,
             margen: veredicto.tipo === 'SIN_COINCIDENCIA' ? null : veredicto.margen,
+            segunda: veredicto.tipo === 'SIN_COINCIDENCIA' ? null : veredicto.segunda,
+            colaboradorId: veredicto.tipo === 'ACEPTADA' ? veredicto.colaborador.id : null,
+            distanciaALaAnterior: continuidad?.distancia ?? null,
+            minutosDesdeLaAnterior: continuidad?.minutos ?? null,
         }, 'reconocimiento facial');
         if (veredicto.tipo === 'SIN_COINCIDENCIA') {
             return reply.code(401).send({ error: 'Rostro no reconocido. Intenta de nuevo o marca con tu cédula.' });
@@ -388,6 +433,7 @@ async function workerRoutes(app) {
             return reply.code(401).send({ error: 'No pudimos confirmar quién eres. Acércate un poco más e intenta de nuevo, o marca con tu cédula.' });
         }
         const col = veredicto.colaborador;
+        recordarCaptura(col.id, descriptor, ahora);
         // La distancia del match la calculaba `mejorCoincidencia` y se tiraba. Ahora
         // viaja en el token y queda en la marcación: una distancia repetida al
         // milímetro entre marcaciones es la huella de un descriptor copiado y
@@ -405,7 +451,31 @@ async function workerRoutes(app) {
             colaborador: { id: col.id, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo, modalidad: col.modalidad },
             sedes: sedesDelCol.map(s => s.sede),
             validaUbicacion: await seLeValidaLaUbicacion(col.id, col.empresaId, col.modalidad),
+            fotoReferencia: await fotoDeReferencia(col.id),
+            // El kiosco pide la confirmación reforzada (1,6 s y un aviso). No es un
+            // rechazo: la distancia sola no separa a una impostora de alguien honesto.
+            parecidoDudoso: (0, rostro_1.esParecidoDudoso)(veredicto.distancia),
         };
+    });
+    // «NO SOY X» (2 de octubre de 2026). La persona que el kiosco reconoció dice que
+    // no es ella. No marca ni cambia nada: deja la huella en el log, con la
+    // distancia y el método de la sesión, porque una identificación falsa CONFESADA
+    // es el mejor dato que hay para calibrar los números del cotejo. El kiosco
+    // descarta la sesión por su cuenta.
+    app.post('/no-soy', { preHandler: [app.authenticate] }, async (request, reply) => {
+        // Sin `any` a propósito: el tope de avisos del linter es una puerta (CLAUDE.md §10).
+        const payload = request.user;
+        if (payload.rol !== 'WORKER')
+            return reply.code(403).send({ error: 'No autorizado' });
+        // La captura anterior NO se borra: no hay forma de saber que la guardada sea la
+        // de esta sesión, y la siguiente marca de verdad medida contra ella es justo el
+        // par que se quiere estudiar. Se casa con esta línea por colaboradorId y hora.
+        app.log.info({
+            evento: 'no-soy-yo', empresaId: payload.empresaId, colaboradorId: payload.id,
+            metodo: typeof payload.metodo === 'string' ? payload.metodo : null,
+            distancia: typeof payload.distancia === 'number' ? payload.distancia : null,
+        }, 'la persona reconocida dijo que no era ella');
+        return { ok: true };
     });
     // Estado del día: retorna si hay entrada abierta (sin salida). Select mínimo: no
     // trae las fotos (LongText) ni el resto de columnas que el kiosco no usa.
@@ -445,7 +515,7 @@ async function workerRoutes(app) {
                     salida: { not: null, gte: new Date(Date.now() - cierreTurnos_1.VENTANA_TURNO_MS) },
                 },
                 orderBy: { salida: 'desc' },
-                select: { fecha: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
+                select: { fecha: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
             }),
         ]);
         // Las ventanas se anclan al turno abierto; sin turno abierto, al día de hoy.
@@ -454,6 +524,20 @@ async function workerRoutes(app) {
         // Un descanso sin regreso deja de estar en curso al terminar el turno de su día más la
         // gracia; el almuerzo sigue con las 18 horas (`pausaQueEsperaRegreso`).
         const pausaEnCurso = abierto ? null : await pausaQueEsperaRegreso(payload.id, ultimoCerrado, ahora);
+        // El turno por el que el kiosco pregunta «ya registraste tu jornada» antes de abrir otro: el de
+        // hoy, o uno nocturno que se cerró hoy hace menos de cuatro horas (`jornadaYaRegistrada`).
+        const yaRegistrada = (0, jornadaYaRegistrada_1.jornadaYaRegistrada)({ ahora, cerradoDeHoy: cerradoHoy, ultimoCerrado, pausaEnCurso: !!pausaEnCurso });
+        // Las marcas del día, para que el kiosco le muestre a la persona lo que ya tiene a su nombre
+        // antes de marcar (3 de octubre de 2026). Van después de saber qué jornada está en curso o se
+        // cerró hoy: la de un turno nocturno empezó ayer y sus marcas están guardadas en ayer
+        // (`desdeCuandoSeListan`). Entra por el índice (colaboradorId, fecha) y sin fotos.
+        const delDia = await prisma_1.prisma.registro.findMany({
+            where: { colaboradorId: payload.id, fecha: { gte: (0, marcasDelDia_1.desdeCuandoSeListan)({ inicioDia, abierto, pausaEnCurso, ultimoCerrado }), lt: finDia } },
+            select: {
+                id: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true,
+                descansoVentana: true, entradaEstimada: true, salidaEstimada: true,
+            },
+        });
         const enAlmuerzo = pausaEnCurso?.salidaAlmuerzo === true;
         const enDescanso = pausaEnCurso?.salidaDescanso === true;
         // ¿Se le pasó la hora de volver? Si sí, el kiosco le pregunta a qué hora
@@ -486,7 +570,8 @@ async function workerRoutes(app) {
         return {
             entradaAbierta: abierto ? { entrada: abierto.entrada } : null,
             dentroAhora: !!abierto,
-            turnoCerradoHoy: cerradoHoy ? { entrada: cerradoHoy.entrada, salida: cerradoHoy.salida } : null,
+            marcasDeHoy: (0, marcasDelDia_1.marcasDelDia)(delDia),
+            turnoCerradoHoy: yaRegistrada ? { entrada: yaRegistrada.entrada, salida: yaRegistrada.salida } : null,
             // Solo se manda cada ventana cuando de verdad se puede usar: el kiosco
             // pregunta exactamente cuando el servidor va a creerle.
             almuerzo: pausas.puedeAlmorzar

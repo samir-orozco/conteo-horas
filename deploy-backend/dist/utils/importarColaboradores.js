@@ -10,7 +10,14 @@ exports.COLUMNAS_FORMATO = [
     { clave: 'apellido', titulo: 'Apellido', obligatoria: true, ejemplo: 'Gómez Ruiz' },
     { clave: 'cedula', titulo: 'Cédula', obligatoria: true, ejemplo: '1020304050', ayuda: 'Solo números, sin puntos' },
     { clave: 'cargo', titulo: 'Cargo', obligatoria: false, ejemplo: 'Vigilante' },
-    { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1750905', ayuda: 'En pesos, sin centavos', tipo: 'dinero' },
+    { clave: 'salarioMensual', titulo: 'Salario básico', obligatoria: true, ejemplo: '1750905', tipo: 'dinero',
+        alias: ['Salario mensual'],
+        ayuda: 'En pesos, sin centavos. SIN el auxilio de transporte, que va en su propia columna.' },
+    // Vacío a propósito en el ejemplo: así se ve que no hay que escribir nada
+    // para que rija el decreto, que es el caso de casi todo el mundo.
+    { clave: 'auxilioTransporte', titulo: 'Auxilio de transporte', obligatoria: false, ejemplo: '', tipo: 'dinero',
+        marcador: 'Automático',
+        ayuda: 'Déjalo vacío y se aplica el del decreto si su salario da derecho. Escribe 0 si tu empresa no lo paga.' },
     { clave: 'email', titulo: 'Correo', obligatoria: false, ejemplo: 'ana@empresa.co' },
     { clave: 'telefono', titulo: 'Teléfono', obligatoria: false, ejemplo: '3001234567' },
     { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', ayuda: 'Día/mes/año. Se acomoda sola al leerla.', tipo: 'fecha' },
@@ -21,6 +28,11 @@ exports.COLUMNAS_FORMATO = [
 // clic. Llega por su id, junto al resto de la fila.
 const CLAVE_HORARIO = 'horarioId';
 const CLAVE_SEDE = 'sedeId';
+// Lo que, por sí solo, no convierte una fila en una persona. La pantalla tiene
+// un «aplicar a todos» para cada uno de los tres. La copia que decide lo mismo
+// en el navegador está en tablaImportacion.ts (hayDatos): las dos tienen que
+// decir lo mismo o el archivo que se manda y el que se valida no coinciden.
+const NO_HACEN_FILA = new Set([CLAVE_HORARIO, CLAVE_SEDE, 'auxilioTransporte']);
 const texto = (v) => (v === null || v === undefined ? '' : String(v).trim());
 // El salario tal como lo escribe la gente: con puntos de miles, con signo, o ya
 // como número si Excel lo guardó así.
@@ -53,11 +65,13 @@ function validarImportacion(filas, ctx) {
         const v = (clave) => texto(cruda[clave]);
         // Excel arrastra filas vacías al final. Una fila sin nada no es un error,
         // es el final del archivo.
-        // Se mira solo lo que viene del ARCHIVO. El horario y la sede se eligen en
-        // la pantalla, y el selector global los pone en todas las filas: si contaran
-        // aquí, una fila vacía del final pasaría a reportarse como una persona sin
-        // nombre y sin cédula.
-        const vacia = exports.COLUMNAS_FORMATO.every(c => v(c.clave) === '');
+        // Los tres de NO_HACEN_FILA no cuentan para decidirlo: los pinta en todas
+        // las filas un control de «aplicar a todos», así que si contaran, la fila
+        // vacía del final pasaría a reportarse como una persona sin nombre y sin
+        // cédula. El auxilio está ahí por eso y no porque sea menos importante:
+        // nadie llena un Excel con el auxilio de alguien de quien no escribió ni
+        // el nombre.
+        const vacia = exports.COLUMNAS_FORMATO.every(c => NO_HACEN_FILA.has(c.clave) || v(c.clave) === '');
         if (vacia)
             return;
         conDatos++;
@@ -93,6 +107,22 @@ function validarImportacion(filas, ctx) {
             err('salarioMensual', 'Falta el salario, o no es un número.');
         else if (salario <= 0)
             err('salarioMensual', 'El salario tiene que ser mayor que cero.');
+        // La celda vacía NO es un error ni un cero: es «el del decreto». Un cero se
+        // escribe con un cero, y entonces manda sobre el decreto.
+        const auxilioEscrito = v('auxilioTransporte');
+        let auxilio = null;
+        if (auxilioEscrito !== '') {
+            const valor = aPesos(auxilioEscrito);
+            if (valor === null) {
+                err('auxilioTransporte', `"${auxilioEscrito}" no es un número. Déjalo vacío para el del decreto, o escribe 0 si no lo pagas.`);
+            }
+            else if (valor < 0) {
+                err('auxilioTransporte', 'El auxilio no puede ser negativo: le restaría plata a la persona.');
+            }
+            else {
+                auxilio = valor;
+            }
+        }
         const email = v('email');
         if (email && !CORREO.test(email))
             err('email', `"${email}" no parece un correo.`);
@@ -134,6 +164,7 @@ function validarImportacion(filas, ctx) {
             fechaNacimiento: nacimiento || null,
             horarioId,
             sedeId,
+            auxilioTransporte: auxilio,
         });
     });
     return {

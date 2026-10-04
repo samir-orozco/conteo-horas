@@ -10,6 +10,7 @@ const tardanzas_1 = require("../utils/tardanzas");
 const diasEsperados_1 = require("../utils/diasEsperados");
 const materializarDias_1 = require("../utils/materializarDias");
 const fechas_1 = require("../utils/fechas");
+const rostro_1 = require("../utils/rostro");
 const columnasDeRegistro_1 = require("../utils/columnasDeRegistro");
 const sedePrincipal_1 = require("../utils/sedePrincipal");
 const sedesDeEmpresa_1 = require("../utils/sedesDeEmpresa");
@@ -680,11 +681,13 @@ async function registroRoutes(app) {
             select: {
                 id: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true,
                 entradaEstimada: true, salidaEstimada: true, fotoEntrada: true, fotoSalida: true,
+                distanciaEntrada: true, distanciaSalida: true,
                 sede: { select: { id: true, nombre: true } },
                 sedeSalida: { select: { id: true, nombre: true } },
             },
         });
         const momentos = (0, jornada_1.momentosDelDia)(delDia);
+        const dudosa = (d) => d !== null && (0, rostro_1.esParecidoDudoso)(d);
         // A qué turno pertenece cada foto, para que la pantalla ponga un título por
         // turno. Sale de la misma agrupación que `momentos`: no pueden discrepar.
         const turnos = (0, jornada_1.jornadaDeCadaMarcacion)(delDia);
@@ -703,12 +706,12 @@ async function registroRoutes(app) {
             // cédula o que alguien la cargó a mano, y quien está auditando el día
             // necesita verlo. Las marcas sin hora no tienen momento y no aparecen.
             if (papel?.entrada) {
-                fotos.push({ registroId: m.id, momento: papel.entrada, hora: m.entrada, foto: m.fotoEntrada, estimada: m.entradaEstimada, jornada, sede: m.sede ?? null, sedeAtribuida: sedeAtribuidaDe(m.id) });
+                fotos.push({ registroId: m.id, momento: papel.entrada, hora: m.entrada, foto: m.fotoEntrada, estimada: m.entradaEstimada, jornada, sede: m.sede ?? null, sedeAtribuida: sedeAtribuidaDe(m.id), parecidoDudoso: dudosa(m.distanciaEntrada) });
             }
             if (papel?.salida) {
                 // La sede de la SALIDA es la suya. Null si no se sabe: nunca la de la
                 // entrada, que afirmaría un lugar que nadie registró.
-                fotos.push({ registroId: m.id, momento: papel.salida, hora: m.salida, foto: m.fotoSalida, estimada: m.salidaEstimada, jornada, sede: m.sedeSalida ?? null, sedeAtribuida: null });
+                fotos.push({ registroId: m.id, momento: papel.salida, hora: m.salida, foto: m.fotoSalida, estimada: m.salidaEstimada, jornada, sede: m.sedeSalida ?? null, sedeAtribuida: null, parecidoDudoso: dudosa(m.distanciaSalida) });
             }
         }
         // En orden cronológico: es como ocurrió el día y como se va a leer.

@@ -92,10 +92,7 @@ async function suscripcionRoutes(app) {
         const empresaId = await empresaDelToken(request, reply);
         if (!empresaId)
             return;
-        const susc = await prisma_1.prisma.suscripcion.findUnique({
-            where: { empresaId },
-            include: { pagos: { orderBy: { creadoEn: 'desc' }, take: 12 } },
-        });
+        const susc = await prisma_1.prisma.suscripcion.findUnique({ where: { empresaId } });
         if (!susc)
             return reply.status(404).send({ error: 'Sin suscripción' });
         const sync = await (0, suscripcion_1.sincronizarEstado)(prisma_1.prisma, susc);
@@ -128,7 +125,9 @@ async function suscripcionRoutes(app) {
             tarifaMensual: cobro.tarifaMesCompleto,
             cobro,
             precios,
-            pagos: susc.pagos,
+            pagos: await (0, suscripcion_1.pagosDeLaEmpresa)(prisma_1.prisma, susc.id),
+            // Para el recibo en PDF que descarga desde el historial
+            empresa: empresa && { nombre: empresa.nombre, nit: empresa.nit, email: empresa.email, telefono: empresa.telefono },
             wompiConfigurado: (0, wompi_1.wompiConfigurado)(),
             checkout,
         };
