@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.eventoDeError = eventoDeError;
 exports.eventoDeNavegador = eventoDeNavegador;
+exports.cambiosAlRepetirse = cambiosAlRepetirse;
+exports.tokenDeKiosco = tokenDeKiosco;
 const huellaDeEvento_1 = require("./huellaDeEvento");
 // De un error a la fila que se guarda (23 de septiembre de 2026).
 //
@@ -70,4 +72,25 @@ function eventoDeNavegador(reporte, peticion) {
         empresaId: peticion.empresa?.id ?? null,
         empresaNombre: peticion.empresa?.nombre ?? null,
     };
+}
+// LO QUE CAMBIA EN LA FILA CUANDO EL MISMO PROBLEMA VUELVE A PASAR (4 de octubre de 2026).
+//
+// Suma una vez y se queda con los datos de ESTA vez: la pantalla, la IP, el navegador, quién y de qué
+// empresa. Antes solo cambiaban la fecha y el rastro, y la fila mostraba la fecha de la última vez
+// con el lugar de la primera: un error de la cámara de 7 veces decía «3 de octubre, 5:02 p. m.» con
+// el kiosco y la IP del 1 de octubre a las 7:00. `primeraVez` no se toca: dice desde cuándo pasa.
+function cambiosAlRepetirse(fila, ahora) {
+    return {
+        veces: { increment: 1 }, ultimaVez: ahora,
+        mensaje: fila.mensaje, detalle: fila.detalle, estado: fila.estado,
+        metodo: fila.metodo, ruta: fila.ruta, ip: fila.ip, navegador: fila.navegador,
+        usuarioId: fila.usuarioId, usuarioEmail: fila.usuarioEmail, usuarioNombre: fila.usuarioNombre,
+        empresaId: fila.empresaId, empresaNombre: fila.empresaNombre,
+    };
+}
+// El token del kiosco, si el error pasó en uno. Un error del kiosco llega sin sesión y la fila no
+// sabía de qué empresa era, pero la dirección del kiosco lleva el token de la empresa.
+function tokenDeKiosco(ruta) {
+    const m = /^\/marcador\/([A-Za-z0-9_-]+)/.exec(ruta ?? '');
+    return m ? m[1] : null;
 }

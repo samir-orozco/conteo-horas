@@ -70,7 +70,8 @@ async function guardar(fila, log) {
     const datos = { ...fila, empresaNombre: nombre, ultimaVez: ahora };
     // Al repetirse se refresca el detalle: interesa el rastro de la ÚLTIMA vez, que es la que se
     // puede reproducir. `primeraVez` no se toca: dice desde cuándo viene pasando.
-    const sumarUna = { veces: { increment: 1 }, ultimaVez: ahora, detalle: datos.detalle, mensaje: datos.mensaje, estado: datos.estado };
+    // Y se queda con el lugar y la persona de ESTA vez, no los de la primera (cambiosAlRepetirse).
+    const sumarUna = (0, eventoDeError_1.cambiosAlRepetirse)(datos, ahora);
     try {
         if (!fila.huella) {
             await prisma_1.prisma.eventoSistema.create({ data: { ...datos, huella: null, primeraVez: ahora } });
@@ -139,7 +140,21 @@ function registrarAcceso(intento, request) {
 function registrarReporteDelNavegador(reporte, request) {
     const fila = (0, eventoDeError_1.eventoDeNavegador)(reporte, datosDePeticion(request));
     if (fila)
-        void guardar(fila, request.log);
+        void conEmpresaDelKiosco(fila).then(f => guardar(f, request.log));
+}
+// Un error del kiosco llega sin sesión: la empresa se saca del token que lleva la dirección
+// (tokenDeKiosco). Si no se encuentra, el evento se guarda igual, sin empresa.
+async function conEmpresaDelKiosco(fila) {
+    const token = fila.empresaId ? null : (0, eventoDeError_1.tokenDeKiosco)(fila.ruta);
+    if (!token)
+        return fila;
+    try {
+        const empresa = await prisma_1.prisma.empresa.findUnique({ where: { marcadorToken: token }, select: { id: true, nombre: true } });
+        return empresa ? { ...fila, empresaId: empresa.id, empresaNombre: empresa.nombre } : fila;
+    }
+    catch {
+        return fila;
+    }
 }
 // El enganche global: toda petición que cambió algo y salió bien deja su fila. Va en `onResponse`
 // para no añadir trabajo antes de responderle a quien espera.
