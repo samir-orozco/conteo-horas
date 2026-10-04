@@ -166,8 +166,9 @@ export default function PantallaMarcar({
             del día, una por línea. Es lo que delata que alguien marcó por ella: el 1 de octubre
             Lina habría visto una entrada a las 8:49 que no hizo. Sin marcas, no se dice nada. */}
         {marcasDeHoy && marcasDeHoy.length > 0 && (
-          <section aria-labelledby="otras-entradas" className="mt-5">
-            <h3 id="otras-entradas" className="text-base font-medium text-white">Otras entradas</h3>
+          <section aria-labelledby="marcas-de-hoy" className="mt-5">
+            {/* «Marcas de hoy» y no «Otras entradas»: la lista trae también salidas y pausas. */}
+            <h3 id="marcas-de-hoy" className="text-base font-medium text-white">Marcas de hoy</h3>
             <ul className="mt-2 space-y-2">
               {marcasDeHoy.map(m => (
                 <li key={`${m.momento}-${m.hora}`}

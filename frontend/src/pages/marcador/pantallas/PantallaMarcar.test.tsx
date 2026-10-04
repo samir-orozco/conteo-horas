@@ -357,13 +357,13 @@ describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
         { momento: 'ENTRADA', hora: '2026-10-01T13:49:21Z' },
       ],
     }, { ahora: '2026-10-01T13:52:39Z' });
-    expect(screen.getByRole('heading', { name: 'Otras entradas' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Marcas de hoy' })).toBeInTheDocument();
     expect(screen.getByText('Entrada registrada a las 8:49 a. m.')).toBeInTheDocument();
   });
 
   it('sin marcas hoy no muestra la lista', () => {
     montarConfirmando({ ...fuera, marcasDeHoy: [] });
-    expect(screen.queryByRole('heading', { name: 'Otras entradas' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Marcas de hoy' })).not.toBeInTheDocument();
   });
 
   it('«No soy Ana» es un botón aunque ya no tenga borde', () => {
