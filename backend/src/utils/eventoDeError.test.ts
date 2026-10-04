@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { eventoDeError, eventoDeNavegador } from './eventoDeError';
+import { eventoDeError, eventoDeNavegador, cambiosAlRepetirse, tokenDeKiosco } from './eventoDeError';
 
 const peticion = {
   metodo: 'POST',
@@ -89,3 +89,45 @@ describe('eventoDeNavegador', () => {
     expect(eventoDeNavegador({ pantalla: '/app' } as never, {})).toBeNull();
   });
 });
+
+// LO DE LA ÚLTIMA VEZ (4 de octubre de 2026). El mismo problema se guarda en UNA fila, que suma una
+// vez cada que se repite. La fila mostraba la fecha de la ÚLTIMA vez con la IP, la pantalla y el
+// navegador de la PRIMERA: un error de la cámara que pasó 7 veces decía «3 de octubre, 5:02 p. m.»
+// con el kiosco y la IP del 1 de octubre a las 7:00, y de las otras seis no quedaba ni dónde.
+describe('cambiosAlRepetirse', () => {
+  const vez = (ip: string, pantalla: string) => eventoDeNavegador(
+    { mensaje: 'Promesa rechazada: Box.constructor', pantalla },
+    { ip, navegador: `Android ${ip}`, usuario: { id: 'u2', email: 'b@b.co', nombre: 'Beto' }, empresa: { id: 'e2', nombre: 'Otra' } },
+  )!;
+
+  it('la fila toma la pantalla, la IP, el navegador y quién, de esa vez', () => {
+    const ahora = new Date('2026-10-03T22:02:00Z');
+    const c = cambiosAlRepetirse(vez('190.249.177.159', '/marcador/otroKiosco123'), ahora);
+    expect(c).toMatchObject({
+      ultimaVez: ahora, ruta: '/marcador/otroKiosco123', ip: '190.249.177.159', navegador: 'Android 190.249.177.159',
+      usuarioId: 'u2', usuarioEmail: 'b@b.co', usuarioNombre: 'Beto', empresaId: 'e2', empresaNombre: 'Otra',
+    });
+  });
+
+  it('suma una vez y no toca cuándo empezó ni de qué problema es', () => {
+    const c = cambiosAlRepetirse(vez('1.1.1.1', '/marcador/abc'), new Date());
+    expect(c.veces).toEqual({ increment: 1 });
+    for (const campo of ['primeraVez', 'huella', 'tipo', 'origen']) expect(c).not.toHaveProperty(campo);
+  });
+});
+
+// Un error del kiosco llega sin sesión, así que la fila no sabía de qué empresa era. El token del
+// kiosco viaja en la dirección: con él se sabe.
+describe('tokenDeKiosco', () => {
+  it('saca el token de la pantalla del kiosco', () => {
+    expect(tokenDeKiosco('/marcador/cmreivbqd0002m4wukmwn0cu9')).toBe('cmreivbqd0002m4wukmwn0cu9');
+    expect(tokenDeKiosco('/marcador/cmreivbqd0002m4wukmwn0cu9?ref=x')).toBe('cmreivbqd0002m4wukmwn0cu9');
+  });
+
+  it('no inventa uno en las demás pantallas', () => {
+    for (const ruta of ['/', '/app/registros', '/marcador/', '/registro-facial/abc', null, undefined]) {
+      expect(tokenDeKiosco(ruta)).toBeNull();
+    }
+  });
+});
+

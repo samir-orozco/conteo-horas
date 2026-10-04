@@ -87,6 +87,27 @@ describe('AdminRegistro', () => {
     expect(await screen.findByText(/at liquidar/)).toBeInTheDocument();
   });
 
+  // Desde el 4 de octubre de 2026 la fila guarda el lugar y la persona de la ÚLTIMA vez, igual que su
+  // fecha. Antes eran los de la primera, y nada lo decía (cambiosAlRepetirse en el servidor).
+  it('un evento repetido dice que el lugar y la persona son los de la última vez', async () => {
+    pintar();
+    await userEvent.click(await screen.findByText('POST /api/reportes/nomina'));
+    expect(await screen.findByText(/la ip y el navegador son los de la última vez/i)).toBeInTheDocument();
+  });
+
+  it('uno que pasó una sola vez no necesita aclararlo', async () => {
+    get.mockImplementation((url: string) => {
+      if (url.includes('/resumen')) return Promise.resolve(RESUMEN);
+      if (url.includes('/admin/empresas')) return Promise.resolve({ data: [] });
+      if (/\/admin\/eventos\/ev\d/.test(url)) return Promise.resolve({ data: { ...ERROR_DE_NOMINA, veces: 1, detalle: 'at liquidar' } });
+      return Promise.resolve(listaCon({ ...ERROR_DE_NOMINA, veces: 1 }));
+    });
+    pintar();
+    await userEvent.click(await screen.findByText('POST /api/reportes/nomina'));
+    expect(await screen.findByText(/at liquidar/)).toBeInTheDocument();
+    expect(screen.queryByText(/son los de la última vez/i)).not.toBeInTheDocument();
+  });
+
   it('la pestaña de accesos pide al servidor ese tipo y enseña la IP', async () => {
     pintar();
     await screen.findByText('POST /api/reportes/nomina');

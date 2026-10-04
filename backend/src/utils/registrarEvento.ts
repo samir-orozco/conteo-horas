@@ -1,6 +1,6 @@
 import type { FastifyBaseLogger, FastifyReply, FastifyRequest } from 'fastify';
 import { prisma } from '../prisma';
-import { eventoDeError, eventoDeNavegador, type DatosDePeticion, type FilaDeEvento, type ReporteDelNavegador } from './eventoDeError';
+import { eventoDeError, eventoDeNavegador, cambiosAlRepetirse, tokenDeKiosco, type DatosDePeticion, type FilaDeEvento, type ReporteDelNavegador } from './eventoDeError';
 import { eventoDeAcceso, motivoDeRespuesta, type IntentoDeAcceso } from './eventoDeAcceso';
 import { seAudita, accionDePeticion, cuerpoParaGuardar } from './auditoriaDePeticion';
 import { recortar } from './huellaDeEvento';
@@ -72,7 +72,8 @@ async function guardar(fila: FilaDeEvento, log?: FastifyBaseLogger): Promise<voi
 
   // Al repetirse se refresca el detalle: interesa el rastro de la ÚLTIMA vez, que es la que se
   // puede reproducir. `primeraVez` no se toca: dice desde cuándo viene pasando.
-  const sumarUna = { veces: { increment: 1 }, ultimaVez: ahora, detalle: datos.detalle, mensaje: datos.mensaje, estado: datos.estado };
+  // Y se queda con el lugar y la persona de ESTA vez, no los de la primera (cambiosAlRepetirse).
+  const sumarUna = cambiosAlRepetirse(datos, ahora);
 
   try {
     if (!fila.huella) {
@@ -143,7 +144,20 @@ export function registrarAcceso(intento: Omit<IntentoDeAcceso, 'ip' | 'navegador
 
 export function registrarReporteDelNavegador(reporte: ReporteDelNavegador, request: FastifyRequest): void {
   const fila = eventoDeNavegador(reporte, datosDePeticion(request));
-  if (fila) void guardar(fila, request.log);
+  if (fila) void conEmpresaDelKiosco(fila).then(f => guardar(f, request.log));
+}
+
+// Un error del kiosco llega sin sesión: la empresa se saca del token que lleva la dirección
+// (tokenDeKiosco). Si no se encuentra, el evento se guarda igual, sin empresa.
+async function conEmpresaDelKiosco(fila: FilaDeEvento): Promise<FilaDeEvento> {
+  const token = fila.empresaId ? null : tokenDeKiosco(fila.ruta);
+  if (!token) return fila;
+  try {
+    const empresa = await prisma.empresa.findUnique({ where: { marcadorToken: token }, select: { id: true, nombre: true } });
+    return empresa ? { ...fila, empresaId: empresa.id, empresaNombre: empresa.nombre } : fila;
+  } catch {
+    return fila;
+  }
 }
 
 // El enganche global: toda petición que cambió algo y salió bien deja su fila. Va en `onResponse`

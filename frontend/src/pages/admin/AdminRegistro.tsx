@@ -329,6 +329,14 @@ function DetalleDelEvento({ evento, onCerrar }: { evento: EventoDetalle; onCerra
             </div>
           ))}
         </dl>
+        {/* Desde el 4 de octubre de 2026 la fila guarda el lugar y la persona de la ÚLTIMA vez, igual
+            que su fecha (cambiosAlRepetirse). Las filas anteriores conservan los de la primera hasta
+            que el problema se repite. */}
+        {evento.veces > 1 && (
+          <p className="px-6 -mt-2 pb-4 text-xs text-muted">
+            La ruta, el usuario, la empresa, la IP y el navegador son los de la última vez.
+          </p>
+        )}
 
         {evento.detalle && (
           <div className="px-6 pb-6">
