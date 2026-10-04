@@ -63,7 +63,10 @@ export default function PantallaMarcar({
   const entradaHace = estado?.entradaAbierta?.entrada ? horaBog(estado.entradaAbierta.entrada, 'HH:mm') : null;
   const cerradoHoy = estado?.turnoCerradoHoy ?? null;
   const marcasDeHoy = estado?.marcasDeHoy;
-  const { visibles: marcasVisibles, ocultas: marcasOcultas } = ultimasMarcas(marcasDeHoy ?? []);
+  const { visibles: ultimas, ocultas: marcasOcultas } = ultimasMarcas(marcasDeHoy ?? []);
+  // Arranca cerrada en cada sesión: esta pantalla se desmonta cuando la persona se va.
+  const [verTodasLasMarcas, setVerTodasLasMarcas] = useState(false);
+  const marcasEnLista = verTodasLasMarcas ? (marcasDeHoy ?? []) : ultimas;
   const almuerzo = estado?.almuerzo ?? null;
   const descanso = estado?.descanso ?? null;
   const [confirmando, setConfirmando] = useState(false);
@@ -170,16 +173,23 @@ export default function PantallaMarcar({
           <section aria-labelledby="marcas-de-hoy" className="mt-5">
             {/* «Marcas de hoy» y no «Otras entradas»: la lista trae también salidas y pausas. */}
             <h3 id="marcas-de-hoy" className="text-base font-medium text-white">Marcas de hoy</h3>
-            <ul className="mt-2 space-y-2">
-              {marcasVisibles.map(m => (
+            <ul id="lista-marcas-de-hoy" className="mt-2 space-y-2">
+              {marcasEnLista.map(m => (
                 <li key={`${m.momento}-${m.hora}`}
                   className="rounded-full bg-green-500/15 px-4 py-2 text-center text-sm font-semibold text-green-400">
                   {textoDeLaMarca(m.momento, m.hora)}
                 </li>
               ))}
             </ul>
+            {/* «y 4 más» abre la lista entera y «Ver menos» la cierra (pedido del dueño). Con la
+                lista abierta el botón de marcar queda más abajo: por eso abrirla es decisión de
+                quien la toca. El padding agranda el área del toque en una tableta. */}
             {marcasOcultas > 0 && (
-              <p className="mt-2 text-center text-xs text-white/45">y {marcasOcultas} más</p>
+              <button type="button" onClick={() => setVerTodasLasMarcas(v => !v)}
+                aria-expanded={verTodasLasMarcas} aria-controls="lista-marcas-de-hoy"
+                className="mx-auto block px-6 py-3.5 text-xs text-white/55 underline decoration-white/25 underline-offset-4 hover:text-white/80">
+                {verTodasLasMarcas ? 'Ver menos' : `y ${marcasOcultas} más`}
+              </button>
             )}
           </section>
         )}

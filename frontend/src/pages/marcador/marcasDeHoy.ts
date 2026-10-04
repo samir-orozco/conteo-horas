@@ -22,7 +22,8 @@ export function textoDeLaMarca(momento: Momento, hora: string | Date): string {
 
 // SOLO LAS ÚLTIMAS TRES (3 de octubre de 2026, decisión del dueño). Con siete marcas, en un celular
 // la lista empujaba el botón de marcar fuera de la pantalla. Lo que delata un error casi siempre es
-// lo más reciente; las anteriores se cuentan («y 4 más»). Llegan en orden, la más vieja primero.
+// lo más reciente; las anteriores se cuentan («y 4 más»), y tocando ese texto se ven todas.
+// Llegan en orden, la más vieja primero.
 export const MARCAS_VISIBLES = 3;
 
 export function ultimasMarcas<T>(marcas: T[]): { visibles: T[]; ocultas: number } {

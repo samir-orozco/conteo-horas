@@ -290,4 +290,47 @@ describe('Marcador · lo que deja abierto quien se va', () => {
     expect(screen.getByText('¿Eres tú, Bruno?')).toBeInTheDocument();
     expect(screen.queryByText('No marcaste tu regreso')).not.toBeInTheDocument();
   });
+
+  // La lista de marcas arranca corta (3 de octubre de 2026): la que abrió Ana no le llega
+  // abierta a Bruno, que tendría el botón de marcar debajo sin haberlo pedido.
+  const conSieteMarcas = <S extends { estado: Record<string, unknown> }>(s: S): S => ({ ...s, estado: {
+    ...s.estado,
+    marcasDeHoy: ['11:02', '13:30', '13:45', '16:01', '17:00', '21:04', '23:00']
+      .map((hm, i) => ({ momento: i % 2 === 0 ? 'ENTRADA' : 'SALIDA', hora: `2026-10-01T${hm}:00Z` })),
+  } });
+
+  it('la lista de marcas que abrió Ana le aparece corta a Bruno', async () => {
+    h.sesion = conSieteMarcas(sesionDeAna());
+    await abrir('¿Eres tú, Ana?');
+    fireEvent.click(screen.getByRole('button', { name: 'y 4 más' }));
+    expect(screen.getAllByRole('listitem')).toHaveLength(7);
+    vi.useFakeTimers();
+    fireEvent.pointerDown(window);
+    await act(async () => { vi.advanceTimersByTime(30_000); });
+    expect(h.limpiarSesion).toHaveBeenCalled();
+    h.alIngresar = () => conSieteMarcas(sesionDeBruno());
+    fireEvent.click(screen.getByRole('button', { name: /^cédula$/i }));
+    fireEvent.change(screen.getByPlaceholderText('Número de cédula'), { target: { value: '222' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^continuar$/i })); });
+    await act(async () => {});
+    expect(screen.getByText('¿Eres tú, Bruno?')).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(screen.getByRole('button', { name: 'y 4 más' })).toBeInTheDocument();
+  });
+
+  // Tocarla es actividad: quien está leyendo sus marcas no se queda sin sesión a la mitad.
+  it('tocar «y 4 más» vuelve a empezar los treinta segundos', async () => {
+    h.sesion = conSieteMarcas(sesionDeAna());
+    await abrir('¿Eres tú, Ana?');
+    vi.useFakeTimers();
+    fireEvent.pointerDown(window);
+    act(() => { vi.advanceTimersByTime(29_000); });
+    const mas = screen.getByRole('button', { name: 'y 4 más' });
+    fireEvent.pointerDown(mas, { pointerId: 1, button: 0 });
+    fireEvent.click(mas);
+    act(() => { vi.advanceTimersByTime(29_000); });
+    expect(h.limpiarSesion).not.toHaveBeenCalled();
+    act(() => { vi.advanceTimersByTime(1_000); });
+    expect(h.limpiarSesion).toHaveBeenCalled();
+  });
 });

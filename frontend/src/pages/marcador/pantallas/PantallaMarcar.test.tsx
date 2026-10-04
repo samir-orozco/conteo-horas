@@ -373,6 +373,42 @@ describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
     expect(screen.getByText('y 4 más')).toBeInTheDocument();
   });
 
+  // «Y 4 MÁS» SE PUEDE TOCAR (3 de octubre de 2026, pedido del dueño): abre la lista entera, y
+  // «Ver menos» la vuelve a cerrar. Arranca cerrada para que el botón de marcar quede a la vista.
+  it('tocar «y 4 más» muestra todas las marcas, y «Ver menos» las vuelve a esconder', () => {
+    const horas = ['11:02', '13:30', '13:45', '16:01', '17:00', '21:04', '23:00'];
+    montarConfirmando({
+      ...fuera, dentroAhora: true, entradaAbierta: { entrada: '2026-10-01T23:00:00Z' },
+      marcasDeHoy: horas.map((h, i) => ({ momento: i % 2 === 0 ? 'ENTRADA' : 'SALIDA', hora: `2026-10-01T${h}:00Z` })),
+    }, { ahora: '2026-10-01T23:30:00Z' });
+    const mas = screen.getByRole('button', { name: 'y 4 más' });
+    expect(mas).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(mas);
+    expect(screen.getAllByRole('listitem')).toHaveLength(7);
+    expect(screen.getByText('Entrada registrada a las 6:02 a. m.')).toBeInTheDocument();
+    const menos = screen.getByRole('button', { name: 'Ver menos' });
+    expect(menos).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(menos);
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(screen.queryByText('Entrada registrada a las 6:02 a. m.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'y 4 más' })).toBeInTheDocument();
+  });
+
+  it('con tres marcas o menos no hay nada que abrir', () => {
+    montarConfirmando({
+      ...fuera, dentroAhora: true, entradaAbierta: { entrada: '2026-10-01T13:49:21Z' },
+      marcasDeHoy: [
+        { momento: 'ENTRADA', hora: '2026-10-01T11:00:00Z' },
+        { momento: 'SALIDA', hora: '2026-10-01T13:00:00Z' },
+        { momento: 'ENTRADA', hora: '2026-10-01T13:49:21Z' },
+      ],
+    }, { ahora: '2026-10-01T13:52:39Z' });
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(screen.queryByRole('button', { name: /más|ver menos/i })).not.toBeInTheDocument();
+  });
+
   it('sin marcas hoy no muestra la lista', () => {
     montarConfirmando({ ...fuera, marcasDeHoy: [] });
     expect(screen.queryByRole('heading', { name: 'Marcas de hoy' })).not.toBeInTheDocument();
