@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Novedades from './Novedades';
 import { vistaKey, apagadoKey, guiaKey } from './novedadesVisibles';
@@ -28,12 +28,14 @@ describe('Novedades', () => {
     // anterior se queda detrás, en vez de reemplazarse.
     render(<Novedades />);
     expect(screen.getByText('Novedades de HoraPro')).toBeInTheDocument();
-    expect(screen.getByText(/programa los turnos de tu equipo/i)).toBeInTheDocument();
+    expect(screen.getByText(/el kiosco confirma quién marca/i)).toBeInTheDocument();
   });
 
-  it('cuenta las catorce novedades: las de los últimos despliegues primero y las de antes detrás', async () => {
+  it('cuenta las quince novedades: las de los últimos despliegues primero y las de antes detrás', async () => {
     render(<Novedades />);
     const titulos = [
+      // Lote del 3 de octubre de 2026: la confirmación del kiosco, en UNA sola vista (pedido del dueño).
+      /el kiosco confirma quién marca/i,
       // Despliegue del 30 de septiembre de 2026: el módulo de turnos.
       /programa los turnos de tu equipo/i,
       /marca un bloque de celdas/i,
@@ -66,6 +68,77 @@ describe('Novedades', () => {
     expect(screen.getByText('Novedades de HoraPro')).toBeInTheDocument();
   });
 
+  it('quien ya vio el lote de turnos las vuelve a ver, porque llegó la del kiosco', () => {
+    localStorage.setItem(`horapro_novedades_2026-09-30_${usuario.id}`, '1');
+    render(<Novedades />);
+    expect(screen.getByText(/el kiosco confirma quién marca/i)).toBeInTheDocument();
+  });
+
+  // UN CLIC POR FUERA YA NO LA CIERRA (3 de octubre de 2026, pedido del dueño). Al pasar de una
+  // novedad a otra la ventana cambia de alto, el botón «Continuar» se mueve, y el clic que iba para
+  // él caía en el fondo: la ventana se cerraba, quedaba como vista, y quien no sabe dónde están las
+  // novedades en el menú no las volvía a encontrar. Ahora se cierra solo con la X (o con «Listo»).
+  it('un clic por fuera no la cierra ni la da por vista', async () => {
+    render(<Novedades />);
+    await userEvent.click(screen.getByTestId('fondo'));
+    expect(screen.getByText('Novedades de HoraPro')).toBeInTheDocument();
+    expect(screen.getByText(/el kiosco confirma quién marca/i)).toBeInTheDocument();
+    expect(localStorage.getItem(vistaKey(usuario.id))).toBeNull();
+  });
+
+  // La sacudida es solo movimiento, así que la prueba mira la marca `data-sacudiendo` del envoltorio
+  // y no la clase de CSS (CLAUDE.md §7). Que esa marca de verdad mueva la ventana se comprobó en el
+  // navegador: la animación que corre es hp-sacudida.
+  const envoltorio = () => screen.getByTestId('fondo').firstElementChild as HTMLElement;
+  // jsdom no tiene AnimationEvent, y entonces React escucha «webkitAnimationEnd»; un navegador de
+  // verdad manda «animationend». Se disparan los dos para no depender del entorno.
+  const terminarAnimacion = (el: Element) => {
+    fireEvent.animationEnd(el);
+    fireEvent(el, new Event('webkitAnimationEnd', { bubbles: true }));
+  };
+
+  it('un clic por fuera la sacude', async () => {
+    render(<Novedades />);
+    expect(envoltorio()).not.toHaveAttribute('data-sacudiendo');
+    await userEvent.click(screen.getByTestId('fondo'));
+    expect(envoltorio()).toHaveAttribute('data-sacudiendo');
+  });
+
+  it('un clic dentro no la sacude', async () => {
+    render(<Novedades />);
+    await userEvent.click(screen.getByText(/el kiosco confirma quién marca/i));
+    await avanzar(1);
+    expect(envoltorio()).not.toHaveAttribute('data-sacudiendo');
+  });
+
+  // Seleccionar texto con el ratón y soltar fuera: el navegador manda el clic al fondo, y la ventana
+  // se sacudía sin que nadie lo hubiera pedido.
+  it('seleccionar texto y soltar fuera no la sacude', () => {
+    render(<Novedades />);
+    fireEvent.pointerDown(screen.getByText(/el kiosco confirma quién marca/i));
+    fireEvent.click(screen.getByTestId('fondo'));
+    expect(envoltorio()).not.toHaveAttribute('data-sacudiendo');
+  });
+
+  it('la animación de entrada no corta la sacudida, y al terminar la suya se puede volver a sacudir', async () => {
+    render(<Novedades />);
+    await userEvent.click(screen.getByTestId('fondo'));
+    // La de entrada de la ventana burbujea hasta el envoltorio.
+    terminarAnimacion(envoltorio().firstElementChild!);
+    expect(envoltorio()).toHaveAttribute('data-sacudiendo');
+    terminarAnimacion(envoltorio());
+    expect(envoltorio()).not.toHaveAttribute('data-sacudiendo');
+    await userEvent.click(screen.getByTestId('fondo'));
+    expect(envoltorio()).toHaveAttribute('data-sacudiendo');
+  });
+
+  it('un clic por fuera no le hace perder la novedad en la que iba', async () => {
+    render(<Novedades />);
+    await avanzar(2);
+    await userEvent.click(screen.getByTestId('fondo'));
+    expect(screen.getByText(/marca un bloque de celdas/i)).toBeInTheDocument();
+  });
+
   it('al cerrarlas quedan como vistas, para no repetirlas en cada pantalla', async () => {
     render(<Novedades />);
     await userEvent.click(screen.getByRole('button', { name: /cerrar/i }));
@@ -90,6 +163,13 @@ describe('Novedades', () => {
 
   it('no se repite a quien ya vio este lote', () => {
     localStorage.setItem(vistaKey(usuario.id), '1');
+    const { container } = render(<Novedades />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  // El de turnos se le mostró a todos (LOTE_INELUDIBLE); el del kiosco respeta a quien las apagó.
+  it('a quien apagó las novedades no le salta el lote del kiosco', () => {
+    localStorage.setItem(apagadoKey(usuario.id), '1');
     const { container } = render(<Novedades />);
     expect(container).toBeEmptyDOMElement();
   });
