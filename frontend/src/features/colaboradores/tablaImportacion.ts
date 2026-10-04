@@ -4,9 +4,18 @@ import type { Columna } from './formatoImportacion';
 // del Excel dentro de la misma fila, pero no se pinta en el formato.
 export const CLAVE_HORARIO = 'horarioId';
 export const CLAVE_SEDE = 'sedeId';
+// El auxilio SÍ viene del archivo, al contrario que los dos de arriba, pero
+// también tiene su «aplicar a todos», y es eso lo que lo mete en NO_HACEN_FILA.
+export const CLAVE_AUXILIO = 'auxilioTransporte';
 
 // Lo que se elige en la pantalla y no viene del archivo.
 const ELEGIDOS = [CLAVE_HORARIO, CLAVE_SEDE];
+
+// Lo que, por sí solo, no convierte una fila en una persona. Tiene que decir lo
+// mismo que NO_HACEN_FILA en el servidor (utils/importarColaboradores.ts): una
+// fila que aquí se manda y allá se considera vacía, o al revés, es una persona
+// de más o un error que señala a quien no es.
+const NO_HACEN_FILA = [...ELEGIDOS, CLAVE_AUXILIO];
 
 export type FilaEditable = Record<string, string>;
 
@@ -21,11 +30,11 @@ export function filaVacia(columnas: Columna[]): FilaEditable {
 
 // ¿La fila tiene algo escrito de verdad?
 //
-// El horario y la sede NO cuentan: los selectores globales los ponen en todas
-// las filas, y si eso convirtiera en real a una fila vacía del final, el
-// servidor la reportaría como una persona sin nombre y sin cédula.
+// Los de NO_HACEN_FILA no cuentan: los controles de «aplicar a todos» los ponen
+// en todas las filas, y si eso convirtiera en real a una fila vacía del final,
+// el servidor la reportaría como una persona sin nombre y sin cédula.
 export function hayDatos(fila: FilaEditable): boolean {
-  return Object.entries(fila).some(([clave, valor]) => !ELEGIDOS.includes(clave) && valor.trim() !== '');
+  return Object.entries(fila).some(([clave, valor]) => !NO_HACEN_FILA.includes(clave) && valor.trim() !== '');
 }
 
 // Los errores del servidor, puestos donde se pueden pintar.

@@ -14,6 +14,16 @@ export type ColumnaFormato = {
   // De esto depende cómo se lee la celda del Excel y qué control pinta la
   // tabla. Lo decide el servidor porque es parte del contrato del formato.
   tipo?: 'texto' | 'fecha' | 'dinero';
+  // Títulos que esta columna tuvo antes. El archivo se lee casando por el
+  // TÍTULO del encabezado, así que renombrar una columna deja sin reconocer
+  // todos los Excel que la gente ya tiene bajados: la columna queda vacía y
+  // salen tantos errores como filas tenga el archivo. El nombre viejo se
+  // queda aquí para siempre; no cuesta nada y el archivo de alguien sí.
+  alias?: string[];
+  // Lo que se lee en la celda de la tabla cuando está vacía. Va aquí y no en
+  // la pantalla porque dice qué significa dejarla en blanco, que es parte del
+  // contrato del formato, no una decisión de diseño.
+  marcador?: string;
 };
 
 // Las columnas del archivo, en orden. Es la misma lista que genera el formato
@@ -23,7 +33,14 @@ export const COLUMNAS_FORMATO: ColumnaFormato[] = [
   { clave: 'apellido', titulo: 'Apellido', obligatoria: true, ejemplo: 'Gómez Ruiz' },
   { clave: 'cedula', titulo: 'Cédula', obligatoria: true, ejemplo: '1020304050', ayuda: 'Solo números, sin puntos' },
   { clave: 'cargo', titulo: 'Cargo', obligatoria: false, ejemplo: 'Vigilante' },
-  { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1750905', ayuda: 'En pesos, sin centavos', tipo: 'dinero' },
+  { clave: 'salarioMensual', titulo: 'Salario básico', obligatoria: true, ejemplo: '1750905', tipo: 'dinero',
+    alias: ['Salario mensual'],
+    ayuda: 'En pesos, sin centavos. SIN el auxilio de transporte, que va en su propia columna.' },
+  // Vacío a propósito en el ejemplo: así se ve que no hay que escribir nada
+  // para que rija el decreto, que es el caso de casi todo el mundo.
+  { clave: 'auxilioTransporte', titulo: 'Auxilio de transporte', obligatoria: false, ejemplo: '', tipo: 'dinero',
+    marcador: 'Automático',
+    ayuda: 'Déjalo vacío y se aplica el del decreto si su salario da derecho. Escribe 0 si tu empresa no lo paga.' },
   { clave: 'email', titulo: 'Correo', obligatoria: false, ejemplo: 'ana@empresa.co' },
   { clave: 'telefono', titulo: 'Teléfono', obligatoria: false, ejemplo: '3001234567' },
   { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', ayuda: 'Día/mes/año. Se acomoda sola al leerla.', tipo: 'fecha' },
@@ -35,6 +52,12 @@ export const COLUMNAS_FORMATO: ColumnaFormato[] = [
 // clic. Llega por su id, junto al resto de la fila.
 const CLAVE_HORARIO = 'horarioId';
 const CLAVE_SEDE = 'sedeId';
+
+// Lo que, por sí solo, no convierte una fila en una persona. La pantalla tiene
+// un «aplicar a todos» para cada uno de los tres. La copia que decide lo mismo
+// en el navegador está en tablaImportacion.ts (hayDatos): las dos tienen que
+// decir lo mismo o el archivo que se manda y el que se valida no coinciden.
+const NO_HACEN_FILA = new Set([CLAVE_HORARIO, CLAVE_SEDE, 'auxilioTransporte']);
 
 export type FilaCruda = Record<string, unknown>;
 
@@ -55,6 +78,11 @@ export type ColaboradorImportado = {
   nombre: string; apellido: string; cedula: string; cargo: string | null;
   salarioMensual: number; email: string | null; telefono: string | null;
   fechaNacimiento: string | null; horarioId: string | null; sedeId: string | null;
+  // null es un valor VÁLIDO y quiere decir «el del decreto, si su básico da derecho».
+  // Cero quiere decir «esta empresa no lo paga». No son lo mismo y por eso no
+  // se puede usar null como señal de «no vino nada». Igual que en la ficha
+  // individual (utils/auxilioDeLaFicha.ts).
+  auxilioTransporte: number | null;
 };
 
 export type ErrorImportacion = { fila: number; campo: string; mensaje: string };
@@ -105,11 +133,13 @@ export function validarImportacion(filas: FilaCruda[], ctx: ContextoImportacion)
 
     // Excel arrastra filas vacías al final. Una fila sin nada no es un error,
     // es el final del archivo.
-    // Se mira solo lo que viene del ARCHIVO. El horario y la sede se eligen en
-    // la pantalla, y el selector global los pone en todas las filas: si contaran
-    // aquí, una fila vacía del final pasaría a reportarse como una persona sin
-    // nombre y sin cédula.
-    const vacia = COLUMNAS_FORMATO.every(c => v(c.clave) === '');
+    // Los tres de NO_HACEN_FILA no cuentan para decidirlo: los pinta en todas
+    // las filas un control de «aplicar a todos», así que si contaran, la fila
+    // vacía del final pasaría a reportarse como una persona sin nombre y sin
+    // cédula. El auxilio está ahí por eso y no porque sea menos importante:
+    // nadie llena un Excel con el auxilio de alguien de quien no escribió ni
+    // el nombre.
+    const vacia = COLUMNAS_FORMATO.every(c => NO_HACEN_FILA.has(c.clave) || v(c.clave) === '');
     if (vacia) return;
     conDatos++;
 
@@ -138,6 +168,21 @@ export function validarImportacion(filas: FilaCruda[], ctx: ContextoImportacion)
     const salario = aPesos(cruda['salarioMensual']);
     if (salario === null) err('salarioMensual', 'Falta el salario, o no es un número.');
     else if (salario <= 0) err('salarioMensual', 'El salario tiene que ser mayor que cero.');
+
+    // La celda vacía NO es un error ni un cero: es «el del decreto». Un cero se
+    // escribe con un cero, y entonces manda sobre el decreto.
+    const auxilioEscrito = v('auxilioTransporte');
+    let auxilio: number | null = null;
+    if (auxilioEscrito !== '') {
+      const valor = aPesos(auxilioEscrito);
+      if (valor === null) {
+        err('auxilioTransporte', `"${auxilioEscrito}" no es un número. Déjalo vacío para el del decreto, o escribe 0 si no lo pagas.`);
+      } else if (valor < 0) {
+        err('auxilioTransporte', 'El auxilio no puede ser negativo: le restaría plata a la persona.');
+      } else {
+        auxilio = valor;
+      }
+    }
 
     const email = v('email');
     if (email && !CORREO.test(email)) err('email', `"${email}" no parece un correo.`);
@@ -179,6 +224,7 @@ export function validarImportacion(filas: FilaCruda[], ctx: ContextoImportacion)
       fechaNacimiento: nacimiento || null,
       horarioId,
       sedeId,
+      auxilioTransporte: auxilio,
     });
   });
 

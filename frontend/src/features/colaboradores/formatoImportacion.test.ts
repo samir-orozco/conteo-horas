@@ -5,7 +5,7 @@ const COLUMNAS: Columna[] = [
   { clave: 'nombre', titulo: 'Nombre', obligatoria: true, ejemplo: 'Ana' },
   { clave: 'apellido', titulo: 'Apellido', obligatoria: true, ejemplo: 'Gómez' },
   { clave: 'cedula', titulo: 'Cédula', obligatoria: true, ejemplo: '123' },
-  { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1' },
+  { clave: 'salarioMensual', titulo: 'Salario básico', obligatoria: true, ejemplo: '1', alias: ['Salario mensual'] },
   { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', tipo: 'fecha' },
 ];
 
@@ -121,5 +121,44 @@ describe('leer la hoja que subieron', () => {
       ['11/12/85', 'Gómez', '123', '1750905'],
     ], COLUMNAS);
     expect(filas[0].nombre).toBe('11/12/85');
+  });
+});
+
+describe('un título de columna que cambió de nombre', () => {
+  // El archivo se casa por el TÍTULO del encabezado. Renombrar una columna deja
+  // sin reconocer todos los Excel que la gente ya tiene bajados: la columna
+  // queda vacía y salen tantos «falta el salario» como filas tenga el archivo.
+  it('lee el archivo viejo, con el título que la columna tenía antes', () => {
+    const filas = mapearHoja([
+      ['Nombre', 'Apellido', 'Cédula', 'Salario mensual'],
+      ['Ana', 'Gómez', '123', '1750905'],
+    ], COLUMNAS);
+    expect(filas[0].salarioMensual).toBe('1750905');
+  });
+
+  it('y el archivo nuevo, con el título de ahora', () => {
+    const filas = mapearHoja([
+      ['Nombre', 'Apellido', 'Cédula', 'Salario básico'],
+      ['Ana', 'Gómez', '123', '1750905'],
+    ], COLUMNAS);
+    expect(filas[0].salarioMensual).toBe('1750905');
+  });
+
+  it('si el archivo trae las dos, manda el título de ahora', () => {
+    // Pasa cuando alguien pega la columna nueva al lado de la vieja en vez de
+    // reemplazarla. Quedarse con la vieja guardaría el número que ya no mira.
+    const filas = mapearHoja([
+      ['Nombre', 'Apellido', 'Cédula', 'Salario mensual', 'Salario básico'],
+      ['Ana', 'Gómez', '123', '999', '1750905'],
+    ], COLUMNAS);
+    expect(filas[0].salarioMensual).toBe('1750905');
+  });
+
+  it('el alias también aguanta las tildes perdidas y las mayúsculas', () => {
+    const filas = mapearHoja([
+      ['Nombre', 'Apellido', 'Cédula', 'SALARIO MENSUAL'],
+      ['Ana', 'Gómez', '123', '1750905'],
+    ], COLUMNAS);
+    expect(filas[0].salarioMensual).toBe('1750905');
   });
 });

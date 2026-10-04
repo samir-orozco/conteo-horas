@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filaVacia, mapaDeErrores, conValorGlobal, hayDatos, erroresSinFila, CLAVE_HORARIO, CLAVE_SEDE } from './tablaImportacion';
+import { filaVacia, mapaDeErrores, conValorGlobal, hayDatos, erroresSinFila, CLAVE_HORARIO, CLAVE_SEDE, CLAVE_AUXILIO } from './tablaImportacion';
 import type { Columna } from './formatoImportacion';
 
 const COLUMNAS: Columna[] = [
@@ -35,6 +35,21 @@ describe('saber si una fila tiene algo escrito', () => {
     // reportaría como personas sin nombre y sin cédula.
     expect(hayDatos({ nombre: '', cedula: '', [CLAVE_HORARIO]: 'h1' })).toBe(false);
     expect(hayDatos({ nombre: '', cedula: '', [CLAVE_SEDE]: 's1' })).toBe(false);
+  });
+
+  it('el auxilio para todos tampoco: un auxilio solo no es una persona', () => {
+    // Mismo motivo, y la misma regla que aplica el servidor al decidir si la
+    // fila está vacía (utils/importarColaboradores.ts, NO_HACEN_FILA). Si las
+    // dos no dicen lo mismo, se manda una fila que el servidor reporta como
+    // alguien sin nombre y sin cédula.
+    expect(hayDatos({ nombre: '', cedula: '', [CLAVE_AUXILIO]: '0' })).toBe(false);
+    expect(hayDatos({ nombre: '', cedula: '', [CLAVE_AUXILIO]: '249095' })).toBe(false);
+  });
+
+  it('pero con nombre, el auxilio viaja: no se descarta la fila ni el dato', () => {
+    const fila = { nombre: 'Ana', cedula: '123', [CLAVE_AUXILIO]: '0' };
+    expect(hayDatos(fila)).toBe(true);
+    expect(fila[CLAVE_AUXILIO]).toBe('0');
   });
 
   it('con cualquier dato real sí cuenta', () => {

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Upload, X, AlertTriangle, FileSpreadsheet, Plus, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
-import { alEscribirMiles } from '../../lib/dinero';
+import { alEscribirMiles, alEscribirMilesConCero } from '../../lib/dinero';
 import { descargarFormato, leerHoja, mapearHoja, type Columna } from './formatoImportacion';
 import {
   filaVacia, hayDatos, mapaDeErrores, conValorGlobal, erroresSinFila,
-  CLAVE_HORARIO, CLAVE_SEDE, type FilaEditable, type ErrorFila,
+  CLAVE_HORARIO, CLAVE_SEDE, CLAVE_AUXILIO, type FilaEditable, type ErrorFila,
 } from './tablaImportacion';
 
 type Opcion = { id: string; nombre: string };
@@ -24,6 +24,16 @@ type Resultado = {
 // uno con texto que el navegador no entienda: lo borraría de la vista y el dato
 // desaparecería sin que nadie se enterara.
 const cabeEnCalendario = (v: string | undefined) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+// Cómo se ve lo que alguien teclea en una celda de dinero.
+//
+// Una columna con `marcador` es una donde el vacío SIGNIFICA algo («Automático»
+// es «el del decreto»). Ahí un cero escrito no puede colapsar a vacío: serían
+// dos respuestas contrarias en el mismo campo. En las demás el cero se sigue
+// borrando, como en toda la ficha, porque un "0" precargado hay que borrarlo
+// antes de poder escribir encima.
+const alEscribirEn = (c: Columna, valor: string) =>
+  (c.marcador ? alEscribirMilesConCero : alEscribirMiles)(valor);
 
 const HOJAS = ['.xlsx', '.xls', '.csv'];
 const esHoja = (f: File) => HOJAS.some(e => f.name.toLowerCase().endsWith(e));
@@ -63,6 +73,10 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
   // posición del scroll, justo cuando se acaba de mover la vista hasta el
   // error.
   const [sacudiendo, setSacudiendo] = useState(false);
+  // El auxilio para todos es un campo de texto, no una lista, así que lleva su
+  // propio estado: los selectores de al lado pueden ser no controlados porque
+  // su valor es uno de los que ya tienen pintados.
+  const [auxilioGlobal, setAuxilioGlobal] = useState('');
   const caja = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,6 +86,10 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
   }, []);
 
   const conDatos = (filas ?? []).filter(hayDatos);
+  // Lo manda el servidor con el resto del formato. Si algún día deja de venir,
+  // la columna y su «para todos» desaparecen juntos y no queda un control que
+  // escribe en un campo que nadie lee.
+  const columnaAuxilio = columnas.find(c => c.clave === CLAVE_AUXILIO);
 
   const revisar = async (candidatas: FilaEditable[], soloValidar: boolean) => {
     setOcupado(true); setError('');
@@ -104,6 +122,14 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
     setError(''); setResultado(null); setErrores(new Map());
     if (!esHoja(archivo)) {
       setError('Ese archivo no es una hoja de Excel. Sube el formato .xlsx que descargaste.');
+      return;
+    }
+    // Sin las columnas no se sabe qué es cada celda, así que la hoja se lee
+    // como si no tuviera nada y la pantalla acusaba al archivo de estar vacío.
+    // Pasa en el primer segundo, antes de que conteste GET /formato, y manda a
+    // revisar un Excel que está bien.
+    if (columnas.length === 0) {
+      setError('Un momento: todavía estamos cargando el formato. Vuelve a soltar el archivo en un segundo.');
       return;
     }
     setOcupado(true);
@@ -278,6 +304,29 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
                       </select>
                     </label>
                   ))}
+                  {/* El auxilio no es una lista: se escribe. Lo normal es dejarlo
+                      vacío, y el caso que esto resuelve es la empresa que no lo
+                      paga a nadie, que escribe un 0 una sola vez en vez de
+                      cuarenta. */}
+                  {columnaAuxilio && (
+                    <label className="flex items-center gap-2 text-sm">
+                      <span className="text-muted">Auxilio</span>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted text-sm">$</span>
+                        <input
+                          aria-label="Auxilio para todos"
+                          inputMode="numeric"
+                          placeholder={columnaAuxilio.marcador}
+                          value={auxilioGlobal}
+                          onChange={e => {
+                            const valor = alEscribirEn(columnaAuxilio, e.target.value);
+                            setAuxilioGlobal(valor);
+                            setFilas(f => conValorGlobal(f ?? [], CLAVE_AUXILIO, valor));
+                          }}
+                          className="w-32 border border-gray-300 bg-white rounded-lg pl-6 pr-3 py-1.5 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-primary" />
+                      </div>
+                    </label>
+                  )}
                   {errores.size > 0 && (
                     <p className="text-sm text-red-700 font-semibold flex items-center gap-1.5 ml-auto">
                       <AlertTriangle size={14} /> {errores.size} dato{errores.size === 1 ? '' : 's'} por corregir
@@ -291,8 +340,18 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
                   Ojo: overflow-x:auto obliga al navegador a recortar TAMBIÉN en
                   vertical, así que el globo del error de la última fila queda
                   cortado. El hueco de abajo le hace sitio, y solo aparece
-                  cuando hay algo que mostrar. */}
-              <div className={`border border-gray-200 rounded-xl overflow-x-auto ${errores.size > 0 ? 'pb-16' : ''}`}>
+                  cuando hay algo que mostrar.
+
+                  El `relative` NO es decorativo y no se puede quitar: ancla aquí
+                  el `sr-only` de la última columna, que es un texto invisible
+                  con position:absolute. Sin ancla, su contenedor pasaba a ser el
+                  fondo del modal, y entonces no lo recortaba este marco: estiraba
+                  el cuerpo del modal a 1471 px sobre 992 visibles y salían DOS
+                  barras horizontales, una dentro de la otra. Medido el 1 de
+                  octubre de 2026 en el navegador; con el ancla, el cuerpo del
+                  modal vuelve a medir exactamente lo que se ve. jsdom no tiene
+                  maquetación, así que esto NO lo cuida ninguna prueba. */}
+              <div className={`relative border border-gray-200 rounded-xl overflow-x-auto ${errores.size > 0 ? 'pb-16' : ''}`}>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-muted uppercase text-[11px]">
                     <tr>
@@ -336,10 +395,15 @@ export default function ModalImportar({ onCerrar, onListo, plan }: {
                                   aria-invalid={malo ? true : undefined}
                                   aria-describedby={malo ? idAviso : undefined}
                                   value={fila[c.clave] ?? ''}
+                                  // Lo que se lee cuando la celda está vacía, si
+                                  // ese vacío significa algo: el auxilio en
+                                  // blanco dice «Automático», o sea el del
+                                  // decreto, y no «a esta persona no se le paga».
+                                  placeholder={c.marcador}
                                   onChange={e => cambiar(i, c.clave,
                                     // El dinero se lee con sus puntos: "1750905"
                                     // hay que contarlo con el dedo.
-                                    c.clave === 'salarioMensual' ? alEscribirMiles(e.target.value) : e.target.value)}
+                                    c.tipo === 'dinero' ? alEscribirEn(c, e.target.value) : e.target.value)}
                                   className={`w-full min-w-[7rem] border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 ${
                                     malo ? 'border-red-400 bg-red-50 focus:ring-red-300' : 'border-gray-300 focus:ring-primary'}`}
                                 />

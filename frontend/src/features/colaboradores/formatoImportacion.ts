@@ -11,6 +11,11 @@ export type Columna = {
   // Qué clase de dato es. Lo dice el servidor porque de eso depende cómo se lee
   // la celda y qué control se pinta en la tabla.
   tipo?: 'texto' | 'fecha' | 'dinero';
+  // Cómo se llamaba esta columna antes. Sin esto, renombrar una columna deja
+  // sin reconocer los Excel que la gente ya tiene bajados.
+  alias?: string[];
+  // Qué se lee en la celda vacía de la tabla.
+  marcador?: string;
 };
 
 export type FilaCruda = Record<string, string>;
@@ -37,22 +42,38 @@ const MINIMO_TITULOS = 2;
 // cargo en el nombre.
 export function mapearHoja(matriz: unknown[][], columnas: Columna[]): FilaCruda[] {
   const porTitulo = new Map(columnas.map(c => [normalizar(c.titulo), c.clave]));
+  // Los nombres que esa misma columna tuvo antes. Van en un mapa aparte y no
+  // en el de arriba para que el título de hoy gane siempre: si alguien pegó la
+  // columna nueva al lado de la vieja en vez de reemplazarla, el archivo trae
+  // las dos y hay que leer la que está mirando, no la que quedó olvidada.
+  const porAlias = new Map<string, string>();
+  for (const c of columnas) for (const a of c.alias ?? []) porAlias.set(normalizar(a), c.clave);
+
+  const conocida = (celda: unknown) => {
+    const t = normalizar(celda);
+    return porTitulo.has(t) || porAlias.has(t);
+  };
 
   // El encabezado no siempre es la primera fila: alguien le pone un título
   // arriba a la hoja todo el tiempo.
   let iEncabezado = -1;
   for (let i = 0; i < Math.min(matriz.length, 10); i++) {
-    const reconocidas = (matriz[i] ?? []).filter(c => porTitulo.has(normalizar(c))).length;
+    const reconocidas = (matriz[i] ?? []).filter(conocida).length;
     if (reconocidas >= MINIMO_TITULOS) { iEncabezado = i; break; }
   }
   if (iEncabezado === -1) return [];
 
-  // Posición de cada columna conocida dentro de la hoja.
+  // Posición de cada columna conocida dentro de la hoja. Primero los títulos de
+  // hoy y después los viejos, para que el orden de las columnas en la hoja no
+  // decida cuál de los dos manda.
+  const encabezado = matriz[iEncabezado] ?? [];
   const posicion = new Map<string, number>();
-  (matriz[iEncabezado] ?? []).forEach((titulo, j) => {
-    const clave = porTitulo.get(normalizar(titulo));
-    if (clave && !posicion.has(clave)) posicion.set(clave, j);
-  });
+  for (const mapa of [porTitulo, porAlias]) {
+    encabezado.forEach((titulo, j) => {
+      const clave = mapa.get(normalizar(titulo));
+      if (clave && !posicion.has(clave)) posicion.set(clave, j);
+    });
+  }
 
   const filas: FilaCruda[] = [];
   for (const cruda of matriz.slice(iEncabezado + 1)) {

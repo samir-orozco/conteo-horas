@@ -249,3 +249,78 @@ describe('la validación de una carga masiva', () => {
     expect(f?.tipo).toBe('fecha');
   });
 });
+
+describe('el auxilio de transporte en la carga masiva', () => {
+  // Las tres cosas que puede querer decir la celda son las mismas de la ficha
+  // individual (utils/auxilioDeLaFicha.ts): vacío es «el del decreto», cero es
+  // «esta empresa no lo paga» y cualquier otro número es un valor pactado.
+  // Aquí se comprueba que el archivo pueda decir las tres.
+
+  it('viene en el formato, marcada como dinero para que la tabla la pinte con puntos', () => {
+    const c = COLUMNAS_FORMATO.find(x => x.clave === 'auxilioTransporte');
+    expect(c).toBeDefined();
+    expect(c?.tipo).toBe('dinero');
+    expect(c?.obligatoria).toBe(false);
+  });
+
+  it('vacío es «el del decreto»: llega como null y sin error', () => {
+    // null es un valor VÁLIDO, no un hueco: es lo que hace que en enero el
+    // decreto nuevo rija sin tocar una ficha por persona.
+    const r = validarImportacion([fila({ auxilioTransporte: '' })], ctx());
+    expect(r.errores).toEqual([]);
+    expect(r.validas[0].auxilioTransporte).toBeNull();
+  });
+
+  it('una columna que el archivo ni siquiera trae también es «el del decreto»', () => {
+    const r = validarImportacion([fila()], ctx());
+    expect(r.errores).toEqual([]);
+    expect(r.validas[0].auxilioTransporte).toBeNull();
+  });
+
+  it('un cero se respeta: es «esta empresa no lo paga», no «no escribió nada»', () => {
+    const r = validarImportacion([fila({ auxilioTransporte: '0' })], ctx());
+    expect(r.errores).toEqual([]);
+    expect(r.validas[0].auxilioTransporte).toBe(0);
+  });
+
+  it('un valor pactado pasa tal cual, con los puntos de miles que escribe la gente', () => {
+    const r = validarImportacion([fila({ auxilioTransporte: '249.095' })], ctx());
+    expect(r.errores).toEqual([]);
+    expect(r.validas[0].auxilioTransporte).toBe(249095);
+  });
+
+  it('lo que no es un número rebota en su celda, no al crear', () => {
+    const r = validarImportacion([fila({ auxilioTransporte: 'el del decreto' })], ctx());
+    expect(errores(r)).toContain('2:auxilioTransporte');
+    expect(r.validas).toHaveLength(0);
+  });
+
+  it('un auxilio negativo no pasa: le restaría plata a la persona', () => {
+    expect(errores(validarImportacion([fila({ auxilioTransporte: '-5000' })], ctx())))
+      .toContain('2:auxilioTransporte');
+  });
+
+  it('un auxilio escrito solo, sin nada más, no convierte en real a una fila vacía', () => {
+    // Mismo motivo que el horario y la sede: el «auxilio para todos» lo pone en
+    // todas las filas, y las de abajo del archivo están vacías a propósito.
+    const soloAuxilio = { nombre: '', apellido: '', cedula: '', cargo: '', salarioMensual: '',
+      email: '', telefono: '', fechaNacimiento: '', horarioId: '', sedeId: '', auxilioTransporte: '0' };
+    const r = validarImportacion([fila(), soloAuxilio], ctx());
+    expect(r.errores).toEqual([]);
+    expect(r.conDatos).toBe(1);
+  });
+});
+
+describe('el salario, que ahora se llama básico', () => {
+  it('la columna se llama «Salario básico», porque es sin el auxilio', () => {
+    const c = COLUMNAS_FORMATO.find(x => x.clave === 'salarioMensual');
+    expect(c?.titulo).toBe('Salario básico');
+  });
+
+  it('sigue aceptando el título viejo, para los archivos que la gente ya tiene bajados', () => {
+    // Sin el alias, un Excel descargado antes de hoy deja la columna sin
+    // reconocer y salen tantos «falta el salario» como filas tenga.
+    const c = COLUMNAS_FORMATO.find(x => x.clave === 'salarioMensual');
+    expect(c?.alias).toContain('Salario mensual');
+  });
+});

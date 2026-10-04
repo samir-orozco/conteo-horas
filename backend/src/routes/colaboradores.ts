@@ -309,6 +309,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
           empresaId: request.empresaId!,
           nombre: c.nombre, apellido: c.apellido, cedula: c.cedula,
           cargo: c.cargo, salarioMensual: c.salarioMensual,
+          // null es «el del decreto»: es el valor que tiene que quedar guardado
+          // para que en enero el decreto nuevo rija sin tocar ficha por ficha.
+          auxilioTransporte: c.auxilioTransporte,
           email: c.email, telefono: c.telefono,
           fechaNacimiento: c.fechaNacimiento ? new Date(`${c.fechaNacimiento}T12:00:00Z`) : null,
           horarioId: c.horarioId,

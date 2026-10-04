@@ -18,7 +18,8 @@ vi.mock('./formatoImportacion', async (real) => ({
 const COLUMNAS = [
   { clave: 'nombre', titulo: 'Nombre', obligatoria: true, ejemplo: 'Ana' },
   { clave: 'cedula', titulo: 'Cédula', obligatoria: true, ejemplo: '123' },
-  { clave: 'salarioMensual', titulo: 'Salario mensual', obligatoria: true, ejemplo: '1', tipo: 'dinero' },
+  { clave: 'salarioMensual', titulo: 'Salario básico', obligatoria: true, ejemplo: '1', tipo: 'dinero', alias: ['Salario mensual'] },
+  { clave: 'auxilioTransporte', titulo: 'Auxilio de transporte', obligatoria: false, ejemplo: '', tipo: 'dinero', marcador: 'Automático' },
   { clave: 'fechaNacimiento', titulo: 'Fecha de nacimiento', obligatoria: false, ejemplo: '1990-05-20', tipo: 'fecha' },
 ];
 const HORARIOS = [{ id: 'h1', nombre: 'Turno diurno' }, { id: 'h2', nombre: 'Turno nocturno' }];
@@ -35,7 +36,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   get.mockResolvedValue({ data: { columnas: COLUMNAS, horarios: HORARIOS, sedes: SEDES } });
   leerHoja.mockResolvedValue([
-    ['Nombre', 'Cédula', 'Salario mensual', 'Fecha de nacimiento'],
+    ['Nombre', 'Cédula', 'Salario básico', 'Fecha de nacimiento'],
     ['Ana', '111', '1750905', '11/12/85'],
     ['Luis', '222', '2000000', ''],
   ]);
@@ -441,16 +442,20 @@ describe('cerrar sin perder el trabajo', () => {
 });
 
 describe('el salario, como se lee la plata', () => {
+  // Ojo: dos pruebas de más arriba siguen mandando una hoja encabezada
+  // «Salario mensual», que es el nombre viejo. No es un descuido: es el alias
+  // en funcionamiento, con el mapearHoja de verdad, sobre el archivo que
+  // alguien tiene bajado desde antes del cambio de nombre.
   it('llega del Excel ya con sus puntos', async () => {
     montar();
     await subir();
-    expect(screen.getByLabelText('Salario mensual de la fila 1')).toHaveValue('1.750.905');
+    expect(screen.getByLabelText('Salario básico de la fila 1')).toHaveValue('1.750.905');
   });
 
   it('los puntos aparecen solos al escribir', async () => {
     montar();
     await subir();
-    const campo = screen.getByLabelText('Salario mensual de la fila 1');
+    const campo = screen.getByLabelText('Salario básico de la fila 1');
     await userEvent.clear(campo);
     await userEvent.type(campo, '2400000');
     expect(campo).toHaveValue('2.400.000');
@@ -459,7 +464,7 @@ describe('el salario, como se lee la plata', () => {
   it('borrarlo deja el campo vacío, no un cero', async () => {
     montar();
     await subir();
-    const campo = screen.getByLabelText('Salario mensual de la fila 1');
+    const campo = screen.getByLabelText('Salario básico de la fila 1');
     await userEvent.clear(campo);
     expect(campo).toHaveValue('');
   });
@@ -535,5 +540,87 @@ describe('cuando se le da a crear y algo está mal', () => {
     await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
     await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
     expect(traer).not.toHaveBeenCalled();
+  });
+});
+
+describe('el auxilio de transporte', () => {
+  it('tiene su columna, y vacía dice que lo pone el decreto', async () => {
+    // Vacío no es cero: vacío es «el del decreto si su salario da derecho».
+    // Una celda en blanco sin más no dice eso, y quien la mire va a pensar que
+    // a esa persona no se le va a pagar.
+    montar();
+    await subir();
+    const celda = screen.getByLabelText('Auxilio de transporte de la fila 1');
+    expect(celda).toHaveValue('');
+    expect(celda).toHaveAttribute('placeholder', 'Automático');
+  });
+
+  it('se lo pone a todos de un golpe, como el horario', async () => {
+    montar();
+    await subir();
+    await userEvent.type(screen.getByLabelText(/Auxilio para todos/i), '0');
+    expect(screen.getByLabelText('Auxilio de transporte de la fila 1')).toHaveValue('0');
+    expect(screen.getByLabelText('Auxilio de transporte de la fila 2')).toHaveValue('0');
+  });
+
+  it('después del global, a uno se le puede pactar otro', async () => {
+    montar();
+    await subir();
+    await userEvent.type(screen.getByLabelText(/Auxilio para todos/i), '0');
+    await userEvent.clear(screen.getByLabelText('Auxilio de transporte de la fila 2'));
+    await userEvent.type(screen.getByLabelText('Auxilio de transporte de la fila 2'), '200000');
+    expect(screen.getByLabelText('Auxilio de transporte de la fila 1')).toHaveValue('0');
+    expect(screen.getByLabelText('Auxilio de transporte de la fila 2')).toHaveValue('200.000');
+  });
+
+  it('se escribe con puntos de miles, igual que el salario', async () => {
+    // "249095" hay que contarlo con el dedo para saber si son millones.
+    montar();
+    await subir();
+    await userEvent.type(screen.getByLabelText('Auxilio de transporte de la fila 1'), '249095');
+    expect(screen.getByLabelText('Auxilio de transporte de la fila 1')).toHaveValue('249.095');
+  });
+
+  it('viaja al crear, y un cero no se confunde con no haber escrito nada', async () => {
+    montar();
+    await subir();
+    await userEvent.type(screen.getByLabelText(/Auxilio para todos/i), '0');
+    post.mockResolvedValueOnce({ data: { ...OK, creados: 2 } });
+    await userEvent.click(screen.getByRole('button', { name: /Crear 2 colaboradores/i }));
+    const enviado = post.mock.calls[post.mock.calls.length - 1][1] as { filas: Record<string, string>[] };
+    expect(enviado.filas[0].auxilioTransporte).toBe('0');
+    expect(enviado.filas[1].auxilioTransporte).toBe('0');
+  });
+
+  it('ponérselo a todos no le borra el horario ni la sede a nadie', async () => {
+    montar();
+    await subir();
+    await userEvent.selectOptions(screen.getByLabelText('Horario de la fila 1'), 'h2');
+    await userEvent.type(screen.getByLabelText(/Auxilio para todos/i), '0');
+    expect(screen.getByLabelText('Horario de la fila 1')).toHaveValue('h2');
+  });
+});
+
+describe('subir el archivo antes de que cargue el formato', () => {
+  it('no dice que el archivo está vacío: dice que espere', async () => {
+    // Sin las columnas no se sabe qué es cada celda, así que la hoja se lee
+    // como si no tuviera nada. Decir «no tiene ninguna fila con datos» manda a
+    // revisar un Excel que está bien.
+    get.mockReturnValue(new Promise(() => {}));
+    montar();
+    const zona = await screen.findByLabelText(/Subir el formato/i);
+    fireEvent.change(zona, { target: { files: [archivo()] } });
+    expect(await screen.findByText(/un momento|espera|cargando/i)).toBeInTheDocument();
+    expect(screen.queryByText(/no tiene ninguna fila con datos/i)).not.toBeInTheDocument();
+    expect(leerHoja).not.toHaveBeenCalled();
+  });
+
+  it('tampoco si lo arrastran, que no pasa por el campo de archivo', async () => {
+    get.mockReturnValue(new Promise(() => {}));
+    montar();
+    fireEvent.drop(await screen.findByTestId('zona-archivo'),
+      { dataTransfer: { files: [archivo()] } });
+    expect(await screen.findByText(/un momento|espera|cargando/i)).toBeInTheDocument();
+    expect(leerHoja).not.toHaveBeenCalled();
   });
 });
