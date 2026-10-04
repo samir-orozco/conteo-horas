@@ -78,11 +78,11 @@ export const PRIVACIDAD = {
   // interruptor y `legal.test.ts` se pone rojo si las dos se separan.
   //
   // PUBLICADA el 9 de septiembre de 2026, versión 1.0. Versión 1.1 el 14 de
-  // septiembre de 2026, con el registro facial por enlace. Versión 1.2 el 2 de
-  // octubre de 2026, con lo que el kiosco muestra al marcar. Si el despliegue del
-  // frontend no ocurre ese día, esta fecha se cambia antes de compilar.
+  // septiembre de 2026, con el registro facial por enlace. Versión 1.2 aprobada el 2
+  // de octubre de 2026 y publicada el 4, con lo que el kiosco muestra al marcar. Si
+  // el despliegue del frontend no ocurre ese día, esta fecha se cambia antes de compilar.
   borrador: false,
-  fechaVigencia: '2 de octubre de 2026',
+  fechaVigencia: '4 de octubre de 2026',
 
   // Lo que faltaba antes de publicar. Vacío porque ya no queda nada: la casilla
   // privacidad@horapro.co existe, la copia semanal quedó configurada y el

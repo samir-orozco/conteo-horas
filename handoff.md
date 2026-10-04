@@ -481,7 +481,8 @@ totales del Excel de muestra.
 
 ## Pendiente de fondo
 
-Ya **no queda nada que toque dinero**. Lo que sigue causa confusión o ruido, no
+Lo único que toca dinero es **la pausa sin regreso** (abajo), y en producción **no ha
+pasado nunca**: medido el 4 de octubre de 2026. Lo demás causa confusión o ruido, no
 números malos. Cada uno con su comprobación antes de tocarlo.
 
 **El mecanismo del día congelado — el primero cierra casi todos los demás:**
@@ -558,6 +559,49 @@ diga por dónde va en vez de quedarse en blanco.
 cuánto tarda hoy un reporte de un mes sobre la empresa más grande de producción, y
 cuántas filas por segundo aguanta el servidor escribiendo días esperados. El
 número 40 que usa la maqueta es una suposición, no una medición.
+
+### La pausa sin regreso y la entrada horas después (4 de octubre de 2026): NO TOCAR sin el dueño
+
+**El defecto, medido con las funciones reales y no supuesto.** `minutosTomadosEnLaPausa`
+(`backend/src/utils/almuerzo.ts`) mide la pausa hasta la SIGUIENTE entrada del día, sin
+límite de horas. Quien sale al descanso a las 15:00, se va a la casa y vuelve a las 19:00
+a hacer extras queda como «se demoró 4 horas», y la nómina no le descuenta lo fijado del
+descanso. Si no hubiera vuelto, sí se lo descontaría: es la regla del dueño, «una pausa
+sin regreso cuesta lo fijado». Con 1.423.500, 15 min son 1.694,64 de más; con el almuerzo,
+60 min son 6.778,57. Solo se vuelve plata si el período tiene faltante, es festivo o cruza
+el tope semanal.
+
+**Lo más caro es otra cosa:** el kiosco espera el regreso del ALMUERZO 18 horas, así que a
+las 19:00 le pregunta a quien salió a almorzar a las 12:00 «¿a qué hora regresaste?» y le
+ofrece «A las 13:00» (`regresoSugerido` en `worker.ts`). Si lo toca, ese día se le pagan
+unos 50.839 de más. El descanso no tiene ese problema: el kiosco ya deja de esperarlo al
+fin del turno más una hora (`limiteDeEsperaDelDescanso`).
+
+**En producción, 0 casos**, con la consulta `sql/pausas-sin-regreso-resumen.sql` (y
+`-detalle.sql`): de 248 salidas a almorzar (15/08 al 04/10) y 152 al descanso (07/09 al
+22/09), ninguna volvió después del límite, ninguna entrada del día siguiente quedó pegada
+y nadie aceptó la hora propuesta tarde. La consulta está validada contra las funciones
+reales (9.261 casos y 12 sabotajes en una MariaDB desechable) y tarda 0,07 s en
+producción. **Volver a correrla cada uno o dos meses**; si aparece un caso, se retoma con
+los números.
+
+**Las tres decisiones que el dueño dejó abiertas, por si se retoma:**
+1. ¿Cobrar lo fijado también a quien estuvo presente sin pausa y volvió a otro turno?
+2. ¿El almuerzo con el mismo límite que el descanso? Cierra el «A las 13:00» tardío, pero
+   quien de verdad volvió a la 1 y no lo arregló antes de la hora límite tendría que
+   pedírselo al administrador.
+3. ¿Desde qué fecha? La liquidación se recalcula en vivo: cambiar la regla mueve períodos
+   ya pagados si alguien los vuelve a abrir. Lo razonable es desde el día del despliegue.
+
+**Si se arregla, en TODAS las copias a la vez (CLAUDE.md §9.3):** la medida de la nómina
+(`minutosTomadosEnLaPausa`), la agrupación (`agruparEnJornadas` y sus derivadas), el
+resumen de la pausa (`resumirSalida`), el kiosco (`pausaQueEsperaRegreso`) y la campana
+(`cierreAlmuerzo.ts`). Arreglar solo la agrupación sería cosmético y dejaría la pantalla
+contradiciendo a la nómina.
+
+**Una observación sin resolver:** la última salida al descanso de producción es del 22 de
+septiembre. Puede ser normal; si se esperaban descansos después, mirar si el kiosco los
+está ofreciendo.
 
 ### Confirmación de identidad en el kiosco: lo que quedó para después
 
