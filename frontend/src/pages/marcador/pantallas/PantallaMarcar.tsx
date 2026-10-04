@@ -7,7 +7,7 @@ import ConfirmarNuevaEntrada from './ConfirmarNuevaEntrada';
 import ElegirTipoDeSalida from './ElegirTipoDeSalida';
 import BotonSostenido from './BotonSostenido';
 import { confirmacionDeLaMarca, textoDelAviso, textoDelSostenido } from '../confirmacion';
-import { textoDeLaMarca } from '../marcasDeHoy';
+import { textoDeLaMarca, ultimasMarcas } from '../marcasDeHoy';
 
 type OpcionesDePausa = { almuerzo?: boolean; descanso?: boolean };
 
@@ -63,6 +63,7 @@ export default function PantallaMarcar({
   const entradaHace = estado?.entradaAbierta?.entrada ? horaBog(estado.entradaAbierta.entrada, 'HH:mm') : null;
   const cerradoHoy = estado?.turnoCerradoHoy ?? null;
   const marcasDeHoy = estado?.marcasDeHoy;
+  const { visibles: marcasVisibles, ocultas: marcasOcultas } = ultimasMarcas(marcasDeHoy ?? []);
   const almuerzo = estado?.almuerzo ?? null;
   const descanso = estado?.descanso ?? null;
   const [confirmando, setConfirmando] = useState(false);
@@ -170,13 +171,16 @@ export default function PantallaMarcar({
             {/* «Marcas de hoy» y no «Otras entradas»: la lista trae también salidas y pausas. */}
             <h3 id="marcas-de-hoy" className="text-base font-medium text-white">Marcas de hoy</h3>
             <ul className="mt-2 space-y-2">
-              {marcasDeHoy.map(m => (
+              {marcasVisibles.map(m => (
                 <li key={`${m.momento}-${m.hora}`}
                   className="rounded-full bg-green-500/15 px-4 py-2 text-center text-sm font-semibold text-green-400">
                   {textoDeLaMarca(m.momento, m.hora)}
                 </li>
               ))}
             </ul>
+            {marcasOcultas > 0 && (
+              <p className="mt-2 text-center text-xs text-white/45">y {marcasOcultas} más</p>
+            )}
           </section>
         )}
 

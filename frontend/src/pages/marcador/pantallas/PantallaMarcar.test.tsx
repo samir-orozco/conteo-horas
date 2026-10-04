@@ -361,6 +361,18 @@ describe('PantallaMarcar · confirmar quién es antes de marcar', () => {
     expect(screen.getByText('Entrada registrada a las 8:49 a. m.')).toBeInTheDocument();
   });
 
+  it('con muchas marcas muestra las tres últimas y dice cuántas más hay', () => {
+    const horas = ['11:02', '13:30', '13:45', '16:01', '17:00', '21:04', '23:00'];
+    montarConfirmando({
+      ...fuera, dentroAhora: true, entradaAbierta: { entrada: '2026-10-01T23:00:00Z' },
+      marcasDeHoy: horas.map((h, i) => ({ momento: i % 2 === 0 ? 'ENTRADA' : 'SALIDA', hora: `2026-10-01T${h}:00Z` })),
+    }, { ahora: '2026-10-01T23:30:00Z' });
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(screen.getByText('Entrada registrada a las 6:00 p. m.')).toBeInTheDocument();
+    expect(screen.queryByText('Entrada registrada a las 6:02 a. m.')).not.toBeInTheDocument();
+    expect(screen.getByText('y 4 más')).toBeInTheDocument();
+  });
+
   it('sin marcas hoy no muestra la lista', () => {
     montarConfirmando({ ...fuera, marcasDeHoy: [] });
     expect(screen.queryByRole('heading', { name: 'Marcas de hoy' })).not.toBeInTheDocument();
