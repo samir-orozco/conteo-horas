@@ -189,9 +189,15 @@ export default function CamaraRostro({ modo = 'login', pasoGafas = false, onCapt
           try {
             const enHold = holdInicio !== null;
             // En el hold detectamos con más resolución y ya pedimos el descriptor.
+            //
+            // CON `.run()` (4 de octubre de 2026). Las tareas de face-api.js tienen un `then` que no
+            // entrega el error: con un `await` directo, el fallo de un cuadro (el video un instante
+            // sin tamaño) no llegaba a este `try`, el ciclo se quedaba esperando para siempre y la
+            // imagen se congelaba con la pantalla negra de error encima. `.run()` sí lo entrega, y
+            // entonces el `catch` de abajo reintenta el siguiente cuadro. Ver tareasDeFaceapi.test.ts.
             const deteccion = enHold
-              ? await faceapi.detectSingleFace(video, opcionesCaptura()).withFaceLandmarks().withFaceDescriptor()
-              : await faceapi.detectSingleFace(video, opcionesDeteccion()).withFaceLandmarks();
+              ? await faceapi.detectSingleFace(video, opcionesCaptura()).withFaceLandmarks().withFaceDescriptor().run()
+              : await faceapi.detectSingleFace(video, opcionesDeteccion()).withFaceLandmarks().run();
             erroresSeguidos = 0; // el cuadro se procesó sin lanzar
 
             if (!activo || terminado) return;

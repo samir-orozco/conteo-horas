@@ -13,7 +13,28 @@ import { render, screen, act } from '@testing-library/react';
 //   2. Una regla que se llena con el giro: la flecha decía hacia dónde, no cuánto.
 //   3. Un 3, 2, 1 grande en vez de una barra de pocos píxeles al borde de la imagen.
 
-const cara = vi.hoisted(() => ({ yaw: 0, hay: true }));
+const { cara, tarea } = vi.hoisted(() => {
+  const cara = { yaw: 0, hay: true, fallos: 0 };
+  // UNA TAREA COMO LAS DE face-api.js (4 de octubre de 2026). Su `then` recibe SOLO el camino del
+  // éxito, igual que `ComposableTask` en la librería: si la tarea falla, un `await tarea` no se
+  // entera, se queda esperando para siempre y el error sale suelto como promesa rechazada. Así se
+  // trababa la cámara del kiosco en producción. `run()` sí es una promesa de verdad. Con promesas
+  // normales, como antes, ninguna prueba podía ver el defecto.
+  const tarea = <T,>(producir: () => T) => ({
+    run: async (): Promise<T> => {
+      if (cara.fallos > 0) {
+        cara.fallos--;
+        // El mensaje de producción: una caja con NaN, que JSON.stringify escribe como null.
+        throw new Error('Box.constructor - expected box to be IBoundingBox | IRect, instead have {"x":null,"y":null,"width":null,"height":null}');
+      }
+      return producir();
+    },
+    then(this: { run: () => Promise<T> }, alCumplir: (valor: T) => unknown) {
+      return (async () => alCumplir(await this.run()))();
+    },
+  });
+  return { cara, tarea };
+});
 
 // Un cuadro con la cara centrada y del tamaño justo en un video de 640x480. El giro sale de dónde
 // cae la nariz sobre la línea de los ojos: con los ojos en x=0 y x=100, la nariz en (yaw+0,5)·100.
@@ -29,12 +50,9 @@ const deteccion = () => ({
 vi.mock('face-api.js', () => ({
   TinyFaceDetectorOptions: class {},
   detectSingleFace: () => ({
-    withFaceLandmarks: () => {
-      const r = Promise.resolve(cara.hay ? deteccion() : undefined);
-      return Object.assign(r, {
-        withFaceDescriptor: () => Promise.resolve(cara.hay ? { ...deteccion(), descriptor: new Float32Array(128).fill(0.1) } : undefined),
-      });
-    },
+    withFaceLandmarks: () => Object.assign(tarea(() => (cara.hay ? deteccion() : undefined)), {
+      withFaceDescriptor: () => tarea(() => (cara.hay ? { ...deteccion(), descriptor: new Float32Array(128).fill(0.1) } : undefined)),
+    }),
   }),
 }));
 vi.mock('../lib/faceapi', () => ({
@@ -50,6 +68,7 @@ const FOTO = 'data:image/jpeg;base64,cuadro';
 beforeEach(() => {
   cara.yaw = 0;
   cara.hay = true;
+  cara.fallos = 0;
   vi.useFakeTimers();
   // El lado del reto se sortea: con 0,2 sale «derecha».
   vi.spyOn(Math, 'random').mockReturnValue(0.2);
@@ -180,3 +199,20 @@ describe('verificando, hasta que el servidor responda', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Verificando…');
   });
 });
+
+// EL DETECTOR QUE FALLA UN CUADRO (4 de octubre de 2026). En producción, cuando el video quedaba un
+// instante sin tamaño, face-api.js fallaba con «Box.constructor - expected box…». Por cómo la
+// librería implementa sus tareas, el error no llegaba al `catch` de la cámara: el ciclo se quedaba
+// esperando para siempre, la imagen se congelaba y encima salía la pantalla negra de error. Pasó 7
+// veces entre el 1 y el 3 de octubre, la primera en Grupo MSM a las 7:00 de la mañana.
+describe('si el detector falla en algunos cuadros', () => {
+  it('la cámara sigue con el siguiente y termina tomando la foto', async () => {
+    cara.fallos = 3;
+    const { onCapturado } = montar();
+    await avanzar(1500);
+    await avanzar(2700);
+    expect(cara.fallos).toBe(0);
+    expect(onCapturado).toHaveBeenCalledTimes(1);
+  });
+});
+

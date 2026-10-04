@@ -61,9 +61,11 @@ export async function pistaDePantalla(img: HTMLImageElement): Promise<Pista> {
     // verdad, pegada al borde del cuadro, donde no hay ninguno, y la foto salía
     // «limpia» con el teléfono a la vista. Pasó en producción el 10 de septiembre
     // de 2026 y es lo que hizo cambiar esto.
+    // Con `.run()`: sin él, un fallo del detector no llega al `catch` y esta promesa no termina
+    // nunca (ver tareasDeFaceapi.test.ts).
     const dets = await faceapi.detectAllFaces(
       img, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.4 })
-    );
+    ).run();
     if (!dets.length) return null;
 
     const c = document.createElement('canvas');
