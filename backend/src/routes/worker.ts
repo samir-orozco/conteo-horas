@@ -474,7 +474,7 @@ export default async function workerRoutes(app: FastifyInstance) {
       sedes: sedesDelCol.map(s => s.sede),
       validaUbicacion: await seLeValidaLaUbicacion(col.id, col.empresaId, col.modalidad),
       fotoReferencia: await fotoDeReferencia(col.id),
-      // El kiosco pide la confirmación reforzada (3 s y un aviso). No es un
+      // El kiosco pide la confirmación reforzada (1,6 s y un aviso). No es un
       // rechazo: la distancia sola no separa a una impostora de alguien honesto.
       parecidoDudoso: esParecidoDudoso(veredicto.distancia),
     };
