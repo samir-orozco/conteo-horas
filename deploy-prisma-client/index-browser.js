@@ -592,6 +592,49 @@ exports.Prisma.EventoSistemaScalarFieldEnum = {
   empresaNombre: 'empresaNombre'
 };
 
+exports.Prisma.CalificacionClimaScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  colaboradorId: 'colaboradorId',
+  fecha: 'fecha',
+  carita: 'carita',
+  motivos: 'motivos',
+  observacion: 'observacion',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
+exports.Prisma.ObservacionConfidencialScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  semana: 'semana',
+  visibleDesde: 'visibleDesde',
+  texto: 'texto',
+  autorCifrado: 'autorCifrado'
+};
+
+exports.Prisma.SeguimientoClimaScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  colaboradorId: 'colaboradorId',
+  desde: 'desde',
+  estado: 'estado',
+  responsableId: 'responsableId',
+  abiertoEn: 'abiertoEn',
+  cerradoEn: 'cerradoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
+exports.Prisma.ComentarioSeguimientoClimaScalarFieldEnum = {
+  id: 'id',
+  seguimientoId: 'seguimientoId',
+  autorId: 'autorId',
+  autorNombre: 'autorNombre',
+  texto: 'texto',
+  creadoEn: 'creadoEn',
+  editadoEn: 'editadoEn'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -747,6 +790,12 @@ exports.OrigenEvento = exports.$Enums.OrigenEvento = {
   NAVEGADOR: 'NAVEGADOR'
 };
 
+exports.EstadoSeguimientoClima = exports.$Enums.EstadoSeguimientoClima = {
+  SIN_REVISAR: 'SIN_REVISAR',
+  EN_SEGUIMIENTO: 'EN_SEGUIMIENTO',
+  CERRADO: 'CERRADO'
+};
+
 exports.Prisma.ModelName = {
   Empresa: 'Empresa',
   Suscripcion: 'Suscripcion',
@@ -780,7 +829,11 @@ exports.Prisma.ModelName = {
   ConstanciaBiometrica: 'ConstanciaBiometrica',
   Contrato: 'Contrato',
   ProrrogaContrato: 'ProrrogaContrato',
-  EventoSistema: 'EventoSistema'
+  EventoSistema: 'EventoSistema',
+  CalificacionClima: 'CalificacionClima',
+  ObservacionConfidencial: 'ObservacionConfidencial',
+  SeguimientoClima: 'SeguimientoClima',
+  ComentarioSeguimientoClima: 'ComentarioSeguimientoClima'
 };
 
 /**

@@ -178,6 +178,26 @@ export type ProrrogaContrato = $Result.DefaultSelection<Prisma.$ProrrogaContrato
  * 
  */
 export type EventoSistema = $Result.DefaultSelection<Prisma.$EventoSistemaPayload>
+/**
+ * Model CalificacionClima
+ * 
+ */
+export type CalificacionClima = $Result.DefaultSelection<Prisma.$CalificacionClimaPayload>
+/**
+ * Model ObservacionConfidencial
+ * 
+ */
+export type ObservacionConfidencial = $Result.DefaultSelection<Prisma.$ObservacionConfidencialPayload>
+/**
+ * Model SeguimientoClima
+ * 
+ */
+export type SeguimientoClima = $Result.DefaultSelection<Prisma.$SeguimientoClimaPayload>
+/**
+ * Model ComentarioSeguimientoClima
+ * 
+ */
+export type ComentarioSeguimientoClima = $Result.DefaultSelection<Prisma.$ComentarioSeguimientoClimaPayload>
 
 /**
  * Enums
@@ -373,6 +393,15 @@ export const OrigenEvento: {
 
 export type OrigenEvento = (typeof OrigenEvento)[keyof typeof OrigenEvento]
 
+
+export const EstadoSeguimientoClima: {
+  SIN_REVISAR: 'SIN_REVISAR',
+  EN_SEGUIMIENTO: 'EN_SEGUIMIENTO',
+  CERRADO: 'CERRADO'
+};
+
+export type EstadoSeguimientoClima = (typeof EstadoSeguimientoClima)[keyof typeof EstadoSeguimientoClima]
+
 }
 
 export type EstadoSuscripcion = $Enums.EstadoSuscripcion
@@ -454,6 +483,10 @@ export const TipoEvento: typeof $Enums.TipoEvento
 export type OrigenEvento = $Enums.OrigenEvento
 
 export const OrigenEvento: typeof $Enums.OrigenEvento
+
+export type EstadoSeguimientoClima = $Enums.EstadoSeguimientoClima
+
+export const EstadoSeguimientoClima: typeof $Enums.EstadoSeguimientoClima
 
 /**
  * ##  Prisma Client ʲˢ
@@ -907,6 +940,46 @@ export class PrismaClient<
     * ```
     */
   get eventoSistema(): Prisma.EventoSistemaDelegate<ExtArgs>;
+
+  /**
+   * `prisma.calificacionClima`: Exposes CRUD operations for the **CalificacionClima** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CalificacionClimas
+    * const calificacionClimas = await prisma.calificacionClima.findMany()
+    * ```
+    */
+  get calificacionClima(): Prisma.CalificacionClimaDelegate<ExtArgs>;
+
+  /**
+   * `prisma.observacionConfidencial`: Exposes CRUD operations for the **ObservacionConfidencial** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ObservacionConfidencials
+    * const observacionConfidencials = await prisma.observacionConfidencial.findMany()
+    * ```
+    */
+  get observacionConfidencial(): Prisma.ObservacionConfidencialDelegate<ExtArgs>;
+
+  /**
+   * `prisma.seguimientoClima`: Exposes CRUD operations for the **SeguimientoClima** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SeguimientoClimas
+    * const seguimientoClimas = await prisma.seguimientoClima.findMany()
+    * ```
+    */
+  get seguimientoClima(): Prisma.SeguimientoClimaDelegate<ExtArgs>;
+
+  /**
+   * `prisma.comentarioSeguimientoClima`: Exposes CRUD operations for the **ComentarioSeguimientoClima** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ComentarioSeguimientoClimas
+    * const comentarioSeguimientoClimas = await prisma.comentarioSeguimientoClima.findMany()
+    * ```
+    */
+  get comentarioSeguimientoClima(): Prisma.ComentarioSeguimientoClimaDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1380,7 +1453,11 @@ export namespace Prisma {
     ConstanciaBiometrica: 'ConstanciaBiometrica',
     Contrato: 'Contrato',
     ProrrogaContrato: 'ProrrogaContrato',
-    EventoSistema: 'EventoSistema'
+    EventoSistema: 'EventoSistema',
+    CalificacionClima: 'CalificacionClima',
+    ObservacionConfidencial: 'ObservacionConfidencial',
+    SeguimientoClima: 'SeguimientoClima',
+    ComentarioSeguimientoClima: 'ComentarioSeguimientoClima'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1396,7 +1473,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "auxilioVigencia" | "tipoHora" | "horario" | "franjaHorario" | "plantillaTurno" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "descansoTrabajado" | "descansoTrabajadoCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato" | "eventoSistema"
+      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "auxilioVigencia" | "tipoHora" | "horario" | "franjaHorario" | "plantillaTurno" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "descansoTrabajado" | "descansoTrabajadoCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato" | "eventoSistema" | "calificacionClima" | "observacionConfidencial" | "seguimientoClima" | "comentarioSeguimientoClima"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3578,6 +3655,270 @@ export namespace Prisma {
           }
         }
       }
+      CalificacionClima: {
+        payload: Prisma.$CalificacionClimaPayload<ExtArgs>
+        fields: Prisma.CalificacionClimaFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CalificacionClimaFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CalificacionClimaPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CalificacionClimaFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CalificacionClimaPayload>
+          }
+          findFirst: {
+            args: Prisma.CalificacionClimaFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CalificacionClimaPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CalificacionClimaFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CalificacionClimaPayload>
+          }
+          findMany: {
+            args: Prisma.CalificacionClimaFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CalificacionClimaPayload>[]
+          }
+          create: {
+            args: Prisma.CalificacionClimaCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CalificacionClimaPayload>
+          }
+          createMany: {
+            args: Prisma.CalificacionClimaCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.CalificacionClimaDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CalificacionClimaPayload>
+          }
+          update: {
+            args: Prisma.CalificacionClimaUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CalificacionClimaPayload>
+          }
+          deleteMany: {
+            args: Prisma.CalificacionClimaDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CalificacionClimaUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CalificacionClimaUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CalificacionClimaPayload>
+          }
+          aggregate: {
+            args: Prisma.CalificacionClimaAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCalificacionClima>
+          }
+          groupBy: {
+            args: Prisma.CalificacionClimaGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CalificacionClimaGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CalificacionClimaCountArgs<ExtArgs>
+            result: $Utils.Optional<CalificacionClimaCountAggregateOutputType> | number
+          }
+        }
+      }
+      ObservacionConfidencial: {
+        payload: Prisma.$ObservacionConfidencialPayload<ExtArgs>
+        fields: Prisma.ObservacionConfidencialFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ObservacionConfidencialFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ObservacionConfidencialPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ObservacionConfidencialFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ObservacionConfidencialPayload>
+          }
+          findFirst: {
+            args: Prisma.ObservacionConfidencialFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ObservacionConfidencialPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ObservacionConfidencialFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ObservacionConfidencialPayload>
+          }
+          findMany: {
+            args: Prisma.ObservacionConfidencialFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ObservacionConfidencialPayload>[]
+          }
+          create: {
+            args: Prisma.ObservacionConfidencialCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ObservacionConfidencialPayload>
+          }
+          createMany: {
+            args: Prisma.ObservacionConfidencialCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ObservacionConfidencialDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ObservacionConfidencialPayload>
+          }
+          update: {
+            args: Prisma.ObservacionConfidencialUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ObservacionConfidencialPayload>
+          }
+          deleteMany: {
+            args: Prisma.ObservacionConfidencialDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ObservacionConfidencialUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ObservacionConfidencialUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ObservacionConfidencialPayload>
+          }
+          aggregate: {
+            args: Prisma.ObservacionConfidencialAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateObservacionConfidencial>
+          }
+          groupBy: {
+            args: Prisma.ObservacionConfidencialGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ObservacionConfidencialGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ObservacionConfidencialCountArgs<ExtArgs>
+            result: $Utils.Optional<ObservacionConfidencialCountAggregateOutputType> | number
+          }
+        }
+      }
+      SeguimientoClima: {
+        payload: Prisma.$SeguimientoClimaPayload<ExtArgs>
+        fields: Prisma.SeguimientoClimaFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SeguimientoClimaFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SeguimientoClimaPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SeguimientoClimaFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SeguimientoClimaPayload>
+          }
+          findFirst: {
+            args: Prisma.SeguimientoClimaFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SeguimientoClimaPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SeguimientoClimaFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SeguimientoClimaPayload>
+          }
+          findMany: {
+            args: Prisma.SeguimientoClimaFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SeguimientoClimaPayload>[]
+          }
+          create: {
+            args: Prisma.SeguimientoClimaCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SeguimientoClimaPayload>
+          }
+          createMany: {
+            args: Prisma.SeguimientoClimaCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.SeguimientoClimaDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SeguimientoClimaPayload>
+          }
+          update: {
+            args: Prisma.SeguimientoClimaUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SeguimientoClimaPayload>
+          }
+          deleteMany: {
+            args: Prisma.SeguimientoClimaDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SeguimientoClimaUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.SeguimientoClimaUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SeguimientoClimaPayload>
+          }
+          aggregate: {
+            args: Prisma.SeguimientoClimaAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSeguimientoClima>
+          }
+          groupBy: {
+            args: Prisma.SeguimientoClimaGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SeguimientoClimaGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SeguimientoClimaCountArgs<ExtArgs>
+            result: $Utils.Optional<SeguimientoClimaCountAggregateOutputType> | number
+          }
+        }
+      }
+      ComentarioSeguimientoClima: {
+        payload: Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>
+        fields: Prisma.ComentarioSeguimientoClimaFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ComentarioSeguimientoClimaFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComentarioSeguimientoClimaPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ComentarioSeguimientoClimaFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComentarioSeguimientoClimaPayload>
+          }
+          findFirst: {
+            args: Prisma.ComentarioSeguimientoClimaFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComentarioSeguimientoClimaPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ComentarioSeguimientoClimaFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComentarioSeguimientoClimaPayload>
+          }
+          findMany: {
+            args: Prisma.ComentarioSeguimientoClimaFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComentarioSeguimientoClimaPayload>[]
+          }
+          create: {
+            args: Prisma.ComentarioSeguimientoClimaCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComentarioSeguimientoClimaPayload>
+          }
+          createMany: {
+            args: Prisma.ComentarioSeguimientoClimaCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ComentarioSeguimientoClimaDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComentarioSeguimientoClimaPayload>
+          }
+          update: {
+            args: Prisma.ComentarioSeguimientoClimaUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComentarioSeguimientoClimaPayload>
+          }
+          deleteMany: {
+            args: Prisma.ComentarioSeguimientoClimaDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ComentarioSeguimientoClimaUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ComentarioSeguimientoClimaUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ComentarioSeguimientoClimaPayload>
+          }
+          aggregate: {
+            args: Prisma.ComentarioSeguimientoClimaAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateComentarioSeguimientoClima>
+          }
+          groupBy: {
+            args: Prisma.ComentarioSeguimientoClimaGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ComentarioSeguimientoClimaGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ComentarioSeguimientoClimaCountArgs<ExtArgs>
+            result: $Utils.Optional<ComentarioSeguimientoClimaCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -3749,6 +4090,9 @@ export namespace Prisma {
     dispositivos: number
     notificaciones: number
     comisiones: number
+    calificacionesClima: number
+    notasConfidenciales: number
+    seguimientosClima: number
   }
 
   export type EmpresaCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3762,6 +4106,9 @@ export namespace Prisma {
     dispositivos?: boolean | EmpresaCountOutputTypeCountDispositivosArgs
     notificaciones?: boolean | EmpresaCountOutputTypeCountNotificacionesArgs
     comisiones?: boolean | EmpresaCountOutputTypeCountComisionesArgs
+    calificacionesClima?: boolean | EmpresaCountOutputTypeCountCalificacionesClimaArgs
+    notasConfidenciales?: boolean | EmpresaCountOutputTypeCountNotasConfidencialesArgs
+    seguimientosClima?: boolean | EmpresaCountOutputTypeCountSeguimientosClimaArgs
   }
 
   // Custom InputTypes
@@ -3843,6 +4190,27 @@ export namespace Prisma {
    */
   export type EmpresaCountOutputTypeCountComisionesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ComisionWhereInput
+  }
+
+  /**
+   * EmpresaCountOutputType without action
+   */
+  export type EmpresaCountOutputTypeCountCalificacionesClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CalificacionClimaWhereInput
+  }
+
+  /**
+   * EmpresaCountOutputType without action
+   */
+  export type EmpresaCountOutputTypeCountNotasConfidencialesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ObservacionConfidencialWhereInput
+  }
+
+  /**
+   * EmpresaCountOutputType without action
+   */
+  export type EmpresaCountOutputTypeCountSeguimientosClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SeguimientoClimaWhereInput
   }
 
 
@@ -3962,6 +4330,8 @@ export namespace Prisma {
     sedes: number
     enlacesRegistroFacial: number
     constanciasBiometricas: number
+    calificacionesClima: number
+    seguimientosClima: number
   }
 
   export type ColaboradorCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3974,6 +4344,8 @@ export namespace Prisma {
     sedes?: boolean | ColaboradorCountOutputTypeCountSedesArgs
     enlacesRegistroFacial?: boolean | ColaboradorCountOutputTypeCountEnlacesRegistroFacialArgs
     constanciasBiometricas?: boolean | ColaboradorCountOutputTypeCountConstanciasBiometricasArgs
+    calificacionesClima?: boolean | ColaboradorCountOutputTypeCountCalificacionesClimaArgs
+    seguimientosClima?: boolean | ColaboradorCountOutputTypeCountSeguimientosClimaArgs
   }
 
   // Custom InputTypes
@@ -4048,6 +4420,20 @@ export namespace Prisma {
    */
   export type ColaboradorCountOutputTypeCountConstanciasBiometricasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ConstanciaBiometricaWhereInput
+  }
+
+  /**
+   * ColaboradorCountOutputType without action
+   */
+  export type ColaboradorCountOutputTypeCountCalificacionesClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CalificacionClimaWhereInput
+  }
+
+  /**
+   * ColaboradorCountOutputType without action
+   */
+  export type ColaboradorCountOutputTypeCountSeguimientosClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SeguimientoClimaWhereInput
   }
 
 
@@ -4266,6 +4652,37 @@ export namespace Prisma {
    */
   export type ContratoCountOutputTypeCountProrrogasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ProrrogaContratoWhereInput
+  }
+
+
+  /**
+   * Count Type SeguimientoClimaCountOutputType
+   */
+
+  export type SeguimientoClimaCountOutputType = {
+    comentarios: number
+  }
+
+  export type SeguimientoClimaCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    comentarios?: boolean | SeguimientoClimaCountOutputTypeCountComentariosArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * SeguimientoClimaCountOutputType without action
+   */
+  export type SeguimientoClimaCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClimaCountOutputType
+     */
+    select?: SeguimientoClimaCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * SeguimientoClimaCountOutputType without action
+   */
+  export type SeguimientoClimaCountOutputTypeCountComentariosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ComentarioSeguimientoClimaWhereInput
   }
 
 
@@ -4521,6 +4938,9 @@ export namespace Prisma {
     notificaciones?: boolean | Empresa$notificacionesArgs<ExtArgs>
     afiliado?: boolean | Empresa$afiliadoArgs<ExtArgs>
     comisiones?: boolean | Empresa$comisionesArgs<ExtArgs>
+    calificacionesClima?: boolean | Empresa$calificacionesClimaArgs<ExtArgs>
+    notasConfidenciales?: boolean | Empresa$notasConfidencialesArgs<ExtArgs>
+    seguimientosClima?: boolean | Empresa$seguimientosClimaArgs<ExtArgs>
     _count?: boolean | EmpresaCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["empresa"]>
 
@@ -4555,6 +4975,9 @@ export namespace Prisma {
     notificaciones?: boolean | Empresa$notificacionesArgs<ExtArgs>
     afiliado?: boolean | Empresa$afiliadoArgs<ExtArgs>
     comisiones?: boolean | Empresa$comisionesArgs<ExtArgs>
+    calificacionesClima?: boolean | Empresa$calificacionesClimaArgs<ExtArgs>
+    notasConfidenciales?: boolean | Empresa$notasConfidencialesArgs<ExtArgs>
+    seguimientosClima?: boolean | Empresa$seguimientosClimaArgs<ExtArgs>
     _count?: boolean | EmpresaCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -4573,6 +4996,9 @@ export namespace Prisma {
       notificaciones: Prisma.$NotificacionPayload<ExtArgs>[]
       afiliado: Prisma.$AfiliadoPayload<ExtArgs> | null
       comisiones: Prisma.$ComisionPayload<ExtArgs>[]
+      calificacionesClima: Prisma.$CalificacionClimaPayload<ExtArgs>[]
+      notasConfidenciales: Prisma.$ObservacionConfidencialPayload<ExtArgs>[]
+      seguimientosClima: Prisma.$SeguimientoClimaPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -4941,6 +5367,9 @@ export namespace Prisma {
     notificaciones<T extends Empresa$notificacionesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$notificacionesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NotificacionPayload<ExtArgs>, T, "findMany"> | Null>
     afiliado<T extends Empresa$afiliadoArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$afiliadoArgs<ExtArgs>>): Prisma__AfiliadoClient<$Result.GetResult<Prisma.$AfiliadoPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     comisiones<T extends Empresa$comisionesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$comisionesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ComisionPayload<ExtArgs>, T, "findMany"> | Null>
+    calificacionesClima<T extends Empresa$calificacionesClimaArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$calificacionesClimaArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "findMany"> | Null>
+    notasConfidenciales<T extends Empresa$notasConfidencialesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$notasConfidencialesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "findMany"> | Null>
+    seguimientosClima<T extends Empresa$seguimientosClimaArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$seguimientosClimaArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5510,6 +5939,66 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ComisionScalarFieldEnum | ComisionScalarFieldEnum[]
+  }
+
+  /**
+   * Empresa.calificacionesClima
+   */
+  export type Empresa$calificacionesClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    where?: CalificacionClimaWhereInput
+    orderBy?: CalificacionClimaOrderByWithRelationInput | CalificacionClimaOrderByWithRelationInput[]
+    cursor?: CalificacionClimaWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CalificacionClimaScalarFieldEnum | CalificacionClimaScalarFieldEnum[]
+  }
+
+  /**
+   * Empresa.notasConfidenciales
+   */
+  export type Empresa$notasConfidencialesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+    where?: ObservacionConfidencialWhereInput
+    orderBy?: ObservacionConfidencialOrderByWithRelationInput | ObservacionConfidencialOrderByWithRelationInput[]
+    cursor?: ObservacionConfidencialWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ObservacionConfidencialScalarFieldEnum | ObservacionConfidencialScalarFieldEnum[]
+  }
+
+  /**
+   * Empresa.seguimientosClima
+   */
+  export type Empresa$seguimientosClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    where?: SeguimientoClimaWhereInput
+    orderBy?: SeguimientoClimaOrderByWithRelationInput | SeguimientoClimaOrderByWithRelationInput[]
+    cursor?: SeguimientoClimaWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SeguimientoClimaScalarFieldEnum | SeguimientoClimaScalarFieldEnum[]
   }
 
   /**
@@ -15464,6 +15953,8 @@ export namespace Prisma {
     sedes?: boolean | Colaborador$sedesArgs<ExtArgs>
     enlacesRegistroFacial?: boolean | Colaborador$enlacesRegistroFacialArgs<ExtArgs>
     constanciasBiometricas?: boolean | Colaborador$constanciasBiometricasArgs<ExtArgs>
+    calificacionesClima?: boolean | Colaborador$calificacionesClimaArgs<ExtArgs>
+    seguimientosClima?: boolean | Colaborador$seguimientosClimaArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["colaborador"]>
 
@@ -15509,6 +16000,8 @@ export namespace Prisma {
     sedes?: boolean | Colaborador$sedesArgs<ExtArgs>
     enlacesRegistroFacial?: boolean | Colaborador$enlacesRegistroFacialArgs<ExtArgs>
     constanciasBiometricas?: boolean | Colaborador$constanciasBiometricasArgs<ExtArgs>
+    calificacionesClima?: boolean | Colaborador$calificacionesClimaArgs<ExtArgs>
+    seguimientosClima?: boolean | Colaborador$seguimientosClimaArgs<ExtArgs>
     _count?: boolean | ColaboradorCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -15526,6 +16019,8 @@ export namespace Prisma {
       sedes: Prisma.$ColaboradorSedePayload<ExtArgs>[]
       enlacesRegistroFacial: Prisma.$EnlaceRegistroFacialPayload<ExtArgs>[]
       constanciasBiometricas: Prisma.$ConstanciaBiometricaPayload<ExtArgs>[]
+      calificacionesClima: Prisma.$CalificacionClimaPayload<ExtArgs>[]
+      seguimientosClima: Prisma.$SeguimientoClimaPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -15905,6 +16400,8 @@ export namespace Prisma {
     sedes<T extends Colaborador$sedesArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$sedesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ColaboradorSedePayload<ExtArgs>, T, "findMany"> | Null>
     enlacesRegistroFacial<T extends Colaborador$enlacesRegistroFacialArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$enlacesRegistroFacialArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EnlaceRegistroFacialPayload<ExtArgs>, T, "findMany"> | Null>
     constanciasBiometricas<T extends Colaborador$constanciasBiometricasArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$constanciasBiometricasArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConstanciaBiometricaPayload<ExtArgs>, T, "findMany"> | Null>
+    calificacionesClima<T extends Colaborador$calificacionesClimaArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$calificacionesClimaArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "findMany"> | Null>
+    seguimientosClima<T extends Colaborador$seguimientosClimaArgs<ExtArgs> = {}>(args?: Subset<T, Colaborador$seguimientosClimaArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -16451,6 +16948,46 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ConstanciaBiometricaScalarFieldEnum | ConstanciaBiometricaScalarFieldEnum[]
+  }
+
+  /**
+   * Colaborador.calificacionesClima
+   */
+  export type Colaborador$calificacionesClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    where?: CalificacionClimaWhereInput
+    orderBy?: CalificacionClimaOrderByWithRelationInput | CalificacionClimaOrderByWithRelationInput[]
+    cursor?: CalificacionClimaWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CalificacionClimaScalarFieldEnum | CalificacionClimaScalarFieldEnum[]
+  }
+
+  /**
+   * Colaborador.seguimientosClima
+   */
+  export type Colaborador$seguimientosClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    where?: SeguimientoClimaWhereInput
+    orderBy?: SeguimientoClimaOrderByWithRelationInput | SeguimientoClimaOrderByWithRelationInput[]
+    cursor?: SeguimientoClimaWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SeguimientoClimaScalarFieldEnum | SeguimientoClimaScalarFieldEnum[]
   }
 
   /**
@@ -37054,6 +37591,3707 @@ export namespace Prisma {
 
 
   /**
+   * Model CalificacionClima
+   */
+
+  export type AggregateCalificacionClima = {
+    _count: CalificacionClimaCountAggregateOutputType | null
+    _avg: CalificacionClimaAvgAggregateOutputType | null
+    _sum: CalificacionClimaSumAggregateOutputType | null
+    _min: CalificacionClimaMinAggregateOutputType | null
+    _max: CalificacionClimaMaxAggregateOutputType | null
+  }
+
+  export type CalificacionClimaAvgAggregateOutputType = {
+    carita: number | null
+  }
+
+  export type CalificacionClimaSumAggregateOutputType = {
+    carita: number | null
+  }
+
+  export type CalificacionClimaMinAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    colaboradorId: string | null
+    fecha: Date | null
+    carita: number | null
+    observacion: string | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type CalificacionClimaMaxAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    colaboradorId: string | null
+    fecha: Date | null
+    carita: number | null
+    observacion: string | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type CalificacionClimaCountAggregateOutputType = {
+    id: number
+    empresaId: number
+    colaboradorId: number
+    fecha: number
+    carita: number
+    motivos: number
+    observacion: number
+    creadoEn: number
+    actualizadoEn: number
+    _all: number
+  }
+
+
+  export type CalificacionClimaAvgAggregateInputType = {
+    carita?: true
+  }
+
+  export type CalificacionClimaSumAggregateInputType = {
+    carita?: true
+  }
+
+  export type CalificacionClimaMinAggregateInputType = {
+    id?: true
+    empresaId?: true
+    colaboradorId?: true
+    fecha?: true
+    carita?: true
+    observacion?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type CalificacionClimaMaxAggregateInputType = {
+    id?: true
+    empresaId?: true
+    colaboradorId?: true
+    fecha?: true
+    carita?: true
+    observacion?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type CalificacionClimaCountAggregateInputType = {
+    id?: true
+    empresaId?: true
+    colaboradorId?: true
+    fecha?: true
+    carita?: true
+    motivos?: true
+    observacion?: true
+    creadoEn?: true
+    actualizadoEn?: true
+    _all?: true
+  }
+
+  export type CalificacionClimaAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CalificacionClima to aggregate.
+     */
+    where?: CalificacionClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CalificacionClimas to fetch.
+     */
+    orderBy?: CalificacionClimaOrderByWithRelationInput | CalificacionClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CalificacionClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CalificacionClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CalificacionClimas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CalificacionClimas
+    **/
+    _count?: true | CalificacionClimaCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CalificacionClimaAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CalificacionClimaSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CalificacionClimaMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CalificacionClimaMaxAggregateInputType
+  }
+
+  export type GetCalificacionClimaAggregateType<T extends CalificacionClimaAggregateArgs> = {
+        [P in keyof T & keyof AggregateCalificacionClima]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCalificacionClima[P]>
+      : GetScalarType<T[P], AggregateCalificacionClima[P]>
+  }
+
+
+
+
+  export type CalificacionClimaGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CalificacionClimaWhereInput
+    orderBy?: CalificacionClimaOrderByWithAggregationInput | CalificacionClimaOrderByWithAggregationInput[]
+    by: CalificacionClimaScalarFieldEnum[] | CalificacionClimaScalarFieldEnum
+    having?: CalificacionClimaScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CalificacionClimaCountAggregateInputType | true
+    _avg?: CalificacionClimaAvgAggregateInputType
+    _sum?: CalificacionClimaSumAggregateInputType
+    _min?: CalificacionClimaMinAggregateInputType
+    _max?: CalificacionClimaMaxAggregateInputType
+  }
+
+  export type CalificacionClimaGroupByOutputType = {
+    id: string
+    empresaId: string
+    colaboradorId: string
+    fecha: Date
+    carita: number
+    motivos: JsonValue
+    observacion: string | null
+    creadoEn: Date
+    actualizadoEn: Date
+    _count: CalificacionClimaCountAggregateOutputType | null
+    _avg: CalificacionClimaAvgAggregateOutputType | null
+    _sum: CalificacionClimaSumAggregateOutputType | null
+    _min: CalificacionClimaMinAggregateOutputType | null
+    _max: CalificacionClimaMaxAggregateOutputType | null
+  }
+
+  type GetCalificacionClimaGroupByPayload<T extends CalificacionClimaGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CalificacionClimaGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CalificacionClimaGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CalificacionClimaGroupByOutputType[P]>
+            : GetScalarType<T[P], CalificacionClimaGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CalificacionClimaSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    empresaId?: boolean
+    colaboradorId?: boolean
+    fecha?: boolean
+    carita?: boolean
+    motivos?: boolean
+    observacion?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["calificacionClima"]>
+
+
+  export type CalificacionClimaSelectScalar = {
+    id?: boolean
+    empresaId?: boolean
+    colaboradorId?: boolean
+    fecha?: boolean
+    carita?: boolean
+    motivos?: boolean
+    observacion?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+  }
+
+  export type CalificacionClimaInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+  }
+
+  export type $CalificacionClimaPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CalificacionClima"
+    objects: {
+      empresa: Prisma.$EmpresaPayload<ExtArgs>
+      colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      empresaId: string
+      colaboradorId: string
+      fecha: Date
+      carita: number
+      motivos: Prisma.JsonValue
+      observacion: string | null
+      creadoEn: Date
+      actualizadoEn: Date
+    }, ExtArgs["result"]["calificacionClima"]>
+    composites: {}
+  }
+
+  type CalificacionClimaGetPayload<S extends boolean | null | undefined | CalificacionClimaDefaultArgs> = $Result.GetResult<Prisma.$CalificacionClimaPayload, S>
+
+  type CalificacionClimaCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CalificacionClimaFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CalificacionClimaCountAggregateInputType | true
+    }
+
+  export interface CalificacionClimaDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CalificacionClima'], meta: { name: 'CalificacionClima' } }
+    /**
+     * Find zero or one CalificacionClima that matches the filter.
+     * @param {CalificacionClimaFindUniqueArgs} args - Arguments to find a CalificacionClima
+     * @example
+     * // Get one CalificacionClima
+     * const calificacionClima = await prisma.calificacionClima.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CalificacionClimaFindUniqueArgs>(args: SelectSubset<T, CalificacionClimaFindUniqueArgs<ExtArgs>>): Prisma__CalificacionClimaClient<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CalificacionClima that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CalificacionClimaFindUniqueOrThrowArgs} args - Arguments to find a CalificacionClima
+     * @example
+     * // Get one CalificacionClima
+     * const calificacionClima = await prisma.calificacionClima.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CalificacionClimaFindUniqueOrThrowArgs>(args: SelectSubset<T, CalificacionClimaFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CalificacionClimaClient<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CalificacionClima that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CalificacionClimaFindFirstArgs} args - Arguments to find a CalificacionClima
+     * @example
+     * // Get one CalificacionClima
+     * const calificacionClima = await prisma.calificacionClima.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CalificacionClimaFindFirstArgs>(args?: SelectSubset<T, CalificacionClimaFindFirstArgs<ExtArgs>>): Prisma__CalificacionClimaClient<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CalificacionClima that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CalificacionClimaFindFirstOrThrowArgs} args - Arguments to find a CalificacionClima
+     * @example
+     * // Get one CalificacionClima
+     * const calificacionClima = await prisma.calificacionClima.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CalificacionClimaFindFirstOrThrowArgs>(args?: SelectSubset<T, CalificacionClimaFindFirstOrThrowArgs<ExtArgs>>): Prisma__CalificacionClimaClient<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CalificacionClimas that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CalificacionClimaFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CalificacionClimas
+     * const calificacionClimas = await prisma.calificacionClima.findMany()
+     * 
+     * // Get first 10 CalificacionClimas
+     * const calificacionClimas = await prisma.calificacionClima.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const calificacionClimaWithIdOnly = await prisma.calificacionClima.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CalificacionClimaFindManyArgs>(args?: SelectSubset<T, CalificacionClimaFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CalificacionClima.
+     * @param {CalificacionClimaCreateArgs} args - Arguments to create a CalificacionClima.
+     * @example
+     * // Create one CalificacionClima
+     * const CalificacionClima = await prisma.calificacionClima.create({
+     *   data: {
+     *     // ... data to create a CalificacionClima
+     *   }
+     * })
+     * 
+     */
+    create<T extends CalificacionClimaCreateArgs>(args: SelectSubset<T, CalificacionClimaCreateArgs<ExtArgs>>): Prisma__CalificacionClimaClient<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CalificacionClimas.
+     * @param {CalificacionClimaCreateManyArgs} args - Arguments to create many CalificacionClimas.
+     * @example
+     * // Create many CalificacionClimas
+     * const calificacionClima = await prisma.calificacionClima.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CalificacionClimaCreateManyArgs>(args?: SelectSubset<T, CalificacionClimaCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a CalificacionClima.
+     * @param {CalificacionClimaDeleteArgs} args - Arguments to delete one CalificacionClima.
+     * @example
+     * // Delete one CalificacionClima
+     * const CalificacionClima = await prisma.calificacionClima.delete({
+     *   where: {
+     *     // ... filter to delete one CalificacionClima
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CalificacionClimaDeleteArgs>(args: SelectSubset<T, CalificacionClimaDeleteArgs<ExtArgs>>): Prisma__CalificacionClimaClient<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CalificacionClima.
+     * @param {CalificacionClimaUpdateArgs} args - Arguments to update one CalificacionClima.
+     * @example
+     * // Update one CalificacionClima
+     * const calificacionClima = await prisma.calificacionClima.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CalificacionClimaUpdateArgs>(args: SelectSubset<T, CalificacionClimaUpdateArgs<ExtArgs>>): Prisma__CalificacionClimaClient<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CalificacionClimas.
+     * @param {CalificacionClimaDeleteManyArgs} args - Arguments to filter CalificacionClimas to delete.
+     * @example
+     * // Delete a few CalificacionClimas
+     * const { count } = await prisma.calificacionClima.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CalificacionClimaDeleteManyArgs>(args?: SelectSubset<T, CalificacionClimaDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CalificacionClimas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CalificacionClimaUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CalificacionClimas
+     * const calificacionClima = await prisma.calificacionClima.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CalificacionClimaUpdateManyArgs>(args: SelectSubset<T, CalificacionClimaUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CalificacionClima.
+     * @param {CalificacionClimaUpsertArgs} args - Arguments to update or create a CalificacionClima.
+     * @example
+     * // Update or create a CalificacionClima
+     * const calificacionClima = await prisma.calificacionClima.upsert({
+     *   create: {
+     *     // ... data to create a CalificacionClima
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CalificacionClima we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CalificacionClimaUpsertArgs>(args: SelectSubset<T, CalificacionClimaUpsertArgs<ExtArgs>>): Prisma__CalificacionClimaClient<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CalificacionClimas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CalificacionClimaCountArgs} args - Arguments to filter CalificacionClimas to count.
+     * @example
+     * // Count the number of CalificacionClimas
+     * const count = await prisma.calificacionClima.count({
+     *   where: {
+     *     // ... the filter for the CalificacionClimas we want to count
+     *   }
+     * })
+    **/
+    count<T extends CalificacionClimaCountArgs>(
+      args?: Subset<T, CalificacionClimaCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CalificacionClimaCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CalificacionClima.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CalificacionClimaAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CalificacionClimaAggregateArgs>(args: Subset<T, CalificacionClimaAggregateArgs>): Prisma.PrismaPromise<GetCalificacionClimaAggregateType<T>>
+
+    /**
+     * Group by CalificacionClima.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CalificacionClimaGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CalificacionClimaGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CalificacionClimaGroupByArgs['orderBy'] }
+        : { orderBy?: CalificacionClimaGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CalificacionClimaGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCalificacionClimaGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CalificacionClima model
+   */
+  readonly fields: CalificacionClimaFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CalificacionClima.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CalificacionClimaClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    empresa<T extends EmpresaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EmpresaDefaultArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CalificacionClima model
+   */ 
+  interface CalificacionClimaFieldRefs {
+    readonly id: FieldRef<"CalificacionClima", 'String'>
+    readonly empresaId: FieldRef<"CalificacionClima", 'String'>
+    readonly colaboradorId: FieldRef<"CalificacionClima", 'String'>
+    readonly fecha: FieldRef<"CalificacionClima", 'DateTime'>
+    readonly carita: FieldRef<"CalificacionClima", 'Int'>
+    readonly motivos: FieldRef<"CalificacionClima", 'Json'>
+    readonly observacion: FieldRef<"CalificacionClima", 'String'>
+    readonly creadoEn: FieldRef<"CalificacionClima", 'DateTime'>
+    readonly actualizadoEn: FieldRef<"CalificacionClima", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CalificacionClima findUnique
+   */
+  export type CalificacionClimaFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which CalificacionClima to fetch.
+     */
+    where: CalificacionClimaWhereUniqueInput
+  }
+
+  /**
+   * CalificacionClima findUniqueOrThrow
+   */
+  export type CalificacionClimaFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which CalificacionClima to fetch.
+     */
+    where: CalificacionClimaWhereUniqueInput
+  }
+
+  /**
+   * CalificacionClima findFirst
+   */
+  export type CalificacionClimaFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which CalificacionClima to fetch.
+     */
+    where?: CalificacionClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CalificacionClimas to fetch.
+     */
+    orderBy?: CalificacionClimaOrderByWithRelationInput | CalificacionClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CalificacionClimas.
+     */
+    cursor?: CalificacionClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CalificacionClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CalificacionClimas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CalificacionClimas.
+     */
+    distinct?: CalificacionClimaScalarFieldEnum | CalificacionClimaScalarFieldEnum[]
+  }
+
+  /**
+   * CalificacionClima findFirstOrThrow
+   */
+  export type CalificacionClimaFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which CalificacionClima to fetch.
+     */
+    where?: CalificacionClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CalificacionClimas to fetch.
+     */
+    orderBy?: CalificacionClimaOrderByWithRelationInput | CalificacionClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CalificacionClimas.
+     */
+    cursor?: CalificacionClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CalificacionClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CalificacionClimas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CalificacionClimas.
+     */
+    distinct?: CalificacionClimaScalarFieldEnum | CalificacionClimaScalarFieldEnum[]
+  }
+
+  /**
+   * CalificacionClima findMany
+   */
+  export type CalificacionClimaFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which CalificacionClimas to fetch.
+     */
+    where?: CalificacionClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CalificacionClimas to fetch.
+     */
+    orderBy?: CalificacionClimaOrderByWithRelationInput | CalificacionClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CalificacionClimas.
+     */
+    cursor?: CalificacionClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CalificacionClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CalificacionClimas.
+     */
+    skip?: number
+    distinct?: CalificacionClimaScalarFieldEnum | CalificacionClimaScalarFieldEnum[]
+  }
+
+  /**
+   * CalificacionClima create
+   */
+  export type CalificacionClimaCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CalificacionClima.
+     */
+    data: XOR<CalificacionClimaCreateInput, CalificacionClimaUncheckedCreateInput>
+  }
+
+  /**
+   * CalificacionClima createMany
+   */
+  export type CalificacionClimaCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CalificacionClimas.
+     */
+    data: CalificacionClimaCreateManyInput | CalificacionClimaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CalificacionClima update
+   */
+  export type CalificacionClimaUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CalificacionClima.
+     */
+    data: XOR<CalificacionClimaUpdateInput, CalificacionClimaUncheckedUpdateInput>
+    /**
+     * Choose, which CalificacionClima to update.
+     */
+    where: CalificacionClimaWhereUniqueInput
+  }
+
+  /**
+   * CalificacionClima updateMany
+   */
+  export type CalificacionClimaUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CalificacionClimas.
+     */
+    data: XOR<CalificacionClimaUpdateManyMutationInput, CalificacionClimaUncheckedUpdateManyInput>
+    /**
+     * Filter which CalificacionClimas to update
+     */
+    where?: CalificacionClimaWhereInput
+  }
+
+  /**
+   * CalificacionClima upsert
+   */
+  export type CalificacionClimaUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CalificacionClima to update in case it exists.
+     */
+    where: CalificacionClimaWhereUniqueInput
+    /**
+     * In case the CalificacionClima found by the `where` argument doesn't exist, create a new CalificacionClima with this data.
+     */
+    create: XOR<CalificacionClimaCreateInput, CalificacionClimaUncheckedCreateInput>
+    /**
+     * In case the CalificacionClima was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CalificacionClimaUpdateInput, CalificacionClimaUncheckedUpdateInput>
+  }
+
+  /**
+   * CalificacionClima delete
+   */
+  export type CalificacionClimaDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+    /**
+     * Filter which CalificacionClima to delete.
+     */
+    where: CalificacionClimaWhereUniqueInput
+  }
+
+  /**
+   * CalificacionClima deleteMany
+   */
+  export type CalificacionClimaDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CalificacionClimas to delete
+     */
+    where?: CalificacionClimaWhereInput
+  }
+
+  /**
+   * CalificacionClima without action
+   */
+  export type CalificacionClimaDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CalificacionClima
+     */
+    select?: CalificacionClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CalificacionClimaInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ObservacionConfidencial
+   */
+
+  export type AggregateObservacionConfidencial = {
+    _count: ObservacionConfidencialCountAggregateOutputType | null
+    _min: ObservacionConfidencialMinAggregateOutputType | null
+    _max: ObservacionConfidencialMaxAggregateOutputType | null
+  }
+
+  export type ObservacionConfidencialMinAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    semana: Date | null
+    visibleDesde: Date | null
+    texto: string | null
+    autorCifrado: string | null
+  }
+
+  export type ObservacionConfidencialMaxAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    semana: Date | null
+    visibleDesde: Date | null
+    texto: string | null
+    autorCifrado: string | null
+  }
+
+  export type ObservacionConfidencialCountAggregateOutputType = {
+    id: number
+    empresaId: number
+    semana: number
+    visibleDesde: number
+    texto: number
+    autorCifrado: number
+    _all: number
+  }
+
+
+  export type ObservacionConfidencialMinAggregateInputType = {
+    id?: true
+    empresaId?: true
+    semana?: true
+    visibleDesde?: true
+    texto?: true
+    autorCifrado?: true
+  }
+
+  export type ObservacionConfidencialMaxAggregateInputType = {
+    id?: true
+    empresaId?: true
+    semana?: true
+    visibleDesde?: true
+    texto?: true
+    autorCifrado?: true
+  }
+
+  export type ObservacionConfidencialCountAggregateInputType = {
+    id?: true
+    empresaId?: true
+    semana?: true
+    visibleDesde?: true
+    texto?: true
+    autorCifrado?: true
+    _all?: true
+  }
+
+  export type ObservacionConfidencialAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ObservacionConfidencial to aggregate.
+     */
+    where?: ObservacionConfidencialWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ObservacionConfidencials to fetch.
+     */
+    orderBy?: ObservacionConfidencialOrderByWithRelationInput | ObservacionConfidencialOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ObservacionConfidencialWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ObservacionConfidencials from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ObservacionConfidencials.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ObservacionConfidencials
+    **/
+    _count?: true | ObservacionConfidencialCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ObservacionConfidencialMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ObservacionConfidencialMaxAggregateInputType
+  }
+
+  export type GetObservacionConfidencialAggregateType<T extends ObservacionConfidencialAggregateArgs> = {
+        [P in keyof T & keyof AggregateObservacionConfidencial]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateObservacionConfidencial[P]>
+      : GetScalarType<T[P], AggregateObservacionConfidencial[P]>
+  }
+
+
+
+
+  export type ObservacionConfidencialGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ObservacionConfidencialWhereInput
+    orderBy?: ObservacionConfidencialOrderByWithAggregationInput | ObservacionConfidencialOrderByWithAggregationInput[]
+    by: ObservacionConfidencialScalarFieldEnum[] | ObservacionConfidencialScalarFieldEnum
+    having?: ObservacionConfidencialScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ObservacionConfidencialCountAggregateInputType | true
+    _min?: ObservacionConfidencialMinAggregateInputType
+    _max?: ObservacionConfidencialMaxAggregateInputType
+  }
+
+  export type ObservacionConfidencialGroupByOutputType = {
+    id: string
+    empresaId: string
+    semana: Date
+    visibleDesde: Date
+    texto: string
+    autorCifrado: string
+    _count: ObservacionConfidencialCountAggregateOutputType | null
+    _min: ObservacionConfidencialMinAggregateOutputType | null
+    _max: ObservacionConfidencialMaxAggregateOutputType | null
+  }
+
+  type GetObservacionConfidencialGroupByPayload<T extends ObservacionConfidencialGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ObservacionConfidencialGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ObservacionConfidencialGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ObservacionConfidencialGroupByOutputType[P]>
+            : GetScalarType<T[P], ObservacionConfidencialGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ObservacionConfidencialSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    empresaId?: boolean
+    semana?: boolean
+    visibleDesde?: boolean
+    texto?: boolean
+    autorCifrado?: boolean
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["observacionConfidencial"]>
+
+
+  export type ObservacionConfidencialSelectScalar = {
+    id?: boolean
+    empresaId?: boolean
+    semana?: boolean
+    visibleDesde?: boolean
+    texto?: boolean
+    autorCifrado?: boolean
+  }
+
+  export type ObservacionConfidencialInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+  }
+
+  export type $ObservacionConfidencialPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ObservacionConfidencial"
+    objects: {
+      empresa: Prisma.$EmpresaPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      empresaId: string
+      semana: Date
+      visibleDesde: Date
+      texto: string
+      autorCifrado: string
+    }, ExtArgs["result"]["observacionConfidencial"]>
+    composites: {}
+  }
+
+  type ObservacionConfidencialGetPayload<S extends boolean | null | undefined | ObservacionConfidencialDefaultArgs> = $Result.GetResult<Prisma.$ObservacionConfidencialPayload, S>
+
+  type ObservacionConfidencialCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ObservacionConfidencialFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ObservacionConfidencialCountAggregateInputType | true
+    }
+
+  export interface ObservacionConfidencialDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ObservacionConfidencial'], meta: { name: 'ObservacionConfidencial' } }
+    /**
+     * Find zero or one ObservacionConfidencial that matches the filter.
+     * @param {ObservacionConfidencialFindUniqueArgs} args - Arguments to find a ObservacionConfidencial
+     * @example
+     * // Get one ObservacionConfidencial
+     * const observacionConfidencial = await prisma.observacionConfidencial.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ObservacionConfidencialFindUniqueArgs>(args: SelectSubset<T, ObservacionConfidencialFindUniqueArgs<ExtArgs>>): Prisma__ObservacionConfidencialClient<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ObservacionConfidencial that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ObservacionConfidencialFindUniqueOrThrowArgs} args - Arguments to find a ObservacionConfidencial
+     * @example
+     * // Get one ObservacionConfidencial
+     * const observacionConfidencial = await prisma.observacionConfidencial.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ObservacionConfidencialFindUniqueOrThrowArgs>(args: SelectSubset<T, ObservacionConfidencialFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ObservacionConfidencialClient<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ObservacionConfidencial that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ObservacionConfidencialFindFirstArgs} args - Arguments to find a ObservacionConfidencial
+     * @example
+     * // Get one ObservacionConfidencial
+     * const observacionConfidencial = await prisma.observacionConfidencial.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ObservacionConfidencialFindFirstArgs>(args?: SelectSubset<T, ObservacionConfidencialFindFirstArgs<ExtArgs>>): Prisma__ObservacionConfidencialClient<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ObservacionConfidencial that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ObservacionConfidencialFindFirstOrThrowArgs} args - Arguments to find a ObservacionConfidencial
+     * @example
+     * // Get one ObservacionConfidencial
+     * const observacionConfidencial = await prisma.observacionConfidencial.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ObservacionConfidencialFindFirstOrThrowArgs>(args?: SelectSubset<T, ObservacionConfidencialFindFirstOrThrowArgs<ExtArgs>>): Prisma__ObservacionConfidencialClient<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ObservacionConfidencials that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ObservacionConfidencialFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ObservacionConfidencials
+     * const observacionConfidencials = await prisma.observacionConfidencial.findMany()
+     * 
+     * // Get first 10 ObservacionConfidencials
+     * const observacionConfidencials = await prisma.observacionConfidencial.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const observacionConfidencialWithIdOnly = await prisma.observacionConfidencial.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ObservacionConfidencialFindManyArgs>(args?: SelectSubset<T, ObservacionConfidencialFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ObservacionConfidencial.
+     * @param {ObservacionConfidencialCreateArgs} args - Arguments to create a ObservacionConfidencial.
+     * @example
+     * // Create one ObservacionConfidencial
+     * const ObservacionConfidencial = await prisma.observacionConfidencial.create({
+     *   data: {
+     *     // ... data to create a ObservacionConfidencial
+     *   }
+     * })
+     * 
+     */
+    create<T extends ObservacionConfidencialCreateArgs>(args: SelectSubset<T, ObservacionConfidencialCreateArgs<ExtArgs>>): Prisma__ObservacionConfidencialClient<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ObservacionConfidencials.
+     * @param {ObservacionConfidencialCreateManyArgs} args - Arguments to create many ObservacionConfidencials.
+     * @example
+     * // Create many ObservacionConfidencials
+     * const observacionConfidencial = await prisma.observacionConfidencial.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ObservacionConfidencialCreateManyArgs>(args?: SelectSubset<T, ObservacionConfidencialCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ObservacionConfidencial.
+     * @param {ObservacionConfidencialDeleteArgs} args - Arguments to delete one ObservacionConfidencial.
+     * @example
+     * // Delete one ObservacionConfidencial
+     * const ObservacionConfidencial = await prisma.observacionConfidencial.delete({
+     *   where: {
+     *     // ... filter to delete one ObservacionConfidencial
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ObservacionConfidencialDeleteArgs>(args: SelectSubset<T, ObservacionConfidencialDeleteArgs<ExtArgs>>): Prisma__ObservacionConfidencialClient<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ObservacionConfidencial.
+     * @param {ObservacionConfidencialUpdateArgs} args - Arguments to update one ObservacionConfidencial.
+     * @example
+     * // Update one ObservacionConfidencial
+     * const observacionConfidencial = await prisma.observacionConfidencial.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ObservacionConfidencialUpdateArgs>(args: SelectSubset<T, ObservacionConfidencialUpdateArgs<ExtArgs>>): Prisma__ObservacionConfidencialClient<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ObservacionConfidencials.
+     * @param {ObservacionConfidencialDeleteManyArgs} args - Arguments to filter ObservacionConfidencials to delete.
+     * @example
+     * // Delete a few ObservacionConfidencials
+     * const { count } = await prisma.observacionConfidencial.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ObservacionConfidencialDeleteManyArgs>(args?: SelectSubset<T, ObservacionConfidencialDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ObservacionConfidencials.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ObservacionConfidencialUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ObservacionConfidencials
+     * const observacionConfidencial = await prisma.observacionConfidencial.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ObservacionConfidencialUpdateManyArgs>(args: SelectSubset<T, ObservacionConfidencialUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ObservacionConfidencial.
+     * @param {ObservacionConfidencialUpsertArgs} args - Arguments to update or create a ObservacionConfidencial.
+     * @example
+     * // Update or create a ObservacionConfidencial
+     * const observacionConfidencial = await prisma.observacionConfidencial.upsert({
+     *   create: {
+     *     // ... data to create a ObservacionConfidencial
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ObservacionConfidencial we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ObservacionConfidencialUpsertArgs>(args: SelectSubset<T, ObservacionConfidencialUpsertArgs<ExtArgs>>): Prisma__ObservacionConfidencialClient<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ObservacionConfidencials.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ObservacionConfidencialCountArgs} args - Arguments to filter ObservacionConfidencials to count.
+     * @example
+     * // Count the number of ObservacionConfidencials
+     * const count = await prisma.observacionConfidencial.count({
+     *   where: {
+     *     // ... the filter for the ObservacionConfidencials we want to count
+     *   }
+     * })
+    **/
+    count<T extends ObservacionConfidencialCountArgs>(
+      args?: Subset<T, ObservacionConfidencialCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ObservacionConfidencialCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ObservacionConfidencial.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ObservacionConfidencialAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ObservacionConfidencialAggregateArgs>(args: Subset<T, ObservacionConfidencialAggregateArgs>): Prisma.PrismaPromise<GetObservacionConfidencialAggregateType<T>>
+
+    /**
+     * Group by ObservacionConfidencial.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ObservacionConfidencialGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ObservacionConfidencialGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ObservacionConfidencialGroupByArgs['orderBy'] }
+        : { orderBy?: ObservacionConfidencialGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ObservacionConfidencialGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetObservacionConfidencialGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ObservacionConfidencial model
+   */
+  readonly fields: ObservacionConfidencialFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ObservacionConfidencial.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ObservacionConfidencialClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    empresa<T extends EmpresaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EmpresaDefaultArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ObservacionConfidencial model
+   */ 
+  interface ObservacionConfidencialFieldRefs {
+    readonly id: FieldRef<"ObservacionConfidencial", 'String'>
+    readonly empresaId: FieldRef<"ObservacionConfidencial", 'String'>
+    readonly semana: FieldRef<"ObservacionConfidencial", 'DateTime'>
+    readonly visibleDesde: FieldRef<"ObservacionConfidencial", 'DateTime'>
+    readonly texto: FieldRef<"ObservacionConfidencial", 'String'>
+    readonly autorCifrado: FieldRef<"ObservacionConfidencial", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ObservacionConfidencial findUnique
+   */
+  export type ObservacionConfidencialFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+    /**
+     * Filter, which ObservacionConfidencial to fetch.
+     */
+    where: ObservacionConfidencialWhereUniqueInput
+  }
+
+  /**
+   * ObservacionConfidencial findUniqueOrThrow
+   */
+  export type ObservacionConfidencialFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+    /**
+     * Filter, which ObservacionConfidencial to fetch.
+     */
+    where: ObservacionConfidencialWhereUniqueInput
+  }
+
+  /**
+   * ObservacionConfidencial findFirst
+   */
+  export type ObservacionConfidencialFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+    /**
+     * Filter, which ObservacionConfidencial to fetch.
+     */
+    where?: ObservacionConfidencialWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ObservacionConfidencials to fetch.
+     */
+    orderBy?: ObservacionConfidencialOrderByWithRelationInput | ObservacionConfidencialOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ObservacionConfidencials.
+     */
+    cursor?: ObservacionConfidencialWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ObservacionConfidencials from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ObservacionConfidencials.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ObservacionConfidencials.
+     */
+    distinct?: ObservacionConfidencialScalarFieldEnum | ObservacionConfidencialScalarFieldEnum[]
+  }
+
+  /**
+   * ObservacionConfidencial findFirstOrThrow
+   */
+  export type ObservacionConfidencialFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+    /**
+     * Filter, which ObservacionConfidencial to fetch.
+     */
+    where?: ObservacionConfidencialWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ObservacionConfidencials to fetch.
+     */
+    orderBy?: ObservacionConfidencialOrderByWithRelationInput | ObservacionConfidencialOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ObservacionConfidencials.
+     */
+    cursor?: ObservacionConfidencialWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ObservacionConfidencials from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ObservacionConfidencials.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ObservacionConfidencials.
+     */
+    distinct?: ObservacionConfidencialScalarFieldEnum | ObservacionConfidencialScalarFieldEnum[]
+  }
+
+  /**
+   * ObservacionConfidencial findMany
+   */
+  export type ObservacionConfidencialFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+    /**
+     * Filter, which ObservacionConfidencials to fetch.
+     */
+    where?: ObservacionConfidencialWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ObservacionConfidencials to fetch.
+     */
+    orderBy?: ObservacionConfidencialOrderByWithRelationInput | ObservacionConfidencialOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ObservacionConfidencials.
+     */
+    cursor?: ObservacionConfidencialWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ObservacionConfidencials from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ObservacionConfidencials.
+     */
+    skip?: number
+    distinct?: ObservacionConfidencialScalarFieldEnum | ObservacionConfidencialScalarFieldEnum[]
+  }
+
+  /**
+   * ObservacionConfidencial create
+   */
+  export type ObservacionConfidencialCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ObservacionConfidencial.
+     */
+    data: XOR<ObservacionConfidencialCreateInput, ObservacionConfidencialUncheckedCreateInput>
+  }
+
+  /**
+   * ObservacionConfidencial createMany
+   */
+  export type ObservacionConfidencialCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ObservacionConfidencials.
+     */
+    data: ObservacionConfidencialCreateManyInput | ObservacionConfidencialCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ObservacionConfidencial update
+   */
+  export type ObservacionConfidencialUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ObservacionConfidencial.
+     */
+    data: XOR<ObservacionConfidencialUpdateInput, ObservacionConfidencialUncheckedUpdateInput>
+    /**
+     * Choose, which ObservacionConfidencial to update.
+     */
+    where: ObservacionConfidencialWhereUniqueInput
+  }
+
+  /**
+   * ObservacionConfidencial updateMany
+   */
+  export type ObservacionConfidencialUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ObservacionConfidencials.
+     */
+    data: XOR<ObservacionConfidencialUpdateManyMutationInput, ObservacionConfidencialUncheckedUpdateManyInput>
+    /**
+     * Filter which ObservacionConfidencials to update
+     */
+    where?: ObservacionConfidencialWhereInput
+  }
+
+  /**
+   * ObservacionConfidencial upsert
+   */
+  export type ObservacionConfidencialUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ObservacionConfidencial to update in case it exists.
+     */
+    where: ObservacionConfidencialWhereUniqueInput
+    /**
+     * In case the ObservacionConfidencial found by the `where` argument doesn't exist, create a new ObservacionConfidencial with this data.
+     */
+    create: XOR<ObservacionConfidencialCreateInput, ObservacionConfidencialUncheckedCreateInput>
+    /**
+     * In case the ObservacionConfidencial was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ObservacionConfidencialUpdateInput, ObservacionConfidencialUncheckedUpdateInput>
+  }
+
+  /**
+   * ObservacionConfidencial delete
+   */
+  export type ObservacionConfidencialDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+    /**
+     * Filter which ObservacionConfidencial to delete.
+     */
+    where: ObservacionConfidencialWhereUniqueInput
+  }
+
+  /**
+   * ObservacionConfidencial deleteMany
+   */
+  export type ObservacionConfidencialDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ObservacionConfidencials to delete
+     */
+    where?: ObservacionConfidencialWhereInput
+  }
+
+  /**
+   * ObservacionConfidencial without action
+   */
+  export type ObservacionConfidencialDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ObservacionConfidencial
+     */
+    select?: ObservacionConfidencialSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ObservacionConfidencialInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SeguimientoClima
+   */
+
+  export type AggregateSeguimientoClima = {
+    _count: SeguimientoClimaCountAggregateOutputType | null
+    _min: SeguimientoClimaMinAggregateOutputType | null
+    _max: SeguimientoClimaMaxAggregateOutputType | null
+  }
+
+  export type SeguimientoClimaMinAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    colaboradorId: string | null
+    desde: Date | null
+    estado: $Enums.EstadoSeguimientoClima | null
+    responsableId: string | null
+    abiertoEn: Date | null
+    cerradoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type SeguimientoClimaMaxAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    colaboradorId: string | null
+    desde: Date | null
+    estado: $Enums.EstadoSeguimientoClima | null
+    responsableId: string | null
+    abiertoEn: Date | null
+    cerradoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type SeguimientoClimaCountAggregateOutputType = {
+    id: number
+    empresaId: number
+    colaboradorId: number
+    desde: number
+    estado: number
+    responsableId: number
+    abiertoEn: number
+    cerradoEn: number
+    actualizadoEn: number
+    _all: number
+  }
+
+
+  export type SeguimientoClimaMinAggregateInputType = {
+    id?: true
+    empresaId?: true
+    colaboradorId?: true
+    desde?: true
+    estado?: true
+    responsableId?: true
+    abiertoEn?: true
+    cerradoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type SeguimientoClimaMaxAggregateInputType = {
+    id?: true
+    empresaId?: true
+    colaboradorId?: true
+    desde?: true
+    estado?: true
+    responsableId?: true
+    abiertoEn?: true
+    cerradoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type SeguimientoClimaCountAggregateInputType = {
+    id?: true
+    empresaId?: true
+    colaboradorId?: true
+    desde?: true
+    estado?: true
+    responsableId?: true
+    abiertoEn?: true
+    cerradoEn?: true
+    actualizadoEn?: true
+    _all?: true
+  }
+
+  export type SeguimientoClimaAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SeguimientoClima to aggregate.
+     */
+    where?: SeguimientoClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SeguimientoClimas to fetch.
+     */
+    orderBy?: SeguimientoClimaOrderByWithRelationInput | SeguimientoClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SeguimientoClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SeguimientoClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SeguimientoClimas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SeguimientoClimas
+    **/
+    _count?: true | SeguimientoClimaCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SeguimientoClimaMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SeguimientoClimaMaxAggregateInputType
+  }
+
+  export type GetSeguimientoClimaAggregateType<T extends SeguimientoClimaAggregateArgs> = {
+        [P in keyof T & keyof AggregateSeguimientoClima]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSeguimientoClima[P]>
+      : GetScalarType<T[P], AggregateSeguimientoClima[P]>
+  }
+
+
+
+
+  export type SeguimientoClimaGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SeguimientoClimaWhereInput
+    orderBy?: SeguimientoClimaOrderByWithAggregationInput | SeguimientoClimaOrderByWithAggregationInput[]
+    by: SeguimientoClimaScalarFieldEnum[] | SeguimientoClimaScalarFieldEnum
+    having?: SeguimientoClimaScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SeguimientoClimaCountAggregateInputType | true
+    _min?: SeguimientoClimaMinAggregateInputType
+    _max?: SeguimientoClimaMaxAggregateInputType
+  }
+
+  export type SeguimientoClimaGroupByOutputType = {
+    id: string
+    empresaId: string
+    colaboradorId: string
+    desde: Date
+    estado: $Enums.EstadoSeguimientoClima
+    responsableId: string | null
+    abiertoEn: Date
+    cerradoEn: Date | null
+    actualizadoEn: Date
+    _count: SeguimientoClimaCountAggregateOutputType | null
+    _min: SeguimientoClimaMinAggregateOutputType | null
+    _max: SeguimientoClimaMaxAggregateOutputType | null
+  }
+
+  type GetSeguimientoClimaGroupByPayload<T extends SeguimientoClimaGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SeguimientoClimaGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SeguimientoClimaGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SeguimientoClimaGroupByOutputType[P]>
+            : GetScalarType<T[P], SeguimientoClimaGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SeguimientoClimaSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    empresaId?: boolean
+    colaboradorId?: boolean
+    desde?: boolean
+    estado?: boolean
+    responsableId?: boolean
+    abiertoEn?: boolean
+    cerradoEn?: boolean
+    actualizadoEn?: boolean
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    comentarios?: boolean | SeguimientoClima$comentariosArgs<ExtArgs>
+    _count?: boolean | SeguimientoClimaCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["seguimientoClima"]>
+
+
+  export type SeguimientoClimaSelectScalar = {
+    id?: boolean
+    empresaId?: boolean
+    colaboradorId?: boolean
+    desde?: boolean
+    estado?: boolean
+    responsableId?: boolean
+    abiertoEn?: boolean
+    cerradoEn?: boolean
+    actualizadoEn?: boolean
+  }
+
+  export type SeguimientoClimaInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+    colaborador?: boolean | ColaboradorDefaultArgs<ExtArgs>
+    comentarios?: boolean | SeguimientoClima$comentariosArgs<ExtArgs>
+    _count?: boolean | SeguimientoClimaCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $SeguimientoClimaPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SeguimientoClima"
+    objects: {
+      empresa: Prisma.$EmpresaPayload<ExtArgs>
+      colaborador: Prisma.$ColaboradorPayload<ExtArgs>
+      comentarios: Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      empresaId: string
+      colaboradorId: string
+      desde: Date
+      estado: $Enums.EstadoSeguimientoClima
+      responsableId: string | null
+      abiertoEn: Date
+      cerradoEn: Date | null
+      actualizadoEn: Date
+    }, ExtArgs["result"]["seguimientoClima"]>
+    composites: {}
+  }
+
+  type SeguimientoClimaGetPayload<S extends boolean | null | undefined | SeguimientoClimaDefaultArgs> = $Result.GetResult<Prisma.$SeguimientoClimaPayload, S>
+
+  type SeguimientoClimaCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<SeguimientoClimaFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: SeguimientoClimaCountAggregateInputType | true
+    }
+
+  export interface SeguimientoClimaDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SeguimientoClima'], meta: { name: 'SeguimientoClima' } }
+    /**
+     * Find zero or one SeguimientoClima that matches the filter.
+     * @param {SeguimientoClimaFindUniqueArgs} args - Arguments to find a SeguimientoClima
+     * @example
+     * // Get one SeguimientoClima
+     * const seguimientoClima = await prisma.seguimientoClima.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SeguimientoClimaFindUniqueArgs>(args: SelectSubset<T, SeguimientoClimaFindUniqueArgs<ExtArgs>>): Prisma__SeguimientoClimaClient<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one SeguimientoClima that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {SeguimientoClimaFindUniqueOrThrowArgs} args - Arguments to find a SeguimientoClima
+     * @example
+     * // Get one SeguimientoClima
+     * const seguimientoClima = await prisma.seguimientoClima.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SeguimientoClimaFindUniqueOrThrowArgs>(args: SelectSubset<T, SeguimientoClimaFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SeguimientoClimaClient<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first SeguimientoClima that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SeguimientoClimaFindFirstArgs} args - Arguments to find a SeguimientoClima
+     * @example
+     * // Get one SeguimientoClima
+     * const seguimientoClima = await prisma.seguimientoClima.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SeguimientoClimaFindFirstArgs>(args?: SelectSubset<T, SeguimientoClimaFindFirstArgs<ExtArgs>>): Prisma__SeguimientoClimaClient<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first SeguimientoClima that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SeguimientoClimaFindFirstOrThrowArgs} args - Arguments to find a SeguimientoClima
+     * @example
+     * // Get one SeguimientoClima
+     * const seguimientoClima = await prisma.seguimientoClima.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SeguimientoClimaFindFirstOrThrowArgs>(args?: SelectSubset<T, SeguimientoClimaFindFirstOrThrowArgs<ExtArgs>>): Prisma__SeguimientoClimaClient<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more SeguimientoClimas that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SeguimientoClimaFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SeguimientoClimas
+     * const seguimientoClimas = await prisma.seguimientoClima.findMany()
+     * 
+     * // Get first 10 SeguimientoClimas
+     * const seguimientoClimas = await prisma.seguimientoClima.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const seguimientoClimaWithIdOnly = await prisma.seguimientoClima.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SeguimientoClimaFindManyArgs>(args?: SelectSubset<T, SeguimientoClimaFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a SeguimientoClima.
+     * @param {SeguimientoClimaCreateArgs} args - Arguments to create a SeguimientoClima.
+     * @example
+     * // Create one SeguimientoClima
+     * const SeguimientoClima = await prisma.seguimientoClima.create({
+     *   data: {
+     *     // ... data to create a SeguimientoClima
+     *   }
+     * })
+     * 
+     */
+    create<T extends SeguimientoClimaCreateArgs>(args: SelectSubset<T, SeguimientoClimaCreateArgs<ExtArgs>>): Prisma__SeguimientoClimaClient<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many SeguimientoClimas.
+     * @param {SeguimientoClimaCreateManyArgs} args - Arguments to create many SeguimientoClimas.
+     * @example
+     * // Create many SeguimientoClimas
+     * const seguimientoClima = await prisma.seguimientoClima.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SeguimientoClimaCreateManyArgs>(args?: SelectSubset<T, SeguimientoClimaCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a SeguimientoClima.
+     * @param {SeguimientoClimaDeleteArgs} args - Arguments to delete one SeguimientoClima.
+     * @example
+     * // Delete one SeguimientoClima
+     * const SeguimientoClima = await prisma.seguimientoClima.delete({
+     *   where: {
+     *     // ... filter to delete one SeguimientoClima
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SeguimientoClimaDeleteArgs>(args: SelectSubset<T, SeguimientoClimaDeleteArgs<ExtArgs>>): Prisma__SeguimientoClimaClient<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one SeguimientoClima.
+     * @param {SeguimientoClimaUpdateArgs} args - Arguments to update one SeguimientoClima.
+     * @example
+     * // Update one SeguimientoClima
+     * const seguimientoClima = await prisma.seguimientoClima.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SeguimientoClimaUpdateArgs>(args: SelectSubset<T, SeguimientoClimaUpdateArgs<ExtArgs>>): Prisma__SeguimientoClimaClient<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more SeguimientoClimas.
+     * @param {SeguimientoClimaDeleteManyArgs} args - Arguments to filter SeguimientoClimas to delete.
+     * @example
+     * // Delete a few SeguimientoClimas
+     * const { count } = await prisma.seguimientoClima.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SeguimientoClimaDeleteManyArgs>(args?: SelectSubset<T, SeguimientoClimaDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SeguimientoClimas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SeguimientoClimaUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SeguimientoClimas
+     * const seguimientoClima = await prisma.seguimientoClima.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SeguimientoClimaUpdateManyArgs>(args: SelectSubset<T, SeguimientoClimaUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one SeguimientoClima.
+     * @param {SeguimientoClimaUpsertArgs} args - Arguments to update or create a SeguimientoClima.
+     * @example
+     * // Update or create a SeguimientoClima
+     * const seguimientoClima = await prisma.seguimientoClima.upsert({
+     *   create: {
+     *     // ... data to create a SeguimientoClima
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SeguimientoClima we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SeguimientoClimaUpsertArgs>(args: SelectSubset<T, SeguimientoClimaUpsertArgs<ExtArgs>>): Prisma__SeguimientoClimaClient<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of SeguimientoClimas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SeguimientoClimaCountArgs} args - Arguments to filter SeguimientoClimas to count.
+     * @example
+     * // Count the number of SeguimientoClimas
+     * const count = await prisma.seguimientoClima.count({
+     *   where: {
+     *     // ... the filter for the SeguimientoClimas we want to count
+     *   }
+     * })
+    **/
+    count<T extends SeguimientoClimaCountArgs>(
+      args?: Subset<T, SeguimientoClimaCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SeguimientoClimaCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SeguimientoClima.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SeguimientoClimaAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SeguimientoClimaAggregateArgs>(args: Subset<T, SeguimientoClimaAggregateArgs>): Prisma.PrismaPromise<GetSeguimientoClimaAggregateType<T>>
+
+    /**
+     * Group by SeguimientoClima.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SeguimientoClimaGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SeguimientoClimaGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SeguimientoClimaGroupByArgs['orderBy'] }
+        : { orderBy?: SeguimientoClimaGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SeguimientoClimaGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSeguimientoClimaGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SeguimientoClima model
+   */
+  readonly fields: SeguimientoClimaFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SeguimientoClima.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SeguimientoClimaClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    empresa<T extends EmpresaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EmpresaDefaultArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    colaborador<T extends ColaboradorDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ColaboradorDefaultArgs<ExtArgs>>): Prisma__ColaboradorClient<$Result.GetResult<Prisma.$ColaboradorPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    comentarios<T extends SeguimientoClima$comentariosArgs<ExtArgs> = {}>(args?: Subset<T, SeguimientoClima$comentariosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SeguimientoClima model
+   */ 
+  interface SeguimientoClimaFieldRefs {
+    readonly id: FieldRef<"SeguimientoClima", 'String'>
+    readonly empresaId: FieldRef<"SeguimientoClima", 'String'>
+    readonly colaboradorId: FieldRef<"SeguimientoClima", 'String'>
+    readonly desde: FieldRef<"SeguimientoClima", 'DateTime'>
+    readonly estado: FieldRef<"SeguimientoClima", 'EstadoSeguimientoClima'>
+    readonly responsableId: FieldRef<"SeguimientoClima", 'String'>
+    readonly abiertoEn: FieldRef<"SeguimientoClima", 'DateTime'>
+    readonly cerradoEn: FieldRef<"SeguimientoClima", 'DateTime'>
+    readonly actualizadoEn: FieldRef<"SeguimientoClima", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SeguimientoClima findUnique
+   */
+  export type SeguimientoClimaFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which SeguimientoClima to fetch.
+     */
+    where: SeguimientoClimaWhereUniqueInput
+  }
+
+  /**
+   * SeguimientoClima findUniqueOrThrow
+   */
+  export type SeguimientoClimaFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which SeguimientoClima to fetch.
+     */
+    where: SeguimientoClimaWhereUniqueInput
+  }
+
+  /**
+   * SeguimientoClima findFirst
+   */
+  export type SeguimientoClimaFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which SeguimientoClima to fetch.
+     */
+    where?: SeguimientoClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SeguimientoClimas to fetch.
+     */
+    orderBy?: SeguimientoClimaOrderByWithRelationInput | SeguimientoClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SeguimientoClimas.
+     */
+    cursor?: SeguimientoClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SeguimientoClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SeguimientoClimas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SeguimientoClimas.
+     */
+    distinct?: SeguimientoClimaScalarFieldEnum | SeguimientoClimaScalarFieldEnum[]
+  }
+
+  /**
+   * SeguimientoClima findFirstOrThrow
+   */
+  export type SeguimientoClimaFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which SeguimientoClima to fetch.
+     */
+    where?: SeguimientoClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SeguimientoClimas to fetch.
+     */
+    orderBy?: SeguimientoClimaOrderByWithRelationInput | SeguimientoClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SeguimientoClimas.
+     */
+    cursor?: SeguimientoClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SeguimientoClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SeguimientoClimas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SeguimientoClimas.
+     */
+    distinct?: SeguimientoClimaScalarFieldEnum | SeguimientoClimaScalarFieldEnum[]
+  }
+
+  /**
+   * SeguimientoClima findMany
+   */
+  export type SeguimientoClimaFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which SeguimientoClimas to fetch.
+     */
+    where?: SeguimientoClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SeguimientoClimas to fetch.
+     */
+    orderBy?: SeguimientoClimaOrderByWithRelationInput | SeguimientoClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SeguimientoClimas.
+     */
+    cursor?: SeguimientoClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SeguimientoClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SeguimientoClimas.
+     */
+    skip?: number
+    distinct?: SeguimientoClimaScalarFieldEnum | SeguimientoClimaScalarFieldEnum[]
+  }
+
+  /**
+   * SeguimientoClima create
+   */
+  export type SeguimientoClimaCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SeguimientoClima.
+     */
+    data: XOR<SeguimientoClimaCreateInput, SeguimientoClimaUncheckedCreateInput>
+  }
+
+  /**
+   * SeguimientoClima createMany
+   */
+  export type SeguimientoClimaCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SeguimientoClimas.
+     */
+    data: SeguimientoClimaCreateManyInput | SeguimientoClimaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SeguimientoClima update
+   */
+  export type SeguimientoClimaUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SeguimientoClima.
+     */
+    data: XOR<SeguimientoClimaUpdateInput, SeguimientoClimaUncheckedUpdateInput>
+    /**
+     * Choose, which SeguimientoClima to update.
+     */
+    where: SeguimientoClimaWhereUniqueInput
+  }
+
+  /**
+   * SeguimientoClima updateMany
+   */
+  export type SeguimientoClimaUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SeguimientoClimas.
+     */
+    data: XOR<SeguimientoClimaUpdateManyMutationInput, SeguimientoClimaUncheckedUpdateManyInput>
+    /**
+     * Filter which SeguimientoClimas to update
+     */
+    where?: SeguimientoClimaWhereInput
+  }
+
+  /**
+   * SeguimientoClima upsert
+   */
+  export type SeguimientoClimaUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SeguimientoClima to update in case it exists.
+     */
+    where: SeguimientoClimaWhereUniqueInput
+    /**
+     * In case the SeguimientoClima found by the `where` argument doesn't exist, create a new SeguimientoClima with this data.
+     */
+    create: XOR<SeguimientoClimaCreateInput, SeguimientoClimaUncheckedCreateInput>
+    /**
+     * In case the SeguimientoClima was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SeguimientoClimaUpdateInput, SeguimientoClimaUncheckedUpdateInput>
+  }
+
+  /**
+   * SeguimientoClima delete
+   */
+  export type SeguimientoClimaDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter which SeguimientoClima to delete.
+     */
+    where: SeguimientoClimaWhereUniqueInput
+  }
+
+  /**
+   * SeguimientoClima deleteMany
+   */
+  export type SeguimientoClimaDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SeguimientoClimas to delete
+     */
+    where?: SeguimientoClimaWhereInput
+  }
+
+  /**
+   * SeguimientoClima.comentarios
+   */
+  export type SeguimientoClima$comentariosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+    where?: ComentarioSeguimientoClimaWhereInput
+    orderBy?: ComentarioSeguimientoClimaOrderByWithRelationInput | ComentarioSeguimientoClimaOrderByWithRelationInput[]
+    cursor?: ComentarioSeguimientoClimaWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ComentarioSeguimientoClimaScalarFieldEnum | ComentarioSeguimientoClimaScalarFieldEnum[]
+  }
+
+  /**
+   * SeguimientoClima without action
+   */
+  export type SeguimientoClimaDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SeguimientoClima
+     */
+    select?: SeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SeguimientoClimaInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ComentarioSeguimientoClima
+   */
+
+  export type AggregateComentarioSeguimientoClima = {
+    _count: ComentarioSeguimientoClimaCountAggregateOutputType | null
+    _min: ComentarioSeguimientoClimaMinAggregateOutputType | null
+    _max: ComentarioSeguimientoClimaMaxAggregateOutputType | null
+  }
+
+  export type ComentarioSeguimientoClimaMinAggregateOutputType = {
+    id: string | null
+    seguimientoId: string | null
+    autorId: string | null
+    autorNombre: string | null
+    texto: string | null
+    creadoEn: Date | null
+    editadoEn: Date | null
+  }
+
+  export type ComentarioSeguimientoClimaMaxAggregateOutputType = {
+    id: string | null
+    seguimientoId: string | null
+    autorId: string | null
+    autorNombre: string | null
+    texto: string | null
+    creadoEn: Date | null
+    editadoEn: Date | null
+  }
+
+  export type ComentarioSeguimientoClimaCountAggregateOutputType = {
+    id: number
+    seguimientoId: number
+    autorId: number
+    autorNombre: number
+    texto: number
+    creadoEn: number
+    editadoEn: number
+    _all: number
+  }
+
+
+  export type ComentarioSeguimientoClimaMinAggregateInputType = {
+    id?: true
+    seguimientoId?: true
+    autorId?: true
+    autorNombre?: true
+    texto?: true
+    creadoEn?: true
+    editadoEn?: true
+  }
+
+  export type ComentarioSeguimientoClimaMaxAggregateInputType = {
+    id?: true
+    seguimientoId?: true
+    autorId?: true
+    autorNombre?: true
+    texto?: true
+    creadoEn?: true
+    editadoEn?: true
+  }
+
+  export type ComentarioSeguimientoClimaCountAggregateInputType = {
+    id?: true
+    seguimientoId?: true
+    autorId?: true
+    autorNombre?: true
+    texto?: true
+    creadoEn?: true
+    editadoEn?: true
+    _all?: true
+  }
+
+  export type ComentarioSeguimientoClimaAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ComentarioSeguimientoClima to aggregate.
+     */
+    where?: ComentarioSeguimientoClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ComentarioSeguimientoClimas to fetch.
+     */
+    orderBy?: ComentarioSeguimientoClimaOrderByWithRelationInput | ComentarioSeguimientoClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ComentarioSeguimientoClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ComentarioSeguimientoClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ComentarioSeguimientoClimas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ComentarioSeguimientoClimas
+    **/
+    _count?: true | ComentarioSeguimientoClimaCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ComentarioSeguimientoClimaMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ComentarioSeguimientoClimaMaxAggregateInputType
+  }
+
+  export type GetComentarioSeguimientoClimaAggregateType<T extends ComentarioSeguimientoClimaAggregateArgs> = {
+        [P in keyof T & keyof AggregateComentarioSeguimientoClima]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateComentarioSeguimientoClima[P]>
+      : GetScalarType<T[P], AggregateComentarioSeguimientoClima[P]>
+  }
+
+
+
+
+  export type ComentarioSeguimientoClimaGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ComentarioSeguimientoClimaWhereInput
+    orderBy?: ComentarioSeguimientoClimaOrderByWithAggregationInput | ComentarioSeguimientoClimaOrderByWithAggregationInput[]
+    by: ComentarioSeguimientoClimaScalarFieldEnum[] | ComentarioSeguimientoClimaScalarFieldEnum
+    having?: ComentarioSeguimientoClimaScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ComentarioSeguimientoClimaCountAggregateInputType | true
+    _min?: ComentarioSeguimientoClimaMinAggregateInputType
+    _max?: ComentarioSeguimientoClimaMaxAggregateInputType
+  }
+
+  export type ComentarioSeguimientoClimaGroupByOutputType = {
+    id: string
+    seguimientoId: string
+    autorId: string | null
+    autorNombre: string
+    texto: string
+    creadoEn: Date
+    editadoEn: Date | null
+    _count: ComentarioSeguimientoClimaCountAggregateOutputType | null
+    _min: ComentarioSeguimientoClimaMinAggregateOutputType | null
+    _max: ComentarioSeguimientoClimaMaxAggregateOutputType | null
+  }
+
+  type GetComentarioSeguimientoClimaGroupByPayload<T extends ComentarioSeguimientoClimaGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ComentarioSeguimientoClimaGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ComentarioSeguimientoClimaGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ComentarioSeguimientoClimaGroupByOutputType[P]>
+            : GetScalarType<T[P], ComentarioSeguimientoClimaGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ComentarioSeguimientoClimaSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    seguimientoId?: boolean
+    autorId?: boolean
+    autorNombre?: boolean
+    texto?: boolean
+    creadoEn?: boolean
+    editadoEn?: boolean
+    seguimiento?: boolean | SeguimientoClimaDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["comentarioSeguimientoClima"]>
+
+
+  export type ComentarioSeguimientoClimaSelectScalar = {
+    id?: boolean
+    seguimientoId?: boolean
+    autorId?: boolean
+    autorNombre?: boolean
+    texto?: boolean
+    creadoEn?: boolean
+    editadoEn?: boolean
+  }
+
+  export type ComentarioSeguimientoClimaInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    seguimiento?: boolean | SeguimientoClimaDefaultArgs<ExtArgs>
+  }
+
+  export type $ComentarioSeguimientoClimaPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ComentarioSeguimientoClima"
+    objects: {
+      seguimiento: Prisma.$SeguimientoClimaPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      seguimientoId: string
+      autorId: string | null
+      autorNombre: string
+      texto: string
+      creadoEn: Date
+      editadoEn: Date | null
+    }, ExtArgs["result"]["comentarioSeguimientoClima"]>
+    composites: {}
+  }
+
+  type ComentarioSeguimientoClimaGetPayload<S extends boolean | null | undefined | ComentarioSeguimientoClimaDefaultArgs> = $Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload, S>
+
+  type ComentarioSeguimientoClimaCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ComentarioSeguimientoClimaFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ComentarioSeguimientoClimaCountAggregateInputType | true
+    }
+
+  export interface ComentarioSeguimientoClimaDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ComentarioSeguimientoClima'], meta: { name: 'ComentarioSeguimientoClima' } }
+    /**
+     * Find zero or one ComentarioSeguimientoClima that matches the filter.
+     * @param {ComentarioSeguimientoClimaFindUniqueArgs} args - Arguments to find a ComentarioSeguimientoClima
+     * @example
+     * // Get one ComentarioSeguimientoClima
+     * const comentarioSeguimientoClima = await prisma.comentarioSeguimientoClima.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ComentarioSeguimientoClimaFindUniqueArgs>(args: SelectSubset<T, ComentarioSeguimientoClimaFindUniqueArgs<ExtArgs>>): Prisma__ComentarioSeguimientoClimaClient<$Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ComentarioSeguimientoClima that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ComentarioSeguimientoClimaFindUniqueOrThrowArgs} args - Arguments to find a ComentarioSeguimientoClima
+     * @example
+     * // Get one ComentarioSeguimientoClima
+     * const comentarioSeguimientoClima = await prisma.comentarioSeguimientoClima.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ComentarioSeguimientoClimaFindUniqueOrThrowArgs>(args: SelectSubset<T, ComentarioSeguimientoClimaFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ComentarioSeguimientoClimaClient<$Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ComentarioSeguimientoClima that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComentarioSeguimientoClimaFindFirstArgs} args - Arguments to find a ComentarioSeguimientoClima
+     * @example
+     * // Get one ComentarioSeguimientoClima
+     * const comentarioSeguimientoClima = await prisma.comentarioSeguimientoClima.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ComentarioSeguimientoClimaFindFirstArgs>(args?: SelectSubset<T, ComentarioSeguimientoClimaFindFirstArgs<ExtArgs>>): Prisma__ComentarioSeguimientoClimaClient<$Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ComentarioSeguimientoClima that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComentarioSeguimientoClimaFindFirstOrThrowArgs} args - Arguments to find a ComentarioSeguimientoClima
+     * @example
+     * // Get one ComentarioSeguimientoClima
+     * const comentarioSeguimientoClima = await prisma.comentarioSeguimientoClima.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ComentarioSeguimientoClimaFindFirstOrThrowArgs>(args?: SelectSubset<T, ComentarioSeguimientoClimaFindFirstOrThrowArgs<ExtArgs>>): Prisma__ComentarioSeguimientoClimaClient<$Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ComentarioSeguimientoClimas that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComentarioSeguimientoClimaFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ComentarioSeguimientoClimas
+     * const comentarioSeguimientoClimas = await prisma.comentarioSeguimientoClima.findMany()
+     * 
+     * // Get first 10 ComentarioSeguimientoClimas
+     * const comentarioSeguimientoClimas = await prisma.comentarioSeguimientoClima.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const comentarioSeguimientoClimaWithIdOnly = await prisma.comentarioSeguimientoClima.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ComentarioSeguimientoClimaFindManyArgs>(args?: SelectSubset<T, ComentarioSeguimientoClimaFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ComentarioSeguimientoClima.
+     * @param {ComentarioSeguimientoClimaCreateArgs} args - Arguments to create a ComentarioSeguimientoClima.
+     * @example
+     * // Create one ComentarioSeguimientoClima
+     * const ComentarioSeguimientoClima = await prisma.comentarioSeguimientoClima.create({
+     *   data: {
+     *     // ... data to create a ComentarioSeguimientoClima
+     *   }
+     * })
+     * 
+     */
+    create<T extends ComentarioSeguimientoClimaCreateArgs>(args: SelectSubset<T, ComentarioSeguimientoClimaCreateArgs<ExtArgs>>): Prisma__ComentarioSeguimientoClimaClient<$Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ComentarioSeguimientoClimas.
+     * @param {ComentarioSeguimientoClimaCreateManyArgs} args - Arguments to create many ComentarioSeguimientoClimas.
+     * @example
+     * // Create many ComentarioSeguimientoClimas
+     * const comentarioSeguimientoClima = await prisma.comentarioSeguimientoClima.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ComentarioSeguimientoClimaCreateManyArgs>(args?: SelectSubset<T, ComentarioSeguimientoClimaCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ComentarioSeguimientoClima.
+     * @param {ComentarioSeguimientoClimaDeleteArgs} args - Arguments to delete one ComentarioSeguimientoClima.
+     * @example
+     * // Delete one ComentarioSeguimientoClima
+     * const ComentarioSeguimientoClima = await prisma.comentarioSeguimientoClima.delete({
+     *   where: {
+     *     // ... filter to delete one ComentarioSeguimientoClima
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ComentarioSeguimientoClimaDeleteArgs>(args: SelectSubset<T, ComentarioSeguimientoClimaDeleteArgs<ExtArgs>>): Prisma__ComentarioSeguimientoClimaClient<$Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ComentarioSeguimientoClima.
+     * @param {ComentarioSeguimientoClimaUpdateArgs} args - Arguments to update one ComentarioSeguimientoClima.
+     * @example
+     * // Update one ComentarioSeguimientoClima
+     * const comentarioSeguimientoClima = await prisma.comentarioSeguimientoClima.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ComentarioSeguimientoClimaUpdateArgs>(args: SelectSubset<T, ComentarioSeguimientoClimaUpdateArgs<ExtArgs>>): Prisma__ComentarioSeguimientoClimaClient<$Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ComentarioSeguimientoClimas.
+     * @param {ComentarioSeguimientoClimaDeleteManyArgs} args - Arguments to filter ComentarioSeguimientoClimas to delete.
+     * @example
+     * // Delete a few ComentarioSeguimientoClimas
+     * const { count } = await prisma.comentarioSeguimientoClima.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ComentarioSeguimientoClimaDeleteManyArgs>(args?: SelectSubset<T, ComentarioSeguimientoClimaDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ComentarioSeguimientoClimas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComentarioSeguimientoClimaUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ComentarioSeguimientoClimas
+     * const comentarioSeguimientoClima = await prisma.comentarioSeguimientoClima.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ComentarioSeguimientoClimaUpdateManyArgs>(args: SelectSubset<T, ComentarioSeguimientoClimaUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ComentarioSeguimientoClima.
+     * @param {ComentarioSeguimientoClimaUpsertArgs} args - Arguments to update or create a ComentarioSeguimientoClima.
+     * @example
+     * // Update or create a ComentarioSeguimientoClima
+     * const comentarioSeguimientoClima = await prisma.comentarioSeguimientoClima.upsert({
+     *   create: {
+     *     // ... data to create a ComentarioSeguimientoClima
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ComentarioSeguimientoClima we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ComentarioSeguimientoClimaUpsertArgs>(args: SelectSubset<T, ComentarioSeguimientoClimaUpsertArgs<ExtArgs>>): Prisma__ComentarioSeguimientoClimaClient<$Result.GetResult<Prisma.$ComentarioSeguimientoClimaPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ComentarioSeguimientoClimas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComentarioSeguimientoClimaCountArgs} args - Arguments to filter ComentarioSeguimientoClimas to count.
+     * @example
+     * // Count the number of ComentarioSeguimientoClimas
+     * const count = await prisma.comentarioSeguimientoClima.count({
+     *   where: {
+     *     // ... the filter for the ComentarioSeguimientoClimas we want to count
+     *   }
+     * })
+    **/
+    count<T extends ComentarioSeguimientoClimaCountArgs>(
+      args?: Subset<T, ComentarioSeguimientoClimaCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ComentarioSeguimientoClimaCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ComentarioSeguimientoClima.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComentarioSeguimientoClimaAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ComentarioSeguimientoClimaAggregateArgs>(args: Subset<T, ComentarioSeguimientoClimaAggregateArgs>): Prisma.PrismaPromise<GetComentarioSeguimientoClimaAggregateType<T>>
+
+    /**
+     * Group by ComentarioSeguimientoClima.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ComentarioSeguimientoClimaGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ComentarioSeguimientoClimaGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ComentarioSeguimientoClimaGroupByArgs['orderBy'] }
+        : { orderBy?: ComentarioSeguimientoClimaGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ComentarioSeguimientoClimaGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetComentarioSeguimientoClimaGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ComentarioSeguimientoClima model
+   */
+  readonly fields: ComentarioSeguimientoClimaFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ComentarioSeguimientoClima.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ComentarioSeguimientoClimaClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    seguimiento<T extends SeguimientoClimaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SeguimientoClimaDefaultArgs<ExtArgs>>): Prisma__SeguimientoClimaClient<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ComentarioSeguimientoClima model
+   */ 
+  interface ComentarioSeguimientoClimaFieldRefs {
+    readonly id: FieldRef<"ComentarioSeguimientoClima", 'String'>
+    readonly seguimientoId: FieldRef<"ComentarioSeguimientoClima", 'String'>
+    readonly autorId: FieldRef<"ComentarioSeguimientoClima", 'String'>
+    readonly autorNombre: FieldRef<"ComentarioSeguimientoClima", 'String'>
+    readonly texto: FieldRef<"ComentarioSeguimientoClima", 'String'>
+    readonly creadoEn: FieldRef<"ComentarioSeguimientoClima", 'DateTime'>
+    readonly editadoEn: FieldRef<"ComentarioSeguimientoClima", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ComentarioSeguimientoClima findUnique
+   */
+  export type ComentarioSeguimientoClimaFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which ComentarioSeguimientoClima to fetch.
+     */
+    where: ComentarioSeguimientoClimaWhereUniqueInput
+  }
+
+  /**
+   * ComentarioSeguimientoClima findUniqueOrThrow
+   */
+  export type ComentarioSeguimientoClimaFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which ComentarioSeguimientoClima to fetch.
+     */
+    where: ComentarioSeguimientoClimaWhereUniqueInput
+  }
+
+  /**
+   * ComentarioSeguimientoClima findFirst
+   */
+  export type ComentarioSeguimientoClimaFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which ComentarioSeguimientoClima to fetch.
+     */
+    where?: ComentarioSeguimientoClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ComentarioSeguimientoClimas to fetch.
+     */
+    orderBy?: ComentarioSeguimientoClimaOrderByWithRelationInput | ComentarioSeguimientoClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ComentarioSeguimientoClimas.
+     */
+    cursor?: ComentarioSeguimientoClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ComentarioSeguimientoClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ComentarioSeguimientoClimas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ComentarioSeguimientoClimas.
+     */
+    distinct?: ComentarioSeguimientoClimaScalarFieldEnum | ComentarioSeguimientoClimaScalarFieldEnum[]
+  }
+
+  /**
+   * ComentarioSeguimientoClima findFirstOrThrow
+   */
+  export type ComentarioSeguimientoClimaFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which ComentarioSeguimientoClima to fetch.
+     */
+    where?: ComentarioSeguimientoClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ComentarioSeguimientoClimas to fetch.
+     */
+    orderBy?: ComentarioSeguimientoClimaOrderByWithRelationInput | ComentarioSeguimientoClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ComentarioSeguimientoClimas.
+     */
+    cursor?: ComentarioSeguimientoClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ComentarioSeguimientoClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ComentarioSeguimientoClimas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ComentarioSeguimientoClimas.
+     */
+    distinct?: ComentarioSeguimientoClimaScalarFieldEnum | ComentarioSeguimientoClimaScalarFieldEnum[]
+  }
+
+  /**
+   * ComentarioSeguimientoClima findMany
+   */
+  export type ComentarioSeguimientoClimaFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter, which ComentarioSeguimientoClimas to fetch.
+     */
+    where?: ComentarioSeguimientoClimaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ComentarioSeguimientoClimas to fetch.
+     */
+    orderBy?: ComentarioSeguimientoClimaOrderByWithRelationInput | ComentarioSeguimientoClimaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ComentarioSeguimientoClimas.
+     */
+    cursor?: ComentarioSeguimientoClimaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ComentarioSeguimientoClimas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ComentarioSeguimientoClimas.
+     */
+    skip?: number
+    distinct?: ComentarioSeguimientoClimaScalarFieldEnum | ComentarioSeguimientoClimaScalarFieldEnum[]
+  }
+
+  /**
+   * ComentarioSeguimientoClima create
+   */
+  export type ComentarioSeguimientoClimaCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ComentarioSeguimientoClima.
+     */
+    data: XOR<ComentarioSeguimientoClimaCreateInput, ComentarioSeguimientoClimaUncheckedCreateInput>
+  }
+
+  /**
+   * ComentarioSeguimientoClima createMany
+   */
+  export type ComentarioSeguimientoClimaCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ComentarioSeguimientoClimas.
+     */
+    data: ComentarioSeguimientoClimaCreateManyInput | ComentarioSeguimientoClimaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ComentarioSeguimientoClima update
+   */
+  export type ComentarioSeguimientoClimaUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ComentarioSeguimientoClima.
+     */
+    data: XOR<ComentarioSeguimientoClimaUpdateInput, ComentarioSeguimientoClimaUncheckedUpdateInput>
+    /**
+     * Choose, which ComentarioSeguimientoClima to update.
+     */
+    where: ComentarioSeguimientoClimaWhereUniqueInput
+  }
+
+  /**
+   * ComentarioSeguimientoClima updateMany
+   */
+  export type ComentarioSeguimientoClimaUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ComentarioSeguimientoClimas.
+     */
+    data: XOR<ComentarioSeguimientoClimaUpdateManyMutationInput, ComentarioSeguimientoClimaUncheckedUpdateManyInput>
+    /**
+     * Filter which ComentarioSeguimientoClimas to update
+     */
+    where?: ComentarioSeguimientoClimaWhereInput
+  }
+
+  /**
+   * ComentarioSeguimientoClima upsert
+   */
+  export type ComentarioSeguimientoClimaUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ComentarioSeguimientoClima to update in case it exists.
+     */
+    where: ComentarioSeguimientoClimaWhereUniqueInput
+    /**
+     * In case the ComentarioSeguimientoClima found by the `where` argument doesn't exist, create a new ComentarioSeguimientoClima with this data.
+     */
+    create: XOR<ComentarioSeguimientoClimaCreateInput, ComentarioSeguimientoClimaUncheckedCreateInput>
+    /**
+     * In case the ComentarioSeguimientoClima was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ComentarioSeguimientoClimaUpdateInput, ComentarioSeguimientoClimaUncheckedUpdateInput>
+  }
+
+  /**
+   * ComentarioSeguimientoClima delete
+   */
+  export type ComentarioSeguimientoClimaDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+    /**
+     * Filter which ComentarioSeguimientoClima to delete.
+     */
+    where: ComentarioSeguimientoClimaWhereUniqueInput
+  }
+
+  /**
+   * ComentarioSeguimientoClima deleteMany
+   */
+  export type ComentarioSeguimientoClimaDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ComentarioSeguimientoClimas to delete
+     */
+    where?: ComentarioSeguimientoClimaWhereInput
+  }
+
+  /**
+   * ComentarioSeguimientoClima without action
+   */
+  export type ComentarioSeguimientoClimaDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ComentarioSeguimientoClima
+     */
+    select?: ComentarioSeguimientoClimaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ComentarioSeguimientoClimaInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -37636,6 +41874,61 @@ export namespace Prisma {
   export type EventoSistemaScalarFieldEnum = (typeof EventoSistemaScalarFieldEnum)[keyof typeof EventoSistemaScalarFieldEnum]
 
 
+  export const CalificacionClimaScalarFieldEnum: {
+    id: 'id',
+    empresaId: 'empresaId',
+    colaboradorId: 'colaboradorId',
+    fecha: 'fecha',
+    carita: 'carita',
+    motivos: 'motivos',
+    observacion: 'observacion',
+    creadoEn: 'creadoEn',
+    actualizadoEn: 'actualizadoEn'
+  };
+
+  export type CalificacionClimaScalarFieldEnum = (typeof CalificacionClimaScalarFieldEnum)[keyof typeof CalificacionClimaScalarFieldEnum]
+
+
+  export const ObservacionConfidencialScalarFieldEnum: {
+    id: 'id',
+    empresaId: 'empresaId',
+    semana: 'semana',
+    visibleDesde: 'visibleDesde',
+    texto: 'texto',
+    autorCifrado: 'autorCifrado'
+  };
+
+  export type ObservacionConfidencialScalarFieldEnum = (typeof ObservacionConfidencialScalarFieldEnum)[keyof typeof ObservacionConfidencialScalarFieldEnum]
+
+
+  export const SeguimientoClimaScalarFieldEnum: {
+    id: 'id',
+    empresaId: 'empresaId',
+    colaboradorId: 'colaboradorId',
+    desde: 'desde',
+    estado: 'estado',
+    responsableId: 'responsableId',
+    abiertoEn: 'abiertoEn',
+    cerradoEn: 'cerradoEn',
+    actualizadoEn: 'actualizadoEn'
+  };
+
+  export type SeguimientoClimaScalarFieldEnum = (typeof SeguimientoClimaScalarFieldEnum)[keyof typeof SeguimientoClimaScalarFieldEnum]
+
+
+  export const ComentarioSeguimientoClimaScalarFieldEnum: {
+    id: 'id',
+    seguimientoId: 'seguimientoId',
+    autorId: 'autorId',
+    autorNombre: 'autorNombre',
+    texto: 'texto',
+    creadoEn: 'creadoEn',
+    editadoEn: 'editadoEn'
+  };
+
+  export type ComentarioSeguimientoClimaScalarFieldEnum = (typeof ComentarioSeguimientoClimaScalarFieldEnum)[keyof typeof ComentarioSeguimientoClimaScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -37861,6 +42154,13 @@ export namespace Prisma {
    */
   export type EnumOrigenEventoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrigenEvento'>
     
+
+
+  /**
+   * Reference to a field of type 'EstadoSeguimientoClima'
+   */
+  export type EnumEstadoSeguimientoClimaFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoSeguimientoClima'>
+    
   /**
    * Deep Input Types
    */
@@ -37896,6 +42196,9 @@ export namespace Prisma {
     notificaciones?: NotificacionListRelationFilter
     afiliado?: XOR<AfiliadoNullableRelationFilter, AfiliadoWhereInput> | null
     comisiones?: ComisionListRelationFilter
+    calificacionesClima?: CalificacionClimaListRelationFilter
+    notasConfidenciales?: ObservacionConfidencialListRelationFilter
+    seguimientosClima?: SeguimientoClimaListRelationFilter
   }
 
   export type EmpresaOrderByWithRelationInput = {
@@ -37925,6 +42228,9 @@ export namespace Prisma {
     notificaciones?: NotificacionOrderByRelationAggregateInput
     afiliado?: AfiliadoOrderByWithRelationInput
     comisiones?: ComisionOrderByRelationAggregateInput
+    calificacionesClima?: CalificacionClimaOrderByRelationAggregateInput
+    notasConfidenciales?: ObservacionConfidencialOrderByRelationAggregateInput
+    seguimientosClima?: SeguimientoClimaOrderByRelationAggregateInput
   }
 
   export type EmpresaWhereUniqueInput = Prisma.AtLeast<{
@@ -37957,6 +42263,9 @@ export namespace Prisma {
     notificaciones?: NotificacionListRelationFilter
     afiliado?: XOR<AfiliadoNullableRelationFilter, AfiliadoWhereInput> | null
     comisiones?: ComisionListRelationFilter
+    calificacionesClima?: CalificacionClimaListRelationFilter
+    notasConfidenciales?: ObservacionConfidencialListRelationFilter
+    seguimientosClima?: SeguimientoClimaListRelationFilter
   }, "id" | "nit" | "marcadorToken">
 
   export type EmpresaOrderByWithAggregationInput = {
@@ -38843,6 +43152,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeListRelationFilter
     enlacesRegistroFacial?: EnlaceRegistroFacialListRelationFilter
     constanciasBiometricas?: ConstanciaBiometricaListRelationFilter
+    calificacionesClima?: CalificacionClimaListRelationFilter
+    seguimientosClima?: SeguimientoClimaListRelationFilter
   }
 
   export type ColaboradorOrderByWithRelationInput = {
@@ -38883,6 +43194,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeOrderByRelationAggregateInput
     enlacesRegistroFacial?: EnlaceRegistroFacialOrderByRelationAggregateInput
     constanciasBiometricas?: ConstanciaBiometricaOrderByRelationAggregateInput
+    calificacionesClima?: CalificacionClimaOrderByRelationAggregateInput
+    seguimientosClima?: SeguimientoClimaOrderByRelationAggregateInput
   }
 
   export type ColaboradorWhereUniqueInput = Prisma.AtLeast<{
@@ -38927,6 +43240,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeListRelationFilter
     enlacesRegistroFacial?: EnlaceRegistroFacialListRelationFilter
     constanciasBiometricas?: ConstanciaBiometricaListRelationFilter
+    calificacionesClima?: CalificacionClimaListRelationFilter
+    seguimientosClima?: SeguimientoClimaListRelationFilter
   }, "id" | "empresaId_cedula">
 
   export type ColaboradorOrderByWithAggregationInput = {
@@ -40875,6 +45190,294 @@ export namespace Prisma {
     empresaNombre?: StringNullableWithAggregatesFilter<"EventoSistema"> | string | null
   }
 
+  export type CalificacionClimaWhereInput = {
+    AND?: CalificacionClimaWhereInput | CalificacionClimaWhereInput[]
+    OR?: CalificacionClimaWhereInput[]
+    NOT?: CalificacionClimaWhereInput | CalificacionClimaWhereInput[]
+    id?: StringFilter<"CalificacionClima"> | string
+    empresaId?: StringFilter<"CalificacionClima"> | string
+    colaboradorId?: StringFilter<"CalificacionClima"> | string
+    fecha?: DateTimeFilter<"CalificacionClima"> | Date | string
+    carita?: IntFilter<"CalificacionClima"> | number
+    motivos?: JsonFilter<"CalificacionClima">
+    observacion?: StringNullableFilter<"CalificacionClima"> | string | null
+    creadoEn?: DateTimeFilter<"CalificacionClima"> | Date | string
+    actualizadoEn?: DateTimeFilter<"CalificacionClima"> | Date | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+  }
+
+  export type CalificacionClimaOrderByWithRelationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    carita?: SortOrder
+    motivos?: SortOrder
+    observacion?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    empresa?: EmpresaOrderByWithRelationInput
+    colaborador?: ColaboradorOrderByWithRelationInput
+  }
+
+  export type CalificacionClimaWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    colaboradorId_fecha?: CalificacionClimaColaboradorIdFechaCompoundUniqueInput
+    AND?: CalificacionClimaWhereInput | CalificacionClimaWhereInput[]
+    OR?: CalificacionClimaWhereInput[]
+    NOT?: CalificacionClimaWhereInput | CalificacionClimaWhereInput[]
+    empresaId?: StringFilter<"CalificacionClima"> | string
+    colaboradorId?: StringFilter<"CalificacionClima"> | string
+    fecha?: DateTimeFilter<"CalificacionClima"> | Date | string
+    carita?: IntFilter<"CalificacionClima"> | number
+    motivos?: JsonFilter<"CalificacionClima">
+    observacion?: StringNullableFilter<"CalificacionClima"> | string | null
+    creadoEn?: DateTimeFilter<"CalificacionClima"> | Date | string
+    actualizadoEn?: DateTimeFilter<"CalificacionClima"> | Date | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+  }, "id" | "colaboradorId_fecha">
+
+  export type CalificacionClimaOrderByWithAggregationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    carita?: SortOrder
+    motivos?: SortOrder
+    observacion?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    _count?: CalificacionClimaCountOrderByAggregateInput
+    _avg?: CalificacionClimaAvgOrderByAggregateInput
+    _max?: CalificacionClimaMaxOrderByAggregateInput
+    _min?: CalificacionClimaMinOrderByAggregateInput
+    _sum?: CalificacionClimaSumOrderByAggregateInput
+  }
+
+  export type CalificacionClimaScalarWhereWithAggregatesInput = {
+    AND?: CalificacionClimaScalarWhereWithAggregatesInput | CalificacionClimaScalarWhereWithAggregatesInput[]
+    OR?: CalificacionClimaScalarWhereWithAggregatesInput[]
+    NOT?: CalificacionClimaScalarWhereWithAggregatesInput | CalificacionClimaScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CalificacionClima"> | string
+    empresaId?: StringWithAggregatesFilter<"CalificacionClima"> | string
+    colaboradorId?: StringWithAggregatesFilter<"CalificacionClima"> | string
+    fecha?: DateTimeWithAggregatesFilter<"CalificacionClima"> | Date | string
+    carita?: IntWithAggregatesFilter<"CalificacionClima"> | number
+    motivos?: JsonWithAggregatesFilter<"CalificacionClima">
+    observacion?: StringNullableWithAggregatesFilter<"CalificacionClima"> | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"CalificacionClima"> | Date | string
+    actualizadoEn?: DateTimeWithAggregatesFilter<"CalificacionClima"> | Date | string
+  }
+
+  export type ObservacionConfidencialWhereInput = {
+    AND?: ObservacionConfidencialWhereInput | ObservacionConfidencialWhereInput[]
+    OR?: ObservacionConfidencialWhereInput[]
+    NOT?: ObservacionConfidencialWhereInput | ObservacionConfidencialWhereInput[]
+    id?: StringFilter<"ObservacionConfidencial"> | string
+    empresaId?: StringFilter<"ObservacionConfidencial"> | string
+    semana?: DateTimeFilter<"ObservacionConfidencial"> | Date | string
+    visibleDesde?: DateTimeFilter<"ObservacionConfidencial"> | Date | string
+    texto?: StringFilter<"ObservacionConfidencial"> | string
+    autorCifrado?: StringFilter<"ObservacionConfidencial"> | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+  }
+
+  export type ObservacionConfidencialOrderByWithRelationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    semana?: SortOrder
+    visibleDesde?: SortOrder
+    texto?: SortOrder
+    autorCifrado?: SortOrder
+    empresa?: EmpresaOrderByWithRelationInput
+  }
+
+  export type ObservacionConfidencialWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ObservacionConfidencialWhereInput | ObservacionConfidencialWhereInput[]
+    OR?: ObservacionConfidencialWhereInput[]
+    NOT?: ObservacionConfidencialWhereInput | ObservacionConfidencialWhereInput[]
+    empresaId?: StringFilter<"ObservacionConfidencial"> | string
+    semana?: DateTimeFilter<"ObservacionConfidencial"> | Date | string
+    visibleDesde?: DateTimeFilter<"ObservacionConfidencial"> | Date | string
+    texto?: StringFilter<"ObservacionConfidencial"> | string
+    autorCifrado?: StringFilter<"ObservacionConfidencial"> | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+  }, "id">
+
+  export type ObservacionConfidencialOrderByWithAggregationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    semana?: SortOrder
+    visibleDesde?: SortOrder
+    texto?: SortOrder
+    autorCifrado?: SortOrder
+    _count?: ObservacionConfidencialCountOrderByAggregateInput
+    _max?: ObservacionConfidencialMaxOrderByAggregateInput
+    _min?: ObservacionConfidencialMinOrderByAggregateInput
+  }
+
+  export type ObservacionConfidencialScalarWhereWithAggregatesInput = {
+    AND?: ObservacionConfidencialScalarWhereWithAggregatesInput | ObservacionConfidencialScalarWhereWithAggregatesInput[]
+    OR?: ObservacionConfidencialScalarWhereWithAggregatesInput[]
+    NOT?: ObservacionConfidencialScalarWhereWithAggregatesInput | ObservacionConfidencialScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ObservacionConfidencial"> | string
+    empresaId?: StringWithAggregatesFilter<"ObservacionConfidencial"> | string
+    semana?: DateTimeWithAggregatesFilter<"ObservacionConfidencial"> | Date | string
+    visibleDesde?: DateTimeWithAggregatesFilter<"ObservacionConfidencial"> | Date | string
+    texto?: StringWithAggregatesFilter<"ObservacionConfidencial"> | string
+    autorCifrado?: StringWithAggregatesFilter<"ObservacionConfidencial"> | string
+  }
+
+  export type SeguimientoClimaWhereInput = {
+    AND?: SeguimientoClimaWhereInput | SeguimientoClimaWhereInput[]
+    OR?: SeguimientoClimaWhereInput[]
+    NOT?: SeguimientoClimaWhereInput | SeguimientoClimaWhereInput[]
+    id?: StringFilter<"SeguimientoClima"> | string
+    empresaId?: StringFilter<"SeguimientoClima"> | string
+    colaboradorId?: StringFilter<"SeguimientoClima"> | string
+    desde?: DateTimeFilter<"SeguimientoClima"> | Date | string
+    estado?: EnumEstadoSeguimientoClimaFilter<"SeguimientoClima"> | $Enums.EstadoSeguimientoClima
+    responsableId?: StringNullableFilter<"SeguimientoClima"> | string | null
+    abiertoEn?: DateTimeFilter<"SeguimientoClima"> | Date | string
+    cerradoEn?: DateTimeNullableFilter<"SeguimientoClima"> | Date | string | null
+    actualizadoEn?: DateTimeFilter<"SeguimientoClima"> | Date | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    comentarios?: ComentarioSeguimientoClimaListRelationFilter
+  }
+
+  export type SeguimientoClimaOrderByWithRelationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    colaboradorId?: SortOrder
+    desde?: SortOrder
+    estado?: SortOrder
+    responsableId?: SortOrderInput | SortOrder
+    abiertoEn?: SortOrder
+    cerradoEn?: SortOrderInput | SortOrder
+    actualizadoEn?: SortOrder
+    empresa?: EmpresaOrderByWithRelationInput
+    colaborador?: ColaboradorOrderByWithRelationInput
+    comentarios?: ComentarioSeguimientoClimaOrderByRelationAggregateInput
+  }
+
+  export type SeguimientoClimaWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    colaboradorId_desde?: SeguimientoClimaColaboradorIdDesdeCompoundUniqueInput
+    AND?: SeguimientoClimaWhereInput | SeguimientoClimaWhereInput[]
+    OR?: SeguimientoClimaWhereInput[]
+    NOT?: SeguimientoClimaWhereInput | SeguimientoClimaWhereInput[]
+    empresaId?: StringFilter<"SeguimientoClima"> | string
+    colaboradorId?: StringFilter<"SeguimientoClima"> | string
+    desde?: DateTimeFilter<"SeguimientoClima"> | Date | string
+    estado?: EnumEstadoSeguimientoClimaFilter<"SeguimientoClima"> | $Enums.EstadoSeguimientoClima
+    responsableId?: StringNullableFilter<"SeguimientoClima"> | string | null
+    abiertoEn?: DateTimeFilter<"SeguimientoClima"> | Date | string
+    cerradoEn?: DateTimeNullableFilter<"SeguimientoClima"> | Date | string | null
+    actualizadoEn?: DateTimeFilter<"SeguimientoClima"> | Date | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+    colaborador?: XOR<ColaboradorRelationFilter, ColaboradorWhereInput>
+    comentarios?: ComentarioSeguimientoClimaListRelationFilter
+  }, "id" | "colaboradorId_desde">
+
+  export type SeguimientoClimaOrderByWithAggregationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    colaboradorId?: SortOrder
+    desde?: SortOrder
+    estado?: SortOrder
+    responsableId?: SortOrderInput | SortOrder
+    abiertoEn?: SortOrder
+    cerradoEn?: SortOrderInput | SortOrder
+    actualizadoEn?: SortOrder
+    _count?: SeguimientoClimaCountOrderByAggregateInput
+    _max?: SeguimientoClimaMaxOrderByAggregateInput
+    _min?: SeguimientoClimaMinOrderByAggregateInput
+  }
+
+  export type SeguimientoClimaScalarWhereWithAggregatesInput = {
+    AND?: SeguimientoClimaScalarWhereWithAggregatesInput | SeguimientoClimaScalarWhereWithAggregatesInput[]
+    OR?: SeguimientoClimaScalarWhereWithAggregatesInput[]
+    NOT?: SeguimientoClimaScalarWhereWithAggregatesInput | SeguimientoClimaScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SeguimientoClima"> | string
+    empresaId?: StringWithAggregatesFilter<"SeguimientoClima"> | string
+    colaboradorId?: StringWithAggregatesFilter<"SeguimientoClima"> | string
+    desde?: DateTimeWithAggregatesFilter<"SeguimientoClima"> | Date | string
+    estado?: EnumEstadoSeguimientoClimaWithAggregatesFilter<"SeguimientoClima"> | $Enums.EstadoSeguimientoClima
+    responsableId?: StringNullableWithAggregatesFilter<"SeguimientoClima"> | string | null
+    abiertoEn?: DateTimeWithAggregatesFilter<"SeguimientoClima"> | Date | string
+    cerradoEn?: DateTimeNullableWithAggregatesFilter<"SeguimientoClima"> | Date | string | null
+    actualizadoEn?: DateTimeWithAggregatesFilter<"SeguimientoClima"> | Date | string
+  }
+
+  export type ComentarioSeguimientoClimaWhereInput = {
+    AND?: ComentarioSeguimientoClimaWhereInput | ComentarioSeguimientoClimaWhereInput[]
+    OR?: ComentarioSeguimientoClimaWhereInput[]
+    NOT?: ComentarioSeguimientoClimaWhereInput | ComentarioSeguimientoClimaWhereInput[]
+    id?: StringFilter<"ComentarioSeguimientoClima"> | string
+    seguimientoId?: StringFilter<"ComentarioSeguimientoClima"> | string
+    autorId?: StringNullableFilter<"ComentarioSeguimientoClima"> | string | null
+    autorNombre?: StringFilter<"ComentarioSeguimientoClima"> | string
+    texto?: StringFilter<"ComentarioSeguimientoClima"> | string
+    creadoEn?: DateTimeFilter<"ComentarioSeguimientoClima"> | Date | string
+    editadoEn?: DateTimeNullableFilter<"ComentarioSeguimientoClima"> | Date | string | null
+    seguimiento?: XOR<SeguimientoClimaRelationFilter, SeguimientoClimaWhereInput>
+  }
+
+  export type ComentarioSeguimientoClimaOrderByWithRelationInput = {
+    id?: SortOrder
+    seguimientoId?: SortOrder
+    autorId?: SortOrderInput | SortOrder
+    autorNombre?: SortOrder
+    texto?: SortOrder
+    creadoEn?: SortOrder
+    editadoEn?: SortOrderInput | SortOrder
+    seguimiento?: SeguimientoClimaOrderByWithRelationInput
+  }
+
+  export type ComentarioSeguimientoClimaWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ComentarioSeguimientoClimaWhereInput | ComentarioSeguimientoClimaWhereInput[]
+    OR?: ComentarioSeguimientoClimaWhereInput[]
+    NOT?: ComentarioSeguimientoClimaWhereInput | ComentarioSeguimientoClimaWhereInput[]
+    seguimientoId?: StringFilter<"ComentarioSeguimientoClima"> | string
+    autorId?: StringNullableFilter<"ComentarioSeguimientoClima"> | string | null
+    autorNombre?: StringFilter<"ComentarioSeguimientoClima"> | string
+    texto?: StringFilter<"ComentarioSeguimientoClima"> | string
+    creadoEn?: DateTimeFilter<"ComentarioSeguimientoClima"> | Date | string
+    editadoEn?: DateTimeNullableFilter<"ComentarioSeguimientoClima"> | Date | string | null
+    seguimiento?: XOR<SeguimientoClimaRelationFilter, SeguimientoClimaWhereInput>
+  }, "id">
+
+  export type ComentarioSeguimientoClimaOrderByWithAggregationInput = {
+    id?: SortOrder
+    seguimientoId?: SortOrder
+    autorId?: SortOrderInput | SortOrder
+    autorNombre?: SortOrder
+    texto?: SortOrder
+    creadoEn?: SortOrder
+    editadoEn?: SortOrderInput | SortOrder
+    _count?: ComentarioSeguimientoClimaCountOrderByAggregateInput
+    _max?: ComentarioSeguimientoClimaMaxOrderByAggregateInput
+    _min?: ComentarioSeguimientoClimaMinOrderByAggregateInput
+  }
+
+  export type ComentarioSeguimientoClimaScalarWhereWithAggregatesInput = {
+    AND?: ComentarioSeguimientoClimaScalarWhereWithAggregatesInput | ComentarioSeguimientoClimaScalarWhereWithAggregatesInput[]
+    OR?: ComentarioSeguimientoClimaScalarWhereWithAggregatesInput[]
+    NOT?: ComentarioSeguimientoClimaScalarWhereWithAggregatesInput | ComentarioSeguimientoClimaScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ComentarioSeguimientoClima"> | string
+    seguimientoId?: StringWithAggregatesFilter<"ComentarioSeguimientoClima"> | string
+    autorId?: StringNullableWithAggregatesFilter<"ComentarioSeguimientoClima"> | string | null
+    autorNombre?: StringWithAggregatesFilter<"ComentarioSeguimientoClima"> | string
+    texto?: StringWithAggregatesFilter<"ComentarioSeguimientoClima"> | string
+    creadoEn?: DateTimeWithAggregatesFilter<"ComentarioSeguimientoClima"> | Date | string
+    editadoEn?: DateTimeNullableWithAggregatesFilter<"ComentarioSeguimientoClima"> | Date | string | null
+  }
+
   export type EmpresaCreateInput = {
     id?: string
     nombre: string
@@ -40901,6 +45504,9 @@ export namespace Prisma {
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateInput = {
@@ -40929,6 +45535,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUpdateInput = {
@@ -40957,6 +45566,9 @@ export namespace Prisma {
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateInput = {
@@ -40985,6 +45597,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateManyInput = {
@@ -41968,6 +46583,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateInput = {
@@ -42006,6 +46623,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUpdateInput = {
@@ -42044,6 +46663,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateInput = {
@@ -42082,6 +46703,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateManyInput = {
@@ -44276,6 +48899,305 @@ export namespace Prisma {
     empresaNombre?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type CalificacionClimaCreateInput = {
+    id?: string
+    fecha: Date | string
+    carita: number
+    motivos: JsonNullValueInput | InputJsonValue
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutCalificacionesClimaInput
+    colaborador: ColaboradorCreateNestedOneWithoutCalificacionesClimaInput
+  }
+
+  export type CalificacionClimaUncheckedCreateInput = {
+    id?: string
+    empresaId: string
+    colaboradorId: string
+    fecha: Date | string
+    carita: number
+    motivos: JsonNullValueInput | InputJsonValue
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type CalificacionClimaUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    carita?: IntFieldUpdateOperationsInput | number
+    motivos?: JsonNullValueInput | InputJsonValue
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutCalificacionesClimaNestedInput
+    colaborador?: ColaboradorUpdateOneRequiredWithoutCalificacionesClimaNestedInput
+  }
+
+  export type CalificacionClimaUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    carita?: IntFieldUpdateOperationsInput | number
+    motivos?: JsonNullValueInput | InputJsonValue
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CalificacionClimaCreateManyInput = {
+    id?: string
+    empresaId: string
+    colaboradorId: string
+    fecha: Date | string
+    carita: number
+    motivos: JsonNullValueInput | InputJsonValue
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type CalificacionClimaUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    carita?: IntFieldUpdateOperationsInput | number
+    motivos?: JsonNullValueInput | InputJsonValue
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CalificacionClimaUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    carita?: IntFieldUpdateOperationsInput | number
+    motivos?: JsonNullValueInput | InputJsonValue
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ObservacionConfidencialCreateInput = {
+    id?: string
+    semana: Date | string
+    visibleDesde: Date | string
+    texto: string
+    autorCifrado: string
+    empresa: EmpresaCreateNestedOneWithoutNotasConfidencialesInput
+  }
+
+  export type ObservacionConfidencialUncheckedCreateInput = {
+    id?: string
+    empresaId: string
+    semana: Date | string
+    visibleDesde: Date | string
+    texto: string
+    autorCifrado: string
+  }
+
+  export type ObservacionConfidencialUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    semana?: DateTimeFieldUpdateOperationsInput | Date | string
+    visibleDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    texto?: StringFieldUpdateOperationsInput | string
+    autorCifrado?: StringFieldUpdateOperationsInput | string
+    empresa?: EmpresaUpdateOneRequiredWithoutNotasConfidencialesNestedInput
+  }
+
+  export type ObservacionConfidencialUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    semana?: DateTimeFieldUpdateOperationsInput | Date | string
+    visibleDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    texto?: StringFieldUpdateOperationsInput | string
+    autorCifrado?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type ObservacionConfidencialCreateManyInput = {
+    id?: string
+    empresaId: string
+    semana: Date | string
+    visibleDesde: Date | string
+    texto: string
+    autorCifrado: string
+  }
+
+  export type ObservacionConfidencialUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    semana?: DateTimeFieldUpdateOperationsInput | Date | string
+    visibleDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    texto?: StringFieldUpdateOperationsInput | string
+    autorCifrado?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type ObservacionConfidencialUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    semana?: DateTimeFieldUpdateOperationsInput | Date | string
+    visibleDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    texto?: StringFieldUpdateOperationsInput | string
+    autorCifrado?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type SeguimientoClimaCreateInput = {
+    id?: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutSeguimientosClimaInput
+    colaborador: ColaboradorCreateNestedOneWithoutSeguimientosClimaInput
+    comentarios?: ComentarioSeguimientoClimaCreateNestedManyWithoutSeguimientoInput
+  }
+
+  export type SeguimientoClimaUncheckedCreateInput = {
+    id?: string
+    empresaId: string
+    colaboradorId: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+    comentarios?: ComentarioSeguimientoClimaUncheckedCreateNestedManyWithoutSeguimientoInput
+  }
+
+  export type SeguimientoClimaUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutSeguimientosClimaNestedInput
+    colaborador?: ColaboradorUpdateOneRequiredWithoutSeguimientosClimaNestedInput
+    comentarios?: ComentarioSeguimientoClimaUpdateManyWithoutSeguimientoNestedInput
+  }
+
+  export type SeguimientoClimaUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    comentarios?: ComentarioSeguimientoClimaUncheckedUpdateManyWithoutSeguimientoNestedInput
+  }
+
+  export type SeguimientoClimaCreateManyInput = {
+    id?: string
+    empresaId: string
+    colaboradorId: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+  }
+
+  export type SeguimientoClimaUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SeguimientoClimaUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ComentarioSeguimientoClimaCreateInput = {
+    id?: string
+    autorId?: string | null
+    autorNombre: string
+    texto: string
+    creadoEn?: Date | string
+    editadoEn?: Date | string | null
+    seguimiento: SeguimientoClimaCreateNestedOneWithoutComentariosInput
+  }
+
+  export type ComentarioSeguimientoClimaUncheckedCreateInput = {
+    id?: string
+    seguimientoId: string
+    autorId?: string | null
+    autorNombre: string
+    texto: string
+    creadoEn?: Date | string
+    editadoEn?: Date | string | null
+  }
+
+  export type ComentarioSeguimientoClimaUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    autorId?: NullableStringFieldUpdateOperationsInput | string | null
+    autorNombre?: StringFieldUpdateOperationsInput | string
+    texto?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    seguimiento?: SeguimientoClimaUpdateOneRequiredWithoutComentariosNestedInput
+  }
+
+  export type ComentarioSeguimientoClimaUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seguimientoId?: StringFieldUpdateOperationsInput | string
+    autorId?: NullableStringFieldUpdateOperationsInput | string | null
+    autorNombre?: StringFieldUpdateOperationsInput | string
+    texto?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ComentarioSeguimientoClimaCreateManyInput = {
+    id?: string
+    seguimientoId: string
+    autorId?: string | null
+    autorNombre: string
+    texto: string
+    creadoEn?: Date | string
+    editadoEn?: Date | string | null
+  }
+
+  export type ComentarioSeguimientoClimaUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    autorId?: NullableStringFieldUpdateOperationsInput | string | null
+    autorNombre?: StringFieldUpdateOperationsInput | string
+    texto?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ComentarioSeguimientoClimaUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    seguimientoId?: StringFieldUpdateOperationsInput | string
+    autorId?: NullableStringFieldUpdateOperationsInput | string | null
+    autorNombre?: StringFieldUpdateOperationsInput | string
+    texto?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -44401,6 +49323,24 @@ export namespace Prisma {
     none?: ComisionWhereInput
   }
 
+  export type CalificacionClimaListRelationFilter = {
+    every?: CalificacionClimaWhereInput
+    some?: CalificacionClimaWhereInput
+    none?: CalificacionClimaWhereInput
+  }
+
+  export type ObservacionConfidencialListRelationFilter = {
+    every?: ObservacionConfidencialWhereInput
+    some?: ObservacionConfidencialWhereInput
+    none?: ObservacionConfidencialWhereInput
+  }
+
+  export type SeguimientoClimaListRelationFilter = {
+    every?: SeguimientoClimaWhereInput
+    some?: SeguimientoClimaWhereInput
+    none?: SeguimientoClimaWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -44443,6 +49383,18 @@ export namespace Prisma {
   }
 
   export type ComisionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CalificacionClimaOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ObservacionConfidencialOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SeguimientoClimaOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -46932,6 +51884,183 @@ export namespace Prisma {
     _max?: NestedEnumOrigenEventoFilter<$PrismaModel>
   }
 
+  export type CalificacionClimaColaboradorIdFechaCompoundUniqueInput = {
+    colaboradorId: string
+    fecha: Date | string
+  }
+
+  export type CalificacionClimaCountOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    carita?: SortOrder
+    motivos?: SortOrder
+    observacion?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type CalificacionClimaAvgOrderByAggregateInput = {
+    carita?: SortOrder
+  }
+
+  export type CalificacionClimaMaxOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    carita?: SortOrder
+    observacion?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type CalificacionClimaMinOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    colaboradorId?: SortOrder
+    fecha?: SortOrder
+    carita?: SortOrder
+    observacion?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type CalificacionClimaSumOrderByAggregateInput = {
+    carita?: SortOrder
+  }
+
+  export type ObservacionConfidencialCountOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    semana?: SortOrder
+    visibleDesde?: SortOrder
+    texto?: SortOrder
+    autorCifrado?: SortOrder
+  }
+
+  export type ObservacionConfidencialMaxOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    semana?: SortOrder
+    visibleDesde?: SortOrder
+    texto?: SortOrder
+    autorCifrado?: SortOrder
+  }
+
+  export type ObservacionConfidencialMinOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    semana?: SortOrder
+    visibleDesde?: SortOrder
+    texto?: SortOrder
+    autorCifrado?: SortOrder
+  }
+
+  export type EnumEstadoSeguimientoClimaFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoSeguimientoClima | EnumEstadoSeguimientoClimaFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoSeguimientoClima[]
+    notIn?: $Enums.EstadoSeguimientoClima[]
+    not?: NestedEnumEstadoSeguimientoClimaFilter<$PrismaModel> | $Enums.EstadoSeguimientoClima
+  }
+
+  export type ComentarioSeguimientoClimaListRelationFilter = {
+    every?: ComentarioSeguimientoClimaWhereInput
+    some?: ComentarioSeguimientoClimaWhereInput
+    none?: ComentarioSeguimientoClimaWhereInput
+  }
+
+  export type ComentarioSeguimientoClimaOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type SeguimientoClimaColaboradorIdDesdeCompoundUniqueInput = {
+    colaboradorId: string
+    desde: Date | string
+  }
+
+  export type SeguimientoClimaCountOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    colaboradorId?: SortOrder
+    desde?: SortOrder
+    estado?: SortOrder
+    responsableId?: SortOrder
+    abiertoEn?: SortOrder
+    cerradoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type SeguimientoClimaMaxOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    colaboradorId?: SortOrder
+    desde?: SortOrder
+    estado?: SortOrder
+    responsableId?: SortOrder
+    abiertoEn?: SortOrder
+    cerradoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type SeguimientoClimaMinOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    colaboradorId?: SortOrder
+    desde?: SortOrder
+    estado?: SortOrder
+    responsableId?: SortOrder
+    abiertoEn?: SortOrder
+    cerradoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type EnumEstadoSeguimientoClimaWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoSeguimientoClima | EnumEstadoSeguimientoClimaFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoSeguimientoClima[]
+    notIn?: $Enums.EstadoSeguimientoClima[]
+    not?: NestedEnumEstadoSeguimientoClimaWithAggregatesFilter<$PrismaModel> | $Enums.EstadoSeguimientoClima
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoSeguimientoClimaFilter<$PrismaModel>
+    _max?: NestedEnumEstadoSeguimientoClimaFilter<$PrismaModel>
+  }
+
+  export type SeguimientoClimaRelationFilter = {
+    is?: SeguimientoClimaWhereInput
+    isNot?: SeguimientoClimaWhereInput
+  }
+
+  export type ComentarioSeguimientoClimaCountOrderByAggregateInput = {
+    id?: SortOrder
+    seguimientoId?: SortOrder
+    autorId?: SortOrder
+    autorNombre?: SortOrder
+    texto?: SortOrder
+    creadoEn?: SortOrder
+    editadoEn?: SortOrder
+  }
+
+  export type ComentarioSeguimientoClimaMaxOrderByAggregateInput = {
+    id?: SortOrder
+    seguimientoId?: SortOrder
+    autorId?: SortOrder
+    autorNombre?: SortOrder
+    texto?: SortOrder
+    creadoEn?: SortOrder
+    editadoEn?: SortOrder
+  }
+
+  export type ComentarioSeguimientoClimaMinOrderByAggregateInput = {
+    id?: SortOrder
+    seguimientoId?: SortOrder
+    autorId?: SortOrder
+    autorNombre?: SortOrder
+    texto?: SortOrder
+    creadoEn?: SortOrder
+    editadoEn?: SortOrder
+  }
+
   export type UsuarioCreateNestedManyWithoutEmpresaInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -47014,6 +52143,27 @@ export namespace Prisma {
     connect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
   }
 
+  export type CalificacionClimaCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<CalificacionClimaCreateWithoutEmpresaInput, CalificacionClimaUncheckedCreateWithoutEmpresaInput> | CalificacionClimaCreateWithoutEmpresaInput[] | CalificacionClimaUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: CalificacionClimaCreateOrConnectWithoutEmpresaInput | CalificacionClimaCreateOrConnectWithoutEmpresaInput[]
+    createMany?: CalificacionClimaCreateManyEmpresaInputEnvelope
+    connect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+  }
+
+  export type ObservacionConfidencialCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<ObservacionConfidencialCreateWithoutEmpresaInput, ObservacionConfidencialUncheckedCreateWithoutEmpresaInput> | ObservacionConfidencialCreateWithoutEmpresaInput[] | ObservacionConfidencialUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ObservacionConfidencialCreateOrConnectWithoutEmpresaInput | ObservacionConfidencialCreateOrConnectWithoutEmpresaInput[]
+    createMany?: ObservacionConfidencialCreateManyEmpresaInputEnvelope
+    connect?: ObservacionConfidencialWhereUniqueInput | ObservacionConfidencialWhereUniqueInput[]
+  }
+
+  export type SeguimientoClimaCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<SeguimientoClimaCreateWithoutEmpresaInput, SeguimientoClimaUncheckedCreateWithoutEmpresaInput> | SeguimientoClimaCreateWithoutEmpresaInput[] | SeguimientoClimaUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutEmpresaInput | SeguimientoClimaCreateOrConnectWithoutEmpresaInput[]
+    createMany?: SeguimientoClimaCreateManyEmpresaInputEnvelope
+    connect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+  }
+
   export type UsuarioUncheckedCreateNestedManyWithoutEmpresaInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -47088,6 +52238,27 @@ export namespace Prisma {
     connectOrCreate?: ComisionCreateOrConnectWithoutEmpresaInput | ComisionCreateOrConnectWithoutEmpresaInput[]
     createMany?: ComisionCreateManyEmpresaInputEnvelope
     connect?: ComisionWhereUniqueInput | ComisionWhereUniqueInput[]
+  }
+
+  export type CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<CalificacionClimaCreateWithoutEmpresaInput, CalificacionClimaUncheckedCreateWithoutEmpresaInput> | CalificacionClimaCreateWithoutEmpresaInput[] | CalificacionClimaUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: CalificacionClimaCreateOrConnectWithoutEmpresaInput | CalificacionClimaCreateOrConnectWithoutEmpresaInput[]
+    createMany?: CalificacionClimaCreateManyEmpresaInputEnvelope
+    connect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+  }
+
+  export type ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<ObservacionConfidencialCreateWithoutEmpresaInput, ObservacionConfidencialUncheckedCreateWithoutEmpresaInput> | ObservacionConfidencialCreateWithoutEmpresaInput[] | ObservacionConfidencialUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ObservacionConfidencialCreateOrConnectWithoutEmpresaInput | ObservacionConfidencialCreateOrConnectWithoutEmpresaInput[]
+    createMany?: ObservacionConfidencialCreateManyEmpresaInputEnvelope
+    connect?: ObservacionConfidencialWhereUniqueInput | ObservacionConfidencialWhereUniqueInput[]
+  }
+
+  export type SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<SeguimientoClimaCreateWithoutEmpresaInput, SeguimientoClimaUncheckedCreateWithoutEmpresaInput> | SeguimientoClimaCreateWithoutEmpresaInput[] | SeguimientoClimaUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutEmpresaInput | SeguimientoClimaCreateOrConnectWithoutEmpresaInput[]
+    createMany?: SeguimientoClimaCreateManyEmpresaInputEnvelope
+    connect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -47270,6 +52441,48 @@ export namespace Prisma {
     deleteMany?: ComisionScalarWhereInput | ComisionScalarWhereInput[]
   }
 
+  export type CalificacionClimaUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<CalificacionClimaCreateWithoutEmpresaInput, CalificacionClimaUncheckedCreateWithoutEmpresaInput> | CalificacionClimaCreateWithoutEmpresaInput[] | CalificacionClimaUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: CalificacionClimaCreateOrConnectWithoutEmpresaInput | CalificacionClimaCreateOrConnectWithoutEmpresaInput[]
+    upsert?: CalificacionClimaUpsertWithWhereUniqueWithoutEmpresaInput | CalificacionClimaUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: CalificacionClimaCreateManyEmpresaInputEnvelope
+    set?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    disconnect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    delete?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    connect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    update?: CalificacionClimaUpdateWithWhereUniqueWithoutEmpresaInput | CalificacionClimaUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: CalificacionClimaUpdateManyWithWhereWithoutEmpresaInput | CalificacionClimaUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: CalificacionClimaScalarWhereInput | CalificacionClimaScalarWhereInput[]
+  }
+
+  export type ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<ObservacionConfidencialCreateWithoutEmpresaInput, ObservacionConfidencialUncheckedCreateWithoutEmpresaInput> | ObservacionConfidencialCreateWithoutEmpresaInput[] | ObservacionConfidencialUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ObservacionConfidencialCreateOrConnectWithoutEmpresaInput | ObservacionConfidencialCreateOrConnectWithoutEmpresaInput[]
+    upsert?: ObservacionConfidencialUpsertWithWhereUniqueWithoutEmpresaInput | ObservacionConfidencialUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: ObservacionConfidencialCreateManyEmpresaInputEnvelope
+    set?: ObservacionConfidencialWhereUniqueInput | ObservacionConfidencialWhereUniqueInput[]
+    disconnect?: ObservacionConfidencialWhereUniqueInput | ObservacionConfidencialWhereUniqueInput[]
+    delete?: ObservacionConfidencialWhereUniqueInput | ObservacionConfidencialWhereUniqueInput[]
+    connect?: ObservacionConfidencialWhereUniqueInput | ObservacionConfidencialWhereUniqueInput[]
+    update?: ObservacionConfidencialUpdateWithWhereUniqueWithoutEmpresaInput | ObservacionConfidencialUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: ObservacionConfidencialUpdateManyWithWhereWithoutEmpresaInput | ObservacionConfidencialUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: ObservacionConfidencialScalarWhereInput | ObservacionConfidencialScalarWhereInput[]
+  }
+
+  export type SeguimientoClimaUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<SeguimientoClimaCreateWithoutEmpresaInput, SeguimientoClimaUncheckedCreateWithoutEmpresaInput> | SeguimientoClimaCreateWithoutEmpresaInput[] | SeguimientoClimaUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutEmpresaInput | SeguimientoClimaCreateOrConnectWithoutEmpresaInput[]
+    upsert?: SeguimientoClimaUpsertWithWhereUniqueWithoutEmpresaInput | SeguimientoClimaUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: SeguimientoClimaCreateManyEmpresaInputEnvelope
+    set?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    disconnect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    delete?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    connect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    update?: SeguimientoClimaUpdateWithWhereUniqueWithoutEmpresaInput | SeguimientoClimaUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: SeguimientoClimaUpdateManyWithWhereWithoutEmpresaInput | SeguimientoClimaUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: SeguimientoClimaScalarWhereInput | SeguimientoClimaScalarWhereInput[]
+  }
+
   export type UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -47418,6 +52631,48 @@ export namespace Prisma {
     update?: ComisionUpdateWithWhereUniqueWithoutEmpresaInput | ComisionUpdateWithWhereUniqueWithoutEmpresaInput[]
     updateMany?: ComisionUpdateManyWithWhereWithoutEmpresaInput | ComisionUpdateManyWithWhereWithoutEmpresaInput[]
     deleteMany?: ComisionScalarWhereInput | ComisionScalarWhereInput[]
+  }
+
+  export type CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<CalificacionClimaCreateWithoutEmpresaInput, CalificacionClimaUncheckedCreateWithoutEmpresaInput> | CalificacionClimaCreateWithoutEmpresaInput[] | CalificacionClimaUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: CalificacionClimaCreateOrConnectWithoutEmpresaInput | CalificacionClimaCreateOrConnectWithoutEmpresaInput[]
+    upsert?: CalificacionClimaUpsertWithWhereUniqueWithoutEmpresaInput | CalificacionClimaUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: CalificacionClimaCreateManyEmpresaInputEnvelope
+    set?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    disconnect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    delete?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    connect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    update?: CalificacionClimaUpdateWithWhereUniqueWithoutEmpresaInput | CalificacionClimaUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: CalificacionClimaUpdateManyWithWhereWithoutEmpresaInput | CalificacionClimaUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: CalificacionClimaScalarWhereInput | CalificacionClimaScalarWhereInput[]
+  }
+
+  export type ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<ObservacionConfidencialCreateWithoutEmpresaInput, ObservacionConfidencialUncheckedCreateWithoutEmpresaInput> | ObservacionConfidencialCreateWithoutEmpresaInput[] | ObservacionConfidencialUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ObservacionConfidencialCreateOrConnectWithoutEmpresaInput | ObservacionConfidencialCreateOrConnectWithoutEmpresaInput[]
+    upsert?: ObservacionConfidencialUpsertWithWhereUniqueWithoutEmpresaInput | ObservacionConfidencialUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: ObservacionConfidencialCreateManyEmpresaInputEnvelope
+    set?: ObservacionConfidencialWhereUniqueInput | ObservacionConfidencialWhereUniqueInput[]
+    disconnect?: ObservacionConfidencialWhereUniqueInput | ObservacionConfidencialWhereUniqueInput[]
+    delete?: ObservacionConfidencialWhereUniqueInput | ObservacionConfidencialWhereUniqueInput[]
+    connect?: ObservacionConfidencialWhereUniqueInput | ObservacionConfidencialWhereUniqueInput[]
+    update?: ObservacionConfidencialUpdateWithWhereUniqueWithoutEmpresaInput | ObservacionConfidencialUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: ObservacionConfidencialUpdateManyWithWhereWithoutEmpresaInput | ObservacionConfidencialUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: ObservacionConfidencialScalarWhereInput | ObservacionConfidencialScalarWhereInput[]
+  }
+
+  export type SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<SeguimientoClimaCreateWithoutEmpresaInput, SeguimientoClimaUncheckedCreateWithoutEmpresaInput> | SeguimientoClimaCreateWithoutEmpresaInput[] | SeguimientoClimaUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutEmpresaInput | SeguimientoClimaCreateOrConnectWithoutEmpresaInput[]
+    upsert?: SeguimientoClimaUpsertWithWhereUniqueWithoutEmpresaInput | SeguimientoClimaUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: SeguimientoClimaCreateManyEmpresaInputEnvelope
+    set?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    disconnect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    delete?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    connect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    update?: SeguimientoClimaUpdateWithWhereUniqueWithoutEmpresaInput | SeguimientoClimaUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: SeguimientoClimaUpdateManyWithWhereWithoutEmpresaInput | SeguimientoClimaUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: SeguimientoClimaScalarWhereInput | SeguimientoClimaScalarWhereInput[]
   }
 
   export type EmpresaCreateNestedOneWithoutSuscripcionInput = {
@@ -47835,6 +53090,20 @@ export namespace Prisma {
     connect?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
   }
 
+  export type CalificacionClimaCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<CalificacionClimaCreateWithoutColaboradorInput, CalificacionClimaUncheckedCreateWithoutColaboradorInput> | CalificacionClimaCreateWithoutColaboradorInput[] | CalificacionClimaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: CalificacionClimaCreateOrConnectWithoutColaboradorInput | CalificacionClimaCreateOrConnectWithoutColaboradorInput[]
+    createMany?: CalificacionClimaCreateManyColaboradorInputEnvelope
+    connect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+  }
+
+  export type SeguimientoClimaCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<SeguimientoClimaCreateWithoutColaboradorInput, SeguimientoClimaUncheckedCreateWithoutColaboradorInput> | SeguimientoClimaCreateWithoutColaboradorInput[] | SeguimientoClimaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutColaboradorInput | SeguimientoClimaCreateOrConnectWithoutColaboradorInput[]
+    createMany?: SeguimientoClimaCreateManyColaboradorInputEnvelope
+    connect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+  }
+
   export type DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput = {
     create?: XOR<DescansoTrabajadoCreateWithoutColaboradorInput, DescansoTrabajadoUncheckedCreateWithoutColaboradorInput> | DescansoTrabajadoCreateWithoutColaboradorInput[] | DescansoTrabajadoUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: DescansoTrabajadoCreateOrConnectWithoutColaboradorInput | DescansoTrabajadoCreateOrConnectWithoutColaboradorInput[]
@@ -47896,6 +53165,20 @@ export namespace Prisma {
     connectOrCreate?: ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput | ConstanciaBiometricaCreateOrConnectWithoutColaboradorInput[]
     createMany?: ConstanciaBiometricaCreateManyColaboradorInputEnvelope
     connect?: ConstanciaBiometricaWhereUniqueInput | ConstanciaBiometricaWhereUniqueInput[]
+  }
+
+  export type CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<CalificacionClimaCreateWithoutColaboradorInput, CalificacionClimaUncheckedCreateWithoutColaboradorInput> | CalificacionClimaCreateWithoutColaboradorInput[] | CalificacionClimaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: CalificacionClimaCreateOrConnectWithoutColaboradorInput | CalificacionClimaCreateOrConnectWithoutColaboradorInput[]
+    createMany?: CalificacionClimaCreateManyColaboradorInputEnvelope
+    connect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+  }
+
+  export type SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput = {
+    create?: XOR<SeguimientoClimaCreateWithoutColaboradorInput, SeguimientoClimaUncheckedCreateWithoutColaboradorInput> | SeguimientoClimaCreateWithoutColaboradorInput[] | SeguimientoClimaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutColaboradorInput | SeguimientoClimaCreateOrConnectWithoutColaboradorInput[]
+    createMany?: SeguimientoClimaCreateManyColaboradorInputEnvelope
+    connect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
   }
 
   export type NullableFloatFieldUpdateOperationsInput = {
@@ -48058,6 +53341,34 @@ export namespace Prisma {
     deleteMany?: ConstanciaBiometricaScalarWhereInput | ConstanciaBiometricaScalarWhereInput[]
   }
 
+  export type CalificacionClimaUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<CalificacionClimaCreateWithoutColaboradorInput, CalificacionClimaUncheckedCreateWithoutColaboradorInput> | CalificacionClimaCreateWithoutColaboradorInput[] | CalificacionClimaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: CalificacionClimaCreateOrConnectWithoutColaboradorInput | CalificacionClimaCreateOrConnectWithoutColaboradorInput[]
+    upsert?: CalificacionClimaUpsertWithWhereUniqueWithoutColaboradorInput | CalificacionClimaUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: CalificacionClimaCreateManyColaboradorInputEnvelope
+    set?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    disconnect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    delete?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    connect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    update?: CalificacionClimaUpdateWithWhereUniqueWithoutColaboradorInput | CalificacionClimaUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: CalificacionClimaUpdateManyWithWhereWithoutColaboradorInput | CalificacionClimaUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: CalificacionClimaScalarWhereInput | CalificacionClimaScalarWhereInput[]
+  }
+
+  export type SeguimientoClimaUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<SeguimientoClimaCreateWithoutColaboradorInput, SeguimientoClimaUncheckedCreateWithoutColaboradorInput> | SeguimientoClimaCreateWithoutColaboradorInput[] | SeguimientoClimaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutColaboradorInput | SeguimientoClimaCreateOrConnectWithoutColaboradorInput[]
+    upsert?: SeguimientoClimaUpsertWithWhereUniqueWithoutColaboradorInput | SeguimientoClimaUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: SeguimientoClimaCreateManyColaboradorInputEnvelope
+    set?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    disconnect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    delete?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    connect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    update?: SeguimientoClimaUpdateWithWhereUniqueWithoutColaboradorInput | SeguimientoClimaUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: SeguimientoClimaUpdateManyWithWhereWithoutColaboradorInput | SeguimientoClimaUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: SeguimientoClimaScalarWhereInput | SeguimientoClimaScalarWhereInput[]
+  }
+
   export type DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput = {
     create?: XOR<DescansoTrabajadoCreateWithoutColaboradorInput, DescansoTrabajadoUncheckedCreateWithoutColaboradorInput> | DescansoTrabajadoCreateWithoutColaboradorInput[] | DescansoTrabajadoUncheckedCreateWithoutColaboradorInput[]
     connectOrCreate?: DescansoTrabajadoCreateOrConnectWithoutColaboradorInput | DescansoTrabajadoCreateOrConnectWithoutColaboradorInput[]
@@ -48182,6 +53493,34 @@ export namespace Prisma {
     update?: ConstanciaBiometricaUpdateWithWhereUniqueWithoutColaboradorInput | ConstanciaBiometricaUpdateWithWhereUniqueWithoutColaboradorInput[]
     updateMany?: ConstanciaBiometricaUpdateManyWithWhereWithoutColaboradorInput | ConstanciaBiometricaUpdateManyWithWhereWithoutColaboradorInput[]
     deleteMany?: ConstanciaBiometricaScalarWhereInput | ConstanciaBiometricaScalarWhereInput[]
+  }
+
+  export type CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<CalificacionClimaCreateWithoutColaboradorInput, CalificacionClimaUncheckedCreateWithoutColaboradorInput> | CalificacionClimaCreateWithoutColaboradorInput[] | CalificacionClimaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: CalificacionClimaCreateOrConnectWithoutColaboradorInput | CalificacionClimaCreateOrConnectWithoutColaboradorInput[]
+    upsert?: CalificacionClimaUpsertWithWhereUniqueWithoutColaboradorInput | CalificacionClimaUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: CalificacionClimaCreateManyColaboradorInputEnvelope
+    set?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    disconnect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    delete?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    connect?: CalificacionClimaWhereUniqueInput | CalificacionClimaWhereUniqueInput[]
+    update?: CalificacionClimaUpdateWithWhereUniqueWithoutColaboradorInput | CalificacionClimaUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: CalificacionClimaUpdateManyWithWhereWithoutColaboradorInput | CalificacionClimaUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: CalificacionClimaScalarWhereInput | CalificacionClimaScalarWhereInput[]
+  }
+
+  export type SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput = {
+    create?: XOR<SeguimientoClimaCreateWithoutColaboradorInput, SeguimientoClimaUncheckedCreateWithoutColaboradorInput> | SeguimientoClimaCreateWithoutColaboradorInput[] | SeguimientoClimaUncheckedCreateWithoutColaboradorInput[]
+    connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutColaboradorInput | SeguimientoClimaCreateOrConnectWithoutColaboradorInput[]
+    upsert?: SeguimientoClimaUpsertWithWhereUniqueWithoutColaboradorInput | SeguimientoClimaUpsertWithWhereUniqueWithoutColaboradorInput[]
+    createMany?: SeguimientoClimaCreateManyColaboradorInputEnvelope
+    set?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    disconnect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    delete?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    connect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+    update?: SeguimientoClimaUpdateWithWhereUniqueWithoutColaboradorInput | SeguimientoClimaUpdateWithWhereUniqueWithoutColaboradorInput[]
+    updateMany?: SeguimientoClimaUpdateManyWithWhereWithoutColaboradorInput | SeguimientoClimaUpdateManyWithWhereWithoutColaboradorInput[]
+    deleteMany?: SeguimientoClimaScalarWhereInput | SeguimientoClimaScalarWhereInput[]
   }
 
   export type EmpresaCreateNestedOneWithoutSedesInput = {
@@ -49140,6 +54479,136 @@ export namespace Prisma {
     set?: $Enums.OrigenEvento
   }
 
+  export type EmpresaCreateNestedOneWithoutCalificacionesClimaInput = {
+    create?: XOR<EmpresaCreateWithoutCalificacionesClimaInput, EmpresaUncheckedCreateWithoutCalificacionesClimaInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutCalificacionesClimaInput
+    connect?: EmpresaWhereUniqueInput
+  }
+
+  export type ColaboradorCreateNestedOneWithoutCalificacionesClimaInput = {
+    create?: XOR<ColaboradorCreateWithoutCalificacionesClimaInput, ColaboradorUncheckedCreateWithoutCalificacionesClimaInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutCalificacionesClimaInput
+    connect?: ColaboradorWhereUniqueInput
+  }
+
+  export type EmpresaUpdateOneRequiredWithoutCalificacionesClimaNestedInput = {
+    create?: XOR<EmpresaCreateWithoutCalificacionesClimaInput, EmpresaUncheckedCreateWithoutCalificacionesClimaInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutCalificacionesClimaInput
+    upsert?: EmpresaUpsertWithoutCalificacionesClimaInput
+    connect?: EmpresaWhereUniqueInput
+    update?: XOR<XOR<EmpresaUpdateToOneWithWhereWithoutCalificacionesClimaInput, EmpresaUpdateWithoutCalificacionesClimaInput>, EmpresaUncheckedUpdateWithoutCalificacionesClimaInput>
+  }
+
+  export type ColaboradorUpdateOneRequiredWithoutCalificacionesClimaNestedInput = {
+    create?: XOR<ColaboradorCreateWithoutCalificacionesClimaInput, ColaboradorUncheckedCreateWithoutCalificacionesClimaInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutCalificacionesClimaInput
+    upsert?: ColaboradorUpsertWithoutCalificacionesClimaInput
+    connect?: ColaboradorWhereUniqueInput
+    update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutCalificacionesClimaInput, ColaboradorUpdateWithoutCalificacionesClimaInput>, ColaboradorUncheckedUpdateWithoutCalificacionesClimaInput>
+  }
+
+  export type EmpresaCreateNestedOneWithoutNotasConfidencialesInput = {
+    create?: XOR<EmpresaCreateWithoutNotasConfidencialesInput, EmpresaUncheckedCreateWithoutNotasConfidencialesInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutNotasConfidencialesInput
+    connect?: EmpresaWhereUniqueInput
+  }
+
+  export type EmpresaUpdateOneRequiredWithoutNotasConfidencialesNestedInput = {
+    create?: XOR<EmpresaCreateWithoutNotasConfidencialesInput, EmpresaUncheckedCreateWithoutNotasConfidencialesInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutNotasConfidencialesInput
+    upsert?: EmpresaUpsertWithoutNotasConfidencialesInput
+    connect?: EmpresaWhereUniqueInput
+    update?: XOR<XOR<EmpresaUpdateToOneWithWhereWithoutNotasConfidencialesInput, EmpresaUpdateWithoutNotasConfidencialesInput>, EmpresaUncheckedUpdateWithoutNotasConfidencialesInput>
+  }
+
+  export type EmpresaCreateNestedOneWithoutSeguimientosClimaInput = {
+    create?: XOR<EmpresaCreateWithoutSeguimientosClimaInput, EmpresaUncheckedCreateWithoutSeguimientosClimaInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutSeguimientosClimaInput
+    connect?: EmpresaWhereUniqueInput
+  }
+
+  export type ColaboradorCreateNestedOneWithoutSeguimientosClimaInput = {
+    create?: XOR<ColaboradorCreateWithoutSeguimientosClimaInput, ColaboradorUncheckedCreateWithoutSeguimientosClimaInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutSeguimientosClimaInput
+    connect?: ColaboradorWhereUniqueInput
+  }
+
+  export type ComentarioSeguimientoClimaCreateNestedManyWithoutSeguimientoInput = {
+    create?: XOR<ComentarioSeguimientoClimaCreateWithoutSeguimientoInput, ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput> | ComentarioSeguimientoClimaCreateWithoutSeguimientoInput[] | ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput[]
+    connectOrCreate?: ComentarioSeguimientoClimaCreateOrConnectWithoutSeguimientoInput | ComentarioSeguimientoClimaCreateOrConnectWithoutSeguimientoInput[]
+    createMany?: ComentarioSeguimientoClimaCreateManySeguimientoInputEnvelope
+    connect?: ComentarioSeguimientoClimaWhereUniqueInput | ComentarioSeguimientoClimaWhereUniqueInput[]
+  }
+
+  export type ComentarioSeguimientoClimaUncheckedCreateNestedManyWithoutSeguimientoInput = {
+    create?: XOR<ComentarioSeguimientoClimaCreateWithoutSeguimientoInput, ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput> | ComentarioSeguimientoClimaCreateWithoutSeguimientoInput[] | ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput[]
+    connectOrCreate?: ComentarioSeguimientoClimaCreateOrConnectWithoutSeguimientoInput | ComentarioSeguimientoClimaCreateOrConnectWithoutSeguimientoInput[]
+    createMany?: ComentarioSeguimientoClimaCreateManySeguimientoInputEnvelope
+    connect?: ComentarioSeguimientoClimaWhereUniqueInput | ComentarioSeguimientoClimaWhereUniqueInput[]
+  }
+
+  export type EnumEstadoSeguimientoClimaFieldUpdateOperationsInput = {
+    set?: $Enums.EstadoSeguimientoClima
+  }
+
+  export type EmpresaUpdateOneRequiredWithoutSeguimientosClimaNestedInput = {
+    create?: XOR<EmpresaCreateWithoutSeguimientosClimaInput, EmpresaUncheckedCreateWithoutSeguimientosClimaInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutSeguimientosClimaInput
+    upsert?: EmpresaUpsertWithoutSeguimientosClimaInput
+    connect?: EmpresaWhereUniqueInput
+    update?: XOR<XOR<EmpresaUpdateToOneWithWhereWithoutSeguimientosClimaInput, EmpresaUpdateWithoutSeguimientosClimaInput>, EmpresaUncheckedUpdateWithoutSeguimientosClimaInput>
+  }
+
+  export type ColaboradorUpdateOneRequiredWithoutSeguimientosClimaNestedInput = {
+    create?: XOR<ColaboradorCreateWithoutSeguimientosClimaInput, ColaboradorUncheckedCreateWithoutSeguimientosClimaInput>
+    connectOrCreate?: ColaboradorCreateOrConnectWithoutSeguimientosClimaInput
+    upsert?: ColaboradorUpsertWithoutSeguimientosClimaInput
+    connect?: ColaboradorWhereUniqueInput
+    update?: XOR<XOR<ColaboradorUpdateToOneWithWhereWithoutSeguimientosClimaInput, ColaboradorUpdateWithoutSeguimientosClimaInput>, ColaboradorUncheckedUpdateWithoutSeguimientosClimaInput>
+  }
+
+  export type ComentarioSeguimientoClimaUpdateManyWithoutSeguimientoNestedInput = {
+    create?: XOR<ComentarioSeguimientoClimaCreateWithoutSeguimientoInput, ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput> | ComentarioSeguimientoClimaCreateWithoutSeguimientoInput[] | ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput[]
+    connectOrCreate?: ComentarioSeguimientoClimaCreateOrConnectWithoutSeguimientoInput | ComentarioSeguimientoClimaCreateOrConnectWithoutSeguimientoInput[]
+    upsert?: ComentarioSeguimientoClimaUpsertWithWhereUniqueWithoutSeguimientoInput | ComentarioSeguimientoClimaUpsertWithWhereUniqueWithoutSeguimientoInput[]
+    createMany?: ComentarioSeguimientoClimaCreateManySeguimientoInputEnvelope
+    set?: ComentarioSeguimientoClimaWhereUniqueInput | ComentarioSeguimientoClimaWhereUniqueInput[]
+    disconnect?: ComentarioSeguimientoClimaWhereUniqueInput | ComentarioSeguimientoClimaWhereUniqueInput[]
+    delete?: ComentarioSeguimientoClimaWhereUniqueInput | ComentarioSeguimientoClimaWhereUniqueInput[]
+    connect?: ComentarioSeguimientoClimaWhereUniqueInput | ComentarioSeguimientoClimaWhereUniqueInput[]
+    update?: ComentarioSeguimientoClimaUpdateWithWhereUniqueWithoutSeguimientoInput | ComentarioSeguimientoClimaUpdateWithWhereUniqueWithoutSeguimientoInput[]
+    updateMany?: ComentarioSeguimientoClimaUpdateManyWithWhereWithoutSeguimientoInput | ComentarioSeguimientoClimaUpdateManyWithWhereWithoutSeguimientoInput[]
+    deleteMany?: ComentarioSeguimientoClimaScalarWhereInput | ComentarioSeguimientoClimaScalarWhereInput[]
+  }
+
+  export type ComentarioSeguimientoClimaUncheckedUpdateManyWithoutSeguimientoNestedInput = {
+    create?: XOR<ComentarioSeguimientoClimaCreateWithoutSeguimientoInput, ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput> | ComentarioSeguimientoClimaCreateWithoutSeguimientoInput[] | ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput[]
+    connectOrCreate?: ComentarioSeguimientoClimaCreateOrConnectWithoutSeguimientoInput | ComentarioSeguimientoClimaCreateOrConnectWithoutSeguimientoInput[]
+    upsert?: ComentarioSeguimientoClimaUpsertWithWhereUniqueWithoutSeguimientoInput | ComentarioSeguimientoClimaUpsertWithWhereUniqueWithoutSeguimientoInput[]
+    createMany?: ComentarioSeguimientoClimaCreateManySeguimientoInputEnvelope
+    set?: ComentarioSeguimientoClimaWhereUniqueInput | ComentarioSeguimientoClimaWhereUniqueInput[]
+    disconnect?: ComentarioSeguimientoClimaWhereUniqueInput | ComentarioSeguimientoClimaWhereUniqueInput[]
+    delete?: ComentarioSeguimientoClimaWhereUniqueInput | ComentarioSeguimientoClimaWhereUniqueInput[]
+    connect?: ComentarioSeguimientoClimaWhereUniqueInput | ComentarioSeguimientoClimaWhereUniqueInput[]
+    update?: ComentarioSeguimientoClimaUpdateWithWhereUniqueWithoutSeguimientoInput | ComentarioSeguimientoClimaUpdateWithWhereUniqueWithoutSeguimientoInput[]
+    updateMany?: ComentarioSeguimientoClimaUpdateManyWithWhereWithoutSeguimientoInput | ComentarioSeguimientoClimaUpdateManyWithWhereWithoutSeguimientoInput[]
+    deleteMany?: ComentarioSeguimientoClimaScalarWhereInput | ComentarioSeguimientoClimaScalarWhereInput[]
+  }
+
+  export type SeguimientoClimaCreateNestedOneWithoutComentariosInput = {
+    create?: XOR<SeguimientoClimaCreateWithoutComentariosInput, SeguimientoClimaUncheckedCreateWithoutComentariosInput>
+    connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutComentariosInput
+    connect?: SeguimientoClimaWhereUniqueInput
+  }
+
+  export type SeguimientoClimaUpdateOneRequiredWithoutComentariosNestedInput = {
+    create?: XOR<SeguimientoClimaCreateWithoutComentariosInput, SeguimientoClimaUncheckedCreateWithoutComentariosInput>
+    connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutComentariosInput
+    upsert?: SeguimientoClimaUpsertWithoutComentariosInput
+    connect?: SeguimientoClimaWhereUniqueInput
+    update?: XOR<XOR<SeguimientoClimaUpdateToOneWithWhereWithoutComentariosInput, SeguimientoClimaUpdateWithoutComentariosInput>, SeguimientoClimaUncheckedUpdateWithoutComentariosInput>
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -49770,6 +55239,23 @@ export namespace Prisma {
     _max?: NestedEnumOrigenEventoFilter<$PrismaModel>
   }
 
+  export type NestedEnumEstadoSeguimientoClimaFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoSeguimientoClima | EnumEstadoSeguimientoClimaFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoSeguimientoClima[]
+    notIn?: $Enums.EstadoSeguimientoClima[]
+    not?: NestedEnumEstadoSeguimientoClimaFilter<$PrismaModel> | $Enums.EstadoSeguimientoClima
+  }
+
+  export type NestedEnumEstadoSeguimientoClimaWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoSeguimientoClima | EnumEstadoSeguimientoClimaFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoSeguimientoClima[]
+    notIn?: $Enums.EstadoSeguimientoClima[]
+    not?: NestedEnumEstadoSeguimientoClimaWithAggregatesFilter<$PrismaModel> | $Enums.EstadoSeguimientoClima
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoSeguimientoClimaFilter<$PrismaModel>
+    _max?: NestedEnumEstadoSeguimientoClimaFilter<$PrismaModel>
+  }
+
   export type UsuarioCreateWithoutEmpresaInput = {
     id?: string
     email: string
@@ -49847,6 +55333,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutEmpresaInput = {
@@ -49884,6 +55372,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutEmpresaInput = {
@@ -50257,6 +55747,98 @@ export namespace Prisma {
 
   export type ComisionCreateManyEmpresaInputEnvelope = {
     data: ComisionCreateManyEmpresaInput | ComisionCreateManyEmpresaInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CalificacionClimaCreateWithoutEmpresaInput = {
+    id?: string
+    fecha: Date | string
+    carita: number
+    motivos: JsonNullValueInput | InputJsonValue
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutCalificacionesClimaInput
+  }
+
+  export type CalificacionClimaUncheckedCreateWithoutEmpresaInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    carita: number
+    motivos: JsonNullValueInput | InputJsonValue
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type CalificacionClimaCreateOrConnectWithoutEmpresaInput = {
+    where: CalificacionClimaWhereUniqueInput
+    create: XOR<CalificacionClimaCreateWithoutEmpresaInput, CalificacionClimaUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type CalificacionClimaCreateManyEmpresaInputEnvelope = {
+    data: CalificacionClimaCreateManyEmpresaInput | CalificacionClimaCreateManyEmpresaInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type ObservacionConfidencialCreateWithoutEmpresaInput = {
+    id?: string
+    semana: Date | string
+    visibleDesde: Date | string
+    texto: string
+    autorCifrado: string
+  }
+
+  export type ObservacionConfidencialUncheckedCreateWithoutEmpresaInput = {
+    id?: string
+    semana: Date | string
+    visibleDesde: Date | string
+    texto: string
+    autorCifrado: string
+  }
+
+  export type ObservacionConfidencialCreateOrConnectWithoutEmpresaInput = {
+    where: ObservacionConfidencialWhereUniqueInput
+    create: XOR<ObservacionConfidencialCreateWithoutEmpresaInput, ObservacionConfidencialUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type ObservacionConfidencialCreateManyEmpresaInputEnvelope = {
+    data: ObservacionConfidencialCreateManyEmpresaInput | ObservacionConfidencialCreateManyEmpresaInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SeguimientoClimaCreateWithoutEmpresaInput = {
+    id?: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+    colaborador: ColaboradorCreateNestedOneWithoutSeguimientosClimaInput
+    comentarios?: ComentarioSeguimientoClimaCreateNestedManyWithoutSeguimientoInput
+  }
+
+  export type SeguimientoClimaUncheckedCreateWithoutEmpresaInput = {
+    id?: string
+    colaboradorId: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+    comentarios?: ComentarioSeguimientoClimaUncheckedCreateNestedManyWithoutSeguimientoInput
+  }
+
+  export type SeguimientoClimaCreateOrConnectWithoutEmpresaInput = {
+    where: SeguimientoClimaWhereUniqueInput
+    create: XOR<SeguimientoClimaCreateWithoutEmpresaInput, SeguimientoClimaUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type SeguimientoClimaCreateManyEmpresaInputEnvelope = {
+    data: SeguimientoClimaCreateManyEmpresaInput | SeguimientoClimaCreateManyEmpresaInput[]
     skipDuplicates?: boolean
   }
 
@@ -50698,6 +56280,96 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"Comision"> | Date | string
   }
 
+  export type CalificacionClimaUpsertWithWhereUniqueWithoutEmpresaInput = {
+    where: CalificacionClimaWhereUniqueInput
+    update: XOR<CalificacionClimaUpdateWithoutEmpresaInput, CalificacionClimaUncheckedUpdateWithoutEmpresaInput>
+    create: XOR<CalificacionClimaCreateWithoutEmpresaInput, CalificacionClimaUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type CalificacionClimaUpdateWithWhereUniqueWithoutEmpresaInput = {
+    where: CalificacionClimaWhereUniqueInput
+    data: XOR<CalificacionClimaUpdateWithoutEmpresaInput, CalificacionClimaUncheckedUpdateWithoutEmpresaInput>
+  }
+
+  export type CalificacionClimaUpdateManyWithWhereWithoutEmpresaInput = {
+    where: CalificacionClimaScalarWhereInput
+    data: XOR<CalificacionClimaUpdateManyMutationInput, CalificacionClimaUncheckedUpdateManyWithoutEmpresaInput>
+  }
+
+  export type CalificacionClimaScalarWhereInput = {
+    AND?: CalificacionClimaScalarWhereInput | CalificacionClimaScalarWhereInput[]
+    OR?: CalificacionClimaScalarWhereInput[]
+    NOT?: CalificacionClimaScalarWhereInput | CalificacionClimaScalarWhereInput[]
+    id?: StringFilter<"CalificacionClima"> | string
+    empresaId?: StringFilter<"CalificacionClima"> | string
+    colaboradorId?: StringFilter<"CalificacionClima"> | string
+    fecha?: DateTimeFilter<"CalificacionClima"> | Date | string
+    carita?: IntFilter<"CalificacionClima"> | number
+    motivos?: JsonFilter<"CalificacionClima">
+    observacion?: StringNullableFilter<"CalificacionClima"> | string | null
+    creadoEn?: DateTimeFilter<"CalificacionClima"> | Date | string
+    actualizadoEn?: DateTimeFilter<"CalificacionClima"> | Date | string
+  }
+
+  export type ObservacionConfidencialUpsertWithWhereUniqueWithoutEmpresaInput = {
+    where: ObservacionConfidencialWhereUniqueInput
+    update: XOR<ObservacionConfidencialUpdateWithoutEmpresaInput, ObservacionConfidencialUncheckedUpdateWithoutEmpresaInput>
+    create: XOR<ObservacionConfidencialCreateWithoutEmpresaInput, ObservacionConfidencialUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type ObservacionConfidencialUpdateWithWhereUniqueWithoutEmpresaInput = {
+    where: ObservacionConfidencialWhereUniqueInput
+    data: XOR<ObservacionConfidencialUpdateWithoutEmpresaInput, ObservacionConfidencialUncheckedUpdateWithoutEmpresaInput>
+  }
+
+  export type ObservacionConfidencialUpdateManyWithWhereWithoutEmpresaInput = {
+    where: ObservacionConfidencialScalarWhereInput
+    data: XOR<ObservacionConfidencialUpdateManyMutationInput, ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaInput>
+  }
+
+  export type ObservacionConfidencialScalarWhereInput = {
+    AND?: ObservacionConfidencialScalarWhereInput | ObservacionConfidencialScalarWhereInput[]
+    OR?: ObservacionConfidencialScalarWhereInput[]
+    NOT?: ObservacionConfidencialScalarWhereInput | ObservacionConfidencialScalarWhereInput[]
+    id?: StringFilter<"ObservacionConfidencial"> | string
+    empresaId?: StringFilter<"ObservacionConfidencial"> | string
+    semana?: DateTimeFilter<"ObservacionConfidencial"> | Date | string
+    visibleDesde?: DateTimeFilter<"ObservacionConfidencial"> | Date | string
+    texto?: StringFilter<"ObservacionConfidencial"> | string
+    autorCifrado?: StringFilter<"ObservacionConfidencial"> | string
+  }
+
+  export type SeguimientoClimaUpsertWithWhereUniqueWithoutEmpresaInput = {
+    where: SeguimientoClimaWhereUniqueInput
+    update: XOR<SeguimientoClimaUpdateWithoutEmpresaInput, SeguimientoClimaUncheckedUpdateWithoutEmpresaInput>
+    create: XOR<SeguimientoClimaCreateWithoutEmpresaInput, SeguimientoClimaUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type SeguimientoClimaUpdateWithWhereUniqueWithoutEmpresaInput = {
+    where: SeguimientoClimaWhereUniqueInput
+    data: XOR<SeguimientoClimaUpdateWithoutEmpresaInput, SeguimientoClimaUncheckedUpdateWithoutEmpresaInput>
+  }
+
+  export type SeguimientoClimaUpdateManyWithWhereWithoutEmpresaInput = {
+    where: SeguimientoClimaScalarWhereInput
+    data: XOR<SeguimientoClimaUpdateManyMutationInput, SeguimientoClimaUncheckedUpdateManyWithoutEmpresaInput>
+  }
+
+  export type SeguimientoClimaScalarWhereInput = {
+    AND?: SeguimientoClimaScalarWhereInput | SeguimientoClimaScalarWhereInput[]
+    OR?: SeguimientoClimaScalarWhereInput[]
+    NOT?: SeguimientoClimaScalarWhereInput | SeguimientoClimaScalarWhereInput[]
+    id?: StringFilter<"SeguimientoClima"> | string
+    empresaId?: StringFilter<"SeguimientoClima"> | string
+    colaboradorId?: StringFilter<"SeguimientoClima"> | string
+    desde?: DateTimeFilter<"SeguimientoClima"> | Date | string
+    estado?: EnumEstadoSeguimientoClimaFilter<"SeguimientoClima"> | $Enums.EstadoSeguimientoClima
+    responsableId?: StringNullableFilter<"SeguimientoClima"> | string | null
+    abiertoEn?: DateTimeFilter<"SeguimientoClima"> | Date | string
+    cerradoEn?: DateTimeNullableFilter<"SeguimientoClima"> | Date | string | null
+    actualizadoEn?: DateTimeFilter<"SeguimientoClima"> | Date | string
+  }
+
   export type EmpresaCreateWithoutSuscripcionInput = {
     id?: string
     nombre: string
@@ -50723,6 +56395,9 @@ export namespace Prisma {
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutSuscripcionInput = {
@@ -50750,6 +56425,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutSuscripcionInput = {
@@ -50835,6 +56513,9 @@ export namespace Prisma {
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutSuscripcionInput = {
@@ -50862,6 +56543,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type PagoUpsertWithWhereUniqueWithoutSuscripcionInput = {
@@ -51084,6 +56768,9 @@ export namespace Prisma {
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutHorariosInput = {
@@ -51111,6 +56798,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutHorariosInput = {
@@ -51185,6 +56875,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutHorarioInput = {
@@ -51222,6 +56914,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutHorarioInput = {
@@ -51270,6 +56964,9 @@ export namespace Prisma {
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutHorariosInput = {
@@ -51297,6 +56994,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type FranjaHorarioUpsertWithWhereUniqueWithoutHorarioInput = {
@@ -51443,6 +57143,9 @@ export namespace Prisma {
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutPlantillasTurnoInput = {
@@ -51470,6 +57173,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutPlantillasTurnoInput = {
@@ -51606,6 +57312,9 @@ export namespace Prisma {
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutPlantillasTurnoInput = {
@@ -51633,6 +57342,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type SedeUpsertWithoutPlantillasInput = {
@@ -51746,6 +57458,9 @@ export namespace Prisma {
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutDispositivosInput = {
@@ -51773,6 +57488,9 @@ export namespace Prisma {
     plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutDispositivosInput = {
@@ -51816,6 +57534,9 @@ export namespace Prisma {
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutDispositivosInput = {
@@ -51843,6 +57564,9 @@ export namespace Prisma {
     plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutColaboradoresInput = {
@@ -51870,6 +57594,9 @@ export namespace Prisma {
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutColaboradoresInput = {
@@ -51897,6 +57624,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutColaboradoresInput = {
@@ -52303,6 +58033,72 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type CalificacionClimaCreateWithoutColaboradorInput = {
+    id?: string
+    fecha: Date | string
+    carita: number
+    motivos: JsonNullValueInput | InputJsonValue
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutCalificacionesClimaInput
+  }
+
+  export type CalificacionClimaUncheckedCreateWithoutColaboradorInput = {
+    id?: string
+    empresaId: string
+    fecha: Date | string
+    carita: number
+    motivos: JsonNullValueInput | InputJsonValue
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type CalificacionClimaCreateOrConnectWithoutColaboradorInput = {
+    where: CalificacionClimaWhereUniqueInput
+    create: XOR<CalificacionClimaCreateWithoutColaboradorInput, CalificacionClimaUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type CalificacionClimaCreateManyColaboradorInputEnvelope = {
+    data: CalificacionClimaCreateManyColaboradorInput | CalificacionClimaCreateManyColaboradorInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type SeguimientoClimaCreateWithoutColaboradorInput = {
+    id?: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutSeguimientosClimaInput
+    comentarios?: ComentarioSeguimientoClimaCreateNestedManyWithoutSeguimientoInput
+  }
+
+  export type SeguimientoClimaUncheckedCreateWithoutColaboradorInput = {
+    id?: string
+    empresaId: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+    comentarios?: ComentarioSeguimientoClimaUncheckedCreateNestedManyWithoutSeguimientoInput
+  }
+
+  export type SeguimientoClimaCreateOrConnectWithoutColaboradorInput = {
+    where: SeguimientoClimaWhereUniqueInput
+    create: XOR<SeguimientoClimaCreateWithoutColaboradorInput, SeguimientoClimaUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type SeguimientoClimaCreateManyColaboradorInputEnvelope = {
+    data: SeguimientoClimaCreateManyColaboradorInput | SeguimientoClimaCreateManyColaboradorInput[]
+    skipDuplicates?: boolean
+  }
+
   export type EmpresaUpsertWithoutColaboradoresInput = {
     update: XOR<EmpresaUpdateWithoutColaboradoresInput, EmpresaUncheckedUpdateWithoutColaboradoresInput>
     create: XOR<EmpresaCreateWithoutColaboradoresInput, EmpresaUncheckedCreateWithoutColaboradoresInput>
@@ -52339,6 +58135,9 @@ export namespace Prisma {
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutColaboradoresInput = {
@@ -52366,6 +58165,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type DescansoTrabajadoUpsertWithWhereUniqueWithoutColaboradorInput = {
@@ -52694,6 +58496,38 @@ export namespace Prisma {
     creadoEn?: DateTimeFilter<"ConstanciaBiometrica"> | Date | string
   }
 
+  export type CalificacionClimaUpsertWithWhereUniqueWithoutColaboradorInput = {
+    where: CalificacionClimaWhereUniqueInput
+    update: XOR<CalificacionClimaUpdateWithoutColaboradorInput, CalificacionClimaUncheckedUpdateWithoutColaboradorInput>
+    create: XOR<CalificacionClimaCreateWithoutColaboradorInput, CalificacionClimaUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type CalificacionClimaUpdateWithWhereUniqueWithoutColaboradorInput = {
+    where: CalificacionClimaWhereUniqueInput
+    data: XOR<CalificacionClimaUpdateWithoutColaboradorInput, CalificacionClimaUncheckedUpdateWithoutColaboradorInput>
+  }
+
+  export type CalificacionClimaUpdateManyWithWhereWithoutColaboradorInput = {
+    where: CalificacionClimaScalarWhereInput
+    data: XOR<CalificacionClimaUpdateManyMutationInput, CalificacionClimaUncheckedUpdateManyWithoutColaboradorInput>
+  }
+
+  export type SeguimientoClimaUpsertWithWhereUniqueWithoutColaboradorInput = {
+    where: SeguimientoClimaWhereUniqueInput
+    update: XOR<SeguimientoClimaUpdateWithoutColaboradorInput, SeguimientoClimaUncheckedUpdateWithoutColaboradorInput>
+    create: XOR<SeguimientoClimaCreateWithoutColaboradorInput, SeguimientoClimaUncheckedCreateWithoutColaboradorInput>
+  }
+
+  export type SeguimientoClimaUpdateWithWhereUniqueWithoutColaboradorInput = {
+    where: SeguimientoClimaWhereUniqueInput
+    data: XOR<SeguimientoClimaUpdateWithoutColaboradorInput, SeguimientoClimaUncheckedUpdateWithoutColaboradorInput>
+  }
+
+  export type SeguimientoClimaUpdateManyWithWhereWithoutColaboradorInput = {
+    where: SeguimientoClimaScalarWhereInput
+    data: XOR<SeguimientoClimaUpdateManyMutationInput, SeguimientoClimaUncheckedUpdateManyWithoutColaboradorInput>
+  }
+
   export type EmpresaCreateWithoutSedesInput = {
     id?: string
     nombre: string
@@ -52719,6 +58553,9 @@ export namespace Prisma {
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutSedesInput = {
@@ -52746,6 +58583,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutSedesInput = {
@@ -52989,6 +58829,9 @@ export namespace Prisma {
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutSedesInput = {
@@ -53016,6 +58859,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type ColaboradorSedeUpsertWithWhereUniqueWithoutSedeInput = {
@@ -53117,6 +58963,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutSedesInput = {
@@ -53154,6 +59002,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutSedesInput = {
@@ -53244,6 +59094,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutSedesInput = {
@@ -53281,6 +59133,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type SedeUpsertWithoutColaboradoresInput = {
@@ -53361,6 +59215,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutDiasEsperadosInput = {
@@ -53398,6 +59254,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutDiasEsperadosInput = {
@@ -53498,6 +59356,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutDiasEsperadosInput = {
@@ -53535,6 +59395,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type PlantillaTurnoUpsertWithoutDiasEsperadosInput = {
@@ -53625,6 +59487,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutRegistrosInput = {
@@ -53662,6 +59526,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutRegistrosInput = {
@@ -53861,6 +59727,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutRegistrosInput = {
@@ -53898,6 +59766,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type SedeUpsertWithoutRegistrosInput = {
@@ -54067,6 +59937,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutPermisosInput = {
@@ -54104,6 +59976,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutPermisosInput = {
@@ -54216,6 +60090,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutPermisosInput = {
@@ -54253,6 +60129,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type RegistroUpsertWithoutNovedadesInput = {
@@ -54345,6 +60223,9 @@ export namespace Prisma {
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutFestivosInput = {
@@ -54372,6 +60253,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutFestivosInput = {
@@ -54415,6 +60299,9 @@ export namespace Prisma {
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutFestivosInput = {
@@ -54442,6 +60329,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutConfiguracionInput = {
@@ -54469,6 +60359,9 @@ export namespace Prisma {
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutConfiguracionInput = {
@@ -54496,6 +60389,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutConfiguracionInput = {
@@ -54539,6 +60435,9 @@ export namespace Prisma {
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutConfiguracionInput = {
@@ -54566,6 +60465,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutNotificacionesInput = {
@@ -54593,6 +60495,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutNotificacionesInput = {
@@ -54620,6 +60525,9 @@ export namespace Prisma {
     plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutNotificacionesInput = {
@@ -54663,6 +60571,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutNotificacionesInput = {
@@ -54690,6 +60601,9 @@ export namespace Prisma {
     plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutUsuariosInput = {
@@ -54717,6 +60631,9 @@ export namespace Prisma {
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutUsuariosInput = {
@@ -54744,6 +60661,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutUsuariosInput = {
@@ -54834,6 +60754,9 @@ export namespace Prisma {
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutUsuariosInput = {
@@ -54861,6 +60784,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type AfiliadoUpsertWithoutUsuariosInput = {
@@ -54983,6 +60909,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutAfiliadoInput = {
@@ -55010,6 +60939,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutAfiliadoInput = {
@@ -55257,6 +61189,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
     afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutComisionesInput = {
@@ -55284,6 +61219,9 @@ export namespace Prisma {
     plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
     dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
     notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutComisionesInput = {
@@ -55417,6 +61355,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutComisionesInput = {
@@ -55444,6 +61385,9 @@ export namespace Prisma {
     plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type PagoUpsertWithoutComisionInput = {
@@ -55748,6 +61692,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutDescansosTrabajadosInput = {
@@ -55785,6 +61731,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutDescansosTrabajadosInput = {
@@ -55868,6 +61816,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutDescansosTrabajadosInput = {
@@ -55905,6 +61855,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type DescansoTrabajadoCambioUpsertWithWhereUniqueWithoutDescansoTrabajadoInput = {
@@ -56048,6 +62000,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutVinculacionInput = {
@@ -56085,6 +62039,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutVinculacionInput = {
@@ -56138,6 +62094,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutVinculacionInput = {
@@ -56175,6 +62133,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateWithoutEnlacesRegistroFacialInput = {
@@ -56212,6 +62172,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutEnlacesRegistroFacialInput = {
@@ -56249,6 +62211,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutEnlacesRegistroFacialInput = {
@@ -56302,6 +62266,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutEnlacesRegistroFacialInput = {
@@ -56339,6 +62305,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateWithoutConstanciasBiometricasInput = {
@@ -56376,6 +62344,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutConstanciasBiometricasInput = {
@@ -56413,6 +62383,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutConstanciasBiometricasInput = {
@@ -56466,6 +62438,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutConstanciasBiometricasInput = {
@@ -56503,6 +62477,8 @@ export namespace Prisma {
     diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorCreateWithoutContratosInput = {
@@ -56540,6 +62516,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorUncheckedCreateWithoutContratosInput = {
@@ -56577,6 +62555,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
   }
 
   export type ColaboradorCreateOrConnectWithoutContratosInput = {
@@ -56660,6 +62640,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutContratosInput = {
@@ -56697,6 +62679,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ProrrogaContratoUpsertWithWhereUniqueWithoutContratoInput = {
@@ -56810,6 +62794,879 @@ export namespace Prisma {
     documentoNombre?: NullableStringFieldUpdateOperationsInput | string | null
     observacion?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EmpresaCreateWithoutCalificacionesClimaInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaUncheckedCreateWithoutCalificacionesClimaInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaCreateOrConnectWithoutCalificacionesClimaInput = {
+    where: EmpresaWhereUniqueInput
+    create: XOR<EmpresaCreateWithoutCalificacionesClimaInput, EmpresaUncheckedCreateWithoutCalificacionesClimaInput>
+  }
+
+  export type ColaboradorCreateWithoutCalificacionesClimaInput = {
+    id?: string
+    nombre: string
+    apellido: string
+    cedula: string
+    numeroContrato?: string | null
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    auxilioTransporte?: number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
+    horario?: HorarioCreateNestedOneWithoutColaboradoresInput
+    registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorUncheckedCreateWithoutCalificacionesClimaInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    apellido: string
+    cedula: string
+    numeroContrato?: string | null
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    auxilioTransporte?: number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    horarioId?: string | null
+    modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
+    registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorCreateOrConnectWithoutCalificacionesClimaInput = {
+    where: ColaboradorWhereUniqueInput
+    create: XOR<ColaboradorCreateWithoutCalificacionesClimaInput, ColaboradorUncheckedCreateWithoutCalificacionesClimaInput>
+  }
+
+  export type EmpresaUpsertWithoutCalificacionesClimaInput = {
+    update: XOR<EmpresaUpdateWithoutCalificacionesClimaInput, EmpresaUncheckedUpdateWithoutCalificacionesClimaInput>
+    create: XOR<EmpresaCreateWithoutCalificacionesClimaInput, EmpresaUncheckedCreateWithoutCalificacionesClimaInput>
+    where?: EmpresaWhereInput
+  }
+
+  export type EmpresaUpdateToOneWithWhereWithoutCalificacionesClimaInput = {
+    where?: EmpresaWhereInput
+    data: XOR<EmpresaUpdateWithoutCalificacionesClimaInput, EmpresaUncheckedUpdateWithoutCalificacionesClimaInput>
+  }
+
+  export type EmpresaUpdateWithoutCalificacionesClimaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type EmpresaUncheckedUpdateWithoutCalificacionesClimaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type ColaboradorUpsertWithoutCalificacionesClimaInput = {
+    update: XOR<ColaboradorUpdateWithoutCalificacionesClimaInput, ColaboradorUncheckedUpdateWithoutCalificacionesClimaInput>
+    create: XOR<ColaboradorCreateWithoutCalificacionesClimaInput, ColaboradorUncheckedCreateWithoutCalificacionesClimaInput>
+    where?: ColaboradorWhereInput
+  }
+
+  export type ColaboradorUpdateToOneWithWhereWithoutCalificacionesClimaInput = {
+    where?: ColaboradorWhereInput
+    data: XOR<ColaboradorUpdateWithoutCalificacionesClimaInput, ColaboradorUncheckedUpdateWithoutCalificacionesClimaInput>
+  }
+
+  export type ColaboradorUpdateWithoutCalificacionesClimaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
+    horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
+    registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorUncheckedUpdateWithoutCalificacionesClimaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type EmpresaCreateWithoutNotasConfidencialesInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaUncheckedCreateWithoutNotasConfidencialesInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaCreateOrConnectWithoutNotasConfidencialesInput = {
+    where: EmpresaWhereUniqueInput
+    create: XOR<EmpresaCreateWithoutNotasConfidencialesInput, EmpresaUncheckedCreateWithoutNotasConfidencialesInput>
+  }
+
+  export type EmpresaUpsertWithoutNotasConfidencialesInput = {
+    update: XOR<EmpresaUpdateWithoutNotasConfidencialesInput, EmpresaUncheckedUpdateWithoutNotasConfidencialesInput>
+    create: XOR<EmpresaCreateWithoutNotasConfidencialesInput, EmpresaUncheckedCreateWithoutNotasConfidencialesInput>
+    where?: EmpresaWhereInput
+  }
+
+  export type EmpresaUpdateToOneWithWhereWithoutNotasConfidencialesInput = {
+    where?: EmpresaWhereInput
+    data: XOR<EmpresaUpdateWithoutNotasConfidencialesInput, EmpresaUncheckedUpdateWithoutNotasConfidencialesInput>
+  }
+
+  export type EmpresaUpdateWithoutNotasConfidencialesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type EmpresaUncheckedUpdateWithoutNotasConfidencialesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type EmpresaCreateWithoutSeguimientosClimaInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaUncheckedCreateWithoutSeguimientosClimaInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaCreateOrConnectWithoutSeguimientosClimaInput = {
+    where: EmpresaWhereUniqueInput
+    create: XOR<EmpresaCreateWithoutSeguimientosClimaInput, EmpresaUncheckedCreateWithoutSeguimientosClimaInput>
+  }
+
+  export type ColaboradorCreateWithoutSeguimientosClimaInput = {
+    id?: string
+    nombre: string
+    apellido: string
+    cedula: string
+    numeroContrato?: string | null
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    auxilioTransporte?: number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutColaboradoresInput
+    descansosTrabajados?: DescansoTrabajadoCreateNestedManyWithoutColaboradorInput
+    horario?: HorarioCreateNestedOneWithoutColaboradoresInput
+    registros?: RegistroCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorUncheckedCreateWithoutSeguimientosClimaInput = {
+    id?: string
+    empresaId: string
+    nombre: string
+    apellido: string
+    cedula: string
+    numeroContrato?: string | null
+    cargo?: string | null
+    email?: string | null
+    telefono?: string | null
+    fechaNacimiento?: Date | string | null
+    salarioMensual: number
+    auxilioTransporte?: number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: Date | string | null
+    rostroRechazadoEn?: Date | string | null
+    foto?: string | null
+    fotoMini?: string | null
+    horarioId?: string | null
+    modalidad?: $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: boolean
+    activo?: boolean
+    fechaRetiro?: Date | string | null
+    motivoRetiro?: $Enums.MotivoRetiro | null
+    retiroProgramado?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedCreateNestedManyWithoutColaboradorInput
+    registros?: RegistroUncheckedCreateNestedManyWithoutColaboradorInput
+    permisos?: PermisoUncheckedCreateNestedManyWithoutColaboradorInput
+    contratos?: ContratoUncheckedCreateNestedManyWithoutColaboradorInput
+    vinculacion?: VinculacionEventoUncheckedCreateNestedManyWithoutColaboradorInput
+    diasEsperados?: DiaEsperadoUncheckedCreateNestedManyWithoutColaboradorInput
+    sedes?: ColaboradorSedeUncheckedCreateNestedManyWithoutColaboradorInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedCreateNestedManyWithoutColaboradorInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedCreateNestedManyWithoutColaboradorInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutColaboradorInput
+  }
+
+  export type ColaboradorCreateOrConnectWithoutSeguimientosClimaInput = {
+    where: ColaboradorWhereUniqueInput
+    create: XOR<ColaboradorCreateWithoutSeguimientosClimaInput, ColaboradorUncheckedCreateWithoutSeguimientosClimaInput>
+  }
+
+  export type ComentarioSeguimientoClimaCreateWithoutSeguimientoInput = {
+    id?: string
+    autorId?: string | null
+    autorNombre: string
+    texto: string
+    creadoEn?: Date | string
+    editadoEn?: Date | string | null
+  }
+
+  export type ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput = {
+    id?: string
+    autorId?: string | null
+    autorNombre: string
+    texto: string
+    creadoEn?: Date | string
+    editadoEn?: Date | string | null
+  }
+
+  export type ComentarioSeguimientoClimaCreateOrConnectWithoutSeguimientoInput = {
+    where: ComentarioSeguimientoClimaWhereUniqueInput
+    create: XOR<ComentarioSeguimientoClimaCreateWithoutSeguimientoInput, ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput>
+  }
+
+  export type ComentarioSeguimientoClimaCreateManySeguimientoInputEnvelope = {
+    data: ComentarioSeguimientoClimaCreateManySeguimientoInput | ComentarioSeguimientoClimaCreateManySeguimientoInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type EmpresaUpsertWithoutSeguimientosClimaInput = {
+    update: XOR<EmpresaUpdateWithoutSeguimientosClimaInput, EmpresaUncheckedUpdateWithoutSeguimientosClimaInput>
+    create: XOR<EmpresaCreateWithoutSeguimientosClimaInput, EmpresaUncheckedCreateWithoutSeguimientosClimaInput>
+    where?: EmpresaWhereInput
+  }
+
+  export type EmpresaUpdateToOneWithWhereWithoutSeguimientosClimaInput = {
+    where?: EmpresaWhereInput
+    data: XOR<EmpresaUpdateWithoutSeguimientosClimaInput, EmpresaUncheckedUpdateWithoutSeguimientosClimaInput>
+  }
+
+  export type EmpresaUpdateWithoutSeguimientosClimaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type EmpresaUncheckedUpdateWithoutSeguimientosClimaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type ColaboradorUpsertWithoutSeguimientosClimaInput = {
+    update: XOR<ColaboradorUpdateWithoutSeguimientosClimaInput, ColaboradorUncheckedUpdateWithoutSeguimientosClimaInput>
+    create: XOR<ColaboradorCreateWithoutSeguimientosClimaInput, ColaboradorUncheckedCreateWithoutSeguimientosClimaInput>
+    where?: ColaboradorWhereInput
+  }
+
+  export type ColaboradorUpdateToOneWithWhereWithoutSeguimientosClimaInput = {
+    where?: ColaboradorWhereInput
+    data: XOR<ColaboradorUpdateWithoutSeguimientosClimaInput, ColaboradorUncheckedUpdateWithoutSeguimientosClimaInput>
+  }
+
+  export type ColaboradorUpdateWithoutSeguimientosClimaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutColaboradoresNestedInput
+    descansosTrabajados?: DescansoTrabajadoUpdateManyWithoutColaboradorNestedInput
+    horario?: HorarioUpdateOneWithoutColaboradoresNestedInput
+    registros?: RegistroUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ColaboradorUncheckedUpdateWithoutSeguimientosClimaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    apellido?: StringFieldUpdateOperationsInput | string
+    cedula?: StringFieldUpdateOperationsInput | string
+    numeroContrato?: NullableStringFieldUpdateOperationsInput | string | null
+    cargo?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaNacimiento?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    salarioMensual?: FloatFieldUpdateOperationsInput | number
+    auxilioTransporte?: NullableFloatFieldUpdateOperationsInput | number | null
+    rostroDescriptor?: NullableJsonNullValueInput | InputJsonValue
+    rostroEnroladoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    rostroRechazadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    foto?: NullableStringFieldUpdateOperationsInput | string | null
+    fotoMini?: NullableStringFieldUpdateOperationsInput | string | null
+    horarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    modalidad?: EnumModalidadTrabajoFieldUpdateOperationsInput | $Enums.ModalidadTrabajo
+    puedeCerrarEnOtraSede?: BoolFieldUpdateOperationsInput | boolean
+    activo?: BoolFieldUpdateOperationsInput | boolean
+    fechaRetiro?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    motivoRetiro?: NullableEnumMotivoRetiroFieldUpdateOperationsInput | $Enums.MotivoRetiro | null
+    retiroProgramado?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    descansosTrabajados?: DescansoTrabajadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    registros?: RegistroUncheckedUpdateManyWithoutColaboradorNestedInput
+    permisos?: PermisoUncheckedUpdateManyWithoutColaboradorNestedInput
+    contratos?: ContratoUncheckedUpdateManyWithoutColaboradorNestedInput
+    vinculacion?: VinculacionEventoUncheckedUpdateManyWithoutColaboradorNestedInput
+    diasEsperados?: DiaEsperadoUncheckedUpdateManyWithoutColaboradorNestedInput
+    sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
+    enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
+    constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+  }
+
+  export type ComentarioSeguimientoClimaUpsertWithWhereUniqueWithoutSeguimientoInput = {
+    where: ComentarioSeguimientoClimaWhereUniqueInput
+    update: XOR<ComentarioSeguimientoClimaUpdateWithoutSeguimientoInput, ComentarioSeguimientoClimaUncheckedUpdateWithoutSeguimientoInput>
+    create: XOR<ComentarioSeguimientoClimaCreateWithoutSeguimientoInput, ComentarioSeguimientoClimaUncheckedCreateWithoutSeguimientoInput>
+  }
+
+  export type ComentarioSeguimientoClimaUpdateWithWhereUniqueWithoutSeguimientoInput = {
+    where: ComentarioSeguimientoClimaWhereUniqueInput
+    data: XOR<ComentarioSeguimientoClimaUpdateWithoutSeguimientoInput, ComentarioSeguimientoClimaUncheckedUpdateWithoutSeguimientoInput>
+  }
+
+  export type ComentarioSeguimientoClimaUpdateManyWithWhereWithoutSeguimientoInput = {
+    where: ComentarioSeguimientoClimaScalarWhereInput
+    data: XOR<ComentarioSeguimientoClimaUpdateManyMutationInput, ComentarioSeguimientoClimaUncheckedUpdateManyWithoutSeguimientoInput>
+  }
+
+  export type ComentarioSeguimientoClimaScalarWhereInput = {
+    AND?: ComentarioSeguimientoClimaScalarWhereInput | ComentarioSeguimientoClimaScalarWhereInput[]
+    OR?: ComentarioSeguimientoClimaScalarWhereInput[]
+    NOT?: ComentarioSeguimientoClimaScalarWhereInput | ComentarioSeguimientoClimaScalarWhereInput[]
+    id?: StringFilter<"ComentarioSeguimientoClima"> | string
+    seguimientoId?: StringFilter<"ComentarioSeguimientoClima"> | string
+    autorId?: StringNullableFilter<"ComentarioSeguimientoClima"> | string | null
+    autorNombre?: StringFilter<"ComentarioSeguimientoClima"> | string
+    texto?: StringFilter<"ComentarioSeguimientoClima"> | string
+    creadoEn?: DateTimeFilter<"ComentarioSeguimientoClima"> | Date | string
+    editadoEn?: DateTimeNullableFilter<"ComentarioSeguimientoClima"> | Date | string | null
+  }
+
+  export type SeguimientoClimaCreateWithoutComentariosInput = {
+    id?: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutSeguimientosClimaInput
+    colaborador: ColaboradorCreateNestedOneWithoutSeguimientosClimaInput
+  }
+
+  export type SeguimientoClimaUncheckedCreateWithoutComentariosInput = {
+    id?: string
+    empresaId: string
+    colaboradorId: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+  }
+
+  export type SeguimientoClimaCreateOrConnectWithoutComentariosInput = {
+    where: SeguimientoClimaWhereUniqueInput
+    create: XOR<SeguimientoClimaCreateWithoutComentariosInput, SeguimientoClimaUncheckedCreateWithoutComentariosInput>
+  }
+
+  export type SeguimientoClimaUpsertWithoutComentariosInput = {
+    update: XOR<SeguimientoClimaUpdateWithoutComentariosInput, SeguimientoClimaUncheckedUpdateWithoutComentariosInput>
+    create: XOR<SeguimientoClimaCreateWithoutComentariosInput, SeguimientoClimaUncheckedCreateWithoutComentariosInput>
+    where?: SeguimientoClimaWhereInput
+  }
+
+  export type SeguimientoClimaUpdateToOneWithWhereWithoutComentariosInput = {
+    where?: SeguimientoClimaWhereInput
+    data: XOR<SeguimientoClimaUpdateWithoutComentariosInput, SeguimientoClimaUncheckedUpdateWithoutComentariosInput>
+  }
+
+  export type SeguimientoClimaUpdateWithoutComentariosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutSeguimientosClimaNestedInput
+    colaborador?: ColaboradorUpdateOneRequiredWithoutSeguimientosClimaNestedInput
+  }
+
+  export type SeguimientoClimaUncheckedUpdateWithoutComentariosInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -56945,6 +63802,36 @@ export namespace Prisma {
     creadoEn?: Date | string
   }
 
+  export type CalificacionClimaCreateManyEmpresaInput = {
+    id?: string
+    colaboradorId: string
+    fecha: Date | string
+    carita: number
+    motivos: JsonNullValueInput | InputJsonValue
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ObservacionConfidencialCreateManyEmpresaInput = {
+    id?: string
+    semana: Date | string
+    visibleDesde: Date | string
+    texto: string
+    autorCifrado: string
+  }
+
+  export type SeguimientoClimaCreateManyEmpresaInput = {
+    id?: string
+    colaboradorId: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+  }
+
   export type UsuarioUpdateWithoutEmpresaInput = {
     id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
@@ -57028,6 +63915,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutEmpresaInput = {
@@ -57065,6 +63954,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateManyWithoutEmpresaInput = {
@@ -57373,6 +64264,98 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CalificacionClimaUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    carita?: IntFieldUpdateOperationsInput | number
+    motivos?: JsonNullValueInput | InputJsonValue
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutCalificacionesClimaNestedInput
+  }
+
+  export type CalificacionClimaUncheckedUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    carita?: IntFieldUpdateOperationsInput | number
+    motivos?: JsonNullValueInput | InputJsonValue
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CalificacionClimaUncheckedUpdateManyWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    carita?: IntFieldUpdateOperationsInput | number
+    motivos?: JsonNullValueInput | InputJsonValue
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ObservacionConfidencialUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    semana?: DateTimeFieldUpdateOperationsInput | Date | string
+    visibleDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    texto?: StringFieldUpdateOperationsInput | string
+    autorCifrado?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type ObservacionConfidencialUncheckedUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    semana?: DateTimeFieldUpdateOperationsInput | Date | string
+    visibleDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    texto?: StringFieldUpdateOperationsInput | string
+    autorCifrado?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    semana?: DateTimeFieldUpdateOperationsInput | Date | string
+    visibleDesde?: DateTimeFieldUpdateOperationsInput | Date | string
+    texto?: StringFieldUpdateOperationsInput | string
+    autorCifrado?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type SeguimientoClimaUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    colaborador?: ColaboradorUpdateOneRequiredWithoutSeguimientosClimaNestedInput
+    comentarios?: ComentarioSeguimientoClimaUpdateManyWithoutSeguimientoNestedInput
+  }
+
+  export type SeguimientoClimaUncheckedUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    comentarios?: ComentarioSeguimientoClimaUncheckedUpdateManyWithoutSeguimientoNestedInput
+  }
+
+  export type SeguimientoClimaUncheckedUpdateManyWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    colaboradorId?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type PagoCreateManySuscripcionInput = {
     id?: string
     monto: number
@@ -57542,6 +64525,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateWithoutHorarioInput = {
@@ -57579,6 +64564,8 @@ export namespace Prisma {
     sedes?: ColaboradorSedeUncheckedUpdateManyWithoutColaboradorNestedInput
     enlacesRegistroFacial?: EnlaceRegistroFacialUncheckedUpdateManyWithoutColaboradorNestedInput
     constanciasBiometricas?: ConstanciaBiometricaUncheckedUpdateManyWithoutColaboradorNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutColaboradorNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutColaboradorNestedInput
   }
 
   export type ColaboradorUncheckedUpdateManyWithoutHorarioInput = {
@@ -57833,6 +64820,28 @@ export namespace Prisma {
     usuarioId?: string | null
     enlaceId?: string | null
     creadoEn?: Date | string
+  }
+
+  export type CalificacionClimaCreateManyColaboradorInput = {
+    id?: string
+    empresaId: string
+    fecha: Date | string
+    carita: number
+    motivos: JsonNullValueInput | InputJsonValue
+    observacion?: string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type SeguimientoClimaCreateManyColaboradorInput = {
+    id?: string
+    empresaId: string
+    desde: Date | string
+    estado?: $Enums.EstadoSeguimientoClima
+    responsableId?: string | null
+    abiertoEn?: Date | string
+    cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
   }
 
   export type DescansoTrabajadoUpdateWithoutColaboradorInput = {
@@ -58243,6 +65252,74 @@ export namespace Prisma {
     usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
     enlaceId?: NullableStringFieldUpdateOperationsInput | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CalificacionClimaUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    carita?: IntFieldUpdateOperationsInput | number
+    motivos?: JsonNullValueInput | InputJsonValue
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutCalificacionesClimaNestedInput
+  }
+
+  export type CalificacionClimaUncheckedUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    carita?: IntFieldUpdateOperationsInput | number
+    motivos?: JsonNullValueInput | InputJsonValue
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CalificacionClimaUncheckedUpdateManyWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    fecha?: DateTimeFieldUpdateOperationsInput | Date | string
+    carita?: IntFieldUpdateOperationsInput | number
+    motivos?: JsonNullValueInput | InputJsonValue
+    observacion?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SeguimientoClimaUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutSeguimientosClimaNestedInput
+    comentarios?: ComentarioSeguimientoClimaUpdateManyWithoutSeguimientoNestedInput
+  }
+
+  export type SeguimientoClimaUncheckedUpdateWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    comentarios?: ComentarioSeguimientoClimaUncheckedUpdateManyWithoutSeguimientoNestedInput
+  }
+
+  export type SeguimientoClimaUncheckedUpdateManyWithoutColaboradorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    estado?: EnumEstadoSeguimientoClimaFieldUpdateOperationsInput | $Enums.EstadoSeguimientoClima
+    responsableId?: NullableStringFieldUpdateOperationsInput | string | null
+    abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ColaboradorSedeCreateManySedeInput = {
@@ -58786,6 +65863,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutAfiliadoInput = {
@@ -58813,6 +65893,9 @@ export namespace Prisma {
     dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
     notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateManyWithoutAfiliadoInput = {
@@ -58977,6 +66060,42 @@ export namespace Prisma {
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ComentarioSeguimientoClimaCreateManySeguimientoInput = {
+    id?: string
+    autorId?: string | null
+    autorNombre: string
+    texto: string
+    creadoEn?: Date | string
+    editadoEn?: Date | string | null
+  }
+
+  export type ComentarioSeguimientoClimaUpdateWithoutSeguimientoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    autorId?: NullableStringFieldUpdateOperationsInput | string | null
+    autorNombre?: StringFieldUpdateOperationsInput | string
+    texto?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ComentarioSeguimientoClimaUncheckedUpdateWithoutSeguimientoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    autorId?: NullableStringFieldUpdateOperationsInput | string | null
+    autorNombre?: StringFieldUpdateOperationsInput | string
+    texto?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ComentarioSeguimientoClimaUncheckedUpdateManyWithoutSeguimientoInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    autorId?: NullableStringFieldUpdateOperationsInput | string | null
+    autorNombre?: StringFieldUpdateOperationsInput | string
+    texto?: StringFieldUpdateOperationsInput | string
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
 
 
   /**
@@ -59022,6 +66141,10 @@ export namespace Prisma {
      * @deprecated Use ContratoCountOutputTypeDefaultArgs instead
      */
     export type ContratoCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ContratoCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use SeguimientoClimaCountOutputTypeDefaultArgs instead
+     */
+    export type SeguimientoClimaCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SeguimientoClimaCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use EmpresaDefaultArgs instead
      */
@@ -59154,6 +66277,22 @@ export namespace Prisma {
      * @deprecated Use EventoSistemaDefaultArgs instead
      */
     export type EventoSistemaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = EventoSistemaDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CalificacionClimaDefaultArgs instead
+     */
+    export type CalificacionClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CalificacionClimaDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ObservacionConfidencialDefaultArgs instead
+     */
+    export type ObservacionConfidencialArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ObservacionConfidencialDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use SeguimientoClimaDefaultArgs instead
+     */
+    export type SeguimientoClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SeguimientoClimaDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ComentarioSeguimientoClimaDefaultArgs instead
+     */
+    export type ComentarioSeguimientoClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ComentarioSeguimientoClimaDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

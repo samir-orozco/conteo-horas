@@ -11,16 +11,16 @@ datasource db {
 // ============ SaaS / Multi-tenant ============
 
 model Empresa {
-  id                   String              @id @default(cuid())
+  id                   String                    @id @default(cuid())
   nombre               String
-  nit                  String              @unique
+  nit                  String                    @unique
   email                String
   telefono             String?
   // Token del link único del kiosco de marcación: /marcador/<token>
-  marcadorToken        String              @unique @default(cuid())
+  marcadorToken        String                    @unique @default(cuid())
   // Acceso ilimitado (cortesía): nunca se le cobra ni se bloquea
-  exentaPago           Boolean             @default(false)
-  activa               Boolean             @default(true)
+  exentaPago           Boolean                   @default(false)
+  activa               Boolean                   @default(true)
   // Cuándo esta empresa revisó los salarios al separar el auxilio de transporte (17 de septiembre
   // de 2026). Null = todavía no, y el panel le pide revisarlos antes de seguir.
   //
@@ -40,8 +40,8 @@ model Empresa {
   // rompería cualquier consulta de `empresas`. Al revés es inofensivo: una columna que esté en la base
   // y no en el esquema, Prisma sencillamente la ignora. Por eso esto no necesita ningún ALTER, exista
   // o no exista la columna en producción.
-  creadoEn             DateTime            @default(now())
-  actualizadoEn        DateTime            @updatedAt
+  creadoEn             DateTime                  @default(now())
+  actualizadoEn        DateTime                  @updatedAt
   usuarios             Usuario[]
   colaboradores        Colaborador[]
   festivos             DiaFestivo[]
@@ -54,10 +54,13 @@ model Empresa {
   notificaciones       Notificacion[]
   // Afiliado que trajo a esta empresa (programa de referidos)
   afiliadoId           String?
-  afiliado             Afiliado?           @relation(fields: [afiliadoId], references: [id])
+  afiliado             Afiliado?                 @relation(fields: [afiliadoId], references: [id])
   atribuidoEn          DateTime? // cuándo se asoció al afiliado (en el registro)
   primerPagoComisionEn DateTime? // primer pago que comisionó (ancla la duración)
   comisiones           Comision[]
+  calificacionesClima  CalificacionClima[]
+  notasConfidenciales  ObservacionConfidencial[]
+  seguimientosClima    SeguimientoClima[]
 
   @@map("empresas")
 }
@@ -421,6 +424,8 @@ model Colaborador {
   sedes                  ColaboradorSede[]
   enlacesRegistroFacial  EnlaceRegistroFacial[]
   constanciasBiometricas ConstanciaBiometrica[]
+  calificacionesClima    CalificacionClima[]
+  seguimientosClima      SeguimientoClima[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
@@ -1286,4 +1291,110 @@ enum TipoEvento {
 enum OrigenEvento {
   SERVIDOR
   NAVEGADOR
+}
+
+// ────────── CLIMA LABORAL (4 de octubre de 2026) ──────────
+// El requerimiento, con cada decisión y su fecha, está en docs/CLIMA_LABORAL.md. Las decisiones viven
+// en src/utils/clima.ts, con sus pruebas.
+
+// Cómo le fue a una persona en su jornada: una fila por persona y por día. Va SIEMPRE con nombre
+// (decisión del dueño): lo único que puede ir confidencial es la observación, y esa va en otra tabla.
+model CalificacionClima {
+  id            String      @id @default(cuid())
+  empresaId     String
+  empresa       Empresa     @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  colaboradorId String
+  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  // El día de la JORNADA, a medianoche de Bogotá: el mismo `fecha` del registro que cerró. En un
+  // turno nocturno es el día en que entró, no el día en que salió.
+  fecha         DateTime
+  // 1 = Muy mal … 5 = Muy bien.
+  carita        Int
+  // Los motivos por su NOMBRE, no por un id: si la empresa cambia sus motivos, lo que ya se
+  // respondió conserva lo que la persona escogió. Lista vacía con las caritas 4 y 5.
+  motivos       Json
+  // La observación DIRECTA, con nombre. La confidencial nunca se guarda aquí.
+  observacion   String?     @db.Text
+  creadoEn      DateTime    @default(now())
+  actualizadoEn DateTime    @updatedAt
+
+  // Una por persona y por día: es la propia base la que impide preguntar dos veces en un turno
+  // partido. Y el panel siempre pide «esta empresa en este rango», de ahí el segundo índice (§8.4).
+  @@unique([colaboradorId, fecha])
+  @@index([empresaId, fecha])
+  @@map("calificaciones_clima")
+}
+
+// La observación CONFIDENCIAL: la empresa ve solo el texto. Lo que NO guarda es a propósito:
+//   - ni la hora en que se escribió (solo la semana y desde cuándo se ve), para que nadie la empareje
+//     con la salida de quien marcó a esa hora;
+//   - ni la carita, los motivos o la sede;
+//   - ni un id que delate la hora: el cuid lleva la hora dentro, por eso este usa uuid, que es al azar.
+// Quién la escribió va CIFRADO con la clave CONFIDENCIAL del .env (src/utils/cifradoConfidencial.ts),
+// y solo se descifra con el comando del super admin, por orden de una autoridad.
+model ObservacionConfidencial {
+  id           String   @id @default(uuid())
+  empresaId    String
+  empresa      Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  // El lunes de la semana, a medianoche de Bogotá.
+  semana       DateTime
+  // La medianoche siguiente al día en que se escribi��.
+  visibleDesde DateTime
+  texto        String   @db.Text
+  autorCifrado String   @db.VarChar(255)
+
+  @@index([empresaId, visibleDesde])
+  @@map("observaciones_confidenciales")
+}
+
+// EL SEGUIMIENTO DE «NECESITAN ATENCIÓN» (4 de octubre de 2026). Un caso por persona y por racha de
+// respuestas negativas: se abre solo cuando la persona entra a la lista, y el administrador lo mueve
+// entre tres estados, con un responsable y comentarios. Las reglas están en `casosPorAbrir`
+// (utils/clima.ts): el caso sigue aunque la persona salga de la lista, hasta que alguien lo cierre; y una
+// racha NUEVA después de un caso cerrado abre otro.
+model SeguimientoClima {
+  id            String                       @id @default(cuid())
+  empresaId     String
+  empresa       Empresa                      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  colaboradorId String
+  colaborador   Colaborador                  @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  // El comienzo de la racha que lo abrió: la primera respuesta negativa después del último buen día.
+  // Mientras la racha dura no cambia, y por eso identifica el caso.
+  desde         DateTime
+  estado        EstadoSeguimientoClima       @default(SIN_REVISAR)
+  // Un usuario de la empresa. Sin llave hacia `usuarios`, a propósito: si el usuario se borra, el caso
+  // no tiene por qué cambiar; la pantalla dice que ya no está.
+  responsableId String?
+  abiertoEn     DateTime                     @default(now())
+  cerradoEn     DateTime?
+  actualizadoEn DateTime                     @updatedAt
+  comentarios   ComentarioSeguimientoClima[]
+
+  // Una racha, un caso: la propia base impide que dos pedidos simultáneos abran el mismo dos veces.
+  @@unique([colaboradorId, desde])
+  // La pestaña «Seguimiento» pide «los casos de esta empresa, por estado».
+  @@index([empresaId, estado])
+  @@map("seguimientos_clima")
+}
+
+// Los comentarios de un caso. Se pueden editar y borrar (decisión del dueño). Guardan el nombre de quien
+// los escribió, además de su id: si el usuario se borra, el comentario sigue diciendo quién lo escribió.
+model ComentarioSeguimientoClima {
+  id            String           @id @default(cuid())
+  seguimientoId String
+  seguimiento   SeguimientoClima @relation(fields: [seguimientoId], references: [id], onDelete: Cascade)
+  autorId       String?
+  autorNombre   String
+  texto         String           @db.Text
+  creadoEn      DateTime         @default(now())
+  editadoEn     DateTime?
+
+  @@index([seguimientoId, creadoEn])
+  @@map("comentarios_seguimiento_clima")
+}
+
+enum EstadoSeguimientoClima {
+  SIN_REVISAR
+  EN_SEGUIMIENTO
+  CERRADO
 }
