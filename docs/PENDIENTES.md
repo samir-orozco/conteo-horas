@@ -277,11 +277,30 @@ columna se muestra; la sede probada se guarda en `registros.sedeId`.
 **No mezclar la sede asignada con la sede donde marcó** en la misma celda. Son
 dos datos distintos y confundirlos hace que el reporte diga algo que nadie midió.
 
-## 21. Etiqueta de «segundo ingreso» · petición 10
+## 21. ~~Etiqueta de «segundo ingreso»~~ · petición 10
 
-Cuando una persona tiene dos o más jornadas el mismo día, una etiqueta visible
-en la tabla, para distinguir de un golpe el turno partido legítimo del duplicado
-por error. No cambia ninguna hora ni ningún valor.
+**HECHO el 4 de octubre de 2026.** En la tabla de registros, debajo de la fecha,
+la segunda jornada de una persona el mismo día dice «2.º ingreso» (3.º, 4.º…).
+No cambia ninguna hora ni ningún valor.
+
+Tres decisiones que vale dejar escritas:
+
+- **No dice «duplicado».** Un turno partido son dos jornadas legítimas, y
+  afirmar un error que la mitad de las veces no existe haría que la etiqueta se
+  dejara de leer. Dice cuál es y cuántas hay; al pasar el puntero explica que
+  puede ser un turno partido o un duplicado. Decidir es de quien mira.
+- **La primera del día no se marca.** Marcada, el 95% de las filas llevaría
+  etiqueta y dejaría de señalar nada.
+- **Se calcula sobre la lista completa, no sobre lo filtrado ni sobre la
+  página.** Que alguien tenga dos jornadas ese día es un hecho del día, no del
+  filtro que esté puesto: calculándolo sobre lo visible, esconder una con un
+  filtro dejaría a la otra diciendo «2.º ingreso» sin que se vea de qué.
+
+El criterio es una función pura, `features/registros/ingresosDelDia.ts`, y
+agrupa por el día de **Bogotá** —el mismo que pinta la fila—, no recortando los
+diez primeros caracteres del ISO. Hay una prueba para eso: una fecha a las 04:00
+UTC es el día anterior a las 11 p. m. en Bogotá, y juntarlas haría que la
+etiqueta contradijera la fecha de la fila.
 
 ## 22. Avisar desde cuándo aplica un cambio de horario · petición 8
 
@@ -299,11 +318,13 @@ no cálculo: el motor de turnos está completo y verificado hasta el dinero.
 
 **Se trabaja sobre la vista que ya existe. Ninguna maqueta HTML aparte** (§13).
 
-## 24. El menú de reportes se esconde en pantallas pequeñas · petición 22
+## 24. ~~El menú de reportes se esconde en pantallas pequeñas~~ · petición 22
 
-Defecto de maquetación: que el menú sea alcanzable en móvil. Hay precedente de
-cómo se arregla — la tabla de seguimiento de clima pasa a tarjetas en pantalla
-angosta (`692af9c`).
+**Arreglado, dicho por el dueño el 4 de octubre de 2026.** Lo que se ve en el
+código: el ítem de Reportes del menú no despliega una lista en el costado, abre
+un modal con las rutas para elegir (`ReportesNav`, usado desde `Layout.tsx`), que
+es lo que lo hace alcanzable en una pantalla angosta. **No lo verifiqué yo en el
+navegador.**
 
 ## 25. ~~Auxilio de transporte en el Excel de colaboradores~~ · peticiones 16 y 27
 
