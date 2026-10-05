@@ -71,6 +71,7 @@ import {
 import { nombreDelDia } from '../../lib/diasDeLaSemana';
 import { CLASES_COLOR, PUNTO_COLOR, CELDA_COLOR, normalizarColor } from '../../lib/coloresDeTurno';
 import { PilaDeAvisos, type Aviso } from '../../components/Toast';
+import Segmentado from '../../components/Segmentado';
 import { sumarRepeticion } from '../../components/contadorDelAviso';
 import { rotuloDeCelda, type OrigenDelRotulo } from './rotuloDeCelda';
 // Dónde cabe un panel flotante sin salirse de la pantalla. Vive en `lib/` porque el pedido del
@@ -3253,47 +3254,14 @@ export default function CalendarioDeTurnos() {
             de una opción a otra sin transición, y lo que se ve al saltar es un parpadeo: no queda
             claro de dónde vino, así que no hay nada que ligue lo que se pulsó con lo que cambió. Con
             el deslizamiento, el ojo sigue la píldora y la rejilla de abajo cambia al final del
-            recorrido.
-
-            LAS TRES OPCIONES MIDEN LO MISMO, y de eso depende todo lo demás: la píldora es un tercio
-            del carril y se mueve un ancho entero por posición. Con anchos distintos habría que medir
-            cada botón con una referencia y recalcular al cambiar el tamaño de la ventana, que es
-            mucha maquinaria para un control de tres opciones.
-
-            Y SE IGUALAN CON `grid-cols-3`, NO CON `flex-1`. Con flex se probó primero y salieron
-            52 / 83 / 59 px: `flex: 1 1 0%` reparte el sobrante, pero ningún hijo baja de su ancho
-            mínimo de contenido, y «Semana» es más ancha que las otras dos. Con una rejilla de tres
-            columnas iguales, las tres miden lo que la más ancha y la píldora cae clavada. Medido en
-            el navegador, no supuesto.
-
-            EL FONDO BAJA A `gray-100`, más claro que el `gray-200` de antes: con el gris oscuro, la
-            píldora blanca y el carril tenían casi el mismo peso y el conjunto se leía como una caja
-            gris con un agujero, en vez de como tres opciones con una encendida. */}
-        <div role="group" aria-label="Cómo se ve el calendario"
-          className="relative grid grid-cols-3 items-center rounded-xl bg-gray-100 p-[3px]">
-          {/* `aria-hidden`: es puro dibujo. Quién está encendido lo dice `aria-pressed` en su botón, y
-              anunciar esto además sería decirlo dos veces a quien usa lector de pantalla.
-
-              `motion-reduce:transition-none` porque quien pidió menos movimiento al sistema operativo
-              no lo pidió para las demás páginas y no para esta. */}
-          <span aria-hidden="true"
-            className="pointer-events-none absolute inset-y-[3px] left-[3px] rounded-[9px] bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
-            style={{
-              width: `calc((100% - 6px) / ${MODOS.length})`,
-              transform: `translateX(${MODOS.indexOf(modo) * 100}%)`,
-            }} />
-          {MODOS.map(m => (
-            <button key={m} type="button" onClick={() => verEnModo(m)} aria-pressed={modo === m}
-              // `relative` para quedar POR ENCIMA de la píldora, que es absoluta: sin esto el blanco
-              // se dibuja sobre el texto y la opción encendida se lee en blanco sobre blanco.
-              className={`relative rounded-[9px] px-4 py-1.5 text-center text-[13px] transition-colors ${
-                modo === m
-                  ? 'text-ink font-extrabold'
-                  : 'text-muted font-semibold hover:bg-gray-200/60 hover:text-ink'}`}>
-              {PERIODO[m].unidad}
-            </button>
-          ))}
-        </div>
+            recorrido. Desde el 4 de octubre de 2026 es una pieza compartida (components/Segmentado),
+            porque el seguimiento del clima laboral la usa igual; las razones de sus medidas están allá. */}
+        <Segmentado
+          etiqueta="Cómo se ve el calendario"
+          opciones={MODOS.map(m => ({ valor: m, etiqueta: PERIODO[m].unidad }))}
+          valor={modo}
+          onCambio={verEnModo}
+        />
 
         {/* BLANCOS CON BORDE, como en la maqueta, y no grises: el gris del segmentado que va al lado
             es el fondo de un grupo de opciones, y usarlo también para los controles de navegación

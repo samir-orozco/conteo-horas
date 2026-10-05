@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../../lib/api';
+import Segmentado from '../../components/Segmentado';
 import type { CasoDeSeguimiento, Responsable } from './tipos';
 import { ESTADOS, NOMBRE_DE_ESTADO } from './estadoDeSeguimiento';
 import { fechaYHora } from '../../lib/fechas';
@@ -35,17 +36,16 @@ export default function SeguimientoDelCaso({ caso, responsables, onCambio }: {
     <section role="group" aria-label="Seguimiento" className="rounded-xl border border-gray-200 p-4 mb-6">
       <p className="text-sm font-semibold text-ink mb-3">Seguimiento</p>
 
-      <div className="flex rounded-lg border border-gray-200 p-0.5 mb-3">
-        {ESTADOS.map(e => (
-          <button
-            key={e} type="button" aria-pressed={caso.estado === e} disabled={ocupado}
-            onClick={() => caso.estado !== e && hacer(() => api.patch(base, { estado: e }))}
-            className={`flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
-              caso.estado === e ? 'bg-ink text-white' : 'text-muted hover:text-ink hover:bg-gray-50'}`}
-          >
-            {NOMBRE_DE_ESTADO[e]}
-          </button>
-        ))}
+      {/* El mismo selector de turnos, con su píldora que se desliza (pedido del dueño). */}
+      <div className="mb-3">
+        <Segmentado
+          etiqueta="Estado del caso"
+          opciones={ESTADOS.map(e => ({ valor: e, etiqueta: NOMBRE_DE_ESTADO[e] }))}
+          valor={caso.estado}
+          deshabilitado={ocupado}
+          compacto
+          onCambio={e => { if (e !== caso.estado) hacer(() => api.patch(base, { estado: e })); }}
+        />
       </div>
 
       <label htmlFor="responsable-caso" className="block text-xs font-medium text-muted mb-1">Responsable</label>
@@ -75,7 +75,7 @@ export default function SeguimientoDelCaso({ caso, responsables, onCambio }: {
                 <textarea
                   id={`editar-${k.id}`} value={editando.texto} rows={3} maxLength={2000}
                   onChange={ev => setEditando({ id: k.id, texto: ev.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+                  className="w-full min-h-[72px] border border-gray-300 rounded-lg px-3 py-2 text-sm resize-y"
                 />
                 <div className="flex gap-3 mt-1">
                   <button type="button" disabled={ocupado || !editando.texto.trim()}
@@ -110,7 +110,8 @@ export default function SeguimientoDelCaso({ caso, responsables, onCambio }: {
       <textarea
         id="comentario-nuevo" value={nuevo} rows={2} maxLength={2000} placeholder="Escribe qué se hizo o qué sigue…"
         onChange={ev => setNuevo(ev.target.value)}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
+        // Se agranda a lo alto arrastrando la esquina (pedido del dueño); a lo ancho no, para no romper el panel.
+        className="w-full min-h-[72px] border border-gray-300 rounded-lg px-3 py-2 text-sm resize-y"
       />
       <button
         type="button" aria-label="Agregar comentario" disabled={ocupado || !nuevo.trim()}

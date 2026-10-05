@@ -341,6 +341,13 @@ describe('seguimiento: en el panel de «Revisar»', () => {
     expect(patch).toHaveBeenCalledWith('/clima/seguimientos/s1', { estado: 'CERRADO' });
   });
 
+  it('tocar el estado que ya tiene no guarda nada', async () => {
+    const panel = await abrirRevisar();
+    const seg = within(panel).getByRole('group', { name: 'Seguimiento' });
+    await act(async () => { fireEvent.click(within(seg).getByRole('button', { name: 'En seguimiento' })); });
+    expect(patch).not.toHaveBeenCalled();
+  });
+
   it('cambiar el responsable lo guarda, y se puede dejar sin responsable', async () => {
     const panel = await abrirRevisar();
     const seg = within(panel).getByRole('group', { name: 'Seguimiento' });
