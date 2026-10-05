@@ -12,7 +12,7 @@ import { MAX_DESCANSOS_POR_FRANJA, MAX_MARCACIONES_POR_JORNADA } from '../lib/de
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import MenuFiltros from '../components/MenuFiltros';
 import MenuAcciones from '../components/MenuAcciones';
-import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
+import { sedeDeLaJornada, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
 import SelectorColaborador from '../components/SelectorColaborador';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
 import { ingresosDelDia, type Ingreso } from '../features/registros/ingresosDelDia';
@@ -21,11 +21,19 @@ import AvatarMini from '../components/AvatarMini';
 
 const TZ = 'America/Bogota';
 // `fotoMini`: la miniatura que ya manda GET /colaboradores. La lista de jornadas no trae fotos.
-type Colaborador = { id: string; nombre: string; apellido: string; fotoMini?: string | null };
+type Colaborador = { id: string; nombre: string; apellido: string; fotoMini?: string | null; sedeNombres?: string[] };
 // La foto de la persona de cada fila de la tabla (13 de septiembre de 2026). Quien ya no está
 // activo no viene en GET /colaboradores y sale con sus iniciales.
 const fotoMiniDe = (colaboradores: Colaborador[], id: string) =>
   colaboradores.find(c => c.id === id)?.fotoMini ?? null;
+// La sede ASIGNADA de la persona, que va bajo su nombre (petición 21 del dueño). Es su
+// configuración, no un hecho de la jornada: dónde marcó lo dice la columna de sede.
+//
+// Vacío cuando no tiene ninguna —un remoto o un híbrido no la necesitan— y también cuando la
+// persona está retirada, porque entonces no viene en GET /colaboradores. En los dos casos no se
+// pinta la línea, que es mejor que pintarla vacía.
+const sedesAsignadasDe = (colaboradores: Colaborador[], id: string) =>
+  (colaboradores.find(c => c.id === id)?.sedeNombres ?? []).join(', ');
 type Marcacion = {
   id: string; entrada: string | null; salida: string | null;
   salidaAlmuerzo: boolean; salidaDescanso?: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
@@ -192,12 +200,6 @@ function CeldaDescansos({ descansos, minutosAqui }: { descansos: ResumenDePausa[
   }
 }
 
-// Celda de sede. Fuera del componente a propósito: definida adentro, React la
-// trataría como un tipo nuevo en cada render.
-//
-// Una sola sede cuando abrió y cerró en la misma, o cuando la de cierre no se
-// sabe (todo lo anterior a que se guardara). La flecha solo cuando se conocen las
-// dos y son distintas: es lo que se quiere encontrar de un vistazo.
 // LA ETIQUETA DEL SEGUNDO INGRESO DEL DÍA.
 //
 // No dice «duplicado»: un turno partido son dos jornadas legítimas, y afirmar
@@ -217,25 +219,46 @@ function EtiquetaDeIngreso({ ingreso, nombre }: { ingreso?: Ingreso; nombre: str
   );
 }
 
+// Celda de sede: DÓNDE MARCÓ esta jornada. Fuera del componente a propósito:
+// definida adentro, React la trataría como un tipo nuevo en cada render.
+//
+// Un caso por valor con un `default` explícito, y la clase la decide
+// `sedeDeLaJornada` (§9.4): era una cadena de cuatro `if` aquí dentro.
+//
+// La flecha solo cuando se conocen las dos sedes y son distintas: es lo que se
+// quiere encontrar de un vistazo.
 function CeldaSede({ r }: { r: Registro }) {
-  if (cruzoDeSede(r)) {
-    return (
-      <span className="inline-flex items-center gap-1 whitespace-nowrap" title={`Abrió en ${r.sede!.nombre} y cerró en ${r.sedeSalida!.nombre}`}>
-        {r.sede!.nombre}
-        <ArrowRight size={12} className="text-amber-600" aria-hidden="true" />
-        <span className="font-semibold text-amber-700">{r.sedeSalida!.nombre}</span>
-      </span>
-    );
+  const s = sedeDeLaJornada(r);
+  switch (s.clase) {
+    case 'cruce':
+      return (
+        <span className="inline-flex items-center gap-1 whitespace-nowrap" title={`Abrió en ${s.abrio} y cerró en ${s.cerro}`}>
+          {s.abrio}
+          <ArrowRight size={12} className="text-amber-600" aria-hidden="true" />
+          <span className="font-semibold text-amber-700">{s.cerro}</span>
+        </span>
+      );
+    case 'probada':
+      return <span className="whitespace-nowrap">{s.nombre}</span>;
+    // Abrió sin sede pero cerró en una: se dice dónde CERRÓ, no se deja creer
+    // que toda la jornada fue ahí.
+    case 'soloCierre':
+      return <span className="whitespace-nowrap">Cerró en {s.nombre}</span>;
+    // LA QUE NO MARCÓ. Sigue visible porque es la que cuenta en los reportes (un
+    // presencial no se ve sin sede, decisión del dueño del 12 de septiembre de
+    // 2026), pero ya no con el mismo aspecto que una probada: así escrita se
+    // leía igual que «marcó aquí», y son dos cosas distintas (petición 21).
+    case 'atribuida':
+      return (
+        <span className="whitespace-nowrap text-gray-400"
+          title={`No quedó registrada la sede de esta jornada. Para los reportes cuenta en ${s.nombre}, que es su sede asignada.`}>
+          {'— · cuenta en '}{s.nombre}
+        </span>
+      );
+    // 'ninguna' y lo que venga: un guion. Explícito a propósito.
+    default:
+      return <span className="text-gray-300">-</span>;
   }
-  if (r.sede) return <span className="whitespace-nowrap">{r.sede.nombre}</span>;
-  // Abrió sin sede pero cerró en una: se dice dónde CERRÓ, no se deja creer que
-  // toda la jornada fue ahí.
-  if (r.sedeSalida) return <span className="whitespace-nowrap">Cerró en {r.sedeSalida.nombre}</span>;
-  // Sin ninguna sede probada, la que se le atribuye: un presencial no se ve sin sede
-  // (decisión del dueño del 12 de septiembre de 2026). Desde el 13, solo con su nombre: el
-  // dueño pidió quitar «por defecto».
-  if (r.sedeAtribuida) return <span className="whitespace-nowrap">{r.sedeAtribuida.nombre}</span>;
-  return <span className="text-gray-300">-</span>;
 }
 
 // El diseño del formulario de la jornada (13 de septiembre de 2026, aprobado por el dueño):
@@ -672,7 +695,18 @@ export default function Registros() {
                   <div className="flex items-center gap-3">
                     <AvatarMini nombre={r.colaborador.nombre} apellido={r.colaborador.apellido}
                       foto={fotoMiniDe(colaboradores, r.colaboradorId)} />
-                    <span className="whitespace-nowrap">{r.colaborador.nombre} {r.colaborador.apellido}</span>
+                    <div className="min-w-0">
+                      <span className="block whitespace-nowrap">{r.colaborador.nombre} {r.colaborador.apellido}</span>
+                      {/* La sede ASIGNADA, que es de la persona y no de la jornada. El rótulo va
+                          en sr-only: a la vista basta el nombre debajo del suyo, y a un lector de
+                          pantalla «Norte» suelto no le dice qué es. */}
+                      {sedesAsignadasDe(colaboradores, r.colaboradorId) && (
+                        <span className="block text-xs text-muted font-normal truncate">
+                          <span className="sr-only">Sede asignada: </span>
+                          {sedesAsignadasDe(colaboradores, r.colaboradorId)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-600 capitalize">

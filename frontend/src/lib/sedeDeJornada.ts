@@ -76,3 +76,32 @@ export function muestraColumnaSede(filas: ConSedes[], activas: SedeCorta[]): boo
   if (activas.length > 0) return true;
   return filas.some(r => r.sede || r.sedeSalida || r.sedeAtribuida);
 }
+
+/**
+ * Qué dice la celda de sede de una jornada.
+ *
+ * Un caso por valor y un `default` explícito, que es lo que pide la §9.4 del
+ * CLAUDE.md para una pregunta de «de qué tipo es esto». Antes era una cadena de
+ * cuatro `if` dentro de la pantalla, y el cuarto devolvía la sede ATRIBUIDA con
+ * el mismo aspecto que una probada: en la tabla no se podía distinguir «marcó
+ * en Laureles» de «no marcó en ninguna y se le atribuye Laureles».
+ *
+ * `atribuida` sale aparte justamente para que la pantalla la pueda decir como
+ * lo que es. Una sede probada manda siempre sobre ella.
+ */
+export type SedeDeJornada =
+  | { clase: 'cruce'; abrio: string; cerro: string }
+  | { clase: 'probada'; nombre: string }
+  | { clase: 'soloCierre'; nombre: string }
+  | { clase: 'atribuida'; nombre: string }
+  | { clase: 'ninguna' };
+
+export function sedeDeLaJornada(r: ConSedes): SedeDeJornada {
+  if (cruzoDeSede(r)) return { clase: 'cruce', abrio: r.sede!.nombre, cerro: r.sedeSalida!.nombre };
+  if (r.sede) return { clase: 'probada', nombre: r.sede.nombre };
+  // Abrió sin sede pero cerró en una: se dice que es el CIERRE, para no dejar
+  // creer que toda la jornada fue ahí.
+  if (r.sedeSalida) return { clase: 'soloCierre', nombre: r.sedeSalida.nombre };
+  if (r.sedeAtribuida) return { clase: 'atribuida', nombre: r.sedeAtribuida.nombre };
+  return { clase: 'ninguna' };
+}

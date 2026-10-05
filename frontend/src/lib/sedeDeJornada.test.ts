@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, CRUCE_DISTINTAS } from './sedeDeJornada';
+import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, sedeDeLaJornada, CRUCE_DISTINTAS } from './sedeDeJornada';
 
 const POBLADO = { id: 's1', nombre: 'El Poblado' };
 const LAURELES = { id: 's2', nombre: 'Laureles' };
@@ -125,5 +125,58 @@ describe('muestraColumnaSede', () => {
   });
   it('sin sedes activas y sin ninguna sede en las filas, no se muestra: sería una columna de guiones', () => {
     expect(muestraColumnaSede([{}, { sede: null, sedeSalida: null, sedeAtribuida: null }], [])).toBe(false);
+  });
+});
+
+// QUÉ DICE LA CELDA DE SEDE DE UNA JORNADA (4 de octubre de 2026).
+//
+// Era una cadena de cuatro `if` dentro de la pantalla, y el cuarto mostraba la
+// sede ATRIBUIDA con el mismo aspecto que una probada: en la tabla no había
+// forma de distinguir «marcó en Laureles» de «no marcó en ninguna y se le
+// atribuye Laureles». El dueño pidió que en la jornada aparezca solo dónde
+// marcó (petición 21), así que la atribuida sigue estando pero dicha como lo
+// que es.
+//
+// Va como una función con un caso por valor y un `default` explícito, que es lo
+// que pide la §9.4 del CLAUDE.md para una pregunta de «de qué tipo es esto».
+describe('sedeDeLaJornada', () => {
+  it('abrió en una y cerró en otra: es un cruce, con las dos', () => {
+    expect(sedeDeLaJornada({ sede: POBLADO, sedeSalida: LAURELES }))
+      .toEqual({ clase: 'cruce', abrio: 'El Poblado', cerro: 'Laureles' });
+  });
+
+  it('abrió y cerró en la misma: una sola, probada', () => {
+    expect(sedeDeLaJornada({ sede: POBLADO, sedeSalida: POBLADO }))
+      .toEqual({ clase: 'probada', nombre: 'El Poblado' });
+  });
+
+  // Todo lo anterior a que se guardara la sede de salida.
+  it('abrió en una y no se sabe dónde cerró: la de apertura, probada', () => {
+    expect(sedeDeLaJornada({ sede: POBLADO }))
+      .toEqual({ clase: 'probada', nombre: 'El Poblado' });
+  });
+
+  it('no se sabe dónde abrió pero cerró en una: se dice que es el cierre', () => {
+    expect(sedeDeLaJornada({ sedeSalida: LAURELES }))
+      .toEqual({ clase: 'soloCierre', nombre: 'Laureles' });
+  });
+
+  // La que importa: sin ninguna sede probada, la atribuida se devuelve APARTE,
+  // para que la pantalla no la pinte como si la hubiera marcado.
+  it('sin sede probada, la atribuida se devuelve como atribuida', () => {
+    expect(sedeDeLaJornada({ sedeAtribuida: PRINCIPAL }))
+      .toEqual({ clase: 'atribuida', nombre: 'Sede principal' });
+  });
+
+  it('una sede probada manda sobre la atribuida', () => {
+    expect(sedeDeLaJornada({ sede: POBLADO, sedeAtribuida: PRINCIPAL }))
+      .toEqual({ clase: 'probada', nombre: 'El Poblado' });
+    expect(sedeDeLaJornada({ sedeSalida: LAURELES, sedeAtribuida: PRINCIPAL }))
+      .toEqual({ clase: 'soloCierre', nombre: 'Laureles' });
+  });
+
+  it('sin ninguna sede, ninguna', () => {
+    expect(sedeDeLaJornada({})).toEqual({ clase: 'ninguna' });
+    expect(sedeDeLaJornada({ sede: null, sedeSalida: null, sedeAtribuida: null })).toEqual({ clase: 'ninguna' });
   });
 });
