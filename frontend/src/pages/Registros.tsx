@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Coffee, Eye, ArrowRight, Clock, User, type LucideIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Coffee, Eye, ArrowRight, Clock, User, FileDown, type LucideIcon } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable, type ResumenDePausa } from './registros/ModalJornada';
@@ -16,12 +16,14 @@ import { sedeDeLaJornada, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumn
 import SelectorColaborador from '../components/SelectorColaborador';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
 import { ingresosDelDia, type Ingreso } from '../features/registros/ingresosDelDia';
+import { descargarExcelHojas } from '../lib/exportar';
+import { COLUMNAS_REGISTROS, filasDeRegistros, nombreDelArchivo } from '../features/registros/exportarRegistros';
 import { avisoDeFotosPorBorrar, type FotoPorBorrar } from '../lib/fotosPorBorrar';
 import AvatarMini from '../components/AvatarMini';
 
 const TZ = 'America/Bogota';
 // `fotoMini`: la miniatura que ya manda GET /colaboradores. La lista de jornadas no trae fotos.
-type Colaborador = { id: string; nombre: string; apellido: string; fotoMini?: string | null; sedeNombres?: string[] };
+type Colaborador = { id: string; nombre: string; apellido: string; fotoMini?: string | null; sedeNombres?: string[]; cedula?: string };
 // La foto de la persona de cada fila de la tabla (13 de septiembre de 2026). Quien ya no está
 // activo no viene en GET /colaboradores y sale con sus iniciales.
 const fotoMiniDe = (colaboradores: Colaborador[], id: string) =>
@@ -34,6 +36,11 @@ const fotoMiniDe = (colaboradores: Colaborador[], id: string) =>
 // pinta la línea, que es mejor que pintarla vacía.
 const sedesAsignadasDe = (colaboradores: Colaborador[], id: string) =>
   (colaboradores.find(c => c.id === id)?.sedeNombres ?? []).join(', ');
+// La cédula para el Excel. GET /registros no la manda —su `colaborador` trae solo el nombre— así
+// que sale de la lista que ya está cargada. Vacía para quien está retirado, que no viene en ella:
+// mejor una celda vacía que una cédula inventada.
+const cedulaDe = (colaboradores: Colaborador[], id: string) =>
+  colaboradores.find(c => c.id === id)?.cedula ?? '';
 type Marcacion = {
   id: string; entrada: string | null; salida: string | null;
   salidaAlmuerzo: boolean; salidaDescanso?: boolean; entradaEstimada: boolean; salidaEstimada: boolean;
@@ -586,6 +593,19 @@ export default function Registros() {
   const ingresos = useMemo(() => ingresosDelDia(registros), [registros]);
   const filtrados = registros.filter(r => cumpleLlegada(r) && cumpleSalida(r) && cumpleSede(r, filtroSede) && cumpleCruce(r, filtroCruce));
 
+  // EXPORTAR LO QUE SE ESTÁ VIENDO: `filtrados`, no `registros` ni `visibles`.
+  //
+  // Con `registros` el archivo ignoraría los filtros puestos; con `visibles`
+  // bajaría solo la página en curso, 50 filas de 300 sin avisar. Las dos formas
+  // de equivocarse dan un archivo plausible, que es lo peligroso.
+  const exportarAExcel = () => {
+    descargarExcelHojas(nombreDelArchivo(desde, hasta), [{
+      nombre: 'Registros',
+      columnas: COLUMNAS_REGISTROS,
+      filas: filasDeRegistros(filtrados, id => cedulaDe(colaboradores, id)),
+    }]);
+  };
+
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / porPagina));
   // Se acota al total por si la lista encogió con el filtro y la página actual
   // ya no existe.
@@ -656,6 +676,15 @@ export default function Registros() {
             setPagina(1);
           }}
         />
+
+        {/* Pegado a los filtros a propósito: lo que baja es lo que ellos dejan. */}
+        <button onClick={exportarAExcel} disabled={filtrados.length === 0}
+          title={filtrados.length === 0
+            ? 'No hay registros que exportar con estos filtros'
+            : `Descargar ${filtrados.length} ${filtrados.length === 1 ? 'jornada' : 'jornadas'} en Excel`}
+          className="ml-auto flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+          <FileDown size={16} />Exportar
+        </button>
       </div>
 
       <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-800 rounded-xl px-4 py-2.5 text-xs mb-4">
