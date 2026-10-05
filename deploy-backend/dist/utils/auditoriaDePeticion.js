@@ -51,6 +51,11 @@ const RECURSOS = {
     'horarios': 'un horario',
     'plantillas-turno': 'una plantilla de turno',
     'turnos': 'un turno',
+    // El panel del clima laboral (4 de octubre de 2026): los motivos y el seguimiento de los casos. Las
+    // caritas del kiosco van por /api/worker/, que no se audita.
+    'clima/motivos': 'los motivos del clima laboral',
+    'clima/seguimientos': 'un caso de seguimiento',
+    'clima/comentarios': 'un comentario de seguimiento',
     'notificaciones': 'una notificación',
     'configuracion': 'la configuración',
     'suscripcion': 'la suscripción',
@@ -69,7 +74,11 @@ function accionDePeticion(metodo, url) {
     const partes = ruta.split('/').filter(Boolean); // ['api', 'admin', 'empresas', ':id']
     // Bajo `/api/admin` el recurso es el segundo segmento: `admin/empresas` no es lo mismo que
     // `empresas` (una la toca HoraPro, la otra la empresa sobre sí misma).
-    const clave = partes[1] === 'admin' ? `admin/${partes[2] ?? ''}` : (partes[1] ?? '');
+    // Bajo `/api/clima` también: los motivos, los casos y sus comentarios son cosas distintas, y el
+    // comentario va anidado en su caso.
+    const clave = partes[1] === 'admin' ? `admin/${partes[2] ?? ''}`
+        : partes[1] === 'clima' ? (partes.includes('comentarios') ? 'clima/comentarios' : `clima/${partes[2] ?? ''}`)
+            : (partes[1] ?? '');
     const recurso = RECURSOS[clave];
     const verboBase = VERBOS[(metodo ?? '').toUpperCase()];
     if (!recurso || !verboBase)

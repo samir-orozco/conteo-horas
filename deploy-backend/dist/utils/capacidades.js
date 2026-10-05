@@ -46,7 +46,7 @@ function exigeFuncion(feature) {
         // El mismo `codigo` y el mismo `funcion` que usan las guardas de dentro de los manejadores: la
         // pantalla los lee para saber que es cosa del plan y no un error, y ofrecer subir de plan.
         return reply.status(403).send({
-            error: 'Tu plan no incluye el módulo de turnos. Sube de plan para programarlos.',
+            error: (0, planes_1.mensajeDeFuncionBloqueada)(feature),
             codigo: 'FUNCION_PLAN',
             funcion: feature,
         });

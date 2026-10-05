@@ -4,6 +4,7 @@
 // override por empresa desde el super admin (limiteOverride / funcionesOverride).
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PLAN_IDS = exports.esPlan = exports.PLANES = exports.FEATURES = void 0;
+exports.mensajeDeFuncionBloqueada = mensajeDeFuncionBloqueada;
 exports.combinarPlanes = combinarPlanes;
 exports.obtenerPlanes = obtenerPlanes;
 exports.capacidadesDe = capacidadesDe;
@@ -22,6 +23,9 @@ exports.FEATURES = [
     // No lleva `proximamente`, al revés que Siigo: existe y se despliega hoy. Esa marca deja la casilla
     // apagada y sin poder tocarla, que es justo lo contrario de lo que se pidió aquí.
     { key: 'turnos', label: 'Turnos y programación' },
+    // CLIMA LABORAL (3 de octubre de 2026): las caritas al marcar la salida y su panel. Solo Empresarial,
+    // por decisión del dueño. El requerimiento está en docs/CLIMA_LABORAL.md.
+    { key: 'clima', label: 'Clima laboral' },
     // Siigo todavía no existe (decisión del dueño del 15 de septiembre de 2026): las pantallas del super
     // admin la muestran como «Próximamente» y sin casilla que marcar.
     { key: 'siigo', label: 'Integración Siigo', proximamente: true },
@@ -46,9 +50,15 @@ exports.PLANES = {
     EMPRESARIAL: {
         id: 'EMPRESARIAL', nombre: 'Empresarial', limite: 150,
         precioMensual: 299900, precioAnual: 2999000,
-        features: F(['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo', 'multiSede', 'turnos']),
+        features: F(['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo', 'multiSede', 'turnos', 'clima']),
     },
 };
+// Lo que responde una guarda cuando el plan no trae la función. Nombra la función por su `label`: antes
+// decía «turnos» para todas, y con un segundo módulo detrás le mentía a quien lo leía.
+function mensajeDeFuncionBloqueada(feature) {
+    const nombre = exports.FEATURES.find(f => f.key === feature)?.label ?? feature;
+    return `Tu plan no incluye «${nombre}». Sube de plan para usarlo.`;
+}
 const esPlan = (v) => v === 'ESENCIAL' || v === 'PROFESIONAL' || v === 'EMPRESARIAL';
 exports.esPlan = esPlan;
 exports.PLAN_IDS = ['ESENCIAL', 'PROFESIONAL', 'EMPRESARIAL'];

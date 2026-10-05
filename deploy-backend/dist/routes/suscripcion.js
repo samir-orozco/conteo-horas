@@ -128,6 +128,8 @@ async function suscripcionRoutes(app) {
             pagos: await (0, suscripcion_1.pagosDeLaEmpresa)(prisma_1.prisma, susc.id),
             // Para el recibo en PDF que descarga desde el historial
             empresa: empresa && { nombre: empresa.nombre, nit: empresa.nit, email: empresa.email, telefono: empresa.telefono },
+            // Para el aviso de suscripción vencida: desde cuándo se pausa el kiosco, y si ya se pausó
+            kiosco: exenta ? null : { pausaDesde: (0, suscripcion_1.pausaDelKiosco)(sync), pausado: (0, suscripcion_1.kioscoPausado)(empresa, sync) },
             wompiConfigurado: (0, wompi_1.wompiConfigurado)(),
             checkout,
         };

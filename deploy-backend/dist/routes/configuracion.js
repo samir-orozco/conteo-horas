@@ -12,6 +12,7 @@ const revisionPendiente_1 = require("../utils/revisionPendiente");
 const vigencias_1 = require("../utils/vigencias");
 const telegram_1 = require("../utils/telegram");
 const capacidades_1 = require("../utils/capacidades");
+const climaDelKiosco_1 = require("../utils/climaDelKiosco");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
 async function configuracionRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
@@ -61,6 +62,11 @@ async function configuracionRoutes(app) {
     app.put('/', auth, async (request, reply) => {
         const data = request.body;
         const empresaId = request.empresaId;
+        // Los motivos del clima laboral tienen su propia ruta, que exige el plan y el rol de administrador
+        // (routes/clima.ts). Por aquí un supervisor podía cambiarlos y quitar justo «Jefe o supervisor».
+        if (climaDelKiosco_1.CLAVE_MOTIVOS in data) {
+            return reply.status(403).send({ error: 'Los motivos del clima laboral se cambian en Clima laboral.' });
+        }
         // Gating: activar GPS o Telegram requiere que el plan lo incluya
         const cap = await (0, capacidades_1.capacidadesEmpresa)(empresaId);
         const tocaGeo = Object.keys(data).some(k => k.startsWith('GEO_'));

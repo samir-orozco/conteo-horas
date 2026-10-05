@@ -53,6 +53,8 @@ const festivos_1 = __importDefault(require("./routes/festivos"));
 const configuracion_1 = __importDefault(require("./routes/configuracion"));
 const reportes_1 = __importDefault(require("./routes/reportes"));
 const worker_1 = __importDefault(require("./routes/worker"));
+const climaDelKiosco_1 = __importDefault(require("./routes/climaDelKiosco"));
+const clima_1 = __importDefault(require("./routes/clima"));
 const registroFacial_1 = __importDefault(require("./routes/registroFacial"));
 const admin_1 = __importDefault(require("./routes/admin"));
 const afiliados_1 = __importDefault(require("./routes/afiliados"));
@@ -72,6 +74,7 @@ const contratos_2 = require("./routes/contratos");
 const cierreAlmuerzo_1 = require("./utils/cierreAlmuerzo");
 const materializarDias_1 = require("./utils/materializarDias");
 const programarDiario_1 = require("./utils/programarDiario");
+const avisosDeSuscripcion_1 = require("./utils/avisosDeSuscripcion");
 const opcionesDeLog_1 = require("./utils/opcionesDeLog");
 const accesoEmpresa_1 = require("./utils/accesoEmpresa");
 const respuestaDeError_1 = require("./utils/respuestaDeError");
@@ -206,6 +209,9 @@ app.register(configuracion_1.default, { prefix: '/api/configuracion' });
 app.register(reportes_1.default, { prefix: '/api/reportes' });
 app.register(sedes_1.default, { prefix: '/api/sedes' });
 app.register(worker_1.default, { prefix: '/api/worker' });
+// Las caritas del clima laboral: bajo /api/worker/ para quedar fuera de la auditoría (ver el archivo).
+app.register(climaDelKiosco_1.default, { prefix: '/api/worker/clima' });
+app.register(clima_1.default, { prefix: '/api/clima' });
 // Público, como el kiosco: la persona registra su rostro con el enlace que le mandó su empresa.
 app.register(registroFacial_1.default, { prefix: '/api/registro-facial' });
 app.register(admin_1.default, { prefix: '/api/admin' });
@@ -303,6 +309,9 @@ const start = async () => {
         // horario VIGENTE, que es justo lo que reescribía el pasado.
         // Es idempotente y solo escribe donde falta, así que correr de más no daña.
         (0, programarDiario_1.programarDiario)('ventana-dias-esperados', HORA_BARRIDOS, () => (0, materializarDias_1.mantenerVentana)(app.log), app.log);
+        // Los correos de suscripción vencida y de kiosco por pausarse (4 de octubre de 2026). A las 7 y
+        // no a la hora de los barridos: son para que los lea una persona.
+        (0, programarDiario_1.programarDiario)('avisos-de-suscripcion', 7, () => (0, avisosDeSuscripcion_1.avisarSuscripcionesDeTodas)(app.log), app.log);
         // Registra el webhook del bot de Telegram (si hay URL configurada)
         if (process.env.TELEGRAM_WEBHOOK_URL)
             (0, telegram_2.configurarWebhook)(process.env.TELEGRAM_WEBHOOK_URL);

@@ -12,6 +12,7 @@ const rostro_1 = require("../utils/rostro");
 const metodoMarcacion_1 = require("../utils/metodoMarcacion");
 const telegram_1 = require("../utils/telegram");
 const notificaciones_1 = require("../utils/notificaciones");
+const suscripcion_1 = require("../utils/suscripcion");
 const fechas_1 = require("../utils/fechas");
 const kioscoConfig_1 = require("../utils/kioscoConfig");
 const modalidad_1 = require("../utils/modalidad");
@@ -24,6 +25,7 @@ const materializarDias_1 = require("../utils/materializarDias");
 const diasDeLaSemana_1 = require("../utils/diasDeLaSemana");
 const marcasDelDia_1 = require("../utils/marcasDelDia");
 const jornadaYaRegistrada_1 = require("../utils/jornadaYaRegistrada");
+const climaDelKiosco_1 = require("../utils/climaDelKiosco");
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
 // Un token de kiosco dura 12 horas y sigue siendo válido aunque la persona ya no
 // exista: pasa cuando el super admin elimina la empresa con una sesión abierta.
@@ -281,6 +283,13 @@ const vincularSchema = {
 };
 // Nota: el kiosco NUNCA se bloquea por mora o suspensión — los colaboradores
 // siguen marcando sus horas; el cobro se gestiona en el panel del admin.
+// El kiosco se pausa por falta de pago, 10 días después de la suspensión (decisión del dueño, 4 de
+// octubre de 2026; antes no se pausaba nunca). Devuelve con qué responder, o null si se puede marcar.
+// La regla está probada en utils/suscripcion.ts; esto solo la consulta.
+async function kioscoEnPausa(empresa) {
+    const suscripcion = await prisma_1.prisma.suscripcion.findUnique({ where: { empresaId: empresa.id } });
+    return (0, suscripcion_1.kioscoPausado)(empresa, suscripcion) ? { error: (0, suscripcion_1.mensajeKioscoPausado)(empresa.nombre), codigo: 'KIOSCO_PAUSADO' } : null;
+}
 async function workerRoutes(app) {
     // Info del kiosco a partir del token del link único de la empresa
     app.get('/kiosco/:token', async (request, reply) => {
@@ -290,6 +299,8 @@ async function workerRoutes(app) {
             return reply.code(404).send({ error: 'Link de marcación inválido' });
         return {
             empresa: empresa.nombre,
+            // Pausado por falta de pago: el kiosco lo dice desde que carga, antes de que alguien intente entrar.
+            pausado: (await kioscoEnPausa(empresa)) !== null,
             requiereDispositivo: await (0, kioscoConfig_1.exigeDispositivo)(empresa.id),
             permiteCedula: await (0, kioscoConfig_1.permiteCedula)(empresa.id),
             // Si el ingreso facial pide girar la cabeza antes de capturar. Apagado por
@@ -333,6 +344,9 @@ async function workerRoutes(app) {
         const empresa = await prisma_1.prisma.empresa.findUnique({ where: { marcadorToken } });
         if (!empresa || !empresa.activa)
             return reply.code(404).send({ error: 'Link de marcación inválido' });
+        const enPausa = await kioscoEnPausa(empresa);
+        if (enPausa)
+            return reply.code(402).send(enPausa);
         if (!(await (0, kioscoConfig_1.permiteCedula)(empresa.id))) {
             return reply.code(403).send({ error: 'Esta empresa desactivó la marcación con cédula. Usa el reconocimiento facial.' });
         }
@@ -391,6 +405,9 @@ async function workerRoutes(app) {
         const empresa = await prisma_1.prisma.empresa.findUnique({ where: { marcadorToken } });
         if (!empresa || !empresa.activa)
             return reply.code(404).send({ error: 'Link de marcación inválido' });
+        const enPausa = await kioscoEnPausa(empresa);
+        if (enPausa)
+            return reply.code(402).send(enPausa);
         if (await (0, kioscoConfig_1.exigeDispositivo)(empresa.id)) {
             if (!(await (0, kioscoConfig_1.dispositivoValido)(empresa.id, deviceToken))) {
                 return reply.code(401).send({ error: 'Este dispositivo no está autorizado para marcar', codigo: 'DISPOSITIVO_REQUERIDO' });
@@ -633,6 +650,12 @@ async function workerRoutes(app) {
             // escribir nada, con un mensaje que la persona entienda.
             if (!col)
                 return reply.code(401).send({ error: SESION_INVALIDA });
+            // Quien entró antes de la medianoche de la pausa tiene un token que sigue valiendo: se mira
+            // aquí también, después de saber que la persona existe.
+            const empresaDelKiosco = await prisma_1.prisma.empresa.findUnique({ where: { id: col.empresaId }, select: { id: true, nombre: true, exentaPago: true } });
+            const enPausa = empresaDelKiosco && await kioscoEnPausa(empresaDelKiosco);
+            if (enPausa)
+                return reply.code(402).send(enPausa);
             const modalidad = col.modalidad ?? modalidad_1.MODALIDAD_POR_DEFECTO;
             // ===== Dónde está marcando =====
             //
@@ -804,9 +827,17 @@ async function workerRoutes(app) {
                     await crearNovedad(payload.id, tipoNovedad, descripcionNovedad, updated.id, ventanaNovedad)
                         .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la salida temprana'));
                 }
+                // CLIMA LABORAL (4 de octubre de 2026): si la salida cierra la jornada y la empresa tiene el
+                // módulo, la respuesta trae con qué abrir la ventana de las caritas. La salida YA quedó escrita:
+                // un fallo aquí deja al kiosco sin ventana, nunca sin marca, y queda anotado como fallo y no
+                // como «hoy no tocaba» (CLAUDE.md §8.3).
+                const clima = await (0, climaDelKiosco_1.climaDeLaSalida)({ colaboradorId: payload.id, empresaId: payload.empresaId, registroId: abierto.id, fechaJornada: abierto.fecha, pausa: esAlmuerzo || esDescanso }, token => app.jwt.sign(token, { expiresIn: climaDelKiosco_1.DURACION_TOKEN_CLIMA })).catch(err => {
+                    app.log.error(err, 'Clima laboral: no se pudo preparar la ventana de la salida');
+                    return null;
+                });
                 // `descanso` es la ventana a la que se anotó la salida, para que la tableta
                 // lo diga: una tableta que no la conoce la ignora.
-                return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo, salidaDescanso: esDescanso, descanso: descansoAsignado };
+                return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo, salidaDescanso: esDescanso, descanso: descansoAsignado, clima };
             }
             else {
                 // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
@@ -949,6 +980,10 @@ async function workerRoutes(app) {
         const existe = await prisma_1.prisma.colaborador.findUnique({ where: { id: payload.id }, select: { id: true } });
         if (!existe)
             return reply.code(401).send({ error: SESION_INVALIDA });
+        const empresaDelKiosco = await prisma_1.prisma.empresa.findUnique({ where: { id: payload.empresaId }, select: { id: true, nombre: true, exentaPago: true } });
+        const enPausa = empresaDelKiosco && await kioscoEnPausa(empresaDelKiosco);
+        if (enPausa)
+            return reply.code(402).send(enPausa);
         const permiso = await crearNovedad(payload.id, tipo, descripcion ?? '');
         return reply.code(201).send({ ok: true, id: permiso.id });
     });
