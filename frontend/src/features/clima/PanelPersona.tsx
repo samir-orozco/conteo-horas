@@ -5,15 +5,21 @@ import type { HistorialPersona } from './tipos';
 import { IMAGEN_DE_CARITA } from './caritas';
 import { NOMBRE_DE_CARITA } from './ventanaClima';
 import { fechaCortaSinAnio } from './panelClima';
+import SeguimientoDelCaso from './SeguimientoDelCaso';
 
 // EL HISTORIAL DE UNA PERSONA, al tocar «Revisar» en «Necesitan atención» (4 de octubre de 2026): sus
 // últimas respuestas con la carita, los motivos y sus observaciones DIRECTAS. Las confidenciales no
 // están aquí, ni pueden estar: no se guardan con nombre.
 //
 // Se abre a la derecha, sobre el panel, y se cierra con su botón, con Escape o tocando por fuera.
-export default function PanelPersona({ colaboradorId, nombre, onCerrar }: { colaboradorId: string; nombre: string; onCerrar: () => void }) {
+// `onCambio`: el seguimiento cambió (estado, responsable o comentarios), para que quien abrió el panel
+// vuelva a leer sus listas.
+export default function PanelPersona({ colaboradorId, nombre, onCerrar, onCambio }: {
+  colaboradorId: string; nombre: string; onCerrar: () => void; onCambio?: () => void;
+}) {
   const [historial, setHistorial] = useState<HistorialPersona | null>(null);
   const [error, setError] = useState(false);
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     let vigente = true;
@@ -21,7 +27,7 @@ export default function PanelPersona({ colaboradorId, nombre, onCerrar }: { cola
       .then(r => { if (vigente) setHistorial(r.data); })
       .catch(() => { if (vigente) setError(true); });
     return () => { vigente = false; };
-  }, [colaboradorId]);
+  }, [colaboradorId, version]);
 
   const onCerrarRef = useRef(onCerrar);
   useEffect(() => { onCerrarRef.current = onCerrar; }, [onCerrar]);
@@ -58,6 +64,12 @@ export default function PanelPersona({ colaboradorId, nombre, onCerrar }: { cola
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {error && <p role="alert" className="text-sm text-red-700">No se pudo cargar el historial.</p>}
           {!historial && !error && <p className="text-sm text-muted">Cargando…</p>}
+          {historial?.seguimiento && (
+            <SeguimientoDelCaso
+              caso={historial.seguimiento} responsables={historial.responsables ?? []}
+              onCambio={() => { setVersion(v => v + 1); onCambio?.(); }}
+            />
+          )}
           {historial && historial.respuestas.length === 0 && <p className="text-sm text-muted">Todavía no ha calificado ningún día.</p>}
           {historial && historial.respuestas.length > 0 && (
             <>

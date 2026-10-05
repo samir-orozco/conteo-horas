@@ -15,14 +15,16 @@ import CalificacionesRecientes from '../features/clima/CalificacionesRecientes';
 import Buzon from '../features/clima/Buzon';
 import EditorMotivos from '../features/clima/EditorMotivos';
 import PanelPersona from '../features/clima/PanelPersona';
+import TablaSeguimiento from '../features/clima/TablaSeguimiento';
 import { notasRecientes, rangoDelMes } from '../features/clima/panelClima';
-import type { BuzonClima, MotivosClima, ResumenClima } from '../features/clima/tipos';
+import type { BuzonClima, MotivosClima, ResumenClima, SeguimientosClima } from '../features/clima/tipos';
 
 // CLIMA LABORAL (4 de octubre de 2026): lo que respondió la gente al marcar la salida. Solo plan
 // Empresarial y solo el administrador. docs/CLIMA_LABORAL.md §3.6.
 
 const TABS = [
   { id: 'resumen', label: 'Resumen' },
+  { id: 'seguimiento', label: 'Seguimiento' },
   { id: 'buzon', label: 'Buzón confidencial' },
   { id: 'motivos', label: 'Motivos' },
 ] as const;
@@ -47,8 +49,11 @@ export default function ClimaLaboral() {
   const [motivos, setMotivos] = useState<MotivosClima | null>(null);
   const [soloAdmin, setSoloAdmin] = useState(false);
   const [error, setError] = useState(false);
-  // A quién se está revisando en el panel lateral, desde «Necesitan atención».
+  // A quién se está revisando en el panel lateral, desde «Necesitan atención» o desde «Seguimiento».
   const [revisando, setRevisando] = useState<{ colaboradorId: string; nombre: string } | null>(null);
+  const [seguimientos, setSeguimientos] = useState<SeguimientosClima | null>(null);
+  // Sube cada vez que cambia un caso, para volver a leer las listas que lo muestran.
+  const [cambios, setCambios] = useState(0);
 
   useEffect(() => {
     if (sinPlan) return;
@@ -62,7 +67,14 @@ export default function ClimaLaboral() {
     api.get('/clima/resumen', { params: { desde, hasta, ...(sedeId ? { sedeId } : {}) } })
       .then(r => { setResumen(r.data); setError(false); })
       .catch(err => { if (esSoloAdmin(err)) setSoloAdmin(true); else setError(true); });
-  }, [sinPlan, desde, hasta, sedeId]);
+  }, [sinPlan, desde, hasta, sedeId, cambios]);
+
+  useEffect(() => {
+    if (sinPlan || tab !== 'seguimiento') return;
+    api.get('/clima/seguimientos')
+      .then(r => setSeguimientos(r.data))
+      .catch(err => { if (esSoloAdmin(err)) setSoloAdmin(true); else setError(true); });
+  }, [sinPlan, tab, cambios]);
 
   const notasDelBuzon = notasRecientes(buzon);
 
@@ -97,6 +109,8 @@ export default function ClimaLaboral() {
             <Lock size={18} className="text-muted" aria-hidden="true" />
             <p className="text-sm text-ink">Solo el administrador ve el clima laboral.</p>
           </div>
+        ) : tab === 'seguimiento' ? (
+          seguimientos && <TablaSeguimiento casos={seguimientos.casos} onAbrir={c => setRevisando({ colaboradorId: c.colaboradorId, nombre: c.nombre })} />
         ) : tab === 'buzon' ? (
           buzon && <Buzon buzon={buzon} />
         ) : tab === 'motivos' ? (
@@ -141,10 +155,15 @@ export default function ClimaLaboral() {
                 <CalificacionesRecientes recientes={resumen.recientes} />
               </>
             )}
-            {revisando && <PanelPersona colaboradorId={revisando.colaboradorId} nombre={revisando.nombre} onCerrar={() => setRevisando(null)} />}
           </div>
         )}
       </div>
+      {revisando && (
+        <PanelPersona
+          colaboradorId={revisando.colaboradorId} nombre={revisando.nombre}
+          onCerrar={() => setRevisando(null)} onCambio={() => setCambios(n => n + 1)}
+        />
+      )}
     </div>
   );
 }

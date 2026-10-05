@@ -8,6 +8,7 @@ import {
   CATALOGO_DE_MOTIVOS, MAX_MOTIVOS, MOTIVOS_PREDETERMINADOS, MOTIVO_OTRO,
   necesitanAtencion, ordenRevuelto, promedioPorSede, resumenDelClima, semanaDe, validarMotivosDeEmpresa,
   variacionDelPromedio, filasParaLaRacha, CARITA_MAX_DE_ATENCION, type CalificacionDelDia,
+  casosPorAbrir, leerCambioDeSeguimiento, leerComentario, type EnAtencion,
 } from '../utils/clima';
 import { CLAVE_MOTIVOS, SALIDAS_QUE_ABREN_LA_VENTANA, motivosDeEmpresa } from '../utils/climaDelKiosco';
 
@@ -52,6 +53,45 @@ export default async function climaRoutes(app: FastifyInstance) {
     }
     return { colaboradores, sedes, sedesDe };
   }
+
+  // Quién necesita atención HOY en toda la empresa, entre las personas activas: lo malo que vino después
+  // del último buen día de cada una, por viejo que sea. Una ventana fija de fechas dejaba fuera a quien
+  // responde poco (revisión adversarial del 4 de octubre de 2026).
+  async function atencionDeLaEmpresa(empresaId: string, activos: Set<string>): Promise<EnAtencion[]> {
+    const [buenos, malas] = await Promise.all([
+      prisma.calificacionClima.groupBy({ by: ['colaboradorId'], where: { empresaId, carita: { gt: CARITA_MAX_DE_ATENCION } }, _max: { fecha: true } }),
+      prisma.calificacionClima.findMany({
+        where: { empresaId, carita: { lte: CARITA_MAX_DE_ATENCION } },
+        select: { colaboradorId: true, fecha: true, carita: true, motivos: true },
+      }),
+    ]);
+    const ultimoBueno = new Map(buenos.filter(b => b._max.fecha).map(b => [b.colaboradorId, b._max.fecha as Date]));
+    return necesitanAtencion(
+      filasParaLaRacha(malas.map(m => ({ ...m, motivos: comoLista(m.motivos) })), ultimoBueno).filter(c => activos.has(c.colaboradorId)),
+    );
+  }
+
+  // EL SEGUIMIENTO (4 de octubre de 2026): cada persona que entra a «Necesitan atención» recibe su caso,
+  // con las reglas de `casosPorAbrir`. Se abren al leer la lista, y la llave única (persona, comienzo de
+  // la racha) impide que dos lecturas simultáneas abran el mismo caso dos veces.
+  async function sincronizarSeguimientos(empresaId: string, atencion: EnAtencion[]) {
+    if (atencion.length === 0) return;
+    const casos = await prisma.seguimientoClima.findMany({
+      where: { empresaId, colaboradorId: { in: atencion.map(a => a.colaboradorId) } },
+      select: { colaboradorId: true, desde: true, estado: true },
+    });
+    const nuevos = casosPorAbrir(atencion, casos);
+    if (nuevos.length > 0) {
+      await prisma.seguimientoClima.createMany({
+        data: nuevos.map(n => ({ empresaId, colaboradorId: n.colaboradorId, desde: n.desde })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
+  // Quién puede ser responsable de un caso: los usuarios activos de la empresa.
+  const responsablesDe = (empresaId: string) =>
+    prisma.usuario.findMany({ where: { empresaId, activo: true }, select: { id: true, nombre: true }, orderBy: { nombre: 'asc' } });
 
   app.get('/resumen', auth, async (request, reply) => {
     const empresaId = request.empresaId!;
@@ -100,25 +140,27 @@ export default async function climaRoutes(app: FastifyInstance) {
     });
     const jornadas = jornadasTodas.filter(j => enLaSede(j.colaboradorId));
 
-    // «Necesitan atención» es cómo está cada uno HOY, no en el período: mira lo malo que vino después de
-    // su último buen día, por viejo que sea. Una ventana fija de fechas dejaba fuera a quien responde poco.
-    const [buenos, malas] = await Promise.all([
-      prisma.calificacionClima.groupBy({ by: ['colaboradorId'], where: { empresaId, carita: { gt: CARITA_MAX_DE_ATENCION } }, _max: { fecha: true } }),
-      prisma.calificacionClima.findMany({
-        where: { empresaId, carita: { lte: CARITA_MAX_DE_ATENCION } },
-        select: { colaboradorId: true, fecha: true, carita: true, motivos: true },
-      }),
-    ]);
-    const ultimoBueno = new Map(buenos.filter(b => b._max.fecha).map(b => [b.colaboradorId, b._max.fecha as Date]));
-    const atencion = necesitanAtencion(
-      filasParaLaRacha(malas.map(m => ({ ...m, motivos: comoLista(m.motivos) })), ultimoBueno)
-        .filter(c => enLaSede(c.colaboradorId) && persona.get(c.colaboradorId)?.activo),
-    ).map(a => ({
-      ...a,
-      nombre: nombreDe(a.colaboradorId),
-      cargo: persona.get(a.colaboradorId)?.cargo ?? null,
-      sedes: (sedesDe.get(a.colaboradorId) ?? []).map(s => nombreDeSede.get(s) ?? 'Sin sede'),
-    }));
+    // «Necesitan atención» es cómo está cada uno HOY, no en el período. Los casos de seguimiento se abren
+    // con TODA la empresa, no solo con la sede del filtro: filtrar la vista no puede dejar a nadie sin caso.
+    const activos = new Set(colaboradores.filter(c => c.activo).map(c => c.id));
+    const atencionTodas = await atencionDeLaEmpresa(empresaId, activos);
+    await sincronizarSeguimientos(empresaId, atencionTodas);
+    const casos = atencionTodas.length === 0 ? [] : await prisma.seguimientoClima.findMany({
+      where: { empresaId, colaboradorId: { in: atencionTodas.map(a => a.colaboradorId) } },
+      select: { id: true, colaboradorId: true, desde: true, estado: true },
+    });
+    const atencion = atencionTodas.filter(a => enLaSede(a.colaboradorId)).map(a => {
+      // El caso de esta racha; si no hay, el que siga abierto.
+      const suyos = casos.filter(c => c.colaboradorId === a.colaboradorId);
+      const caso = suyos.find(c => c.desde.getTime() === a.desde.getTime()) ?? suyos.find(c => c.estado !== 'CERRADO') ?? null;
+      return {
+        ...a,
+        nombre: nombreDe(a.colaboradorId),
+        cargo: persona.get(a.colaboradorId)?.cargo ?? null,
+        sedes: (sedesDe.get(a.colaboradorId) ?? []).map(s => nombreDeSede.get(s) ?? 'Sin sede'),
+        seguimiento: caso ? { id: caso.id, estado: caso.estado } : null,
+      };
+    });
 
     const recientes = [...actual]
       .sort((a, b) => b.fecha.getTime() - a.fecha.getTime() || b.actualizadoEn.getTime() - a.actualizadoEn.getTime())
@@ -162,12 +204,116 @@ export default async function climaRoutes(app: FastifyInstance) {
       const principal = await prisma.sede.findFirst({ where: { id: defecto(id)!, empresaId }, select: { nombre: true } });
       if (principal) sedes = [principal.nombre];
     }
+    // Su caso de seguimiento: el que siga abierto, o el último que tuvo.
+    const [casos, responsables] = await Promise.all([
+      prisma.seguimientoClima.findMany({
+        where: { colaboradorId: id, empresaId },
+        orderBy: { abiertoEn: 'desc' },
+        include: { comentarios: { orderBy: { creadoEn: 'asc' } } },
+      }),
+      responsablesDe(empresaId),
+    ]);
+    const caso = casos.find(c => c.estado !== 'CERRADO') ?? casos[0] ?? null;
     return {
       nombre: `${persona.nombre} ${persona.apellido}`,
       cargo: persona.cargo,
       sedes: sedes.length > 0 ? sedes : ['Sin sede'],
       respuestas: filas.map(f => ({ fecha: f.fecha, carita: f.carita, motivos: comoLista(f.motivos), observacion: f.observacion })),
+      seguimiento: caso && {
+        id: caso.id, estado: caso.estado, responsableId: caso.responsableId, desde: caso.desde, abiertoEn: caso.abiertoEn, cerradoEn: caso.cerradoEn,
+        comentarios: caso.comentarios.map(k => ({ id: k.id, autorNombre: k.autorNombre, texto: k.texto, creadoEn: k.creadoEn, editadoEn: k.editadoEn })),
+      },
+      responsables,
     };
+  });
+
+  // LA PESTAÑA «SEGUIMIENTO»: todos los casos de la empresa. Primero se abren los que falten.
+  const ORDEN_DE_ESTADO = { SIN_REVISAR: 0, EN_SEGUIMIENTO: 1, CERRADO: 2 } as const;
+  app.get('/seguimientos', auth, async (request) => {
+    const empresaId = request.empresaId!;
+    const { colaboradores, sedes, sedesDe } = await sedesDeLaGente(empresaId);
+    const activos = new Set(colaboradores.filter(c => c.activo).map(c => c.id));
+    const atencion = await atencionDeLaEmpresa(empresaId, activos);
+    await sincronizarSeguimientos(empresaId, atencion);
+    const [casos, responsables] = await Promise.all([
+      prisma.seguimientoClima.findMany({
+        where: { empresaId },
+        include: { comentarios: { orderBy: { creadoEn: 'desc' }, take: 1 }, _count: { select: { comentarios: true } } },
+      }),
+      responsablesDe(empresaId),
+    ]);
+    const persona = new Map(colaboradores.map(c => [c.id, c]));
+    const nombreDeSede = new Map<string | null, string>([...sedes.map(s => [s.id, s.nombre] as [string, string]), [null, 'Sin sede']]);
+    const nombreDeUsuario = new Map(responsables.map(r => [r.id, r.nombre]));
+    return {
+      responsables,
+      casos: casos
+        .sort((a, b) => ORDEN_DE_ESTADO[a.estado] - ORDEN_DE_ESTADO[b.estado] || b.abiertoEn.getTime() - a.abiertoEn.getTime())
+        .map(c => {
+          const p = persona.get(c.colaboradorId);
+          const enLista = atencion.find(a => a.colaboradorId === c.colaboradorId && a.desde.getTime() === c.desde.getTime());
+          return {
+            id: c.id, colaboradorId: c.colaboradorId,
+            nombre: p ? `${p.nombre} ${p.apellido}` : 'Persona eliminada',
+            cargo: p?.cargo ?? null,
+            sedes: (sedesDe.get(c.colaboradorId) ?? []).map(s => nombreDeSede.get(s) ?? 'Sin sede'),
+            estado: c.estado,
+            responsableId: c.responsableId,
+            responsable: c.responsableId ? nombreDeUsuario.get(c.responsableId) ?? 'Usuario que ya no está' : null,
+            desde: c.desde, abiertoEn: c.abiertoEn, cerradoEn: c.cerradoEn,
+            // Si la racha que lo abrió sigue: cuántas respuestas negativas lleva.
+            racha: enLista ? enLista.dias : null,
+            comentarios: c._count.comentarios,
+            ultimoComentario: c.comentarios[0] ? { texto: c.comentarios[0].texto, autorNombre: c.comentarios[0].autorNombre, creadoEn: c.comentarios[0].creadoEn } : null,
+          };
+        }),
+    };
+  });
+
+  app.patch('/seguimientos/:id', auth, async (request, reply) => {
+    const empresaId = request.empresaId!;
+    const { id } = request.params as { id: string };
+    const caso = await prisma.seguimientoClima.findFirst({ where: { id, empresaId }, select: { id: true } });
+    if (!caso) return reply.status(404).send({ error: 'Ese caso no existe.' });
+    const usuarios = await prisma.usuario.findMany({ where: { empresaId, activo: true }, select: { id: true } });
+    const v = leerCambioDeSeguimiento(request.body, usuarios.map(u => u.id));
+    if (!v.ok) return reply.status(400).send({ error: v.error });
+    // Cerrar anota cuándo; reabrir lo borra.
+    const cierre = v.cambio.estado === undefined ? {} : { cerradoEn: v.cambio.estado === 'CERRADO' ? new Date() : null };
+    return prisma.seguimientoClima.update({ where: { id }, data: { ...v.cambio, ...cierre } });
+  });
+
+  // LOS COMENTARIOS DEL CASO. El autor sale de la sesión, nunca del cuerpo. Se pueden editar y borrar
+  // (decisión del dueño); al editar queda la marca de cuándo.
+  app.post('/seguimientos/:id/comentarios', auth, async (request, reply) => {
+    const empresaId = request.empresaId!;
+    const { id } = request.params as { id: string };
+    const caso = await prisma.seguimientoClima.findFirst({ where: { id, empresaId }, select: { id: true } });
+    if (!caso) return reply.status(404).send({ error: 'Ese caso no existe.' });
+    const c = leerComentario(request.body);
+    if (!c.ok) return reply.status(400).send({ error: c.error });
+    const comentario = await prisma.comentarioSeguimientoClima.create({
+      data: { seguimientoId: id, autorId: request.usuarioId ?? null, autorNombre: request.usuarioNombre ?? 'Administrador', texto: c.texto },
+    });
+    return reply.status(201).send(comentario);
+  });
+
+  const comentarioDe = (empresaId: string, seguimientoId: string, id: string) =>
+    prisma.comentarioSeguimientoClima.findFirst({ where: { id, seguimientoId, seguimiento: { empresaId } }, select: { id: true } });
+
+  app.put('/seguimientos/:id/comentarios/:cid', auth, async (request, reply) => {
+    const { id, cid } = request.params as { id: string; cid: string };
+    if (!await comentarioDe(request.empresaId!, id, cid)) return reply.status(404).send({ error: 'Ese comentario no existe.' });
+    const c = leerComentario(request.body);
+    if (!c.ok) return reply.status(400).send({ error: c.error });
+    return prisma.comentarioSeguimientoClima.update({ where: { id: cid }, data: { texto: c.texto, editadoEn: new Date() } });
+  });
+
+  app.delete('/seguimientos/:id/comentarios/:cid', auth, async (request, reply) => {
+    const { id, cid } = request.params as { id: string; cid: string };
+    if (!await comentarioDe(request.empresaId!, id, cid)) return reply.status(404).send({ error: 'Ese comentario no existe.' });
+    await prisma.comentarioSeguimientoClima.delete({ where: { id: cid } });
+    return { ok: true };
   });
 
   // EL BUZÓN CONFIDENCIAL: solo el texto, sin nada que diga quién ni cuándo. Ni el id sale de aquí.

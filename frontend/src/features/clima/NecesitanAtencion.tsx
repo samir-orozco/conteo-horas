@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CheckCircle2, ChevronRight } from 'lucide-react';
 import type { ResumenClima } from './tipos';
 import { fechaCortaSinAnio } from './panelClima';
+import ChipDeEstado from './ChipDeEstado';
 
 type Persona = ResumenClima['atencion'][number];
 
@@ -40,7 +41,10 @@ export default function NecesitanAtencion({ atencion, onRevisar }: { atencion: R
         {visibles.map(a => (
           <li key={a.colaboradorId} className="py-2.5 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink">{a.nombre}</p>
+              <p className="text-sm font-semibold text-ink flex items-center gap-2 flex-wrap">
+                {a.nombre}
+                {a.seguimiento && <ChipDeEstado estado={a.seguimiento.estado} />}
+              </p>
               <p className="text-xs text-muted">{[a.cargo, a.sedes.join(', ')].filter(Boolean).join(' · ')}</p>
               <p className="text-xs text-ink/80 mt-0.5">
                 {`${a.dias} respuestas negativas consecutivas · desde el ${fechaCortaSinAnio(a.desde)}${a.motivo ? ` · Más repetido: ${a.motivo}` : ''}`}

@@ -12,6 +12,8 @@ const { prisma, estado } = vi.hoisted(() => ({
     colaborador: { findFirst: vi.fn() },
     colaboradorSede: { findMany: vi.fn() },
     calificacionClima: { findMany: vi.fn() },
+    seguimientoClima: { findMany: vi.fn() },
+    usuario: { findMany: vi.fn() },
   },
 }));
 vi.mock('../utils/sedesDeEmpresa', () => ({ sedesPorDefecto: async () => () => null }));
@@ -126,6 +128,8 @@ describe('GET /api/clima/persona/:id', () => {
   beforeEach(() => {
     prisma.colaborador.findFirst.mockResolvedValue({ id: 'c1', nombre: 'Andrea', apellido: 'Gómez', cargo: 'Caja', modalidad: 'PRESENCIAL' });
     prisma.colaboradorSede.findMany.mockResolvedValue([{ sede: { nombre: 'Sede Sur' } }]);
+    prisma.seguimientoClima.findMany.mockResolvedValue([]);
+    prisma.usuario.findMany.mockResolvedValue([{ id: 'u-1', nombre: 'Admin Uno' }]);
     prisma.calificacionClima.findMany.mockResolvedValue([
       { fecha: new Date('2026-10-03T05:00:00.000Z'), carita: 1, motivos: ['Mucho trabajo'], observacion: 'Me dejaron sola' },
       { fecha: new Date('2026-10-02T05:00:00.000Z'), carita: 4, motivos: [], observacion: null },
@@ -152,6 +156,19 @@ describe('GET /api/clima/persona/:id', () => {
     expect(cuerpo.sedes).toEqual(['Sede Sur']);
     expect(cuerpo.respuestas[0]).toEqual({ fecha: '2026-10-03T05:00:00.000Z', carita: 1, motivos: ['Mucho trabajo'], observacion: 'Me dejaron sola' });
     expect(prisma.calificacionClima.findMany.mock.calls[0][0].orderBy).toEqual({ fecha: 'desc' });
+  });
+
+  it('trae su caso de seguimiento (el abierto antes que el último cerrado) y quiénes pueden ser responsables', async () => {
+    prisma.seguimientoClima.findMany.mockResolvedValue([
+      { id: 'cerrado', estado: 'CERRADO', responsableId: null, desde: new Date(), abiertoEn: new Date(), cerradoEn: new Date(), comentarios: [] },
+      { id: 'abierto', estado: 'EN_SEGUIMIENTO', responsableId: 'u-1', desde: new Date(), abiertoEn: new Date(), cerradoEn: null,
+        comentarios: [{ id: 'k1', autorNombre: 'Admin Uno', texto: 'Hablé con ella', creadoEn: new Date(), editadoEn: null }] },
+    ]);
+    const cuerpo = (await pedir('GET', '/api/clima/persona/c1')).json();
+    expect(cuerpo.seguimiento.id).toBe('abierto');
+    expect(cuerpo.seguimiento.comentarios[0].texto).toBe('Hablé con ella');
+    expect(cuerpo.responsables).toEqual([{ id: 'u-1', nombre: 'Admin Uno' }]);
+    expect(prisma.seguimientoClima.findMany.mock.calls[0][0].where).toEqual({ colaboradorId: 'c1', empresaId: 'emp-1' });
   });
 
   it('nunca toca las observaciones confidenciales', async () => {

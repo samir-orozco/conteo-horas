@@ -5,8 +5,13 @@ import { MemoryRouter } from 'react-router-dom';
 // EL PANEL DEL CLIMA LABORAL (4 de octubre de 2026). docs/CLIMA_LABORAL.md §3.6. Se consulta por lo que
 // lee el administrador, no por clases.
 
-const { get, put } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn() }));
-vi.mock('../lib/api', () => ({ default: { get: (...a: unknown[]) => get(...a), put: (...a: unknown[]) => put(...a) } }));
+const { get, put, patch, post, del } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn(), patch: vi.fn(), post: vi.fn(), del: vi.fn() }));
+vi.mock('../lib/api', () => ({
+  default: {
+    get: (...a: unknown[]) => get(...a), put: (...a: unknown[]) => put(...a), patch: (...a: unknown[]) => patch(...a),
+    post: (...a: unknown[]) => post(...a), delete: (...a: unknown[]) => del(...a),
+  },
+}));
 let mockPlan: () => { plan: { features: Record<string, boolean> } | null };
 vi.mock('../lib/plan', () => ({ useMiPlan: () => mockPlan() }));
 import ClimaLaboral from './ClimaLaboral';
@@ -25,7 +30,7 @@ const RESUMEN = {
     { sedeId: 's3', nombre: 'Sur', promedio: 2.5, total: 4, jornadas: 5, participacion: 80 },
   ],
   atencion: [
-    { colaboradorId: 'c1', nombre: 'Andrea Gómez', cargo: 'Cajera', sedes: ['Norte'], dias: 6, desde: '2026-10-01T05:00:00.000Z', motivo: 'Mucho trabajo' },
+    { colaboradorId: 'c1', nombre: 'Andrea Gómez', cargo: 'Cajera', sedes: ['Norte'], dias: 6, desde: '2026-10-01T05:00:00.000Z', motivo: 'Mucho trabajo', seguimiento: { id: 's1', estado: 'EN_SEGUIMIENTO' } },
     { colaboradorId: 'c3', nombre: 'Jorge Vargas', cargo: null, sedes: ['Sur'], dias: 5, desde: '2026-10-01T05:00:00.000Z', motivo: null },
     { colaboradorId: 'c4', nombre: 'Esteban Salazar', cargo: null, sedes: ['Principal'], dias: 4, desde: '2026-10-01T05:00:00.000Z', motivo: null },
     { colaboradorId: 'c5', nombre: 'Mariana Giraldo', cargo: null, sedes: ['Sur'], dias: 3, desde: '2026-10-01T05:00:00.000Z', motivo: null },
@@ -46,14 +51,34 @@ const MOTIVOS = {
 
 const HISTORIAL = {
   nombre: 'Andrea Gómez', cargo: 'Cajera', sedes: ['Norte'],
+  seguimiento: {
+    id: 's1', estado: 'EN_SEGUIMIENTO', responsableId: 'u1', desde: '2026-10-01T05:00:00.000Z', abiertoEn: '2026-10-03T22:00:00.000Z', cerradoEn: null,
+    comentarios: [{ id: 'k1', autorNombre: 'Admin Uno', texto: 'Hablé con ella, el problema es el cierre', creadoEn: '2026-10-03T22:10:00.000Z', editadoEn: null }],
+  },
+  responsables: [{ id: 'u1', nombre: 'Admin Uno' }, { id: 'u2', nombre: 'Admin Dos' }],
   respuestas: [
     { fecha: '2026-10-03T05:00:00.000Z', carita: 1, motivos: ['Mucho trabajo'], observacion: 'Me dejaron sola en el cierre otra vez' },
     { fecha: '2026-10-02T05:00:00.000Z', carita: 2, motivos: ['Mucho trabajo', 'Jefe o supervisor'], observacion: null },
     { fecha: '2026-09-30T05:00:00.000Z', carita: 4, motivos: [], observacion: null },
   ],
 };
+const SEGUIMIENTOS = {
+  responsables: [{ id: 'u1', nombre: 'Admin Uno' }],
+  casos: [
+    { id: 's2', colaboradorId: 'c3', nombre: 'Jorge Vargas', cargo: 'Bodega', sedes: ['Sur'], estado: 'SIN_REVISAR', responsableId: null, responsable: null,
+      desde: '2026-09-28T05:00:00.000Z', abiertoEn: '2026-10-04T15:00:00.000Z', cerradoEn: null, racha: 5, comentarios: 0, ultimoComentario: null },
+    { id: 's1', colaboradorId: 'c1', nombre: 'Andrea Gómez', cargo: 'Cajera', sedes: ['Norte'], estado: 'EN_SEGUIMIENTO', responsableId: 'u1', responsable: 'Admin Uno',
+      desde: '2026-10-01T05:00:00.000Z', abiertoEn: '2026-10-03T22:00:00.000Z', cerradoEn: null, racha: 6, comentarios: 1,
+      ultimoComentario: { texto: 'Hablé con ella, el problema es el cierre', autorNombre: 'Admin Uno', creadoEn: '2026-10-03T22:10:00.000Z' } },
+    { id: 's0', colaboradorId: 'c9', nombre: 'Lina Henao', cargo: null, sedes: ['Principal'], estado: 'CERRADO', responsableId: 'u1', responsable: 'Admin Uno',
+      desde: '2026-08-01T05:00:00.000Z', abiertoEn: '2026-08-04T15:00:00.000Z', cerradoEn: '2026-08-20T15:00:00.000Z', racha: null, comentarios: 3, ultimoComentario: null },
+  ],
+};
 const respuestas = (sobre: Record<string, unknown> = {}) => (url: string) => {
-  const datos: Record<string, unknown> = { '/clima/resumen': RESUMEN, '/clima/buzon': BUZON, '/clima/motivos': MOTIVOS, '/sedes': [], '/clima/persona/c1': HISTORIAL, ...sobre };
+  const datos: Record<string, unknown> = {
+    '/clima/resumen': RESUMEN, '/clima/buzon': BUZON, '/clima/motivos': MOTIVOS, '/sedes': [], '/clima/persona/c1': HISTORIAL,
+    '/clima/seguimientos': SEGUIMIENTOS, ...sobre,
+  };
   return url in datos ? Promise.resolve({ data: datos[url] }) : Promise.reject(new Error(`sin respuesta para ${url}`));
 };
 const abrir = async (ruta = '/app/clima') => {
@@ -66,6 +91,8 @@ beforeEach(() => {
   put.mockReset();
   get.mockImplementation(respuestas());
   put.mockImplementation((_u: string, body: { motivos: string[] }) => Promise.resolve({ data: { motivos: body.motivos } }));
+  patch.mockReset(); post.mockReset(); del.mockReset();
+  patch.mockResolvedValue({ data: {} }); post.mockResolvedValue({ data: {} }); del.mockResolvedValue({ data: { ok: true } });
   mockPlan = () => ({ plan: { features: { clima: true } } });
 });
 
@@ -277,5 +304,113 @@ describe('motivos', () => {
     await abrir('/app/clima?tab=motivos');
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Guardar motivos' })); });
     expect(screen.getByText('Hay motivos repetidos.')).toBeInTheDocument();
+  });
+});
+
+// ────────── EL SEGUIMIENTO DE LOS CASOS (4 de octubre de 2026) ──────────
+const abrirRevisar = async () => {
+  await abrir();
+  const a = screen.getByRole('group', { name: 'Necesitan atención' });
+  await act(async () => { fireEvent.click(within(a).getByRole('button', { name: 'Revisar a Andrea Gómez' })); });
+  return screen.getByRole('dialog', { name: 'Andrea Gómez' });
+};
+
+describe('seguimiento: en «Necesitan atención»', () => {
+  it('cada persona muestra el estado de su caso', async () => {
+    await abrir();
+    const a = screen.getByRole('group', { name: 'Necesitan atención' });
+    const fila = within(a).getByText('Andrea Gómez').closest('li')!;
+    expect(within(fila).getByText('En seguimiento')).toBeInTheDocument();
+  });
+});
+
+describe('seguimiento: en el panel de «Revisar»', () => {
+  it('muestra el estado, el responsable y los comentarios del caso', async () => {
+    const panel = await abrirRevisar();
+    const seg = within(panel).getByRole('group', { name: 'Seguimiento' });
+    expect(within(seg).getByRole('button', { name: 'En seguimiento' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(seg).getByLabelText('Responsable')).toHaveValue('u1');
+    expect(within(seg).getByText('Hablé con ella, el problema es el cierre')).toBeInTheDocument();
+    expect(within(seg).getByText(/^Admin Uno ·/)).toBeInTheDocument();
+  });
+
+  it('cambiar el estado lo guarda', async () => {
+    const panel = await abrirRevisar();
+    const seg = within(panel).getByRole('group', { name: 'Seguimiento' });
+    await act(async () => { fireEvent.click(within(seg).getByRole('button', { name: 'Cerrado' })); });
+    expect(patch).toHaveBeenCalledWith('/clima/seguimientos/s1', { estado: 'CERRADO' });
+  });
+
+  it('cambiar el responsable lo guarda, y se puede dejar sin responsable', async () => {
+    const panel = await abrirRevisar();
+    const seg = within(panel).getByRole('group', { name: 'Seguimiento' });
+    await act(async () => { fireEvent.change(within(seg).getByLabelText('Responsable'), { target: { value: 'u2' } }); });
+    expect(patch).toHaveBeenCalledWith('/clima/seguimientos/s1', { responsableId: 'u2' });
+    await act(async () => { fireEvent.change(within(seg).getByLabelText('Responsable'), { target: { value: '' } }); });
+    expect(patch).toHaveBeenLastCalledWith('/clima/seguimientos/s1', { responsableId: null });
+  });
+
+  it('agregar un comentario lo manda y vuelve a cargar el caso', async () => {
+    const panel = await abrirRevisar();
+    const seg = within(panel).getByRole('group', { name: 'Seguimiento' });
+    fireEvent.change(within(seg).getByLabelText('Nuevo comentario'), { target: { value: 'Lo pasamos a la tarde' } });
+    get.mockClear();
+    await act(async () => { fireEvent.click(within(seg).getByRole('button', { name: 'Agregar comentario' })); });
+    expect(post).toHaveBeenCalledWith('/clima/seguimientos/s1/comentarios', { texto: 'Lo pasamos a la tarde' });
+    expect(get).toHaveBeenCalledWith('/clima/persona/c1');
+  });
+
+  it('un comentario se edita en su lugar', async () => {
+    const panel = await abrirRevisar();
+    const seg = within(panel).getByRole('group', { name: 'Seguimiento' });
+    fireEvent.click(within(seg).getByRole('button', { name: 'Editar comentario' }));
+    fireEvent.change(within(seg).getByLabelText('Editar comentario'), { target: { value: 'Corregido' } });
+    await act(async () => { fireEvent.click(within(seg).getByRole('button', { name: 'Guardar' })); });
+    expect(put).toHaveBeenCalledWith('/clima/seguimientos/s1/comentarios/k1', { texto: 'Corregido' });
+  });
+
+  it('borrar pide confirmación', async () => {
+    const panel = await abrirRevisar();
+    const seg = within(panel).getByRole('group', { name: 'Seguimiento' });
+    fireEvent.click(within(seg).getByRole('button', { name: 'Borrar comentario' }));
+    expect(del).not.toHaveBeenCalled();
+    await act(async () => { fireEvent.click(within(seg).getByRole('button', { name: 'Sí, borrar' })); });
+    expect(del).toHaveBeenCalledWith('/clima/seguimientos/s1/comentarios/k1');
+  });
+});
+
+describe('seguimiento: la pestaña', () => {
+  it('lista los casos con su estado, responsable y último comentario', async () => {
+    await abrir('/app/clima?tab=seguimiento');
+    const tabla = screen.getByRole('table', { name: 'Casos de seguimiento' });
+    const filas = within(tabla).getAllByRole('row').slice(1);
+    expect(filas).toHaveLength(3);
+    expect(within(filas[1]).getByText('Andrea Gómez')).toBeInTheDocument();
+    expect(within(filas[1]).getByText('En seguimiento')).toBeInTheDocument();
+    expect(within(filas[1]).getByText('Admin Uno')).toBeInTheDocument();
+    expect(within(filas[1]).getByText(/Hablé con ella/)).toBeInTheDocument();
+    expect(within(filas[0]).getByText('Sin asignar')).toBeInTheDocument();
+  });
+
+  it('se filtra por estado, y cada filtro dice cuántos hay', async () => {
+    await abrir('/app/clima?tab=seguimiento');
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrado (1)' }));
+    const filas = within(screen.getByRole('table', { name: 'Casos de seguimiento' })).getAllByRole('row').slice(1);
+    expect(filas).toHaveLength(1);
+    expect(within(filas[0]).getByText('Lina Henao')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Todos (3)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sin revisar (1)' })).toBeInTheDocument();
+  });
+
+  it('«Abrir» lleva al mismo panel de la persona', async () => {
+    await abrir('/app/clima?tab=seguimiento');
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Abrir el caso de Andrea Gómez' })); });
+    expect(screen.getByRole('dialog', { name: 'Andrea Gómez' })).toBeInTheDocument();
+  });
+
+  it('sin casos lo dice', async () => {
+    get.mockImplementation(respuestas({ '/clima/seguimientos': { responsables: [], casos: [] } }));
+    await abrir('/app/clima?tab=seguimiento');
+    expect(screen.getByText('Todavía no hay casos. Se abren solos cuando alguien entra a «Necesitan atención».')).toBeInTheDocument();
   });
 });

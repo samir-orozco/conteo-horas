@@ -28,13 +28,16 @@ const marca = (ok: boolean, texto: string, detalle = '') => {
   console.log(`  ${ok ? 'ok   ' : 'FALLA'} ${texto}${detalle ? `  (${detalle})` : ''}`);
 };
 
+let adminId = '';
 async function montar(empresaIdDelAdmin: string) {
   const app = Fastify();
   await app.register(jwt, { secret: 'verificar-clima' });
   app.decorate('authenticate', async (request: { jwtVerify: () => Promise<unknown> }) => { await request.jwtVerify(); });
-  app.decorate('requireEmpresa', async (request: { user?: unknown; empresaId?: string }) => {
+  app.decorate('requireEmpresa', async (request: { user?: unknown; empresaId?: string; usuarioId?: string; usuarioNombre?: string }) => {
     request.user = { rol: 'ADMIN', empresaId: empresaIdDelAdmin };
     request.empresaId = empresaIdDelAdmin;
+    request.usuarioId = adminId;
+    request.usuarioNombre = 'Admin Verificación';
   });
   await app.register(climaDelKioscoRoutes, { prefix: '/api/worker/clima' });
   await app.register(climaRoutes, { prefix: '/api/clima' });
@@ -76,6 +79,7 @@ async function main() {
       await prisma.calificacionClima.create({ data: { empresaId: con.id, colaboradorId: carla.id, fecha: new Date(inicioDia.getTime() - diasAtras * 864e5), carita: 1, motivos: ['Compañeros'] } });
     }
 
+    adminId = (await prisma.usuario.create({ data: { empresaId: con.id, email: `admin-${SUFIJO}@ejemplo.co`, password: 'x', nombre: 'Admin Verificación', rol: 'ADMIN' } })).id;
     const app = await montar(con.id);
     const firmar = (t: object) => app.jwt.sign(t, { expiresIn: DURACION_TOKEN_CLIMA });
 
@@ -158,6 +162,48 @@ async function main() {
     const buzon = r.json();
     marca(buzon.semanas?.[0]?.notas?.[0] === texto, 'al día siguiente sí, solo el texto');
     marca(!JSON.stringify(buzon).includes(String(cruda?.id)), 'sin el id de la nota');
+    console.log('\n  El seguimiento de los casos');
+    const casoCarla = await prisma.seguimientoClima.findMany({ where: { colaboradorId: carla.id } });
+    marca(casoCarla.length === 1 && casoCarla[0].estado === 'SIN_REVISAR', 'leer el resumen le abrió un caso a Carla, sin revisar');
+    const enLaLista = (res.atencion ?? []).find((a: { colaboradorId: string }) => a.colaboradorId === carla.id);
+    marca(enLaLista?.seguimiento?.id === casoCarla[0]?.id, 'y la lista de atención lo muestra con su caso');
+    await app.inject({ method: 'GET', url: `/api/clima/resumen?desde=${hoy}&hasta=${hoy}` });
+    marca((await prisma.seguimientoClima.count({ where: { colaboradorId: carla.id } })) === 1, 'leer otra vez no abre un segundo caso');
+    const idCaso = casoCarla[0].id;
+    r = await app.inject({ method: 'PATCH', url: `/api/clima/seguimientos/${idCaso}`, payload: { estado: 'EN_SEGUIMIENTO', responsableId: adminId } });
+    marca(r.statusCode === 200 && r.json().estado === 'EN_SEGUIMIENTO' && r.json().responsableId === adminId, 'pasa a «En seguimiento» con responsable');
+    r = await app.inject({ method: 'POST', url: `/api/clima/seguimientos/${idCaso}/comentarios`, payload: { texto: 'Hablé con Carla' } });
+    const idComentario = r.json().id;
+    marca(r.statusCode === 201 && r.json().autorNombre === 'Admin Verificación', 'el comentario queda con quien lo escribió');
+    r = await app.inject({ method: 'PUT', url: `/api/clima/seguimientos/${idCaso}/comentarios/${idComentario}`, payload: { texto: 'Hablé con Carla y su jefe' } });
+    marca(r.statusCode === 200 && r.json().editadoEn !== null, 'se puede editar, y queda la marca de cuándo');
+    r = await app.inject({ method: 'GET', url: '/api/clima/seguimientos' });
+    const listado = r.json().casos.find((c: { id: string }) => c.id === idCaso);
+    marca(listado?.estado === 'EN_SEGUIMIENTO' && listado?.responsable === 'Admin Verificación' && listado?.comentarios === 1
+      && listado?.ultimoComentario?.texto === 'Hablé con Carla y su jefe', 'la pestaña «Seguimiento» lo lista con su estado, responsable y último comentario');
+    r = await app.inject({ method: 'GET', url: `/api/clima/persona/${carla.id}` });
+    marca(r.json().seguimiento?.comentarios?.[0]?.texto === 'Hablé con Carla y su jefe', 'el panel de «Revisar» trae el caso con sus comentarios');
+    r = await app.inject({ method: 'PATCH', url: `/api/clima/seguimientos/${idCaso}`, payload: { estado: 'CERRADO' } });
+    marca(r.json().cerradoEn !== null, 'al cerrarlo queda cuándo');
+    await app.inject({ method: 'GET', url: '/api/clima/seguimientos' });
+    marca((await prisma.seguimientoClima.count({ where: { colaboradorId: carla.id } })) === 1, 'cerrar el caso de una racha que sigue no lo reabre');
+    // Carla tiene un buen día y después otra racha: se abre un caso nuevo.
+    for (const [d, carita] of [[40, 5], [30, 1], [20, 2], [10, 1]] as const) {
+      await prisma.calificacionClima.upsert({
+        where: { colaboradorId_fecha: { colaboradorId: carla.id, fecha: new Date(inicioDia.getTime() - d * 864e5) } },
+        create: { empresaId: con.id, colaboradorId: carla.id, fecha: new Date(inicioDia.getTime() - d * 864e5), carita, motivos: [] },
+        update: { carita },
+      });
+    }
+    await prisma.calificacionClima.deleteMany({ where: { colaboradorId: carla.id, fecha: { gt: new Date(inicioDia.getTime() - 5 * 864e5) } } });
+    await app.inject({ method: 'GET', url: '/api/clima/seguimientos' });
+    const deCarla = await prisma.seguimientoClima.findMany({ where: { colaboradorId: carla.id }, orderBy: { abiertoEn: 'asc' } });
+    marca(deCarla.length === 2 && deCarla[1].estado === 'SIN_REVISAR', 'una racha NUEVA después del cierre abre otro caso', `${deCarla.length} caso(s)`);
+    r = await app.inject({ method: 'DELETE', url: `/api/clima/seguimientos/${idCaso}/comentarios/${idComentario}` });
+    marca(r.statusCode === 200 && (await prisma.comentarioSeguimientoClima.count({ where: { seguimientoId: idCaso } })) === 0, 'el comentario se puede borrar');
+    r = await app.inject({ method: 'PATCH', url: `/api/clima/seguimientos/${idCaso}`, payload: { responsableId: 'usuario-de-otra-empresa' } });
+    marca(r.statusCode === 400, 'un responsable que no es de la empresa se rechaza');
+
     r = await app.inject({ method: 'PUT', url: '/api/clima/motivos', payload: { motivos: ['Clientes difíciles', 'Turno largo'] } });
     const cfg = await prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId: con.id, clave: 'climaMotivos' } } });
     marca(r.statusCode === 200 && cfg?.valor === JSON.stringify(['Clientes difíciles', 'Turno largo']), 'los motivos se guardan en la configuración de la empresa');

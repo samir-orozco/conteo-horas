@@ -314,8 +314,24 @@ Resueltos por el dueño el 4 de octubre de 2026, tal como se propusieron:
   (últimas 60 respuestas, motivos y observaciones directas).
 - **Por sede** muestra respuestas y participación, destaca la más baja y avisa «Pocas respuestas» con
   menos de 10. Una sede con pocas respuestas no se destaca como la más baja.
-- **Pendiente de decisión del dueño:** el seguimiento de cada caso (responsable y estados «Sin revisar»,
-  «En seguimiento», «Cerrado») necesita una tabla nueva.
+- **El historial de «Revisar»** resume cada carita con un círculo que dice cuántas veces la escogió (la
+  tira de treinta caritas seguidas era invasiva, dijo el dueño).
+
+### El seguimiento de los casos (4 de octubre de 2026)
+
+Decisiones del dueño:
+
+- **Una pestaña propia, «Seguimiento»,** con la tabla de todos los casos: persona, estado, responsable,
+  cuándo se abrió y el último comentario, con filtros por estado. «Abrir» lleva al panel de «Revisar».
+- **Cada persona que entra a «Necesitan atención» recibe un caso «Sin revisar»** al cargarse el panel.
+  El administrador lo pasa a «En seguimiento» o «Cerrado», le asigna un responsable y escribe
+  comentarios. El responsable es cualquier usuario activo de la empresa (todavía no hay roles).
+- **El caso sigue visible aunque la persona salga de la lista**, hasta que alguien lo cierre.
+- **Cerrar el caso de una racha que sigue no lo reabre.** Una racha NUEVA, después de un buen día, abre
+  otro caso. Cada racha se reconoce por su comienzo, y la base no deja abrir dos casos de la misma.
+- **Los comentarios se pueden editar y borrar.** Borrar pide confirmación; editar deja la marca
+  «editado». Cada comentario guarda quién lo escribió, y lo sigue diciendo aunque ese usuario se borre.
+- Estos comentarios son datos personales del trabajador: van a la lista del abogado, con lo demás.
 
 ### Lo que cambió con la revisión adversarial (4 de octubre de 2026)
 

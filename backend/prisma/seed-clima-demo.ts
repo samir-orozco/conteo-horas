@@ -27,7 +27,7 @@ import { prisma } from '../src/prisma';
 import { borrarEmpresaEnCascada } from '../src/utils/borrarEmpresaEnCascada';
 import { cifrar, leerClave } from '../src/utils/cifradoConfidencial';
 import { rangoDiaBogota } from '../src/utils/fechas';
-import { semanaDe, visibleDesde } from '../src/utils/clima';
+import { semanaDe, visibleDesde, necesitanAtencion, filasParaLaRacha } from '../src/utils/clima';
 
 const NIT = 'clima-demo';
 const DIA = 24 * 60 * 60 * 1000;
@@ -128,7 +128,7 @@ async function main() {
     const s = await prisma.sede.create({ data: { empresaId: empresa.id, nombre, creadoEn: new Date(Date.now() - (10 - i) * 1000) } });
     sedes[nombre] = s.id;
   }
-  await prisma.usuario.create({
+  const admin = await prisma.usuario.create({
     data: { email: 'admin@clima-demo.test', password: await bcrypt.hash('clima-demo-123', 10), nombre: 'Admin Clima', rol: 'ADMIN', empresaId: empresa.id, emailVerificado: true },
   });
   await prisma.configuracion.createMany({
@@ -228,6 +228,39 @@ async function main() {
     }
   }
   await prisma.observacionConfidencial.createMany({ data: notas });
+
+  // Casos de seguimiento con historia: se calculan con las MISMAS reglas del panel, para que el comienzo
+  // de cada racha coincida y el panel no abra un segundo caso al cargarse.
+  const ultimoBueno = new Map<string, Date>();
+  for (const c of calificaciones) if (c.carita > 2 && (ultimoBueno.get(c.colaboradorId)?.getTime() ?? 0) < c.fecha.getTime()) ultimoBueno.set(c.colaboradorId, c.fecha);
+  const atencion = necesitanAtencion(filasParaLaRacha(calificaciones.filter(c => c.carita <= 2), ultimoBueno));
+  const [primero, segundo] = atencion;
+  if (primero) {
+    const caso = await prisma.seguimientoClima.create({
+      data: { empresaId: empresa.id, colaboradorId: primero.colaboradorId, desde: primero.desde, estado: 'EN_SEGUIMIENTO', responsableId: admin.id, abiertoEn: new Date(hoy.getTime() - 2 * DIA) },
+    });
+    await prisma.comentarioSeguimientoClima.createMany({
+      data: [
+        { seguimientoId: caso.id, autorId: admin.id, autorNombre: 'Admin Clima', texto: 'Hablé con él. Dice que el supervisor de bodega le cambia el turno sin avisar.', creadoEn: new Date(hoy.getTime() - 2 * DIA + 20 * HORA) },
+        { seguimientoId: caso.id, autorId: admin.id, autorNombre: 'Admin Clima', texto: 'Reunión con el supervisor el lunes. Los turnos se publican el jueves de ahora en adelante.', creadoEn: new Date(hoy.getTime() - DIA + 15 * HORA) },
+      ],
+    });
+  }
+  if (segundo) {
+    await prisma.seguimientoClima.create({
+      data: { empresaId: empresa.id, colaboradorId: segundo.colaboradorId, desde: segundo.desde, estado: 'SIN_REVISAR', abiertoEn: new Date(hoy.getTime() - DIA) },
+    });
+  }
+  // Uno viejo y cerrado, de alguien que ya está bien: así se ve el historial de la pestaña.
+  const viejo = await prisma.seguimientoClima.create({
+    data: {
+      empresaId: empresa.id, colaboradorId: gente[12].id, desde: new Date(hoy.getTime() - 60 * DIA), estado: 'CERRADO', responsableId: admin.id,
+      abiertoEn: new Date(hoy.getTime() - 55 * DIA), cerradoEn: new Date(hoy.getTime() - 40 * DIA),
+    },
+  });
+  await prisma.comentarioSeguimientoClima.create({
+    data: { seguimientoId: viejo.id, autorId: admin.id, autorNombre: 'Admin Clima', texto: 'Se le dio el permiso para la cita médica de su mamá. Ya está mejor.', creadoEn: new Date(hoy.getTime() - 40 * DIA) },
+  });
 
   console.log(`Empresa «${empresa.nombre}»: ${gente.length} personas en 3 sedes, ${registros.length} jornadas, `
     + `${calificaciones.length} calificaciones y ${notas.length} notas confidenciales en ${DIAS_ATRAS + 1} días.`);

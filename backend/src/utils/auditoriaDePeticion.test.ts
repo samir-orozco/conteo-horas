@@ -57,8 +57,12 @@ describe('accionDePeticion', () => {
     expect(accionDePeticion('DELETE', '/api/admin/empresas/ckv123abc456def789ghi012j')).toBe('Borró una empresa');
   });
 
-  it('los motivos del clima laboral (4 de octubre de 2026)', () => {
+  it('el clima laboral: los motivos, los casos de seguimiento y sus comentarios, cada uno por su nombre', () => {
     expect(accionDePeticion('PUT', '/api/clima/motivos')).toBe('Editó los motivos del clima laboral');
+    expect(accionDePeticion('PATCH', '/api/clima/seguimientos/ckv123abc456def789ghi012j')).toBe('Editó un caso de seguimiento');
+    expect(accionDePeticion('POST', '/api/clima/seguimientos/ckv123abc456def789ghi012j/comentarios')).toBe('Creó un comentario de seguimiento');
+    expect(accionDePeticion('PUT', '/api/clima/seguimientos/ckv123abc456def789ghi012j/comentarios/ckv999abc456def789ghi012j')).toBe('Editó un comentario de seguimiento');
+    expect(accionDePeticion('DELETE', '/api/clima/seguimientos/ckv123abc456def789ghi012j/comentarios/ckv999abc456def789ghi012j')).toBe('Borró un comentario de seguimiento');
   });
 
   it('las caritas del kiosco NO se auditan: el cuerpo llevaría el texto confidencial', () => {

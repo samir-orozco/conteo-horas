@@ -4,6 +4,7 @@ import {
   debePreguntarClima, leerMotivosDeEmpresa, validarMotivosDeEmpresa, leerCalificacion, leerObservacion,
   necesitanAtencion, semanaDe, visibleDesde, ordenRevuelto,
   resumenDelClima, variacionDelPromedio, promedioPorSede, yaSePreguntoHoy, filasParaLaRacha,
+  casosPorAbrir, leerCambioDeSeguimiento, leerComentario,
 } from './clima';
 
 // Un instante dado en hora de Bogotá (UTC-5 todo el año). CLAUDE.md §8.1.
@@ -379,5 +380,64 @@ describe('promedioPorSede', () => {
     const sedesDe = new Map<string, (string | null)[]>([['a', ['s1']]]);
     expect(promedioPorSede([c('a', 4), c('a', 4)], [j('a')], sedesDe, sedes)[0].participacion).toBe(100);
     expect(promedioPorSede([c('a', 4)], [], sedesDe, sedes)[0].participacion).toBeNull();
+  });
+});
+
+describe('casosPorAbrir — el seguimiento de «Necesitan atención»', () => {
+  const desde = (dia: number) => bog(2026, 10, dia, 0);
+  const atencion = (colaboradorId: string, dia: number) => ({ colaboradorId, dias: 3, desde: desde(dia), motivo: null });
+  const caso = (colaboradorId: string, dia: number, estado: 'SIN_REVISAR' | 'EN_SEGUIMIENTO' | 'CERRADO') => ({ colaboradorId, desde: desde(dia), estado });
+
+  it('quien entra a la lista sin caso recibe uno nuevo, desde el comienzo de su racha', () => {
+    expect(casosPorAbrir([atencion('a', 2)], [])).toEqual([{ colaboradorId: 'a', desde: desde(2) }]);
+  });
+
+  it('quien ya tiene un caso abierto no recibe otro', () => {
+    expect(casosPorAbrir([atencion('a', 2)], [caso('a', 2, 'SIN_REVISAR')])).toEqual([]);
+    expect(casosPorAbrir([atencion('a', 9)], [caso('a', 2, 'EN_SEGUIMIENTO')])).toEqual([]);
+  });
+
+  it('cerrar el caso de una racha que sigue NO lo reabre: ya se atendió', () => {
+    expect(casosPorAbrir([atencion('a', 2)], [caso('a', 2, 'CERRADO')])).toEqual([]);
+  });
+
+  it('una racha NUEVA después de un caso cerrado abre otro caso (decisión del dueño)', () => {
+    expect(casosPorAbrir([atencion('a', 9)], [caso('a', 2, 'CERRADO')])).toEqual([{ colaboradorId: 'a', desde: desde(9) }]);
+  });
+
+  it('salir de la lista no toca nada: el caso sigue hasta que alguien lo cierre', () => {
+    expect(casosPorAbrir([], [caso('a', 2, 'EN_SEGUIMIENTO')])).toEqual([]);
+  });
+
+  it('cada persona por su lado', () => {
+    expect(casosPorAbrir([atencion('a', 2), atencion('b', 3)], [caso('a', 2, 'SIN_REVISAR')]))
+      .toEqual([{ colaboradorId: 'b', desde: desde(3) }]);
+  });
+});
+
+describe('leerCambioDeSeguimiento', () => {
+  it('acepta un estado conocido y un responsable de la lista, o ninguno', () => {
+    expect(leerCambioDeSeguimiento({ estado: 'EN_SEGUIMIENTO' }, ['u1'])).toEqual({ ok: true, cambio: { estado: 'EN_SEGUIMIENTO' } });
+    expect(leerCambioDeSeguimiento({ responsableId: 'u1' }, ['u1'])).toEqual({ ok: true, cambio: { responsableId: 'u1' } });
+    expect(leerCambioDeSeguimiento({ responsableId: null }, ['u1'])).toEqual({ ok: true, cambio: { responsableId: null } });
+  });
+
+  it('rechaza un estado inventado, un responsable de otra empresa y un cambio vacío', () => {
+    expect(leerCambioDeSeguimiento({ estado: 'ARCHIVADO' }, ['u1']).ok).toBe(false);
+    expect(leerCambioDeSeguimiento({ responsableId: 'de-otra' }, ['u1']).ok).toBe(false);
+    expect(leerCambioDeSeguimiento({}, ['u1']).ok).toBe(false);
+  });
+});
+
+describe('leerComentario', () => {
+  it('acepta un texto recortado de hasta 2000 letras', () => {
+    expect(leerComentario({ texto: '  Hablé con él  ' })).toEqual({ ok: true, texto: 'Hablé con él' });
+    expect(leerComentario({ texto: 'x'.repeat(2000) }).ok).toBe(true);
+  });
+
+  it('rechaza el vacío y el demasiado largo', () => {
+    expect(leerComentario({ texto: '   ' }).ok).toBe(false);
+    expect(leerComentario({ texto: 'x'.repeat(2001) }).ok).toBe(false);
+    expect(leerComentario(null).ok).toBe(false);
   });
 });

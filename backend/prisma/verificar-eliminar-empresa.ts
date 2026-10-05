@@ -91,6 +91,8 @@ async function sembrar(etiqueta: string, afiliadoId: string): Promise<Caso> {
   const confidencial = await prisma.observacionConfidencial.create({
     data: { empresaId: empresa.id, semana: AHORA, visibleDesde: AHORA, texto: `Nota ${s}`, autorCifrado: 'v1:x:y:z' },
   });
+  const seguimiento = await prisma.seguimientoClima.create({ data: { empresaId: empresa.id, colaboradorId: colaborador.id, desde: AHORA } });
+  const comentario = await prisma.comentarioSeguimientoClima.create({ data: { seguimientoId: seguimiento.id, autorNombre: 'Admin', texto: 'Hablé con ella' } });
   return {
     empresaId: empresa.id,
     colaboradorSede: { colaboradorId: colaborador.id, sedeId: sede.id },
@@ -104,6 +106,7 @@ async function sembrar(etiqueta: string, afiliadoId: string): Promise<Caso> {
       constancias_biometricas: [constancia.id], enlaces_registro_facial: [enlace.id],
       plantillas_turno: [plantilla.id],
       calificaciones_clima: [calificacion.id], observaciones_confidenciales: [confidencial.id],
+      seguimientos_clima: [seguimiento.id], comentarios_seguimiento_clima: [comentario.id],
     },
   };
 }
@@ -139,12 +142,14 @@ async function contar(caso: Caso): Promise<Record<string, number>> {
     prisma.plantillaTurno.count(porId(f.plantillas_turno)),
     prisma.calificacionClima.count(porId(f.calificaciones_clima)),
     prisma.observacionConfidencial.count(porId(f.observaciones_confidenciales)),
+    prisma.seguimientoClima.count(porId(f.seguimientos_clima)),
+    prisma.comentarioSeguimientoClima.count(porId(f.comentarios_seguimiento_clima)),
   ]);
   const tablas = ['empresas', 'suscripciones', 'pagos', 'comisiones', 'usuarios', 'horarios', 'franjas_horario', 'sedes',
     'colaboradores', 'colaboradores_sedes', 'dias_esperados', 'registros', 'registro_cambios', 'permisos', 'contratos',
     'prorrogas_contrato', 'vinculacion_eventos', 'dispositivos_kiosco', 'dias_festivos', 'configuracion', 'notificaciones',
     'constancias_biometricas', 'enlaces_registro_facial', 'plantillas_turno',
-    'calificaciones_clima', 'observaciones_confidenciales'];
+    'calificaciones_clima', 'observaciones_confidenciales', 'seguimientos_clima', 'comentarios_seguimiento_clima'];
   return Object.fromEntries(tablas.map((t, i) => [t, n[i]]));
 }
 

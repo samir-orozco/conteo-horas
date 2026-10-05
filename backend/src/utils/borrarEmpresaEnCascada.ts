@@ -103,6 +103,11 @@ export async function borrarEmpresaEnCascada(
     parte => tx.calificacionClima.deleteMany({ where: { id: { in: parte } } }));
   await enLotes('observaciones_confidenciales', ids(await tx.observacionConfidencial.findMany({ where: { empresaId }, select: { id: true } })),
     parte => tx.observacionConfidencial.deleteMany({ where: { id: { in: parte } } }));
+  // El seguimiento de los casos: primero los comentarios, que cuelgan de su caso.
+  await enLotes('comentarios_seguimiento_clima', ids(await tx.comentarioSeguimientoClima.findMany({ where: { seguimiento: { empresaId } }, select: { id: true } })),
+    parte => tx.comentarioSeguimientoClima.deleteMany({ where: { id: { in: parte } } }));
+  await enLotes('seguimientos_clima', ids(await tx.seguimientoClima.findMany({ where: { empresaId }, select: { id: true } })),
+    parte => tx.seguimientoClima.deleteMany({ where: { id: { in: parte } } }));
   // Llave compuesta, sin id: se borra por colaborador y por sede, que son el
   // comienzo de su clave y de su índice.
   await enLotes('colaboradores_sedes', colaboradores, parte => tx.colaboradorSede.deleteMany({ where: { colaboradorId: { in: parte } } }));

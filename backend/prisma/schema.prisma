@@ -60,6 +60,7 @@ model Empresa {
   comisiones           Comision[]
   calificacionesClima  CalificacionClima[]
   notasConfidenciales  ObservacionConfidencial[]
+  seguimientosClima    SeguimientoClima[]
 
   @@map("empresas")
 }
@@ -424,6 +425,7 @@ model Colaborador {
   enlacesRegistroFacial  EnlaceRegistroFacial[]
   constanciasBiometricas ConstanciaBiometrica[]
   calificacionesClima    CalificacionClima[]
+  seguimientosClima      SeguimientoClima[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
@@ -1343,4 +1345,56 @@ model ObservacionConfidencial {
 
   @@index([empresaId, visibleDesde])
   @@map("observaciones_confidenciales")
+}
+
+// EL SEGUIMIENTO DE «NECESITAN ATENCIÓN» (4 de octubre de 2026). Un caso por persona y por racha de
+// respuestas negativas: se abre solo cuando la persona entra a la lista, y el administrador lo mueve
+// entre tres estados, con un responsable y comentarios. Las reglas están en `casosPorAbrir`
+// (utils/clima.ts): el caso sigue aunque la persona salga de la lista, hasta que alguien lo cierre; y una
+// racha NUEVA después de un caso cerrado abre otro.
+model SeguimientoClima {
+  id            String                       @id @default(cuid())
+  empresaId     String
+  empresa       Empresa                      @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  colaboradorId String
+  colaborador   Colaborador                  @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  // El comienzo de la racha que lo abrió: la primera respuesta negativa después del último buen día.
+  // Mientras la racha dura no cambia, y por eso identifica el caso.
+  desde         DateTime
+  estado        EstadoSeguimientoClima       @default(SIN_REVISAR)
+  // Un usuario de la empresa. Sin llave hacia `usuarios`, a propósito: si el usuario se borra, el caso
+  // no tiene por qué cambiar; la pantalla dice que ya no está.
+  responsableId String?
+  abiertoEn     DateTime                     @default(now())
+  cerradoEn     DateTime?
+  actualizadoEn DateTime                     @updatedAt
+  comentarios   ComentarioSeguimientoClima[]
+
+  // Una racha, un caso: la propia base impide que dos pedidos simultáneos abran el mismo dos veces.
+  @@unique([colaboradorId, desde])
+  // La pestaña «Seguimiento» pide «los casos de esta empresa, por estado».
+  @@index([empresaId, estado])
+  @@map("seguimientos_clima")
+}
+
+// Los comentarios de un caso. Se pueden editar y borrar (decisión del dueño). Guardan el nombre de quien
+// los escribió, además de su id: si el usuario se borra, el comentario sigue diciendo quién lo escribió.
+model ComentarioSeguimientoClima {
+  id            String           @id @default(cuid())
+  seguimientoId String
+  seguimiento   SeguimientoClima @relation(fields: [seguimientoId], references: [id], onDelete: Cascade)
+  autorId       String?
+  autorNombre   String
+  texto         String           @db.Text
+  creadoEn      DateTime         @default(now())
+  editadoEn     DateTime?
+
+  @@index([seguimientoId, creadoEn])
+  @@map("comentarios_seguimiento_clima")
+}
+
+enum EstadoSeguimientoClima {
+  SIN_REVISAR
+  EN_SEGUIMIENTO
+  CERRADO
 }

@@ -260,3 +260,58 @@ export function promedioPorSede(
   if (porSede.has(null)) lineas.push(linea(null, 'Sin sede'));
   return lineas;
 }
+
+// ────────── EL SEGUIMIENTO DE «NECESITAN ATENCIÓN» (4 de octubre de 2026) ──────────
+// Cada persona que entra a la lista recibe un caso, que el administrador mueve entre tres estados,
+// con un responsable y comentarios. Decisiones del dueño: el caso sigue visible aunque la persona salga
+// de la lista, hasta que alguien lo cierre; y si un caso cerrado vuelve a tener una racha de respuestas
+// negativas, se abre uno nuevo.
+
+export const ESTADOS_DE_SEGUIMIENTO = ['SIN_REVISAR', 'EN_SEGUIMIENTO', 'CERRADO'] as const;
+export type EstadoDeSeguimiento = typeof ESTADOS_DE_SEGUIMIENTO[number];
+export const MAX_COMENTARIO = 2000;
+
+// Los casos que hay que abrir. Una racha se reconoce por su comienzo (`desde`): mientras dura, el
+// comienzo no cambia. Por eso cerrar el caso de una racha que sigue no lo reabre (ya se atendió), y una
+// racha NUEVA, que empieza después de un buen día, sí abre otro.
+export function casosPorAbrir(
+  atencion: { colaboradorId: string; desde: Date }[],
+  casos: { colaboradorId: string; desde: Date; estado: EstadoDeSeguimiento }[],
+): { colaboradorId: string; desde: Date }[] {
+  return atencion
+    .filter(a => {
+      const suyos = casos.filter(c => c.colaboradorId === a.colaboradorId);
+      const abierto = suyos.some(c => c.estado !== 'CERRADO');
+      const deEstaRacha = suyos.some(c => c.desde.getTime() === a.desde.getTime());
+      return !abierto && !deEstaRacha;
+    })
+    .map(a => ({ colaboradorId: a.colaboradorId, desde: a.desde }));
+}
+
+export function leerCambioDeSeguimiento(
+  cuerpo: unknown,
+  responsablesValidos: string[],
+): Resultado<{ cambio: { estado?: EstadoDeSeguimiento; responsableId?: string | null } }> {
+  const { estado, responsableId } = (typeof cuerpo === 'object' && cuerpo !== null ? cuerpo : {}) as { estado?: unknown; responsableId?: unknown };
+  const cambio: { estado?: EstadoDeSeguimiento; responsableId?: string | null } = {};
+  if (estado !== undefined) {
+    if (!(ESTADOS_DE_SEGUIMIENTO as readonly unknown[]).includes(estado)) return { ok: false, error: 'Ese estado no existe.' };
+    cambio.estado = estado as EstadoDeSeguimiento;
+  }
+  if (responsableId !== undefined) {
+    if (responsableId !== null && (typeof responsableId !== 'string' || !responsablesValidos.includes(responsableId))) {
+      return { ok: false, error: 'Ese responsable no es de tu empresa.' };
+    }
+    cambio.responsableId = responsableId;
+  }
+  if (Object.keys(cambio).length === 0) return { ok: false, error: 'No hay nada que cambiar.' };
+  return { ok: true, cambio };
+}
+
+export function leerComentario(cuerpo: unknown): Resultado<{ texto: string }> {
+  const { texto } = (typeof cuerpo === 'object' && cuerpo !== null ? cuerpo : {}) as { texto?: unknown };
+  const limpio = typeof texto === 'string' ? texto.trim() : '';
+  if (limpio === '') return { ok: false, error: 'El comentario está vacío.' };
+  if (limpio.length > MAX_COMENTARIO) return { ok: false, error: `El comentario puede tener hasta ${MAX_COMENTARIO} letras.` };
+  return { ok: true, texto: limpio };
+}
