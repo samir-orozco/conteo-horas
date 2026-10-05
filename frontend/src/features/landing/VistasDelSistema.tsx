@@ -215,28 +215,30 @@ export function VistaTurnos() {
     { n: 'Julián Torres', celdas: ['N', 'N', 'N'], horas: 38 },
     { n: 'Sofía Ramos', celdas: ['T', 'T', null], horas: 36 },
   ];
-  const columnas = 'grid grid-cols-[44px_repeat(3,1fr)_52px] items-center gap-1';
+  // Medido en el navegador: con 262 px los totales se salían de su columna y «Mañana» salía cortado.
+  // 286 cabe en la tarjeta más angosta (la del celular deja 287).
+  const columnas = 'grid grid-cols-[54px_repeat(3,1fr)_62px] items-center gap-1';
   return (
-    <div className="w-full max-w-[262px] rounded-xl bg-white shadow-lg p-2.5 text-ink">
+    <div className="w-full max-w-[286px] rounded-xl bg-white shadow-lg p-2.5 text-ink">
       <p className="text-[10px] font-bold">5 oct – 11 oct</p>
       <div className={`${columnas} mt-1 text-[8px] font-semibold text-muted`}>
         <span />
         {['Lun 5', 'Mar 6', 'Mié 7'].map(d => <span key={d} className="text-center">{d}</span>)}
         <span className="text-center">Semana</span>
       </div>
-      <div className="mt-0.5 space-y-1">
+      <div className="mt-0.5 space-y-0.5">
         {filas.map(f => {
           const p = progresoDelTope(f.horas * 60, 42 * 60);
           return (
             <div key={f.n} className={columnas}>
               <span className="text-[9px] font-medium truncate">{f.n}</span>
               {f.celdas.map((c, i) => c ? (
-                <span key={i} className={`flex h-[22px] min-w-0 items-center gap-0.5 rounded-md px-1 text-[8px] font-bold ${CELDA_COLOR[TURNO[c][1]]}`}>
+                <span key={i} className={`flex h-[20px] min-w-0 items-center gap-0.5 rounded-md px-0.5 text-[8px] font-bold ${CELDA_COLOR[TURNO[c][1]]}`}>
                   <span aria-hidden="true" className={`h-[5px] w-[5px] shrink-0 rounded-full ${PUNTO_COLOR[TURNO[c][1]]}`} />
                   <span className="truncate">{TURNO[c][0]}</span>
                 </span>
               ) : (
-                <span key={i} className="flex h-[22px] flex-col items-center justify-center rounded-md bg-gray-100 text-[7px] font-medium text-muted leading-none">
+                <span key={i} className="flex h-[20px] flex-col items-center justify-center rounded-md bg-gray-100 text-[7px] font-medium text-muted leading-none">
                   <Bed size={8} aria-hidden="true" /> Descanso
                 </span>
               ))}
@@ -252,7 +254,7 @@ export function VistaTurnos() {
           );
         })}
       </div>
-      <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-900">
+      <div className="mt-1.5 rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-900">
         <p className="text-[8px] font-semibold uppercase text-rose-700/80 mb-0.5">Antes de aplicar</p>
         <div className="flex items-start gap-1.5">
           <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-600">
