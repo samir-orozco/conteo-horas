@@ -452,6 +452,106 @@ la novedad», la causa está en el servidor y el registro del sistema
 
 ---
 
+# Huecos que encontró la revisión del 4 de octubre (no son peticiones)
+
+Salieron de revisar contra el código lo que la landing y Suscripción prometen de cada plan, y las
+tarjetas nuevas de la landing. **Se leyeron en el código y no se ejecutaron**: antes de arreglar cada
+uno hay que reproducirlo. Las líneas son las de ese día. Van del que más importa al que menos.
+
+## 29. Un Esencial que borra su único horario se queda sin poder crear otro
+
+**Defecto que le pasa a un cliente.** Borrar un horario solo lo desactiva
+(`routes/horarios.ts:163`, `activo: false`), pero el tope de un horario cuenta
+también los desactivados (`horarios.ts:58`, `horario.count` sin filtro de
+`activo`). La pantalla lista solo los activos (`horarios.ts:29`), así que ve
+cero y ofrece «Nuevo horario» (`TabHorario.tsx:229`), y el servidor responde 403.
+
+Arreglo probable: contar solo los activos. Pequeño, pero toca la regla del plan:
+prueba primero.
+
+## 30. El historial de correcciones de una jornada solo anota la primera fila
+
+**Hueco de auditoría.** El editor de jornada (`PUT /jornada/:id`) anota los
+cambios solo de la PRIMERA fila (`routes/registros.ts:1106-1108`, con
+`cambiosPrimera` armado de `nuevos[0]` en `:1021-1027`). Las demás se
+reescriben sin rastro (`:1081`). Ejemplo: entrada 8:00, almuerzo 12:00–13:00,
+salida 17:00; si alguien cambia la salida a 16:00, no queda nada en el historial.
+
+Importa el día que un trabajador reclame horas: el historial es la prueba de quién
+cambió qué. Toca dinero de forma indirecta.
+
+## 31. Un colaborador retirado se puede reactivar por API sin pasar por el tope del plan
+
+**Fuga de cobro.** `PUT /colaboradores/:id` copia el cuerpo tal cual
+(`routes/colaboradores.ts:439-463`): mandar `{ activo: true }` sobre alguien
+retirado lo reactiva sin la guarda del tope que sí tienen crear (`:384-392`),
+reingresar (`:655-663`) y la carga masiva (`:282-291`). La pantalla usa
+`/reingresar`, así que solo se llega a mano.
+
+Arreglo probable: que el PUT ignore `activo`, `fechaRetiro`, `motivoRetiro` y
+`retiroProgramado`.
+
+## 32. La evidencia de una novedad se puede adjuntar al editarla, en cualquier plan
+
+**Fuga de una función del Profesional.** El POST la rechaza sin
+`features.evidencia` (`routes/permisos.ts:61-64`), pero el `PUT /permisos/:id`
+(`:72-82`) pasa por `limpiarPermiso`, que la guarda sin mirar el plan
+(`utils/cuerpoDePermiso.ts:63-71`).
+
+Arreglo probable: la misma guarda del POST cuando el cuerpo trae documento.
+
+## 33. El código de vinculación del kiosco se puede escribir por la configuración
+
+**Fuga de una función del Profesional.** `PUT /configuracion` guarda cualquier
+clave (`routes/configuracion.ts:96-104`) y solo filtra algunas (`:66-95`). Por
+ahí se puede escribir `CODIGO_KIOSCO` sin pasar por la guarda de
+`multiDispositivo`.
+
+Arreglo probable: lista de claves permitidas, y volver a mirar el plan en
+`/worker/vincular`.
+
+## 34. La alerta de Telegram sigue llegando después de bajar de plan
+
+**Fuga de una función del Profesional.** `alertarTardanzaTelegram`
+(`routes/worker.ts:239-249`) mira `TELEGRAM_ALERTAS_TARDE` y no el plan, así
+que una empresa que baja a Esencial con Telegram ya configurado sigue
+recibiéndola. Es la única alerta que se manda por Telegram (el comentario de
+`contratos.ts:91`, que habla de un aviso por Telegram, está desactualizado).
+
+## 35. El kiosco mide la llegada tarde contra el horario, no contra el turno programado
+
+**Hay que confirmarlo antes que nada.** El kiosco pide el motivo de llegada
+tarde y de salida temprana comparando con la franja del HORARIO vigente
+(`worker.ts:671-674`, `:813-817`, `:917-922`; `utils/tardanzas.ts:283-287`).
+Los reportes de tardanzas miden contra el día programado, `DiaEsperado`
+(`tardanzas.ts:137-147`). A quien tiene un turno pintado distinto de su
+horario, el kiosco le pediría motivo cuando no llegó tarde, o no se lo pediría
+cuando sí.
+
+Afecta justo a quien usa el módulo de turnos. Toca horas, así que se reproduce
+con persona y día antes de tocar nada.
+
+## 36. El kiosco trae «Cita médica» escogido de entrada como motivo
+
+**Calidad del dato.** El motivo de llegada tarde arranca en `MEDICO`
+(`pages/Marcador.tsx:63`, y se repone en `:123` y `:289`), y la descripción es
+opcional. Con un solo toque en «Registrar mi entrada», la novedad queda como
+«Cita médica» sin que la persona haya escogido nada. Por eso la landing dice
+«le pide el motivo» y no «sin motivo no marca».
+
+Arreglo probable: que el selector arranque vacío y obligue a escoger. Es una
+decisión del dueño: un paso más para quien llega tarde.
+
+## 37. El aviso de novedad por aprobar dice el tipo con su código crudo
+
+**Cosmético.** El cuerpo del aviso es «Reportó una novedad (MEDICO) pendiente de
+tu aprobación.» (`routes/worker.ts:232`). Debería decir el nombre («Cita
+médica»), que vive en `frontend/src/constants/permisos.ts` y el servidor no
+tiene. Al llevar los nombres al servidor, una sola tabla para los dos
+(CLAUDE.md §9.3).
+
+---
+
 ### Peticiones que eran la misma
 
 7 = 19 = 32 → nº 9 · 16 = 27 → nº 25 · 3 = 29 → nº 6 · 15 = 17 → nº 15
