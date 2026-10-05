@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
@@ -15,6 +15,7 @@ import MenuAcciones from '../components/MenuAcciones';
 import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
 import SelectorColaborador from '../components/SelectorColaborador';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
+import { ingresosDelDia, type Ingreso } from '../features/registros/ingresosDelDia';
 import { avisoDeFotosPorBorrar, type FotoPorBorrar } from '../lib/fotosPorBorrar';
 import AvatarMini from '../components/AvatarMini';
 
@@ -197,6 +198,25 @@ function CeldaDescansos({ descansos, minutosAqui }: { descansos: ResumenDePausa[
 // Una sola sede cuando abrió y cerró en la misma, o cuando la de cierre no se
 // sabe (todo lo anterior a que se guardara). La flecha solo cuando se conocen las
 // dos y son distintas: es lo que se quiere encontrar de un vistazo.
+// LA ETIQUETA DEL SEGUNDO INGRESO DEL DÍA.
+//
+// No dice «duplicado»: un turno partido son dos jornadas legítimas, y afirmar
+// un error que la mitad de las veces no existe haría que la etiqueta se dejara
+// de leer. Dice cuál es y cuántas hay; decidir es de quien mira.
+//
+// La primera jornada del día NO se marca. Con ella marcada, el 95% de las filas
+// llevaría una etiqueta y dejaría de señalar nada.
+function EtiquetaDeIngreso({ ingreso, nombre }: { ingreso?: Ingreso; nombre: string }) {
+  if (!ingreso || ingreso.orden < 2) return null;
+  return (
+    <span
+      title={`Es la ${ingreso.orden}.ª de ${ingreso.total} jornadas de ${nombre} ese día. Puede ser un turno partido o un registro duplicado.`}
+      className="mt-1 block w-fit px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 normal-case whitespace-nowrap">
+      {ingreso.orden}.º ingreso
+    </span>
+  );
+}
+
 function CeldaSede({ r }: { r: Registro }) {
   if (cruzoDeSede(r)) {
     return (
@@ -536,6 +556,11 @@ export default function Registros() {
     return filtroSalida.some(v =>
       v === 'ESTIMADA' ? !!r.salidaEstimada : !r.salida);
   };
+  // Sobre `registros` y no sobre lo filtrado ni sobre la página: que alguien
+  // tenga dos jornadas ese día es un hecho del día, no del filtro que esté
+  // puesto. Calculándolo sobre lo visible, esconder una con un filtro dejaría a
+  // la otra diciendo «2.º ingreso» sin que se vea de qué.
+  const ingresos = useMemo(() => ingresosDelDia(registros), [registros]);
   const filtrados = registros.filter(r => cumpleLlegada(r) && cumpleSalida(r) && cumpleSede(r, filtroSede) && cumpleCruce(r, filtroCruce));
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / porPagina));
@@ -650,7 +675,10 @@ export default function Registros() {
                     <span className="whitespace-nowrap">{r.colaborador.nombre} {r.colaborador.apellido}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-gray-600 capitalize">{format(toZonedTime(new Date(r.fecha), TZ), "d MMM yyyy", { locale: es })}</td>
+                <td className="px-4 py-3 text-gray-600 capitalize">
+                  {format(toZonedTime(new Date(r.fecha), TZ), "d MMM yyyy", { locale: es })}
+                  <EtiquetaDeIngreso ingreso={ingresos.get(r.id)} nombre={r.colaborador.nombre} />
+                </td>
                 {haySedes && <td className="px-4 py-3 text-gray-600"><CeldaSede r={r} /></td>}
                 {/* La entrada y la salida en una sola columna, separadas por una raya. La entrada va en
                     un ancho fijo para que la raya quede alineada en todas las filas, y a un lector de
