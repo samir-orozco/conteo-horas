@@ -11,6 +11,8 @@ import { pistaDePantalla, pistaDeUrl, UMBRAL_PISTA, type Pista } from '../lib/pi
 import { leerMemoria, recordar } from '../lib/memoriaPistas';
 import { pedirFotos, fotoDelMomento, olvidarFotos } from '../lib/fotosRevision';
 import MiniaturaMarcacion from '../components/MiniaturaMarcacion';
+import CajaDeBusqueda from '../components/CajaDeBusqueda';
+import { coincideBusqueda } from '../lib/busqueda';
 import {
   motivoSinFoto, franjaDeLaHora, TEXTO_SIN_FOTO, ROTULO_METODO, ROTULO_MOMENTO, ROTULO_FRANJA,
   type EventoDeRevision, type RespuestaRevision, type Franja,
@@ -103,9 +105,10 @@ function rotuloDeGrupo(ev: EventoDeRevision, dias: number): string {
 // FUERA del componente a propósito. Definido dentro, React lo trata como un tipo
 // nuevo en CADA render y desmonta y vuelve a montar todo el árbol de abajo: se
 // pierde el foco, se reinicia el scroll y las animaciones parpadean.
-function Marco({ children, dias, setDias, setIdx, total, hayDatos }: {
+function Marco({ children, dias, setDias, setIdx, total, hayDatos, consulta, onBuscar }: {
   children: React.ReactNode; dias: number; setDias: (d: number) => void;
   setIdx: (i: number) => void; total: number; hayDatos: boolean;
+  consulta: string; onBuscar: (v: string) => void;
 }) {
   return (
     <div className="p-4 md:p-6 max-w-[1600px] mx-auto">
@@ -116,7 +119,12 @@ function Marco({ children, dias, setDias, setIdx, total, hayDatos }: {
           </h2>
           <p className="text-sm text-muted mt-1">Una cara a la vez, en orden cronológico.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* El buscador va con la ventana de días porque las dos acotan la
+              misma lista, y aquí acotar es lo que evita pasar de a una por
+              cientos de marcaciones para llegar a una persona. */}
+          <CajaDeBusqueda valor={consulta} onCambiar={onBuscar}
+            rotulo="Buscar por nombre" className="w-full sm:w-56" />
           <div className="inline-flex rounded-lg bg-gray-100 p-0.5">
             {VENTANAS.map(v => (
               <button key={v.dias} onClick={() => { setDias(v.dias); setIdx(0); }}
@@ -141,6 +149,7 @@ function Marco({ children, dias, setDias, setIdx, total, hayDatos }: {
 export default function RevisionMarcaciones() {
   const [dias, setDias] = useState(1);
   const [idx, setIdx] = useState(0);
+  const [consulta, setConsulta] = useState('');
   const [intento, setIntento] = useState(0);
   const [zoom, setZoom] = useState<1 | 2>(2);
   // La respuesta se guarda JUNTO A LA VENTANA que la pidió: así «cargando» se
@@ -184,7 +193,24 @@ export default function RevisionMarcaciones() {
   const cargando = !vigente;
   const error = !!vigente && !vigente.datos;
   const datos = vigente?.datos ?? null;
-  const eventos = useMemo(() => datos?.eventos ?? [], [datos]);
+  const todas = useMemo(() => datos?.eventos ?? [], [datos]);
+  // EL BUSCADOR FILTRA LA LISTA ENTERA, no solo lo que se ve: todo lo demás de
+  // esta pantalla —el contador, el barrido de fotos, las flechas— se deriva de
+  // `eventos`, así que con el filtro puesto el barrido mide solo las de esa
+  // persona, que es lo que se quiere al estar mirándola.
+  const eventos = useMemo(() => {
+    if (consulta.trim() === '') return todas;
+    const porId = new Map((datos?.personas ?? []).map(p => [p.id, p]));
+    return todas.filter(ev => {
+      const p = porId.get(ev.colaboradorId);
+      return coincideBusqueda(consulta, [p?.nombre, p?.apellido, p?.cargo]);
+    });
+  }, [todas, datos, consulta]);
+
+  // Al filtrar se vuelve al principio, y se hace AQUÍ y no en un efecto: la
+  // pantalla pinta `eventos[idx]`, así que si se estaba en la tercera y el
+  // filtro deja una, el visor queda en blanco sin que nada se queje.
+  const buscar = (v: string) => { setConsulta(v); setIdx(0); };
   const actual: EventoDeRevision | undefined = eventos[idx];
 
   // LAS FOTOS YA NO SE PIDEN SOLO DE UNA EN UNA, Y ES UNA DECISIÓN DEL DUEÑO.
@@ -301,7 +327,7 @@ export default function RevisionMarcaciones() {
 
   if (cargando) {
     return (
-      <Marco dias={dias} setDias={setDias} setIdx={setIdx} total={eventos.length} hayDatos={!!datos}>
+      <Marco dias={dias} setDias={setDias} setIdx={setIdx} total={eventos.length} hayDatos={!!datos} consulta={consulta} onBuscar={buscar}>
         <div className="bg-white rounded-xl shadow p-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 py-2.5 animate-pulse">
@@ -317,7 +343,7 @@ export default function RevisionMarcaciones() {
 
   if (error) {
     return (
-      <Marco dias={dias} setDias={setDias} setIdx={setIdx} total={eventos.length} hayDatos={!!datos}>
+      <Marco dias={dias} setDias={setDias} setIdx={setIdx} total={eventos.length} hayDatos={!!datos} consulta={consulta} onBuscar={buscar}>
         <div className="bg-white rounded-xl shadow py-16 text-center">
           <div className="mx-auto w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
             <AlertTriangle size={26} className="text-red-500" />
@@ -334,18 +360,35 @@ export default function RevisionMarcaciones() {
 
   if (eventos.length === 0) {
     return (
-      <Marco dias={dias} setDias={setDias} setIdx={setIdx} total={eventos.length} hayDatos={!!datos}>
+      <Marco dias={dias} setDias={setDias} setIdx={setIdx} total={eventos.length} hayDatos={!!datos} consulta={consulta} onBuscar={buscar}>
         <div className="bg-white rounded-xl shadow py-16 text-center">
           <div className="mx-auto w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center">
             <CalendarOff size={26} className="text-gray-300" />
           </div>
-          <p className="mt-4 font-semibold text-ink">No hay marcaciones en este período.</p>
-          <p className="mt-1 text-sm text-muted">Pruebe con una ventana más amplia.</p>
-          {dias < 7 && (
-            <button onClick={() => { setDias(7); setIdx(0); }}
-              className="mt-4 px-4 py-2 rounded-lg bg-primary hover:bg-primary-dark text-ink text-sm font-bold">
-              Ver 7 días
-            </button>
+          {/* Dos vacíos distintos, y confundirlos manda a ampliar la ventana
+              a quien lo que tiene es un nombre mal escrito. */}
+          {consulta.trim() !== '' && todas.length > 0 ? (
+            <>
+              <p className="mt-4 font-semibold text-ink">No encontramos marcaciones de «{consulta.trim()}» en este período.</p>
+              <p className="mt-1 text-sm text-muted">
+                Hay {todas.length} {todas.length === 1 ? 'marcación' : 'marcaciones'} de otras personas.
+              </p>
+              <button onClick={() => buscar('')}
+                className="mt-4 px-4 py-2 rounded-lg bg-primary hover:bg-primary-dark text-ink text-sm font-bold">
+                Quitar la búsqueda
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="mt-4 font-semibold text-ink">No hay marcaciones en este período.</p>
+              <p className="mt-1 text-sm text-muted">Pruebe con una ventana más amplia.</p>
+              {dias < 7 && (
+                <button onClick={() => { setDias(7); setIdx(0); }}
+                  className="mt-4 px-4 py-2 rounded-lg bg-primary hover:bg-primary-dark text-ink text-sm font-bold">
+                  Ver 7 días
+                </button>
+              )}
+            </>
           )}
         </div>
       </Marco>
@@ -368,7 +411,7 @@ export default function RevisionMarcaciones() {
 
 
   return (
-    <Marco dias={dias} setDias={setDias} setIdx={setIdx} total={eventos.length} hayDatos={!!datos}>
+    <Marco dias={dias} setDias={setDias} setIdx={setIdx} total={eventos.length} hayDatos={!!datos} consulta={consulta} onBuscar={buscar}>
       {datos?.truncado && (
         <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 text-amber-800 rounded-xl px-4 py-2.5 text-xs mb-4">
           <Info size={14} className="mt-0.5 shrink-0" />

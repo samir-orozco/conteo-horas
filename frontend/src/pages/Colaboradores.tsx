@@ -11,6 +11,8 @@ import Toast from '../components/Toast';
 import { estadoContrato, OPCIONES_CONTRATO, cumpleFiltros, sedesQueCuentan, sedesParaFiltrar, SIN_SEDE } from '../features/colaboradores/estadoContrato';
 import type { SedeOpcion } from '../components/SelectorSedes';
 import MenuFiltros from '../components/MenuFiltros';
+import CajaDeBusqueda from '../components/CajaDeBusqueda';
+import { coincideBusqueda } from '../lib/busqueda';
 import AvatarMini from '../components/AvatarMini';
 import { fechaCorta } from '../lib/fechas';
 import { ETIQUETA_MOTIVO } from '../features/colaboradores/motivos';
@@ -190,6 +192,7 @@ export default function Colaboradores() {
   // pantalla quedaba en blanco sin forma de volver.
   const pestanaActiva = retirados.length === 0 ? 'activos' : pestana;
   const [filtros, setFiltros] = useState<Record<string, string[]>>({});
+  const [consulta, setConsulta] = useState('');
   const [modalImportar, setModalImportar] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -209,7 +212,19 @@ export default function Colaboradores() {
 
   // El filtro de contrato solo aplica a quien sigue trabajando: el contrato de
   // un retirado ya no hay que renovarlo.
-  const visibles = filas.filter(f => !f.activo || cumpleFiltros(f, filtros, sedes));
+  //
+  // El buscador se CRUZA con los filtros y con la pestaña, no los reemplaza: se
+  // puede querer buscar a alguien entre los que tienen el contrato por vencer.
+  const buscada = (f: Fila) => coincideBusqueda(consulta, [f.nombre, f.apellido, f.cedula]);
+  const visibles = filas.filter(f => (!f.activo || cumpleFiltros(f, filtros, sedes)) && buscada(f));
+
+  // Cuántos coinciden en la OTRA pestaña. Sin esto, buscar a alguien retirado
+  // desde «Activos» responde «no hay nada», que es lo que hace concluir que la
+  // persona no está en el sistema.
+  const fueraDeLaPestana = pestanaActiva === 'activos' ? retirados
+    : pestanaActiva === 'retirados' ? lista : [];
+  const coincidenFuera = consulta.trim() === '' ? 0
+    : fueraDeLaPestana.filter(p => coincideBusqueda(consulta, [p.nombre, p.apellido, p.cedula])).length;
 
   // Las sedes donde de verdad cuenta alguien, con la principal si algún presencial
   // sin sedes cuenta en ella (`sedesParaFiltrar`).
@@ -286,6 +301,14 @@ export default function Colaboradores() {
         </div>
       ) : <span />}
 
+      <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
+        {/* El buscador va junto a los filtros porque hace lo mismo —acotar la
+            lista— y se usan uno detrás del otro. */}
+        {(lista.length > 0 || retirados.length > 0) && (
+          <CajaDeBusqueda valor={consulta} onCambiar={setConsulta}
+            rotulo="Buscar por nombre o cédula" className="flex-1 sm:w-64 sm:flex-none" />
+        )}
+
         {/* Los filtros no son una pestaña más porque se cruzan con ellas: se
             puede querer ver los activos por vencer de una sede en concreto. */}
         {lista.length > 0 && (
@@ -303,6 +326,7 @@ export default function Colaboradores() {
             alinear="derecha"
           />
         )}
+      </div>
       </div>
 
       <div className="bg-white rounded-card border border-gray-200 overflow-hidden">
@@ -403,9 +427,41 @@ export default function Colaboradores() {
                 </td>
               </tr>
             ))}
+            {/* Tres casos, y antes solo se cubría el primero: con los
+                filtros puestos la tabla quedaba en blanco, sin una línea que
+                dijera por qué. */}
             {filas.length === 0 && (
               <tr><td colSpan={7} className="px-4 py-10 text-center text-muted">
                 {pestanaActiva === 'retirados' ? 'Nadie se ha retirado todavía' : 'Aún no hay colaboradores'}
+              </td></tr>
+            )}
+            {filas.length > 0 && visibles.length === 0 && (
+              <tr><td colSpan={7} className="px-4 py-10 text-center text-muted">
+                {consulta.trim() !== '' ? (
+                  <>
+                    <p className="font-semibold text-ink">No encontramos a nadie con «{consulta.trim()}».</p>
+                    {coincidenFuera > 0 ? (
+                      <>
+                        {/* La frase entera en una sola cadena: partida en dos
+                            trozos decía «y está está entre los retirados», y el
+                            plural no concordaba. */}
+                        <p className="mt-1 text-sm">
+                          {coincidenFuera === 1
+                            ? `Hay 1 persona que coincide y está entre los ${pestanaActiva === 'activos' ? 'retirados' : 'activos'}.`
+                            : `Hay ${coincidenFuera} personas que coinciden y están entre los ${pestanaActiva === 'activos' ? 'retirados' : 'activos'}.`}
+                        </p>
+                        <button onClick={() => setPestana('todos')}
+                          className="mt-3 px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-dark text-ink text-sm font-semibold">
+                          Ver en todos
+                        </button>
+                      </>
+                    ) : (
+                      <p className="mt-1 text-sm">Revise cómo está escrito, o pruebe con la cédula.</p>
+                    )}
+                  </>
+                ) : (
+                  <p>Nadie cumple los filtros que están puestos.</p>
+                )}
               </td></tr>
             )}
           </tbody>
