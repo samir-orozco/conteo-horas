@@ -83,10 +83,30 @@ Nunca se trabaja directo sobre `master` ni sobre `develop`.
 
 Son las que ya nos han mordido. No son teoría.
 
-- **Nada llega a producción sin permiso explícito.** Se compila y se dejan los
-  comandos listos; el usuario los corre.
-- **Un comando de terminal por bloque** cuando el usuario los va a ejecutar en el
-  servidor, para que pueda revisar cada resultado.
+- **Nada llega a producción sin permiso explícito.** Desde el 4 de octubre de
+  2026, los comandos de servidor los corre Claude desde cPanel en el navegador
+  integrado (terminal y phpMyAdmin), con la sesión iniciada por el dueño. Claude
+  nunca escribe la contraseña.
+  - Lo de **solo lectura** va sin preguntar: `grep -c`, `ps`, `curl`, un `SELECT`.
+  - Cada paso que **cambia producción** lleva un «sí» del dueño en el chat: SQL,
+    `.env`, copias a la app o al docroot, reinicio, `kill`. Es paso por paso: un
+    «sí» no vale para el siguiente.
+  - Cuando no se está desplegando, la sesión de cPanel se cierra. Da acceso a toda
+    la cuenta del hosting, con otros sitios.
+- **Cómo se maneja cPanel desde el navegador.** Las dos herramientas mienten de
+  formas distintas (probado el 4 de octubre de 2026):
+  - **La terminal no acepta texto pegado.** Se teclea tecla por tecla, como máximo
+    100 teclas por acción, generadas con un script.
+  - **Sin comillas dobles**, que llegan con retraso.
+  - **La salida se lee por captura de pantalla**: es un canvas. Antes de cada
+    Enter, captura de la línea entera.
+  - **En phpMyAdmin hay dos editores en la página**, y el bueno es
+    `#sqlqueryform .CodeMirror`. Leyendo el otro, la comprobación dijo «vacío»
+    con la consulta duplicada adentro. Antes de «Go», se compara lo que hay en el
+    editor contra la consulta, carácter por carácter.
+- **Un comando de terminal por bloque** cuando es el dueño quien los va a
+  ejecutar (si el navegador falla, o si lo prefiere), para que pueda revisar cada
+  resultado.
 - **La trampa del `.env.local`:** Vite lo prioriza sobre `.env` incluso al
   compilar para producción. Antes de `npm run build` hay que apartarlo, y después
   verificar que el bundle no contenga `localhost`.
