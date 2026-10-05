@@ -6,7 +6,7 @@
 
 // Lote de novedades que se está mostrando. Subirla hace que vuelvan a aparecer,
 // salvo a quien pidió no verlas más (ver `LOTE_INELUDIBLE`).
-export const VERSION = '2026-10-03';
+export const VERSION = '2026-10-04';
 
 // EL LOTE QUE SE LE MUESTRA A TODOS, INCLUIDO A QUIEN APAGÓ LAS NOVEDADES.
 //
@@ -22,11 +22,15 @@ export const VERSION = '2026-10-03';
 // ineludibles todos los lotes futuros, que es justo lo que no se quiere. Por eso se escribe la fecha
 // a mano y no se pone `= VERSION`.
 //
-// El lote del kiosco (3 de octubre de 2026) NO es ineludible: le llega a quien no las apagó.
+// El lote del kiosco (3 de octubre de 2026) NO fue ineludible: le llegó a quien no las apagó.
+//
+// EL DEL CLIMA LABORAL (4 de octubre de 2026) SÍ, por pedido del dueño: «que ahora sí aparezca a todos
+// sin importar si desmarcaron que no querían ver más». Va escrito a mano, igual que el de turnos.
 //
 // El `: string` hace falta cuando las dos fechas difieren: con los tipos literales, TypeScript da la
-// comparación de `loteEsIneludible` por imposible y no compila.
-const LOTE_INELUDIBLE: string = '2026-09-30';
+// comparación de `loteEsIneludible` por imposible y no compila. Hoy coinciden, y se deja igual para que
+// el próximo lote no tropiece con eso.
+const LOTE_INELUDIBLE: string = '2026-10-04';
 
 export const vistaKey = (id: string) => `horapro_novedades_${VERSION}_${id}`;
 export const apagadoKey = (id: string) => `horapro_novedades_off_${id}`;

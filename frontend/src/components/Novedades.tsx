@@ -2,10 +2,11 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X, ChevronRight, FileSignature, Laptop, FileSpreadsheet, History, ListFilter, ScanFace, ArrowLeftRight, Coffee,
-  Clock, LogIn, CalendarDays, MousePointerSquareDashed, ShieldAlert, Tag, UserCheck,
+  Clock, LogIn, CalendarDays, MousePointerSquareDashed, ShieldAlert, Tag, UserCheck, Smile,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import giraIzquierda from '../assets/rostro/gira-izquierda.svg';
+import { IMAGEN_DE_CARITA } from '../features/clima/caritas';
 import { debeMostrarNovedades, loteEsIneludible, vistaKey, apagadoKey, guiaKey } from './novedadesVisibles';
 import { puntosVisibles } from './puntosDeNovedades';
 
@@ -33,6 +34,50 @@ const Chip = ({ tono, children }: { tono: string; children: React.ReactNode }) =
 );
 
 const NOVEDADES: Novedad[] = [
+  // Lote del 4 de octubre de 2026: el clima laboral. Se le muestra a TODOS, también a quien apagó las
+  // novedades (LOTE_INELUDIBLE en novedadesVisibles.ts, pedido del dueño).
+  {
+    icono: Smile,
+    titulo: 'Mide cómo termina tu equipo cada jornada',
+    // Lo confidencial se dice como es: el administrador la ve SIN nombre. No se escribe «anónimo», porque
+    // el autor queda guardado cifrado (docs/CLIMA_LABORAL.md §3.4) y un texto para clientes no puede
+    // prometer más de lo que pasa. El «esa» es a propósito: con un «que» detrás de coma, la frase se leía
+    // como si también la observación con nombre llegara sin él (revisión del 4 de octubre de 2026). Y
+    // el plan va dicho: la novedad le sale también a quien no lo tiene.
+    //
+    // CABE EN CINCO LÍNEAS y no en seis: con seis, el enlace de abajo queda cortado en la ventana de
+    // escritorio. Medido en el navegador: cinco líneas en los 528 px del texto y todavía en 495, para que
+    // otra letra (la de Windows no es la del Mac) no lo empuje a seis. Si se alarga, medirlo otra vez.
+    texto: 'Al marcar su salida del día, el kiosco pregunta «¿Cómo te fue hoy?» con cinco caritas. Con Normal o peor, puede marcar qué pasó con tus motivos. Siempre puede dejar una observación con su nombre, o confidencial: esa la ves sin nombre y al día siguiente. En «Clima laboral» ves el ánimo y quién lleva tres caritas seguidas en Muy mal o Mal. Solo en el plan Empresarial.',
+    enlace: { texto: 'Abrir Clima laboral', a: '/app/clima' },
+    // La ventana del kiosco en chiquito, con sus caritas de verdad, y debajo la fila del panel.
+    vista: (
+      <div className="w-full max-w-[250px] flex flex-col gap-1.5">
+        <div className="rounded-2xl bg-ink p-2.5 text-center text-white shadow-sm">
+          <p className="text-[9px] font-semibold text-green-400">Salida registrada · 5:02 p. m.</p>
+          <p className="mt-0.5 text-[11px] font-bold">¿Cómo te fue hoy, Ana?</p>
+          <div className="mt-1.5 flex justify-between px-1">
+            {[1, 2, 3, 4, 5].map(v => (
+              <img key={v} src={IMAGEN_DE_CARITA[v]} alt="" width={26} height={26}
+                className={`h-[26px] w-[26px] rounded-full ${v === 2 ? 'ring-2 ring-white' : 'opacity-40'}`} />
+            ))}
+          </div>
+          <div className="mt-1.5 flex flex-wrap justify-center gap-1">
+            <span className="rounded-full bg-primary px-2 py-0.5 text-[9px] font-medium text-ink">Mucho trabajo</span>
+            <span className="rounded-full border border-white/20 px-2 py-0.5 text-[9px] text-white/80">Compañeros</span>
+          </div>
+        </div>
+        <div className="rounded-lg bg-white/95 border border-gray-200 px-2.5 py-1.5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold text-ink">Necesitan atención</span>
+            <span className="ml-auto shrink-0"><Chip tono="bg-orange-50 text-orange-800">1 persona</Chip></span>
+          </div>
+          <p className="mt-0.5 text-[9px] text-muted">Ana Giraldo · 3 respuestas negativas consecutivas</p>
+        </div>
+      </div>
+    ),
+  },
+
   // Lote del 3 de octubre de 2026: el kiosco confirma quién marca. UNA sola vista a propósito
   // (pedido del dueño): es un cambio de la misma pantalla, y repartido en cinco no se leería.
   {
