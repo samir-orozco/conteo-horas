@@ -140,17 +140,39 @@ ya está montado y no cuesta.
 
 # Nivel 3 — Un día o dos
 
-## 9. Exportar los registros a Excel · peticiones 7, 19 y 32
+## 9. ~~Exportar los registros a Excel~~ · peticiones 7, 19 y 32
 
-Entradas, salidas, tiempo de almuerzo y lo demás de la jornada, con botón en la
-pantalla de registros.
+**HECHO el 5 de octubre de 2026.** Botón «Exportar» al final de la barra de
+filtros, pegado a ellos a propósito: lo que baja es lo que ellos dejan. El
+archivo se llama `Registros_<desde>_a_<hasta>.xlsx`, y con la tabla vacía el
+botón no se puede oprimir.
 
-**Hay hoy:** el motor de Excel (`lib/exportar.ts`) ya existe y lo usan Reportes y
-nómina. `Registros.tsx` no lo importa: ahí no hay exportación de ninguna clase.
+Catorce columnas: Colaborador, Cédula, Fecha, Sede, Entrada, Salida, Salida
+estimada, Almuerzo (min), Descansos (min), Duración (min), Llegada tarde (min),
+Tipo, Jornada del día y Observación.
 
-**Que exporte lo que se está viendo**, respetando el rango, los filtros y la
-persona seleccionada, que ya están en esa pantalla. Un botón que exporte todo
-ignorando los filtros es un defecto esperando.
+Cuatro decisiones que vale dejar escritas:
+
+- **Los minutos van como número**, no como «8h 0m»: una columna de texto no se
+  puede sumar, y el archivo existe para sumarlo en otra parte.
+- **Llegada tarde vacía no es cero.** `0` es «llegó a tiempo» y vacío es «no
+  aplica» (sin horario, o día que no cuenta). Escribir 0 en los dos casos diría
+  que todo el mundo fue puntual.
+- **La salida que puso el auto-cierre lleva su propia columna.** En una hoja de
+  cálculo se ve idéntica a una hora marcada si nada lo dice.
+- **«Jornada del día»** es el mismo número de la etiqueta del nº 21, calculado
+  con la misma función: filtrando por mayor que 1 salen los ingresos dobles.
+
+La cédula sale de la lista de colaboradores, porque `GET /registros` no la
+manda; queda vacía para alguien retirado, que no viene en esa lista. Y la columna
+de sede usa el mismo `sedeDeLaJornada` que la tabla, así que el archivo y la
+pantalla no pueden contradecirse.
+
+**Lo único que podía salir mal de verdad era el cableado**, y las dos formas de
+equivocarse dan un archivo plausible: conectado a la página en curso baja 50
+filas de 300 sin avisar, y conectado a la lista cruda ignora los filtros. Hay una
+prueba para cada una, y **las dos se vieron rojas cableando el botón a propósito
+a `visibles` y a `registros`.**
 
 ## 10. Cambiar el estado de una novedad desde el reporte · petición 23
 
