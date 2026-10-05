@@ -40,7 +40,11 @@ export type DiaDelPeriodo = {
 };
 
 // "2026-09-10": el día de calendario en Bogotá. `en-CA` da el formato ISO sin armarlo a mano.
-const claveDia = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: TZ });
+//
+// Se exporta desde el 5 de octubre de 2026: el modal necesita el día de una novedad para pintar su
+// rango, y una segunda copia de esta conversión en la pantalla se separaría de esta (§9.3).
+export const diaEnBogota = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: TZ });
+const claveDia = diaEnBogota;
 
 // "08:05". `h23` para que la medianoche sea 00:00 y no 24:00.
 const horaDeBogota = (iso: string) =>
@@ -80,4 +84,29 @@ export function diasDelPeriodo(
         novedades: rangos.filter(r => r.ini <= dia && dia <= r.fin).map(r => r.novedad),
       };
     });
+}
+
+// LAS NOVEDADES PENDIENTES DE APROBAR QUE TOCAN EL PERÍODO (5 de octubre de 2026).
+//
+// El modal pide TODAS las novedades de la persona —la ruta no acepta rango— y
+// hasta ahora solo usaba las aprobadas, para pintar el día. Una pendiente no se
+// veía en ninguna parte del reporte, así que no había desde dónde aprobarla
+// (petición 23 del dueño).
+//
+// SE MIRA EL CRUCE CON EL PERÍODO, no que quepa dentro: una incapacidad del 28
+// de agosto al 3 de septiembre hay que decidirla igual cuando se está mirando
+// septiembre. Y los días se comparan en Bogotá, como todo lo de este archivo:
+// una novedad de un solo día guardada a medianoche de Bogotá son las 05:00 UTC,
+// y comparada cruda se cae del período por cinco horas.
+export function pendientesDelPeriodo(
+  novedades: NovedadDelPeriodo[],
+  desde: string,
+  hasta: string,
+): NovedadDelPeriodo[] {
+  return novedades
+    .filter(n => !n.aprobado)
+    .filter(n => claveDia(n.fechaInicio) <= hasta && claveDia(n.fechaFin) >= desde)
+    // De la más antigua a la más reciente: el orden en que llegan es el de la
+    // ruta, y una lista que baila entre dos aperturas se lee mal.
+    .sort((a, b) => claveDia(a.fechaInicio).localeCompare(claveDia(b.fechaInicio)));
 }

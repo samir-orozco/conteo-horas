@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { X, LogIn, LogOut, CalendarClock, CalendarDays } from 'lucide-react';
+import { X, LogIn, LogOut, CalendarClock, CalendarDays, Check } from 'lucide-react';
 import api from '../../lib/api';
 import { TZ } from '../../lib/fechas';
 import { TIPO_PERMISO_LABEL } from '../../constants/permisos';
-import { diasDelPeriodo, type RegistroDelPeriodo, type NovedadDelPeriodo } from './detalleDelPeriodo';
+import { diasDelPeriodo, pendientesDelPeriodo, diaEnBogota, type RegistroDelPeriodo, type NovedadDelPeriodo } from './detalleDelPeriodo';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import type { PersonaDeNomina, Periodo } from './nominaDelPeriodo';
 
 // El detalle de una persona dentro del reporte de nómina (15 de septiembre de 2026, pedido del dueño).
@@ -23,6 +24,15 @@ const nombreDeNovedad = (tipo: string) => TIPO_PERMISO_LABEL[tipo] ?? tipo.toLow
 // zona al occidente de Colombia pintaría el día anterior.
 const enBogota = (dia: string, formato: Intl.DateTimeFormatOptions) =>
   new Date(`${dia}T12:00:00Z`).toLocaleDateString('es-CO', { timeZone: TZ, ...formato });
+
+// «3 de septiembre» cuando es de un día y «7 al 10 de septiembre» cuando son varios. El día sale
+// de `diaEnBogota`, la misma conversión que usa el recorte al período.
+const rangoDeNovedad = (n: { fechaInicio: string; fechaFin: string }) => {
+  const ini = diaEnBogota(n.fechaInicio);
+  const fin = diaEnBogota(n.fechaFin);
+  const corto = (dia: string) => enBogota(dia, { day: 'numeric', month: 'long' });
+  return ini === fin ? corto(ini) : `${enBogota(ini, { day: 'numeric' })} al ${corto(fin)}`;
+};
 
 // «Jueves, 10 de septiembre», con mayúscula al principio: encabeza cada línea de la lista.
 const fechaDelDia = (dia: string) => {
@@ -51,12 +61,21 @@ function Tarjeta({ rotulo, Icono, valor, nota }: {
   );
 }
 
-type Props = { persona: PersonaDeNomina; periodo: Periodo; onCerrar: () => void };
+type Props = {
+  persona: PersonaDeNomina; periodo: Periodo; onCerrar: () => void;
+  // Se llama al aprobar una novedad: el reporte de atrás tiene que volver a
+  // calcularse, porque sus totales acaban de cambiar. Sin esto la pantalla se
+  // queda diciendo el total viejo, que es peor que no haber dejado aprobar.
+  onAprobada?: () => void;
+};
 
-export default function ModalDetalleDePersona({ persona, periodo, onCerrar }: Props) {
+export default function ModalDetalleDePersona({ persona, periodo, onCerrar, onAprobada }: Props) {
   const [registros, setRegistros] = useState<RegistroDelPeriodo[] | null>(null);
   const [novedades, setNovedades] = useState<NovedadDelPeriodo[]>([]);
   const [error, setError] = useState('');
+  const [porAprobar, setPorAprobar] = useState<NovedadDelPeriodo | null>(null);
+  const [aprobando, setAprobando] = useState(false);
+  const [fallo, setFallo] = useState('');
 
   useEffect(() => {
     let vigente = true;
@@ -76,6 +95,25 @@ export default function ModalDetalleDePersona({ persona, periodo, onCerrar }: Pr
   }, [persona.colaboradorId, periodo.desde, periodo.hasta]);
 
   const dias = registros ? diasDelPeriodo(registros, novedades, periodo.desde, periodo.hasta) : [];
+  const pendientes = pendientesDelPeriodo(novedades, periodo.desde, periodo.hasta);
+
+  const aprobar = async () => {
+    if (!porAprobar) return;
+    setAprobando(true);
+    setFallo('');
+    try {
+      await api.put(`/permisos/${porAprobar.id}`, { aprobado: true });
+      // La lista de aquí se arregla sin volver a pedirla, y el reporte de atrás
+      // sí se recalcula: es el que tiene los totales que acaban de cambiar.
+      setNovedades(ns => ns.map(n => (n.id === porAprobar.id ? { ...n, aprobado: true } : n)));
+      setPorAprobar(null);
+      onAprobada?.();
+    } catch {
+      setFallo('No pudimos aprobar la novedad. Vuelve a intentarlo.');
+    } finally {
+      setAprobando(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 !mt-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onCerrar}>
@@ -120,6 +158,42 @@ export default function ModalDetalleDePersona({ persona, periodo, onCerrar }: Pr
             <Tarjeta rotulo="Total adicional" Icono={LogOut} valor={fmt(persona.totalAdicional)}
               nota="recargos y extras" />
           </div>
+
+          {/* LO QUE FALTA DECIDIR VA ARRIBA DE LO QUE YA ESTÁ DECIDIDO (5 de octubre de 2026,
+              petición 23). Una novedad pendiente no se veía en ninguna parte del reporte —el día
+              a día solo pinta las aprobadas—, así que al revisar la nómina del período no había
+              forma de enterarse de que faltaba aprobar algo, y menos de hacerlo sin salir. */}
+          {pendientes.length > 0 && (
+            <section role="group" aria-label="Novedades pendientes de aprobar"
+              className="rounded-xl border border-orange-200 bg-orange-50/60 px-4 py-3">
+              <p className="text-sm font-semibold text-orange-900 flex items-center gap-1.5">
+                <CalendarClock size={14} aria-hidden="true" />
+                {pendientes.length === 1
+                  ? 'Hay 1 novedad pendiente de aprobar en este período'
+                  : `Hay ${pendientes.length} novedades pendientes de aprobar en este período`}
+              </p>
+              <p className="text-xs text-orange-800/80 mt-0.5">
+                Mientras esté pendiente, esos días siguen contando como ausencia.
+              </p>
+              <ul className="mt-2.5 space-y-1.5">
+                {pendientes.map(n => (
+                  <li key={n.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-white border border-orange-200 px-3 py-2">
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-ink">
+                        {nombreDeNovedad(n.tipo)} · {rangoDeNovedad(n)}
+                      </span>
+                      {n.descripcion && <span className="block text-xs text-muted">{n.descripcion}</span>}
+                    </span>
+                    <button type="button" onClick={() => setPorAprobar(n)}
+                      className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-ink bg-primary hover:bg-primary-dark px-2.5 py-1.5 rounded-lg">
+                      <Check size={13} aria-hidden="true" />Aprobar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {fallo && <p className="mt-2 text-xs font-medium text-red-700">{fallo}</p>}
+            </section>
+          )}
 
           {/* Las novedades del período, que es lo que antes iba apretado en la celda de la tabla. */}
           <section aria-labelledby="titulo-novedades-del-periodo">
@@ -180,6 +254,19 @@ export default function ModalDetalleDePersona({ persona, periodo, onCerrar }: Pr
           </section>
         </div>
       </div>
+
+      {/* Aprobar mueve dinero: esos días dejan de exigirse y el total del período cambia. En una
+          tabla de doscientas filas eso no puede pasar con un clic suelto. */}
+      <ConfirmDialog
+        abierto={!!porAprobar}
+        titulo="¿Aprobar esta novedad?"
+        subtitulo={porAprobar
+          ? `${nombreDeNovedad(porAprobar.tipo)} · ${rangoDeNovedad(porAprobar)}. Esos días dejan de contar como ausencia y el total del período cambia.`
+          : undefined}
+        textoContinuar={aprobando ? 'Aprobando...' : 'Sí, aprobar'}
+        onContinuar={aprobar}
+        onCancelar={() => setPorAprobar(null)}
+      />
     </div>
   );
 }

@@ -243,7 +243,10 @@ export default function ReporteNomina() {
       </div>
 
       {detalle && (
-        <ModalDetalleDePersona persona={detalle} periodo={periodo} onCerrar={() => setDetalle(null)} />
+        <ModalDetalleDePersona persona={detalle} periodo={periodo} onCerrar={() => setDetalle(null)}
+          // Aprobar una novedad cambia los totales del período: el reporte se vuelve a calcular,
+          // o la tabla de atrás se queda diciendo el número viejo.
+          onAprobada={buscar} />
       )}
     </div>
   );

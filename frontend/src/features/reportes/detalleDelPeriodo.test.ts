@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { diasDelPeriodo, type RegistroDelPeriodo, type NovedadDelPeriodo } from './detalleDelPeriodo';
+import { diasDelPeriodo, pendientesDelPeriodo, type RegistroDelPeriodo, type NovedadDelPeriodo } from './detalleDelPeriodo';
 
 // Lo que muestra el modal de «Detalles» del reporte de nómina (15 de septiembre de 2026): las
 // asistencias y las novedades de una persona en el período.
@@ -92,5 +92,71 @@ describe('diasDelPeriodo', () => {
     expect(dias).toHaveLength(1);
     // La primera entrada y la última salida del día.
     expect(dias[0]).toMatchObject({ dia: '2026-09-04', entrada: '08:00', salida: '17:30', jornadas: 2 });
+  });
+});
+
+// LAS NOVEDADES PENDIENTES DE APROBAR DEL PERÍODO (5 de octubre de 2026, petición 23).
+//
+// El modal del reporte pide TODAS las novedades de la persona, porque la ruta no
+// acepta rango, y hasta ahora solo usaba las APROBADAS para pintar el día. Una
+// pendiente no se veía en ninguna parte del reporte, así que no había desde dónde
+// aprobarla: eso es lo que esto hace visible.
+//
+// Se trata de dinero: una novedad aprobada deja de exigir esos días y el total
+// del período cambia. Por eso la lista es de lo pendiente, para decidir, y no una
+// lista más de lo que ya está resuelto.
+describe('pendientesDelPeriodo', () => {
+  it('sin novedades no hay nada que aprobar', () => {
+    expect(pendientesDelPeriodo([], DESDE, HASTA)).toEqual([]);
+  });
+
+  it('las aprobadas no entran: ya se decidieron', () => {
+    const n = novedad('VACACIONES', bog(2026, 9, 2), bog(2026, 9, 5));
+    expect(pendientesDelPeriodo([n], DESDE, HASTA)).toEqual([]);
+  });
+
+  it('una pendiente dentro del período entra', () => {
+    const n = novedad('CITA_MEDICA', bog(2026, 9, 3), bog(2026, 9, 3), { aprobado: false });
+    expect(pendientesDelPeriodo([n], DESDE, HASTA)).toEqual([n]);
+  });
+
+  // LO QUE MÁS IMPORTA: se mira el CRUCE con el período, no que quepa dentro.
+  // Una incapacidad del 28 de agosto al 3 de septiembre toca el período y hay que
+  // decidirla, aunque empiece antes.
+  it('una pendiente que empieza antes del período pero lo toca, entra', () => {
+    const n = novedad('INCAPACIDAD_EPS', bog(2026, 8, 28), bog(2026, 9, 3), { aprobado: false });
+    expect(pendientesDelPeriodo([n], DESDE, HASTA)).toEqual([n]);
+  });
+
+  it('una pendiente que termina después del período pero lo toca, entra', () => {
+    const n = novedad('VACACIONES', bog(2026, 9, 14), bog(2026, 9, 25), { aprobado: false });
+    expect(pendientesDelPeriodo([n], DESDE, HASTA)).toEqual([n]);
+  });
+
+  it('una pendiente que envuelve el período entero entra', () => {
+    const n = novedad('LICENCIA_MATERNIDAD', bog(2026, 7, 1), bog(2026, 12, 1), { aprobado: false });
+    expect(pendientesDelPeriodo([n], DESDE, HASTA)).toEqual([n]);
+  });
+
+  it('una pendiente que no toca el período no entra', () => {
+    const antes = novedad('PERMISO', bog(2026, 8, 1), bog(2026, 8, 20), { aprobado: false });
+    const despues = novedad('PERMISO', bog(2026, 9, 16), bog(2026, 9, 20), { aprobado: false });
+    expect(pendientesDelPeriodo([antes, despues], DESDE, HASTA)).toEqual([]);
+  });
+
+  // El día es el de Bogotá. Una novedad de un solo día guardada a medianoche de
+  // Bogotá son las 05:00 UTC: comparada cruda contra «2026-09-01» se cae del
+  // período por cinco horas, y la pendiente del primer día no se vería.
+  it('el primer y el último día del período cuentan, en hora de Bogotá', () => {
+    const primero = novedad('PERMISO', bog(2026, 9, 1), bog(2026, 9, 1), { aprobado: false });
+    const ultimo = novedad('PERMISO', bog(2026, 9, 15), bog(2026, 9, 15), { aprobado: false });
+    expect(pendientesDelPeriodo([primero, ultimo], DESDE, HASTA)).toHaveLength(2);
+  });
+
+  it('van de la más antigua a la más reciente, para que la lista no baile', () => {
+    const tarde = novedad('PERMISO', bog(2026, 9, 10), bog(2026, 9, 10), { aprobado: false });
+    const temprano = novedad('PERMISO', bog(2026, 9, 2), bog(2026, 9, 2), { aprobado: false });
+    expect(pendientesDelPeriodo([tarde, temprano], DESDE, HASTA).map(n => n.fechaInicio))
+      .toEqual([temprano.fechaInicio, tarde.fechaInicio]);
   });
 });
