@@ -36,19 +36,36 @@ describe('Landing', () => {
     expect(screen.getByRole('heading', { name: 'Tu nómina no necesita otra hoja de Excel. Necesita un sistema.' })).toBeInTheDocument();
   });
 
-  it('muestra siete partes del sistema, con sedes, geocerca, control antifraude y clima laboral', () => {
+  // Nueve y no siete (4 de octubre de 2026): la del clima quedaba sola en su fila, y el dueño eligió
+  // acompañarla con las tardanzas y los turnos. La fila se lee Tardanzas, Clima, Turnos.
+  it('muestra nueve partes del sistema, y la última fila es tardanzas, clima y turnos', () => {
     abrir();
-    for (const titulo of [
+    const titulos = [
       'Liquida sin hacer cuentas',
       'Marcan con la cara, no con excusas',
       'Tus contratos avisan antes de vencerse',
       'Cada sede con su gente y sus reportes',
       'Marcan solo dentro de su sede',
       'Marcar por otro deja rastro',
+      'La llegada tarde pide un motivo',
       'Cómo le fue a tu equipo, en una carita',
-    ]) {
-      expect(screen.getByRole('heading', { name: titulo })).toBeInTheDocument();
-    }
+      'Turnos con aviso de horas de más',
+    ];
+    const seccion = document.getElementById('funciones')!;
+    expect(within(seccion).getAllByRole('heading', { level: 3 }).map(h => h.textContent)).toEqual(titulos);
+    // El subtítulo cuenta las partes: decía «Siete» y con nueve habría mentido.
+    expect(within(seccion).getByText(/^Nueve partes del sistema/)).toBeInTheDocument();
+  });
+
+  // La del clima decía «quién lleva días seguidos mal» y «el ánimo por semana»: la cuenta es de
+  // RESPUESTAS y no de días (decisión del dueño), y la evolución va por día en los rangos cortos.
+  // Y «dejar una observación confidencial» se leía como si toda observación lo fuera.
+  it('la tarjeta del clima cuenta caritas, no días, y la observación puede ir con nombre', () => {
+    abrir();
+    const tarjeta = screen.getByRole('heading', { name: 'Cómo le fue a tu equipo, en una carita' }).closest('article')!;
+    expect(tarjeta).toHaveTextContent('tres caritas seguidas en Muy mal o Mal');
+    expect(tarjeta).toHaveTextContent('con su nombre o confidencial');
+    expect(tarjeta).not.toHaveTextContent(/días seguidos|por semana/);
   });
 
   it('el pie va en columnas y trae las redes de HoraPro, que abren en otra pestaña', () => {

@@ -1,4 +1,6 @@
-import { Calculator, Check, ScanFace, MapPin } from 'lucide-react';
+import { Calculator, Check, ScanFace, MapPin, Clock, CalendarOff, Bed, AlertTriangle, CheckCheck } from 'lucide-react';
+import { CELDA_COLOR, PUNTO_COLOR, type ColorDeTurno } from '../../lib/coloresDeTurno';
+import { progresoDelTope } from '../../pages/turnos/progresoDelTope';
 import carita1 from '../../assets/caritas/carita-1.svg';
 import carita2 from '../../assets/caritas/carita-2.svg';
 import carita3 from '../../assets/caritas/carita-3.svg';
@@ -150,6 +152,118 @@ export function VistaClima() {
               {m}
             </span>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// La campana del panel en pequeño (4 de octubre de 2026): copia de
+// features/notificaciones/PanelNotificaciones.tsx —su caja, su encabezado con «Todas / No leídas», sus
+// filas y su pie— con los dos avisos que deja una llegada tarde con su motivo. Los textos son los que
+// escribe el servidor (routes/worker.ts), letra por letra, incluido el tipo de la novedad en mayúsculas
+// entre paréntesis: así lo pinta hoy la aplicación, y la vista no puede mostrar uno más pulido.
+// Una revisión adversarial comparó esta vista contra la pantalla real el mismo día.
+export function VistaTardanzas() {
+  const avisos = [
+    { Icono: Clock, titulo: 'Ana Giraldo llegó tarde', cuerpo: 'Marcó entrada con 17 min de retraso.' },
+    { Icono: CalendarOff, titulo: 'Novedad por aprobar: Ana Giraldo', cuerpo: 'Reportó una novedad (PERSONAL) pendiente de tu aprobación.' },
+  ];
+  return (
+    <div className="w-full max-w-[250px] rounded-2xl bg-white shadow-lg border border-gray-200/70 overflow-hidden text-ink">
+      <div className="flex items-center justify-between px-3 pt-2 pb-1.5 border-b border-gray-100">
+        <p className="font-bold text-[12px]">Notificaciones</p>
+        <div className="flex items-center gap-0.5 bg-gray-100 rounded-full p-0.5 text-[8px] font-medium">
+          <span className="px-1.5 py-0.5 rounded-full bg-white shadow-sm">Todas</span>
+          <span className="px-1.5 py-0.5 text-muted">No leídas</span>
+        </div>
+      </div>
+      {avisos.map(({ Icono, titulo, cuerpo }) => (
+        <div key={titulo} className="flex gap-2 px-3 py-1.5 border-b border-gray-50">
+          <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center bg-amber-100 text-amber-600">
+            <Icono size={12} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold leading-snug">{titulo}</p>
+            <p className="text-[9px] text-muted mt-0.5 leading-snug">{cuerpo}</p>
+            <p className="text-[8px] text-gray-400 mt-0.5">hace 2 minutos</p>
+          </div>
+          <span className="shrink-0 self-center w-2 h-2 rounded-full bg-green-500" />
+        </div>
+      ))}
+      <p className="px-3 py-1 text-[9px] font-medium text-primary-dark flex items-center justify-center gap-1">
+        <CheckCheck size={10} /> Marcar todas como leídas
+      </p>
+    </div>
+  );
+}
+
+// Una semana del calendario de turnos en pequeño (4 de octubre de 2026), copiada de
+// pages/turnos/CalendarioDeTurnos.tsx y revisada contra ella el mismo día:
+// - el rótulo de la semana sin el año, como `rangoBreve`, y los días con `abreviaturaDeDia`;
+// - la celda de un turno con su fondo claro y su punto (CELDA_COLOR y PUNTO_COLOR, no clases a mano);
+// - el descanso con su cama y la palabra debajo;
+// - el total «40 h de 42 h» con la barra de `progresoDelTope`, la misma función del calendario;
+// - y aparte, la ventana «Antes de aplicar» con su aviso grave, que es donde la app avisa del tope. La
+//   rejilla dice lo que hay hoy (Julián en 38 h) y el aviso lo que quedaría al aplicar (46 h): mezclar
+//   las dos cosas en la misma fila diría algo que la pantalla no dice.
+// Se ven tres días y no siete: con más, «Mañana» no cabe ni recortado. Los datos son de ejemplo.
+export function VistaTurnos() {
+  const TURNO: Record<string, [string, ColorDeTurno]> = { M: ['Mañana', 'esmeralda'], T: ['Tarde', 'ambar'], N: ['Noche', 'cobalto'] };
+  const filas = [
+    { n: 'Ana Giraldo', celdas: ['M', null, 'M'], horas: 40 },
+    { n: 'Julián Torres', celdas: ['N', 'N', 'N'], horas: 38 },
+    { n: 'Sofía Ramos', celdas: ['T', 'T', null], horas: 36 },
+  ];
+  const columnas = 'grid grid-cols-[44px_repeat(3,1fr)_52px] items-center gap-1';
+  return (
+    <div className="w-full max-w-[262px] rounded-xl bg-white shadow-lg p-2.5 text-ink">
+      <p className="text-[10px] font-bold">5 oct – 11 oct</p>
+      <div className={`${columnas} mt-1 text-[8px] font-semibold text-muted`}>
+        <span />
+        {['Lun 5', 'Mar 6', 'Mié 7'].map(d => <span key={d} className="text-center">{d}</span>)}
+        <span className="text-center">Semana</span>
+      </div>
+      <div className="mt-0.5 space-y-1">
+        {filas.map(f => {
+          const p = progresoDelTope(f.horas * 60, 42 * 60);
+          return (
+            <div key={f.n} className={columnas}>
+              <span className="text-[9px] font-medium truncate">{f.n}</span>
+              {f.celdas.map((c, i) => c ? (
+                <span key={i} className={`flex h-[22px] min-w-0 items-center gap-0.5 rounded-md px-1 text-[8px] font-bold ${CELDA_COLOR[TURNO[c][1]]}`}>
+                  <span aria-hidden="true" className={`h-[5px] w-[5px] shrink-0 rounded-full ${PUNTO_COLOR[TURNO[c][1]]}`} />
+                  <span className="truncate">{TURNO[c][0]}</span>
+                </span>
+              ) : (
+                <span key={i} className="flex h-[22px] flex-col items-center justify-center rounded-md bg-gray-100 text-[7px] font-medium text-muted leading-none">
+                  <Bed size={8} aria-hidden="true" /> Descanso
+                </span>
+              ))}
+              <div>
+                <span className="block whitespace-nowrap text-[9px] leading-none tabular-nums">
+                  <b className={p.pasa ? 'text-red-600' : ''}>{f.horas} h</b> <span className="text-muted">de 42 h</span>
+                </span>
+                <span className="mt-0.5 block h-1 rounded-full bg-gray-200 overflow-hidden">
+                  <span className={`block h-full rounded-full ${p.pasa ? 'bg-red-500' : 'bg-primary-dark'}`} style={{ width: `${p.ancho}%` }} />
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-900">
+        <p className="text-[8px] font-semibold uppercase text-rose-700/80 mb-0.5">Antes de aplicar</p>
+        <div className="flex items-start gap-1.5">
+          <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-600">
+            <AlertTriangle size={9} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[9px] font-bold leading-snug">Semanas que se pasarían del tope de 42 horas</p>
+            <ul className="list-disc pl-3 text-[8.5px] leading-snug">
+              <li>Julián Torres, semana del 5 de octubre: <b>46 h</b></li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
