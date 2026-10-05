@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Building2, CreditCard, Users, Wallet, Link as LinkIcon, FileDown, Paperclip, TrendingUp, ListChecks, BadgeCheck,
+  ArrowLeft, Building2, CreditCard, Users, Wallet, Link as LinkIcon, FileDown, Paperclip, TrendingUp, ListChecks, BadgeCheck, Tag,
 } from 'lucide-react';
 import api from '../../lib/api';
 import Toast from '../../components/Toast';
@@ -11,6 +11,8 @@ import { ultimoDiaCubierto } from '../../lib/fechas';
 import VistaDeAdjunto from '../../components/VistaDeAdjunto';
 import { tipoDeDataUri } from '../../lib/archivos';
 import { funcionesDelPlan, funcionesExtra, cupoExtra, type CatalogoDePlanes } from '../../features/admin/planDeEmpresa';
+import CamposDePrecio from '../../features/admin/CamposDePrecio';
+import { precioDeLaSuscripcion, PRECIO_GLOBAL, type FormPrecio } from '../../features/admin/precioDelCliente';
 
 const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -34,6 +36,10 @@ type Empresa = {
   suscripcion: {
     estadoEfectivo: string; diasMora: number; finPrueba: string; pagadoHasta: string | null; pagos: Pago[];
     plan: string; cicloPago: string; limiteOverride: number | null;
+    // El precio propio del cliente, si tiene. Los tres modos están en
+    // features/admin/precioDelCliente.ts.
+    precioModo?: string | null; precioFijo?: number | null;
+    precioTramo1?: number | null; limiteTramo1?: number | null; precioTramo2?: number | null;
   } | null;
 };
 
@@ -62,6 +68,8 @@ export default function AdminEmpresaDetalle() {
   const [limite, setLimite] = useState(30);
   const [feats, setFeats] = useState<Record<string, boolean>>({});
   const [guardandoPlan, setGuardandoPlan] = useState(false);
+  const [precio, setPrecio] = useState<FormPrecio>(PRECIO_GLOBAL);
+  const [guardandoPrecio, setGuardandoPrecio] = useState(false);
   const [verificando, setVerificando] = useState('');
   // Los planes con su cupo, precio y funciones como están en «Precios», y la lista de funciones, salen
   // del servidor (15 de septiembre de 2026). Antes iban copiados aquí y se habían quedado atrás.
@@ -75,6 +83,7 @@ export default function AdminEmpresaDetalle() {
       setCiclo(r.data.suscripcion?.cicloPago ?? 'MENSUAL');
       setLimite(Number.isFinite(c?.limite) ? c.limite : 150);
       setFeats({ ...(c?.features ?? {}) });
+      setPrecio(precioDeLaSuscripcion(r.data.suscripcion));
     });
   }, [id]);
   useEffect(() => { cargar(); }, [cargar]);
@@ -113,6 +122,21 @@ export default function AdminEmpresaDetalle() {
       setToast('Plan actualizado');
       cargar();
     } finally { setGuardandoPlan(false); }
+  };
+
+  // El precio va por su propia ruta y con su propio botón: «GLOBAL» es lo que
+  // BORRA el precio propio en el servidor, así que guardarlo es una decisión
+  // tan explícita como ponerle uno.
+  const guardarPrecio = async () => {
+    if (!id) return;
+    setGuardandoPrecio(true);
+    try {
+      await api.put(`/admin/empresas/${id}/precio`, precio);
+      setToast('Precio del cliente actualizado');
+      cargar();
+    } catch {
+      setToast('No pudimos guardar el precio');
+    } finally { setGuardandoPrecio(false); }
   };
 
   if (!empresa) return <div className="p-8 text-muted">Cargando...</div>;
@@ -264,6 +288,31 @@ export default function AdminEmpresaDetalle() {
           </>
         )}
       </div>
+
+      {/* Precio del cliente. A quien tiene acceso ilimitado de cortesía no se le
+          cobra, así que ofrecerle un precio propio es ofrecerle algo que no
+          rige: la tarjeta del plan ya explica ese caso. */}
+      {!empresa.exentaPago && (
+      <div className="bg-white rounded-card border border-gray-200 p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Tag size={18} className="text-emerald-600" />
+          <h2 className="font-bold text-ink">Precio del cliente</h2>
+        </div>
+        <p className="text-sm text-muted mb-4">
+          Define un precio propio para este cliente o usa el global de la plataforma.
+        </p>
+        <CamposDePrecio valor={precio} onCambiar={setPrecio} />
+        <div className="flex items-center gap-3 mt-5">
+          <button onClick={guardarPrecio} disabled={guardandoPrecio}
+            className="px-4 py-2 text-sm bg-primary hover:bg-primary-dark text-ink font-semibold rounded-lg disabled:opacity-60">
+            {guardandoPrecio ? 'Guardando...' : 'Guardar precio'}
+          </button>
+          <span className="text-xs text-muted">
+            Con <b>Precio global</b> paga lo que diga «Precios», y el precio propio se borra.
+          </span>
+        </div>
+      </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Usuarios del panel */}

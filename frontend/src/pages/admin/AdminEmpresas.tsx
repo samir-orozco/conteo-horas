@@ -11,6 +11,8 @@ import { procesarEvidencia } from '../../lib/evidencia';
 import { claseDeArchivo, rotuloDeArchivo, ACEPTA_COMPROBANTE } from '../../lib/archivos';
 import IconoDeAdjunto from '../../components/IconoDeAdjunto';
 import { mensajeDeError } from '../../lib/errores';
+import CamposDePrecio from '../../features/admin/CamposDePrecio';
+import { precioDeLaSuscripcion, PRECIO_GLOBAL, type FormPrecio } from '../../features/admin/precioDelCliente';
 
 const cop = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -58,7 +60,7 @@ export default function AdminEmpresas() {
   const [guardandoPrueba, setGuardandoPrueba] = useState(false);
   // Precio del cliente
   const [preciando, setPreciando] = useState<EmpresaRow | null>(null);
-  const [formPrecio, setFormPrecio] = useState({ modo: 'GLOBAL', precioFijo: 0, precioTramo1: 0, limiteTramo1: 0, precioTramo2: 0 });
+  const [formPrecio, setFormPrecio] = useState<FormPrecio>(PRECIO_GLOBAL);
   const [guardandoPrecio, setGuardandoPrecio] = useState(false);
   // Eliminar empresa (irreversible)
   const [eliminando, setEliminando] = useState<EmpresaRow | null>(null);
@@ -236,14 +238,7 @@ export default function AdminEmpresas() {
     setPreciando(emp);
     // Trae el detalle para prellenar el override actual
     const r = await api.get(`/admin/empresas/${emp.id}`);
-    const s = r.data.suscripcion ?? {};
-    setFormPrecio({
-      modo: s.precioModo ?? 'GLOBAL',
-      precioFijo: s.precioFijo ?? 0,
-      precioTramo1: s.precioTramo1 ?? 0,
-      limiteTramo1: s.limiteTramo1 ?? 0,
-      precioTramo2: s.precioTramo2 ?? 0,
-    });
+    setFormPrecio(precioDeLaSuscripcion(r.data.suscripcion));
   };
 
   const guardarPrecio = async (e: React.FormEvent) => {
@@ -532,50 +527,7 @@ export default function AdminEmpresas() {
             </div>
             <p className="text-sm text-muted mb-4">{preciando.nombre} · define un precio propio o usa el global de la plataforma.</p>
             <form onSubmit={guardarPrecio} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-muted mb-1">Modo de precio</label>
-                <select value={formPrecio.modo} onChange={ev => setFormPrecio(p => ({ ...p, modo: ev.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                  <option value="GLOBAL">Precio global de la plataforma</option>
-                  <option value="FIJO">Precio fijo mensual</option>
-                  <option value="TRAMOS">Tarifa por colaborador propia</option>
-                </select>
-              </div>
-
-              {formPrecio.modo === 'FIJO' && (
-                <div>
-                  <label className="block text-xs font-medium text-muted mb-1">Valor fijo mensual (COP)</label>
-                  <input inputMode="numeric" value={formatearMiles(formPrecio.precioFijo)}
-                    onChange={ev => setFormPrecio(p => ({ ...p, precioFijo: parsearMiles(ev.target.value) }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                  <p className="text-xs text-muted mt-1">Se cobra igual sin importar cuántos colaboradores tenga.</p>
-                </div>
-              )}
-
-              {formPrecio.modo === 'TRAMOS' && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-muted mb-1">Precio por colaborador (tramo 1)</label>
-                      <input inputMode="numeric" value={formatearMiles(formPrecio.precioTramo1)}
-                        onChange={ev => setFormPrecio(p => ({ ...p, precioTramo1: parsearMiles(ev.target.value) }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-muted mb-1">Hasta cuántos colaboradores</label>
-                      <input type="number" min={1} step={1} value={formPrecio.limiteTramo1}
-                        onChange={ev => setFormPrecio(p => ({ ...p, limiteTramo1: Number(ev.target.value) }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted mb-1">Precio por colaborador extra (tramo 2)</label>
-                    <input inputMode="numeric" value={formatearMiles(formPrecio.precioTramo2)}
-                      onChange={ev => setFormPrecio(p => ({ ...p, precioTramo2: parsearMiles(ev.target.value) }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-                  </div>
-                </div>
-              )}
+              <CamposDePrecio valor={formPrecio} onCambiar={setFormPrecio} />
 
               <div className="flex justify-end gap-2 pt-1">
                 <button type="button" onClick={() => setPreciando(null)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>
