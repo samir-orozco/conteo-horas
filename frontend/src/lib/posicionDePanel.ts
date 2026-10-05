@@ -70,3 +70,41 @@ export function posicionDePanel(ancla: Rect, panel: Tamano, ventana: Tamano): { 
   // las otras dos opciones y mejor que quedar fuera de la pantalla, que es donde no se puede usar.
   return { x, y: dentroDeLaVentana(debajo, panel.alto, ventana.alto) };
 }
+
+// LA OTRA COLOCACIÓN: AL LADO DEL ANCLA, DESLIZANDO (4 de octubre de 2026).
+//
+// Para los paneles que cuelgan de un botón del menú lateral (Reportes y la campana). No se abren
+// debajo del botón sino a su derecha, y cuando no caben no se voltean: se deslizan hacia arriba.
+//
+// POR QUÉ AQUÍ Y NO EN SU PROPIO ARCHIVO: es el mismo pedido del dueño que encabeza este archivo,
+// «que se acomode al espacio», dicho para toda esta clase de elementos. Estuvo un día repartido en
+// dos archivos vecinos —este y un `panelAnclado.ts` que ya no existe— y eso es peor que no haberlo
+// extraído: parecía una sola regla y eran dos, con nombres casi iguales, así que el siguiente que
+// necesitara colocar un panel habría elegido una de las dos a cara o cruz.
+//
+// POR QUÉ NO SE VOLTEA, que es lo que sí hace `posicionDePanel`: el botón de Reportes es de los
+// últimos del menú, así que volteado el panel taparía el menú entero de arriba abajo. Deslizándolo
+// el botón se sigue viendo y el panel queda a su lado, que es de donde se entiende que salió.
+//
+// DEVUELVE TAMBIÉN EL ALTO MÁXIMO, al contrario que la de arriba, y no es un capricho: un panel más
+// alto que la ventana no se puede colocar, solo se puede topar para que se desplace por dentro. Sin
+// eso, el único sitio donde "cabe" es fuera de la pantalla.
+
+// Lo que el panel se separa del botón que lo abre.
+const SEPARACION_DEL_ANCLA = 10;
+
+export function posicionAlLado(ancla: Rect, panel: Tamano, ventana: Tamano): { x: number; y: number; altoMaximo: number } {
+  // Lo más alto que puede ser sin tocar ningún borde. Nunca negativo: una ventana diminuta —el
+  // instante de rotar el teléfono, o el teclado abriéndose— colapsaría el panel a nada.
+  const altoMaximo = Math.max(0, ventana.alto - MARGEN_DE_PANTALLA * 2);
+
+  // Lo que va a ocupar DE VERDAD, que es lo que decide cuánto hay que subirlo. Con el alto que pide
+  // a secas, un panel más alto que la ventana se "colocaría" en negativo.
+  const alto = Math.min(panel.alto, altoMaximo);
+
+  return {
+    x: dentroDeLaVentana(ancla.x + ancla.ancho + SEPARACION_DEL_ANCLA, panel.ancho, ventana.ancho),
+    y: dentroDeLaVentana(ancla.y, alto, ventana.alto),
+    altoMaximo,
+  };
+}

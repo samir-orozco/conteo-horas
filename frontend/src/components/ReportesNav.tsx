@@ -2,7 +2,9 @@ import { useCallback, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FileBarChart2, Clock3, AlarmClock, ChevronRight, FileSpreadsheet } from 'lucide-react';
-import { posicionDelPanel } from '../lib/panelAnclado';
+import { posicionAlLado } from '../lib/posicionDePanel';
+
+const ANCHO = 320;
 
 const OPCIONES = [
   { to: '/app/reportes', label: 'Reporte diario', desc: 'Liquidación día a día de un colaborador.', icon: FileBarChart2 },
@@ -55,15 +57,15 @@ export default function ReportesNav({ onNav }: { onNav?: () => void }) {
   // El botón de Reportes es de los últimos del menú, así que en una pantalla
   // baja cae cerca del borde: colgarlo a la altura del botón dejaba el panel
   // fuera de la ventana y, por ser fixed, sin ningún scroll que lo alcanzara.
-  const colocado = posicionDelPanel({
-    anclaTop: ancla ? ancla.top : 80,
-    anclaRight: ancla ? ancla.right : 256,
-    altoPanel,
-    altoVentana: typeof window !== 'undefined' ? window.innerHeight : 0,
-  });
+  const { x, y, altoMaximo } = posicionAlLado(
+    { x: ancla ? ancla.left : 16, y: ancla ? ancla.top : 80, ancho: ancla ? ancla.width : 224, alto: ancla ? ancla.height : 40 },
+    { ancho: ANCHO, alto: altoPanel },
+    { ancho: typeof window !== 'undefined' ? window.innerWidth : 0,
+      alto: typeof window !== 'undefined' ? window.innerHeight : 0 },
+  );
   const estilo: CSSProperties = esMovil
     ? { top: 12, left: 12, right: 12, maxHeight: '85dvh' }
-    : { ...colocado, width: 320 };
+    : { top: y, left: x, width: ANCHO, maxHeight: altoMaximo };
 
   return (
     <>

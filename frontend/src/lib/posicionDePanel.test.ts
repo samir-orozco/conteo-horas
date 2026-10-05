@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { posicionDePanel, MARGEN_DE_PANTALLA } from './posicionDePanel';
+import { posicionDePanel, posicionAlLado, MARGEN_DE_PANTALLA } from './posicionDePanel';
 
 // DÓNDE CABE UN PANEL FLOTANTE SIN SALIRSE DE LA PANTALLA (22 de septiembre de 2026).
 //
@@ -123,5 +123,83 @@ describe('posicionDePanel', () => {
     expect(p.y).toBeGreaterThanOrEqual(MARGEN_DE_PANTALLA);
     expect(p.x + panel.ancho).toBeLessThanOrEqual(ventana.ancho - MARGEN_DE_PANTALLA);
     expect(p.y + panel.alto).toBeLessThanOrEqual(ventana.alto - MARGEN_DE_PANTALLA);
+  });
+});
+
+// LA OTRA COLOCACIÓN DE LA MISMA REGLA (4 de octubre de 2026).
+//
+// Los paneles que cuelgan del menú lateral —Reportes y la campana— no se abren DEBAJO de su botón
+// sino AL LADO, y no se voltean: se deslizan hacia arriba. Vive en este archivo y no en uno nuevo
+// porque el pedido del dueño de arriba es el mismo para todas: «que se acomode al espacio». Tenerlo
+// en dos archivos vecinos ya pasó, y el resultado es que el siguiente que necesite colocar un panel
+// elige uno de los dos a cara o cruz.
+//
+// POR QUÉ NO SE VOLTEA, que es lo que sí hace la de arriba: el botón de Reportes es de los últimos
+// del menú, así que volteado el panel taparía el menú entero de arriba abajo. Deslizarlo deja el
+// botón visible y el panel al lado, que es de donde se entiende que salió.
+
+const ventanaBaja = { ancho: 1280, alto: 620 };
+
+describe('posicionAlLado', () => {
+  const panelLateral = { ancho: 320, alto: 354 };
+
+  it('a la derecha del botón y a su misma altura, cuando cabe', () => {
+    const ancla = { x: 16, y: 120, ancho: 224, alto: 40 };
+    const p = posicionAlLado(ancla, panelLateral, { ancho: 1280, alto: 900 });
+    expect(p.y).toBe(120);
+    expect(p.x).toBeGreaterThan(ancla.x + ancla.ancho);
+  });
+
+  it('si no cabe hacia abajo, sube lo justo para entrar entero', () => {
+    // El caso medido en el navegador el 4 de octubre: el botón de Reportes cae en y=504 de una
+    // ventana de 620, y el panel colgando de ahí terminaba 238 px por debajo del borde. Como es
+    // position:fixed, no hay scroll que lo alcance: tres de las cuatro opciones eran inalcanzables.
+    const ancla = { x: 16, y: 504, ancho: 224, alto: 40 };
+    const p = posicionAlLado(ancla, panelLateral, ventanaBaja);
+    expect(p.y).toBe(620 - MARGEN_DE_PANTALLA - 354);
+    expect(p.y + panelLateral.alto).toBe(620 - MARGEN_DE_PANTALLA);
+  });
+
+  it('sube solo lo necesario: un panel casi tan alto como la ventana no se pega arriba de más', () => {
+    // 880 de panel en 900 de ventana: sube hasta y=12, donde su borde de abajo toca el margen.
+    // Escrito como invariante y no como el 12 a secas, que sería un número mágico: lo que importa
+    // es que entre entero y que no acabe por encima del margen.
+    const ancla = { x: 16, y: 500, ancho: 224, alto: 40 };
+    const alto = 880;
+    const p = posicionAlLado(ancla, { ancho: 320, alto }, { ancho: 1280, alto: 900 });
+    expect(p.y).toBeGreaterThanOrEqual(MARGEN_DE_PANTALLA);
+    expect(p.y + alto).toBe(900 - MARGEN_DE_PANTALLA);
+  });
+
+  it('un botón pegado al borde de arriba tampoco lo saca por arriba', () => {
+    const p = posicionAlLado({ x: 16, y: 2, ancho: 224, alto: 40 }, panelLateral, ventanaBaja);
+    expect(p.y).toBe(MARGEN_DE_PANTALLA);
+  });
+
+  it('si no cabe ni subiendo, se pega arriba y se desplaza por dentro', () => {
+    const p = posicionAlLado({ x: 16, y: 300, ancho: 224, alto: 40 }, { ancho: 320, alto: 2000 }, ventanaBaja);
+    expect(p.y).toBe(MARGEN_DE_PANTALLA);
+    expect(p.altoMaximo).toBe(620 - MARGEN_DE_PANTALLA * 2);
+  });
+
+  it('el alto máximo es la ventana menos sus dos márgenes', () => {
+    const p = posicionAlLado({ x: 16, y: 120, ancho: 224, alto: 40 }, panelLateral, ventanaBaja);
+    expect(p.altoMaximo).toBe(620 - MARGEN_DE_PANTALLA * 2);
+  });
+
+  it('una ventana absurdamente baja no devuelve números negativos', () => {
+    // Pasa de verdad un instante al rotar el teléfono o al abrir el teclado. Un altoMaximo
+    // negativo colapsa el panel y un y negativo lo saca de la pantalla.
+    const p = posicionAlLado({ x: 16, y: 10, ancho: 224, alto: 40 }, panelLateral, { ancho: 1280, alto: 20 });
+    expect(p.y).toBeGreaterThanOrEqual(0);
+    expect(p.altoMaximo).toBeGreaterThanOrEqual(0);
+  });
+
+  it('tampoco se sale por la derecha si el ancla está pegada a ese borde', () => {
+    // No pasa con el menú lateral, que vive a la izquierda, pero es la invariante que esta
+    // función promete y la de arriba también cumple.
+    const p = posicionAlLado({ x: 1200, y: 100, ancho: 60, alto: 40 }, panelLateral, ventanaBaja);
+    expect(p.x + panelLateral.ancho).toBeLessThanOrEqual(1280 - MARGEN_DE_PANTALLA);
+    expect(p.x).toBeGreaterThanOrEqual(MARGEN_DE_PANTALLA);
   });
 });

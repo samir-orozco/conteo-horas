@@ -5,9 +5,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckCheck, AlarmClock, Clock, CalendarOff, Bell, X } from 'lucide-react';
 import { rutaDeNotificacion } from './ruta';
-import { posicionDelPanel } from '../../lib/panelAnclado';
+import { posicionAlLado } from '../../lib/posicionDePanel';
 import type { Notificacion } from './types';
 import type { NotifState } from './useNotificaciones';
+
+const ANCHO = 380;
 
 const ICONO: Record<string, typeof Bell> = {
   NO_MARCO_SALIDA: AlarmClock,
@@ -57,19 +59,20 @@ export default function PanelNotificaciones({ notif, ancla, onClose }: {
   // atrapando al usuario. Ahora se ve la página debajo, se entiende que es un
   // panel encima, y además hay una X.
   const esMovil = typeof window !== 'undefined' && window.innerWidth < 768;
-  // La misma regla que el menú de Reportes, y por eso vive en un solo sitio
-  // (lib/panelAnclado.ts). La copia que había aquí limitaba el alto pero no
-  // subía el panel: con el botón cerca del borde de abajo lo dejaba aplastado
-  // en una franja de unos pocos píxeles en vez de moverlo a donde cabe.
-  const colocado = posicionDelPanel({
-    anclaTop: ancla ? ancla.top : 80,
-    anclaRight: ancla ? ancla.right : 256,
-    altoPanel,
-    altoVentana: typeof window !== 'undefined' ? window.innerHeight : 0,
-  });
+  // La misma regla que el menú de Reportes y que el calendario de turnos, y por
+  // eso vive en un solo sitio: lib/posicionDePanel.ts. La copia que había aquí
+  // limitaba el alto pero no subía el panel, así que con el botón cerca del
+  // borde de abajo lo dejaba aplastado en una franja de unos pocos píxeles en
+  // vez de moverlo a donde cabe.
+  const { x, y, altoMaximo } = posicionAlLado(
+    { x: ancla ? ancla.left : 16, y: ancla ? ancla.top : 80, ancho: ancla ? ancla.width : 224, alto: ancla ? ancla.height : 40 },
+    { ancho: ANCHO, alto: altoPanel },
+    { ancho: typeof window !== 'undefined' ? window.innerWidth : 0,
+      alto: typeof window !== 'undefined' ? window.innerHeight : 0 },
+  );
   const estilo: CSSProperties = esMovil
     ? { top: 64, left: 12, right: 12, maxHeight: '65dvh' }
-    : { ...colocado, width: 380 };
+    : { top: y, left: x, width: ANCHO, maxHeight: altoMaximo };
 
   // Portal a document.body: el botón que lo abre vive dentro del <aside> del
   // sidebar, que es `position: sticky` y por eso crea su propio contexto de
