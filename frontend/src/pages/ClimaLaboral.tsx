@@ -145,8 +145,8 @@ export default function ClimaLaboral() {
                 {/* Primero el panorama, después las personas (4 de octubre de 2026). */}
                 <div className="grid gap-6 lg:grid-cols-2">
                   {granularidad(desde, hasta) === 'DIA'
-                    ? <GraficaEvolucion unidad="DIA" puntos={resumen.dias} />
-                    : <GraficaEvolucion unidad="SEMANA" puntos={resumen.semanas.map(s => ({ fecha: s.semana, promedio: s.promedio, total: s.total }))} />}
+                    ? <GraficaEvolucion unidad="DIA" puntos={resumen.dias} promedio={resumen.promedio} />
+                    : <GraficaEvolucion unidad="SEMANA" puntos={resumen.semanas.map(s => ({ fecha: s.semana, promedio: s.promedio, total: s.total }))} promedio={resumen.promedio} />}
                   <DistribucionCaritas distribucion={resumen.distribucion} total={resumen.total} />
                 </div>
                 <NecesitanAtencion atencion={resumen.atencion} onRevisar={a => setRevisando({ colaboradorId: a.colaboradorId, nombre: a.nombre })} />

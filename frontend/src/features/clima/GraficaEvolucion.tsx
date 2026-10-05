@@ -17,7 +17,10 @@ const IZQUIERDA = 34; // espacio para las caritas del eje
 
 type Punto = { fecha: string; promedio: number; total: number };
 
-export default function GraficaEvolucion({ puntos: serie, unidad }: { puntos: Punto[]; unidad: 'DIA' | 'SEMANA' }) {
+// `promedio`: el del período entero, el mismo de la tarjeta «Ánimo promedio». Va como una línea de
+// referencia con su rótulo: sin ella, el valor del último punto (un solo día) se leía como si fuera el
+// promedio, y no coincidía con la tarjeta (reporte del dueño, 4 de octubre de 2026).
+export default function GraficaEvolucion({ puntos: serie, unidad, promedio }: { puntos: Punto[]; unidad: 'DIA' | 'SEMANA'; promedio: number | null }) {
   const rotulo = (fecha: string) => (unidad === 'SEMANA' ? etiquetaDeSemana(fecha) : fechaCortaSinAnio(fecha));
   const [activa, setActiva] = useState<number | null>(null);
   const puntos = puntosDeLaLinea(serie, { ancho: ANCHO - IZQUIERDA, alto: ALTO, margen: MARGEN }).map(p => ({ ...p, x: p.x + IZQUIERDA }));
@@ -39,13 +42,25 @@ export default function GraficaEvolucion({ puntos: serie, unidad }: { puntos: Pu
               <image href={IMAGEN_DE_CARITA[n]} x={4} y={yDe(n) - 10} width={20} height={20} />
             </g>
           ))}
+          {promedio !== null && (
+            <g>
+              <line x1={IZQUIERDA} x2={ANCHO - 4} y1={yDe(promedio)} y2={yDe(promedio)} stroke="#d4a72c" strokeWidth={1.5} />
+              {/* Con un halo blanco, para que se lea aunque la línea de la serie pase por encima. */}
+              <text x={IZQUIERDA + 4} y={yDe(promedio) - 6} fontSize={11} fontWeight={600} fill="#6b6b6b"
+                stroke="#ffffff" strokeWidth={3} paintOrder="stroke">
+                {`Promedio del período: ${decimal(promedio)}`}
+              </text>
+            </g>
+          )}
           {puntos.length > 1 && <path d={camino} fill="none" stroke="#303030" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
           {puntos.map((p, i) => (
             <circle key={i} cx={p.x} cy={p.y} r={activa === i ? 6 : 4} fill="#303030" stroke="#ffffff" strokeWidth={2} />
           ))}
+          {/* El valor del último punto dice DE QUÉ día o semana es: solo, se confundía con el promedio. */}
           {ultimo && (
-            <text x={Math.min(ultimo.x, ANCHO - 30)} y={ultimo.y - 12} textAnchor="middle" fontSize={13} fontWeight={700} fill="#303030">
-              {decimal(serie[serie.length - 1].promedio)}
+            <text x={serie.length > 1 ? ANCHO - 4 : ultimo.x} y={ultimo.y - 12} textAnchor={serie.length > 1 ? 'end' : 'middle'}
+              fontSize={12} fontWeight={700} fill="#303030" stroke="#ffffff" strokeWidth={3} paintOrder="stroke">
+              {`${unidad === 'SEMANA' ? `Semana del ${fechaCortaSinAnio(serie[serie.length - 1].fecha)}` : fechaCortaSinAnio(serie[serie.length - 1].fecha)}: ${decimal(serie[serie.length - 1].promedio)}`}
             </text>
           )}
           {puntos.map((p, i) => {

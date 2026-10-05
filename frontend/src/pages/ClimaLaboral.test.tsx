@@ -156,6 +156,15 @@ describe('resumen', () => {
     expect(within(g).queryByText('28 de sept')).toBeNull();
   });
 
+  it('la evolución marca el promedio del período, el mismo de la tarjeta, y dice de qué día es el último valor', async () => {
+    // Reporte del dueño: la tarjeta decía 3,8 y el final de la línea 3,6, sin decir que ese era solo el
+    // último día. Ahora la línea del promedio lleva su rótulo y el último valor lleva su fecha.
+    await abrir();
+    const g = screen.getByRole('group', { name: 'Evolución del ánimo' });
+    expect(within(g).getByText('Promedio del período: 3,8')).toBeInTheDocument();
+    expect(within(g).getByText('3 de oct: 4,0')).toBeInTheDocument();
+  });
+
   it('cuántas caritas de cada una, con su nombre', async () => {
     await abrir();
     const dist = screen.getByRole('group', { name: 'Cómo se sintieron' });
