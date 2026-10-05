@@ -6,7 +6,7 @@ import { useMiPlan } from '../lib/plan';
 import FuncionBloqueada from '../components/FuncionBloqueada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import TarjetasDelClima from '../features/clima/TarjetasDelClima';
-import GraficaSemanas from '../features/clima/GraficaSemanas';
+import GraficaEvolucion from '../features/clima/GraficaEvolucion';
 import DistribucionCaritas from '../features/clima/DistribucionCaritas';
 import BarrasMotivos from '../features/clima/BarrasMotivos';
 import PorSede from '../features/clima/PorSede';
@@ -16,7 +16,7 @@ import Buzon from '../features/clima/Buzon';
 import EditorMotivos from '../features/clima/EditorMotivos';
 import PanelPersona from '../features/clima/PanelPersona';
 import TablaSeguimiento from '../features/clima/TablaSeguimiento';
-import { notasRecientes, rangoDelMes } from '../features/clima/panelClima';
+import { granularidad, notasRecientes, rangoDelMes } from '../features/clima/panelClima';
 import type { BuzonClima, MotivosClima, ResumenClima, SeguimientosClima } from '../features/clima/tipos';
 
 // CLIMA LABORAL (4 de octubre de 2026): lo que respondió la gente al marcar la salida. Solo plan
@@ -144,7 +144,9 @@ export default function ClimaLaboral() {
                 <TarjetasDelClima r={resumen} notasDelBuzon={notasDelBuzon} onVerBuzon={() => setParams({ tab: 'buzon' })} />
                 {/* Primero el panorama, después las personas (4 de octubre de 2026). */}
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <GraficaSemanas semanas={resumen.semanas} />
+                  {granularidad(desde, hasta) === 'DIA'
+                    ? <GraficaEvolucion unidad="DIA" puntos={resumen.dias} />
+                    : <GraficaEvolucion unidad="SEMANA" puntos={resumen.semanas.map(s => ({ fecha: s.semana, promedio: s.promedio, total: s.total }))} />}
                   <DistribucionCaritas distribucion={resumen.distribucion} total={resumen.total} />
                 </div>
                 <NecesitanAtencion atencion={resumen.atencion} onRevisar={a => setRevisando({ colaboradorId: a.colaboradorId, nombre: a.nombre })} />

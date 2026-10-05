@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   COLOR_DE_CARITA, decimal, variacion, respondieron, caritaDelPromedio, puntosDeLaLinea, rangoDelMes, etiquetaDeSemana,
-  notasRecientes, porcentajeNegativas, sedeMasBaja, POCAS_RESPUESTAS,
+  notasRecientes, porcentajeNegativas, sedeMasBaja, POCAS_RESPUESTAS, granularidad,
 } from './panelClima';
 
 describe('números del panel', () => {
@@ -118,5 +118,18 @@ describe('sedeMasBaja', () => {
 
   it('«Sin sede» también puede ser la más baja', () => {
     expect(sedeMasBaja([s('a', 4.1, 40), s(null, 2.9, 15)])).toBeNull();
+  });
+});
+
+describe('granularidad — la evolución por día o por semana', () => {
+  it('un mes o menos va por día: el mes en curso al comienzo del mes era un solo punto', () => {
+    expect(granularidad('2026-10-01', '2026-10-04')).toBe('DIA');
+    expect(granularidad('2026-10-01', '2026-10-31')).toBe('DIA');
+    expect(granularidad('2026-10-05', '2026-10-05')).toBe('DIA');
+  });
+
+  it('más de un mes va por semana', () => {
+    expect(granularidad('2026-10-01', '2026-11-01')).toBe('SEMANA');
+    expect(granularidad('2026-07-06', '2026-10-04')).toBe('SEMANA');
   });
 });

@@ -89,3 +89,14 @@ export function sedeMasBaja(porSede: { sedeId: string | null; promedio: number; 
   if (comparables.length < 2) return undefined;
   return comparables.reduce((min, s) => (s.promedio < min.promedio ? s : min)).sedeId;
 }
+
+// La evolución del ánimo va por día en los rangos de un mes o menos, y por semana en los más largos. Antes
+// iba siempre por semana, y el rango que se abre por defecto (el mes en curso) al comienzo del mes caía
+// entero en una semana: un solo punto y ninguna línea (4 de octubre de 2026). Los días se cuentan con las
+// fechas «yyyy-MM-dd» como fechas puras, sin zona: es la cuenta del calendario, no de instantes.
+export const DIAS_MAXIMOS_POR_DIA = 31;
+export function granularidad(desde: string, hasta: string): 'DIA' | 'SEMANA' {
+  const dia = (s: string) => { const [a, m, d] = s.split('-').map(Number); return Date.UTC(a, m - 1, d); };
+  const dias = Math.round((dia(hasta) - dia(desde)) / 86_400_000) + 1;
+  return dias <= DIAS_MAXIMOS_POR_DIA ? 'DIA' : 'SEMANA';
+}

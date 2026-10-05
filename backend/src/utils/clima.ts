@@ -192,6 +192,9 @@ export type ResumenDelClima = {
   // Sobre los días que no fueron buenos (caritas 1 a 3), que son los que muestran motivos.
   motivos: { motivo: string; veces: number; porcentaje: number }[];
   semanas: { semana: Date; promedio: number; total: number }[];
+  // La misma cuenta por día, para los rangos cortos: con el mes en curso al comienzo del mes había una
+  // sola semana, y un solo punto no hace línea (4 de octubre de 2026).
+  dias: { fecha: Date; promedio: number; total: number }[];
 };
 
 export function resumenDelClima(calificaciones: CalificacionDelDia[]): ResumenDelClima {
@@ -214,6 +217,17 @@ export function resumenDelClima(calificaciones: CalificacionDelDia[]): ResumenDe
     .sort(([a], [b]) => a - b)
     .map(([clave, lista]) => ({ semana: new Date(clave), promedio: promedioDe(lista)!, total: lista.length }));
 
+  // Por el día de Bogotá y no por el instante exacto: una fecha que llegue de la base con milisegundos
+  // de más no puede abrir un día aparte.
+  const porDia = new Map<number, CalificacionDelDia[]>();
+  for (const c of calificaciones) {
+    const clave = rangoDiaBogota(c.fecha).inicioDia.getTime();
+    porDia.set(clave, [...(porDia.get(clave) ?? []), c]);
+  }
+  const dias = [...porDia]
+    .sort(([a], [b]) => a - b)
+    .map(([clave, lista]) => ({ fecha: new Date(clave), promedio: promedioDe(lista)!, total: lista.length }));
+
   return {
     total: calificaciones.length,
     personas: new Set(calificaciones.map(c => c.colaboradorId)).size,
@@ -222,6 +236,7 @@ export function resumenDelClima(calificaciones: CalificacionDelDia[]): ResumenDe
     negativas: calificaciones.filter(c => c.carita <= CARITA_MAX_DE_ATENCION).length,
     motivos,
     semanas,
+    dias,
   };
 }
 

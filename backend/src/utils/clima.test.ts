@@ -288,6 +288,7 @@ describe('resumenDelClima', () => {
     expect(r.distribucion).toEqual({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
     expect(r.motivos).toEqual([]);
     expect(r.semanas).toEqual([]);
+    expect(r.dias).toEqual([]);
     expect(r.negativas).toBe(0);
   });
 
@@ -317,6 +318,15 @@ describe('resumenDelClima', () => {
     expect(r.motivos).toEqual([
       { motivo: 'Mucho trabajo', veces: 3, porcentaje: 75 },
       { motivo: 'Compañeros', veces: 2, porcentaje: 50 },
+    ]);
+  });
+
+  it('agrupa por día, del más viejo al más nuevo, para los rangos cortos', () => {
+    // Con el mes en curso al comienzo del mes había una sola semana: un solo punto y ninguna línea.
+    const r = resumenDelClima([c('a', 6, 4), c('b', 5, 2), c('c', 6, 5), c('d', 5, 3)]);
+    expect(r.dias).toEqual([
+      { fecha: bog(2026, 10, 5, 0), promedio: 2.5, total: 2 },
+      { fecha: bog(2026, 10, 6, 0), promedio: 4.5, total: 2 },
     ]);
   });
 

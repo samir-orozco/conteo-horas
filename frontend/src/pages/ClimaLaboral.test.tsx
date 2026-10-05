@@ -24,6 +24,11 @@ const RESUMEN = {
     { semana: '2026-09-28T05:00:00.000Z', promedio: 3.6, total: 30 },
     { semana: '2026-10-05T05:00:00.000Z', promedio: 3.9, total: 30 },
   ],
+  dias: [
+    { fecha: '2026-10-01T05:00:00.000Z', promedio: 3.5, total: 20 },
+    { fecha: '2026-10-02T05:00:00.000Z', promedio: 3.9, total: 20 },
+    { fecha: '2026-10-03T05:00:00.000Z', promedio: 4.0, total: 20 },
+  ],
   porSede: [
     { sedeId: 's1', nombre: 'Principal', promedio: 4.1, total: 40, jornadas: 50, participacion: 80 },
     { sedeId: 's2', nombre: 'Norte', promedio: 3.2, total: 20, jornadas: 25, participacion: 80 },
@@ -141,11 +146,14 @@ describe('resumen', () => {
     expect(opciones.params.desde).toMatch(/^\d{4}-\d{2}-01$/);
   });
 
-  it('la línea de las semanas dice debajo a qué semanas corresponde', async () => {
+  it('con el mes en curso la evolución va por día, con las fechas debajo', async () => {
+    // El rango por defecto es el mes en curso: por semana, al comienzo del mes era un solo punto.
     await abrir();
     const g = screen.getByRole('group', { name: 'Evolución del ánimo' });
-    expect(within(g).getByText('28 de sept')).toBeInTheDocument();
-    expect(within(g).getByText('5 de oct')).toBeInTheDocument();
+    expect(within(g).getByText('Promedio de las caritas de cada día')).toBeInTheDocument();
+    expect(within(g).getByText('1 de oct')).toBeInTheDocument();
+    expect(within(g).getByText('3 de oct')).toBeInTheDocument();
+    expect(within(g).queryByText('28 de sept')).toBeNull();
   });
 
   it('cuántas caritas de cada una, con su nombre', async () => {
@@ -242,7 +250,7 @@ describe('resumen', () => {
 
   it('sin calificaciones en el período lo dice, en vez de mostrar ceros', async () => {
     get.mockImplementation(respuestas({
-      '/clima/resumen': { ...RESUMEN, total: 0, personas: 0, promedio: null, variacion: null, negativas: 0, motivos: [], semanas: [], porSede: [], atencion: [], recientes: [], distribucion: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } },
+      '/clima/resumen': { ...RESUMEN, total: 0, personas: 0, promedio: null, variacion: null, negativas: 0, motivos: [], semanas: [], dias: [], porSede: [], atencion: [], recientes: [], distribucion: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } },
     }));
     await abrir();
     expect(screen.getByText('Todavía nadie calificó su día en este período.')).toBeInTheDocument();

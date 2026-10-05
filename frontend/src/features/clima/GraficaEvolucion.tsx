@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import type { ResumenClima } from './tipos';
 import { IMAGEN_DE_CARITA } from './caritas';
 import { decimal, etiquetaDeSemana, fechaCortaSinAnio, puntosDeLaLinea } from './panelClima';
 
-// La evolución del ánimo: el promedio de cada semana. Una sola serie: la nombra el título y no lleva leyenda. La escala
+// La evolución del ánimo: el promedio de cada día o de cada semana, según el largo del rango (ver
+// `granularidad` en panelClima.ts). Una sola serie: la nombra el título y no lleva leyenda. La escala
 // es la de las caritas completa (1 a 5), con la carita dibujada en cada línea de la grilla en vez de un
 // número suelto. Al pasar el mouse o el dedo por una semana sale su detalle.
 const ANCHO = 600;
@@ -15,21 +15,24 @@ const PIE = 22; // espacio para las fechas debajo
 const ROTULOS = 4;
 const IZQUIERDA = 34; // espacio para las caritas del eje
 
-export default function GraficaSemanas({ semanas }: { semanas: ResumenClima['semanas'] }) {
+type Punto = { fecha: string; promedio: number; total: number };
+
+export default function GraficaEvolucion({ puntos: serie, unidad }: { puntos: Punto[]; unidad: 'DIA' | 'SEMANA' }) {
+  const rotulo = (fecha: string) => (unidad === 'SEMANA' ? etiquetaDeSemana(fecha) : fechaCortaSinAnio(fecha));
   const [activa, setActiva] = useState<number | null>(null);
-  const puntos = puntosDeLaLinea(semanas, { ancho: ANCHO - IZQUIERDA, alto: ALTO, margen: MARGEN }).map(p => ({ ...p, x: p.x + IZQUIERDA }));
+  const puntos = puntosDeLaLinea(serie, { ancho: ANCHO - IZQUIERDA, alto: ALTO, margen: MARGEN }).map(p => ({ ...p, x: p.x + IZQUIERDA }));
   const yDe = (n: number) => MARGEN + ((5 - n) * (ALTO - 2 * MARGEN)) / 4;
   const camino = puntos.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
   const ultimo = puntos[puntos.length - 1];
-  const franja = semanas.length > 1 ? (ANCHO - IZQUIERDA - 2 * MARGEN) / (semanas.length - 1) : ANCHO - IZQUIERDA;
+  const franja = serie.length > 1 ? (ANCHO - IZQUIERDA - 2 * MARGEN) / (serie.length - 1) : ANCHO - IZQUIERDA;
 
   return (
     <div role="group" aria-label="Evolución del ánimo" className="bg-white rounded-card border border-gray-200 p-5">
       <p className="font-semibold text-ink">Evolución del ánimo</p>
-      <p className="text-xs text-muted mb-3">Promedio de las caritas de cada semana</p>
+      <p className="text-xs text-muted mb-3">{`Promedio de las caritas de cada ${unidad === 'SEMANA' ? 'semana' : 'día'}`}</p>
       <div className="relative">
         <svg viewBox={`0 0 ${ANCHO} ${ALTO + PIE}`} className="w-full h-auto" role="img"
-          aria-label={semanas.map(s => `${etiquetaDeSemana(s.semana)}: ${decimal(s.promedio)}`).join('; ')}>
+          aria-label={serie.map(s => `${rotulo(s.fecha)}: ${decimal(s.promedio)}`).join('; ')}>
           {[1, 2, 3, 4, 5].map(n => (
             <g key={n}>
               <line x1={IZQUIERDA} x2={ANCHO - 4} y1={yDe(n)} y2={yDe(n)} stroke="#ececea" strokeWidth={1} />
@@ -42,7 +45,7 @@ export default function GraficaSemanas({ semanas }: { semanas: ResumenClima['sem
           ))}
           {ultimo && (
             <text x={Math.min(ultimo.x, ANCHO - 30)} y={ultimo.y - 12} textAnchor="middle" fontSize={13} fontWeight={700} fill="#303030">
-              {decimal(semanas[semanas.length - 1].promedio)}
+              {decimal(serie[serie.length - 1].promedio)}
             </text>
           )}
           {puntos.map((p, i) => {
@@ -50,7 +53,7 @@ export default function GraficaSemanas({ semanas }: { semanas: ResumenClima['sem
             const rotula = i === 0 || i === puntos.length - 1 || (i % paso === 0 && puntos.length - 1 - i >= paso / 2);
             return rotula && (
               <text key={`f${i}`} x={p.x} y={ALTO + 14} textAnchor="middle" fontSize={11} fill="#898989">
-                {fechaCortaSinAnio(semanas[i].semana)}
+                {fechaCortaSinAnio(serie[i].fecha)}
               </text>
             );
           })}
@@ -65,8 +68,8 @@ export default function GraficaSemanas({ semanas }: { semanas: ResumenClima['sem
             className="pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-lg bg-ink px-3 py-2 text-xs text-white shadow-lg whitespace-nowrap"
             style={{ left: `${(puntos[activa].x / ANCHO) * 100}%`, top: `${(puntos[activa].y / (ALTO + PIE)) * 100}%`, marginTop: -10 }}
           >
-            <p className="font-semibold">{etiquetaDeSemana(semanas[activa].semana)}</p>
-            <p>{decimal(semanas[activa].promedio)} de 5 · {semanas[activa].total} {semanas[activa].total === 1 ? 'respuesta' : 'respuestas'}</p>
+            <p className="font-semibold">{rotulo(serie[activa].fecha)}</p>
+            <p>{decimal(serie[activa].promedio)} de 5 · {serie[activa].total} {serie[activa].total === 1 ? 'respuesta' : 'respuestas'}</p>
           </div>
         )}
       </div>

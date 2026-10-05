@@ -12,6 +12,7 @@ export type ResumenClima = {
   distribucion: Record<1 | 2 | 3 | 4 | 5, number>;
   motivos: { motivo: string; veces: number; porcentaje: number }[];
   semanas: { semana: string; promedio: number; total: number }[];
+  dias: { fecha: string; promedio: number; total: number }[];
   porSede: { sedeId: string | null; nombre: string; promedio: number; total: number; jornadas: number; participacion: number | null }[];
   atencion: {
     colaboradorId: string; nombre: string; cargo: string | null; sedes: string[]; dias: number; desde: string; motivo: string | null;
