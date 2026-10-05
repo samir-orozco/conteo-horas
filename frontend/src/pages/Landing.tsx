@@ -20,6 +20,8 @@ import BlogReciente from '../features/landing/BlogReciente';
 import PieDePagina from '../features/landing/PieDePagina';
 import { useScrollSuave } from '../features/landing/useScrollSuave';
 import { useProgresoAlBajar } from '../features/landing/useProgresoAlBajar';
+// Lo que incluye cada plan, compartido con Suscripción y comparado con planes.ts (planesComerciales.ts).
+import { PLANES_COMERCIALES } from '../lib/planesComerciales';
 
 const cop = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
@@ -64,27 +66,6 @@ const FAQ = [
   { q: '¿Cómo se paga?', a: 'Con Wompi: tarjeta, PSE o Nequi. Eliges plan mensual o anual (con 2 meses gratis) y puedes cancelar cuando quieras.' },
 ];
 
-const PLANES_LANDING = [
-  {
-    id: 'ESENCIAL', nombre: 'Esencial', mensual: 99900, anual: 999000, limite: 10, destacado: false,
-    para: 'Para negocios pequeños',
-    incluye: ['Hasta 10 colaboradores', 'Marcación con rostro o cédula', 'Liquidación de recargos y extras', 'Reportes básicos', '1 horario · 1 dispositivo'],
-  },
-  {
-    id: 'PROFESIONAL', nombre: 'Profesional', mensual: 169900, anual: 1699000, limite: 30, destacado: true,
-    para: 'El más elegido',
-    incluye: ['Hasta 30 colaboradores', 'Todo lo de Esencial', 'Marcación por GPS / geocerca', 'Alertas por Telegram', 'Evidencia en novedades', 'Varios horarios y dispositivos'],
-  },
-  {
-    id: 'EMPRESARIAL', nombre: 'Empresarial', mensual: 299900, anual: 2999000, limite: 150, destacado: false,
-    para: 'Para operaciones grandes',
-    // «Turnos y programación» va PRIMERO de los suyos, y no al final (30 de septiembre de 2026): es lo
-    // que de verdad distingue a este plan del Profesional, mientras que Siigo todavía dice
-    // «próximamente» y el soporte no se ve hasta que hace falta. Clima laboral va justo después
-    // (3 de octubre de 2026): también es solo de este plan, por decisión del dueño.
-    incluye: ['Hasta 150 colaboradores', 'Todo lo de Profesional', 'Turnos y programación por calendario', 'Clima laboral: cómo se siente tu equipo', 'Varias sedes', 'Integración Siigo (próximamente)', 'Soporte prioritario'],
-  },
-];
 const WPP_LANDING = enlaceWhatsApp('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
 
 // Las ondas de la portada (14 de septiembre de 2026), como la franja del ejemplo de Weav: cierran el
@@ -327,7 +308,7 @@ export default function Landing() {
             quedaba exageradamente grande (decisión del dueño del 14 de septiembre de 2026). Las tres
             columnas esperan a los 1024 px: a 820 el precio y el botón ya se partían en dos líneas. */}
         <div className="grid gap-5 items-start max-w-sm mx-auto lg:max-w-none lg:grid-cols-3">
-          {PLANES_LANDING.map((p, i) => {
+          {PLANES_COMERCIALES.map((p, i) => {
             const pd = precios?.planes?.find(x => x.id === p.id);
             const mensual = pd?.precioMensual ?? p.mensual;
             const anualTotal = pd?.precioAnual ?? p.anual;

@@ -7,14 +7,12 @@ import { useAuth } from '../context/AuthContext';
 import { useMiPlan, invalidarMiPlan } from '../lib/plan';
 import { fechaCorta, fechaLarga, mesYAnio, ultimoDiaCubierto } from '../lib/fechas';
 import { descargarReciboPDF, type PagoRecibo } from '../lib/recibo';
+// Lo que incluye cada plan: la MISMA lista de la landing (antes esta pantalla tenía la suya, más corta,
+// y no sabía de Turnos ni de Clima laboral). Ver planesComerciales.ts.
+import { PLANES_COMERCIALES } from '../lib/planesComerciales';
 
 type CheckoutData = { url: string; publicKey: string; currency: string; amountInCents: number; reference: string; signature: string };
 
-const PLANES_UI = [
-  { id: 'ESENCIAL', nombre: 'Esencial', mensual: 99900, limite: 10, incluye: ['Hasta 10 colaboradores', 'Rostro o cédula', 'Liquidación y reportes'] },
-  { id: 'PROFESIONAL', nombre: 'Profesional', mensual: 169900, limite: 30, incluye: ['Hasta 30 colaboradores', 'GPS + Telegram', 'Evidencia y exportar'] },
-  { id: 'EMPRESARIAL', nombre: 'Empresarial', mensual: 299900, limite: 150, incluye: ['Hasta 150 colaboradores', 'Todo lo Profesional', 'Siigo (próximamente) + prioritario'] },
-];
 const WPP_150 = enlaceWhatsApp('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');
 
 const cop = (n: number) =>
@@ -193,7 +191,7 @@ export default function Suscripcion() {
           <h2 className="font-bold text-ink mb-1">Tu plan</h2>
           <p className="text-sm text-muted mb-5">Sube de plan para más colaboradores y funciones. Al subir estando al día, solo pagas la diferencia de lo que resta del mes.</p>
           <div className="grid md:grid-cols-3 gap-4">
-            {PLANES_UI.map(p => {
+            {PLANES_COMERCIALES.map(p => {
               const pd = miPlan?.planes?.find(x => x.id === p.id);
               const mensual = pd?.precioMensual ?? p.mensual;
               const actual = miPlan?.plan === p.id;
