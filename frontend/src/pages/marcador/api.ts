@@ -7,7 +7,8 @@ export const apiKiosco = axios.create({ baseURL: import.meta.env.VITE_API_URL ||
 
 const authHeader = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } });
 
-type InfoKiosco = { empresa: string; requiereDispositivo: boolean; permiteCedula: boolean; exigeUbicacion: boolean; exigeReto?: boolean };
+// `pausado` (4 de octubre de 2026): el kiosco está pausado por falta de pago. Un servidor anterior no lo manda.
+type InfoKiosco = { empresa: string; requiereDispositivo: boolean; permiteCedula: boolean; exigeUbicacion: boolean; exigeReto?: boolean; pausado?: boolean };
 // `fotoReferencia` y `parecidoDudoso` (2 de octubre de 2026): la miniatura de la
 // ficha para ponerla junto a la foto del momento, y si la cara se pareció poco a su
 // registro. Opcionales: un servidor anterior no los manda, y entonces el kiosco

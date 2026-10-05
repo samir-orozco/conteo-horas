@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CreditCard, CheckCircle, LogOut, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { ultimoDiaCubierto } from '../lib/fechas';
+import { fechaLarga, ultimoDiaCubierto } from '../lib/fechas';
 import { useAuth } from '../context/AuthContext';
 
 const cop = (n: number) =>
@@ -12,13 +12,16 @@ const esLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname
 
 type Cuenta = {
   estado: string; diasMora: number; tarifaMensual: number; colaboradoresActivos: number;
-  cobro: { monto: number; mesCompleto?: boolean; diasRestantes: number; diasMes: number; cubreHasta: string; tarifaMesCompleto: number };
+  cobro: { monto: number; mesCompleto?: boolean; desde?: string; diasRestantes: number; diasMes: number; cubreHasta: string; tarifaMesCompleto: number };
   checkout: { url: string; publicKey: string; currency: string; amountInCents: number; reference: string; signature: string } | null;
+  // Desde cuándo se pausa el kiosco si no entra el pago, y si ya se pausó. Null si no aplica.
+  kiosco: { pausaDesde: string; pausado: boolean } | null;
 };
 
 // Modal bloqueante cuando la suscripción está vencida (EN_MORA o SUSPENDIDA):
 // no se puede cerrar ni navegar; solo pagar, verificar el pago o cerrar sesión.
-// El kiosco de marcación NO se bloquea — las horas se siguen registrando.
+// El kiosco sigue marcando 10 días después de la suspensión y luego se pausa
+// (decisión del dueño, 4 de octubre de 2026; antes no se pausaba nunca).
 export default function BloqueoPago() {
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
@@ -99,10 +102,15 @@ export default function BloqueoPago() {
         </div>
 
         <div className="p-6">
-          <p className="text-sm text-muted mb-4">
-            Tus colaboradores <b className="text-ink">siguen marcando normalmente</b> en el kiosco y no se
-            pierde ninguna hora. Para volver a usar el panel, realiza el pago del mes.
-          </p>
+          {cuenta?.kiosco && (
+            <p className="text-sm text-muted mb-4">
+              {cuenta.kiosco.pausado ? (
+                <>El kiosco está pausado desde el <b className="text-ink">{fechaLarga(cuenta.kiosco.pausaDesde)}</b>: tus colaboradores no pueden marcar hasta que registres el pago. Lo que ya marcaron se conserva.</>
+              ) : (
+                <>Tus colaboradores pueden seguir marcando en el kiosco hasta el <b className="text-ink">{ultimoDiaCubierto(cuenta.kiosco.pausaDesde)}</b>. Desde el {fechaLarga(cuenta.kiosco.pausaDesde)}, el kiosco se pausa hasta que registres el pago.</>
+              )}
+            </p>
+          )}
 
           {cuenta && (
             <div className="border border-dashed border-gray-300 rounded-xl p-4 mb-5 text-sm space-y-1.5">
@@ -114,7 +122,7 @@ export default function BloqueoPago() {
                 <span className="text-muted">{cuenta.cobro.mesCompleto ? 'Mes completo (pago atrasado)' : `Días por cubrir (${cuenta.cobro.diasRestantes} de ${cuenta.cobro.diasMes})`}</span>
                 <span className="font-bold text-ink">{cop(cuenta.cobro.monto)}</span>
               </div>
-              <p className="text-[11px] text-muted">Cubre hasta el {ultimoDiaCubierto(cuenta.cobro.cubreHasta)} — todos los pagos renuevan el día 1.</p>
+              <p className="text-[11px] text-muted">Cubre {cuenta.cobro.desde ? `desde el ${fechaLarga(cuenta.cobro.desde)} ` : ''}hasta el {ultimoDiaCubierto(cuenta.cobro.cubreHasta)} — todos los pagos renuevan el día 1.</p>
             </div>
           )}
 

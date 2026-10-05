@@ -33,6 +33,7 @@ import { avisarContratosDeTodas } from './routes/contratos';
 import { avisarPausasSinRegreso } from './utils/cierreAlmuerzo';
 import { mantenerVentana } from './utils/materializarDias';
 import { programarDiario } from './utils/programarDiario';
+import { avisarSuscripcionesDeTodas } from './utils/avisosDeSuscripcion';
 import { opcionesDeLog } from './utils/opcionesDeLog';
 import { decidirAccesoEmpresa } from './utils/accesoEmpresa';
 import { esErrorInesperado, manejarError } from './utils/respuestaDeError';
@@ -287,6 +288,9 @@ const start = async () => {
     // horario VIGENTE, que es justo lo que reescribía el pasado.
     // Es idempotente y solo escribe donde falta, así que correr de más no daña.
     programarDiario('ventana-dias-esperados', HORA_BARRIDOS, () => mantenerVentana(app.log), app.log);
+    // Los correos de suscripción vencida y de kiosco por pausarse (4 de octubre de 2026). A las 7 y
+    // no a la hora de los barridos: son para que los lea una persona.
+    programarDiario('avisos-de-suscripcion', 7, () => avisarSuscripcionesDeTodas(app.log), app.log);
     // Registra el webhook del bot de Telegram (si hay URL configurada)
     if (process.env.TELEGRAM_WEBHOOK_URL) configurarWebhook(process.env.TELEGRAM_WEBHOOK_URL);
   } catch (err) {

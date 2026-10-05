@@ -7,6 +7,7 @@ import { esDescriptorValido, identificarRostro, esParecidoDudoso, continuidadCon
 import { camposDeAutenticacion } from '../utils/metodoMarcacion';
 import { enviarTelegram } from '../utils/telegram';
 import { notificar } from '../utils/notificaciones';
+import { kioscoPausado, mensajeKioscoPausado } from '../utils/suscripcion';
 import { rangoDiaBogota } from '../utils/fechas';
 import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes, exigeRetoDePose } from '../utils/kioscoConfig';
 import { decidirUbicacionDeMarca, MODALIDAD_POR_DEFECTO, puedeCerrarAqui } from '../utils/modalidad';
@@ -284,6 +285,14 @@ const vincularSchema = {
 
 // Nota: el kiosco NUNCA se bloquea por mora o suspensión — los colaboradores
 // siguen marcando sus horas; el cobro se gestiona en el panel del admin.
+// El kiosco se pausa por falta de pago, 10 días después de la suspensión (decisión del dueño, 4 de
+// octubre de 2026; antes no se pausaba nunca). Devuelve con qué responder, o null si se puede marcar.
+// La regla está probada en utils/suscripcion.ts; esto solo la consulta.
+async function kioscoEnPausa(empresa: { id: string; nombre: string; exentaPago: boolean }) {
+  const suscripcion = await prisma.suscripcion.findUnique({ where: { empresaId: empresa.id } });
+  return kioscoPausado(empresa, suscripcion) ? { error: mensajeKioscoPausado(empresa.nombre), codigo: 'KIOSCO_PAUSADO' } : null;
+}
+
 export default async function workerRoutes(app: FastifyInstance) {
   // Info del kiosco a partir del token del link único de la empresa
   app.get('/kiosco/:token', async (request, reply) => {
@@ -292,6 +301,8 @@ export default async function workerRoutes(app: FastifyInstance) {
     if (!empresa || !empresa.activa) return reply.code(404).send({ error: 'Link de marcación inválido' });
     return {
       empresa: empresa.nombre,
+      // Pausado por falta de pago: el kiosco lo dice desde que carga, antes de que alguien intente entrar.
+      pausado: (await kioscoEnPausa(empresa)) !== null,
       requiereDispositivo: await exigeDispositivo(empresa.id),
       permiteCedula: await permiteCedula(empresa.id),
       // Si el ingreso facial pide girar la cabeza antes de capturar. Apagado por
@@ -338,6 +349,8 @@ export default async function workerRoutes(app: FastifyInstance) {
 
     const empresa = await prisma.empresa.findUnique({ where: { marcadorToken } });
     if (!empresa || !empresa.activa) return reply.code(404).send({ error: 'Link de marcación inválido' });
+    const enPausa = await kioscoEnPausa(empresa);
+    if (enPausa) return reply.code(402).send(enPausa);
 
     if (!(await permiteCedula(empresa.id))) {
       return reply.code(403).send({ error: 'Esta empresa desactivó la marcación con cédula. Usa el reconocimiento facial.' });
@@ -405,6 +418,8 @@ export default async function workerRoutes(app: FastifyInstance) {
 
     const empresa = await prisma.empresa.findUnique({ where: { marcadorToken } });
     if (!empresa || !empresa.activa) return reply.code(404).send({ error: 'Link de marcación inválido' });
+    const enPausa = await kioscoEnPausa(empresa);
+    if (enPausa) return reply.code(402).send(enPausa);
 
     if (await exigeDispositivo(empresa.id)) {
       if (!(await dispositivoValido(empresa.id, deviceToken))) {
@@ -661,6 +676,11 @@ export default async function workerRoutes(app: FastifyInstance) {
       // 500 contra la llave foránea al escribir la marca: se corta aquí, antes de
       // escribir nada, con un mensaje que la persona entienda.
       if (!col) return reply.code(401).send({ error: SESION_INVALIDA });
+      // Quien entró antes de la medianoche de la pausa tiene un token que sigue valiendo: se mira
+      // aquí también, después de saber que la persona existe.
+      const empresaDelKiosco = await prisma.empresa.findUnique({ where: { id: col.empresaId }, select: { id: true, nombre: true, exentaPago: true } });
+      const enPausa = empresaDelKiosco && await kioscoEnPausa(empresaDelKiosco);
+      if (enPausa) return reply.code(402).send(enPausa);
       const modalidad = col.modalidad ?? MODALIDAD_POR_DEFECTO;
 
       // ===== Dónde está marcando =====
@@ -984,13 +1004,16 @@ export default async function workerRoutes(app: FastifyInstance) {
   // El colaborador reporta el motivo de una salida temprana desde el kiosco.
   // Crea una novedad del día, pendiente de aprobación por el administrador.
   app.post('/novedad', { preHandler: [app.authenticate] }, async (request, reply) => {
-    const payload = (request as any).user as { id: string; rol: string };
+    const payload = (request as any).user as { id: string; rol: string; empresaId: string };
     if (payload.rol !== 'WORKER') return reply.code(403).send({ error: 'No autorizado' });
     const { tipo, descripcion } = (request.body ?? {}) as { tipo?: string; descripcion?: string };
     if (!tipo || !TIPOS_NOVEDAD.has(tipo)) return reply.code(400).send({ error: 'Motivo inválido' });
     // Igual que al marcar: sin esto, crear la novedad reventaba contra la llave foránea.
     const existe = await prisma.colaborador.findUnique({ where: { id: payload.id }, select: { id: true } });
     if (!existe) return reply.code(401).send({ error: SESION_INVALIDA });
+    const empresaDelKiosco = await prisma.empresa.findUnique({ where: { id: payload.empresaId }, select: { id: true, nombre: true, exentaPago: true } });
+    const enPausa = empresaDelKiosco && await kioscoEnPausa(empresaDelKiosco);
+    if (enPausa) return reply.code(402).send(enPausa);
     const permiso = await crearNovedad(payload.id, tipo, descripcion ?? '');
     return reply.code(201).send({ ok: true, id: permiso.id });
   });

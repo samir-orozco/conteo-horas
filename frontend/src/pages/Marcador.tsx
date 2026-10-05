@@ -9,6 +9,7 @@ import { useFlashResultado } from './marcador/useFlashResultado';
 import PantallaResultado from './marcador/pantallas/PantallaResultado';
 import PantallaVinculacion from './marcador/pantallas/PantallaVinculacion';
 import PantallaLinkInvalido from './marcador/pantallas/PantallaLinkInvalido';
+import PantallaKioscoPausado from './marcador/pantallas/PantallaKioscoPausado';
 import PantallaUbicacion from './marcador/pantallas/PantallaUbicacion';
 import PantallaLogin from './marcador/pantallas/PantallaLogin';
 import PantallaMotivo from './marcador/pantallas/PantallaMotivo';
@@ -25,6 +26,9 @@ export default function Marcador() {
   const { token: marcadorToken } = useParams<{ token: string }>();
   const [empresa, setEmpresa] = useState<string | null>(null);
   const [linkInvalido, setLinkInvalido] = useState(false);
+  // Pausado por falta de pago (4 de octubre de 2026): lo dice el servidor al cargar, o al intentar entrar
+  // si la pausa empezó con la pantalla ya abierta.
+  const [kioscoPausado, setKioscoPausado] = useState(false);
   const [ahora, setAhora] = useState(new Date());
 
   // Config del kiosco (viene de /worker/kiosco/:token)
@@ -154,6 +158,7 @@ export default function Marcador() {
     infoKiosco(marcadorToken)
       .then(info => {
         setEmpresa(info.empresa);
+        setKioscoPausado(info.pausado === true);
         setExigeUbicacion(info.exigeUbicacion === true);
         setExigeReto(info.exigeReto === true);
         if (info.permiteCedula === false) {
@@ -175,7 +180,9 @@ export default function Marcador() {
     try {
       await sesion.ingresar(cedula, vinculo.getDeviceToken());
     } catch (err: any) {
-      if (err.response?.data?.codigo === 'DISPOSITIVO_REQUERIDO') {
+      if (err.response?.data?.codigo === 'KIOSCO_PAUSADO') {
+        setKioscoPausado(true);
+      } else if (err.response?.data?.codigo === 'DISPOSITIVO_REQUERIDO') {
         vinculo.olvidarDispositivo();
         vinculo.setRequiereVinculo(true);
       } else {
@@ -195,7 +202,9 @@ export default function Marcador() {
       setFotoRostro(foto);
       setModoRostro(false);
     } catch (err: any) {
-      if (err.response?.data?.codigo === 'DISPOSITIVO_REQUERIDO') {
+      if (err.response?.data?.codigo === 'KIOSCO_PAUSADO') {
+        setKioscoPausado(true);
+      } else if (err.response?.data?.codigo === 'DISPOSITIVO_REQUERIDO') {
         // Se mantiene modoRostro: al vincular vuelve a la cámara, no a la cédula
         vinculo.olvidarDispositivo();
         vinculo.setRequiereVinculo(true);
@@ -278,6 +287,7 @@ export default function Marcador() {
 
   // ===== Selección de pantalla (mismo orden que antes) =====
   if (flash) return <PantallaResultado flash={flash} cerrandoFlash={cerrandoFlash} />;
+  if (kioscoPausado) return <PantallaKioscoPausado empresa={empresa} />;
   if (vinculo.requiereVinculo && !linkInvalido) {
     return (
       <PantallaVinculacion

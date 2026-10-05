@@ -51,6 +51,26 @@ export function prorrateo(ahora = new Date()): { diasMes: number; diasRestantes:
   return { diasMes, diasRestantes, factor: diasRestantes / diasMes };
 }
 
+// Primer día del mes en curso a las 00:00 de Bogotá
+export function inicioDeMes(ahora = new Date()): Date {
+  const b = fechaBogota(ahora);
+  return new Date(Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), 1, 5, 0, 0));
+}
+
+export type Periodo = { desde: Date; hasta: Date; diasMes: number; diasRestantes: number; factor: number };
+
+// El período que paga hoy una empresa que no está al día (4 de octubre de 2026).
+// - Primer pago: desde el día en que termina la prueba hasta el fin de ese mes, pague el
+//   día que pague. Se contaba desde el día del pago, y cada día de espera salía más
+//   barato: con la prueba hasta el 8, pagaba 28 días el 4 y 19 el 13, último día de
+//   gracia. Si la prueba terminó en un mes anterior, el mes en curso completo.
+// - Ya pagó alguna vez: el mes en curso completo. Atrasarse no puede salir más barato.
+export function periodoACobrar(finPrueba: Date, yaPago: boolean, ahora = new Date()): Periodo {
+  const mes = inicioDeMes(ahora);
+  const desde = !yaPago && finPrueba > mes ? finPrueba : mes;
+  return { desde, hasta: finDeMes(desde), ...prorrateo(desde) };
+}
+
 // ===== Estados =====
 
 // Estado real de la suscripción según fechas, sin importar lo persistido.
@@ -71,6 +91,42 @@ export function diasDeMora(s: Suscripcion, ahora = new Date()): number {
   const vencimiento = s.pagadoHasta ?? s.finPrueba;
   if (ahora <= vencimiento) return 0;
   return Math.floor((ahora.getTime() - vencimiento.getTime()) / DIA_MS);
+}
+
+// ===== Pausa del kiosco =====
+
+// El kiosco sigue marcando estos días después de la suspensión (decisión del dueño, 4 de
+// octubre de 2026). Antes no se pausaba nunca: una empresa podía marcar meses sin pagar
+// ni abrir el panel, y al pagar un mes recuperaba todos esos datos.
+export const DIAS_KIOSCO_TRAS_SUSPENSION = 10;
+
+// Desde cuándo se pausa el kiosco si no entra el pago: la medianoche de Bogotá que sigue
+// a los 5 días de gracia y los 10 de suspensión. A medianoche y no a la hora exacta, para
+// no cortar a nadie en plena jornada. Las empresas que ya estén suspendidas al desplegar
+// no reciben días extra: también decisión del dueño.
+export function pausaDelKiosco(s: Pick<Suscripcion, 'finPrueba' | 'pagadoHasta'>): Date {
+  const vence = s.pagadoHasta ?? s.finPrueba;
+  const ultimoInstante = new Date(vence.getTime() + (DIAS_GRACIA_MORA + DIAS_KIOSCO_TRAS_SUSPENSION) * DIA_MS - 1);
+  const b = fechaBogota(ultimoInstante);
+  return new Date(Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate() + 1, 5, 0, 0));
+}
+
+// Si el kiosco de una empresa está pausado por falta de pago. Igual que con el panel, una
+// empresa exenta o sin suscripción no se pausa nunca, y una cancelada sí.
+export function kioscoPausado(
+  empresa: { exentaPago: boolean } | null,
+  s: Pick<Suscripcion, 'estado' | 'finPrueba' | 'pagadoHasta'> | null,
+  ahora = new Date(),
+): boolean {
+  if (!empresa || empresa.exentaPago || !s) return false;
+  if (s.estado === 'CANCELADA') return true;
+  return ahora >= pausaDelKiosco(s);
+}
+
+// Lo que ve el trabajador en el kiosco pausado. Neutro a propósito (decisión del dueño): lo
+// leen los trabajadores, y no es a ellos a quienes hay que decirles que la empresa no pagó.
+export function mensajeKioscoPausado(empresa: string): string {
+  return `El kiosco de ${empresa} está pausado. Avísale al administrador de tu empresa.`;
 }
 
 // Persiste el estado calculado si cambió (transición perezosa al consultar)
@@ -102,6 +158,7 @@ export type Cobro = {
   tarifaMesCompleto: number;
   monto: number; // lo que se debe pagar hoy (prorrateado, salvo mesCompleto)
   mesCompleto?: boolean; // MES sin prorrateo: ya pagó antes y se atrasó
+  desde?: Date; // MES: desde cuándo cubre (el fin de la prueba, o el día 1)
   diasMes: number;
   diasRestantes: number;
   cubreHasta: Date;
@@ -128,14 +185,13 @@ export async function calcularCobro(prisma: PrismaClient, empresaId: string, pre
 
   const alDia = Boolean(susc?.pagadoHasta && susc.pagadoHasta > ahora);
   if (!alDia) {
-    // Prorrateo solo en el primer cobro (sale de la prueba a mitad de mes). Quien ya
-    // pagó alguna vez debe el mes completo: atrasarse no puede salir más barato.
     const yaPago = Boolean(susc?.pagos.some(p => p.estado === 'APROBADO'));
+    const periodo = periodoACobrar(susc?.finPrueba ?? ahora, yaPago, ahora);
     return {
       tipo: 'MES', colaboradoresActivos: activos, colaboradoresFacturados: 0,
-      tarifaMesCompleto, monto: yaPago ? tarifaMesCompleto : Math.round(tarifaMesCompleto * factor),
-      mesCompleto: yaPago,
-      diasMes, diasRestantes, cubreHasta,
+      tarifaMesCompleto, monto: Math.round(tarifaMesCompleto * periodo.factor),
+      mesCompleto: yaPago, desde: periodo.desde,
+      diasMes: periodo.diasMes, diasRestantes: periodo.diasRestantes, cubreHasta: periodo.hasta,
     };
   }
 
@@ -172,6 +228,7 @@ export function pagosDeLaEmpresa(prisma: PrismaClient, suscripcionId: string) {
 
 // Registra un pago aprobado. El período siempre cierra a fin de mes calendario.
 // Idempotente por wompiTransaccionId (webhook y confirmación manual pueden coincidir).
+// `ahora` solo para las pruebas.
 export async function aplicarPagoAprobado(
   prisma: PrismaClient,
   empresaId: string,
@@ -182,7 +239,8 @@ export async function aplicarPagoAprobado(
     nota?: string;
     comprobanteBase64?: string;
     registradoPor?: string;
-  }
+  },
+  ahora = new Date(),
 ) {
   const susc = await prisma.suscripcion.findUnique({ where: { empresaId } });
   if (!susc) return null;
@@ -192,10 +250,16 @@ export async function aplicarPagoAprobado(
     if (existente) return existente;
   }
 
-  const ahora = new Date();
-  const colaboradores = await prisma.colaborador.count({ where: { empresaId, activo: true } });
+  const [colaboradores, pagosPrevios] = await Promise.all([
+    prisma.colaborador.count({ where: { empresaId, activo: true } }),
+    prisma.pago.count({ where: { suscripcionId: susc.id, estado: 'APROBADO' } }),
+  ]);
+  // Al día, es un pago de diferencia (plan o colaboradores nuevos) y corre desde hoy. Si
+  // no, cubre el mismo período que se le cobró, que es el que tiene que decir el recibo.
+  const alDia = Boolean(susc.pagadoHasta && susc.pagadoHasta > ahora);
+  const periodo = alDia ? { desde: ahora, hasta: finDeMes(ahora) } : periodoACobrar(susc.finPrueba, pagosPrevios > 0, ahora);
   // Si ya tenía el mes (u otro futuro) pagado, se conserva la vigencia mayor
-  const periodoFin = susc.pagadoHasta && susc.pagadoHasta > finDeMes(ahora) ? susc.pagadoHasta : finDeMes(ahora);
+  const periodoFin = susc.pagadoHasta && susc.pagadoHasta > periodo.hasta ? susc.pagadoHasta : periodo.hasta;
 
   const [pago] = await prisma.$transaction([
     prisma.pago.create({
@@ -203,7 +267,7 @@ export async function aplicarPagoAprobado(
         suscripcionId: susc.id,
         monto: datos.monto,
         colaboradoresFacturados: colaboradores,
-        periodoInicio: ahora,
+        periodoInicio: periodo.desde,
         periodoFin,
         metodo: datos.metodo,
         estado: 'APROBADO',

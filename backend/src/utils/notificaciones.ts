@@ -13,7 +13,11 @@ export type TipoNotif =
   | 'CONTRATO_ETAPA_APRENDIZ'
   // Alguien registró su rostro por el enlace y se parece mucho a la ficha de otra
   // persona de la empresa (2 de octubre de 2026).
-  | 'ROSTRO_PARECIDO';
+  | 'ROSTRO_PARECIDO'
+  // Suscripción vencida, y el kiosco a tres días de pausarse. Los escribe la pasada
+  // diaria de avisosDeSuscripcion.ts, que además manda el correo (4 de octubre de 2026).
+  | 'SUSCRIPCION_VENCIDA'
+  | 'KIOSCO_POR_PAUSARSE';
 
 type NuevaNotif = {
   tipo: TipoNotif;

@@ -22,6 +22,12 @@ describe('a dónde lleva cada notificación', () => {
     expect(rutaDeNotificacion(n({ tipo: 'NO_MARCO_SALIDA' }))).toBe('/app/colaboradores/c1');
   });
 
+  it('un aviso de la suscripción lleva a pagarla (4 de octubre de 2026)', () => {
+    for (const tipo of ['SUSCRIPCION_VENCIDA', 'KIOSCO_POR_PAUSARSE']) {
+      expect(rutaDeNotificacion(n({ tipo, entidad: 'suscripcion', entidadId: 's1:vence:1' }))).toBe('/app/suscripcion');
+    }
+  });
+
   it('un aviso de marcación lleva a registros', () => {
     expect(rutaDeNotificacion(n({ tipo: 'NO_MARCO_SALIDA', entidad: 'registro', entidadId: 'r1' })))
       .toBe('/app/registros');

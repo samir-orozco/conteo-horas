@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '../prisma';
 import type { JwtPayload } from '../index';
 import {
-  estadoEfectivo, diasDeMora, sincronizarEstado, aplicarPagoAprobado, pagosDeLaEmpresa,
+  estadoEfectivo, diasDeMora, sincronizarEstado, aplicarPagoAprobado, pagosDeLaEmpresa, pausaDelKiosco, kioscoPausado,
   obtenerPrecios, calcularCobro, prorrateo,
  aplicarPlanDelPago,
 } from '../utils/suscripcion';
@@ -138,6 +138,8 @@ export default async function suscripcionRoutes(app: FastifyInstance) {
       pagos: await pagosDeLaEmpresa(prisma, susc.id),
       // Para el recibo en PDF que descarga desde el historial
       empresa: empresa && { nombre: empresa.nombre, nit: empresa.nit, email: empresa.email, telefono: empresa.telefono },
+      // Para el aviso de suscripción vencida: desde cuándo se pausa el kiosco, y si ya se pausó
+      kiosco: exenta ? null : { pausaDesde: pausaDelKiosco(sync), pausado: kioscoPausado(empresa, sync) },
       wompiConfigurado: wompiConfigurado(),
       checkout,
     };

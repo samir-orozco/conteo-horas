@@ -5,7 +5,7 @@ import api from '../lib/api';
 import { enlaceWhatsApp } from '../lib/whatsapp';
 import { useAuth } from '../context/AuthContext';
 import { useMiPlan, invalidarMiPlan } from '../lib/plan';
-import { fechaCorta, fechaLarga, ultimoDiaCubierto } from '../lib/fechas';
+import { fechaCorta, fechaLarga, mesYAnio, ultimoDiaCubierto } from '../lib/fechas';
 import { descargarReciboPDF, type PagoRecibo } from '../lib/recibo';
 
 type CheckoutData = { url: string; publicKey: string; currency: string; amountInCents: number; reference: string; signature: string };
@@ -25,7 +25,7 @@ type Cobro = {
   tipo: 'MES' | 'ADICIONAL' | 'AL_DIA';
   colaboradoresActivos: number; colaboradoresFacturados: number;
   tarifaMesCompleto: number; monto: number;
-  diasMes: number; diasRestantes: number; mesCompleto?: boolean; cubreHasta: string;
+  diasMes: number; diasRestantes: number; mesCompleto?: boolean; desde?: string; cubreHasta: string;
 };
 type Cuenta = {
   estado: string; diasMora: number; finPrueba: string; pagadoHasta: string | null;
@@ -143,10 +143,10 @@ export default function Suscripcion() {
   if (!cuenta) return <div className="p-8 text-muted">Cargando...</div>;
 
   const ui = ESTADO_UI[cuenta.estado] ?? ESTADO_UI.CANCELADA;
-  const { cobro, precios } = cuenta;
-  const base = Math.min(cobro.colaboradoresActivos, precios.limiteTramo1);
-  const extra = Math.max(0, cobro.colaboradoresActivos - precios.limiteTramo1);
-  const mesNombre = new Date().toLocaleDateString('es-CO', { month: 'long' });
+  const { cobro } = cuenta;
+  // El mes que se paga, que no siempre es el de hoy: si la prueba termina el mes que
+  // viene, el primer pago cubre ese mes.
+  const mesDelPeriodo = mesYAnio(cobro.desde ?? new Date());
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -295,9 +295,10 @@ export default function Suscripcion() {
       {/* Recibo previo al pago: resumen tipo factura antes de ir a Wompi */}
       {recibo && cuenta.checkout && (
         <div className="fixed inset-0 !mt-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={() => setRecibo(false)}>
-          <div className="hp-pop bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-labelledby="titulo-resumen-pago"
+            className="hp-pop bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-ink px-6 py-4 flex items-center justify-between">
-              <p className="text-white font-bold flex items-center gap-2"><Receipt size={17} /> Resumen de tu pago</p>
+              <p id="titulo-resumen-pago" className="text-white font-bold flex items-center gap-2"><Receipt size={17} /> Resumen de tu pago</p>
               <button onClick={() => setRecibo(false)} className="text-white/70 hover:text-white"><X size={18} /></button>
             </div>
             <div className="p-6">
@@ -305,7 +306,7 @@ export default function Suscripcion() {
                 <p className="text-sm text-muted">{usuario?.empresaNombre}</p>
                 <p className="text-4xl font-extrabold text-ink mt-1">{cop(cobro.monto)}</p>
                 <p className="text-xs text-muted mt-1">
-                  {cobro.tipo === 'ADICIONAL' ? 'Colaboradores nuevos · resto del mes' : `Suscripción HoraPro · ${mesNombre}`}
+                  {cobro.tipo === 'ADICIONAL' ? 'Colaboradores nuevos · resto del mes' : `Suscripción HoraPro · ${mesDelPeriodo}`}
                 </p>
               </div>
               <div className="border border-dashed border-gray-300 rounded-xl p-4 space-y-2 text-sm">
@@ -315,23 +316,23 @@ export default function Suscripcion() {
                     <span className="text-ink font-medium">{cop(cobro.monto)}</span>
                   </div>
                 ) : (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-muted">{base} colaborador{base === 1 ? '' : 'es'} × {cop(precios.precioTramo1)}</span>
-                      <span className="text-ink font-medium">{cop(base * precios.precioTramo1)}</span>
-                    </div>
-                    {extra > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted">{extra} adicional{extra === 1 ? '' : 'es'} × {cop(precios.precioTramo2)}</span>
-                        <span className="text-ink font-medium">{cop(extra * precios.precioTramo2)}</span>
-                      </div>
-                    )}
-                  </>
+                  // El precio es por plan. Esta línea multiplicaba colaboradores por el precio
+                  // viejo de $10.000 y no cuadraba con el total (4 de octubre de 2026).
+                  <div className="flex justify-between">
+                    <span className="text-muted">{miPlan?.nombrePlan ? `Plan ${miPlan.nombrePlan}` : 'Suscripción'} · mes completo</span>
+                    <span className="text-ink font-medium">{cop(cobro.tarifaMesCompleto)}</span>
+                  </div>
                 )}
                 <div className="flex justify-between border-t border-gray-200 pt-2">
                   <span className="text-muted">{cobro.mesCompleto ? 'Mes completo (pago atrasado)' : 'Días del mes por cubrir'}</span>
                   <span className="text-ink font-medium">{cobro.mesCompleto ? `${cobro.diasMes} de ${cobro.diasMes}` : `${cobro.diasRestantes} de ${cobro.diasMes}`}</span>
                 </div>
+                {cobro.desde && (
+                  <div className="flex justify-between">
+                    <span className="text-muted">Desde</span>
+                    <span className="text-ink font-medium">{fechaLarga(cobro.desde)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted">Cubre hasta</span>
                   <span className="text-ink font-medium">{ultimoDiaCubierto(cobro.cubreHasta)}</span>
