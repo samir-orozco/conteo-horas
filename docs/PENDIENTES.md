@@ -266,16 +266,44 @@ El vacío quedó partido en dos, que antes era uno: «no hay marcaciones en este
 período» manda a ampliar la ventana, y quien tiene un nombre mal escrito necesita
 oír otra cosa.
 
-## 20. La sede en la tabla de registros · petición 21
+## 20. ~~La sede en la tabla de registros~~ · petición 21
 
-Dos cosas, las dos de presentación: debajo del nombre, la sede **asignada**; en
-la jornada, la sede **donde marcó** entrada y salida.
+**HECHO el 4 de octubre de 2026.** Los dos datos quedaron separados:
 
-**Hay hoy:** `lib/sedeDeJornada.ts` ya calcula el cruce de sedes y decide si la
-columna se muestra; la sede probada se guarda en `registros.sedeId`.
+- **Bajo el nombre, la sede asignada** de la persona, que es su configuración. No
+  sale para quien no tiene ninguna —un remoto o un híbrido— ni para alguien
+  retirado, que no viene en `GET /colaboradores`.
+- **En la columna de sede, dónde marcó**: la probada, el cruce con su flecha
+  cuando abrió en una y cerró en otra, o «Cerró en X» cuando solo se sabe el
+  cierre.
 
-**No mezclar la sede asignada con la sede donde marcó** en la misma celda. Son
-dos datos distintos y confundirlos hace que el reporte diga algo que nadie midió.
+**Lo que cambió de verdad, y conviene mirarlo en pantalla:** la columna mostraba
+la sede ATRIBUIDA —la que el servidor le pone al leer a un presencial que no
+marcó en ninguna— con el mismo aspecto que una probada, así que en la tabla no
+había forma de distinguir «marcó en Norte» de «no marcó en ninguna y cuenta en
+Norte». Ahora esa fila dice **«— · cuenta en Norte»** en gris, y al pasar el
+puntero explica que no quedó registrada la sede de esa jornada y que para los
+reportes cuenta ahí.
+
+**No se quita, se dice distinto:** sigue visible porque es la que suman los
+reportes por sede (un presencial no se ve sin sede, decisión del 12 de
+septiembre). Lo que se quita es que parezca una marcación.
+
+La clase de la celda la decide ahora `sedeDeLaJornada`, con un caso por valor y
+un `default` explícito (§9.4), en vez de la cadena de cuatro `if` que vivía
+dentro de la pantalla.
+
+**Dos cosas de método que salieron de aquí:**
+
+- Las aserciones van **por celda, buscando la columna por su encabezado**.
+  Preguntar por texto no servía: Testing Library mira el texto DIRECTO de cada
+  elemento, así que un rótulo en `sr-only` queda en un hijo aparte y no aparece
+  en la consulta, y «Norte» salía en dos celdas a la vez. El ayudante de la
+  prueba lleva su propia guarda, y fue la que avisó de que la columna se llama
+  «Colaborador» y no «Nombre».
+- La etiqueta del nº 21 se había insertado entre el comentario de `CeldaSede` y
+  su función, dejando el comentario explicando el componente equivocado.
+  Corregido en este cambio.
 
 ## 21. ~~Etiqueta de «segundo ingreso»~~ · petición 10
 
