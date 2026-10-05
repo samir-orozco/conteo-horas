@@ -174,14 +174,43 @@ filas de 300 sin avisar, y conectado a la lista cruda ignora los filtros. Hay un
 prueba para cada una, y **las dos se vieron rojas cableando el botón a propósito
 a `visibles` y a `registros`.**
 
-## 10. Cambiar el estado de una novedad desde el reporte · petición 23
+## 10. ~~Cambiar el estado de una novedad desde el reporte~~ · petición 23
 
-Aprobar o rechazar sin ir a la ficha de la persona.
+**HECHO el 5 de octubre de 2026.** En el detalle de una persona del reporte de
+nómina, arriba del resumen, un bloque ámbar con **las novedades pendientes de
+aprobar que tocan el período**, cada una con su tipo, sus fechas, su descripción
+y un botón «Aprobar».
 
-Mueve dinero: una novedad aprobada deja de exigir esos días y la liquidación
-cambia (lo dice el propio aviso en `ColaboradorDetalle.tsx:734`). En una tabla de
-200 filas, el cambio de estado va con confirmación explícita, no con un clic
-suelto.
+**Lo que se encontró al hacerlo, y era lo de fondo:** una novedad pendiente **no
+se veía en ninguna parte del reporte**. El día a día del modal solo pinta las
+aprobadas (`diasDelPeriodo` las filtra), así que al revisar la nómina del período
+no había forma de enterarse de que faltaba decidir algo. Ahora el bloque lo dice
+y añade la consecuencia: mientras esté pendiente, esos días siguen contando como
+ausencia.
+
+Tres decisiones:
+
+- **Se mira el cruce con el período, no que la novedad quepa dentro.** Una
+  incapacidad del 28 de agosto al 3 de septiembre hay que decidirla igual cuando
+  se está mirando septiembre.
+- **Aprobar pide confirmación**, y el diálogo dice la consecuencia con esas
+  palabras: esos días dejan de contar como ausencia y **el total del período
+  cambia**. En una tabla de doscientas filas eso no puede pasar con un clic
+  suelto.
+- **Al aprobar, el reporte de atrás se vuelve a calcular.** Si no, la pantalla se
+  queda diciendo el total viejo, que es peor que no haber dejado aprobar.
+
+**Solo aprobar, no desaprobar.** El estado es un booleano (`permisos.aprobado`) y
+en la ficha tampoco hay «rechazar»: lo que hay es borrar. Quitarle la aprobación
+a algo ya aprobado desde un reporte de nómina es más peligroso que útil, así que
+eso sigue siendo cosa de la ficha.
+
+**Dos defectos míos en las pruebas, cazados al verlas fallar:** el fixture usaba
+un tipo de novedad que no existe (`CITA_MEDICA`; el real es `MEDICO`) y el
+producto lo tapaba con su respaldo, que escribe el nombre sin tilde — un fixture
+que no es un ejemplo real no prueba lo que dice (§9.2). Y pedir
+`role="dialog"` a secas encontraba dos, porque el modal entero también es un
+diálogo: hay que nombrarlo.
 
 ## 11. Marcar fuera del área, con alerta en vez de bloqueo · petición 13
 
