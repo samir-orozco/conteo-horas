@@ -10,6 +10,11 @@ haya que decidir algo antes. Cada trabajo dice qué lo hace grande.
 Donde se cita un archivo y una línea, se leyó el código. Lo que viene del
 `handoff.md` o de una sesión anterior va dicho así.
 
+Lo hecho el 4 de octubre comparte dos piezas, a propósito: el criterio de
+búsqueda vive una sola vez en `lib/busqueda.ts` y la caja en
+`components/CajaDeBusqueda.tsx`. Dos buscadores que con lo mismo escrito
+encuentran cosas distintas son dos productos.
+
 ---
 
 # Nivel 5 — Semanas
@@ -231,21 +236,35 @@ solo aplica al pagar?
 
 # Nivel 2 — Medio día
 
-## 18. Buscador en colaboradores · petición 14
+## 18. ~~Buscador en colaboradores~~ · petición 14
 
-**Hay hoy:** filtros (`MenuFiltros`, en `Colaboradores.tsx:292`: sede, estado de
-contrato) y pestañas. No hay caja de búsqueda por texto.
+**HECHO el 4 de octubre de 2026.** Caja de búsqueda junto a los filtros, por
+nombre, apellido o cédula. Se cruza con los filtros y con la pestaña, no los
+reemplaza.
 
-Buscar por nombre o cédula, que con 180 personas es lo que de verdad se usa, y
-que funcione **junto** con los filtros.
+Dos cosas que salieron de hacerlo y no estaban pedidas:
 
-## 19. Buscador en revisión de marcaciones · petición 18
+- **Buscar a alguien retirado desde «Activos» ya no responde «no hay nada»**,
+  que es lo que hace concluir que la persona no está en el sistema. Dice cuántos
+  coinciden en la otra pestaña y ofrece «Ver en todos».
+- **La tabla ya no se queda en blanco** cuando los filtros no dejan a nadie.
+  Antes el mensaje solo salía si la empresa no tenía ningún colaborador, así que
+  filtrar hasta cero no decía nada.
 
-**Hay hoy:** filtro por días. Lo único que dice «Buscar» en esa pantalla es
-«Buscar aparatos en estas fotos» (`RevisionMarcaciones.tsx:413`), que es otra
-cosa.
+## 19. ~~Buscador en revisión de marcaciones~~ · petición 18
 
-Buscar por persona, con el mismo componente del nº 18.
+**HECHO el 4 de octubre de 2026.** La misma caja, al lado de la ventana de días,
+buscando por nombre o cargo (ahí no viaja la cédula).
+
+El filtro alcanza a toda la pantalla, no solo a la lista: el contador, las
+flechas y el barrido de fotos se derivan de la misma lista, así que con una
+persona buscada el barrido mide solo sus marcaciones. Y al filtrar se vuelve a la
+primera, porque el visor pinta la marcación número `idx`: estando en la tercera y
+filtrando a una, la pantalla quedaba en blanco sin que nada se quejara.
+
+El vacío quedó partido en dos, que antes era uno: «no hay marcaciones en este
+período» manda a ampliar la ventana, y quien tiene un nombre mal escrito necesita
+oír otra cosa.
 
 ## 20. La sede en la tabla de registros · petición 21
 
