@@ -877,3 +877,44 @@ navegador oculto las animaciones no avanzan, así que el elemento se queda en el
 **para siempre**. Medido 900 ms después de abrirlo, con una animación declarada de 160 ms, seguía
 en `matrix(0.9, 0, 0, 0.9, 0, 0)`. Un `setTimeout` más largo no lo arregla, solo tarda más en
 mentir.
+
+### 12.10 Una puerta es código, y cuando está mal escrita dice «limpio» (4 de octubre de 2026)
+
+La §12.3 dice que la puerta va en el guion y no en la atención de quien mira. Le falta la otra
+mitad: **esa puerta también es código sin probar, y su forma de fallar es decir que todo está bien.**
+
+El caso, preparando un commit en un árbol con trabajo de otra sesión. Para quedarse solo con las
+líneas propias de un parche, la comprobación era:
+
+```python
+if linea[:1] in '+-':      # ¿es una línea de cambio?
+    assert es_mia(linea)
+```
+
+y en Python **`'' in '+-'` es `True`**, porque la cadena vacía es subcadena de cualquier cosa. La
+línea vacía del final del parche entraba como si fuera un cambio. Comprobado, no supuesto:
+
+```
+"" in "+-"      -> True
+""[:1] in "+-"  -> True
+```
+
+Ahí tuvo suerte y saltó de más, con un mensaje que señalaba una línea vacía. La forma peligrosa es
+la de siempre, y es la que tienen casi todas las puertas de este archivo, que son `grep`:
+
+```bash
+if git diff --cached --name-only | grep -E 'patron-con-dedazo'; then echo "ABORTO"; fi
+```
+
+Un `grep` sin coincidencias devuelve 1, o sea que **un dedazo en el patrón es indistinguible de
+«no hay nada malo»**. Es la §12.2 otra vez —un vacío no es un resultado negativo— pero dentro de la
+herramienta que debería estar protegiendo el commit.
+
+**La regla, que es la §9.1 aplicada a las puertas: una puerta no vale hasta que se la ve saltar.**
+Antes de confiarle un commit, correrla una vez contra algo que TIENE que hacerla abortar. Son diez
+segundos y es la única forma de distinguir «no encontró nada» de «no buscó nada».
+
+```bash
+# comprobar la puerta ANTES de confiar en ella: con un patrón que sí está, tiene que gritar
+git diff --cached --name-only | grep -E '<algo que sabes que está preparado>' && echo "la puerta ve"
+```
