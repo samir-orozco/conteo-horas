@@ -8,7 +8,7 @@ import {
 // La selección en bloque y el guardado por bloques: dos decisiones puras, probadas y mutadas aparte.
 // Qué celdas caen dentro de un rectángulo y qué se va a escribir de verdad NO se deciden aquí.
 import {
-  claveDeCelda, celdasDelRectangulo, escribibles, alternarConjunto, conjuntoCompleto,
+  claveDeCelda, celdasDelRectangulo, escribibles, alternarConjunto, conjuntoCompleto, celdasDeLasFechas,
   type Celda as CeldaMarcada,
 } from './seleccionEnBloque';
 import { bloquesDe, planDeEscritura, type AccionDeEscritura } from './aplicacionPorBloques';
@@ -2382,6 +2382,14 @@ export default function CalendarioDeTurnos() {
     fila.dias.map(d => ({ colaboradorId: fila.id, fecha: d.fecha })), estaMarcada, hoy,
   );
 
+  // LAS CELDAS DE UNA SEMANA, de todas las personas a la vista. Las usan el rótulo de la semana para
+  // marcarla y para decir si está entera, y las dos tienen que mirar exactamente el mismo conjunto: con
+  // dos listas, el rótulo diría «entera» de una semana que el toque todavía va a completar.
+  const celdasDeLaSemana = (fechas: readonly string[]) => celdasDeLasFechas(filas.map(f => f.id), fechas);
+  // `conjuntoCompleto` y no `every` a pelo: una semana entera en el pasado no tiene NADA que marcar, y
+  // `every` sobre una lista vacía es `true`, así que se pintaría «entera» sin que nadie la tocara.
+  const semanaEntera = (fechas: readonly string[]) => conjuntoCompleto(celdasDeLaSemana(fechas), estaMarcada, hoy);
+
   // La precedencia entre los cuatro fondos vive en `fondoDeLaColumna`, que es pura y está probada y
   // mutada. Aquí solo se resuelve cuál de los tres hechos ocurre.
   const fondoDeColumna = (fecha: string, enFilaEntera = false) => fondoDeLaColumna({
@@ -2645,6 +2653,27 @@ export default function CalendarioDeTurnos() {
   const marcarColumna = (fecha: string) => {
     const esas = filas.map(f => ({ colaboradorId: f.id, fecha }));
     const { celdas, apagar } = alternarConjunto(esas, c => Boolean(marcadas[claveDeCelda(c)]), hoy);
+    if (celdas.length === 0) { avisarDiaPasado(); return; }
+    marcar(celdas, apagar);
+    cerrarRango();
+  };
+
+  // EL RÓTULO DE UNA SEMANA, EN EL MES (5 de octubre de 2026, petición 25 del dueño): marca sus siete días
+  // de todos. Es el mismo gesto que la columna de un día y la fila de una persona, con las mismas tres
+  // propiedades: interruptor, solo lo que todavía se puede escribir, y el mismo aviso si no queda nada.
+  //
+  // LAS FECHAS SON LAS QUE TIENE EL GRUPO y no siete desde el lunes: el rótulo se dibuja con `colSpan`
+  // sobre `semana.fechas`, y marcar algo distinto de lo que abarca el rótulo sería escribir donde no se
+  // ve. Incluye los días de relleno de otro mes, igual que el encabezado de una columna de relleno y que
+  // la fila de una persona, que ya los marcan.
+  const marcarSemana = (fechas: readonly string[]) => {
+    // SIN PERSONAS NO HAY A QUIÉN MARCARLE, y eso no es un día pasado: sin esta salida, la lista vacía
+    // caería en el aviso de abajo y la pantalla diría «ese día ya pasó» cuando lo que pasa es que el
+    // filtro no deja a nadie.
+    if (filas.length === 0) return;
+    const { celdas, apagar } = alternarConjunto(celdasDeLaSemana(fechas), c => Boolean(marcadas[claveDeCelda(c)]), hoy);
+    // CERO CELDAS CON PERSONAS A LA VISTA ES QUE TODA LA SEMANA YA PASÓ. El mismo silencio que una celda
+    // ida: sin decirlo, se pulsa dos veces y se acaba dudando de la pantalla.
     if (celdas.length === 0) { avisarDiaPasado(); return; }
     marcar(celdas, apagar);
     cerrarRango();
@@ -3470,7 +3499,28 @@ export default function CalendarioDeTurnos() {
                     <th colSpan={semana.fechas.length}
                       className={`whitespace-nowrap px-2 pt-3 pb-1.5 text-center text-[11px] font-bold text-muted ${
                         corteDeSemana(semana.fechas[0])}`}>
-                      {rotuloDeSemanaEnLaVista(semana.lunes, i)}
+                      {/* EL RÓTULO MARCA LA SEMANA ENTERA (petición 25 del dueño). El texto es el de
+                          siempre; lo que cambia es que se puede pulsar.
+
+                          ES `aria-disabled` Y NO `disabled`, por lo mismo que el encabezado de un día
+                          ido: el botón sigue en el tabulador y al pulsarlo explica por qué no se puede.
+                          Se apaga solo cuando NO queda ningún día por venir, que es cuando pulsarlo no
+                          tiene nada que marcar; la semana en curso, con días idos y días por venir, queda
+                          viva y marca los que sí se pueden.
+
+                          EL NOMBRE EMPIEZA DISTINTO A PROPÓSITO de «Marcar la semana de Ana» (la fila de
+                          una persona) y de «Marcar el día 7 de todos» (la columna): tres botones que
+                          marcan cosas distintas no pueden llamarse casi igual, ni para quien los lee en
+                          voz alta ni para las pruebas que los buscan por su nombre. */}
+                      <button type="button" onClick={() => marcarSemana(semana.fechas)}
+                        aria-pressed={semanaEntera(semana.fechas)}
+                        aria-disabled={semana.fechas.every(f => !sePuedePintar(f, hoy))}
+                        aria-label={`Marcar todos los días de la ${rotuloDeSemanaEnLaVista(semana.lunes, i)}`}
+                        className={`rounded-lg px-2.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-dark ${
+                          semanaEntera(semana.fechas) ? 'bg-[#fff7df] text-ink' : ''} ${
+                          semana.fechas.every(f => !sePuedePintar(f, hoy)) ? 'cursor-default' : 'hover:bg-gray-100'}`}>
+                        {rotuloDeSemanaEnLaVista(semana.lunes, i)}
+                      </button>
                     </th>
                     {/* La columna del total de esa semana, que va entre grupo y grupo. */}
                     <th className="w-[64px] bg-gray-50" />

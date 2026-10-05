@@ -62,6 +62,25 @@ export function celdasDelRectangulo(
   return celdas;
 }
 
+// LAS CELDAS DE UNAS FECHAS PARA TODAS LAS PERSONAS (5 de octubre de 2026, petición 25 del dueño).
+//
+// Es lo que marca el rótulo de una semana en la vista de mes: sus siete días, de todos a la vez, igual
+// que el encabezado de un día marca esa columna.
+//
+// POR FILAS Y NO POR COLUMNAS, por la misma razón que `celdasDelRectangulo`: la selección se escribe
+// en el orden en que se insertó, así que el progreso avanza persona por persona y no salta entre ellas.
+// Dos bucles al revés dan las mismas celdas en otro orden, y por eso hay una prueba que lo fija.
+//
+// SIN PERSONAS NO HAY CELDAS: devolver vacío es lo que le deja a quien llama distinguir «no hay a
+// quién marcarle» de «todo eso ya pasó», que son dos avisos distintos.
+export function celdasDeLasFechas(colaboradores: readonly string[], fechas: readonly string[]): Celda[] {
+  const celdas: Celda[] = [];
+  for (const colaboradorId of colaboradores) {
+    for (const fecha of fechas) celdas.push({ colaboradorId, fecha });
+  }
+  return celdas;
+}
+
 // ────────── LO QUE NO SE PUEDE ESCRIBIR NO SE PUEDE MARCAR (29 de septiembre de 2026) ──────────
 //
 // Pedido del dueño: «si no lo puedo cambiar, sería bueno que no lo deje seleccionar tampoco». Antes

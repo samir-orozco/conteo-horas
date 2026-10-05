@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  claveDeCelda, celdasDelRectangulo, escribibles, alternarConjunto, conjuntoCompleto,
+  claveDeCelda, celdasDelRectangulo, escribibles, alternarConjunto, conjuntoCompleto, celdasDeLasFechas,
 } from './seleccionEnBloque';
 
 // LA SELECCIÓN EN BLOQUE (28 de septiembre de 2026).
@@ -256,5 +256,62 @@ describe('cuándo un conjunto está entero', () => {
 
   it('sin celdas tampoco', () => {
     expect(conjuntoCompleto([], todas, HOY)).toBe(false);
+  });
+});
+
+// LAS CELDAS DE UNAS FECHAS PARA TODAS LAS PERSONAS (5 de octubre de 2026, petición 25 del dueño).
+//
+// «En turnos rotativos, en el mes, cuando le doy a la semana, que se seleccionen todos los días de
+// allí»: el rótulo de cada semana del mes pasa a marcar sus siete días de todos a la vez, igual que el
+// encabezado de un día marca esa columna.
+//
+// LO ÚNICO QUE HAY QUE DECIDIR AQUÍ ES EL ORDEN, y no es cosmético: la selección se escribe en el orden
+// en que se insertó, así que va POR FILAS —una persona completa y luego la siguiente—. Por columnas, el
+// progreso saltaría de persona en persona, que es lo que `celdasDelRectangulo` evita por la misma razón.
+describe('celdasDeLasFechas', () => {
+  const PERSONAS = ['ana', 'beto'];
+  const FECHAS = ['2026-10-05', '2026-10-06', '2026-10-07'];
+
+  it('cruza todas las personas con todas las fechas', () => {
+    expect(celdasDeLasFechas(PERSONAS, FECHAS)).toHaveLength(6);
+  });
+
+  // La que importa: el orden. Con los dos bucles al revés da las mismas seis celdas, pero en otro orden.
+  it('va por filas: una persona completa y luego la siguiente', () => {
+    expect(celdasDeLasFechas(PERSONAS, FECHAS)).toEqual([
+      { colaboradorId: 'ana', fecha: '2026-10-05' },
+      { colaboradorId: 'ana', fecha: '2026-10-06' },
+      { colaboradorId: 'ana', fecha: '2026-10-07' },
+      { colaboradorId: 'beto', fecha: '2026-10-05' },
+      { colaboradorId: 'beto', fecha: '2026-10-06' },
+      { colaboradorId: 'beto', fecha: '2026-10-07' },
+    ]);
+  });
+
+  it('no repite ni inventa: cada pareja sale una sola vez', () => {
+    const claves = celdasDeLasFechas(PERSONAS, FECHAS).map(claveDeCelda);
+    expect(new Set(claves).size).toBe(claves.length);
+  });
+
+  // Sin personas a la vista no hay nada que marcar, y devolver vacío es lo que deja a quien llama
+  // distinguirlo de «todo era del pasado».
+  it('sin personas o sin fechas no hay celdas', () => {
+    expect(celdasDeLasFechas([], FECHAS)).toEqual([]);
+    expect(celdasDeLasFechas(PERSONAS, [])).toEqual([]);
+  });
+
+  it('una sola fecha es lo mismo que marcar la columna de ese día', () => {
+    expect(celdasDeLasFechas(PERSONAS, ['2026-10-05'])).toEqual([
+      { colaboradorId: 'ana', fecha: '2026-10-05' },
+      { colaboradorId: 'beto', fecha: '2026-10-05' },
+    ]);
+  });
+
+  it('no modifica las listas que recibe', () => {
+    const personas = [...PERSONAS];
+    const fechas = [...FECHAS];
+    celdasDeLasFechas(personas, fechas);
+    expect(personas).toEqual(PERSONAS);
+    expect(fechas).toEqual(FECHAS);
   });
 });
