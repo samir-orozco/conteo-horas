@@ -839,3 +839,41 @@ medio), pero el número de arriba es el que decide.
 
 Es la misma familia que todo lo demás de esta sección: **el instrumento informó éxito** —Vite dijo
 «hmr update», el navegador no se quejó— **y lo que corría era otra cosa.**
+
+### 12.9 Medir un elemento animado con `getBoundingClientRect` da un número falso y creíble (4 de octubre de 2026)
+
+Al arreglar el panel de Reportes (§12.8 es del mismo navegador y la misma familia) hubo que medir
+cuánto mide el panel para decidir dónde colocarlo. Se midió con
+`getBoundingClientRect().height`, y el arreglo quedó **a medias sin que nada se quejara**: el panel
+de Reportes sí entraba, pero la campana seguía saliéndose 43 px de la pantalla.
+
+La causa: **el rect devuelve la caja TRANSFORMADA, no la de maquetación.** El panel entra con
+
+```css
+@keyframes hp-notif-pop { 0% { transform: scale(0.9); } 100% { transform: scale(1); } }
+.hp-notif-pop { animation: hp-notif-pop 0.16s ... both; }
+```
+
+y el `both` hace que el fotograma del 0% esté aplicado **antes** de que la animación arranque, que es
+justo cuando corre la medición. O sea que medía 318 donde el panel mide 354 —el 90% exacto— y lo
+colocaba como si fuera más bajo de lo que es.
+
+Por qué no se caza mirando: no hay error, no hay `NaN`, no hay cero. Hay un número plausible, de la
+magnitud correcta, con un 10% de menos.
+
+**La regla:** para decidir una posición o un tamaño se mide por MAQUETACIÓN —`offsetHeight`,
+`offsetWidth`, y el `top`/`left` de `getComputedStyle`—, que las transformaciones no tocan.
+`getBoundingClientRect` responde otra pregunta: dónde se está dibujando ahora mismo, con la
+animación a medias incluida. Las dos son correctas; la trampa es creer que son la misma.
+
+Y antes de fiarse de un rect en una comprobación, mirar si hay transformación encima:
+
+```js
+getComputedStyle(el).transform   // "none" o "matrix(1, 0, 0, 1, 0, 0)" -> el rect es la caja real
+```
+
+**Esperar no sirve.** La primera reacción es «será que medí demasiado pronto», y no: con el panel del
+navegador oculto las animaciones no avanzan, así que el elemento se queda en el primer fotograma
+**para siempre**. Medido 900 ms después de abrirlo, con una animación declarada de 160 ms, seguía
+en `matrix(0.9, 0, 0, 0.9, 0, 0)`. Un `setTimeout` más largo no lo arregla, solo tarda más en
+mentir.
