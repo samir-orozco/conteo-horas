@@ -20,6 +20,7 @@ import { asegurarDiaSinFallar } from '../utils/materializarDias';
 import { DIAS_SEMANA } from '../utils/diasDeLaSemana';
 import { marcasDelDia, desdeCuandoSeListan } from '../utils/marcasDelDia';
 import { jornadaYaRegistrada } from '../utils/jornadaYaRegistrada';
+import { climaDeLaSalida, DURACION_TOKEN_CLIMA } from '../utils/climaDelKiosco';
 
 // Motivos de novedad válidos (mismos de la vista interna del colaborador)
 // Un token de kiosco dura 12 horas y sigue siendo válido aunque la persona ya no
@@ -863,9 +864,21 @@ export default async function workerRoutes(app: FastifyInstance) {
             .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la salida temprana'));
         }
 
+        // CLIMA LABORAL (4 de octubre de 2026): si la salida cierra la jornada y la empresa tiene el
+        // módulo, la respuesta trae con qué abrir la ventana de las caritas. La salida YA quedó escrita:
+        // un fallo aquí deja al kiosco sin ventana, nunca sin marca, y queda anotado como fallo y no
+        // como «hoy no tocaba» (CLAUDE.md §8.3).
+        const clima = await climaDeLaSalida(
+          { colaboradorId: payload.id, empresaId: payload.empresaId, registroId: abierto.id, fechaJornada: abierto.fecha, pausa: esAlmuerzo || esDescanso },
+          token => app.jwt.sign(token, { expiresIn: DURACION_TOKEN_CLIMA }),
+        ).catch(err => {
+          app.log.error(err, 'Clima laboral: no se pudo preparar la ventana de la salida');
+          return null;
+        });
+
         // `descanso` es la ventana a la que se anotó la salida, para que la tableta
         // lo diga: una tableta que no la conoce la ignora.
-        return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo, salidaDescanso: esDescanso, descanso: descansoAsignado };
+        return { accion: 'SALIDA', registro: updated, hora: ahora, salidaTemprana, salidaAlmuerzo: esAlmuerzo, salidaDescanso: esDescanso, descanso: descansoAsignado, clima };
       } else {
         // ¿Ya había marcado entrada hoy? (para alertar tardanza solo en la 1a entrada)
         const entradasPrevias = await prisma.registro.count({

@@ -57,6 +57,15 @@ describe('accionDePeticion', () => {
     expect(accionDePeticion('DELETE', '/api/admin/empresas/ckv123abc456def789ghi012j')).toBe('Borró una empresa');
   });
 
+  it('los motivos del clima laboral (4 de octubre de 2026)', () => {
+    expect(accionDePeticion('PUT', '/api/clima/motivos')).toBe('Editó los motivos del clima laboral');
+  });
+
+  it('las caritas del kiosco NO se auditan: el cuerpo llevaría el texto confidencial', () => {
+    expect(seAudita('PUT', '/api/worker/clima', 200)).toBe(false);
+    expect(seAudita('POST', '/api/worker/clima/observacion', 200)).toBe(false);
+  });
+
   it('una ruta que nadie tradujo sale tal cual, no como un texto inventado', () => {
     expect(accionDePeticion('POST', '/api/algo-nuevo/ckv123abc456def789ghi012j')).toBe('POST /api/algo-nuevo/:id');
   });

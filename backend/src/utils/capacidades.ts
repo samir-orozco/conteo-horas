@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { prisma } from '../prisma';
-import { capacidadesDe, obtenerPlanes, type Capacidades, type FeatureKey } from './planes';
+import { capacidadesDe, obtenerPlanes, mensajeDeFuncionBloqueada, type Capacidades, type FeatureKey } from './planes';
 
 // Capacidades efectivas de una empresa (plan + overrides + acceso ilimitado).
 export async function capacidadesEmpresa(empresaId: string): Promise<Capacidades> {
@@ -43,7 +43,7 @@ export function exigeFuncion(feature: FeatureKey) {
     // El mismo `codigo` y el mismo `funcion` que usan las guardas de dentro de los manejadores: la
     // pantalla los lee para saber que es cosa del plan y no un error, y ofrecer subir de plan.
     return reply.status(403).send({
-      error: 'Tu plan no incluye el módulo de turnos. Sube de plan para programarlos.',
+      error: mensajeDeFuncionBloqueada(feature),
       codigo: 'FUNCION_PLAN',
       funcion: feature,
     });

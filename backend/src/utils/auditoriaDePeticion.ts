@@ -49,6 +49,9 @@ const RECURSOS: Record<string, string> = {
   'horarios': 'un horario',
   'plantillas-turno': 'una plantilla de turno',
   'turnos': 'un turno',
+  // La única escritura del panel del clima laboral (4 de octubre de 2026). Las caritas del kiosco van
+  // por /api/worker/, que no se audita.
+  'clima': 'los motivos del clima laboral',
   'notificaciones': 'una notificación',
   'configuracion': 'la configuración',
   'suscripcion': 'la suscripción',

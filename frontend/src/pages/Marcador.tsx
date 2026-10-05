@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { infoKiosco, marcar as apiMarcar, avisarNoSoy, type OpcionesMarca } from './marcador/api';
+import { infoKiosco, marcar as apiMarcar, avisarNoSoy, guardarClima, enviarObservacionClima, type OpcionesMarca, type ClimaDeLaSalida } from './marcador/api';
 import { useCierrePorInactividad, MS_INACTIVIDAD_KIOSCO } from './marcador/useCierrePorInactividad';
 import { useSesionKiosco } from './marcador/useSesionKiosco';
 import { useGeolocalizacion } from './marcador/useGeolocalizacion';
@@ -16,6 +16,8 @@ import PantallaMotivo from './marcador/pantallas/PantallaMotivo';
 import { decidirTrasErrorDeMarca, type CasoMotivo } from './marcador/motivoDeMarca';
 import PantallaMarcar from './marcador/pantallas/PantallaMarcar';
 import RegresoOlvidado from './marcador/pantallas/RegresoOlvidado';
+import PantallaClima from './marcador/pantallas/PantallaClima';
+import { horaDoce } from '../lib/fechas';
 import { decidirUbicacion } from './marcador/decisionUbicacion';
 import { mensajeGeo } from './marcador/geo';
 
@@ -65,6 +67,17 @@ export default function Marcador() {
   // abrir el turno se le pregunta a qué hora regresó. Si no, marcar a las 17:00
   // el regreso de un almuerzo de las 12:00 le borraría la tarde entera.
   const [preguntandoRegreso, setPreguntandoRegreso] = useState(false);
+  // CLIMA LABORAL (4 de octubre de 2026). La respuesta de la salida trae con qué abrir la ventana de
+  // las caritas, pero la ventana sale DESPUÉS del aviso verde: mientras tanto se guarda aquí, en un
+  // ref, porque quien la lee es el cierre del aviso. La hora va con ella para decir en la ventana a
+  // qué hora quedó la salida.
+  //
+  // Va ATADA a quien marcó (`colaboradorId`): solo se muestra si la sesión abierta es la de esa persona.
+  // Con la red pegada, un cierre a destiempo podía dejar la ventana de una persona lista para la
+  // siguiente, con el token de la primera (revisión adversarial del 4 de octubre de 2026).
+  type ClimaDeAlguien = ClimaDeLaSalida & { hora: string; colaboradorId: string };
+  const climaPendiente = useRef<ClimaDeAlguien | null>(null);
+  const [clima, setClima] = useState<ClimaDeAlguien | null>(null);
 
   const sesion = useSesionKiosco(marcadorToken);
   const geo = useGeolocalizacion();
@@ -109,9 +122,18 @@ export default function Marcador() {
     setPreguntandoRegreso(false);
     setNovedadTipo('MEDICO');
     setNovedadDesc('');
+    // La ventana de las caritas también: es de la persona que se va.
+    climaPendiente.current = null;
+    setClima(null);
   };
 
-  const { flash, cerrandoFlash, mostrarFlashOk, mostrarFlashError } = useFlashResultado(() => salir());
+  // Al cerrarse el aviso de una marca, o se abre la ventana de las caritas o se libera el kiosco.
+  const { flash, cerrandoFlash, mostrarFlashOk, mostrarFlashError } = useFlashResultado(() => {
+    const pendiente = climaPendiente.current;
+    climaPendiente.current = null;
+    if (pendiente) setClima(pendiente);
+    else salir();
+  });
 
   // «NO SOY X» (2 de octubre de 2026). Queda la huella en el servidor y se descarta
   // la sesión. Si la empresa permite la cédula, sigue por ahí CON la foto que se
@@ -248,6 +270,11 @@ export default function Marcador() {
         ...(opciones?.novedadTipo ? { novedadTipo: opciones.novedadTipo } : {}),
         ...(opciones?.novedadDescripcion ? { novedadDescripcion: opciones.novedadDescripcion } : {}),
       });
+      // Si el servidor la pidió, la ventana de las caritas se abre al cerrarse el aviso. Quién decide
+      // que toca (salida que cierra la jornada, plan con el módulo, sin calificar hoy) es el servidor.
+      climaPendiente.current = r.clima && sesion.colaborador
+        ? { ...r.clima, hora: horaDoce(r.hora), colaboradorId: sesion.colaborador.id }
+        : null;
       // La pausa la confirma el SERVIDOR, no el botón que se tocó: si la ventana
       // ya no aplicaba, la marca quedó como salida normal y la pantalla lo dice.
       mostrarFlashOk(r.accion, r.hora, nombreColab,
@@ -287,6 +314,16 @@ export default function Marcador() {
 
   // ===== Selección de pantalla (mismo orden que antes) =====
   if (flash) return <PantallaResultado flash={flash} cerrandoFlash={cerrandoFlash} />;
+  if (clima && clima.colaboradorId === sesion.colaborador?.id) {
+    return (
+      <PantallaClima
+        nombre={sesion.colaborador.nombre} hora={clima.hora} motivos={clima.motivos}
+        guardar={c => guardarClima(clima.token, c)}
+        enviarObservacion={o => enviarObservacionClima(clima.token, o)}
+        onTerminar={() => salir()}
+      />
+    );
+  }
   if (kioscoPausado) return <PantallaKioscoPausado empresa={empresa} />;
   if (vinculo.requiereVinculo && !linkInvalido) {
     return (

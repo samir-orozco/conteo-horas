@@ -7,6 +7,7 @@ import { revisionPendiente } from '../utils/revisionPendiente';
 import { jornadaVigente, tiposVigentes, horasMesDeJornada } from '../utils/vigencias';
 import { enviarTelegram, telegramConfigurado } from '../utils/telegram';
 import { capacidadesEmpresa } from '../utils/capacidades';
+import { CLAVE_MOTIVOS } from '../utils/climaDelKiosco';
 import {
   CLAVE_PERMISOS_REMUNERADOS, PERMISOS_CONFIGURABLES, PERMISOS_REMUNERADOS_LEY,
   PERMISOS_NUNCA_REMUNERADOS, normalizarPoliticaPermisos, parsearPoliticaPermisos,
@@ -62,6 +63,11 @@ export default async function configuracionRoutes(app: FastifyInstance) {
   app.put('/', auth, async (request, reply) => {
     const data = request.body as Record<string, string>;
     const empresaId = request.empresaId!;
+    // Los motivos del clima laboral tienen su propia ruta, que exige el plan y el rol de administrador
+    // (routes/clima.ts). Por aquí un supervisor podía cambiarlos y quitar justo «Jefe o supervisor».
+    if (CLAVE_MOTIVOS in data) {
+      return reply.status(403).send({ error: 'Los motivos del clima laboral se cambian en Clima laboral.' });
+    }
     // Gating: activar GPS o Telegram requiere que el plan lo incluya
     const cap = await capacidadesEmpresa(empresaId);
     const tocaGeo = Object.keys(data).some(k => k.startsWith('GEO_'));

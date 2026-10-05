@@ -14,6 +14,8 @@ import festivoRoutes from './routes/festivos';
 import configuracionRoutes from './routes/configuracion';
 import reporteRoutes from './routes/reportes';
 import workerRoutes from './routes/worker';
+import climaDelKioscoRoutes from './routes/climaDelKiosco';
+import climaRoutes from './routes/clima';
 import registroFacialRoutes from './routes/registroFacial';
 import adminRoutes from './routes/admin';
 import afiliadoAdminRoutes from './routes/afiliados';
@@ -187,6 +189,9 @@ app.register(configuracionRoutes, { prefix: '/api/configuracion' });
 app.register(reporteRoutes, { prefix: '/api/reportes' });
 app.register(sedeRoutes, { prefix: '/api/sedes' });
 app.register(workerRoutes, { prefix: '/api/worker' });
+// Las caritas del clima laboral: bajo /api/worker/ para quedar fuera de la auditoría (ver el archivo).
+app.register(climaDelKioscoRoutes, { prefix: '/api/worker/clima' });
+app.register(climaRoutes, { prefix: '/api/clima' });
 // Público, como el kiosco: la persona registra su rostro con el enlace que le mandó su empresa.
 app.register(registroFacialRoutes, { prefix: '/api/registro-facial' });
 app.register(adminRoutes, { prefix: '/api/admin' });

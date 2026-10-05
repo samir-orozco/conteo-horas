@@ -26,12 +26,16 @@ const h = vi.hoisted(() => ({
   // Quién queda en sesión cuando la cámara reconoce una cara.
   alReconocer: null as null | (() => { token: string | null; colaborador: null | Record<string, unknown>; estado: null | Record<string, unknown> }),
   geoLimpiar: vi.fn(),
+  guardarClima: vi.fn<(t: string, c: Record<string, unknown>) => Promise<void>>(() => Promise.resolve()),
+  enviarObservacionClima: vi.fn<(t: string, o: Record<string, unknown>) => Promise<void>>(() => Promise.resolve()),
 }));
 
 vi.mock('./marcador/api', () => ({
   infoKiosco: () => Promise.resolve({ empresa: 'Tuercas & Pernos', requiereDispositivo: false, permiteCedula: h.permiteCedula, exigeUbicacion: h.exigeUbicacion }),
   marcar: (t: string, cuerpo: Record<string, unknown>) => h.marcar(t, cuerpo),
   avisarNoSoy: (t: string) => h.avisarNoSoy(t),
+  guardarClima: (t: string, c: Record<string, unknown>) => h.guardarClima(t, c),
+  enviarObservacionClima: (t: string, o: Record<string, unknown>) => h.enviarObservacionClima(t, o),
 }));
 vi.mock('./marcador/useSesionKiosco', () => ({
   useSesionKiosco: () => ({
@@ -93,6 +97,8 @@ beforeEach(() => {
   h.alIngresar = null;
   h.alReconocer = null;
   h.geoLimpiar.mockClear();
+  h.guardarClima.mockClear();
+  h.enviarObservacionClima.mockClear();
 });
 afterEach(() => vi.useRealTimers());
 
@@ -332,5 +338,131 @@ describe('Marcador · lo que deja abierto quien se va', () => {
     expect(h.limpiarSesion).not.toHaveBeenCalled();
     act(() => { vi.advanceTimersByTime(1_000); });
     expect(h.limpiarSesion).toHaveBeenCalled();
+  });
+});
+
+// ────────── CLIMA LABORAL (4 de octubre de 2026) ──────────
+// La ventana de las caritas sale DESPUÉS del aviso de la salida, y solo si el servidor la pidió. La
+// sesión de la persona sigue viva mientras está abierta, y se cierra igual: al terminar, al omitir, o
+// cuando nadie la toca. Nunca le queda abierta a la siguiente persona.
+describe('Marcador · la ventana del clima laboral', () => {
+  const HORA = '2026-10-05T22:42:00.000Z';
+  const CLIMA = { token: 'tok-clima', motivos: ['Mucho trabajo'] };
+  const anaAdentro = () => {
+    const s = sesionDeAna();
+    return { ...s, estado: { ...s.estado, dentroAhora: true, entradaAbierta: { entrada: '2026-10-05T13:00:00.000Z' } } };
+  };
+  const salirConSostener = async () => {
+    const b = screen.getByRole('button', { name: /soy ana, registrar salida/i });
+    fireEvent.pointerDown(b, { pointerId: 1, button: 0 });
+    await act(async () => { vi.advanceTimersByTime(1500); });
+    fireEvent.pointerUp(b, { pointerId: 1 });
+    await act(async () => {});
+  };
+  // Lo que pasaría al cerrarse el aviso verde de «Salida registrada».
+  const cierraElAviso = () => act(() => h.salir!());
+
+  it('tras una salida con clima pregunta cómo le fue, sin cerrar todavía la sesión', async () => {
+    h.marcar.mockImplementation(() => Promise.resolve({ accion: 'SALIDA', hora: HORA, clima: CLIMA }));
+    h.sesion = anaAdentro();
+    await abrir('¿Eres tú, Ana?');
+    vi.useFakeTimers();
+    await salirConSostener();
+    cierraElAviso();
+    expect(screen.getByRole('heading', { name: '¿Cómo te fue hoy, Ana?' })).toBeInTheDocument();
+    expect(h.limpiarSesion).not.toHaveBeenCalled();
+  });
+
+  it('sin clima en la respuesta, vuelve a la cámara como siempre', async () => {
+    h.marcar.mockImplementation(() => Promise.resolve({ accion: 'SALIDA', hora: HORA, clima: null }));
+    h.sesion = anaAdentro();
+    await abrir('¿Eres tú, Ana?');
+    vi.useFakeTimers();
+    await salirConSostener();
+    cierraElAviso();
+    expect(screen.queryByRole('heading', { name: /cómo te fue hoy/i })).toBeNull();
+    expect(h.limpiarSesion).toHaveBeenCalled();
+  });
+
+  it('la carita se guarda con el token de la salida, no con el de la sesión', async () => {
+    h.marcar.mockImplementation(() => Promise.resolve({ accion: 'SALIDA', hora: HORA, clima: CLIMA }));
+    h.sesion = anaAdentro();
+    await abrir('¿Eres tú, Ana?');
+    vi.useFakeTimers();
+    await salirConSostener();
+    cierraElAviso();
+    fireEvent.click(screen.getByRole('radio', { name: 'Bien' }));
+    await act(async () => {});
+    expect(h.guardarClima).toHaveBeenCalledWith('tok-clima', { carita: 4, motivos: [] });
+  });
+
+  it('al omitir se cierra la sesión y vuelve a la cámara', async () => {
+    h.marcar.mockImplementation(() => Promise.resolve({ accion: 'SALIDA', hora: HORA, clima: CLIMA }));
+    h.sesion = anaAdentro();
+    await abrir('¿Eres tú, Ana?');
+    vi.useFakeTimers();
+    await salirConSostener();
+    cierraElAviso();
+    fireEvent.click(screen.getByRole('button', { name: 'Omitir' }));
+    expect(h.limpiarSesion).toHaveBeenCalled();
+    expect(screen.getByText('Cámara del kiosco')).toBeInTheDocument();
+  });
+
+  it('si nadie la toca se cierra sola, y la siguiente persona no la ve', async () => {
+    h.marcar.mockImplementation(() => Promise.resolve({ accion: 'SALIDA', hora: HORA, clima: CLIMA }));
+    h.sesion = anaAdentro();
+    await abrir('¿Eres tú, Ana?');
+    vi.useFakeTimers();
+    await salirConSostener();
+    cierraElAviso();
+    act(() => { vi.advanceTimersByTime(8_000); });
+    expect(h.limpiarSesion).toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: /cómo te fue hoy/i })).toBeNull();
+    expect(screen.getByText('Cámara del kiosco')).toBeInTheDocument();
+  });
+
+  it('la ventana de Ana no se le abre a Bruno, que entra después', async () => {
+    h.marcar.mockImplementation(() => Promise.resolve({ accion: 'SALIDA', hora: HORA, clima: CLIMA }));
+    h.sesion = anaAdentro();
+    await abrir('¿Eres tú, Ana?');
+    vi.useFakeTimers();
+    await salirConSostener();
+    cierraElAviso();
+    act(() => { vi.advanceTimersByTime(8_000); });
+    h.alIngresar = () => ({ ...sesionDeAna(), token: 'tok-bruno', colaborador: { id: 'c2', nombre: 'Bruno', apellido: 'Ríos', cargo: null, modalidad: 'REMOTO' } });
+    fireEvent.click(screen.getByRole('button', { name: /^cédula$/i }));
+    fireEvent.change(screen.getByPlaceholderText('Número de cédula'), { target: { value: '222' } });
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /^continuar$/i })); });
+    await act(async () => {});
+    expect(screen.getByText('¿Eres tú, Bruno?')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /cómo te fue hoy/i })).toBeNull();
+  });
+
+  it('la ventana va atada a quien marcó: si al cerrarse el aviso la sesión ya es de otro, no se abre', async () => {
+    // Revisión adversarial: con la red pegada, un cierre a destiempo podía dejar la ventana de una
+    // persona lista para la siguiente, con el token de la primera.
+    h.marcar.mockImplementation(() => Promise.resolve({ accion: 'SALIDA', hora: HORA, clima: CLIMA }));
+    h.sesion = anaAdentro();
+    await abrir('¿Eres tú, Ana?');
+    vi.useFakeTimers();
+    await salirConSostener();
+    h.sesion = { ...sesionDeAna(), token: 'tok-bruno', colaborador: { id: 'c2', nombre: 'Bruno', apellido: 'Ríos', cargo: null, modalidad: 'REMOTO' } };
+    cierraElAviso();
+    expect(screen.queryByRole('heading', { name: /cómo te fue hoy/i })).toBeNull();
+  });
+
+  it('si la toca y la deja abierta, el cierre por inactividad del kiosco la cierra', async () => {
+    h.marcar.mockImplementation(() => Promise.resolve({ accion: 'SALIDA', hora: HORA, clima: CLIMA }));
+    h.sesion = anaAdentro();
+    await abrir('¿Eres tú, Ana?');
+    vi.useFakeTimers();
+    await salirConSostener();
+    cierraElAviso();
+    const bien = screen.getByRole('radio', { name: 'Bien' });
+    fireEvent.pointerDown(bien);
+    fireEvent.click(bien);
+    await act(async () => { vi.advanceTimersByTime(30_000); });
+    expect(h.limpiarSesion).toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: /cómo te fue hoy/i })).toBeNull();
   });
 });

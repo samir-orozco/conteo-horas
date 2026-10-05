@@ -253,6 +253,7 @@ medio. El navegador normal tampoco lo ve.
 | `WOMPI_*` | llaves de **producción** (ver sección 7) |
 | `SMTP_*` | buzón creado en el paso 5 |
 | `LOG_FILE` | `/home/<usuario>/horapro-co-api/logs/api.log`. Sin ella la app imprime a stdout y **cPanel lo descarta**: durante dos meses no quedó rastro de nada (ver 6.2) |
+| `CLAVE_CONFIDENCIAL` | `openssl rand -hex 32`. Cifra quién escribió cada observación confidencial del clima laboral (ver 6.3). Sin ella el kiosco no guarda observaciones confidenciales. **Perderla es perder todos los nombres** |
 
 ### 6.1 ⚠️ Prisma en Banahosting: por qué estas variables son obligatorias, no opcionales
 
@@ -305,6 +306,38 @@ grep -n 'LA_VARIABLE_ANTERIOR\|^LOG_FILE' ~/horapro-co-api/.env   # tienen que s
 
 Y después de `touch tmp/restart.txt` se comprueba el **efecto**, no el comando:
 que exista `~/horapro-co-api/logs/api.log` y tenga contenido.
+
+### 6.3 La clave del clima laboral (`CLAVE_CONFIDENCIAL`)
+
+Cifra quién escribió cada observación confidencial del clima laboral. La empresa nunca ve ese nombre;
+el super admin lo descifra con un comando, y solo con la orden de una autoridad
+(`docs/CLIMA_LABORAL.md` §3.4). Va en el `.env` **antes** de desplegar el backend del módulo, con el
+procedimiento de 6.2:
+
+```bash
+printf '\nCLAVE_CONFIDENCIAL="%s"\n' "$(openssl rand -hex 32)" >> ~/horapro-co-api/.env
+```
+
+```bash
+grep -c '^CLAVE_CONFIDENCIAL="[0-9a-f]\{64\}"$' ~/horapro-co-api/.env   # tiene que dar 1
+```
+
+**Cópiala también a un gestor de contraseñas el mismo día.** Si se pierde, las notas siguen
+leyéndose pero ya nadie puede saber quién escribió ninguna. Y **no se cambia** una vez en uso: una
+clave nueva no descifra lo que cifró la anterior.
+
+El comando para revelar un autor, que deja constancia en el registro del sistema antes de mostrar el
+nombre. Lleva los dos límites de hilos de 6.1, como todo lo que use Prisma en esta cuenta. El `.env` no
+se carga a mano: lo lee el propio comando desde la carpeta de la app (y cargarlo con `set -a` dañaría
+una contraseña que tenga un `$`).
+
+```bash
+cd ~/horapro-co-api && TOKIO_WORKER_THREADS=1 UV_THREADPOOL_SIZE=2 node dist/scripts/revelar-autor-confidencial.js buscar --nit <NIT> --texto "<un pedazo de la nota>"
+```
+
+```bash
+cd ~/horapro-co-api && TOKIO_WORKER_THREADS=1 UV_THREADPOOL_SIZE=2 node dist/scripts/revelar-autor-confidencial.js revelar --nota <id> --motivo "<autoridad y radicado>" --quien "<quién lo corre>"
+```
 
 ## 7. Wompi en producción
 

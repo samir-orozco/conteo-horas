@@ -84,6 +84,13 @@ async function sembrar(etiqueta: string, afiliadoId: string): Promise<Caso> {
   const plantilla = await prisma.plantillaTurno.create({
     data: { empresaId: empresa.id, sedeId: sede.id, nombre: `Mañana ${s}`, horaEntrada: '06:00', horaSalida: '14:00' },
   });
+  // El clima laboral (4 de octubre de 2026): una carita con nombre y una observación confidencial.
+  const calificacion = await prisma.calificacionClima.create({
+    data: { empresaId: empresa.id, colaboradorId: colaborador.id, fecha: AHORA, carita: 2, motivos: ['Compañeros'] },
+  });
+  const confidencial = await prisma.observacionConfidencial.create({
+    data: { empresaId: empresa.id, semana: AHORA, visibleDesde: AHORA, texto: `Nota ${s}`, autorCifrado: 'v1:x:y:z' },
+  });
   return {
     empresaId: empresa.id,
     colaboradorSede: { colaboradorId: colaborador.id, sedeId: sede.id },
@@ -96,6 +103,7 @@ async function sembrar(etiqueta: string, afiliadoId: string): Promise<Caso> {
       configuracion: [configuracion.id], notificaciones: [notificacion.id],
       constancias_biometricas: [constancia.id], enlaces_registro_facial: [enlace.id],
       plantillas_turno: [plantilla.id],
+      calificaciones_clima: [calificacion.id], observaciones_confidenciales: [confidencial.id],
     },
   };
 }
@@ -129,11 +137,14 @@ async function contar(caso: Caso): Promise<Record<string, number>> {
     prisma.constanciaBiometrica.count(porId(f.constancias_biometricas)),
     prisma.enlaceRegistroFacial.count(porId(f.enlaces_registro_facial)),
     prisma.plantillaTurno.count(porId(f.plantillas_turno)),
+    prisma.calificacionClima.count(porId(f.calificaciones_clima)),
+    prisma.observacionConfidencial.count(porId(f.observaciones_confidenciales)),
   ]);
   const tablas = ['empresas', 'suscripciones', 'pagos', 'comisiones', 'usuarios', 'horarios', 'franjas_horario', 'sedes',
     'colaboradores', 'colaboradores_sedes', 'dias_esperados', 'registros', 'registro_cambios', 'permisos', 'contratos',
     'prorrogas_contrato', 'vinculacion_eventos', 'dispositivos_kiosco', 'dias_festivos', 'configuracion', 'notificaciones',
-    'constancias_biometricas', 'enlaces_registro_facial', 'plantillas_turno'];
+    'constancias_biometricas', 'enlaces_registro_facial', 'plantillas_turno',
+    'calificaciones_clima', 'observaciones_confidenciales'];
   return Object.fromEntries(tablas.map((t, i) => [t, n[i]]));
 }
 

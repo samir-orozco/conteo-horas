@@ -1,6 +1,6 @@
-import { Calculator, ScanFace, FileSignature, MapPin, Crosshair, ShieldCheck } from 'lucide-react';
+import { Calculator, ScanFace, FileSignature, MapPin, Crosshair, ShieldCheck, Smile } from 'lucide-react';
 import { Resaltado } from './Marcas';
-import { VistaLiquidacion, VistaKiosco, VistaContratos, VistaSedes, VistaGeocerca, VistaAntifraude } from './VistasDelSistema';
+import { VistaLiquidacion, VistaKiosco, VistaContratos, VistaSedes, VistaGeocerca, VistaAntifraude, VistaClima } from './VistasDelSistema';
 
 // Las partes del sistema en la landing (14 de septiembre de 2026), con el formato de tarjeta que
 // eligió el dueño: arriba un pedazo del producto, después el título, el texto y su etiqueta.
@@ -42,6 +42,14 @@ const PARTES = [
     titulo: 'Marcar por otro deja rastro',
     texto: 'Cada marcación guarda la foto de quien marcó, y puedes permitir marcar solo desde tus dispositivos autorizados.',
   },
+  // Clima laboral (4 de octubre de 2026), solo del plan Empresarial. Dice «confidencial» y no
+  // «anónima»: la empresa no ve el nombre, pero el nombre se guarda cifrado. Tampoco promete
+  // encuestas: son una segunda etapa que todavía no existe (docs/CLIMA_LABORAL.md).
+  {
+    etiqueta: 'Clima laboral', Icono: Smile, Vista: VistaClima,
+    titulo: 'Cómo le fue a tu equipo, en una carita',
+    texto: 'Al marcar la salida, cada persona puede calificar su día y dejar una observación confidencial. Tú ves el ánimo por semana y por sede, y quién lleva días seguidos mal.',
+  },
 ];
 
 export default function TarjetasDelSistema() {
@@ -52,7 +60,7 @@ export default function TarjetasDelSistema() {
           <h2 id="titulo-funciones" className="isolate text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
             Mira lo que hace HoraPro <Resaltado>por tu empresa</Resaltado>
           </h2>
-          <p className="text-white/70 mt-4 text-lg">Seis partes del sistema que te ahorran cuentas, reclamos y discusiones.</p>
+          <p className="text-white/70 mt-4 text-lg">Siete partes del sistema que te ahorran cuentas, reclamos y discusiones.</p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
           {PARTES.map((p, i) => (

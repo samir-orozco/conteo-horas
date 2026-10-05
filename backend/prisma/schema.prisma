@@ -58,6 +58,8 @@ model Empresa {
   atribuidoEn          DateTime? // cuándo se asoció al afiliado (en el registro)
   primerPagoComisionEn DateTime? // primer pago que comisionó (ancla la duración)
   comisiones           Comision[]
+  calificacionesClima  CalificacionClima[]
+  notasConfidenciales  ObservacionConfidencial[]
 
   @@map("empresas")
 }
@@ -421,6 +423,7 @@ model Colaborador {
   sedes                  ColaboradorSede[]
   enlacesRegistroFacial  EnlaceRegistroFacial[]
   constanciasBiometricas ConstanciaBiometrica[]
+  calificacionesClima    CalificacionClima[]
 
   @@unique([empresaId, cedula])
   @@map("colaboradores")
@@ -1286,4 +1289,58 @@ enum TipoEvento {
 enum OrigenEvento {
   SERVIDOR
   NAVEGADOR
+}
+
+// ────────── CLIMA LABORAL (4 de octubre de 2026) ──────────
+// El requerimiento, con cada decisión y su fecha, está en docs/CLIMA_LABORAL.md. Las decisiones viven
+// en src/utils/clima.ts, con sus pruebas.
+
+// Cómo le fue a una persona en su jornada: una fila por persona y por día. Va SIEMPRE con nombre
+// (decisión del dueño): lo único que puede ir confidencial es la observación, y esa va en otra tabla.
+model CalificacionClima {
+  id            String      @id @default(cuid())
+  empresaId     String
+  empresa       Empresa     @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  colaboradorId String
+  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Cascade)
+  // El día de la JORNADA, a medianoche de Bogotá: el mismo `fecha` del registro que cerró. En un
+  // turno nocturno es el día en que entró, no el día en que salió.
+  fecha         DateTime
+  // 1 = Muy mal … 5 = Muy bien.
+  carita        Int
+  // Los motivos por su NOMBRE, no por un id: si la empresa cambia sus motivos, lo que ya se
+  // respondió conserva lo que la persona escogió. Lista vacía con las caritas 4 y 5.
+  motivos       Json
+  // La observación DIRECTA, con nombre. La confidencial nunca se guarda aquí.
+  observacion   String?     @db.Text
+  creadoEn      DateTime    @default(now())
+  actualizadoEn DateTime    @updatedAt
+
+  // Una por persona y por día: es la propia base la que impide preguntar dos veces en un turno
+  // partido. Y el panel siempre pide «esta empresa en este rango», de ahí el segundo índice (§8.4).
+  @@unique([colaboradorId, fecha])
+  @@index([empresaId, fecha])
+  @@map("calificaciones_clima")
+}
+
+// La observación CONFIDENCIAL: la empresa ve solo el texto. Lo que NO guarda es a propósito:
+//   - ni la hora en que se escribió (solo la semana y desde cuándo se ve), para que nadie la empareje
+//     con la salida de quien marcó a esa hora;
+//   - ni la carita, los motivos o la sede;
+//   - ni un id que delate la hora: el cuid lleva la hora dentro, por eso este usa uuid, que es al azar.
+// Quién la escribió va CIFRADO con la clave CONFIDENCIAL del .env (src/utils/cifradoConfidencial.ts),
+// y solo se descifra con el comando del super admin, por orden de una autoridad.
+model ObservacionConfidencial {
+  id           String   @id @default(uuid())
+  empresaId    String
+  empresa      Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  // El lunes de la semana, a medianoche de Bogotá.
+  semana       DateTime
+  // La medianoche siguiente al día en que se escribió.
+  visibleDesde DateTime
+  texto        String   @db.Text
+  autorCifrado String   @db.VarChar(255)
+
+  @@index([empresaId, visibleDesde])
+  @@map("observaciones_confidenciales")
 }

@@ -36,7 +36,7 @@ describe('Landing', () => {
     expect(screen.getByRole('heading', { name: 'Tu nómina no necesita otra hoja de Excel. Necesita un sistema.' })).toBeInTheDocument();
   });
 
-  it('muestra seis partes del sistema, con sedes, geocerca y control antifraude', () => {
+  it('muestra siete partes del sistema, con sedes, geocerca, control antifraude y clima laboral', () => {
     abrir();
     for (const titulo of [
       'Liquida sin hacer cuentas',
@@ -45,6 +45,7 @@ describe('Landing', () => {
       'Cada sede con su gente y sus reportes',
       'Marcan solo dentro de su sede',
       'Marcar por otro deja rastro',
+      'Cómo le fue a tu equipo, en una carita',
     ]) {
       expect(screen.getByRole('heading', { name: titulo })).toBeInTheDocument();
     }
@@ -161,5 +162,16 @@ describe('los planes de la página pública', () => {
     render(<MemoryRouter><Landing /></MemoryRouter>);
     // Una sola mención en toda la página de precios. Si apareciera en dos, es que se coló en otro plan.
     expect(screen.getAllByText(/Turnos y programación por calendario/i)).toHaveLength(1);
+  });
+
+  // Clima laboral (3 de octubre de 2026): «Solo en el empresarial», decisión del dueño. La misma
+  // segunda verdad que turnos, atada de la misma forma.
+  it('el plan Empresarial anuncia el clima laboral, y solo él', () => {
+    render(<MemoryRouter><Landing /></MemoryRouter>);
+    const items = screen.getAllByText('Clima laboral: cómo se siente tu equipo');
+    expect(items).toHaveLength(1);
+    // Y en la tarjeta del Empresarial, no en otra: una sola mención no dice en cuál plan quedó.
+    const tarjeta = items[0].closest('ul')!.parentElement!;
+    expect(within(tarjeta).getByRole('heading', { name: 'Empresarial' })).toBeInTheDocument();
   });
 });

@@ -80,8 +80,9 @@ const PLANES_LANDING = [
     para: 'Para operaciones grandes',
     // «Turnos y programación» va PRIMERO de los suyos, y no al final (30 de septiembre de 2026): es lo
     // que de verdad distingue a este plan del Profesional, mientras que Siigo todavía dice
-    // «próximamente» y el soporte no se ve hasta que hace falta.
-    incluye: ['Hasta 150 colaboradores', 'Todo lo de Profesional', 'Turnos y programación por calendario', 'Varias sedes', 'Integración Siigo (próximamente)', 'Soporte prioritario'],
+    // «próximamente» y el soporte no se ve hasta que hace falta. Clima laboral va justo después
+    // (3 de octubre de 2026): también es solo de este plan, por decisión del dueño.
+    incluye: ['Hasta 150 colaboradores', 'Todo lo de Profesional', 'Turnos y programación por calendario', 'Clima laboral: cómo se siente tu equipo', 'Varias sedes', 'Integración Siigo (próximamente)', 'Soporte prioritario'],
   },
 ];
 const WPP_LANDING = enlaceWhatsApp('Hola, necesito HoraPro para más de 150 colaboradores. ¿Me ayudan con un plan a la medida?');

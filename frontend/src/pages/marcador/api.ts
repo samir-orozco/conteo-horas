@@ -14,7 +14,10 @@ type InfoKiosco = { empresa: string; requiereDispositivo: boolean; permiteCedula
 // registro. Opcionales: un servidor anterior no los manda, y entonces el kiosco
 // pinta las iniciales y pide la confirmación normal.
 type SesionResp = { token: string; colaborador: Colaborador; sedes?: Sede[]; validaUbicacion?: boolean; fotoReferencia?: string | null; parecidoDudoso?: boolean };
-type MarcaResp = { accion: 'ENTRADA' | 'SALIDA'; hora: string; salidaTemprana?: boolean; salidaAlmuerzo?: boolean; salidaDescanso?: boolean; regresoEstimado?: boolean };
+// `clima` (4 de octubre de 2026): con qué abrir la ventana de las caritas después de una salida que
+// cierra la jornada. Null cuando no toca; un servidor anterior no lo manda.
+export type ClimaDeLaSalida = { token: string; motivos: string[] };
+type MarcaResp = { accion: 'ENTRADA' | 'SALIDA'; hora: string; salidaTemprana?: boolean; salidaAlmuerzo?: boolean; salidaDescanso?: boolean; regresoEstimado?: boolean; clima?: ClimaDeLaSalida | null };
 export type OpcionesMarca = { almuerzo?: boolean; descanso?: boolean; regresoA?: string; novedadTipo?: string; novedadDescripcion?: string };
 
 export const infoKiosco = (marcadorToken: string) =>
@@ -49,3 +52,16 @@ export const enviarNovedad = (token: string, body: { tipo: string; descripcion: 
 // «No soy X»: deja la huella en el registro del servidor. No marca nada.
 export const avisarNoSoy = (token: string) =>
   apiKiosco.post('/worker/no-soy', {}, authHeader(token));
+
+// LA VENTANA DEL CLIMA LABORAL (4 de octubre de 2026). Van con el token que firmó la salida, no con el
+// de la sesión: ese token dice de quién y de qué jornada es, y con él no se puede marcar nada.
+//
+// Con tiempo máximo: sin él, una red pegada dejaba la ventana esperando para siempre detrás de la
+// tableta compartida.
+const ESPERA_CLIMA_MS = 10_000;
+
+export const guardarClima = (tokenClima: string, cuerpo: { carita: number; motivos: string[] }) =>
+  apiKiosco.put('/worker/clima', cuerpo, { ...authHeader(tokenClima), timeout: ESPERA_CLIMA_MS });
+
+export const enviarObservacionClima = (tokenClima: string, cuerpo: { texto: string; confidencial: boolean }) =>
+  apiKiosco.post('/worker/clima/observacion', cuerpo, { ...authHeader(tokenClima), timeout: ESPERA_CLIMA_MS });

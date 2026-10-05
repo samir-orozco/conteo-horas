@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Clock, Users, Calendar, Settings, BarChart2, FileBarChart2, Bell, LogOut, Menu, X, HelpCircle, PlayCircle, Sparkles,
   Building2, CreditCard, LayoutDashboard, AlertTriangle, Home, Handshake,
-  ScanFace, CalendarRange, ScrollText, UserCog } from 'lucide-react';
+  ScanFace, CalendarRange, ScrollText, UserCog, Smile } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import BloqueoPago from './BloqueoPago';
@@ -35,6 +35,9 @@ const navEmpresa: NavSection[] = [
       { to: '/app/turnos', label: 'Turnos', icon: CalendarRange, beta: true },
       { to: '/app/registros', label: 'Registros', icon: BarChart2 },
       { to: '/app/revision', label: 'Revisión', icon: ScanFace },
+      // Clima laboral (4 de octubre de 2026): nuevo y con una segunda etapa en camino (encuestas y eNPS),
+      // por eso va con la etiqueta, igual que Turnos al estrenarse.
+      { to: '/app/clima', label: 'Clima laboral', icon: Smile, beta: true },
     ],
   },
   {

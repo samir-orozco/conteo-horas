@@ -96,6 +96,13 @@ export async function borrarEmpresaEnCascada(
     parte => tx.constanciaBiometrica.deleteMany({ where: { id: { in: parte } } }));
   await enLotes('enlaces_registro_facial', ids(await tx.enlaceRegistroFacial.findMany({ where: deSuGente, select: { id: true } })),
     parte => tx.enlaceRegistroFacial.deleteMany({ where: { id: { in: parte } } }));
+  // El clima laboral (4 de octubre de 2026). Las dos cuelgan de la empresa con ON DELETE CASCADE, y
+  // las calificaciones también del colaborador, así que se irían solas; se borran aquí para que el
+  // conteo lo diga. Las dos se buscan por `empresaId`, que es el comienzo de su índice.
+  await enLotes('calificaciones_clima', ids(await tx.calificacionClima.findMany({ where: { empresaId }, select: { id: true } })),
+    parte => tx.calificacionClima.deleteMany({ where: { id: { in: parte } } }));
+  await enLotes('observaciones_confidenciales', ids(await tx.observacionConfidencial.findMany({ where: { empresaId }, select: { id: true } })),
+    parte => tx.observacionConfidencial.deleteMany({ where: { id: { in: parte } } }));
   // Llave compuesta, sin id: se borra por colaborador y por sede, que son el
   // comienzo de su clave y de su índice.
   await enLotes('colaboradores_sedes', colaboradores, parte => tx.colaboradorSede.deleteMany({ where: { colaboradorId: { in: parte } } }));

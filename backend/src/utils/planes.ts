@@ -4,7 +4,7 @@
 
 export type FeatureKey =
   | 'gps' | 'telegram' | 'evidencia' | 'exportar'
-  | 'multiDispositivo' | 'multiHorario' | 'siigo' | 'multiSede' | 'turnos';
+  | 'multiDispositivo' | 'multiHorario' | 'siigo' | 'multiSede' | 'turnos' | 'clima';
 
 export const FEATURES: { key: FeatureKey; label: string; proximamente?: boolean }[] = [
   { key: 'gps', label: 'Marcación por GPS / geocerca' },
@@ -20,6 +20,9 @@ export const FEATURES: { key: FeatureKey; label: string; proximamente?: boolean 
   // No lleva `proximamente`, al revés que Siigo: existe y se despliega hoy. Esa marca deja la casilla
   // apagada y sin poder tocarla, que es justo lo contrario de lo que se pidió aquí.
   { key: 'turnos', label: 'Turnos y programación' },
+  // CLIMA LABORAL (3 de octubre de 2026): las caritas al marcar la salida y su panel. Solo Empresarial,
+  // por decisión del dueño. El requerimiento está en docs/CLIMA_LABORAL.md.
+  { key: 'clima', label: 'Clima laboral' },
   // Siigo todavía no existe (decisión del dueño del 15 de septiembre de 2026): las pantallas del super
   // admin la muestran como «Próximamente» y sin casilla que marcar.
   { key: 'siigo', label: 'Integración Siigo', proximamente: true },
@@ -54,9 +57,16 @@ export const PLANES: Record<PlanId, PlanDef> = {
   EMPRESARIAL: {
     id: 'EMPRESARIAL', nombre: 'Empresarial', limite: 150,
     precioMensual: 299900, precioAnual: 2999000,
-    features: F(['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo', 'multiSede', 'turnos']),
+    features: F(['gps', 'telegram', 'evidencia', 'exportar', 'multiDispositivo', 'multiHorario', 'siigo', 'multiSede', 'turnos', 'clima']),
   },
 };
+
+// Lo que responde una guarda cuando el plan no trae la función. Nombra la función por su `label`: antes
+// decía «turnos» para todas, y con un segundo módulo detrás le mentía a quien lo leía.
+export function mensajeDeFuncionBloqueada(feature: FeatureKey): string {
+  const nombre = FEATURES.find(f => f.key === feature)?.label ?? feature;
+  return `Tu plan no incluye «${nombre}». Sube de plan para usarlo.`;
+}
 
 export const esPlan = (v: any): v is PlanId => v === 'ESENCIAL' || v === 'PROFESIONAL' || v === 'EMPRESARIAL';
 export const PLAN_IDS: PlanId[] = ['ESENCIAL', 'PROFESIONAL', 'EMPRESARIAL'];

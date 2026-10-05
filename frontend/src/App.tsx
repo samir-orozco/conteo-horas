@@ -23,6 +23,7 @@ import ReporteLlegadasTarde from './pages/ReporteLlegadasTarde';
 import ReporteNomina from './pages/ReporteNomina';
 import Configuracion from './pages/Configuracion';
 import Turnos from './pages/Turnos';
+import ClimaLaboral from './pages/ClimaLaboral';
 import AutoLogin from './pages/AutoLogin';
 import Marcador from './pages/Marcador';
 import Suscripcion from './pages/Suscripcion';
@@ -107,6 +108,7 @@ export default function App() {
             <Route path="colaboradores" element={<Colaboradores />} />
             <Route path="colaboradores/:id" element={<ColaboradorDetalle />} />
             <Route path="turnos" element={<Turnos />} />
+            <Route path="clima" element={<ClimaLaboral />} />
             <Route path="registros" element={<Registros />} />
             <Route path="revision" element={<RevisionMarcaciones />} />
             <Route path="festivos" element={<Festivos />} />

@@ -1,4 +1,9 @@
 import { Calculator, Check, ScanFace, MapPin } from 'lucide-react';
+import carita1 from '../../assets/caritas/carita-1.svg';
+import carita2 from '../../assets/caritas/carita-2.svg';
+import carita3 from '../../assets/caritas/carita-3.svg';
+import carita4 from '../../assets/caritas/carita-4.svg';
+import carita5 from '../../assets/caritas/carita-5.svg';
 
 // Pedazos del producto para las tarjetas de la landing (14 de septiembre de 2026). Se arman
 // con los mismos estilos de la app en vez de capturas: se ven nítidos en cualquier pantalla
@@ -106,6 +111,46 @@ export function VistaAntifraude() {
       <div className="mt-2 flex flex-wrap gap-1">
         <Chip tono="bg-green-50 text-green-700">Dispositivo autorizado</Chip>
         <Chip tono="bg-gray-100 text-gray-700">Con foto</Chip>
+      </div>
+    </div>
+  );
+}
+
+// La ventana de las caritas del kiosco en pequeño (4 de octubre de 2026): copia de
+// pages/marcador/pantallas/PantallaClima.tsx con un «Mal» escogido, que es el que abre los motivos.
+// Si la ventana real cambia, esta tiene que cambiar con ella.
+export function VistaClima() {
+  const escogida = 2;
+  return (
+    <div className="w-full max-w-[240px] rounded-2xl bg-ink shadow-lg p-2.5">
+      <div className="rounded-[18px] border border-white/10 bg-white/[0.06] p-3 text-center">
+        <p className="text-[10px] font-semibold text-green-400 flex items-center justify-center gap-1">
+          <Check size={11} /> Salida registrada · 5:42 p. m.
+        </p>
+        <p className="text-[13px] font-bold text-white mt-1">¿Cómo te fue hoy, Ana?</p>
+        <div className="flex justify-between mt-2.5 px-0.5">
+          {[carita1, carita2, carita3, carita4, carita5].map((src, i) => (
+            <span
+              key={src}
+              className={`rounded-full p-0.5 ${i + 1 === escogida ? 'scale-110 ring-[1.5px] ring-white' : 'opacity-40'}`}
+            >
+              <img src={src} alt="" className="w-7 h-7" draggable={false} />
+            </span>
+          ))}
+        </div>
+        <p className="mt-1 text-[11px] font-bold text-white">Mal</p>
+        <p className="mt-1 text-[9px] text-white/60">¿Qué pasó? Puedes marcar varios</p>
+        <div className="mt-1 flex flex-wrap justify-center gap-1">
+          {['Mucho trabajo', 'Compañeros', 'Otro'].map(m => (
+            <span
+              key={m}
+              className={`rounded-full border px-1.5 py-0.5 text-[9px] font-medium whitespace-nowrap ${
+                m === 'Mucho trabajo' ? 'bg-primary border-primary text-ink' : 'border-white/20 text-white/80'}`}
+            >
+              {m}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
