@@ -408,6 +408,21 @@ describe('seguimiento: la pestaña', () => {
     expect(screen.getByRole('dialog', { name: 'Andrea Gómez' })).toBeInTheDocument();
   });
 
+  it('el contenedor de la tabla encierra todo lo que tiene adentro (sin desborde de la página)', async () => {
+    // Un rótulo solo para lectores de pantalla se posiciona en absoluto: sin un contenedor `relative`, se
+    // escapaba de la tabla y estiraba la página hacia el lado (4 de octubre de 2026).
+    await abrir('/app/clima?tab=seguimiento');
+    const tabla = screen.getByRole('table', { name: 'Casos de seguimiento' });
+    expect(tabla.parentElement!.className).toMatch(/\brelative\b/);
+    expect(tabla.parentElement!.className).not.toMatch(/overflow-x-auto/);
+  });
+
+  it('en una pantalla angosta cada dato dice qué es, porque no hay encabezado a la vista', async () => {
+    await abrir('/app/clima?tab=seguimiento');
+    const filas = within(screen.getByRole('table', { name: 'Casos de seguimiento' })).getAllByRole('row').slice(1);
+    expect(within(filas[1]).getByText('Responsable:')).toBeInTheDocument();
+  });
+
   it('sin casos lo dice', async () => {
     get.mockImplementation(respuestas({ '/clima/seguimientos': { responsables: [], casos: [] } }));
     await abrir('/app/clima?tab=seguimiento');

@@ -35,35 +35,43 @@ export default function TablaSeguimiento({ casos, onAbrir }: { casos: FilaDeSegu
         })}
       </div>
 
-      <div className="bg-white rounded-card border border-gray-200 overflow-x-auto">
-        <table aria-label="Casos de seguimiento" className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted border-b border-gray-200">
-              <th className="px-4 py-3 font-medium">Persona</th>
-              <th className="px-4 py-3 font-medium">Estado</th>
-              <th className="px-4 py-3 font-medium">Responsable</th>
-              <th className="px-4 py-3 font-medium">Abierto</th>
-              <th className="px-4 py-3 font-medium">Último comentario</th>
-              <th className="px-4 py-3"><span className="sr-only">Acciones</span></th>
+      {/* UNA TABLA QUE EN PANTALLA ANGOSTA SE VUELVE TARJETAS (4 de octubre de 2026). Con scroll lateral,
+          «Último comentario» y «Abrir» quedaban escondidos, y un rótulo para lectores de pantalla se escapaba
+          del contenedor y estiraba la página: el contenedor es `relative` para encerrarlo. Los roles van
+          escritos porque cambiar el `display` de una tabla le borra la semántica en algunos navegadores. */}
+      <div className="relative bg-white rounded-card border border-gray-200">
+        <table role="table" aria-label="Casos de seguimiento" className="block lg:table w-full text-sm">
+          <thead className="hidden lg:table-header-group">
+            <tr role="row" className="text-left text-xs text-muted border-b border-gray-200">
+              <th role="columnheader" className="px-4 py-3 font-medium">Persona</th>
+              <th role="columnheader" className="px-4 py-3 font-medium">Estado</th>
+              <th role="columnheader" className="px-4 py-3 font-medium">Responsable</th>
+              <th role="columnheader" className="px-4 py-3 font-medium">Abierto</th>
+              <th role="columnheader" className="px-4 py-3 font-medium">Último comentario</th>
+              <th role="columnheader" className="px-4 py-3"><span className="sr-only">Acciones</span></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="block lg:table-row-group divide-y divide-gray-100">
             {visibles.map(c => (
-              <tr key={c.id} className="align-top">
-                <td className="px-4 py-3 min-w-[180px]">
+              <tr key={c.id} role="row" className="flex flex-wrap items-start gap-x-4 gap-y-2 px-4 py-3 lg:table-row lg:p-0 lg:align-top">
+                <td role="cell" className="w-full lg:w-auto lg:table-cell lg:px-4 lg:py-3 lg:min-w-[180px]">
                   <p className="font-semibold text-ink">{c.nombre}</p>
                   <p className="text-xs text-muted">{[c.cargo, c.sedes.join(', ')].filter(Boolean).join(' · ')}</p>
                   <p className="text-xs text-muted mt-0.5">
                     {c.racha !== null ? `${c.racha} respuestas negativas consecutivas` : 'Ya salió de «Necesitan atención»'}
                   </p>
                 </td>
-                <td className="px-4 py-3"><ChipDeEstado estado={c.estado} /></td>
-                <td className="px-4 py-3 whitespace-nowrap">{c.responsable ?? <span className="text-muted">Sin asignar</span>}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-muted">
-                  {fechaCortaSinAnio(c.abiertoEn)}
+                <td role="cell" className="lg:table-cell lg:px-4 lg:py-3"><ChipDeEstado estado={c.estado} /></td>
+                <td role="cell" className="lg:table-cell lg:px-4 lg:py-3 lg:whitespace-nowrap">
+                  <span className="lg:hidden text-xs text-muted">Responsable: </span>
+                  {c.responsable ? <span>{c.responsable}</span> : <span className="text-muted">Sin asignar</span>}
+                </td>
+                <td role="cell" className="lg:table-cell lg:px-4 lg:py-3 lg:whitespace-nowrap text-muted">
+                  <span className="lg:hidden text-xs">Abierto el </span>
+                  <span>{fechaCortaSinAnio(c.abiertoEn)}</span>
                   {c.cerradoEn && <span className="block text-xs">{`Cerrado el ${fechaCortaSinAnio(c.cerradoEn)}`}</span>}
                 </td>
-                <td className="px-4 py-3 min-w-[220px] max-w-[340px]">
+                <td role="cell" className="w-full lg:w-auto lg:table-cell lg:px-4 lg:py-3 lg:min-w-[220px] lg:max-w-[340px]">
                   {c.ultimoComentario ? (
                     <>
                       <p className="text-ink line-clamp-2 break-words">{c.ultimoComentario.texto}</p>
@@ -71,7 +79,7 @@ export default function TablaSeguimiento({ casos, onAbrir }: { casos: FilaDeSegu
                     </>
                   ) : <span className="text-muted">{c.comentarios > 0 ? `${c.comentarios} comentarios` : 'Sin comentarios'}</span>}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td role="cell" className="w-full lg:w-auto lg:table-cell lg:px-4 lg:py-3 text-right">
                   <button
                     type="button" onClick={() => onAbrir(c)} aria-label={`Abrir el caso de ${c.nombre}`}
                     className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-ink hover:bg-gray-50"
