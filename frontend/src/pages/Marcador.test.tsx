@@ -348,9 +348,18 @@ describe('Marcador · lo que deja abierto quien se va', () => {
 describe('Marcador · la ventana del clima laboral', () => {
   const HORA = '2026-10-05T22:42:00.000Z';
   const CLIMA = { token: 'tok-clima', motivos: ['Mucho trabajo'] };
+  // La entrada va RELATIVA al reloj de verdad, tres horas atrás, y no en una fecha
+  // fija (5 de octubre de 2026). `confirmacionDeLaMarca` compara esa hora contra
+  // `new Date()`: si la salida cae a menos de 15 minutos de la entrada, el botón
+  // pide el sostenido REFORZADO de 1,6 s y los 1500 ms de `salirConSostener` ya no
+  // alcanzan. La fecha que estaba clavada aquí era futura cuando se escribió, y el
+  // 5 de octubre entre las 08:00 y las 08:15 de Bogotá se convirtió en «ahora»:
+  // cuatro pruebas de este archivo salieron rojas en esa ventana de quince minutos,
+  // por el reloj y no por el código.
   const anaAdentro = () => {
     const s = sesionDeAna();
-    return { ...s, estado: { ...s.estado, dentroAhora: true, entradaAbierta: { entrada: '2026-10-05T13:00:00.000Z' } } };
+    const haceTresHoras = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    return { ...s, estado: { ...s.estado, dentroAhora: true, entradaAbierta: { entrada: haceTresHoras } } };
   };
   const salirConSostener = async () => {
     const b = screen.getByRole('button', { name: /soy ana, registrar salida/i });
