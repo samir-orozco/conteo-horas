@@ -212,18 +212,120 @@ que no es un ejemplo real no prueba lo que dice (§9.2). Y pedir
 `role="dialog"` a secas encontraba dos, porque el modal entero también es un
 diálogo: hay que nombrarlo.
 
-## 11. Marcar fuera del área, con alerta en vez de bloqueo · petición 13
+## 11. Marcar fuera del área, con alerta, y dejar su ubicación en un mapa · petición 13
 
-**Hay hoy:** se bloquea. La decisión es una función pura,
-`decidirUbicacionDeMarca` (`utils/modalidad.ts:51`), que responde «Estás fuera de
-la ubicación de la empresa (a N m). Debes marcar desde el sitio de trabajo.»
-(línea 96).
+**ANALIZADO el 5 de octubre de 2026. NO SE VA A DESARROLLAR POR AHORA**, por
+decisión del dueño. Esta entrada es el análisis, para retomarlo sin repetirlo.
 
-Es el caso más limpio del ciclo de la §2: función pura con pruebas ya escritas
-(`modalidad.test.ts`), prueba primero y verla fallar.
+El dueño lo amplió: además de dejar marcar fuera del área con una alerta, que **la
+ubicación de esa marca quede en el registro y se vea en un mapa**.
 
-**Dos decisiones:** ¿aplica a todos o es opción por empresa? ¿La alerta le llega
-al administrador en el momento, o solo se ve en el reporte?
+### Lo que decide todo: la política publicada promete lo contrario
+
+La política de privacidad vigente (v1.2, en `horapro.co/legal/privacidad/`, texto en
+`frontend/blog/legal/privacidad.mjs:147`) dice: **«Esa coordenada no se guarda… De
+esa decisión solo queda registrada la sede. HoraPro no almacena el recorrido ni la
+ubicación de ningún trabajador.»** Y el código la cumple: `Registro` guarda solo
+`sedeId`, ninguna coordenada.
+
+Por eso guardar la ubicación **no es una mejora de pantalla: es guardar un dato que
+hoy prometimos no guardar.** Pide abogado, política 1.3 y aviso a las empresas
+antes de escribir código. Es la misma puerta del clima anónimo (nº 6).
+
+### Tres capas, con costos distintos
+
+| Capa | Qué es | ¿Toca la promesa? |
+|---|---|---|
+| **A** | Dejar marcar fuera del área, con alerta | Poco: guarda «fuera, a 340 m», no una coordenada. Igual lo ve el abogado, porque «solo queda la sede» cambia un poco. |
+| **B** | Guardar la coordenada de esa marca | **Sí, de frente.** |
+| **C** | Verla en un mapa | Depende de B, más un tercero: el proveedor del mapa. |
+
+**La capa A se puede entregar sola**, sin mapa y sin coordenada.
+
+### Lo que se encontró en el código y afecta el diseño
+
+- **Hay tres estados, no dos:** dentro, fuera (con coordenada) y **sin ubicación**
+  (permiso negado, GPS apagado, tiempo agotado). Hoy los dos últimos bloquean
+  (`RECHAZAR` y `EXIGIR_COORDENADAS`, en `utils/modalidad.ts`). El tercero
+  seguramente es el más frecuente en la práctica y es distinto de «fuera»: no hay
+  nada que poner en un mapa.
+- **El kiosco no manda la precisión del GPS.** Solo `lat` y `lng`
+  (`worker.ts:658`), y acepta una posición de hasta un minuto de antigüedad
+  (`maximumAge: 60000`, en `pages/marcador/geo.ts`). En un teléfono sin buen GPS el
+  error puede ser de cientos de metros. **Un punto sin su círculo de precisión
+  afirma una exactitud que no tiene**, y las alertas serían ruido que nadie vuelve a
+  mirar. La precisión hay que guardarla y mostrarla.
+- **REMOTO y HÍBRIDO quedan fuera.** El código dice de REMOTO «no se le mira la
+  ubicación, ni siquiera para anotarla», y para un híbrido estar fuera es normal.
+  Esto es solo para PRESENCIAL.
+- **La coordenada la manda el navegador:** una alerta es un indicio, no una prueba.
+  Ya es así hoy.
+- La campana (`notificaciones`), Telegram y el Excel de registros (nº 9) ya
+  existen: la alerta puede viajar por ahí, y el Excel puede llevar una columna.
+
+### El mapa
+
+**OpenStreetMap no es una API a la que se le pida un mapa:** el enlace que se pegó
+es su sitio web. Lo normal es una librería de código abierto (Leaflet) más un
+servidor de teselas. No hay ninguna librería de mapas en el frontend hoy.
+
+La política de uso de las teselas públicas de OSM (verificada en la fuente el 5 de
+octubre): exige atribución visible, **prohíbe el uso intensivo**, no da garantía de
+disponibilidad, **pueden bloquear sin aviso**, y para uso comercial recomiendan
+proveedores alternativos o servidor propio.
+
+Para un administrador que abre un punto unas pocas veces al día cabe en uso
+ligero, pero un SaaS colgado de algo que se puede apagar sin aviso es frágil.
+Cuatro caminos:
+
+1. **Leaflet + teselas públicas de OSM:** gratis y rápido, sin garantías.
+2. **Un proveedor comercial sobre datos de OSM** (MapTiler, Stadia y similares):
+   con llave y plan gratuito. **Los precios se miran al decidir**, no se anotan
+   aquí: cambian.
+3. **Sin mapa incrustado:** solo un enlace «Abrir en OpenStreetMap» con la
+   coordenada. Cero dependencia, y el tercero solo la ve si alguien hace clic.
+4. **Servidor propio de teselas:** exagerado para esto.
+
+**Para el abogado:** al abrir el mapa, el navegador del administrador le pide
+teselas de esa zona al proveedor, que se entera del área consultada y de su IP, no
+de quién es el trabajador. Aun así es un tercero que hay que nombrar en la sección
+de transmisión de la política.
+
+**Lo que haría útil el mapa:** el punto, la sede con su círculo de geocerca, la
+precisión y la distancia («a 340 m, ±1.200 m»). El mismo componente serviría para
+la pestaña de sedes —dibujar la geocerca y fijar la ubicación— y para el nº 12
+(enlace para que alguien en la sede la capture).
+
+### Decisiones del dueño, con la recomendación
+
+1. **¿Bloquear, permitir con alerta, o un punto medio?** Es la barrera contra
+   «marcar desde la casa»: se recomienda una **opción por empresa**. Un punto
+   medio: permitir con alerta hasta N metros fuera del radio y bloquear más allá.
+2. **Guardar la coordenada solo en las marcas fuera de área**, nunca en todas: es
+   el mínimo necesario y reduce mucho la exposición legal.
+3. **Cuánto tiempo.** Lo coherente es igualar la regla de las fotos (60 días, la
+   única que borra sola) o menos.
+4. **Que la persona lo sepa al marcar:** el kiosco debería decirle «quedó
+   registrada con alerta de ubicación».
+5. **Quién la ve:** administrador y supervisor, como dice la política. Con el módulo
+   de roles (nº 1) podría ser un permiso aparte.
+6. **Qué proveedor de mapa**, y si la capa C entra en esta etapa o después.
+
+### Si algún día se desarrolla
+
+Orden que tendría sentido: **abogado y política** → la función pura
+`decidirUbicacionDeMarca` (con su ciclo de pruebas completo, es la parte más
+limpia, y el caso más limpio de la §2) → esquema y guardado → alerta, etiqueta,
+filtro y columna en el Excel → mapa.
+
+El esquema ya tiene el patrón (`metodoEntrada/Salida`, `distanciaEntrada/Salida`),
+pero es un cambio sobre `registros`: según el CLAUDE.md **se habla antes**, va con
+**`prisma-build` obligatoria** (§11) y el `ALTER` con `ALGORITHM` y `LOCK`
+explícitos.
+
+**Lo que no se revisó:** cabeceras de seguridad (CSP) en el servidor. Solo se
+buscó en los archivos del frontend, donde no hay. Antes de incrustar un mapa hay
+que mirarlo.
 
 ## 12. Enlace para que alguien en la sede capture la ubicación · petición 5
 
