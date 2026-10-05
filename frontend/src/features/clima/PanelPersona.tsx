@@ -31,8 +31,10 @@ export default function PanelPersona({ colaboradorId, nombre, onCerrar }: { cola
     return () => window.removeEventListener('keydown', alTeclear);
   }, []);
 
-  // De la más vieja a la más nueva, para leer la tendencia de izquierda a derecha.
-  const tira = historial ? [...historial.respuestas].slice(0, 30).reverse() : [];
+  // Cuántas veces escogió cada carita en sus últimas respuestas. Antes era una tira de treinta caritas
+  // seguidas, y el dueño la encontró invasiva (4 de octubre de 2026): la secuencia ya la cuenta la lista
+  // de abajo, día por día.
+  const veces = [1, 2, 3, 4, 5].map(n => historial?.respuestas.filter(r => r.carita === n).length ?? 0);
 
   return (
     <div className="fixed inset-0 !mt-0 z-50 flex justify-end">
@@ -59,14 +61,23 @@ export default function PanelPersona({ colaboradorId, nombre, onCerrar }: { cola
           {historial && historial.respuestas.length === 0 && <p className="text-sm text-muted">Todavía no ha calificado ningún día.</p>}
           {historial && historial.respuestas.length > 0 && (
             <>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
-                {`Sus últimas ${tira.length} respuestas, de la más vieja a la más nueva`}
+              <p className="text-xs font-semibold text-muted mb-3">
+                {historial.respuestas.length === 1 ? 'Su única respuesta' : `Sus últimas ${historial.respuestas.length} respuestas`}
               </p>
-              <div className="flex flex-wrap gap-1 mb-5" aria-hidden="true">
-                {tira.map((r, i) => <img key={i} src={IMAGEN_DE_CARITA[r.carita]} alt="" className="w-5 h-5" title={`${fechaCortaSinAnio(r.fecha)}: ${NOMBRE_DE_CARITA[r.carita]}`} />)}
-              </div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-1">Respuestas</p>
-              <ul className="divide-y divide-gray-100">
+              <ul aria-label="Cuántas veces escogió cada carita" className="flex justify-between gap-2 mb-6 px-1">
+                {veces.map((n, i) => (
+                  <li key={i} aria-label={`${NOMBRE_DE_CARITA[i + 1]}: ${n === 0 ? 'ninguna' : n === 1 ? '1 vez' : `${n} veces`}`} className="relative">
+                    <img src={IMAGEN_DE_CARITA[i + 1]} alt="" className={`w-10 h-10 ${n === 0 ? 'opacity-25' : ''}`} />
+                    {n > 0 && (
+                      <span aria-hidden="true" className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-ink text-white text-[11px] font-bold flex items-center justify-center tabular-nums ring-2 ring-white">
+                        {n}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs font-semibold text-muted mb-1">Respuestas, de la más nueva a la más vieja</p>
+              <ul aria-label="Respuestas" className="divide-y divide-gray-100">
                 {historial.respuestas.map(r => (
                   <li key={r.fecha} className="py-2.5 flex gap-3">
                     <img src={IMAGEN_DE_CARITA[r.carita]} alt={NOMBRE_DE_CARITA[r.carita]} className="w-7 h-7 shrink-0" />

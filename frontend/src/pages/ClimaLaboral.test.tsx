@@ -182,7 +182,17 @@ describe('resumen', () => {
     const panel = screen.getByRole('dialog', { name: 'Andrea Gómez' });
     expect(within(panel).getByText('«Me dejaron sola en el cierre otra vez»')).toBeInTheDocument();
     expect(within(panel).getByText('Jefe o supervisor')).toBeInTheDocument();
-    expect(within(panel).getAllByRole('listitem')).toHaveLength(3);
+    expect(within(within(panel).getByRole('list', { name: 'Respuestas' })).getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  it('el resumen del historial es cada carita con cuántas veces la escogió, no una tira de caritas', async () => {
+    // Pedido del dueño (4 de octubre de 2026): treinta caritas seguidas eran invasivas.
+    await abrir();
+    const a = screen.getByRole('group', { name: 'Necesitan atención' });
+    await act(async () => { fireEvent.click(within(a).getByRole('button', { name: 'Revisar a Andrea Gómez' })); });
+    const conteo = within(screen.getByRole('dialog')).getByRole('list', { name: 'Cuántas veces escogió cada carita' });
+    expect(within(conteo).getAllByRole('listitem').map(li => li.getAttribute('aria-label')))
+      .toEqual(['Muy mal: 1 vez', 'Mal: 1 vez', 'Normal: ninguna', 'Bien: 1 vez', 'Muy bien: ninguna']);
   });
 
   it('el historial se cierra con su botón y con Escape', async () => {
