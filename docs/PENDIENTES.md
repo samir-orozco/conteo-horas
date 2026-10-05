@@ -492,12 +492,48 @@ mañana» va a estar equivocado la mitad de las veces.
 Ejemplo de la pantalla: *«Ana ya marcó hoy, así que este horario le aplica desde
 mañana. Carlos todavía no marca: le aplica desde hoy.»*
 
-## 23. Seleccionar la semana completa en la vista mes del rotativo · petición 25
+## 23. ~~Seleccionar la semana completa en la vista mes del rotativo~~ · petición 25
 
-Al tocar el rótulo de una semana, que queden seleccionados sus días. Es selección,
-no cálculo: el motor de turnos está completo y verificado hasta el dinero.
+**HECHO el 5 de octubre de 2026.** En la vista de mes, el rótulo de cada semana
+(«Semana 2 · 5 oct – 11 oct») pasó de ser texto a ser un botón que **marca sus
+siete días de todas las personas a la vista**, igual que el encabezado de un día
+marca esa columna y el nombre de una persona marca su fila.
 
-**Se trabaja sobre la vista que ya existe. Ninguna maqueta HTML aparte** (§13).
+Se trabajó sobre la vista que ya existe (§13): el gesto reusa `alternarConjunto`,
+`conjuntoCompleto` y el mismo aviso del día pasado, así que se comporta como sus
+dos hermanos:
+
+- **Es un interruptor:** tocarlo otra vez lo desmarca. Con un día de esa semana ya
+  marcado, completa la semana en vez de apagar lo poco que llevaba.
+- **Solo marca lo que todavía se puede escribir.** La semana en curso, con días
+  idos y días por venir, marca los que sí; una semana entera en el pasado no marca
+  nada y dice por qué.
+- **Incluye los días de relleno de otro mes** que caen en esa fila, como ya lo
+  hacen el encabezado de esa columna y la fila de una persona.
+- **Se ve marcado cuando está entera:** el rótulo toma el mismo tinte de la
+  selección entera y se anuncia con `aria-pressed`.
+- **Su nombre accesible empieza distinto** («Marcar todos los días de la Semana
+  2 · …») de «Marcar la semana de Ana» y de «Marcar el día 7 de todos»: tres
+  botones que marcan cosas distintas no pueden llamarse casi igual.
+
+**Solo en el mes.** En la vista de semana no hay renglón de semanas, y ahí ya
+existen los encabezados de día y el nombre de cada persona.
+
+La única decisión pura es el cruce personas × fechas, y va **por filas** porque la
+selección se escribe en el orden en que se insertó (`celdasDeLasFechas`, en
+`seleccionEnBloque.ts`).
+
+**Respaldo:** 6 pruebas de la función pura y 8 de la pantalla, en el mes con el
+reloj fijo en el miércoles de pruebas. **Siete mutaciones, las siete mueren**
+(orden por columnas, marcar el pasado, «entera» con un solo día, sin interruptor,
+sin `aria-disabled`, sin la salida de «sin personas», y apagar con que haya
+alguna marcada). **No se vio en el navegador.**
+
+**Defecto que ya existía y apareció al probar, SIN ARREGLAR:** con cero personas a
+la vista (un filtro que no deja a nadie), tocar el encabezado de un día **por
+venir** dice «Ese día ya pasó y no se puede programar». Es `marcarColumna`: con una
+lista vacía cae en el aviso del pasado. Comprobado con una prueba temporal, ya
+borrada. El rótulo de la semana sí tiene la salida correcta.
 
 ## 24. ~~El menú de reportes se esconde en pantallas pequeñas~~ · petición 22
 
