@@ -4,6 +4,10 @@ import { ChevronLeft, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { rutaInicio } from '../lib/rutas';
 import { mensajeDeError } from '../lib/errores';
+import {
+  esBloqueoDelHosting, decidirRecarga, guardarRecarga, ultimaRecarga, recargaReciente, olvidarRecarga,
+} from '../lib/bloqueoDelHosting';
+import { recargarPagina } from '../lib/recargar';
 import logoCompleto from '../assets/logo-completo.svg';
 import GeoArt from '../components/GeoArt';
 import CreditoKrumlab from '../components/CreditoKrumlab';
@@ -11,7 +15,12 @@ import CreditoKrumlab from '../components/CreditoKrumlab';
 export default function Login() {
   const { login, usuario, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  // SI LA PÁGINA SE RECARGÓ SOLA por un 403 de otra capa (`lib/bloqueoDelHosting.ts`), el correo ya viene
+  // escrito y se avisa por qué. Se lee UNA vez al montar, en el inicializador, y NO se borra aquí: el
+  // modo estricto de React corre los inicializadores dos veces en desarrollo, y la primera lectura que
+  // borrara dejaría la segunda sin nada. Lo borra el login que sale bien.
+  const [recargada] = useState(() => recargaReciente(sessionStorage));
+  const [email, setEmail] = useState(recargada?.email ?? '');
   const [password, setPassword] = useState('');
   const [verPass, setVerPass] = useState(false);
   const [error, setError] = useState('');
@@ -28,9 +37,18 @@ export default function Login() {
     setLoading(true);
     try {
       const usuario = await login(email, password);
+      olvidarRecarga(sessionStorage);
       // replace: reemplaza /login en el historial, así "atrás" no regresa aquí
       navigate(rutaInicio(usuario.rol), { replace: true });
     } catch (e) {
+      // UN 403 QUE NO ES DE LA APP: otra capa detuvo la petición y solo una recarga la deja pasar. Se
+      // recarga sola, UNA vez: si ya se recargó hace poco y sigue pasando, recargar de nuevo tampoco lo
+      // arreglaría, y se cae al mensaje de abajo en vez de entrar en un bucle.
+      if (esBloqueoDelHosting(e) && decidirRecarga(Date.now(), ultimaRecarga(sessionStorage)) === 'RECARGAR') {
+        guardarRecarga(sessionStorage, Date.now(), email);
+        recargarPagina();
+        return;
+      }
       // Antes era un texto fijo, y decía "Email o contraseña incorrectos" también cuando el
       // servidor no respondía. Con el backend caído eso manda a buscar el problema en la
       // contraseña —que está bien— en lugar de en el servidor (CLAUDE.md §12.2).
@@ -65,12 +83,19 @@ export default function Login() {
               <label htmlFor="login-password" className="block text-xs font-medium text-muted mb-1">Contraseña</label>
               <div className="relative">
                 <input id="login-password" className={`${input} pr-10`} type={verPass ? 'text' : 'password'} required
-                  value={password} onChange={e => setPassword(e.target.value)} placeholder="Tu contraseña" />
+                  value={password} onChange={e => setPassword(e.target.value)} placeholder="Tu contraseña"
+                  autoFocus={Boolean(recargada)} />
                 <button type="button" onClick={() => setVerPass(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted">
                   {verPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
+
+            {recargada && !error && (
+              <p className="text-muted text-sm">
+                La página se recargó sola por la verificación de seguridad del hosting. Escribe tu contraseña otra vez.
+              </p>
+            )}
 
             {error && <p className="text-red-600 text-sm">{error}</p>}
 

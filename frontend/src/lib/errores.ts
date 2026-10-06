@@ -4,6 +4,8 @@
 // e.response.data.error. Un fallo del propio navegador (leer el archivo,
 // procesar la imagen) llega como un Error normal. Los dos terminan en el mismo
 // cartelito, y sin esto cada sitio lo destripa a mano con un `any`.
+import { esBloqueoDelHosting, MENSAJE_BLOQUEO } from './bloqueoDelHosting';
+
 export const SIN_CONEXION = 'No hay conexión con el servidor. Revisa que esté encendido y vuelve a intentar.';
 
 export function mensajeDeError(e: unknown, respaldo: string): string {
@@ -19,6 +21,11 @@ export function mensajeDeError(e: unknown, respaldo: string): string {
     const respuesta = (e as { response?: { data?: { error?: unknown } } }).response;
     const delServidor = respuesta?.data?.error;
     if (typeof delServidor === 'string' && delServidor.trim()) return delServidor;
+
+    // Un 403 sin el JSON de la app lo puso otra capa (ver `bloqueoDelHosting.ts`). Va ANTES del texto
+    // de axios, que dice «Request failed with status code 403» y no le sirve a nadie, y DESPUÉS del
+    // mensaje del servidor, que si existe es el que sabe por qué.
+    if (esBloqueoDelHosting(e)) return MENSAJE_BLOQUEO;
 
     const mensaje = (e as { message?: unknown }).message;
     if (typeof mensaje === 'string' && mensaje.trim()) return mensaje;

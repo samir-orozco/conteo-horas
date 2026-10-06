@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { mensajeDeError } from './errores';
+import { MENSAJE_BLOQUEO } from './bloqueoDelHosting';
 
 describe('qué mensaje se le muestra a la persona', () => {
   it('el del servidor gana, porque es el que sabe por qué falló', () => {
@@ -61,5 +62,32 @@ describe('mensajeDeError cuando el servidor no contestó', () => {
 
   it('un error del propio navegador sigue saliendo con su mensaje', () => {
     expect(mensajeDeError(new Error('No se pudo leer el archivo'), 'respaldo')).toBe('No se pudo leer el archivo');
+  });
+});
+
+// UN 403 QUE NO ES DE LA APP (6 de octubre de 2026): ver `bloqueoDelHosting.ts`. Antes salía el texto
+// genérico de axios, «Request failed with status code 403», que no le dice nada a nadie.
+describe('un 403 que no es de la app', () => {
+  const ajeno = { isAxiosError: true, config: {}, message: 'Request failed with status code 403',
+    response: { status: 403, data: '<html>One moment, please...</html>' } };
+
+  it('dice que el servicio de seguridad detuvo la solicitud, no el texto de axios', () => {
+    expect(mensajeDeError(ajeno, 'Email o contraseña incorrectos')).toBe(MENSAJE_BLOQUEO);
+  });
+
+  it('también sin cuerpo', () => {
+    expect(mensajeDeError({ ...ajeno, response: { status: 403, data: '' } }, 'x')).toBe(MENSAJE_BLOQUEO);
+  });
+
+  // Lo que NO puede pasar: tapar la razón de un 403 de la app con un mensaje de seguridad.
+  it('un 403 de la app sigue diciendo lo que la app dijo', () => {
+    const suyo = { ...ajeno, response: { status: 403, data: { error: 'Empresa inactiva. Contacta a HoraPro.' } } };
+    expect(mensajeDeError(suyo, 'x')).toBe('Empresa inactiva. Contacta a HoraPro.');
+  });
+
+  it('otros códigos con HTML conservan su comportamiento de siempre', () => {
+    const quinientos = { isAxiosError: true, config: {}, message: 'Request failed with status code 502',
+      response: { status: 502, data: '<html></html>' } };
+    expect(mensajeDeError(quinientos, 'x')).toBe('Request failed with status code 502');
   });
 });
