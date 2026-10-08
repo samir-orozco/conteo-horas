@@ -13,6 +13,7 @@ const planes_1 = require("../utils/planes");
 const correo_1 = require("../utils/correo");
 const afiliados_1 = require("../utils/afiliados");
 const sedesDeEmpresa_1 = require("../utils/sedesDeEmpresa");
+const rolDeEmpresa_1 = require("../utils/rolDeEmpresa");
 const DIA_MS = 24 * 60 * 60 * 1000;
 // Vencimiento de la sesión del panel (el kiosco usa su propio token de 12h)
 const SESION = '7d';
@@ -400,7 +401,7 @@ async function authRoutes(app) {
         if (payload.rol !== 'ADMIN')
             return reply.status(403).send({ error: 'Solo el administrador crea usuarios' });
         const { email, password, nombre, rol } = request.body;
-        if (rol === 'SUPER_ADMIN')
+        if (rol !== undefined && !(0, rolDeEmpresa_1.rolPermitidoParaEmpresa)(rol))
             return reply.status(403).send({ error: 'Rol no permitido' });
         const hash = await bcryptjs_1.default.hash(password, 10);
         const usuario = await prisma_1.prisma.usuario.create({
@@ -415,6 +416,9 @@ async function authRoutes(app) {
             return reply.status(403).send({ error: 'Solo el administrador edita usuarios' });
         const { id } = request.params;
         const { nombre, rol, activo, password } = request.body;
+        // Sin rol en el cuerpo, el rol no cambia. Con rol, solo uno de empresa: ver utils/rolDeEmpresa.ts.
+        if (rol !== undefined && !(0, rolDeEmpresa_1.rolPermitidoParaEmpresa)(rol))
+            return reply.status(403).send({ error: 'Rol no permitido' });
         const existente = await prisma_1.prisma.usuario.findFirst({ where: { id, empresaId: request.empresaId } });
         if (!existente)
             return reply.status(404).send({ error: 'Usuario no encontrado' });
