@@ -36,18 +36,19 @@ corrige.
 
 | rama | hash | de qué fuente |
 |---|---|---|
-| `master` | `31f9698` | **lo que está desplegado** (avance limpio el 7 de octubre, sin `--force`) |
-| `develop` | `6ceab29` y encima uno más | le lleva dos commits a `master`: el handoff (`6ceab29`, solo docs) y la regla del 403 ampliada (frontend, **sin desplegar**) |
-| `frontend-build` | `82f2776` | de `31f9698` (lo dice su propio commit) |
+| `master` | `31f9698` | lo desplegado hasta el 7 de octubre (avance limpio, sin `--force`). **No se alineó el 8**: avanzarlo a `f2a4678` diría que el arreglo de la escalada está en producción, y no lo está |
+| `develop` | `f2a4678`, subido el 8 de octubre | le lleva a `master`: el handoff, la regla del 403 ampliada y el cierre de turnos (frontend, **ya desplegados**) y el arreglo de la escalada a `SUPER_ADMIN`, `2063dd4` (backend, **sin desplegar**) |
+| `frontend-build` | `b1a09ac` | de `f2a4678`, desplegado el 8 de octubre (antes: `95f694a` solo se publicó, nunca se copió; `82f2776` fue el de `31f9698`) |
 | `backend-build` | `2f36b2f` | de `b0d91f1` |
 | `prisma-build` | `9507d82` | de `b0d91f1` |
-| bundle público | `index-aw2K_Dnz.js` | comprobado en el servidor el 6 de octubre |
+| bundle público | `index-ommmrJo5.js` | comprobado el 8 de octubre: el `index.html` del docroot lo pide, trae el texto nuevo y el sitio lo entrega por HTTPS (`curl` desde el servidor) |
 
 `backend-build` y `prisma-build` no se movieron desde la noche del 4 de octubre **porque el
 backend y el esquema no cambiaron**: `git diff b0d91f1..develop -- backend/src
 backend/prisma/schema.prisma backend/package.json backend/package-lock.json` sale vacío. Código
-de `develop` sin desplegar: **1 commit, de frontend**: la regla del 403 ampliada
-(`lib/bloqueoDelHosting.ts`, ver *El 403 del login*). Del backend no hay nada commiteado sin desplegar.
+de `develop` sin desplegar (8 de octubre): **1 commit, de backend**, `2063dd4`, el arreglo de la
+escalada a `SUPER_ADMIN` (`routes/auth.ts`, `utils/rolDeEmpresa*`, el tope del lint a 168 en
+`package.json`). Sin esquema. Del frontend no queda nada commiteado sin desplegar.
 
 Qué llevan, según los mensajes de los propios artefactos: el backend y el esquema, el clima
 laboral y el kiosco que se pausa si no se paga; el frontend, además, lo que se hizo del 4 al 6
@@ -55,7 +56,7 @@ de octubre (ver *Next step* nº 4 y `docs/PENDIENTES.md`).
 
 | | backend | frontend |
 |---|---|---|
-| pruebas | **102 archivos / 1750** (+1 fallo esperado) | **187 / 2253** |
+| pruebas | **102 archivos / 1750** (+1 fallo esperado), a `31f9698`; **sin re-medir tras `2063dd4`** | **189 / 2272**, medido el 8 de octubre en un árbol limpio en `f2a4678` |
 | tipos | `tsc --noEmit`, código 0 | `tsc -b`, código 0 |
 | lint | **173 avisos, 0 errores** — su tope | 65 errores / 6 avisos, la línea base |
 
@@ -154,10 +155,39 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Un solo commit, de frontend: la regla del 403 ampliada** (ver *El 403 del login*). Sin SQL, sin
-backend y sin esquema: va solo `frontend-build`, con las guardas de siempre. Todo lo demás, medido
-el 7 de octubre, está desplegado: `master` es lo que corre en producción, el frontend publicado sale
-de él, y el backend y el esquema no han cambiado desde el que está en producción.
+**Un solo commit, de backend: `2063dd4`, el arreglo de la escalada a `SUPER_ADMIN`** (ver *Files in
+flight*). Sin esquema y sin SQL de cambio; va solo `backend-build`, y **es urgente**: por lectura del
+código el hueco sigue abierto en producción. Trae `sql/revision-escalada-super-admin.sql`, que es de
+REVISIÓN (quién tiene hoy ese rol), no de arreglo. El frontend quedó al día el 8 de octubre
+(`b1a09ac`): la regla del 403 ampliada y el cierre de turnos. Todo lo demás, medido el 7 de octubre,
+está desplegado: el backend y el esquema no han cambiado desde el que está en producción.
+
+### Cerrar un turno olvidado: la entrada reenviada sin segundos (8 de octubre de 2026)
+
+**Qué pasó.** El modal «Cerrar turno» (`features/dashboard/components/ModalCerrarTurno.tsx`) mandaba la
+entrada como `HH:mm`, sin segundos, aunque nadie la tocara. Una persona marcó salida a las 16:42:40 y una
+entrada a las 16:42:54: la entrada viajaba como 16:42:00, quedaba DENTRO del tramo anterior y el
+servidor la rechazaba por cruce de marcaciones (400). El modal tragaba el motivo y decía «No pudimos
+guardar. Intenta de nuevo.». Se encontró leyendo las marcaciones en producción con un `SELECT` (solo
+lectura) a partir del id que salía en DevTools.
+
+**El arreglo** (`f2a4678`, desplegado como `b1a09ac`): la entrada solo viaja si se corrigió la fecha o la
+hora; una salida con hora menor que la entrada es del día siguiente y el modal lo dice («Salida el 8 de
+octubre»); el motivo del servidor se muestra. La decisión vive en `features/dashboard/cierreDeTurno.ts`
+(función pura, 11 pruebas) y el modal tiene 8. Las pruebas se vieron rojas antes; 9 mutaciones, todas muertas.
+**No se vio en el navegador**, solo por pruebas de componente.
+
+**Los datos de ese caso no se tocaron.** El segundo tramo (14 segundos después de la salida) parece una
+entrada por error; **borrarlo lo hace el dueño desde Registros**, no un `DELETE` por SQL.
+
+**Dos trampas del build que casi se cuelan** (las dos cazadas por una guarda, no por casualidad):
+1. **En un árbol limpio no hay `.env`** (está en `.gitignore`), así que `VITE_API_URL` cae a su valor de
+   desarrollo y el bundle sale con `http://localhost:3001/api` en tres sitios. Se compila con
+   `VITE_API_URL="https://horapro.co/api" npm run build` y se comprueba `grep -c 'localhost:300'` = 0
+   (el bundle de producción tiene 3 `https://horapro.co/api` y 4 líneas con `localhost`, todas de librerías).
+2. **`frontend/dist` está en el `.gitignore` de la rama del artefacto**: `git add -A frontend/dist` sin `-f`
+   prepara los borrados pero NO los archivos nuevos, y deja un índice a medias que parece válido. Con `-f`
+   salen 4 renombrados y 1 modificado, que es la forma correcta.
 
 Lo que este apartado tenía como «listo para desplegar» —la confirmación de identidad del kiosco
 y la política de privacidad 1.2— **ya está en producción**, y se comprobó por el historial y por
@@ -182,17 +212,26 @@ Lo que sí sigue fuera de git, y **no entra en ningún commit**:
 
 ## Files in flight
 
-**De esta sesión, ninguno sin commitear:** todo lo suyo está commiteado y subido al 7 de octubre de
-2026. Lo único sin desplegar es la regla del 403 ampliada (*Lo pendiente de desplegar*).
+**De esta sesión, ninguno sin commitear:** todo lo suyo está commiteado y subido al 8 de octubre de
+2026, y desplegado (el frontend). Lo único sin desplegar es `2063dd4`, que no es de esta sesión
+(*Lo pendiente de desplegar*).
 
-**Sí hay trabajo en curso de OTRA sesión, sin commitear y sin desplegar**, medido ese día con
-`git status`: `backend/src/routes/auth.ts`, `backend/package.json` (el tope del lint, de 173 a
-168), `CLAUDE.md` (cuatro líneas) y los archivos nuevos `utils/rolDeEmpresa.ts`,
-`utils/rolDeEmpresa.test.ts` y `routes/auth.usuarios.test.ts`. Según la nota que dejó en
-`CLAUDE.md`, cierra la escalada a `SUPER_ADMIN` en `POST` y `PUT /usuarios`. **No se tocó.**
+**El arreglo de la escalada a `SUPER_ADMIN` ya está commiteado (`2063dd4`) y subido a `origin/develop`**,
+pero **no desplegado**. Se subió el 8 de octubre sin proponérselo: el `push` de `develop` para el cierre de
+turnos llevaba ese commit debajo. Cierra el hueco en `POST` y `PUT /usuarios` (`routes/auth.ts`,
+`utils/rolDeEmpresa*`, el tope del lint a 168). La regla para la próxima vez: antes de subir `develop`,
+`git log origin/develop..HEAD` y mirar QUÉ más va en el viaje.
 
-Por lectura del código ya subido, `PUT /usuarios/:id` pasa el `rol` del cuerpo directo a
-`prisma.usuario.update`, y el rol admite `SUPER_ADMIN`: **mientras ese arreglo no se despliegue,
+**Sigue habiendo trabajo en curso de OTRA sesión, sin commitear y sin desplegar** (medido el 8 de
+octubre con `git status`): las reseñas (`routes/resenas.ts`, `utils/resenas.ts`, `AdminResenas`, el
+carrusel de la landing, `sql/resenas.sql`, `docs/RESENAS.md`, scripts de siembra) y cambios sueltos en
+`index.ts`, `admin.ts`, `borrarEmpresaEnCascada.ts`, `auditoriaDePeticion.ts`, `fechas.ts`,
+`registrarEvento.ts`, `App.tsx`, `Layout.tsx` y `Landing.tsx`. **También `backend/prisma/schema.prisma`:
+no se miró qué cambió, pero si el diff lo toca, `prisma-build` es obligatoria al desplegar (CLAUDE.md §11).**
+**No se tocó nada de eso.** Por eso los artefactos se compilan en un `git worktree` limpio.
+
+Por lectura del código de producción, `PUT /usuarios/:id` pasa el `rol` del cuerpo directo a
+`prisma.usuario.update`, y el rol admite `SUPER_ADMIN`: **mientras `2063dd4` no se despliegue,
 el hueco sigue en producción.** No se probó contra producción, y no debe probarse ahí.
 
 Lo demás sin commitear es lo de *Archivos sueltos en la raíz*, más arriba.
@@ -473,8 +512,8 @@ De la 29 a la 37 no son de esa lista: las agregó otra sesión tras revisar los 
 
 ### 5. Lo abierto del 403 del login
 
-Ver *El 403 del login*, más abajo, en *Pendiente de fondo*. Lo que falta, en orden: (1) desplegar el
-frontend con la regla ampliada, que ya está en `develop`; (2) la cabecera `server` y el cuerpo de
+Ver *El 403 del login*, más abajo, en *Pendiente de fondo*. Lo que falta, en orden: (1) ~~desplegar el
+frontend con la regla ampliada~~ — hecho el 8 de octubre; (2) la cabecera `server` y el cuerpo de
 un 403 real, del navegador del dueño; (3) solo con (2) en la mano, el ticket a Banahosting. Aparte, sin explicar y sin tocar: 51 `GET /api/notificaciones` rechazados con 403
 desde el Mac del dueño entre el 1 y el 5 de octubre (`Layout` solo se dibuja con el rol ya
 conocido, así que el origen no se encontró), y centenares de «sesión inválida» por IP en Accesos
@@ -968,10 +1007,10 @@ servicio de seguridad detuvo la solicitud. Recarga la página e inténtalo de nu
 el login; el mensaje vale para todas las pantallas.
 
 **Dónde está cada versión.** La primera (6 de octubre) solo reconocía HTML o vacío y trataba todo
-JSON como de la app: **esa es la que está desplegada** (`31f9698`, artefacto `82f2776`), y el JSON de
-Imunify del 10 de septiembre se le escapa: no recarga y muestra el texto de axios. La que está
-arriba, que cubre los dos casos, se escribió el 7 de octubre a pedido del dueño y está en `develop`,
-**sin desplegar**. Respaldo de ambas: pruebas en `bloqueoDelHosting.test.ts`, `errores.test.ts` y
+JSON como de la app (`31f9698`, artefacto `82f2776`); el JSON de Imunify del 10 de septiembre se le
+escapaba: no recargaba y mostraba el texto de axios. La de arriba, que cubre los dos casos, se escribió
+el 7 de octubre a pedido del dueño y **está desplegada desde el 8** (`develop` `6152993`, publicada en el
+artefacto `b1a09ac`, bundle `index-ommmrJo5.js`). Respaldo de ambas: pruebas en `bloqueoDelHosting.test.ts`, `errores.test.ts` y
 `Login.test.tsx`, y 16 mutaciones, todas muertas (10 de la primera, 6 de la ampliación).
 
 **Sin confirmar:** qué recibe de verdad el navegador del dueño cuando falla. DevTools → Network
