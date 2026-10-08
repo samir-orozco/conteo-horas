@@ -546,6 +546,10 @@ campo el cuerpo de una jornada.
 **Bajó a 173 el 13 de septiembre de 2026**: los tres `any` de `limpiarPermiso`, al mudarla de
 `routes/permisos.ts` a `utils/cuerpoDePermiso.ts` con sus tipos.
 
+**Bajó a 168 el 7 de octubre de 2026**: los cinco `any` de `POST` y `PUT /usuarios` en
+`routes/auth.ts`, al tipar el cuerpo para cerrar la escalada a `SUPER_ADMIN` (ver
+`utils/rolDeEmpresa.ts`).
+
 ### El frontend tiene el problema contrario, y sigue sin resolver
 
 `frontend` sale con **66 errores preexistentes**, o sea que su `npm run lint`

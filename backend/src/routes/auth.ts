@@ -8,6 +8,7 @@ import { obtenerPlanes, PLAN_IDS } from '../utils/planes';
 import { enviarCorreo, plantillaCorreo, correoConfigurado } from '../utils/correo';
 import { limpiarPago } from '../utils/afiliados';
 import { crearSedePrincipal } from '../utils/sedesDeEmpresa';
+import { rolPermitidoParaEmpresa, type RolDeEmpresa } from '../utils/rolDeEmpresa';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 // Vencimiento de la sesión del panel (el kiosco usa su propio token de 12h)
@@ -392,10 +393,10 @@ export default async function authRoutes(app: FastifyInstance) {
   });
 
   app.post('/usuarios', { preHandler: [app.requireEmpresa] }, async (request, reply) => {
-    const payload = request.user as any;
+    const payload = request.user as { rol?: string };
     if (payload.rol !== 'ADMIN') return reply.status(403).send({ error: 'Solo el administrador crea usuarios' });
-    const { email, password, nombre, rol } = request.body as any;
-    if (rol === 'SUPER_ADMIN') return reply.status(403).send({ error: 'Rol no permitido' });
+    const { email, password, nombre, rol } = request.body as { email: string; password: string; nombre: string; rol?: unknown };
+    if (rol !== undefined && !rolPermitidoParaEmpresa(rol)) return reply.status(403).send({ error: 'Rol no permitido' });
     const hash = await bcrypt.hash(password, 10);
     const usuario = await prisma.usuario.create({
       data: { email, password: hash, nombre, rol: rol ?? 'SUPERVISOR', empresaId: request.empresaId! },
@@ -405,13 +406,15 @@ export default async function authRoutes(app: FastifyInstance) {
   });
 
   app.put('/usuarios/:id', { preHandler: [app.requireEmpresa] }, async (request, reply) => {
-    const payload = request.user as any;
+    const payload = request.user as { rol?: string };
     if (payload.rol !== 'ADMIN') return reply.status(403).send({ error: 'Solo el administrador edita usuarios' });
     const { id } = request.params as { id: string };
-    const { nombre, rol, activo, password } = request.body as any;
+    const { nombre, rol, activo, password } = request.body as { nombre?: string; rol?: unknown; activo?: boolean; password?: string };
+    // Sin rol en el cuerpo, el rol no cambia. Con rol, solo uno de empresa: ver utils/rolDeEmpresa.ts.
+    if (rol !== undefined && !rolPermitidoParaEmpresa(rol)) return reply.status(403).send({ error: 'Rol no permitido' });
     const existente = await prisma.usuario.findFirst({ where: { id, empresaId: request.empresaId } });
     if (!existente) return reply.status(404).send({ error: 'Usuario no encontrado' });
-    const data: any = { nombre, rol, activo };
+    const data: { nombre?: string; rol?: RolDeEmpresa; activo?: boolean; password?: string } = { nombre, rol, activo };
     if (password) data.password = await bcrypt.hash(password, 10);
     return prisma.usuario.update({
       where: { id },
