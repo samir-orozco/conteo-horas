@@ -28,29 +28,44 @@ Tres reglas que gobiernan esto y no se tocan sin pensarlo:
 
 ## Current State
 
-**Medido el 1 de octubre de 2026 al cerrar el día, con `git fetch` delante. No escrito
-de memoria.** Hubo DOS despliegues ese día: el de madrugada (los 71 commits que
-llevaban desde el 17 de septiembre) y el de la noche, que corrigió un defecto del
-primero.
+**Medido el 7 de octubre de 2026, con `git fetch` delante y las puertas corridas ese mismo
+día. No escrito de memoria.** La medición anterior de esta sección era del 1 de octubre. Desde
+entonces entraron **43 commits** y hubo tres despliegues más (4, 5 y 6 de octubre), y este
+archivo no se tocó en ninguno: la regla 1 del final se incumplió tres veces seguidas. Esto lo
+corrige.
 
 | rama | hash | de qué fuente |
 |---|---|---|
-| `master` | `64cb610` | **al día con `develop`** |
-| `develop` | `64cb610` | — |
-| `backend-build` | `4eb4ae2` | de `64cb610` |
-| `frontend-build` | `33947d7` | de `64cb610` |
-| `prisma-build` | `ee46890` | sin tocar desde la madrugada |
-| bundle público | `index-0Ip7Jej_.js` | |
+| `master` | `31f9698` | **al día con `develop`**: avance limpio el 7 de octubre, sin `--force` |
+| `develop` | `31f9698` | — |
+| `frontend-build` | `82f2776` | de `31f9698` (lo dice su propio commit) |
+| `backend-build` | `2f36b2f` | de `b0d91f1` |
+| `prisma-build` | `9507d82` | de `b0d91f1` |
+| bundle público | `index-aw2K_Dnz.js` | comprobado en el servidor el 6 de octubre |
 
-Commits de `develop` sin desplegar: **0**.
+`backend-build` y `prisma-build` no se movieron desde la noche del 4 de octubre **porque el
+backend y el esquema no cambiaron**: `git diff b0d91f1..develop -- backend/src
+backend/prisma/schema.prisma backend/package.json backend/package-lock.json` sale vacío. Código
+de `develop` sin desplegar: **0**.
+
+Qué llevan, según los mensajes de los propios artefactos: el backend y el esquema, el clima
+laboral y el kiosco que se pausa si no se paga; el frontend, además, lo que se hizo del 4 al 6
+de octubre (ver *Next step* nº 4 y `docs/PENDIENTES.md`).
 
 | | backend | frontend |
 |---|---|---|
-| pruebas | **84 archivos / 1508** (+1 fallo esperado) | **150 / 1752** |
-| tipos | `tsc --noEmit` limpio | `tsc -b` limpio |
-| lint | 173 avisos, 0 errores — su tope | 65 errores / 6 avisos, la línea base |
+| pruebas | **102 archivos / 1750** (+1 fallo esperado) | **187 / 2246** |
+| tipos | `tsc --noEmit`, código 0 | `tsc -b`, código 0 |
+| lint | **173 avisos, 0 errores** — su tope | 65 errores / 6 avisos, la línea base |
 
-### LO MÁS IMPORTANTE DE ESTE DÍA: el recargo dominical se rompió y se arregló
+**El backend se midió en un `git worktree` limpio sobre `31f9698`, no en la carpeta de trabajo**: ese
+día la carpeta tenía trabajo de OTRA sesión sin commitear (un arreglo en `routes/auth.ts` con
+`utils/rolDeEmpresa*` y el tope del lint bajado a 168), y medido ahí daba 104 / 1764 y 168 avisos:
+números que no son de lo que está en `develop`. Es la regla de *Dos sesiones armando artefactos*
+aplicada a las puertas: un verde solo vale si el árbol estaba limpio. El frontend no tenía
+nada ajeno (`git diff --stat -- frontend` salía vacío).
+
+### El recargo dominical se rompió y se arregló (1 de octubre de 2026)
 
 Hay que leer esto antes de tocar nada del motor de horas.
 
@@ -91,7 +106,7 @@ roto congeló en 0; comprobado por el efecto, de más de cien filas a cero, con 
 310 descansos marcados intactos). Septiembre no necesitó SQL: sus filas estaban en
 NULL porque la columna se creó esa misma madrugada.
 
-### Lo que se verificó del despliegue de la noche, y cómo
+### Lo que se verificó del despliegue de la noche del 1 de octubre, y cómo
 
 ```
 grep '?? exports.DOMINGO'    en ~/horapro-co-api/dist → 1   (0 en el artefacto anterior)
@@ -107,7 +122,7 @@ septiembre, y el panel de turnos dice «esta semana descansa el domingo».
 para él.** Lo único que distingue «desplegado» de «copiado» aquí es el `grep` dentro
 del `dist` vivo más la pantalla.
 
-### Los diez SQL de la madrugada, todos aplicados
+### Los diez SQL de la madrugada del 1 de octubre, todos aplicados
 
 `plantillas_turno`, `dias_esperados.plantillaId` (en tres pasos), `esDescanso`,
 `descansoPintado`, `descansos_trabajados` + `_cambios`, `eventos_sistema`,
@@ -119,7 +134,7 @@ esquema entero contra la base: **cero faltantes de 371 columnas.**
 `NOT NULL DEFAULT 0` habría afirmado sobre 27.611 filas que ninguno de esos domingos
 era descanso.
 
-### DOS SESIONES ARMANDO ARTEFACTOS A LA VEZ: lo que más cerca estuvo de salir mal
+### DOS SESIONES ARMANDO ARTEFACTOS A LA VEZ (1 de octubre): lo que más cerca estuvo de salir mal
 
 No fue el código. Ese día hubo dos sesiones trabajando sobre `develop` en la misma
 carpeta, y las dos armaron artefactos de las MISMAS ramas. Salió bien **por suerte de
@@ -138,30 +153,47 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**La confirmación de identidad del kiosco (2 de octubre de 2026).** Sin SQL y sin
-cambio de esquema: `prisma-build` no se toca. Van `backend-build` y `frontend-build`.
-**Listo para desplegar.** `MAX_ENTRE_TOMAS` quedó medido el 2 de octubre en
-producción (86 personas de Grupo MSM, máxima honesta 0,537, se deja en 0,6). La
-política de privacidad 1.2, que cubre lo que el kiosco muestra, ya está aprobada y
-commiteada, y sale en el MISMO `frontend-build`: si el despliegue no es el 2 de
-octubre de 2026, cambiar `fechaVigencia` en `frontend/blog/legal/privacidad.mjs` al
-día del despliegue y regenerar el documento del abogado antes de compilar.
+**Nada.** Medido el 7 de octubre: `develop` y `master` son el mismo commit, el frontend
+desplegado sale de él, y el backend y el esquema no han cambiado desde el que está en
+producción.
 
-### Archivos sueltos en la raíz (no versionados, no míos)
+Lo que este apartado tenía como «listo para desplegar» —la confirmación de identidad del kiosco
+y la política de privacidad 1.2— **ya está en producción**, y se comprobó por el historial y por
+el artefacto, no por memoria: `79ce047` es ancestro de las fuentes del backend (`b0d91f1`) y del
+frontend (`31f9698`), y el `frontend-build` publicado trae `legal/privacidad/index.html` con
+«Versión 1.2» y «4 de octubre de 2026».
 
-Siguen los cuatro, comprobado: `ARRANQUE-PROYECTO-WEB.md`, `PLAYBOOK-BANAHOSTING.md`,
-`PLAYBOOK-BANAHOSTING-PHP.md`, `PLAYBOOK-CRM-MENSAJERIA.md`. Son documentación de
-Krumlab, no de HoraPro, y el dueño decide si van a este repo, a otro o a ninguno.
-**No entran en ningún commit**, igual que `.claude/launch.json`, que está modificado
-y se queda fuera.
+### Archivos sueltos en la raíz (medido el 7 de octubre)
+
+**Los playbooks de Krumlab ya están versionados**, desde el 27 de septiembre (`3ed4df8`):
+`ARRANQUE-PROYECTO-WEB.md` y los `PLAYBOOK-*.md`. Este apartado decía lo contrario («no
+versionados») hasta hoy, y los daba por sueltos en la raíz.
+
+Lo que sí sigue fuera de git, y **no entra en ningún commit**:
+
+- `.claude/launch.json`, modificado: configuración de entorno de las sesiones, no del producto.
+- Tres grabaciones de pantalla en la raíz (`*.mov`, del 2 de octubre): no consta quién las puso,
+  y el dueño decide si se borran.
+- `docs/RESENAS.md`, sin versionar y de **otra sesión**. No se tocó.
 
 ---
 
 ## Files in flight
 
-**Ninguno.** Todo está commiteado, subido y desplegado al 1 de octubre de 2026.
-Lo único sin commitear en el árbol es `.claude/launch.json`, que se queda fuera a
-propósito, y los cuatro playbooks sueltos de la raíz.
+**De esta sesión, ninguno:** todo lo suyo está commiteado, subido y desplegado al 7 de octubre
+de 2026.
+
+**Sí hay trabajo en curso de OTRA sesión, sin commitear y sin desplegar**, medido ese día con
+`git status`: `backend/src/routes/auth.ts`, `backend/package.json` (el tope del lint, de 173 a
+168), `CLAUDE.md` (cuatro líneas) y los archivos nuevos `utils/rolDeEmpresa.ts`,
+`utils/rolDeEmpresa.test.ts` y `routes/auth.usuarios.test.ts`. Según la nota que dejó en
+`CLAUDE.md`, cierra la escalada a `SUPER_ADMIN` en `POST` y `PUT /usuarios`. **No se tocó.**
+
+Por lectura del código ya subido, `PUT /usuarios/:id` pasa el `rol` del cuerpo directo a
+`prisma.usuario.update`, y el rol admite `SUPER_ADMIN`: **mientras ese arreglo no se despliegue,
+el hueco sigue en producción.** No se probó contra producción, y no debe probarse ahí.
+
+Lo demás sin commitear es lo de *Archivos sueltos en la raíz*, más arriba.
 
 La lista de abajo NO es trabajo pendiente: es el mapa de dónde vive cada pieza de la
 lógica de jornadas, que sigue valiendo:
@@ -398,6 +430,54 @@ Arreglarlas ANTES de llegar ahí.
   Worktree del scratchpad sobre el commit, y se borra en el mismo paso.
 - **No dar por verificado un despliegue porque el comando no se quejó.** Se hace
   `grep` de una cadena del cambio DENTRO del `dist` o del bundle que está vivo.
+- **No pasar `git push` por `| tail`: el código de salida es el de `tail`.** El 5 de octubre
+  GitHub rechazó un push a `develop` («remote rejected … fatal error in commit_refs») y el
+  comando salió con 0. Se comprueba leyendo `origin`. El reintento, con los objetos ya subidos
+  a otra rama, entró.
+- **`GIT_CURL_VERBOSE=0` no apaga nada: cualquier valor lo enciende.** Volcó la cabecera
+  `Authorization` con un token personal de GitHub a un archivo temporal. Ese archivo se borró y no
+  queda copia, pero el token está en la transcripción de la sesión: **hay que rotarlo, y a 7 de
+  octubre no se ha hecho.**
+- **No teclear los signos por nombre en la terminal de cPanel** (`minus`, `slash`): se pierden
+  en silencio. Llegan LITERALES (`-` `/` `.` `'` `|` `&` `;` `$` `>`). Y se evita el `~`: la
+  terminal arranca en el home, así que se usan rutas relativas. La pantalla puede dibujar con más
+  de 5 segundos de retraso: si «falta» una letra, esperar 10 s y recapturar ANTES de teclearla
+  otra vez (el 6 de octubre una `l` extra dejó `index.htmll`). `wait` admite 10 s como máximo.
+  Lo demás está en CLAUDE.md §4.
+- **Una fecha futura clavada en un fixture se vuelve «ahora» un día.** `Marcador.test.tsx` salió
+  rojo el 5 de octubre entre las 08:00 y las 08:15 de Bogotá: `anaAdentro()` fijaba la entrada en
+  `2026-10-05T13:00Z`, y el kiosco pide el sostenido reforzado si alguien sale a menos de 15 min
+  de entrar. Arreglado en `cfc4139`, con la entrada relativa al reloj. Hermana de
+  `src/pruebas/reloj.ts`.
+
+### 4. El backlog del dueño vive en `docs/PENDIENTES.md`
+
+Las 33 peticiones del 4 de octubre de 2026 quedaron ordenadas por dificultad en
+`docs/PENDIENTES.md`, sin repetidas, con lo que hay hoy en el código citado por archivo y línea y
+lo que falta de cada una. **Ese archivo es el único sitio donde vive la lista: aquí no se
+copia.**
+
+Medido el 7 de octubre: **37 entradas, 10 tachadas** (nº 9, 10, 18, 19, 20, 21, 23, 24, 25 y 27).
+De la 29 a la 37 no son de esa lista: las agregó otra sesión tras revisar los planes y la landing.
+
+- **En pausa por decisión del dueño, con el análisis ya escrito: el nº 11**, marcar fuera del
+  área y dejar la ubicación en un mapa. La política de privacidad 1.2 promete que la coordenada
+  **no se guarda**; guardarla pide abogado y política 1.3 antes de escribir código.
+- **Dicho «todavía no» o «de momento no» por el dueño:** nº 22 y nº 26.
+- **Frenados por una decisión o por un tercero**, en el orden en que bloquean: nº 3 (los números
+  de la incapacidad de EPS, con el contador), nº 6 parte 3 (la llave del super admin sobre las
+  notas anónimas, con el abogado), nº 1 (qué es un permiso en el módulo de usuarios), nº 4 (si una
+  extra sin aprobar cuenta en el reporte) y nº 8 (si se paga WhatsApp teniendo Telegram).
+
+### 5. Lo abierto del 403 del login
+
+Ver *El 403 del login*, más abajo, en *Pendiente de fondo*. Lo que falta, en orden: (1) la cabecera `server` y el cuerpo de
+un 403 real, del navegador del dueño; (2) decidir si se amplía la regla a «un 403 sin `error` de
+texto» —cambio chico, con pruebas, pero otro despliegue—; (3) solo con (1) en la mano, el ticket
+a Banahosting. Aparte, sin explicar y sin tocar: 51 `GET /api/notificaciones` rechazados con 403
+desde el Mac del dueño entre el 1 y el 5 de octubre (`Layout` solo se dibuja con el rol ya
+conocido, así que el origen no se encontró), y centenares de «sesión inválida» por IP en Accesos
+que no vienen del cliente web, que redirige al primer 401: puede ser el kiosco.
 
 ## La política de privacidad está publicada
 
@@ -652,7 +732,7 @@ anterior de la misma persona van al log `login-rostro`.
    la cara de otra persona. `UMBRAL_PARECIDO_AL_REGISTRAR` (0,45) solo avisa, así
    que puede esperar. Las dos revisiones dejan su huella en el log
    (`"evento":"revision-rostro"`, con distancias e ids, sin nombres).
-3. **Antes de desplegar: la política de privacidad.** El punto 4 dice «Quién ve
+3. **La política de privacidad (resuelta y desplegada el 4 de octubre).** El punto 4 dice «Quién ve
    estos datos: los usuarios de la propia empresa con rol de administrador o de
    supervisor», y ahora el kiosco le muestra la foto de perfil a quien reconoce,
    incluida la persona con la que confunda a alguien. Y la revisión del rostro
@@ -851,6 +931,50 @@ rastreador de WhatsApp). Que la primera vez la causa fuera nuestra no significa
 que esta también lo sea.
 
 ---
+
+### El 403 del login: no es de la app, y el arreglo desplegado tiene un hueco
+
+**Visto el 6 de octubre de 2026** por el dueño, que ya lo conocía de antes («muy seguido»): al
+iniciar sesión sale «Request failed with status code 403», y recargando la página vuelve a
+entrar. Le pasó **en un perfil de su navegador y en los otros no**: es estado del navegador, no
+su IP.
+
+**Qué se comprobó**, todo desde el código y el registro del sistema; no se reprodujo en vivo:
+
+- El único 403 del login es «Empresa inactiva», con su mensaje. **Todos los 403 que escribe el
+  backend llevan un campo `error` de texto** (revisados uno por uno el 7 de octubre). Si fuera de
+  la app, la pantalla mostraría ese texto.
+- `/admin/registro` → Accesos: 9 eventos de `/auth/login`, **los 9 «Contraseña incorrecta»**
+  (401), ninguno 403. El enganche global sí anota los 403 de la app en otras rutas.
+- Desde la Mac del dueño, una petición sin la cookie del navegador a `/api/health` recibe la
+  página «One moment, please…» (HTTP 200, se recarga a los 5 s) con `server: openresty`,
+  mientras la API contesta `server: LiteSpeed`. Hay otra capa delante.
+- Descartado el service worker: solo toca `/models/`.
+
+**Lo que ya estaba escrito en este mismo archivo y no se había cruzado:** el 10 de septiembre,
+con `curl`, el servidor respondió `403 {"message": "Access denied by Imunify360 bot-protection.
+IPs used for automation should be whitelisted"}` (sección *El despliegue del 10 de septiembre*).
+Es una respuesta **JSON y sin campo `error`**, y con ella `axios` muestra el texto que vio el
+dueño. También la caída de ese día: el `POST /marcar` devolvió 403 y no 500.
+
+**Lo desplegado** (`31f9698`, artefacto `82f2776`): `frontend/src/lib/bloqueoDelHosting.ts`.
+`esBloqueoDelHosting` reconoce un 403 cuyo cuerpo es **HTML o vacío**. Entonces el login recarga
+la página UNA vez (guarda de un minuto contra el bucle), precarga el correo, **no guarda la
+contraseña**, y `mensajeDeError` dice «El servicio de seguridad detuvo la solicitud. Recarga la
+página e inténtalo de nuevo.» Solo recarga en el login; el mensaje vale para todas las pantallas.
+33 pruebas nuevas y 10 mutaciones, todas muertas.
+
+**EL HUECO.** Un cuerpo **JSON** se trata como de la app (la decisión fue conservadora: «recargar
+de más es lo que cuesta»). El JSON de Imunify del 10 de septiembre cae ahí: **no recargaría y
+mostraría el texto de axios.** La regla que cubre los dos casos y se puede comprobar es: *un 403
+sin un `error` de texto en el cuerpo no es de la app*, porque todos los de la app lo llevan.
+Cambia la función de `bloqueoDelHosting.ts`, sus pruebas y la mutación del «cualquier 403», y
+exige otro despliegue del frontend. **Sin hacer: es decisión del dueño.**
+
+**Sin confirmar:** qué recibe de verdad el navegador del dueño cuando falla. DevTools → Network
+→ la petición `login` en rojo → la cabecera `server` y el cuerpo (HTML, JSON o vacío). De eso
+depende también si hay ticket a Banahosting, y **no se manda nada antes**: ver la advertencia de
+la sección de WhatsApp, donde el 3 de septiembre un ticket salió de la propia actividad.
 
 ### Las 4 vulnerabilidades del backend: diagnosticadas, sin aplicar
 
@@ -1080,7 +1204,9 @@ con facilidad y hacer difícil (o imposible) editar una cuyo rango ya pasó.
 
 ### Turnos rotativos: el motor está completo y verificado hasta el dinero
 
-**22 de septiembre de 2026. SIN COMMITEAR**, a la espera de que el dueño pruebe.
+**22 de septiembre de 2026.** Entonces estaba sin commitear; hoy ya está commiteado (la primera
+pieza, `rotuloDeCelda`, es de `8bc2b20`, del 23 de septiembre) y dentro del despliegue del 1 de
+octubre: ese commit es ancestro de `64cb610`.
 
 Antes de esto, `ROTATIVO` era un valor de enum sin nada detrás: `esDescansoObligatorio`
 tenía su rama y **los cinco llamadores le pasaban `null`**, así que un rotativo
