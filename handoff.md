@@ -36,8 +36,8 @@ corrige.
 
 | rama | hash | de qué fuente |
 |---|---|---|
-| `master` | `31f9698` | **al día con `develop`**: avance limpio el 7 de octubre, sin `--force` |
-| `develop` | `31f9698` | — |
+| `master` | `31f9698` | **lo que está desplegado** (avance limpio el 7 de octubre, sin `--force`) |
+| `develop` | `6ceab29` y encima uno más | le lleva dos commits a `master`: el handoff (`6ceab29`, solo docs) y la regla del 403 ampliada (frontend, **sin desplegar**) |
 | `frontend-build` | `82f2776` | de `31f9698` (lo dice su propio commit) |
 | `backend-build` | `2f36b2f` | de `b0d91f1` |
 | `prisma-build` | `9507d82` | de `b0d91f1` |
@@ -46,7 +46,8 @@ corrige.
 `backend-build` y `prisma-build` no se movieron desde la noche del 4 de octubre **porque el
 backend y el esquema no cambiaron**: `git diff b0d91f1..develop -- backend/src
 backend/prisma/schema.prisma backend/package.json backend/package-lock.json` sale vacío. Código
-de `develop` sin desplegar: **0**.
+de `develop` sin desplegar: **1 commit, de frontend**: la regla del 403 ampliada
+(`lib/bloqueoDelHosting.ts`, ver *El 403 del login*). Del backend no hay nada commiteado sin desplegar.
 
 Qué llevan, según los mensajes de los propios artefactos: el backend y el esquema, el clima
 laboral y el kiosco que se pausa si no se paga; el frontend, además, lo que se hizo del 4 al 6
@@ -54,7 +55,7 @@ de octubre (ver *Next step* nº 4 y `docs/PENDIENTES.md`).
 
 | | backend | frontend |
 |---|---|---|
-| pruebas | **102 archivos / 1750** (+1 fallo esperado) | **187 / 2246** |
+| pruebas | **102 archivos / 1750** (+1 fallo esperado) | **187 / 2253** |
 | tipos | `tsc --noEmit`, código 0 | `tsc -b`, código 0 |
 | lint | **173 avisos, 0 errores** — su tope | 65 errores / 6 avisos, la línea base |
 
@@ -153,9 +154,10 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Nada.** Medido el 7 de octubre: `develop` y `master` son el mismo commit, el frontend
-desplegado sale de él, y el backend y el esquema no han cambiado desde el que está en
-producción.
+**Un solo commit, de frontend: la regla del 403 ampliada** (ver *El 403 del login*). Sin SQL, sin
+backend y sin esquema: va solo `frontend-build`, con las guardas de siempre. Todo lo demás, medido
+el 7 de octubre, está desplegado: `master` es lo que corre en producción, el frontend publicado sale
+de él, y el backend y el esquema no han cambiado desde el que está en producción.
 
 Lo que este apartado tenía como «listo para desplegar» —la confirmación de identidad del kiosco
 y la política de privacidad 1.2— **ya está en producción**, y se comprobó por el historial y por
@@ -180,8 +182,8 @@ Lo que sí sigue fuera de git, y **no entra en ningún commit**:
 
 ## Files in flight
 
-**De esta sesión, ninguno:** todo lo suyo está commiteado, subido y desplegado al 7 de octubre
-de 2026.
+**De esta sesión, ninguno sin commitear:** todo lo suyo está commiteado y subido al 7 de octubre de
+2026. Lo único sin desplegar es la regla del 403 ampliada (*Lo pendiente de desplegar*).
 
 **Sí hay trabajo en curso de OTRA sesión, sin commitear y sin desplegar**, medido ese día con
 `git status`: `backend/src/routes/auth.ts`, `backend/package.json` (el tope del lint, de 173 a
@@ -471,10 +473,9 @@ De la 29 a la 37 no son de esa lista: las agregó otra sesión tras revisar los 
 
 ### 5. Lo abierto del 403 del login
 
-Ver *El 403 del login*, más abajo, en *Pendiente de fondo*. Lo que falta, en orden: (1) la cabecera `server` y el cuerpo de
-un 403 real, del navegador del dueño; (2) decidir si se amplía la regla a «un 403 sin `error` de
-texto» —cambio chico, con pruebas, pero otro despliegue—; (3) solo con (1) en la mano, el ticket
-a Banahosting. Aparte, sin explicar y sin tocar: 51 `GET /api/notificaciones` rechazados con 403
+Ver *El 403 del login*, más abajo, en *Pendiente de fondo*. Lo que falta, en orden: (1) desplegar el
+frontend con la regla ampliada, que ya está en `develop`; (2) la cabecera `server` y el cuerpo de
+un 403 real, del navegador del dueño; (3) solo con (2) en la mano, el ticket a Banahosting. Aparte, sin explicar y sin tocar: 51 `GET /api/notificaciones` rechazados con 403
 desde el Mac del dueño entre el 1 y el 5 de octubre (`Layout` solo se dibuja con el rol ya
 conocido, así que el origen no se encontró), y centenares de «sesión inválida» por IP en Accesos
 que no vienen del cliente web, que redirige al primer 401: puede ser el kiosco.
@@ -957,19 +958,21 @@ IPs used for automation should be whitelisted"}` (sección *El despliegue del 10
 Es una respuesta **JSON y sin campo `error`**, y con ella `axios` muestra el texto que vio el
 dueño. También la caída de ese día: el `POST /marcar` devolvió 403 y no 500.
 
-**Lo desplegado** (`31f9698`, artefacto `82f2776`): `frontend/src/lib/bloqueoDelHosting.ts`.
-`esBloqueoDelHosting` reconoce un 403 cuyo cuerpo es **HTML o vacío**. Entonces el login recarga
-la página UNA vez (guarda de un minuto contra el bucle), precarga el correo, **no guarda la
-contraseña**, y `mensajeDeError` dice «El servicio de seguridad detuvo la solicitud. Recarga la
-página e inténtalo de nuevo.» Solo recarga en el login; el mensaje vale para todas las pantallas.
-33 pruebas nuevas y 10 mutaciones, todas muertas.
+**La regla** (`frontend/src/lib/bloqueoDelHosting.ts`): `esBloqueoDelHosting` reconoce un 403
+**sin un `error` de texto en el cuerpo** —HTML, vacío, o un JSON propio como el de Imunify—, porque
+todos los 403 que escribe el backend lo llevan (revisados uno por uno el 7 de octubre). Es el mismo
+criterio con el que `mensajeDeError` decide si hay un mensaje del servidor. Solo el 403: un 500 o
+un 429 con `{"message": …}` no cuenta. Entonces el login recarga la página UNA vez (guarda de un
+minuto contra el bucle), precarga el correo, **no guarda la contraseña**, y `mensajeDeError` dice «El
+servicio de seguridad detuvo la solicitud. Recarga la página e inténtalo de nuevo.» Solo recarga en
+el login; el mensaje vale para todas las pantallas.
 
-**EL HUECO.** Un cuerpo **JSON** se trata como de la app (la decisión fue conservadora: «recargar
-de más es lo que cuesta»). El JSON de Imunify del 10 de septiembre cae ahí: **no recargaría y
-mostraría el texto de axios.** La regla que cubre los dos casos y se puede comprobar es: *un 403
-sin un `error` de texto en el cuerpo no es de la app*, porque todos los de la app lo llevan.
-Cambia la función de `bloqueoDelHosting.ts`, sus pruebas y la mutación del «cualquier 403», y
-exige otro despliegue del frontend. **Sin hacer: es decisión del dueño.**
+**Dónde está cada versión.** La primera (6 de octubre) solo reconocía HTML o vacío y trataba todo
+JSON como de la app: **esa es la que está desplegada** (`31f9698`, artefacto `82f2776`), y el JSON de
+Imunify del 10 de septiembre se le escapa: no recarga y muestra el texto de axios. La que está
+arriba, que cubre los dos casos, se escribió el 7 de octubre a pedido del dueño y está en `develop`,
+**sin desplegar**. Respaldo de ambas: pruebas en `bloqueoDelHosting.test.ts`, `errores.test.ts` y
+`Login.test.tsx`, y 16 mutaciones, todas muertas (10 de la primera, 6 de la ampliación).
 
 **Sin confirmar:** qué recibe de verdad el navegador del dueño cuando falla. DevTools → Network
 → la petición `login` en rojo → la cabecera `server` y el cuerpo (HTML, JSON o vacío). De eso

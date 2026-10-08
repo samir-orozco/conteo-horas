@@ -79,6 +79,14 @@ describe('un 403 que no es de la app', () => {
     expect(mensajeDeError({ ...ajeno, response: { status: 403, data: '' } }, 'x')).toBe(MENSAJE_BLOQUEO);
   });
 
+  // El caso del 10 de septiembre, con el texto exacto del hosting: JSON, y sin `error`.
+  it('el JSON de Imunify360 también dice lo del servicio de seguridad', () => {
+    const imunify = { ...ajeno, response: { status: 403, data: {
+      message: 'Access denied by Imunify360 bot-protection. IPs used for automation should be whitelisted',
+    } } };
+    expect(mensajeDeError(imunify, 'x')).toBe(MENSAJE_BLOQUEO);
+  });
+
   // Lo que NO puede pasar: tapar la razón de un 403 de la app con un mensaje de seguridad.
   it('un 403 de la app sigue diciendo lo que la app dijo', () => {
     const suyo = { ...ajeno, response: { status: 403, data: { error: 'Empresa inactiva. Contacta a HoraPro.' } } };

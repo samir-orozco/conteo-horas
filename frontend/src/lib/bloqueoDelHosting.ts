@@ -7,10 +7,17 @@
 // please…») de otra capa. Que esa capa sea Imunify360 es la atribución de DESPLIEGUE.md §4.2: la página
 // no se nombra a sí misma.
 //
-// LA REGLA ES EL CUERPO y no «cualquier 403»: la API siempre contesta JSON, y quien está delante contesta
-// HTML o nada. Es lo único que se puede leer desde el navegador sin adivinar. Un 403 con JSON, aunque no
-// traiga `error`, se trata como nuestro: recargar de más es lo que cuesta, y no recargar es lo que ya
-// pasaba.
+// LA REGLA: UN 403 SIN UN `error` DE TEXTO EN EL CUERPO NO ES DE LA APP. Todos los 403 que escribe el
+// backend llevan `error` (revisados uno por uno el 7 de octubre de 2026), y es el mismo criterio con el
+// que `mensajeDeError` decide si hay un mensaje del servidor que mostrar. Quien está delante contesta
+// HTML, nada, o un JSON propio que no lo trae: el 10 de septiembre el hosting respondió
+// `{"message": "Access denied by Imunify360 bot-protection…"}`, y `axios` lo convierte en el mismo
+// «Request failed with status code 403». La primera versión (6 de octubre) trataba todo JSON como de la
+// app y ese caso se le escapaba; se corrigió el 7 de octubre.
+//
+// SOLO EL 403. Un 500 o un 429 con `{"message": …}` no es un bloqueo, y recargar sobre ellos no arregla
+// nada. Y con `error` de texto es SIEMPRE de la app, aunque traiga más campos: es la contraparte que
+// protege a quien ve «Tu plan permite hasta 10 colaboradores» de que se la tape un aviso de seguridad.
 
 export const MENSAJE_BLOQUEO = 'El servicio de seguridad detuvo la solicitud. Recarga la página e inténtalo de nuevo.';
 
@@ -18,13 +25,19 @@ export const MENSAJE_BLOQUEO = 'El servicio de seguridad detuvo la solicitud. Re
 // se avisa y se para. Un minuto basta: la recarga tarda segundos, y pasado el minuto es otra vez.
 export const VENTANA_RECARGA_MS = 60_000;
 
+// ¿La app dijo algo con sus propias palabras? Un texto no vacío en `error`: lo mismo que `mensajeDeError`
+// considera un mensaje del servidor. Un `error` vacío, en blanco o que no es texto no explica nada.
+function traeMensajeDeLaApp(cuerpo: unknown): boolean {
+  if (typeof cuerpo !== 'object' || cuerpo === null) return false;
+  const error = (cuerpo as { error?: unknown }).error;
+  return typeof error === 'string' && error.trim() !== '';
+}
+
 export function esBloqueoDelHosting(e: unknown): boolean {
   if (typeof e !== 'object' || e === null) return false;
   const respuesta = (e as { response?: { status?: unknown; data?: unknown } }).response;
   if (!respuesta || respuesta.status !== 403) return false;
-  // Sin cuerpo (null, undefined, '') o con una página de texto. Un objeto ya es JSON, o sea de la app.
-  const cuerpo = respuesta.data;
-  return cuerpo === null || cuerpo === undefined || typeof cuerpo === 'string';
+  return !traeMensajeDeLaApp(respuesta.data);
 }
 
 export type DecisionDeRecarga = 'RECARGAR' | 'SOLO_AVISAR';

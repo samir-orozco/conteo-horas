@@ -76,6 +76,36 @@ describe('Login · un 403 de otra capa', () => {
     expect(recargarPagina).toHaveBeenCalledTimes(1);
   });
 
+  // EL CASO QUE LA PRIMERA VERSIÓN DEJABA PASAR: el hosting contesta con JSON, y sin `error`.
+  it('un 403 con el JSON de Imunify360 también recarga la página sola', async () => {
+    login.mockImplementation(async () => {
+      throw Object.assign(new Error('Request failed with status code 403'), {
+        isAxiosError: true, config: {},
+        response: { status: 403, data: {
+          message: 'Access denied by Imunify360 bot-protection. IPs used for automation should be whitelisted',
+        } },
+      });
+    });
+    render(<MemoryRouter><Login /></MemoryRouter>);
+    await entrar();
+    expect(recargarPagina).toHaveBeenCalledTimes(1);
+  });
+
+  it('y si ya se recargó hace poco, con ese JSON tampoco hay bucle: avisa', async () => {
+    guardarRecarga(sessionStorage, Date.now() - 2_000, 'ana@empresa.co');
+    login.mockImplementation(async () => {
+      throw Object.assign(new Error('Request failed with status code 403'), {
+        isAxiosError: true, config: {},
+        response: { status: 403, data: { message: 'Access denied by Imunify360 bot-protection.' } },
+      });
+    });
+    render(<MemoryRouter><Login /></MemoryRouter>);
+    await userEvent.type(screen.getByLabelText(/Contraseña/i), 'lo-que-sea');
+    await userEvent.click(screen.getByRole('button', { name: /Iniciar sesión/i }));
+    expect(await screen.findByText(MENSAJE_BLOQUEO)).toBeInTheDocument();
+    expect(recargarPagina).not.toHaveBeenCalled();
+  });
+
   it('antes de recargar guarda el correo y la hora, y NUNCA la contraseña', async () => {
     login.mockImplementation(async () => { throw bloqueo(); });
     render(<MemoryRouter><Login /></MemoryRouter>);

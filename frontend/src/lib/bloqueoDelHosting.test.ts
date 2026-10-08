@@ -12,9 +12,13 @@ import {
 // la misma IP, una petición sin la cookie del navegador recibe una página de espera
 // («One moment, please…») de otra capa, no de nuestra API.
 //
-// LO QUE DISTINGUE UN 403 NUESTRO DE UNO AJENO es el cuerpo: la API siempre contesta JSON con `error`,
-// y quien está delante contesta HTML o nada. Es lo único que se puede leer desde el navegador sin
-// adivinar, y por eso la regla es esa y no «cualquier 403».
+// LO QUE DISTINGUE UN 403 NUESTRO DE UNO AJENO es que lleve un `error` de texto: TODOS los 403 que
+// escribe el backend lo llevan (revisados uno por uno el 7 de octubre de 2026), y es el mismo criterio
+// con el que `mensajeDeError` decide si hay un mensaje del servidor que mostrar. Quien está delante
+// contesta HTML, nada, o un JSON PROPIO que no lo trae: el 10 de septiembre el hosting respondió
+// `{"message": "Access denied by Imunify360 bot-protection…"}`, que es justo lo que `axios` convierte en
+// «Request failed with status code 403». La primera versión de la regla (6 de octubre) trataba todo JSON
+// como de la app y ese caso se le escapaba.
 
 const respuesta = (status: number, data: unknown) => ({ isAxiosError: true, config: {}, response: { status, data } });
 
@@ -36,16 +40,48 @@ describe('esBloqueoDelHosting', () => {
     expect(esBloqueoDelHosting(respuesta(403, { error: 'Solo el administrador edita usuarios' }))).toBe(false);
   });
 
-  // Un JSON sin `error` sigue siendo JSON: lo escribió alguien que habla como nuestra API. Ante la duda
-  // no se recarga, porque recargar de más es lo que cuesta, y no recargar es lo que ya pasaba.
-  it('un 403 con JSON sin «error» tampoco', () => {
-    expect(esBloqueoDelHosting(respuesta(403, {}))).toBe(false);
-    expect(esBloqueoDelHosting(respuesta(403, { codigo: 'X' }))).toBe(false);
+  // LO QUE ESTA VERSIÓN CAMBIA. Un JSON sin `error` de texto NO es de la app, porque la app siempre lo
+  // pone. Es el caso del 10 de septiembre, con el texto exacto que devolvió el hosting.
+  it('un 403 con el JSON de Imunify360 SÍ es de otra capa', () => {
+    expect(esBloqueoDelHosting(respuesta(403, {
+      message: 'Access denied by Imunify360 bot-protection. IPs used for automation should be whitelisted',
+    }))).toBe(true);
+  });
+
+  it('un 403 con JSON sin «error» de texto, sea cual sea, es de otra capa', () => {
+    expect(esBloqueoDelHosting(respuesta(403, {}))).toBe(true);
+    expect(esBloqueoDelHosting(respuesta(403, { codigo: 'X' }))).toBe(true);
+    expect(esBloqueoDelHosting(respuesta(403, { message: 'Forbidden' }))).toBe(true);
+    expect(esBloqueoDelHosting(respuesta(403, []))).toBe(true);
+  });
+
+  // Lo que `mensajeDeError` no puede mostrar tampoco cuenta como «mensaje de la app»: un cuadro de
+  // error vacío no explica nada, y es mejor la recarga y el aviso de seguridad.
+  it('un «error» vacío, en blanco o que no es texto no cuenta como mensaje de la app', () => {
+    expect(esBloqueoDelHosting(respuesta(403, { error: '' }))).toBe(true);
+    expect(esBloqueoDelHosting(respuesta(403, { error: '   ' }))).toBe(true);
+    expect(esBloqueoDelHosting(respuesta(403, { error: { campo: 'x' } }))).toBe(true);
+    expect(esBloqueoDelHosting(respuesta(403, { error: 403 }))).toBe(true);
+  });
+
+  // Y la contraparte, que es la que protege al usuario: con `error` de texto es SIEMPRE de la app,
+  // aunque traiga más campos, y entonces se le dice lo que la app dijo.
+  it('un 403 con «error» de texto es de la app aunque traiga más campos', () => {
+    expect(esBloqueoDelHosting(respuesta(403, { error: 'Tu plan permite hasta 10 colaboradores.', codigo: 'LIMITE_PLAN', limite: 10 }))).toBe(false);
+    expect(esBloqueoDelHosting(respuesta(403, { error: 'x', message: 'Access denied' }))).toBe(false);
   });
 
   it('otros códigos no son esto, aunque traigan HTML', () => {
     for (const s of [200, 401, 402, 404, 429, 500, 502, 503]) {
       expect(esBloqueoDelHosting(respuesta(s, '<html></html>'))).toBe(false);
+    }
+  });
+
+  // Ampliar la regla a los JSON no puede arrastrar a los demás códigos: un 500 o un 429 con
+  // `{"message": …}` no es un bloqueo y recargar la página sobre ellos no arregla nada.
+  it('otros códigos no son esto, aunque traigan un JSON sin «error»', () => {
+    for (const s of [200, 400, 401, 402, 404, 409, 429, 500, 502, 503]) {
+      expect(esBloqueoDelHosting(respuesta(s, { message: 'Access denied' }))).toBe(false);
     }
   });
 
