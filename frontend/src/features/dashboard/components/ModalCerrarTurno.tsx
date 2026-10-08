@@ -5,34 +5,34 @@ import { es } from 'date-fns/locale';
 import { AlarmClock, X } from 'lucide-react';
 import ModalShell from './ModalShell';
 import { cerrarRegistro } from '../api';
+import { armarCierre, valoresIniciales } from '../cierreDeTurno';
 import { TZ } from '../helpers';
+import { mensajeDeError } from '../../../lib/errores';
 import type { TurnoOlvidado } from '../types';
 
 export default function ModalCerrarTurno({ turno, onClose, onDone }: {
   turno: TurnoOlvidado; onClose: () => void; onDone: () => void;
 }) {
-  const [form, setForm] = useState(() => {
-    const z = toZonedTime(new Date(turno.entrada), TZ);
-    return { fecha: format(z, 'yyyy-MM-dd'), entrada: format(z, 'HH:mm'), salida: '' };
-  });
+  const [form, setForm] = useState(() => valoresIniciales(turno.entrada));
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+
+  const cierre = armarCierre({ turnoEntrada: turno.entrada, ...form });
+  const diaDeLaSalida = cierre.ok && cierre.salidaDiaSiguiente
+    ? format(toZonedTime(cierre.cuerpo.salida, TZ), "d 'de' MMMM", { locale: es })
+    : null;
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!form.salida) { setError('Indica la hora de salida.'); return; }
-    // Hora de pared de Bogotá (UTC-5): así el instante no depende de la zona del navegador.
-    const entrada = new Date(`${form.fecha}T${form.entrada}:00-05:00`);
-    const salida = new Date(`${form.fecha}T${form.salida}:00-05:00`);
-    if (salida <= entrada) { setError('La salida debe ser posterior a la entrada.'); return; }
+    if (!cierre.ok) { setError(cierre.error); return; }
     setGuardando(true);
     try {
-      await cerrarRegistro(turno.id, { entrada, salida });
+      await cerrarRegistro(turno.id, cierre.cuerpo);
       onClose();
       onDone();
-    } catch {
-      setError('No pudimos guardar. Intenta de nuevo.');
+    } catch (err) {
+      setError(mensajeDeError(err, 'No pudimos guardar. Intenta de nuevo.'));
     } finally {
       setGuardando(false);
     }
@@ -47,20 +47,21 @@ export default function ModalCerrarTurno({ turno, onClose, onDone }: {
       <p className="text-sm text-muted mb-4">{turno.colaborador} · marcó entrada el {format(toZonedTime(new Date(turno.entrada), TZ), "d 'de' MMMM", { locale: es })} pero no registró salida.</p>
       <form onSubmit={guardar} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-muted mb-1">Fecha</label>
-          <input type="date" value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))}
+          <label htmlFor="cerrar-fecha" className="block text-xs font-medium text-muted mb-1">Fecha</label>
+          <input id="cerrar-fecha" type="date" value={form.fecha} onChange={e => setForm(p => ({ ...p, fecha: e.target.value }))}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-muted mb-1">Entrada</label>
-            <input type="time" value={form.entrada} onChange={e => setForm(p => ({ ...p, entrada: e.target.value }))}
+            <label htmlFor="cerrar-entrada" className="block text-xs font-medium text-muted mb-1">Entrada</label>
+            <input id="cerrar-entrada" type="time" value={form.entrada} onChange={e => setForm(p => ({ ...p, entrada: e.target.value }))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-muted mb-1">Salida</label>
-            <input type="time" autoFocus value={form.salida} onChange={e => setForm(p => ({ ...p, salida: e.target.value }))}
+            <label htmlFor="cerrar-salida" className="block text-xs font-medium text-muted mb-1">Salida</label>
+            <input id="cerrar-salida" type="time" autoFocus value={form.salida} onChange={e => setForm(p => ({ ...p, salida: e.target.value }))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            {diaDeLaSalida && <p className="text-xs text-muted mt-1">Salida el {diaDeLaSalida}</p>}
           </div>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
