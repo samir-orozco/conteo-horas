@@ -36,19 +36,18 @@ corrige.
 
 | rama | hash | de qué fuente |
 |---|---|---|
-| `master` | `31f9698` | lo desplegado hasta el 7 de octubre (avance limpio, sin `--force`). **No se alineó el 8**: avanzarlo a `f2a4678` diría que el arreglo de la escalada está en producción, y no lo está |
-| `develop` | `f2a4678`, subido el 8 de octubre | le lleva a `master`: el handoff, la regla del 403 ampliada y el cierre de turnos (frontend, **ya desplegados**) y el arreglo de la escalada a `SUPER_ADMIN`, `2063dd4` (backend, **sin desplegar**) |
+| `master` | `31f9698` | lo desplegado hasta el 7 de octubre (avance limpio, sin `--force`). **Quedó atrás**: desde el 9 de octubre TODO lo commiteado en `develop` ya está desplegado, así que alinearlo es un avance limpio y es lo que dice la regla de ramas. **No se hizo: lo pide el dueño** |
+| `develop` | `240ec6b` y encima el commit de este handoff | le lleva a `master`: el handoff, la regla del 403 ampliada y el cierre de turnos (frontend, desplegados el 8) y el arreglo de la escalada a `SUPER_ADMIN`, `2063dd4` (backend, **desplegado el 9**) |
 | `frontend-build` | `b1a09ac` | de `f2a4678`, desplegado el 8 de octubre (antes: `95f694a` solo se publicó, nunca se copió; `82f2776` fue el de `31f9698`) |
-| `backend-build` | `2f36b2f` | de `b0d91f1` |
-| `prisma-build` | `9507d82` | de `b0d91f1` |
+| `backend-build` | `1d563f4` | de `240ec6b` (backend = `2063dd4` sobre `b0d91f1`), desplegado el 9 de octubre. Solo cambian 2 archivos respecto de `2f36b2f`: `dist/routes/auth.js` y `dist/utils/rolDeEmpresa.js` |
+| `prisma-build` | `9507d82` | de `b0d91f1`; no se tocó el 9: `git diff --name-only b0d91f1..240ec6b` no incluye `schema.prisma` (la puerta de CLAUDE.md §11) |
 | bundle público | `index-ommmrJo5.js` | comprobado el 8 de octubre: el `index.html` del docroot lo pide, trae el texto nuevo y el sitio lo entrega por HTTPS (`curl` desde el servidor) |
 
-`backend-build` y `prisma-build` no se movieron desde la noche del 4 de octubre **porque el
-backend y el esquema no cambiaron**: `git diff b0d91f1..develop -- backend/src
-backend/prisma/schema.prisma backend/package.json backend/package-lock.json` sale vacío. Código
-de `develop` sin desplegar (8 de octubre): **1 commit, de backend**, `2063dd4`, el arreglo de la
-escalada a `SUPER_ADMIN` (`routes/auth.ts`, `utils/rolDeEmpresa*`, el tope del lint a 168 en
-`package.json`). Sin esquema. Del frontend no queda nada commiteado sin desplegar.
+`prisma-build` no se movió desde la noche del 4 de octubre **porque el esquema no cambió**
+(`schema.prisma` no sale en `git diff --name-only b0d91f1..develop`). `backend-build` se movió el 9
+de octubre, con el único cambio de backend desde entonces: `2063dd4`, el arreglo de la escalada a
+`SUPER_ADMIN` (`routes/auth.ts`, `utils/rolDeEmpresa*`, el tope del lint a 168 en `package.json`).
+**Código commiteado de `develop` sin desplegar, medido el 9 de octubre: ninguno.**
 
 Qué llevan, según los mensajes de los propios artefactos: el backend y el esquema, el clima
 laboral y el kiosco que se pausa si no se paga; el frontend, además, lo que se hizo del 4 al 6
@@ -155,12 +154,45 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Un solo commit, de backend: `2063dd4`, el arreglo de la escalada a `SUPER_ADMIN`** (ver *Files in
-flight*). Sin esquema y sin SQL de cambio; va solo `backend-build`, y **es urgente**: por lectura del
-código el hueco sigue abierto en producción. Trae `sql/revision-escalada-super-admin.sql`, que es de
-REVISIÓN (quién tiene hoy ese rol), no de arreglo. El frontend quedó al día el 8 de octubre
-(`b1a09ac`): la regla del 403 ampliada y el cierre de turnos. Todo lo demás, medido el 7 de octubre,
-está desplegado: el backend y el esquema no han cambiado desde el que está en producción.
+**Nada de lo commiteado** (9 de octubre). El frontend quedó al día el 8 (`b1a09ac`) y el backend el 9
+(`1d563f4`, el arreglo de la escalada a `SUPER_ADMIN`; ver *El despliegue del backend del 9 de octubre*).
+Lo que sigue sin desplegar es trabajo de OTRA sesión, sin commitear: las reseñas (*Files in flight*), y
+**con tabla nueva**: cuando se despliegue llevan `sql/resenas.sql` y `prisma-build` (CLAUDE.md §11).
+
+### El despliegue del backend del 9 de octubre: la escalada a `SUPER_ADMIN`
+
+**Qué cambió en producción:** `routes/auth.js` (modificado) y `utils/rolDeEmpresa.js` (nuevo). `POST` y
+`PUT /api/auth/usuarios` solo aceptan `ADMIN` o `SUPERVISOR`. Copiado el 8 de octubre (`cp -R` al app root
+real, `/home/ewyfwxbg/horapro-co-api`, leído con `PassengerAppRoot`) y **reiniciado el 9** con
+`touch tmp/restart.txt`, con un «sí» del dueño por cada uno de los dos pasos.
+
+**Cómo se comprobó, por efecto:** antes de copiar, el `auth.js` vivo traía 0 menciones de
+`rolPermitidoParaEmpresa`; `diff -rq` entre artefacto y app vivos mostró SOLO esos dos archivos; después de
+copiar, 2 menciones y `diff` vacío. Tras el reinicio: `/api/health` → `{"status":"ok"}` (prueba que el
+módulo nuevo carga), `PUT /api/auth/usuarios/x` sin token → 401, y **un proceso `lsnode` nuevo** (3416140)
+nació después de la copia, así que ejecuta los archivos nuevos. **NO se probó la escalada contra
+producción**, ni se debe: el arreglo se respalda con sus pruebas (`rolDeEmpresa.test.ts`,
+`auth.usuarios.test.ts`) y con esta comparación de código.
+
+**Lo que queda por saber:** el proceso viejo 3277445 (21 h, código anterior en memoria) **siguió vivo**.
+Con 40 peticiones de lectura, solo el nuevo cambió de CPU y de memoria; el viejo quedó idéntico (22 s de CPU,
+99 528 KB), o sea que no atiende. Es evidencia, no prueba. LiteSpeed no apaga los procesos viejos al reiniciar
+(visto el 13 de septiembre y otra vez ahora); pararlo con `kill` es un paso de producción y lleva su «sí».
+El otro proceso viejo (506758, de casi dos días) sí desapareció solo.
+
+**La revisión de si alguien usó el hueco** (`sql/revision-escalada-super-admin.sql`, solo lectura, corrida
+el 9 de octubre en phpMyAdmin): 1 `SUPER_ADMIN` (la del dueño), **0 con empresa**, **0 cuentas de empresa con
+un rol que no sea ADMIN ni SUPERVISOR**, **0 llamadas auditadas a `/api/auth/usuarios`**, con 814 eventos de
+auditoría como control. Límites: la auditoría empieza el **1 de octubre de 2026** (antes no hay rastro), solo
+registra lo que salió bien, y no ve a quien se subió, entró, guardó su token de 7 días y se bajó. Es decir:
+sin señales, no prueba de ausencia. No se corrieron las consultas 2 y 3 del archivo porque con los conteos en
+cero habrían listado solo la cuenta del dueño.
+
+**Del cPanel en el navegador, aprendido en este despliegue:** la terminal se queda muerta tras unos 10 minutos
+de inactividad (no redibuja ni con `Ctrl+C`): se recarga la página y se teclea de nuevo, y como la línea
+nunca recibió Enter, no hay nada que repetir. La flecha `Up` sí trae el historial. `find` es una herramienta
+aparte de `computer`. Un Enter puede fallar por una caída de la herramienta que lo autoriza: la línea sigue en
+pantalla y se reintenta una vez.
 
 ### Cerrar un turno olvidado: la entrada reenviada sin segundos (8 de octubre de 2026)
 
@@ -212,27 +244,26 @@ Lo que sí sigue fuera de git, y **no entra en ningún commit**:
 
 ## Files in flight
 
-**De esta sesión, ninguno sin commitear:** todo lo suyo está commiteado y subido al 8 de octubre de
-2026, y desplegado (el frontend). Lo único sin desplegar es `2063dd4`, que no es de esta sesión
-(*Lo pendiente de desplegar*).
+**De esta sesión, ninguno sin commitear:** todo lo suyo está commiteado, subido y desplegado al 9 de
+octubre de 2026.
 
-**El arreglo de la escalada a `SUPER_ADMIN` ya está commiteado (`2063dd4`) y subido a `origin/develop`**,
-pero **no desplegado**. Se subió el 8 de octubre sin proponérselo: el `push` de `develop` para el cierre de
-turnos llevaba ese commit debajo. Cierra el hueco en `POST` y `PUT /usuarios` (`routes/auth.ts`,
-`utils/rolDeEmpresa*`, el tope del lint a 168). La regla para la próxima vez: antes de subir `develop`,
-`git log origin/develop..HEAD` y mirar QUÉ más va en el viaje.
+**El arreglo de la escalada a `SUPER_ADMIN` (`2063dd4`) es de la otra sesión**: lo commiteó ella el 8 de
+octubre, y el `push` de `develop` para el cierre de turnos lo subió sin proponérselo, porque iba debajo. Se
+desplegó el 9 (*El despliegue del backend del 9 de octubre*). La regla para la próxima vez: antes de subir
+`develop`, `git log origin/develop..HEAD` y mirar QUÉ más va en el viaje.
 
 **Sigue habiendo trabajo en curso de OTRA sesión, sin commitear y sin desplegar** (medido el 8 de
 octubre con `git status`): las reseñas (`routes/resenas.ts`, `utils/resenas.ts`, `AdminResenas`, el
 carrusel de la landing, `sql/resenas.sql`, `docs/RESENAS.md`, scripts de siembra) y cambios sueltos en
 `index.ts`, `admin.ts`, `borrarEmpresaEnCascada.ts`, `auditoriaDePeticion.ts`, `fechas.ts`,
 `registrarEvento.ts`, `App.tsx`, `Layout.tsx` y `Landing.tsx`. **También `backend/prisma/schema.prisma`:
-no se miró qué cambió, pero si el diff lo toca, `prisma-build` es obligatoria al desplegar (CLAUDE.md §11).**
+se miró el 8 de octubre y es solo ADITIVO (74 líneas: el modelo `Resena` y su relación con `Empresa`), pero
+al desplegar las reseñas `prisma-build` es obligatoria (CLAUDE.md §11) y el SQL va antes.**
 **No se tocó nada de eso.** Por eso los artefactos se compilan en un `git worktree` limpio.
 
-Por lectura del código de producción, `PUT /usuarios/:id` pasa el `rol` del cuerpo directo a
-`prisma.usuario.update`, y el rol admite `SUPER_ADMIN`: **mientras `2063dd4` no se despliegue,
-el hueco sigue en producción.** No se probó contra producción, y no debe probarse ahí.
+El hueco de `PUT /usuarios/:id` (escribía el `rol` del cuerpo, `SUPER_ADMIN` incluido) **está cerrado en
+producción desde el reinicio del 9 de octubre**; ver *El despliegue del backend del 9 de octubre* para qué
+se comprobó y qué no.
 
 Lo demás sin commitear es lo de *Archivos sueltos en la raíz*, más arriba.
 
@@ -498,7 +529,7 @@ Las 33 peticiones del 4 de octubre de 2026 quedaron ordenadas por dificultad en
 lo que falta de cada una. **Ese archivo es el único sitio donde vive la lista: aquí no se
 copia.**
 
-Medido el 7 de octubre: **37 entradas, 10 tachadas** (nº 9, 10, 18, 19, 20, 21, 23, 24, 25 y 27).
+Medido el 9 de octubre: **38 entradas, 10 tachadas** (nº 9, 10, 18, 19, 20, 21, 23, 24, 25 y 27). La nº 38 es de ese día y **espera una decisión del dueño** (la columna «Sede» de Registros).
 De la 29 a la 37 no son de esa lista: las agregó otra sesión tras revisar los planes y la landing.
 
 - **En pausa por decisión del dueño, con el análisis ya escrito: el nº 11**, marcar fuera del

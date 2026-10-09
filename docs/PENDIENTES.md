@@ -717,6 +717,36 @@ médica»), que vive en `frontend/src/constants/permisos.ts` y el servidor no
 tiene. Al llevar los nombres al servidor, una sola tabla para los dos
 (CLAUDE.md §9.3).
 
+# Peticiones del 8 y 9 de octubre
+
+## 38. La columna «Sede» de Registros muestra la sede de la persona cuando no hay sede de marcación · petición 34
+
+**Pedido del dueño (9 de octubre):** que la columna Sede de los Registros diga la sede donde
+MARCÓ la persona y no la suya, y que si marcó en dos sedes distintas se vean las dos.
+
+**Lo que hay hoy** (`CeldaSede` en `pages/Registros.tsx`, la decide `sedeDeLaJornada`): con sede de
+marcación, la dice; con dos distintas, «A → B» (nº 20, ya hecho); y SIN sede de marcación, un gris
+«— · cuenta en [sede asignada]». Esa última es lo que el dueño ve como «la sede de la persona».
+
+**Por qué falta el dato, medido en producción** (jornadas desde el 1 de octubre, solo conteos): el servidor
+guarda la sede de una marcación únicamente cuando la ubicación del celular cae dentro de la geocerca de una
+sede CON coordenadas (`decidirUbicacionDeMarca`, `utils/modalidad.ts`). El kiosco no sabe en qué sede está:
+`dispositivos_kiosco` no tiene sede. Resultado: las dos empresas con más jornadas (571 y 269) tienen 0 con
+sede de marcación y sus sedes no tienen coordenadas; una tercera (158) tampoco guarda ninguna aunque su sede
+sí tiene coordenadas (por mirar). Las que sí las tienen guardan sede en casi todas las jornadas y registran
+cruces (7 en una, 1 en otra).
+
+**Opciones, sin decidir:**
+1. Quitar la sede asignada de esa celda: «No quedó registrada». Pequeño, sin esquema. Esas empresas verían la
+   columna sin ninguna sede de marcación. Los reportes siguen contando por la sede asignada (decisión del 12 de
+   septiembre).
+2. **Darle una sede a cada kiosco** (columna nueva en `dispositivos_kiosco`, SQL y `prisma-build`): toda marcación
+   hecha ahí guarda esa sede sin depender del GPS. Es lo que de verdad da el dato; hay que decidir qué pasa si el
+   GPS y el kiosco no coinciden. Cambio de esquema: se habla antes (CLAUDE.md §4).
+3. Que las empresas carguen las coordenadas de sus sedes. Sin código, y solo vale hacia adelante.
+
+Recomendación: 1 y 2 juntas. **Esperando la decisión del dueño.**
+
 ---
 
 ### Peticiones que eran la misma
