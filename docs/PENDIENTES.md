@@ -747,6 +747,10 @@ cruces (7 en una, 1 en otra).
 
 Recomendación: 1 y 2 juntas. **Esperando la decisión del dueño.**
 
+**El Excel de Registros ya separa las dos cosas** (`5dfc0af`, 9 de octubre, sin desplegar): «Sede» es la de la
+persona y «Marcó en» la de la jornada. La TABLA de la pantalla sigue como estaba; esa es la que decide esta
+entrada.
+
 ---
 
 ### Peticiones que eran la misma

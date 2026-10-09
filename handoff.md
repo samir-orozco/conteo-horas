@@ -47,7 +47,7 @@ corrige.
 (`schema.prisma` no sale en `git diff --name-only b0d91f1..develop`). `backend-build` se movió el 9
 de octubre, con el único cambio de backend desde entonces: `2063dd4`, el arreglo de la escalada a
 `SUPER_ADMIN` (`routes/auth.ts`, `utils/rolDeEmpresa*`, el tope del lint a 168 en `package.json`).
-**Código commiteado de `develop` sin desplegar, medido el 9 de octubre: ninguno.**
+**Código commiteado de `develop` sin desplegar (9 de octubre): 1 commit, de frontend, `5dfc0af`** (el Excel de Registros con dos columnas de sede; ver *Lo pendiente de desplegar*).
 
 Qué llevan, según los mensajes de los propios artefactos: el backend y el esquema, el clima
 laboral y el kiosco que se pausa si no se paga; el frontend, además, lo que se hizo del 4 al 6
@@ -154,7 +154,17 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Nada de lo commiteado** (9 de octubre). El frontend quedó al día el 8 (`b1a09ac`) y el backend el 9
+**Un commit, de frontend: `5dfc0af`, el Excel de Registros** (9 de octubre, petición del dueño). La columna
+«Sede» pasa a ser la sede a la que PERTENECE la persona (la asignada; si no tiene, la atribuida) y se añade
+«Marcó en», a su derecha, con dónde marcó esa jornada: una sede, «A → B» si cruzó, «Cerró en B» si solo se
+conoce el cierre, vacía si no quedó registrada. Antes una sola columna mezclaba las dos («No marcó · cuenta en
+X»). Solo cambia `features/registros/exportarRegistros.ts` y la llamada en `pages/Registros.tsx`; la TABLA de la
+pantalla no cambia. Respaldo: 14 pruebas rojas antes, 8 mutaciones muertas, y en un árbol limpio `tsc -b` en 0,
+189 archivos / 2283 pruebas y lint limpio en lo nuevo (`Registros.tsx` sigue con sus 2 errores heredados). **No
+se desplegó ni se subió: espera el «sí» del dueño.** Va solo `frontend-build`, compilado con
+`VITE_API_URL=https://horapro.co/api`.
+
+Antes de ese commit, nada de lo commiteado estaba sin desplegar. El frontend quedó al día el 8 (`b1a09ac`) y el backend el 9
 (`1d563f4`, el arreglo de la escalada a `SUPER_ADMIN`; ver *El despliegue del backend del 9 de octubre*).
 Lo que sigue sin desplegar es trabajo de OTRA sesión, sin commitear: las reseñas (*Files in flight*), y
 **con tabla nueva**: cuando se despliegue llevan `sql/resenas.sql` y `prisma-build` (CLAUDE.md §11).
