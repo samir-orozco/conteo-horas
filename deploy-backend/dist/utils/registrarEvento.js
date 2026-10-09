@@ -172,7 +172,7 @@ function registrarAuditoria(request, reply) {
         origen: 'SERVIDOR',
         // Sin huella: cada acción es un hecho distinto y se ve suelta.
         huella: null,
-        mensaje: (0, huellaDeEvento_1.recortar)((0, auditoriaDePeticion_1.accionDePeticion)(request.method, request.url), 500),
+        mensaje: (0, huellaDeEvento_1.recortar)((0, auditoriaDePeticion_1.accionDePeticion)(request.method, request.url, request.body), 500),
         detalle: (0, auditoriaDePeticion_1.cuerpoParaGuardar)(request.body),
         metodo: request.method.toUpperCase(),
         ruta: request.url.split('?')[0] || null,

@@ -103,6 +103,10 @@ async function borrarEmpresaEnCascada(tx, empresaId, { lote = exports.LOTE_BORRA
     await enLotes('dias_festivos', ids(await tx.diaFestivo.findMany({ where: { empresaId }, select: { id: true } })), parte => tx.diaFestivo.deleteMany({ where: { id: { in: parte } } }));
     await enLotes('configuracion', ids(await tx.configuracion.findMany({ where: { empresaId }, select: { id: true } })), parte => tx.configuracion.deleteMany({ where: { id: { in: parte } } }));
     await enLotes('notificaciones', ids(await tx.notificacion.findMany({ where: { empresaId }, select: { id: true } })), parte => tx.notificacion.deleteMany({ where: { id: { in: parte } } }));
+    // Su reseña (7 de octubre de 2026): una como máximo, por la llave única de `empresaId`. Cuelga de la
+    // empresa con ON DELETE CASCADE y se iría sola; se borra aquí para que el conteo lo diga. Antes que
+    // los usuarios por orden de lectura, aunque `usuarioId` no tiene llave hacia ellos.
+    await enLotes('resenas', ids(await tx.resena.findMany({ where: { empresaId }, select: { id: true } })), parte => tx.resena.deleteMany({ where: { id: { in: parte } } }));
     await enLotes('usuarios', ids(await tx.usuario.findMany({ where: { empresaId }, select: { id: true } })), parte => tx.usuario.deleteMany({ where: { id: { in: parte } } }));
     // Antes que los pagos: cada comisión apunta a su pago.
     await enLotes('comisiones', ids(await tx.comision.findMany({ where: { empresaId }, select: { id: true } })), parte => tx.comision.deleteMany({ where: { id: { in: parte } } }));

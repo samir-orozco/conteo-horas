@@ -251,9 +251,11 @@ async function adminRoutes(app) {
         });
         if (!empresa)
             return null;
-        const [colaboradores, registros, pagos, comisiones] = await Promise.all([
+        const [colaboradores, registros, resenas, pagos, comisiones] = await Promise.all([
             prisma_1.prisma.colaborador.count({ where: { empresaId: id } }),
             prisma_1.prisma.registro.count({ where: { colaborador: { empresaId: id } } }),
+            // Su reseña (0 o 1): se va con ella, y si estaba publicada sale de la landing.
+            prisma_1.prisma.resena.count({ where: { empresaId: id } }),
             // Solo los APROBADO: son los que suma /admin/ingresos.
             prisma_1.prisma.pago.aggregate({
                 where: { estado: 'APROBADO', suscripcion: { empresaId: id } },
@@ -265,6 +267,7 @@ async function adminRoutes(app) {
             ...empresa,
             colaboradores,
             registros,
+            resenas,
             pagosAprobados: pagos._count._all,
             montoPagosAprobados: pagos._sum.monto ?? 0,
             comisiones: comisiones._count._all,

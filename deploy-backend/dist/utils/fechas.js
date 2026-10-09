@@ -6,6 +6,7 @@ exports.claveDiaBogota = claveDiaBogota;
 exports.hoyEnBogota = hoyEnBogota;
 exports.rangoReporte = rangoReporte;
 exports.rangoSemanaBogota = rangoSemanaBogota;
+exports.sumarMesesBogota = sumarMesesBogota;
 const date_fns_tz_1 = require("date-fns-tz");
 const TZ = 'America/Bogota';
 // Límites del día en zona Bogotá como instantes UTC (00:00 Bogotá = 05:00 UTC),
@@ -83,4 +84,24 @@ function rangoSemanaBogota(fecha) {
     const haciaAtras = diaSemana === 0 ? 6 : diaSemana - 1;
     const lunes = new Date(fecha.getTime() - haciaAtras * UN_DIA);
     return { lunes, finExclusivo: new Date(lunes.getTime() + 7 * UN_DIA) };
+}
+// Suma `n` meses calendario a la fecha de BOGOTÁ de un instante y devuelve la medianoche de Bogotá
+// del día de llegada (7 de octubre de 2026, para la elegibilidad de las reseñas: docs/RESENAS.md, R1).
+//
+// Si el día no existe en el mes de llegada, se recorta al último: del 31 de enero, el 28 (o el 29)
+// de febrero. `setMonth` hace lo contrario —se desborda al 3 de marzo— y además opera con el reloj
+// de la máquina.
+//
+// Se parte de la fecha de Bogotá y no de la UTC: un pago de las 11:30 p. m. del 31 de octubre en
+// Bogotá ya es 1 de noviembre en UTC, y un mes después daría el 1 de diciembre en vez del 30 de
+// noviembre. Restar las cinco horas a mano vale por lo mismo que en `medianocheBogota`: Colombia es
+// UTC-5 todo el año.
+function sumarMesesBogota(instante, n) {
+    const enBogota = new Date(instante.getTime() - 5 * 60 * 60 * 1000);
+    const anio = enBogota.getUTCFullYear();
+    const mes = enBogota.getUTCMonth() + n;
+    // El día 0 del mes siguiente es el último del mes de llegada. `Date.UTC` reparte solo los meses
+    // que pasan de 11 en años.
+    const ultimoDia = new Date(Date.UTC(anio, mes + 1, 0)).getUTCDate();
+    return new Date(Date.UTC(anio, mes, Math.min(enBogota.getUTCDate(), ultimoDia), 5, 0, 0));
 }

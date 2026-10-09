@@ -80,6 +80,7 @@ const accesoEmpresa_1 = require("./utils/accesoEmpresa");
 const respuestaDeError_1 = require("./utils/respuestaDeError");
 const registrarEvento_1 = require("./utils/registrarEvento");
 const eventos_1 = __importStar(require("./routes/eventos"));
+const resenas_1 = __importStar(require("./routes/resenas"));
 const esProduccion = process.env.NODE_ENV === 'production';
 // En producción los secretos NO pueden venir de valores por defecto del código
 if (esProduccion && !process.env.JWT_SECRET) {
@@ -227,6 +228,10 @@ app.register(telegram_1.default, { prefix: '/api/telegram' });
 app.register(notificaciones_1.default, { prefix: '/api/notificaciones' });
 app.register(eventos_1.default, { prefix: '/api/eventos' });
 app.register(eventos_1.eventosAdminRoutes, { prefix: '/api/admin/eventos' });
+// Las reseñas: la ventana de la empresa y el carrusel público de la landing, y aparte lo del super
+// admin, que es el único que publica (ver el archivo y docs/RESENAS.md).
+app.register(resenas_1.default, { prefix: '/api/resenas' });
+app.register(resenas_1.resenasAdminRoutes, { prefix: '/api/admin/resenas' });
 app.get('/api/health', async () => ({ status: 'ok' }));
 // Retención de fotos de verificación facial: 2 meses. Corre al arrancar y cada día
 // a las 3 de la madrugada de Bogotá (ver utils/programarDiario.ts), para que las
