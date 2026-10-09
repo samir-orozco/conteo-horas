@@ -22,7 +22,7 @@ const get = api.get as unknown as ReturnType<typeof vi.fn>;
 const exportar = descargarExcelHojas as unknown as ReturnType<typeof vi.fn>;
 
 const bog = (h: number, m = 0, d = 1) => new Date(Date.UTC(2026, 8, d, h + 5, m)).toISOString();
-const COLABORADOR = { id: 'c1', nombre: 'Ana María', apellido: 'Gómez', cedula: '1020304050' };
+const COLABORADOR = { id: 'c1', nombre: 'Ana María', apellido: 'Gómez', cedula: '1020304050', sedeNombres: ['Norte'] };
 
 const jornada = (id: string, extra: Record<string, unknown> = {}) => ({
   id, colaboradorId: 'c1', colaborador: { id: 'c1', nombre: 'Ana María', apellido: 'Gómez' },
@@ -60,6 +60,17 @@ describe('Registros · exportar a Excel', () => {
     expect(hoja().filas[0][COLUMNAS_REGISTROS.indexOf('Colaborador')]).toBe('Ana María Gómez');
     // La cédula sale de la lista de colaboradores: la jornada no la trae.
     expect(hoja().filas[0][COLUMNAS_REGISTROS.indexOf('Cédula')]).toBe('1020304050');
+  });
+
+  // Las dos columnas de sede salen de fuentes distintas: «Sede» de la ficha de la persona (la lista de
+  // colaboradores) y «Marcó en» de la jornada. Si la pantalla no le pasa a la función de dónde sacar la
+  // primera, la columna sale vacía en TODAS las filas y el archivo parece bien armado.
+  it('«Sede» es la de la persona y «Marcó en» la de la jornada', async () => {
+    const sur = { id: 's2', nombre: 'Sur' };
+    const u = montar([jornada('a', { sede: sur, sedeSalida: sur })]);
+    await u.click(await boton());
+    expect(hoja().filas[0][COLUMNAS_REGISTROS.indexOf('Sede')]).toBe('Norte');
+    expect(hoja().filas[0][COLUMNAS_REGISTROS.indexOf('Marcó en')]).toBe('Sur');
   });
 
   it('el archivo lleva el rango de fechas en el nombre', async () => {

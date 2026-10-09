@@ -602,7 +602,7 @@ export default function Registros() {
     descargarExcelHojas(nombreDelArchivo(desde, hasta), [{
       nombre: 'Registros',
       columnas: COLUMNAS_REGISTROS,
-      filas: filasDeRegistros(filtrados, id => cedulaDe(colaboradores, id)),
+      filas: filasDeRegistros(filtrados, id => cedulaDe(colaboradores, id), id => sedesAsignadasDe(colaboradores, id)),
     }]);
   };
 

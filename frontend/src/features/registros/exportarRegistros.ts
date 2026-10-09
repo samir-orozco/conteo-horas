@@ -33,7 +33,7 @@ export type JornadaExportable = ConSedes & {
 };
 
 export const COLUMNAS_REGISTROS = [
-  'Colaborador', 'Cédula', 'Fecha', 'Sede', 'Entrada', 'Salida', 'Salida estimada',
+  'Colaborador', 'Cédula', 'Fecha', 'Sede', 'Marcó en', 'Entrada', 'Salida', 'Salida estimada',
   'Almuerzo (min)', 'Descansos (min)', 'Duración (min)', 'Llegada tarde (min)',
   'Tipo', 'Jornada del día', 'Observación',
 ];
@@ -44,16 +44,33 @@ export const COLUMNAS_REGISTROS = [
 const hora = (iso: string | null) => (iso ? format(toZonedTime(new Date(iso), TZ), 'HH:mm') : '');
 const dia = (iso: string) => format(toZonedTime(new Date(iso), TZ), 'yyyy-MM-dd');
 
-// Qué dice la columna de sede. La CLASE la decide `sedeDeLaJornada`, la misma que
-// usa la tabla, para que el archivo y la pantalla no puedan contradecirse. Las
-// palabras sí cambian: en una celda, el «—» de la pantalla no se entiende solo.
-function sede(j: JornadaExportable): string {
+// DOS COLUMNAS DE SEDE, que dicen cosas distintas (9 de octubre de 2026, petición del dueño):
+//
+//   «Sede»     a cuál PERTENECE la persona. Es suya y la misma en todas sus jornadas.
+//   «Marcó en» dónde marcó ESA jornada, que puede ser otra distinta de la suya.
+//
+// Antes había una sola, y mezclaba las dos: decía dónde marcó y, cuando no se sabía, «cuenta en
+// [la de la persona]».
+
+// A cuál pertenece: la asignada, tal como la escribe la pantalla. Un presencial sin sede asignada cuenta,
+// en los reportes, en la que el servidor le atribuye, y esa es la única que se le conoce: sin ella, el
+// archivo la dejaría sin sede. Si no hay ninguna de las dos, queda vacía y no se inventa una.
+function sedeDeLaPersona(j: JornadaExportable, sedesAsignadasDe: (colaboradorId: string) => string): string {
+  return sedesAsignadasDe(j.colaboradorId) || j.sedeAtribuida?.nombre || '';
+}
+
+// Dónde marcó. La CLASE la decide `sedeDeLaJornada`, la misma que usa la tabla, para que el archivo y la
+// pantalla no puedan contradecirse. Las palabras sí cambian: en una celda, el «—» de la pantalla no se
+// entiende solo.
+function dondeMarco(j: JornadaExportable): string {
   const s = sedeDeLaJornada(j);
   switch (s.clase) {
     case 'cruce': return `${s.abrio} → ${s.cerro}`;
     case 'probada': return s.nombre;
     case 'soloCierre': return `Cerró en ${s.nombre}`;
-    case 'atribuida': return `No marcó · cuenta en ${s.nombre}`;
+    // La atribuida NO es dónde marcó: es a cuál cuenta en los reportes, y eso lo dice «Sede». Una celda
+    // vacía dice «no quedó registrada», que es lo único cierto.
+    case 'atribuida': return '';
     default: return '';
   }
 }
@@ -61,6 +78,7 @@ function sede(j: JornadaExportable): string {
 export function filasDeRegistros(
   jornadas: JornadaExportable[],
   cedulaDe: (colaboradorId: string) => string,
+  sedesAsignadasDe: (colaboradorId: string) => string,
 ): Celda[][] {
   // El mismo número que la etiqueta de la tabla, con la misma función: así,
   // filtrando por «Jornada del día» mayor que 1 salen los ingresos dobles.
@@ -70,7 +88,8 @@ export function filasDeRegistros(
     `${j.colaborador.nombre} ${j.colaborador.apellido}`,
     cedulaDe(j.colaboradorId),
     dia(j.fecha),
-    sede(j),
+    sedeDeLaPersona(j, sedesAsignadasDe),
+    dondeMarco(j),
     hora(j.entrada),
     hora(j.salida),
     j.salidaEstimada ? 'Sí' : 'No',
