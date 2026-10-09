@@ -36,8 +36,8 @@ corrige.
 
 | rama | hash | de qué fuente |
 |---|---|---|
-| `master` | `31f9698` | lo desplegado hasta el 7 de octubre (avance limpio, sin `--force`). **Quedó atrás**: desde el 9 de octubre TODO lo commiteado en `develop` ya está desplegado, así que alinearlo es un avance limpio y es lo que dice la regla de ramas. **No se hizo: lo pide el dueño** |
-| `develop` | `240ec6b` y encima el commit de este handoff | le lleva a `master`: el handoff, la regla del 403 ampliada y el cierre de turnos (frontend, desplegados el 8) y el arreglo de la escalada a `SUPER_ADMIN`, `2063dd4` (backend, **desplegado el 9**) |
+| `master` | `e70468d` | **lo desplegado y verificado.** Alineado el 9 de octubre a pedido del dueño: avance limpio de 6 commits desde `31f9698`, sin `--force`, leído en `origin`. Los 13 archivos de código de ese rango son exactamente los ya desplegados (`b1a09ac` y `1d563f4`); el resto es documentación |
+| `develop` | `e70468d` y encima el commit de este handoff (solo docs) | le lleva a `master`: el handoff, la regla del 403 ampliada y el cierre de turnos (frontend, desplegados el 8) y el arreglo de la escalada a `SUPER_ADMIN`, `2063dd4` (backend, **desplegado el 9**) |
 | `frontend-build` | `b1a09ac` | de `f2a4678`, desplegado el 8 de octubre (antes: `95f694a` solo se publicó, nunca se copió; `82f2776` fue el de `31f9698`) |
 | `backend-build` | `1d563f4` | de `240ec6b` (backend = `2063dd4` sobre `b0d91f1`), desplegado el 9 de octubre. Solo cambian 2 archivos respecto de `2f36b2f`: `dist/routes/auth.js` y `dist/utils/rolDeEmpresa.js` |
 | `prisma-build` | `9507d82` | de `b0d91f1`; no se tocó el 9: `git diff --name-only b0d91f1..240ec6b` no incluye `schema.prisma` (la puerta de CLAUDE.md §11) |
@@ -174,11 +174,15 @@ nació después de la copia, así que ejecuta los archivos nuevos. **NO se prob�
 producción**, ni se debe: el arreglo se respalda con sus pruebas (`rolDeEmpresa.test.ts`,
 `auth.usuarios.test.ts`) y con esta comparación de código.
 
-**Lo que queda por saber:** el proceso viejo 3277445 (21 h, código anterior en memoria) **siguió vivo**.
+**El proceso viejo.** El 3277445 (21 h, código anterior en memoria) **siguió vivo** tras el reinicio.
 Con 40 peticiones de lectura, solo el nuevo cambió de CPU y de memoria; el viejo quedó idéntico (22 s de CPU,
-99 528 KB), o sea que no atiende. Es evidencia, no prueba. LiteSpeed no apaga los procesos viejos al reiniciar
-(visto el 13 de septiembre y otra vez ahora); pararlo con `kill` es un paso de producción y lleva su «sí».
-El otro proceso viejo (506758, de casi dos días) sí desapareció solo.
+99 528 KB), o sea que no atendía. LiteSpeed no apaga los procesos viejos al reiniciar (visto el 13 de
+septiembre y otra vez ahora). El otro viejo (506758, de casi dos días) sí desapareció solo.
+**El dueño dio el «sí» y se ejecutó `kill 3277445` el 9 de octubre** (antes se releyó el listado: el número
+seguía siendo el viejo, con 22 s de CPU y sin moverse). Volvió sin error, **pero el efecto NO está verificado**:
+la herramienta de seguridad del navegador denegó el Enter del listado de comprobación, y no se reintentó. Para
+cerrarlo: `ps -u ewyfwxbg -o pid,etime,time,rss,cmd --sort=-etime | grep lsnode` (el 3277445 no debe salir, y el
+3416140 sí) y `curl -s https://horapro.co/api/health` → `{"status":"ok"}`.
 
 **La revisión de si alguien usó el hueco** (`sql/revision-escalada-super-admin.sql`, solo lectura, corrida
 el 9 de octubre en phpMyAdmin): 1 `SUPER_ADMIN` (la del dueño), **0 con empresa**, **0 cuentas de empresa con
