@@ -37,7 +37,7 @@ corrige.
 | rama | hash | de qué fuente |
 |---|---|---|
 | `master` | `e70468d` | **lo desplegado y verificado.** Alineado el 9 de octubre a pedido del dueño: avance limpio de 6 commits desde `31f9698`, sin `--force`, leído en `origin`. Los 13 archivos de código de ese rango son exactamente los ya desplegados (`b1a09ac` y `1d563f4`); el resto es documentación |
-| `develop` | `e70468d` y encima el commit de este handoff (solo docs) | le lleva a `master`: el handoff, la regla del 403 ampliada y el cierre de turnos (frontend, desplegados el 8) y el arreglo de la escalada a `SUPER_ADMIN`, `2063dd4` (backend, **desplegado el 9**) |
+| `develop` | `fb46212`; **`origin/develop` sigue en `9947f29`: 5 commits locales sin subir** (`5dfc0af` y `fb46212` del Excel, `1ba9a8c` y el de este handoff, solo docs, y `01aa7e9` de las reseñas, de la otra sesión) | le lleva a `master`: el handoff, la regla del 403 ampliada y el cierre de turnos (frontend, desplegados el 8) y el arreglo de la escalada a `SUPER_ADMIN`, `2063dd4` (backend, **desplegado el 9**) |
 | `frontend-build` | `b1a09ac` | de `f2a4678`, desplegado el 8 de octubre (antes: `95f694a` solo se publicó, nunca se copió; `82f2776` fue el de `31f9698`) |
 | `backend-build` | `1d563f4` | de `240ec6b` (backend = `2063dd4` sobre `b0d91f1`), desplegado el 9 de octubre. Solo cambian 2 archivos respecto de `2f36b2f`: `dist/routes/auth.js` y `dist/utils/rolDeEmpresa.js` |
 | `prisma-build` | `9507d82` | de `b0d91f1`; no se tocó el 9: `git diff --name-only b0d91f1..240ec6b` no incluye `schema.prisma` (la puerta de CLAUDE.md §11) |
@@ -154,20 +154,43 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Un commit, de frontend: `5dfc0af`, el Excel de Registros** (9 de octubre, petición del dueño). La columna
+**Todo esto está commiteado en `develop` y NADA está subido ni desplegado: el dueño pidió esperar a que terminen las reseñas y
+subir todo completo (9 de octubre).** Son tres cosas, en este orden de commits: el Excel de Registros (`5dfc0af`), las
+reseñas de la otra sesión (`01aa7e9`, ya commiteadas) y la hoja «Entradas por día» (`fb46212`).
+
+**1. El Excel de Registros, `5dfc0af`** (9 de octubre, petición del dueño). La columna
 «Sede» pasa a ser la sede a la que PERTENECE la persona (la asignada; si no tiene, la atribuida) y se añade
 «Marcó en», a su derecha, con dónde marcó esa jornada: una sede, «A → B» si cruzó, «Cerró en B» si solo se
 conoce el cierre, vacía si no quedó registrada. Antes una sola columna mezclaba las dos («No marcó · cuenta en
 X»). Solo cambia `features/registros/exportarRegistros.ts` y la llamada en `pages/Registros.tsx`; la TABLA de la
-pantalla no cambia. Respaldo: 14 pruebas rojas antes, 8 mutaciones muertas, y en un árbol limpio `tsc -b` en 0,
-189 archivos / 2283 pruebas y lint limpio en lo nuevo (`Registros.tsx` sigue con sus 2 errores heredados). **No
-se desplegó ni se subió: espera el «sí» del dueño.** Va solo `frontend-build`, compilado con
-`VITE_API_URL=https://horapro.co/api`.
+pantalla no cambia. Respaldo: 14 pruebas rojas antes y 8 mutaciones muertas.
 
-Antes de ese commit, nada de lo commiteado estaba sin desplegar. El frontend quedó al día el 8 (`b1a09ac`) y el backend el 9
-(`1d563f4`, el arreglo de la escalada a `SUPER_ADMIN`; ver *El despliegue del backend del 9 de octubre*).
-Lo que sigue sin desplegar es trabajo de OTRA sesión, sin commitear: las reseñas (*Files in flight*), y
-**con tabla nueva**: cuando se despliegue llevan `sql/resenas.sql` y `prisma-build` (CLAUDE.md §11).
+**2. La hoja «Entradas por día», `fb46212`** (9 de octubre, petición del dueño: la tabla dinámica de personas por días
+con la hora de entrada, que armaba a mano con el Excel de Registros). Es una SEGUNDA HOJA del mismo archivo y sigue lo
+que se está viendo: una fila por persona, una columna por día del rango (también los días en que nadie marcó) y, en la
+celda, la primera entrada del día en hora de Bogotá. Sin filtros de jornada suma a las personas activas sin ninguna
+marcación, con la fila en blanco (con una persona elegida, solo a ella); con un filtro puesto NO las suma, porque ahí un
+blanco querría decir «la filtré» y no «faltó». Una marcación fuera del rango agrega su día y no se pierde. **La celda
+vacía no distingue descanso, novedad y falta**: eso necesita los días esperados del servidor y sería otro reporte, que
+el dueño no ha pedido. Respaldo: 19 pruebas rojas antes; 11 mutaciones, y **una sobrevivió a la primera ronda** (la
+pantalla mandaba las jornadas sin filtrar, y la prueba del filtro no lo distinguía porque las dos jornadas eran de la
+misma persona): se reescribió con tres personas y ahora muere. Con las reseñas incluidas, en un árbol limpio sobre
+`fb46212`: `tsc -b` en 0, **197 archivos / 2527 pruebas** y lint limpio en lo nuevo (`Registros.tsx` conserva sus 2
+errores heredados, no uno más).
+
+**3. Las reseñas, `01aa7e9`** (de la otra sesión, 43 archivos, commiteadas el 9 de octubre a las 16:17). **Traen cambio de
+esquema y tabla nueva**, así que el despliegue de «todo completo» lleva LAS CUATRO ramas, en este orden (CLAUDE.md §11):
+(1) `sql/resenas.sql` en phpMyAdmin; (2) `prisma-build`; (3) `backend-build`; (4) `frontend-build`. `schema.prisma` suma
+74 líneas, solo aditivas: el modelo `Resena` y su relación con `Empresa`. Las pruebas del frontend de las reseñas pasan
+dentro de las 2527. **El backend no se midió con ellas**: antes de armar `backend-build` hay que correr sus puertas en un
+árbol limpio (la última medida, 104 archivos / 1764 pruebas y lint 168, es de antes de las reseñas).
+
+Hasta aquí, el 9 de octubre en la mañana, nada de lo commiteado estaba sin desplegar: el frontend quedó al día el 8
+(`b1a09ac`) y el backend el 9 (`1d563f4`, el arreglo de la escalada a `SUPER_ADMIN`; ver *El despliegue del backend
+del 9 de octubre*).
+
+**Antes de subir `develop`: `git log origin/develop..HEAD`.** Hoy llevaría cinco commits, tres de ellos ajenos a esta sesión
+o de documentación.
 
 ### El despliegue del backend del 9 de octubre: la escalada a `SUPER_ADMIN`
 
@@ -266,14 +289,13 @@ octubre, y el `push` de `develop` para el cierre de turnos lo subió sin propon�
 desplegó el 9 (*El despliegue del backend del 9 de octubre*). La regla para la próxima vez: antes de subir
 `develop`, `git log origin/develop..HEAD` y mirar QUÉ más va en el viaje.
 
-**Sigue habiendo trabajo en curso de OTRA sesión, sin commitear y sin desplegar** (medido el 8 de
-octubre con `git status`): las reseñas (`routes/resenas.ts`, `utils/resenas.ts`, `AdminResenas`, el
-carrusel de la landing, `sql/resenas.sql`, `docs/RESENAS.md`, scripts de siembra) y cambios sueltos en
-`index.ts`, `admin.ts`, `borrarEmpresaEnCascada.ts`, `auditoriaDePeticion.ts`, `fechas.ts`,
-`registrarEvento.ts`, `App.tsx`, `Layout.tsx` y `Landing.tsx`. **También `backend/prisma/schema.prisma`:
-se miró el 8 de octubre y es solo ADITIVO (74 líneas: el modelo `Resena` y su relación con `Empresa`), pero
-al desplegar las reseñas `prisma-build` es obligatoria (CLAUDE.md §11) y el SQL va antes.**
-**No se tocó nada de eso.** Por eso los artefactos se compilan en un `git worktree` limpio.
+**El trabajo de la otra sesión (las reseñas) ya está COMMITEADO, no sube ni se despliega todavía** (`01aa7e9`, 9 de octubre
+a las 16:17; el detalle y el orden de despliegue, en *Lo pendiente de desplegar*, punto 3). Hasta las 16:08 de ese día seguía
+sin commitear y mezclado en la misma carpeta: es la razón por la que los artefactos siempre se compilan en un `git worktree`
+limpio y por la que una prueba de «¿la puerta ve un intruso?» puede quedarse sin intruso (ver *Lo que NO hay que volver a hacer*).
+
+**Con el árbol de trabajo hoy, `git status` solo muestra `.claude/launch.json` y tres grabaciones de pantalla** (los
+`*.mov`): nada de código suelto.
 
 El hueco de `PUT /usuarios/:id` (escribía el `rol` del cuerpo, `SUPER_ADMIN` incluido) **está cerrado en
 producción desde el reinicio del 9 de octubre**; ver *El despliegue del backend del 9 de octubre* para qué
@@ -535,6 +557,14 @@ Arreglarlas ANTES de llegar ahí.
   `2026-10-05T13:00Z`, y el kiosco pide el sostenido reforzado si alguien sale a menos de 15 min
   de entrar. Arreglado en `cfc4139`, con la entrada relativa al reloj. Hermana de
   `src/pruebas/reloj.ts`.
+- **«Probar la puerta con un intruso» solo vale si el intruso quedó preparado de verdad.** El 9 de octubre
+  se hizo `git add frontend/src/App.tsx` para ver saltar la puerta, y la puerta dijo «sin intrusos, 4
+  preparados» con exit 0: la otra sesión acababa de commitear ese archivo, el `git add` no hizo nada y
+  la prueba no probó nada, pero con un 0 que parece un aprobado. Antes de correr la puerta, comprobar que
+  el intruso está en el índice (`git diff --cached --name-only | grep -Fx <archivo>`); si no, la prueba
+  es inválida y se dice. Esa vez el commit se verificó por nombre, con `git show --name-only`, que
+  mostró exactamente los 4 archivos propios: es la misma regla de CLAUDE.md §12.1 (el efecto, no la
+  salida) aplicada a la propia puerta (§12.10).
 
 ### 4. El backlog del dueño vive en `docs/PENDIENTES.md`
 
