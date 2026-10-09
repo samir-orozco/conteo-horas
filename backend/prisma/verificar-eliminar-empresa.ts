@@ -93,6 +93,11 @@ async function sembrar(etiqueta: string, afiliadoId: string): Promise<Caso> {
   });
   const seguimiento = await prisma.seguimientoClima.create({ data: { empresaId: empresa.id, colaboradorId: colaborador.id, desde: AHORA } });
   const comentario = await prisma.comentarioSeguimientoClima.create({ data: { seguimientoId: seguimiento.id, autorNombre: 'Admin', texto: 'Hablé con ella' } });
+  // Su reseña (7 de octubre de 2026): la llave es ON DELETE CASCADE, así que se iría sola; lo que se
+  // comprueba es que la cascada la CUENTE, y que la de la testigo siga ahí.
+  const resena = await prisma.resena.create({
+    data: { origen: 'CLIENTE', estado: 'PUBLICADA', empresaId: empresa.id, usuarioId: usuario.id, estrellas: 5, texto: `Reseña ${s}`, comoAparece: 'ANONIMA' },
+  });
   return {
     empresaId: empresa.id,
     colaboradorSede: { colaboradorId: colaborador.id, sedeId: sede.id },
@@ -107,6 +112,7 @@ async function sembrar(etiqueta: string, afiliadoId: string): Promise<Caso> {
       plantillas_turno: [plantilla.id],
       calificaciones_clima: [calificacion.id], observaciones_confidenciales: [confidencial.id],
       seguimientos_clima: [seguimiento.id], comentarios_seguimiento_clima: [comentario.id],
+      resenas: [resena.id],
     },
   };
 }
@@ -144,12 +150,14 @@ async function contar(caso: Caso): Promise<Record<string, number>> {
     prisma.observacionConfidencial.count(porId(f.observaciones_confidenciales)),
     prisma.seguimientoClima.count(porId(f.seguimientos_clima)),
     prisma.comentarioSeguimientoClima.count(porId(f.comentarios_seguimiento_clima)),
+    prisma.resena.count(porId(f.resenas)),
   ]);
   const tablas = ['empresas', 'suscripciones', 'pagos', 'comisiones', 'usuarios', 'horarios', 'franjas_horario', 'sedes',
     'colaboradores', 'colaboradores_sedes', 'dias_esperados', 'registros', 'registro_cambios', 'permisos', 'contratos',
     'prorrogas_contrato', 'vinculacion_eventos', 'dispositivos_kiosco', 'dias_festivos', 'configuracion', 'notificaciones',
     'constancias_biometricas', 'enlaces_registro_facial', 'plantillas_turno',
-    'calificaciones_clima', 'observaciones_confidenciales', 'seguimientos_clima', 'comentarios_seguimiento_clima'];
+    'calificaciones_clima', 'observaciones_confidenciales', 'seguimientos_clima', 'comentarios_seguimiento_clima',
+    'resenas'];
   return Object.fromEntries(tablas.map((t, i) => [t, n[i]]));
 }
 

@@ -175,7 +175,7 @@ export function registrarAuditoria(request: FastifyRequest, reply: FastifyReply)
     origen: 'SERVIDOR',
     // Sin huella: cada acción es un hecho distinto y se ve suelta.
     huella: null as unknown as string,
-    mensaje: recortar(accionDePeticion(request.method, request.url), 500),
+    mensaje: recortar(accionDePeticion(request.method, request.url, request.body), 500),
     detalle: cuerpoParaGuardar(request.body),
     metodo: request.method.toUpperCase(),
     ruta: request.url.split('?')[0] || null,

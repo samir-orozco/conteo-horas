@@ -22,6 +22,7 @@ const { prisma, borrarEmpresaEnCascada, estado, TX } = vi.hoisted(() => {
     usuario: null as null | { rol: string; activo: boolean },
     colaboradores: 0,
     registros: 0,
+    resenas: 0,
     pagos: { n: 0, monto: 0 },
     comisiones: { n: 0, monto: 0 },
     transaccionFalla: null as null | Error,
@@ -32,6 +33,7 @@ const { prisma, borrarEmpresaEnCascada, estado, TX } = vi.hoisted(() => {
     usuario: { findUnique: vi.fn(async () => estado.usuario) },
     colaborador: { count: vi.fn(async () => estado.colaboradores) },
     registro: { count: vi.fn(async () => estado.registros) },
+    resena: { count: vi.fn(async () => estado.resenas) },
     pago: { aggregate: vi.fn(async () => suma(estado.pagos)) },
     comision: { aggregate: vi.fn(async () => suma(estado.comisiones)) },
     $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>, _opciones?: unknown) => {
@@ -76,6 +78,7 @@ beforeEach(() => {
     usuario: { rol: 'SUPER_ADMIN', activo: true },
     colaboradores: 12,
     registros: 4830,
+    resenas: 0,
     pagos: { n: 0, monto: 0 },
     comisiones: { n: 0, monto: 0 },
     transaccionFalla: null,
@@ -85,6 +88,7 @@ beforeEach(() => {
 
 describe('el resumen que pinta el modal', () => {
   it('cuenta lo que se pierde, incluida la plata, y ya no trae bloqueo', async () => {
+    estado.resenas = 1;
     estado.pagos = { n: 3, monto: 899_700 };
     estado.comisiones = { n: 2, monto: 59_980 };
     const { app } = await montar();
@@ -94,7 +98,10 @@ describe('el resumen que pinta el modal', () => {
     expect(cuerpo).toMatchObject({
       id: 'emp1', nit: NIT, colaboradores: 12, registros: 4830,
       pagosAprobados: 3, montoPagosAprobados: 899_700, comisiones: 2, montoComisiones: 59_980,
+      // Su reseña se va con ella, y si estaba publicada sale de la landing (docs/RESENAS.md, sección 6).
+      resenas: 1,
     });
+    expect(prisma.resena.count).toHaveBeenCalledWith({ where: { empresaId: 'emp1' } });
     expect(cuerpo).not.toHaveProperty('bloqueo');
     await app.close();
   });

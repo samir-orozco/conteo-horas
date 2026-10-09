@@ -61,6 +61,8 @@ model Empresa {
   calificacionesClima  CalificacionClima[]
   notasConfidenciales  ObservacionConfidencial[]
   seguimientosClima    SeguimientoClima[]
+  // Una sola por empresa (docs/RESENAS.md, D1): la que envió, la que omitió o la que cargó el dueño.
+  resena               Resena?
 
   @@map("empresas")
 }
@@ -1397,4 +1399,76 @@ enum EstadoSeguimientoClima {
   SIN_REVISAR
   EN_SEGUIMIENTO
   CERRADO
+}
+
+// ────────── RESEÑAS DE CLIENTES (7 de octubre de 2026) ──────────
+// El requerimiento, con cada regla (R1…R44) y cada decisión del dueño, está en docs/RESENAS.md. Las
+// decisiones viven en src/utils/resenas.ts, con sus pruebas; las rutas, en src/routes/resenas.ts.
+//
+// Una tabla nueva y ningún cambio a las existentes (sql/resenas.sql). Los nombres de las columnas
+// evitan la palabra «firma» a propósito: la auditoría oculta toda clave que la contenga.
+model Resena {
+  id                   String       @id @default(cuid())
+  origen               OrigenResena
+  // Toda reseña nace por revisar (R19). «Omitir» se guarda como una fila OMITIDA sin estrellas, así
+  // que la misma llave única sostiene «una por empresa» y «se pide una sola vez» (D1, D2).
+  estado               EstadoResena @default(POR_REVISAR)
+  // Opcional y ÚNICO: una por empresa. Las manuales sin empresa lo dejan en null, y el índice único
+  // de MySQL admite varios null. Se va con la empresa si se la borra.
+  empresaId            String?      @unique
+  empresa              Empresa?     @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  // Quién la envió. Sin llave hacia `usuarios`, a propósito: si el usuario se borra, la reseña no
+  // tiene por qué irse con él.
+  usuarioId            String?
+  // 1 a 5, o null: omitida, o manual cuya fuente no traía calificación (R28).
+  estrellas            Int?
+  // Hasta 500 caracteres (R11). La columna tiene holgura: MySQL cuenta caracteres, igual que el tope.
+  texto                String       @default("") @db.VarChar(600)
+  // Null cuando no hay texto: sin comentario no hay nada que autorizar (sección 3.3).
+  comoAparece          ComoAparece?
+  // La firma, copiada al enviar (R12) y borrada con «Quitar el nombre» (R23). En las de clientes,
+  // `cargoPublico` es el nombre de la empresa congelado ese día.
+  nombrePublico        String?      @db.VarChar(120)
+  cargoPublico         String?      @db.VarChar(160)
+  // La constancia de la autorización (R13): el texto EXACTO de la opción que eligió y la versión de
+  // la política vigente.
+  textoAutorizacion    String?      @db.VarChar(300)
+  versionPolitica      String?      @db.VarChar(20)
+  // Solo las manuales (R26): por dónde llegó, dónde quedó, cómo autorizó y cuándo la dijo.
+  canal                String?      @db.VarChar(60)
+  referencia           String?      @db.VarChar(500)
+  autorizacion         String?      @db.VarChar(500)
+  fechaOpinion         DateTime?
+  // El correo del super admin que la cargó, como en los pagos manuales (R29).
+  registradaPor        String?      @db.VarChar(191)
+  // Cómo estaba la empresa cuando opinó.
+  planAlEnviar         String?      @db.VarChar(40)
+  mesesPagadosAlEnviar Int?
+  nombreRetiradoEn     DateTime?
+  publicadaEn          DateTime?
+  creadoEn             DateTime     @default(now())
+  actualizadoEn        DateTime     @updatedAt
+
+  // La landing pide «las publicadas»: con caché de un minuto, pero sin este índice cada vuelta a la
+  // base sería un recorrido de la tabla entera (§8.4).
+  @@index([estado])
+  @@map("resenas")
+}
+
+enum OrigenResena {
+  CLIENTE
+  MANUAL
+}
+
+enum EstadoResena {
+  OMITIDA
+  POR_REVISAR
+  PUBLICADA
+  OCULTA
+  ARCHIVADA
+}
+
+enum ComoAparece {
+  CON_NOMBRE
+  ANONIMA
 }

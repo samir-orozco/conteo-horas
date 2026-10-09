@@ -259,9 +259,11 @@ export default async function adminRoutes(app: FastifyInstance) {
       select: { id: true, nombre: true, nit: true },
     });
     if (!empresa) return null;
-    const [colaboradores, registros, pagos, comisiones] = await Promise.all([
+    const [colaboradores, registros, resenas, pagos, comisiones] = await Promise.all([
       prisma.colaborador.count({ where: { empresaId: id } }),
       prisma.registro.count({ where: { colaborador: { empresaId: id } } }),
+      // Su reseña (0 o 1): se va con ella, y si estaba publicada sale de la landing.
+      prisma.resena.count({ where: { empresaId: id } }),
       // Solo los APROBADO: son los que suma /admin/ingresos.
       prisma.pago.aggregate({
         where: { estado: 'APROBADO', suscripcion: { empresaId: id } },
@@ -273,6 +275,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       ...empresa,
       colaboradores,
       registros,
+      resenas,
       pagosAprobados: pagos._count._all,
       montoPagosAprobados: pagos._sum.monto ?? 0,
       comisiones: comisiones._count._all,

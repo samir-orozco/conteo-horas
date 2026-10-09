@@ -34,6 +34,7 @@ import AdminConfiguracion from './pages/admin/AdminConfiguracion';
 import AdminEmpresaDetalle from './pages/admin/AdminEmpresaDetalle';
 import AdminAfiliados from './pages/admin/AdminAfiliados';
 import AdminRegistro from './pages/admin/AdminRegistro';
+import AdminResenas from './pages/admin/AdminResenas';
 import AdminCuenta from './pages/admin/AdminCuenta';
 import PanelAfiliado from './pages/PanelAfiliado';
 import RegistroAfiliado from './pages/RegistroAfiliado';
@@ -129,6 +130,7 @@ export default function App() {
             <Route path="afiliados" element={<AdminAfiliados />} />
             <Route path="configuracion" element={<AdminConfiguracion />} />
             <Route path="registro" element={<AdminRegistro />} />
+            <Route path="resenas" element={<AdminResenas />} />
             <Route path="cuenta" element={<AdminCuenta />} />
           </Route>
 

@@ -41,6 +41,7 @@ import { decidirAccesoEmpresa } from './utils/accesoEmpresa';
 import { esErrorInesperado, manejarError } from './utils/respuestaDeError';
 import { registrarError, registrarAuditoria, registrarAccesoPorRespuesta } from './utils/registrarEvento';
 import eventoRoutes, { eventosAdminRoutes } from './routes/eventos';
+import resenaRoutes, { resenasAdminRoutes } from './routes/resenas';
 
 // Reexportado por compatibilidad: media base de código hace `import { prisma }
 // from '../index'`. El cliente ahora vive en `./prisma` (ver el porqué allí).
@@ -207,6 +208,10 @@ app.register(telegramRoutes, { prefix: '/api/telegram' });
 app.register(notificacionRoutes, { prefix: '/api/notificaciones' });
 app.register(eventoRoutes, { prefix: '/api/eventos' });
 app.register(eventosAdminRoutes, { prefix: '/api/admin/eventos' });
+// Las reseñas: la ventana de la empresa y el carrusel público de la landing, y aparte lo del super
+// admin, que es el único que publica (ver el archivo y docs/RESENAS.md).
+app.register(resenaRoutes, { prefix: '/api/resenas' });
+app.register(resenasAdminRoutes, { prefix: '/api/admin/resenas' });
 
 app.get('/api/health', async () => ({ status: 'ok' }));
 

@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Clock, Users, Calendar, Settings, BarChart2, FileBarChart2, Bell, LogOut, Menu, X, HelpCircle, PlayCircle, Sparkles,
   Building2, CreditCard, LayoutDashboard, AlertTriangle, Home, Handshake,
-  ScanFace, CalendarRange, ScrollText, UserCog, Smile } from 'lucide-react';
+  ScanFace, CalendarRange, ScrollText, UserCog, Smile, MessageSquareQuote } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import BloqueoPago from './BloqueoPago';
@@ -10,6 +10,7 @@ import VerificarCorreo from './VerificarCorreo';
 import GuiaBienvenida from './GuiaBienvenida';
 import RevisionAuxilio from './RevisionAuxilio';
 import Novedades from './Novedades';
+import VentanaResena from '../features/resenas/VentanaResena';
 import CampanaNav from '../features/notificaciones/CampanaNav';
 import ReportesNav from './ReportesNav';
 import { useNotificaciones } from '../features/notificaciones/useNotificaciones';
@@ -57,6 +58,9 @@ const navSuperAdmin: NavSection[] = [
       { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/admin/empresas', label: 'Empresas', icon: Building2 },
       { to: '/admin/afiliados', label: 'Afiliados', icon: Handshake },
+      // Las opiniones de los clientes: leerlas, publicarlas en la landing y cargar las que llegan por
+      // otros canales (docs/RESENAS.md §4).
+      { to: '/admin/resenas', label: 'Reseñas', icon: MessageSquareQuote },
       { to: '/admin/pagos', label: 'Pagos', icon: CreditCard },
       { to: '/admin/configuracion', label: 'Precios', icon: Settings },
       { to: '/admin/registro', label: 'Registro', icon: ScrollText },
@@ -241,6 +245,10 @@ export default function Layout() {
           onCerrar={() => setAyuda(null)}
         />
       )}
+      {/* La reseña va AL FINAL y no se cruza con ninguno de los de arriba: si en esta carga sale
+          cualquiera de ellos, espera a la siguiente carga (R4). Que sea solo para el administrador, y
+          solo en Inicio, lo decide ella con `debeMostrarResena`, que es donde vive la regla. */}
+      {!esSuperAdmin && <VentanaResena />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rangoReporte, hoyEnBogota, medianocheBogota, rangoSemanaBogota } from './fechas';
+import { rangoReporte, hoyEnBogota, medianocheBogota, rangoSemanaBogota, sumarMesesBogota } from './fechas';
 
 // Estas pruebas fijan el arreglo del bug del 2026-08-11: `new Date("2026-07-01")`
 // es medianoche UTC, que en Bogotá es el 30 de junio a las 7 p.m. Usarlo directo
@@ -126,5 +126,49 @@ describe('rangoSemanaBogota', () => {
     const { lunes, finExclusivo } = rangoSemanaBogota(bog('2026-09-24'));
     expect(lunes.toISOString().endsWith('T05:00:00.000Z')).toBe(true);
     expect(finExclusivo.toISOString().endsWith('T05:00:00.000Z')).toBe(true);
+  });
+});
+
+// UN MES CALENDARIO EN HORA DE BOGOTÁ (7 de octubre de 2026).
+//
+// Lo necesitan las reseñas: una empresa es elegible cuando ya pasó un mes calendario desde el
+// inicio de su primer pago real (docs/RESENAS.md, R1). «Un mes» no son 30 días: del 28 de octubre
+// es el 28 de noviembre, y del 31 de enero es el último día de febrero, no el 3 de marzo, que es
+// lo que da `setMonth` al desbordarse.
+//
+// Se opera sobre la fecha de BOGOTÁ del instante. Un pago de las 11:30 p. m. del 31 de octubre en
+// Bogotá ya es 1 de noviembre en UTC, y sumarle un mes a esa fecha UTC daría el 1 de diciembre en
+// vez del 30 de noviembre.
+describe('sumarMesesBogota', () => {
+  // Un instante dado en hora de Bogotá (UTC-5 todo el año, sin horario de verano). CLAUDE.md §8.1.
+  const bog = (a: number, mes: number, d: number, h: number, min = 0) =>
+    new Date(Date.UTC(a, mes - 1, d, h + 5, min, 0));
+
+  it('del 28 de octubre a media mañana, el 28 de noviembre a medianoche de Bogotá', () => {
+    expect(sumarMesesBogota(bog(2026, 10, 28, 10), 1).toISOString()).toBe('2026-11-28T05:00:00.000Z');
+  });
+
+  it('del 31 de enero, el último día de febrero y no el 3 de marzo', () => {
+    expect(sumarMesesBogota(bog(2027, 1, 31, 9), 1).toISOString()).toBe('2027-02-28T05:00:00.000Z');
+  });
+
+  it('en año bisiesto, el 29 de febrero', () => {
+    expect(sumarMesesBogota(bog(2028, 1, 31, 9), 1).toISOString()).toBe('2028-02-29T05:00:00.000Z');
+  });
+
+  it('de diciembre pasa a enero del año siguiente', () => {
+    expect(sumarMesesBogota(bog(2026, 12, 15, 14), 1).toISOString()).toBe('2027-01-15T05:00:00.000Z');
+  });
+
+  it('a las 11:30 p. m. de Bogotá cuenta el día de Bogotá, no el de UTC', () => {
+    // 31 de octubre, 23:30 en Bogotá = 1 de noviembre, 04:30 UTC.
+    const instante = bog(2026, 10, 31, 23, 30);
+    expect(instante.toISOString()).toBe('2026-11-01T04:30:00.000Z');
+    // Del 31 de octubre: noviembre tiene 30 días. Con la fecha UTC daría el 1 de diciembre.
+    expect(sumarMesesBogota(instante, 1).toISOString()).toBe('2026-11-30T05:00:00.000Z');
+  });
+
+  it('suma varios meses, recortando al fin del mes de llegada', () => {
+    expect(sumarMesesBogota(bog(2026, 8, 31, 12), 13).toISOString()).toBe('2027-09-30T05:00:00.000Z');
   });
 });

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Calculator, ScanFace, CalendarCheck, AlarmClock,
   ArrowRight, Check, ChevronDown, ShieldCheck, MonitorSmartphone, Sparkles,
-  Quote, Star, PlayCircle, Users, MessageCircle, Menu,
+  PlayCircle, Users, MessageCircle, Menu,
 } from 'lucide-react';
 import logoNegro from '../assets/logo-completo-negro.svg';
 import logoPRecortada from '../assets/logo-p.svg';
@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import { Resaltado, Tachado } from '../features/landing/Marcas';
 import TarjetasDelSistema from '../features/landing/TarjetasDelSistema';
 import BlogReciente from '../features/landing/BlogReciente';
+import CarruselResenas from '../features/landing/CarruselResenas';
 import PieDePagina from '../features/landing/PieDePagina';
 import { useScrollSuave } from '../features/landing/useScrollSuave';
 import { useProgresoAlBajar } from '../features/landing/useProgresoAlBajar';
@@ -39,22 +40,6 @@ function useReveal() {
     return () => io.disconnect();
   }, []);
 }
-
-// Testimonios de clientes (van con nombre y empresa reales)
-const TESTIMONIOS = [
-  {
-    nombre: 'Mateo Vera', cargo: 'CEO Grupo MSM · Founder Fem Probiotics', iniciales: 'MV',
-    texto: 'Liquidar la nómina nos tomaba dos días y siempre había reclamos por los recargos. Con HoraPro es cuestión de minutos y los números cuadran. Dejamos de improvisar con hojas de cálculo.',
-  },
-  {
-    nombre: 'Carolina Calle', cargo: 'CEO Tuercas & Pernos', iniciales: 'CC',
-    texto: 'Lo que más me gustó es que la gente marca con la cara y se acabaron las excusas de "se me olvidó firmar". Los reportes de quién llegó tarde me los reviso desde el celular en la mañana.',
-  },
-  {
-    nombre: 'Santiago Botero', cargo: 'Gerente Lavadora Las Brisas', iniciales: 'SB',
-    texto: 'la verdad no soy de tecnologia y pense q iba ser complicado pero no. mis muchachos marcan con la cara y yo veo todo desde el telefono. me ahorro un monton de tiempo y ya no peleo con el excel jaja. muy recomendado',
-  },
-];
 
 const FAQ = [
   { q: '¿Qué software ofrece liquidación automática de nómina en Colombia?', a: 'HoraPro calcula automáticamente los recargos nocturnos, dominicales, festivos y las horas extra según la Ley 2466, y entrega el total listo para tu nómina, sin fórmulas de Excel ni errores de cálculo.' },
@@ -264,31 +249,10 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonios */}
-      <section className="max-w-6xl mx-auto px-5 py-16 md:py-24">
-        <div className="text-center max-w-xl mx-auto mb-12 hp-reveal">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Negocios que ya dejaron el Excel</h2>
-          <p className="text-muted mt-3">Lo que dicen quienes liquidan sus horas con HoraPro.</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-5">
-          {TESTIMONIOS.map((t, i) => (
-            <figure key={t.nombre} className="hp-reveal bg-white border border-gray-200 rounded-2xl p-6 flex flex-col" style={{ animationDelay: `${i * 90}ms` }}>
-              <Quote size={26} className="text-primary shrink-0" />
-              <div className="flex gap-0.5 mt-3 mb-2">
-                {Array.from({ length: 5 }).map((_, s) => <Star key={s} size={14} className="fill-primary text-primary" />)}
-              </div>
-              <blockquote className="text-sm text-ink/90 leading-relaxed flex-1">"{t.texto}"</blockquote>
-              <figcaption className="flex items-center gap-3 mt-5 pt-4 border-t border-gray-100">
-                <span className="w-10 h-10 rounded-full bg-ink text-white font-bold text-sm flex items-center justify-center shrink-0">{t.iniciales}</span>
-                <span>
-                  <span className="block text-sm font-bold text-ink">{t.nombre}</span>
-                  <span className="block text-xs text-muted">{t.cargo}</span>
-                </span>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-      </section>
+      {/* Reseñas de clientes, justo antes de Precios (docs/RESENAS.md, sección 5). Reemplazan a los tres
+          testimonios que estaban escritos aquí: ahora las publica el dueño desde el super admin, y sin
+          ninguna publicada la sección no aparece. */}
+      <CarruselResenas titulo="Negocios que ya dejaron el Excel" subtitulo="Lo que dicen quienes liquidan sus horas con HoraPro." />
 
       {/* Precios */}
       <section id="precios" className="max-w-6xl mx-auto px-5 py-16 md:py-24 scroll-mt-16">

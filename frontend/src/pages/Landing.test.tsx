@@ -1,14 +1,25 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import Landing from './Landing';
+import type { TarjetaPublica } from '../features/resenas/api';
 
 // La landing rediseñada (14 de septiembre de 2026): la portada con el celular, la frase
 // con tachado y resaltado, las partes del sistema, lo último del blog y el pie con las
 // redes. Los artículos son de mentira para que la prueba no cambie cada vez que se
 // publica uno.
-vi.mock('../lib/api', () => ({ default: { get: vi.fn(() => new Promise(() => {})) } }));
+//
+// El servidor simulado responde según la ruta. Los precios no llegan nunca, y las reseñas
+// tampoco salvo en las pruebas del carrusel, que dicen qué responde (8 de octubre de 2026).
+const servidor = vi.hoisted(() => ({
+  resenas: (): Promise<unknown> => new Promise(() => {}),
+}));
+vi.mock('../lib/api', () => ({
+  default: {
+    get: vi.fn((ruta: string) => (ruta === '/resenas/publicas' ? servidor.resenas() : new Promise(() => {}))),
+  },
+}));
 vi.mock('../context/AuthContext', () => ({ useAuth: () => ({ usuario: null }) }));
 vi.mock('../components/VideoVSL', () => ({ default: () => <div>Video de HoraPro</div> }));
 // El scroll suave necesita un navegador de verdad (jsdom no trae ResizeObserver); se prueba aparte en
@@ -156,6 +167,98 @@ describe('Landing · menú del celular', () => {
     expect(document.body.style.overflow).toBe('hidden');
     await usuario.keyboard('{Escape}');
     expect(document.body.style.overflow).toBe('');
+  });
+});
+
+// ────────── LAS RESEÑAS DE CLIENTES (8 de octubre de 2026) ──────────
+//
+// Reemplazan a los tres testimonios que estaban escritos en el código (docs/RESENAS.md, sección 5).
+// Las reseñas las publica el dueño desde el super admin, así que la landing tiene que aguantar los
+// tres casos del servidor: con reseñas, sin ninguna y caído. El detalle del carrusel se prueba en
+// CarruselResenas.test.tsx; aquí, que la landing lo monta en su lugar y con su título.
+describe('Landing · reseñas de clientes', () => {
+  const TITULO = 'Negocios que ya dejaron el Excel';
+  const resenas = (n: number): TarjetaPublica[] => Array.from({ length: n }, (_, i) => ({
+    id: `r${i + 1}`, estrellas: 4, texto: `Opinión ${i + 1}`, nombre: `Persona ${i + 1}`, detalle: `Empresa ${i + 1}`,
+  }));
+
+  // Tres a la vez es en el computador; jsdom no trae matchMedia y por omisión responde «celular».
+  const enComputador = () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(consulta => ({
+      matches: consulta === '(min-width: 768px)', media: consulta, onchange: null,
+      addListener: () => {}, removeListener: () => {},
+      addEventListener: () => {}, removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList);
+  };
+
+  const abrirCon = async (respuesta: () => Promise<unknown>) => {
+    servidor.resenas = respuesta;
+    abrir();
+    await act(async () => {});
+  };
+  const conLista = (lista: TarjetaPublica[]) => () => Promise.resolve({ data: { resenas: lista } });
+  const visibles = () => within(screen.getByRole('region', { name: TITULO }))
+    .getAllByRole('group').map(g => g.getAttribute('aria-label'));
+
+  afterEach(() => {
+    servidor.resenas = () => new Promise(() => {});
+    vi.useRealTimers();
+    delete (HTMLElement.prototype as { scrollTo?: unknown }).scrollTo;
+  });
+
+  it('con reseñas publicadas, muestra el título y se pueden leer todas', async () => {
+    enComputador();
+    await abrirCon(conLista(resenas(15)));
+    expect(screen.getByRole('heading', { level: 2, name: TITULO })).toBeInTheDocument();
+    expect(screen.getByText('Lo que dicen quienes liquidan sus horas con HoraPro.')).toBeInTheDocument();
+    expect(visibles()).toEqual(Array.from({ length: 15 }, (_, i) => `${i + 1} de 15`));
+  });
+
+  // D7: justo antes de Precios, donde estaban los testimonios.
+  it('van justo antes de Precios', async () => {
+    enComputador();
+    await abrirCon(conLista(resenas(4)));
+    expect(screen.getByRole('region', { name: TITULO }).nextElementSibling).toHaveAttribute('id', 'precios');
+  });
+
+  it('con dos, se ven las dos y no hay flechas', async () => {
+    enComputador();
+    await abrirCon(conLista(resenas(2)));
+    expect(visibles()).toEqual(['1 de 2', '2 de 2']);
+    expect(screen.queryByRole('button', { name: 'Reseñas siguientes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reseñas anteriores' })).not.toBeInTheDocument();
+  });
+
+  // R39 y R34: sin reseñas no queda ni el título ni los testimonios que estaban escritos a mano.
+  it('sin reseñas publicadas, la sección no está', async () => {
+    await abrirCon(conLista([]));
+    expect(screen.queryByRole('heading', { name: TITULO })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Mateo Vera|Carolina Calle|Santiago Botero/)).not.toBeInTheDocument();
+  });
+
+  it('si el servidor de las reseñas falla, la sección no está y el resto de la página sí', async () => {
+    await abrirCon(() => Promise.reject(new Error('Network Error')));
+    expect(screen.queryByRole('heading', { name: TITULO })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Un plan para cada tamaño' })).toBeInTheDocument();
+  });
+
+  // Pedido del dueño (8 de octubre de 2026): la fila se desliza sola, sin botón de pausa ni puntos.
+  it('con más de tres, solo hay flechas: ni botón de pausa ni puntos', async () => {
+    enComputador();
+    await abrirCon(conLista(resenas(15)));
+    const botones = within(screen.getByRole('region', { name: TITULO })).getAllByRole('button');
+    expect(botones.map(b => b.getAttribute('aria-label'))).toEqual(['Reseñas anteriores', 'Reseñas siguientes']);
+  });
+
+  // R43: lo escribe un cliente y lo lee cualquiera. Si se interpretara como HTML, una reseña podría
+  // ejecutar código en la landing el día que el dueño la publique.
+  it('el texto de una reseña se ve tal cual, sin volverse HTML', async () => {
+    const malicioso = '<img src=x onerror=alert(1)>';
+    await abrirCon(conLista([{ ...resenas(1)[0], texto: malicioso }]));
+    const seccion = screen.getByRole('region', { name: TITULO });
+    expect(within(seccion).getByText(malicioso, { exact: false })).toBeInTheDocument();
+    expect(seccion.querySelector('img')).toBeNull();
   });
 });
 

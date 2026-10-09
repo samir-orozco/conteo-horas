@@ -70,6 +70,39 @@ describe('accionDePeticion', () => {
     expect(seAudita('POST', '/api/worker/clima/observacion', 200)).toBe(false);
   });
 
+  it('la reseña que envía una empresa NO se audita: copiaría su nombre y su texto a un registro que «Quitar el nombre» no alcanza', () => {
+    expect(seAudita('POST', '/api/resenas', 201)).toBe(false);
+    expect(seAudita('POST', '/api/resenas/', 201)).toBe(false);
+    // Lo del super admin sí: es quien publica, y R24 pide que cada acción quede.
+    expect(seAudita('POST', '/api/admin/resenas', 201)).toBe(true);
+    expect(seAudita('PUT', '/api/admin/resenas/ckv123abc456def789ghi012j/estado', 200)).toBe(true);
+    expect(seAudita('POST', '/api/admin/resenas/ckv123abc456def789ghi012j/quitar-nombre', 200)).toBe(true);
+  });
+
+  it('las reseñas del super admin se dicen con su nombre, no con la ruta (R24)', () => {
+    const ID = 'ckv123abc456def789ghi012j';
+    expect(accionDePeticion('POST', '/api/admin/resenas')).toBe('Creó una reseña');
+    expect(accionDePeticion('PUT', `/api/admin/resenas/${ID}`)).toBe('Editó una reseña');
+    // Con el método solo, quitar el nombre sería «Creó una reseña», que dice lo contrario de lo que pasó.
+    expect(accionDePeticion('POST', `/api/admin/resenas/${ID}/quitar-nombre`)).toBe('Quitó el nombre de una reseña');
+  });
+
+  it('el cambio de estado de una reseña dice cuál, leyendo el cuerpo', () => {
+    const ruta = '/api/admin/resenas/ckv123abc456def789ghi012j/estado';
+    expect(accionDePeticion('PUT', ruta, { estado: 'PUBLICADA' })).toBe('Publicó una reseña');
+    expect(accionDePeticion('PUT', ruta, { estado: 'OCULTA' })).toBe('Ocultó una reseña');
+    expect(accionDePeticion('PUT', ruta, { estado: 'ARCHIVADA' })).toBe('Archivó una reseña');
+    expect(accionDePeticion('PUT', ruta, { estado: 'POR_REVISAR' })).toBe('Devolvió a revisión una reseña');
+    // Sin cuerpo, o con uno que no dice nada, se dice lo que se sabe y no se inventa el estado.
+    for (const cuerpo of [undefined, null, {}, { estado: 'BORRADA' }, { estado: 3 }, 'PUBLICADA', { estado: 'toString' }]) {
+      expect(accionDePeticion('PUT', ruta, cuerpo), JSON.stringify(cuerpo)).toBe('Cambió el estado de una reseña');
+    }
+  });
+
+  it('el cuerpo solo cambia el texto de las rutas que lo leen', () => {
+    expect(accionDePeticion('PUT', '/api/colaboradores/ckv123abc456def789ghi012j', { estado: 'PUBLICADA' })).toBe('Editó un colaborador');
+  });
+
   it('una ruta que nadie tradujo sale tal cual, no como un texto inventado', () => {
     expect(accionDePeticion('POST', '/api/algo-nuevo/ckv123abc456def789ghi012j')).toBe('POST /api/algo-nuevo/:id');
   });
@@ -127,6 +160,27 @@ describe('cuerpoParaGuardar', () => {
     expect(cuerpoParaGuardar(undefined)).toBe('');
     expect(cuerpoParaGuardar(null)).toBe('');
     expect(cuerpoParaGuardar('texto suelto')).toBe('texto suelto');
+  });
+
+  // R23: «Quitar el nombre» limpia la fila de `resenas`, pero no llega a este registro, que no se
+  // borra. Así que el nombre, el cargo y lo que dice dónde quedó y cómo autorizó (que suele traer un
+  // teléfono o un chat) no se copian aquí nunca. Lo demás sí, para que se lea qué se hizo.
+  it('de una reseña cargada a mano no quedan el nombre, el cargo, dónde quedó ni cómo autorizó', () => {
+    const guardado = cuerpoParaGuardar({
+      estrellas: 5,
+      texto: 'Liquidar la nómina nos tomaba dos días.',
+      nombrePublico: 'Carolina Calle',
+      cargoPublico: 'CEO Tuercas & Pernos',
+      canal: 'WhatsApp',
+      referencia: 'chat con Carolina, 300 123 4567',
+      autorizacion: 'Carolina dijo que sí por WhatsApp',
+      fechaOpinion: '2026-07-19',
+    });
+    expect(guardado).not.toContain('Carolina');
+    expect(guardado).not.toContain('Tuercas');
+    expect(guardado).not.toContain('300 123 4567');
+    expect(guardado).toContain('WhatsApp');
+    expect(guardado).toContain('2026-07-19');
   });
 
   it('los objetos anidados también se limpian', () => {

@@ -194,6 +194,14 @@ body {
    a la vista. */
 .hp-tabs-scroll { scrollbar-width: none; -ms-overflow-style: none; }
 .hp-tabs-scroll::-webkit-scrollbar { display: none; }
+/* El carrusel de reseñas de la landing (8 de octubre de 2026, pedido del dueño): la fila se desliza
+   sola, y sin esto las tarjetas se cortan en seco contra los costados. Se desvanecen en los 4rem de
+   cada lado. Con máscara y no con un degradado blanco encima, para no depender del color del fondo.
+   El prefijo -webkit- es para Safari anterior a 15.4. */
+.hp-desvanecido-lados {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 4rem, #000 calc(100% - 4rem), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 4rem, #000 calc(100% - 4rem), transparent);
+}
 /* LAS DOS ESQUINAS DE LA CABECERA DE TURNOS (29 de septiembre de 2026, pedido del dueño: «uno al
    lado del otro, pero en esquinas diferentes, y al momento en que en el responsive se junten, uno
    encima del otro pero centrado»).
